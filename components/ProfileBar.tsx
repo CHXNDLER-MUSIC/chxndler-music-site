@@ -148,21 +148,20 @@ export default function ProfileBar({
 
       const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
       
-      // Check for existing HeartCoin transaction for journal completion today
-      const { data: transactions, error } = await supabaseBrowser
-        .from('heartcoin_transactions')
+      // Check for journal entry with soul_star content for today
+      const { data: journalEntries, error } = await supabaseBrowser
+        .from('soul_journal_entries')
         .select('*')
         .eq('user_id', user.id)
-        .eq('reason', 'Completed journal reflection')
-        .gte('created_at', `${today}T00:00:00`)
-        .lt('created_at', `${today}T23:59:59`);
+        .eq('entry_date', today);
 
       if (error) {
         console.error('Error checking journal completion:', error);
         return false;
       }
 
-      return transactions && transactions.length > 0;
+      // Journal is completed if there's an entry with soul_star content
+      return journalEntries && journalEntries.length > 0 && journalEntries[0].soul_star && journalEntries[0].soul_star.trim().length > 0;
     } catch (error) {
       console.error('Error checking journal completion:', error);
       return false;
@@ -175,6 +174,14 @@ export default function ProfileBar({
       checkJournalCompletion().then(setJournalCompletedToday);
     }
   }, [contextProfile?.id, profileRefreshTrigger]);
+  
+  // Check journal completion status when journal opens/closes
+  useEffect(() => {
+    if (contextProfile?.id && !isJournalOpen) {
+      // When journal closes, check if it was completed
+      checkJournalCompletion().then(setJournalCompletedToday);
+    }
+  }, [isJournalOpen, contextProfile?.id]);
 
   // Track authentication state
   useEffect(() => {
@@ -204,12 +211,13 @@ export default function ProfileBar({
 
   // Handler for when journal gets completed
   const handleJournalCompleted = async () => {
-    setJournalCompletedToday(true);
-    // Notify parent component
-    onJournalCompleted?.();
     // Refresh profile data to get updated HeartCoin balance
+    await refreshProfile();
+    // Check completion status
     const completed = await checkJournalCompletion();
     setJournalCompletedToday(completed);
+    // Notify parent component
+    onJournalCompleted?.();
   };
 
   
@@ -1298,6 +1306,7 @@ export default function ProfileBar({
       <SoulStarJournal 
         isOpen={isJournalOpen} 
         onClose={() => setIsJournalOpen(false)}
+        onJournalCompleted={handleJournalCompleted}
       />
 
       {/* Journey Modal - Triggered by hamburger menu JOURNEY option */}

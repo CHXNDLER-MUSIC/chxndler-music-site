@@ -249,6 +249,7 @@ export default function ChatPanel({ isOpen, onClose }) {
           name: profile.name,
           element: profile.element || null,
           avatar_badge_id: profile.avatar_badge_id || null,
+          profile_image_url: profile.profile_image_url || null,
           last_seen: new Date().toISOString()
         };
         setChatUsers([authenticatedUser]);
@@ -291,6 +292,7 @@ export default function ChatPanel({ isOpen, onClose }) {
             name: profile.name,
             element: profile.element || null,
             avatar_badge_id: profile.avatar_badge_id || null,
+            profile_image_url: profile.profile_image_url || null,
             last_seen: new Date().toISOString()
           };
           console.log('🔥 Setting authenticated user:', authenticatedUser);
@@ -345,6 +347,7 @@ export default function ChatPanel({ isOpen, onClose }) {
           name: profile.name,
           element: profile.element || null,
           avatar_badge_id: profile.avatar_badge_id || null,
+          profile_image_url: profile.profile_image_url || null,
           last_seen: new Date().toISOString()
         };
         setChatUsers([authenticatedUser, ...databaseUsers.filter(u => u.id !== user.id)]);
@@ -1613,7 +1616,7 @@ export default function ChatPanel({ isOpen, onClose }) {
       {/* Card Popup Modal */}
       {selectedCardPopup && (
         <div
-          className="fixed inset-0 z-[120] flex items-center justify-center p-4"
+          className="absolute inset-0 z-[120] flex items-center justify-center p-4"
           style={{
             background: 'rgba(0, 0, 0, 0.8)',
             backdropFilter: 'blur(8px)'
@@ -1621,7 +1624,7 @@ export default function ChatPanel({ isOpen, onClose }) {
           onClick={() => setSelectedCardPopup(null)}
         >
           <div
-            className="relative max-w-md w-full aspect-[2/3] max-h-[80vh]"
+            className="relative w-48 aspect-[2/3] max-h-[50vh]"
             onClick={(e) => e.stopPropagation()}
             style={{
               background: `

@@ -125,6 +125,8 @@ interface ProfileContextType {
   journalEntries: JournalEntry[];
   loadJournalEntries: (userId: string) => Promise<void>;
   saveJournalEntry: (entry: Omit<JournalEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<JournalEntry | null>;
+  updateJournalEntry: (entryId: string, updates: Partial<Pick<JournalEntry, 'soul_star' | 'intention' | 'reflection' | 'intention_response' | 'reflection_response' | 'is_private'>>) => Promise<void>;
+  deleteJournalEntry: (entryId: string) => Promise<void>;
   getDailyPrompts: () => Promise<DailyPrompts | null>;
   isJournalOpen: boolean;
   setIsJournalOpen: (open: boolean) => void;
@@ -536,6 +538,53 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateJournalEntry = async (entryId: string, updates: Partial<Pick<JournalEntry, 'soul_star' | 'intention' | 'reflection' | 'intention_response' | 'reflection_response' | 'is_private'>>) => {
+    try {
+      const { error } = await supabaseClient
+        .from('soul_journal_entries')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', entryId);
+
+      if (error) {
+        throw error;
+      }
+
+      // Update local state
+      setJournalEntries(prev => 
+        prev.map(entry => 
+          entry.id === entryId 
+            ? { ...entry, ...updates }
+            : entry
+        )
+      );
+    } catch (error) {
+      console.error('Error updating journal entry:', error);
+      throw error;
+    }
+  };
+
+  const deleteJournalEntry = async (entryId: string) => {
+    try {
+      const { error } = await supabaseClient
+        .from('soul_journal_entries')
+        .delete()
+        .eq('id', entryId);
+
+      if (error) {
+        throw error;
+      }
+
+      // Update local state
+      setJournalEntries(prev => prev.filter(entry => entry.id !== entryId));
+    } catch (error) {
+      console.error('Error deleting journal entry:', error);
+      throw error;
+    }
+  };
+
   const getDailyPrompts = async (): Promise<DailyPrompts | null> => {
     try {
       const response = await fetch('/api/soulPrompt/daily');
@@ -604,6 +653,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     journalEntries,
     loadJournalEntries,
     saveJournalEntry,
+    updateJournalEntry,
+    deleteJournalEntry,
     getDailyPrompts,
     isJournalOpen,
     setIsJournalOpen,

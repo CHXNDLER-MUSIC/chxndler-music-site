@@ -990,7 +990,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     try { sfx.play('click', 0.6); } catch {}
                     setActiveTab(tab);
                   }}
-                  className="px-4 py-2 text-xs rounded border transition-all duration-200"
+                  className="px-6 py-1.5 text-xs rounded border transition-all duration-200"
                   style={{
                     background: activeTab === tab 
                       ? 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.6) 100%)'
@@ -1263,7 +1263,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               {!showItemDetail ? (
                 <>
                   {/* Sub-tabs for USE */}
-                  <div className="flex justify-center mb-3 space-x-3">
+                  <div className="flex justify-center mb-1 space-x-3">
                     {(['MERCH', 'CARDS'] as const).map((tab) => (
                       <button
                         key={tab}
@@ -1272,7 +1272,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           try { sfx.play('click', 0.6); } catch {}
                           setActiveUseTab(tab);
                         }}
-                        className="px-8 py-2 text-sm rounded border transition-all duration-200"
+                        className="px-10 py-1.5 text-sm rounded border transition-all duration-200"
                         style={{
                           background: activeUseTab === tab 
                             ? 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.6) 100%)'
@@ -1679,7 +1679,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           <div className="flex gap-2 mb-4">
                             <select 
                               value={selectedSong}
-                              onChange={(e) => setSelectedSong(e.target.value)}
+                              onChange={(e) => {
+                                try { sfx.play('change', 0.6); } catch {}
+                                setSelectedSong(e.target.value);
+                              }}
                               className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1"
                             >
                               {availableSongs.map(song => (
@@ -1688,7 +1691,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             </select>
                             <select 
                               value={selectedRarity}
-                              onChange={(e) => setSelectedRarity(e.target.value)}
+                              onChange={(e) => {
+                                try { sfx.play('change', 0.6); } catch {}
+                                setSelectedRarity(e.target.value);
+                              }}
                               className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1"
                             >
                               <option value="">All Rarities</option>

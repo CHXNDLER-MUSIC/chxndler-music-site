@@ -1,10 +1,34 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Canvas } from "@react-three/fiber";
+import dynamic from "next/dynamic";
 import { SRGBColorSpace } from "three";
 import { playerStore } from "@/store/usePlayerStore";
-import HeartverseSolarSystem from "./HeartverseSolarSystem";
+
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback?: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('HeartverseSystemWrapper Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || <div style={{ display: 'none' }} />;
+    }
+    return this.props.children;
+  }
+}
 
 interface HeartverseSystemWrapperProps {
   showAll?: boolean;
@@ -17,74 +41,71 @@ export default function HeartverseSystemWrapper({
   hideUntilPlaying = false,
   onSongClick
 }: HeartverseSystemWrapperProps) {
-  const [storeSnap, setStoreSnap] = useState(() => playerStore.getState());
   const [isMounted, setIsMounted] = useState(false);
+  const [r3fSafe, setR3fSafe] = useState(false);
   
-  // Subscribe to player store changes
-  useEffect(() => {
-    const unsubscribe = playerStore.subscribe(() => setStoreSnap(playerStore.getState()));
-    return unsubscribe;
-  }, []);
-
+  // Lazy-load R3F Canvas to avoid evaluating internals before guards
+  const R3FCanvas: any = React.useMemo(
+    () =>
+      dynamic(() => import("@react-three/fiber").then((m) => m.Canvas as any), {
+        ssr: false,
+      }),
+    []
+  );
+  // Lazy-load the solar system too, only render it when safe
+  const HeartverseSolarSystemLazy: any = React.useMemo(
+    () =>
+      dynamic(() => import("./HeartverseSolarSystem"), {
+        ssr: false,
+      }),
+    []
+  );
+  
   // Ensure client-side mounting
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Mark 3D system as active so global key handlers can avoid interfering
+  // After mount, probe environment to avoid ReactCurrentOwner crashes
   useEffect(() => {
-    try { 
-      (window as any).__CHX_3D_ACTIVE = true; 
-    } catch {}
-    return () => { 
-      try { 
-        (window as any).__CHX_3D_ACTIVE = false; 
-      } catch {} 
-    };
+    try {
+      // WebGL availability check
+      const c = document.createElement('canvas');
+      const gl = c && (c.getContext('webgl') || c.getContext('experimental-webgl'));
+      const hasWebGL = !!gl;
+      // Some R3F versions touch React internals in dev runtime
+      const hasReactInternals = !!(
+        (React as any) && (React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED
+      );
+      setR3fSafe(!!hasWebGL && !!hasReactInternals);
+    } catch {
+      setR3fSafe(false);
+    }
   }, []);
-
-  const { songs, mainId, hoverId, planetsVisible, planetDisplayMode } = storeSnap as any;
 
   // Responsive design values
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
-  
-  // Visibility logic
-  const shouldShow = showAll || planetsVisible;
-  const shouldHide = hideUntilPlaying && !mainId;
-  const effectiveVisibility = shouldShow && !shouldHide;
-
-  // Handle song click
-  const handleSongClick = (songId: string) => {
-    try {
-      // Update player store
-      playerStore.getState().setMainId(songId);
-      
-      // Call external handler if provided
-      if (onSongClick) {
-        onSongClick(songId);
-      }
-    } catch (error) {
-      console.error("Failed to handle song click:", error);
-    }
-  };
 
   if (!isMounted) {
     return null; // Prevent SSR issues
   }
 
   return (
-    <div
-      className="absolute inset-0"
-      style={{
-        opacity: effectiveVisibility ? 1 : 0,
-        transition: isMobile ? 'none' : 'opacity 600ms ease-in-out',
-        willChange: 'opacity',
-        transform: 'translateZ(0)',
-        WebkitTransform: 'translateZ(0)',
-        backfaceVisibility: 'hidden' as any,
-      }}
-    >
-      <Canvas
+    <ErrorBoundary>
+      <div
+        className="absolute inset-0"
+        style={{
+          opacity: 1,
+          transition: isMobile ? 'none' : 'opacity 600ms ease-in-out',
+          willChange: 'opacity',
+          transform: 'translateZ(0)',
+          WebkitTransform: 'translateZ(0)',
+          backfaceVisibility: 'hidden' as any,
+        }}
+      >
+        {/* If environment isn't safe for R3F (e.g., React internals missing), quietly no-op */}
+        {!r3fSafe ? null : (
+        <R3FCanvas
         className="absolute inset-0"
         style={{ background: 'transparent' }}
         // Responsive DPR settings
@@ -142,11 +163,13 @@ export default function HeartverseSystemWrapper({
         
 
         {/* Main Heartverse Solar System */}
-        <HeartverseSolarSystem 
-          songs={songs}
-          onSongClick={handleSongClick}
+        <HeartverseSolarSystemLazy 
+          songs={[]}
+          onSongClick={() => {}}
         />
-      </Canvas>
-    </div>
+        </R3FCanvas>
+        )}
+      </div>
+    </ErrorBoundary>
   );
 }

@@ -27,6 +27,19 @@ interface SoulStarJournalProps {
   isOpen: boolean;
   onClose: () => void;
   openWelcomeHome?: () => void;
+  onJournalCompleted?: () => void;
+}
+
+interface JournalEntry {
+  id: string;
+  entry_date: string;
+  element: string;
+  intention?: string;
+  reflection?: string;
+  intention_response?: string;
+  reflection_response?: string;
+  soul_star?: string;
+  is_private?: boolean;
 }
 
 interface JournalState {
@@ -55,11 +68,14 @@ const ELEMENT_EMOJIS = {
   darkness: "🌑",
 };
 
-export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: SoulStarJournalProps) {
-  const { saveJournalEntry, journalEntries, profile, user, getDailyPrompts } = useProfile();
+export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJournalCompleted }: SoulStarJournalProps) {
+  const { saveJournalEntry, journalEntries, profile, user, getDailyPrompts, deleteJournalEntry, updateJournalEntry } = useProfile();
   const { hasPendingReflection, markReflectionComplete } = useDailyReflectionStatus();
   const [showHistory, setShowHistory] = useState(false);
   const [dailyPrompt, setDailyPrompt] = useState<DailyPrompt | null>(null);
+  const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
+  const [editingEntry, setEditingEntry] = useState<string | null>(null);
+  const [editResponse, setEditResponse] = useState<string>("");
   const journalRef = useRef<HTMLDivElement>(null);
   const [journalState, setJournalState] = useState<JournalState>({
     intentionResponse: "",
@@ -135,8 +151,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
     if (todayEntry) {
       setJournalState(prev => ({
         ...prev,
-        intentionResponse: todayEntry.intention || "",
-        reflectionResponse: todayEntry.reflection || "",
+        intentionResponse: todayEntry.intention_response || "",
+        reflectionResponse: todayEntry.reflection_response || "",
         soulStar: todayEntry.soul_star || "",
         isPrivate: todayEntry.is_private ?? false,
         // If there's already a soul_star for today, mark as submitted to lock UI
@@ -185,10 +201,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
         entry_date: today,
         element: profile.element,
         prompt_id: dailyPrompt.id,
-        intention: journalState.intentionResponse,
-        reflection: journalState.reflectionResponse,
-        intention_response: null,
-        reflection_response: null,
+        intention: dailyPrompt.intention.text,
+        reflection: dailyPrompt.reflection.text,
+        intention_response: journalState.intentionResponse,
+        reflection_response: journalState.reflectionResponse,
         soul_star: journalState.soulStar.trim(),
         is_private: journalState.isPrivate,
       } as any);
@@ -202,6 +218,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
           saveMessage: "Signal cast into the stars",
           isSubmitted: true,
         }));
+        
+        // Notify parent that journal was completed
+        onJournalCompleted?.();
+        
         setTimeout(() => {
           setJournalState(prev => ({ ...prev, saveMessage: "" }));
           onClose(); // Close the popout on success
@@ -234,6 +254,50 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
   const handleClose = () => {
     sfx.play('close', 0.8);
     onClose();
+  };
+
+  const handleEntryClick = (entryId: string) => {
+    sfx.play('click', 0.6);
+    setExpandedEntry(expandedEntry === entryId ? null : entryId);
+    setEditingEntry(null); // Close any editing when clicking on an entry
+  };
+
+  const handleEditClick = (entry: JournalEntry, e: React.MouseEvent) => {
+    e.stopPropagation();
+    sfx.play('click', 0.6);
+    setEditingEntry(entry.id);
+    setEditResponse(entry.soul_star || "");
+  };
+
+  const handleSaveEdit = async (entryId: string) => {
+    try {
+      sfx.play('click', 0.8);
+      await updateJournalEntry(entryId, { soul_star: editResponse.trim() });
+      setEditingEntry(null);
+      setEditResponse("");
+    } catch (error) {
+      console.error('Failed to update entry:', error);
+      // Could add error state here
+    }
+  };
+
+  const handleDeleteClick = async (entryId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to delete this journal entry?')) {
+      try {
+        sfx.play('click', 0.8);
+        await deleteJournalEntry(entryId);
+      } catch (error) {
+        console.error('Failed to delete entry:', error);
+        // Could add error state here
+      }
+    }
+  };
+
+  const handleCancelEdit = () => {
+    sfx.play('click', 0.6);
+    setEditingEntry(null);
+    setEditResponse("");
   };
 
   if (!isOpen) return null;
@@ -422,7 +486,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
 
         {showHistory ? (
           /* History View */
-          <div className="space-y-4 overflow-y-auto" style={{ height: '400px' }}>
+          <div className="space-y-2 overflow-y-auto" style={{ height: '400px' }}>
             {journalEntries.length === 0 ? (
               <div 
                 className="text-center p-6 rounded-lg"
@@ -445,45 +509,253 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
                 });
                 const entryColor = ELEMENT_COLORS[entry.element as keyof typeof ELEMENT_COLORS]?.color || elementTheme.color;
                 const entryEmoji = ELEMENT_EMOJIS[entry.element as keyof typeof ELEMENT_EMOJIS] || "💖";
+                const isExpanded = expandedEntry === entry.id;
+                const isEditing = editingEntry === entry.id;
                 
                 return (
                   <div 
                     key={entry.id}
-                    className="p-4 rounded-lg space-y-3"
+                    className="rounded-lg overflow-hidden"
                     style={{
                       background: `${entryColor}08`,
                       border: `1px solid ${entryColor}30`,
                       borderLeft: `4px solid ${entryColor}`
                     }}
                   >
-                    <div className="flex justify-between items-start gap-4">
-                      <div className="text-sm font-semibold" style={{ color: entryColor }}>
-                        {entryDate}
+                    {/* Single line view */}
+                    <div 
+                      className="p-3 cursor-pointer hover:bg-black/20 flex items-center justify-between"
+                      onClick={() => handleEntryClick(entry.id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="text-sm font-semibold" style={{ color: entryColor }}>
+                          {entryDate}
+                        </div>
+                        <span 
+                          className="text-xs px-2 py-1 rounded-full uppercase font-semibold flex items-center gap-1"
+                          style={{
+                            background: `${entryColor}15`,
+                            color: entryColor,
+                            border: `1px solid ${entryColor}40`
+                          }}
+                        >
+                          {entryEmoji} {entry.element}
+                        </span>
+                        {/* Preview of first few words */}
+                        <div 
+                          className="text-xs opacity-70 truncate flex-1"
+                          style={{ color: '#FFFFFF', maxWidth: '200px' }}
+                        >
+                          {entry.soul_star ? entry.soul_star.substring(0, 50) + (entry.soul_star.length > 50 ? '...' : '') : 'No content'}
+                        </div>
                       </div>
-                      <span 
-                        className="text-xs px-2 py-1 rounded-full uppercase font-semibold flex items-center gap-1"
-                        style={{
-                          background: `${entryColor}15`,
-                          color: entryColor,
-                          border: `1px solid ${entryColor}40`
-                        }}
-                      >
-                        {entryEmoji} {entry.element}
-                      </span>
+                      
+                      <div className="flex items-center gap-2">
+                        {/* Delete button */}
+                        <button
+                          onClick={(e) => handleDeleteClick(entry.id, e)}
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-xs transition-all opacity-60 hover:opacity-100"
+                          style={{
+                            color: '#ff4444',
+                            background: 'rgba(255, 68, 68, 0.1)',
+                            border: '1px solid rgba(255, 68, 68, 0.3)'
+                          }}
+                          title="Delete entry"
+                        >
+                          ×
+                        </button>
+                        
+                        {/* Expand indicator */}
+                        <div 
+                          className="text-xs opacity-50"
+                          style={{ color: entryColor }}
+                        >
+                          {isExpanded ? '▼' : '▶'}
+                        </div>
+                      </div>
                     </div>
                     
-                    {entry.soul_star && (
+                    {/* Expanded view */}
+                    {isExpanded && (
                       <div 
-                        className="text-sm leading-relaxed"
-                        style={{ 
-                          color: '#FFFFFF',
-                          background: 'rgba(0,0,0,0.3)',
-                          padding: '12px',
-                          borderRadius: '8px',
-                          border: `1px solid ${entryColor}20`
+                        className="px-4 pb-4 space-y-3"
+                        style={{
+                          borderTop: `1px solid ${entryColor}20`
                         }}
                       >
-                        {entry.soul_star}
+                        {/* Today's Intention */}
+                        {entry.intention && (
+                          <div>
+                            <div 
+                              className="text-xs font-semibold mb-1 uppercase tracking-wider"
+                              style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
+                            >
+                              ✨ Today's Intention
+                            </div>
+                            <div 
+                              className="text-sm leading-relaxed"
+                              style={{ 
+                                color: '#FFFFFF',
+                                background: 'rgba(0,0,0,0.2)',
+                                padding: '8px',
+                                borderRadius: '6px',
+                                border: `1px solid ${entryColor}15`
+                              }}
+                            >
+                              {entry.intention}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Prompt */}
+                        {entry.reflection && (
+                          <div>
+                            <div 
+                              className="text-xs font-semibold mb-1 uppercase tracking-wider"
+                              style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
+                            >
+                              💭 Prompt
+                            </div>
+                            <div 
+                              className="text-sm leading-relaxed"
+                              style={{ 
+                                color: '#FFFFFF',
+                                background: 'rgba(0,0,0,0.2)',
+                                padding: '8px',
+                                borderRadius: '6px',
+                                border: `1px solid ${entryColor}15`
+                              }}
+                            >
+                              {entry.reflection}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* User Response to Intention */}
+                        {entry.intention_response && (
+                          <div>
+                            <div 
+                              className="text-xs font-semibold mb-1 uppercase tracking-wider"
+                              style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
+                            >
+                              💝 Your Intention Response
+                            </div>
+                            <div 
+                              className="text-sm leading-relaxed"
+                              style={{ 
+                                color: '#FFFFFF',
+                                background: 'rgba(0,0,0,0.2)',
+                                padding: '8px',
+                                borderRadius: '6px',
+                                border: `1px solid ${entryColor}15`
+                              }}
+                            >
+                              {entry.intention_response}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* User Response to Prompt */}
+                        {entry.reflection_response && (
+                          <div>
+                            <div 
+                              className="text-xs font-semibold mb-1 uppercase tracking-wider"
+                              style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
+                            >
+                              🤔 Your Prompt Response
+                            </div>
+                            <div 
+                              className="text-sm leading-relaxed"
+                              style={{ 
+                                color: '#FFFFFF',
+                                background: 'rgba(0,0,0,0.2)',
+                                padding: '8px',
+                                borderRadius: '6px',
+                                border: `1px solid ${entryColor}15`
+                              }}
+                            >
+                              {entry.reflection_response}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* User Response */}
+                        {entry.soul_star && (
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <div 
+                                className="text-xs font-semibold uppercase tracking-wider"
+                                style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
+                              >
+                                🌟 Your Soul Star
+                              </div>
+                              {!isEditing && (
+                                <button
+                                  onClick={(e) => handleEditClick(entry, e)}
+                                  className="text-xs px-2 py-1 rounded transition-all"
+                                  style={{
+                                    color: entryColor,
+                                    background: `${entryColor}10`,
+                                    border: `1px solid ${entryColor}30`
+                                  }}
+                                >
+                                  Edit
+                                </button>
+                              )}
+                            </div>
+                            
+                            {isEditing ? (
+                              <div className="space-y-2">
+                                <textarea
+                                  value={editResponse}
+                                  onChange={(e) => setEditResponse(e.target.value)}
+                                  className="w-full h-20 p-2 rounded text-white placeholder-white/50 resize-none focus:outline-none"
+                                  style={{
+                                    background: 'rgba(0,0,0,0.4)',
+                                    border: `1px solid ${entryColor}40`,
+                                  }}
+                                />
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleSaveEdit(entry.id)}
+                                    className="px-3 py-1 text-xs rounded transition-all"
+                                    style={{
+                                      background: `${entryColor}20`,
+                                      color: entryColor,
+                                      border: `1px solid ${entryColor}40`
+                                    }}
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={handleCancelEdit}
+                                    className="px-3 py-1 text-xs rounded transition-all"
+                                    style={{
+                                      background: 'rgba(255, 255, 255, 0.1)',
+                                      color: '#FFFFFF',
+                                      border: '1px solid rgba(255, 255, 255, 0.3)'
+                                    }}
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div 
+                                className="text-sm leading-relaxed"
+                                style={{ 
+                                  color: '#FFFFFF',
+                                  background: 'rgba(0,0,0,0.3)',
+                                  padding: '12px',
+                                  borderRadius: '8px',
+                                  border: `1px solid ${entryColor}20`
+                                }}
+                              >
+                                {entry.soul_star}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

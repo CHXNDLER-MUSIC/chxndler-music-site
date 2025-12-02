@@ -562,7 +562,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
           style={{
             width: 'min(92vw, 500px)',
             minHeight: 'auto',
-            padding: '20px 24px 16px 24px',
+            padding: '16px 24px 12px 24px',
             borderRadius: 18,
             background: 'rgba(0,0,0,0.6)',
             border: '1px solid rgba(0,255,255,0.55)',
@@ -795,11 +795,11 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               </div>
               
               {/* Daily Streak and Heart Coins */}
-              <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center gap-3 mt-2">
                 <div className="flex items-center">
-                  <span className="text-white/80 text-sm mr-1">DAILY STREAK:</span>
+                  <span className="text-white/80 text-xs mr-1">DAILY STREAK:</span>
                   <span 
-                    className="font-bold text-sm"
+                    className="font-bold text-xs"
                     style={{ 
                       color: '#00FFFF', 
                       textShadow: '0 0 8px rgba(0,255,255,0.6)' 
@@ -809,9 +809,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   </span>
                 </div>
                 <div className="flex items-center">
-                  <span className="text-white/80 text-sm mr-1">TOTAL HEART COINS:</span>
+                  <span className="text-white/80 text-xs mr-1">TOTAL HEART COINS:</span>
                   <span 
-                    className="font-bold text-sm"
+                    className="font-bold text-xs"
                     style={{ 
                       color: '#00FFFF', 
                       textShadow: '0 0 8px rgba(0,255,255,0.6)' 
@@ -836,7 +836,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
 
           {/* Profile Image Selection Menu - Inline */}
           {showElementMenu && (
-            <div className="mt-4 mb-4 p-4 rounded-lg border border-cyan-400/60 bg-black/40 relative">
+            <div className="mt-3 mb-2 p-4 rounded-lg border border-cyan-400/60 bg-black/40 relative">
               {/* Close button */}
               <button
                 onClick={() => {
@@ -868,9 +868,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               </div>
               
               {/* Elements Section */}
-              <div className="mb-3">
+              <div className="mb-2">
                 <div 
-                  className="text-center mb-2 text-xs"
+                  className="text-center mb-1 text-xs"
                   style={{ 
                     color: '#00FFFF80', 
                     fontSize: '10px'
@@ -918,9 +918,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               </div>
               
               {/* Relics Section */}
-              <div className="mb-3">
+              <div className="mb-1">
                 <div 
-                  className="text-center mb-2 text-xs"
+                  className="text-center mb-1 text-xs"
                   style={{ 
                     color: '#00FFFF80', 
                     fontSize: '10px'

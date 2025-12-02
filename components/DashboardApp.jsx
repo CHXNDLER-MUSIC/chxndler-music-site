@@ -13,7 +13,7 @@ import { Slot } from "@/components/Slot";
 import { DASHBOARD } from "@/config/dashboard";
 import dynamic from "next/dynamic";
 const HUDPanel = dynamic(() => import("@/components/HUDPanel"), { ssr: false });
-const PlanetSystem = dynamic(() => import("@/components/holo/PlanetSystem"), { ssr: false });
+const HeartverseSystemWrapper = dynamic(() => import("@/components/holo/HeartverseSystemWrapper"), { ssr: false });
 const HoloHUD = dynamic(() => import("@/components/HoloHUD"), { ssr: false });
 import { skyFor, introSky } from "@/lib/sky";
 import { youtubeSkyFor, HOME_YOUTUBE_SKY } from "@/lib/sky-youtube";
@@ -524,6 +524,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     }
     const selectedTrack = tracks[idx];
     console.log('🎵 Song selected:', selectedTrack.title);
+    console.log('🎵 Current state before update:', { userSelected, homeMode, pendingTrackPlay, curTrack: curTrack?.slug });
     // Unblock main player audio now that a song is explicitly selected
     try { if (typeof window !== 'undefined') { window.__BLOCK_MAIN_AUDIO = false; } } catch (e) {}
     
@@ -585,7 +586,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
     // Get track and update links immediately to avoid race conditions
     const t = tracks[idx];
-    setCurTrack(t);
     setLinks({ spotify: t.spotify || LINKS.spotify, apple: t.apple || LINKS.apple });
     
     // Update player store so HoloAudioBridge plays the correct song
@@ -596,8 +596,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     setHidePlanetsForSelection(false);
     // Store the track index to set after warp completes
     pendingTrackIndexRef.current = idx;
-    // Also set the current track directly for immediate UI updates
+    // Set the current track directly for immediate UI updates
     setCurTrack(selectedTrack);
+    console.log('🎵 State updated - new curTrack:', selectedTrack.slug, 'userSelected: true, pendingTrackPlay: true');
     
     // Always switch the base sky immediately so it can load under the overlay.
     // Do not start a new warp if one is already in progress; just update the pending track.
@@ -1685,6 +1686,22 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           suspend={ambientSuspended} 
           userSelectedSong={userSelected} 
         />
+        
+        {/* 3D Planet System */}
+        <HeartverseSystemWrapper 
+          showAll={homeMode}
+          onSongClick={(songId) => {
+            try {
+              const track = tracks.find(t => t.slug === songId);
+              if (track) {
+                handleTrackSelection(track);
+              }
+            } catch (error) {
+              console.error("Failed to handle planet song click:", error);
+            }
+          }}
+        />
+        
       <SkyboxVideo
         brightness={0.95}
         srcWebm={sky.webm}
@@ -2259,7 +2276,16 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 {(() => {
                   const currentIdValue = (homeMode && !userSelected && !pendingTrackPlay) ? undefined : curTrack?.slug;
                   const showAllValue = !currentIdValue;
-                  // Debug HUD visibility inputs (optional)
+                  // Debug HUD visibility inputs and currentId calculation
+                  console.log('🎵 HUD currentId calculation:', { 
+                    homeMode, 
+                    userSelected, 
+                    pendingTrackPlay, 
+                    curTrack: curTrack?.slug,
+                    currentIdValue,
+                    condition: `(${homeMode} && !${userSelected} && !${pendingTrackPlay})`,
+                    result: (homeMode && !userSelected && !pendingTrackPlay)
+                  });
                   debugLog({
                     homeMode,
                     userSelected,
