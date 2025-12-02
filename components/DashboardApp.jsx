@@ -182,7 +182,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [sky, setSky] = useState(introSky);
   const [links, setLinks] = useState({ spotify: LINKS.spotify, apple: LINKS.apple });
   const [userSelected, setUserSelected] = useState(false);
-  const [curTrack, setCurTrack] = useState(initialSlug ? (tracks.find(t => t.slug === initialSlug) || tracks.find(t => t.title === "WE'RE JUST FRIENDS") || tracks[0]) : null);
+  const [curTrack, setCurTrack] = useState(null); // No default track - user must explicitly select
   const [playSignal, setPlaySignal] = useState(0);
   const [toggleSignal, setToggleSignal] = useState(0);
   const [flySignal, setFlySignal] = useState(0);
@@ -740,9 +740,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     setShowOverlayUI(false);
     setBeamEnabled(false);
     // Don't suspend ambient during route transitions
-    // Select channel index for MediaPlayer
-    const idx = tracks.findIndex((x) => (x.slug || '').toLowerCase() === (t.slug || '').toLowerCase());
-    if (idx >= 0) setChannelIdxWithLog(idx);
+    // Channel index setting disabled - no auto track selection
+    // const idx = tracks.findIndex((x) => (x.slug || '').toLowerCase() === (t.slug || '').toLowerCase());
+    // if (idx >= 0) setChannelIdxWithLog(idx);
     // Prime hidden audio element for autoplay (muted)
     try {
       const audioEl = document.querySelector('audio[data-audio-player="1"]');
@@ -1182,13 +1182,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               try { sfx.play('click', 0.6); } catch {}
               return;
             }
-            // If we're on home and ambient is paused, play ambient (do NOT start a song)
-            if (ambient) {
-              try { window.dispatchEvent(new CustomEvent('ambient:userPlay')); } catch {}
-              ambient.play().catch(()=>{});
-              try { sfx.play('click', 0.6); } catch {}
-              return;
-            }
+            // Ambient auto-play disabled - user must manually interact with audio controls
+            // if (ambient) {
+            //   try { window.dispatchEvent(new CustomEvent('ambient:userPlay')); } catch {}
+            //   ambient.play().catch(()=>{});
+            //   try { sfx.play('click', 0.6); } catch {}
+            //   return;
+            // }
           }
 
           // 3) Off homepage: control the main player when available
@@ -1356,7 +1356,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         setHomeMode(true);
         setHomeIntroEnabled(true);
         setWelcomeHasPlayed(false);
-        setAmbientSuspended(false);
+        // setAmbientSuspended(false); // DISABLED - no ambient auto-play
         
       };
     }
@@ -1734,8 +1734,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             delete window.postWarpProfileComplete;
             
             if (postWarpUser) {
-              // User IS logged in - play audio but DON'T show welcome modal
-              audioHeartverse.playWelcomeHomeAndSpaceMusic();
+              // User IS logged in - no auto-play audio after warp
+              // audioHeartverse.playWelcomeHomeAndSpaceMusic(); // DISABLED
               // Clear any pending welcome modal flags for logged in users
               setShouldShowWelcomeModal(false);
             }
@@ -1865,10 +1865,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                     
                   }
                   
-                  // Trigger ambient start via coordinator event; AmbientSpace will
-                  // handle delayed VO playback after the first loop completes.
-                  setAmbientSuspended(false);
-                  try { window.dispatchEvent(new CustomEvent('ambient:play')); } catch {}
+                  // Ambient start disabled - no auto-play after warp
+                  // setAmbientSuspended(false); // DISABLED
+                  // try { window.dispatchEvent(new CustomEvent('ambient:play')); } catch {} // DISABLED
                   
                 } catch (e) {
                   console.error('🎵 DashboardApp: Error starting audio from beginning:', e);
@@ -1883,11 +1882,11 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               // start after a generous timeout to avoid getting stuck on silence.
               setTimeout(() => { if (!settled) startAudioFromBeginning(); }, 3000);
             } catch {
-              // If SFX throws synchronously, still resume ambient shortly after
-              setTimeout(() => {
-                try { setAmbientSuspended(false); } catch {}
-                try { window.dispatchEvent(new CustomEvent('ambient:play')); } catch {}
-              }, 300);
+              // Ambient resume disabled - no auto-play fallback
+              // setTimeout(() => {
+              //   try { setAmbientSuspended(false); } catch {}
+              //   try { window.dispatchEvent(new CustomEvent('ambient:play')); } catch {}
+              // }, 300);
             }
             try { setShowOverlayUI(true); } catch {}
             try { setBeamEnabled(true); } catch {}
@@ -2323,7 +2322,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               ) : null}
             </div>
             {/* Hidden MediaPlayer for audio functionality only (mount only when a song is selected/pending) */}
-            {(userSelected || pendingTrackPlay || initialSlug) ? (
+            {(userSelected || pendingTrackPlay) ? (
             <div className="hidden">
               <MediaPlayer
                 onSkyChange={(webm, mp4, key) => setNextSky({ webm, mp4, key })}

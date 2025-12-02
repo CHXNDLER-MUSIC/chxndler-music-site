@@ -334,19 +334,20 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
 
         {/* Full Log Button - Top Left */}
         <button
-          onClick={() => {
+          onClick={(!user?.id || !profile?.element) ? undefined : () => {
             sfx.play('click', 0.8);
             setShowHistory(!showHistory);
           }}
-          className="absolute top-3 left-4 text-xs font-semibold transition-all duration-200 hover:opacity-100 px-2 py-1 rounded"
+          disabled={!user?.id || !profile?.element}
+          className="absolute top-3 left-4 text-xs font-semibold transition-all duration-200 hover:opacity-100 px-2 py-1 rounded disabled:cursor-not-allowed"
           style={{
-            color: elementTheme.color,
-            textShadow: `0 0 4px ${elementTheme.glow}`,
-            opacity: showHistory ? 1 : 0.8,
+            color: (!user?.id || !profile?.element) ? '#808080' : elementTheme.color,
+            textShadow: (!user?.id || !profile?.element) ? 'none' : `0 0 4px ${elementTheme.glow}`,
+            opacity: (!user?.id || !profile?.element) ? 0.4 : (showHistory ? 1 : 0.8),
             background: 'transparent',
-            border: '1px solid #F2EF1D',
-            boxShadow: '0 0 8px #F2EF1D, 0 0 15px #FFFF00',
-            cursor: 'pointer'
+            border: (!user?.id || !profile?.element) ? '1px solid #808080' : '1px solid #F2EF1D',
+            boxShadow: (!user?.id || !profile?.element) ? 'none' : '0 0 8px #F2EF1D, 0 0 15px #FFFF00',
+            cursor: (!user?.id || !profile?.element) ? 'not-allowed' : 'pointer'
           }}
         >
           FULL LOG
@@ -371,6 +372,26 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
             <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
           </svg>
         </button>
+
+        {/* Private Toggle - positioned under close button */}
+        <button
+          onClick={(!user?.id || !profile?.element) ? undefined : () => {
+            sfx.play('click', 0.8);
+            setJournalState(prev => ({ ...prev, isPrivate: !prev.isPrivate }));
+          }}
+          disabled={!user?.id || !profile?.element}
+          className="absolute top-16 right-4 px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-200 disabled:cursor-not-allowed"
+          style={{
+            background: (!user?.id || !profile?.element) ? 'rgba(128, 128, 128, 0.1)' : (journalState.isPrivate ? `${elementTheme.color}20` : 'rgba(128, 128, 128, 0.2)'),
+            border: (!user?.id || !profile?.element) ? '1px solid #50505060' : `1px solid ${journalState.isPrivate ? elementTheme.color : '#808080'}60`,
+            color: (!user?.id || !profile?.element) ? '#505050' : (journalState.isPrivate ? elementTheme.color : '#808080'),
+            textShadow: (!user?.id || !profile?.element) ? 'none' : (journalState.isPrivate ? `0 0 4px ${elementTheme.glow}` : 'none'),
+            opacity: (!user?.id || !profile?.element) ? 0.4 : 1,
+            cursor: (!user?.id || !profile?.element) ? 'not-allowed' : 'pointer'
+          }}
+        >
+          PRIVATE
+        </button>
         
         {/* Header */}
         <div 
@@ -384,7 +405,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
             letterSpacing: '1px'
           }}
         >
-          🌟 {showHistory ? 'SOUL JOURNAL HISTORY' : 'SOUL STAR JOURNAL'} 🌟
+          🌟 SOUL STAR JOURNAL 🌟
           {/* Yellow underline */}
           <div 
             className="mt-2"
@@ -399,7 +420,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
 
         {showHistory ? (
           /* History View */
-          <div className="space-y-4 max-h-96 overflow-y-auto">
+          <div className="space-y-4 overflow-y-auto" style={{ height: '400px' }}>
             {journalEntries.length === 0 ? (
               <div 
                 className="text-center p-6 rounded-lg"
@@ -470,7 +491,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
           </div>
         ) : (
           /* Today's Journal Interface */
-          <>
+          <div style={{ height: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
             {/* Date and Element with pending notification */}
             <div className="text-center mb-4">
               <div 
@@ -605,24 +626,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
             )}
 
             {/* Bottom Section */}
-            <div className="relative flex justify-center">
-              {/* Private Toggle - positioned absolute to left */}
-              <button
-                onClick={() => {
-                  sfx.play('click', 0.8);
-                  setJournalState(prev => ({ ...prev, isPrivate: !prev.isPrivate }));
-                }}
-                className="absolute left-0 top-0 px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-200"
-                style={{
-                  background: journalState.isPrivate ? `${elementTheme.color}20` : 'rgba(128, 128, 128, 0.2)',
-                  border: `1px solid ${journalState.isPrivate ? elementTheme.color : '#808080'}60`,
-                  color: journalState.isPrivate ? elementTheme.color : '#808080',
-                  textShadow: journalState.isPrivate ? `0 0 4px ${elementTheme.glow}` : 'none'
-                }}
-              >
-                PRIVATE
-              </button>
-
+            <div className="flex justify-center mt-auto mb-2">
               {/* Cast into the Stars Button - centered */}
               {(!user?.id || !profile?.element) ? (
                 <button
@@ -639,6 +643,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
                   <span
                     onClick={(e) => {
                       e.stopPropagation();
+                      onClose();
                       if (openWelcomeHome) {
                         openWelcomeHome();
                       }
@@ -674,7 +679,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome }: So
                 </button>
               )}
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>

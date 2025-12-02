@@ -917,49 +917,60 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                     relic_name: `Relic ${i + 1}`,
                     icon_url: null,
                     description: null
-                  }))).map((relic, i) => (
-                    <button
-                      key={`relic-${relic.id}`}
-                      onClick={() => {
-                        if (relic.icon_url) {
-                          setSelectedRelicInline(relic.icon_url);
-                          setShowRelicsInline(true);
-                          setShowElementMenu(false);
-                          try { sfx.play('flip', 0.6); } catch {}
-                        }
-                      }}
-                      disabled={!relic.icon_url}
-                      className={`w-12 h-12 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 disabled:opacity-30 disabled:cursor-not-allowed ${
-                        selectedImageUrl === relic.icon_url
-                          ? 'border-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.6)]'
-                          : 'border-white/30 hover:border-cyan-400/60'
-                      }`}
-                      title={relic.relic_name || `Relic ${i + 1}`}
-                    >
-                      {relic.icon_url ? (
-                        <img
-                          src={relic.icon_url}
-                          alt={relic.relic_name || `Relic ${i + 1}`}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            const parent = target.parentElement;
-                            if (parent) {
-                              parent.innerHTML = '🏛️';
-                              parent.style.color = '#666';
-                              parent.style.fontSize = '8px';
-                              parent.style.display = 'flex';
-                              parent.style.alignItems = 'center';
-                              parent.style.justifyContent = 'center';
-                            }
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">🏛️</div>
-                      )}
-                    </button>
-                  ))}
+                  }))).map((relic, i) => {
+                    const unlockedIds = new Set(userRelics.map(r => r.relic_id));
+                    const isUnlocked = relic && relic.id ? unlockedIds.has(relic.id) : false;
+                    const hasImage = Boolean(relic.icon_url);
+                    return (
+                      <button
+                        key={`relic-${relic.id}`}
+                        onClick={() => {
+                          if (isUnlocked && relic.icon_url) {
+                            setSelectedRelicInline(relic.icon_url);
+                            setShowRelicsInline(true);
+                            setShowElementMenu(false);
+                            try { sfx.play('flip', 0.6); } catch {}
+                          }
+                        }}
+                        disabled={!isUnlocked}
+                        className={`relative w-12 h-12 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 disabled:opacity-60 disabled:cursor-not-allowed ${
+                          selectedImageUrl === relic.icon_url
+                            ? 'border-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.6)]'
+                            : 'border-white/30 hover:border-cyan-400/60'
+                        }`}
+                        title={isUnlocked ? (relic.relic_name || `Relic ${i + 1}`) : 'Locked'}
+                      >
+                        {hasImage ? (
+                          <img
+                            src={relic.icon_url!}
+                            alt={relic.relic_name || `Relic ${i + 1}`}
+                            className={`w-full h-full object-cover ${isUnlocked ? '' : 'grayscale'}`}
+                            style={{ opacity: isUnlocked ? 1 : 0.5 }}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement as HTMLElement | null;
+                              if (parent) {
+                                parent.innerHTML = '🏛️';
+                                parent.style.color = '#666';
+                                parent.style.fontSize = '8px';
+                                parent.style.display = 'flex';
+                                parent.style.alignItems = 'center';
+                                parent.style.justifyContent = 'center';
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">🏛️</div>
+                        )}
+                        {!isUnlocked && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-[10px] text-white font-semibold">
+                            Locked
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
               
@@ -1049,25 +1060,27 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                     icon_url: null,
                     description: null
                   }))).map((relic, i) => {
+                    const unlockedIds = new Set(userRelics.map(r => r.relic_id));
+                    const isUnlocked = relic && relic.id ? unlockedIds.has(relic.id) : false;
                     const hasImage = Boolean(relic.icon_url);
                     return (
                       <button
                         type="button"
-                        onClick={() => { if (hasImage) { setSelectedRelicInline(relic.icon_url!); try { sfx.play('click', 0.6); } catch {} } }}
+                        onClick={() => { if (isUnlocked && hasImage) { setSelectedRelicInline(relic.icon_url!); try { sfx.play('click', 0.6); } catch {} } }}
                         key={`relic-inline-${relic.id}`}
-                        className="aspect-square rounded-lg border border-white/20 bg-black/40 relative overflow-hidden transition-transform hover:scale-[1.03]"
+                        className="aspect-square rounded-lg border border-white/20 bg-black/40 relative overflow-hidden transition-transform hover:scale-[1.03] disabled:opacity-60 disabled:cursor-not-allowed"
                         style={{
-                          minHeight: '44px',
-                          opacity: hasImage ? 1 : 0.4,
-                          filter: hasImage ? 'none' : 'grayscale(100%)'
+                          minHeight: '44px'
                         }}
-                        title={hasImage ? `View ${relic.relic_name}` : relic.relic_name || `Relic ${i + 1}`}
+                        disabled={!isUnlocked}
+                        title={isUnlocked ? (hasImage ? `View ${relic.relic_name}` : relic.relic_name || `Relic ${i + 1}`) : 'Locked'}
                       >
                         {hasImage ? (
                           <img
                             src={relic.icon_url!}
                             alt={relic.relic_name || `Relic ${i + 1}`}
-                            className="absolute inset-0 w-full h-full object-cover"
+                            className={`absolute inset-0 w-full h-full object-cover ${isUnlocked ? '' : 'grayscale'}`}
+                            style={{ opacity: isUnlocked ? 1 : 0.5 }}
                             onError={(e) => {
                               const target = e.currentTarget as HTMLImageElement;
                               target.style.display = 'none';
@@ -1075,6 +1088,11 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-white/30 text-xs">🏛️</div>
+                        )}
+                        {!isUnlocked && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-[10px] text-white font-semibold">
+                            Locked
+                          </div>
                         )}
                         <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
                         <div 
@@ -1437,24 +1455,24 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   icon_url: null,
                   description: null
                 }))).map((relic, i) => {
+                  const unlockedIds = new Set(userRelics.map(r => r.relic_id));
+                  const isUnlocked = relic && relic.id ? unlockedIds.has(relic.id) : false;
                   const hasImage = Boolean(relic.icon_url);
                   return (
                     <button
                       type="button"
-                      onClick={() => { if (hasImage) { setSelectedRelicModal(relic.icon_url!); try { sfx.play('click', 0.6); } catch {} } }}
+                      onClick={() => { if (isUnlocked && hasImage) { setSelectedRelicModal(relic.icon_url!); try { sfx.play('click', 0.6); } catch {} } }}
                       key={`relic-modal-${relic.id}`}
-                      className="aspect-square rounded-lg border-2 border-white/20 bg-black/40 relative overflow-hidden transition-transform hover:scale-[1.03]"
-                      style={{
-                        opacity: hasImage ? 1 : 0.4,
-                        filter: hasImage ? 'none' : 'grayscale(100%)'
-                      }}
-                      title={hasImage ? `View ${relic.relic_name}` : relic.relic_name || `Relic ${i + 1}`}
+                      className="aspect-square rounded-lg border-2 border-white/20 bg-black/40 relative overflow-hidden transition-transform hover:scale-[1.03] disabled:opacity-60 disabled:cursor-not-allowed"
+                      disabled={!isUnlocked}
+                      title={isUnlocked ? (hasImage ? `View ${relic.relic_name}` : relic.relic_name || `Relic ${i + 1}`) : 'Locked'}
                     >
                       {hasImage ? (
                         <img
                           src={relic.icon_url!}
                           alt={relic.relic_name || `Relic ${i + 1}`}
-                          className="absolute inset-0 w-full h-full object-cover"
+                          className={`absolute inset-0 w-full h-full object-cover ${isUnlocked ? '' : 'grayscale'}`}
+                          style={{ opacity: isUnlocked ? 1 : 0.5 }}
                           onError={(e) => {
                             const target = e.currentTarget as HTMLImageElement;
                             target.style.display = 'none';
@@ -1462,6 +1480,11 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-white/30 text-lg">🏛️</div>
+                      )}
+                      {!isUnlocked && (
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-xs text-white font-semibold">
+                          Locked
+                        </div>
                       )}
                       <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
                       <div 

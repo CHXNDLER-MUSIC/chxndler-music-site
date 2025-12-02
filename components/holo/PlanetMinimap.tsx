@@ -44,6 +44,16 @@ interface PlanetMinimapProps {
 const ELEMENT_PLANETS = getPlanetsByType('element');
 const elementOrbitRadius = ELEMENT_ORBIT_RADIUS; // Match 3D system
 
+// Build the element list used for rendering; previously missing which caused runtime errors on expand
+const ELEMENTS: ElementPosition[] = (['heart', 'water', 'lightning', 'darkness'] as const).map((code) => {
+  const cfg = ELEMENT_PLANETS.find(p => p.element === code);
+  const position = (cfg?.position ?? [0, 0, 0]) as [number, number, number];
+  const label = cfg?.name ?? (code.charAt(0).toUpperCase() + code.slice(1));
+  const color = ELEMENT_COLORS[code];
+  const glowColor = color;
+  return { code, label, position, color, glowColor };
+});
+
 // Element speeds mirror 3D rotation
 const ELEMENT_SPEED = 0.0003; // global orbital speed around center (matches 3D systemRef rotation)
 const SONG_SPEEDS: Record<ElementType, number> = ELEMENT_SONG_ORBIT_SPEEDS;
@@ -101,6 +111,8 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
   const [selectedPlanet, setSelectedPlanet] = React.useState<string | null>(null);
   const [hoveredPlanet, setHoveredPlanet] = React.useState<string | null>(null);
   const now = Date.now() * 0.001;
+  // Highlight the focused element of the day (used in UI below)
+  const { focusElement } = useFocusElementOfDay();
 
   const handleClose = () => {
     sfx.play('close', 0.8);
@@ -233,8 +245,8 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
           onMouseEnter={() => setHoveredPlanet("heartverse")}
           onMouseLeave={() => setHoveredPlanet(null)}
         >
-          <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold text-white" style={{textShadow: "0 0 4px black"}}>
-            💖 Heartverse
+          <div className="absolute -top-7 left-1/2 transform -translate-x-1/2 text-xs font-bold text-white" style={{textShadow: "0 0 4px black"}}>
+            Heartverse
           </div>
         </div>
 
