@@ -41,11 +41,36 @@ export async function saveSoulStarEntry({
     is_private: isPrivate,
   };
 
-  const { data, error } = await supabaseClient
+  // First try to find existing entry
+  const { data: existingEntry } = await supabaseClient
     .from("soul_journal_entries")
-    .upsert(row, { onConflict: "user_id,prompt_id" })
-    .select()
+    .select("id")
+    .eq("user_id", userId)
+    .eq("prompt_id", currentPrompt.id)
     .single();
+
+  let data, error;
+  
+  if (existingEntry) {
+    // Update existing entry
+    const updateResult = await supabaseClient
+      .from("soul_journal_entries")
+      .update(row)
+      .eq("id", existingEntry.id)
+      .select()
+      .single();
+    data = updateResult.data;
+    error = updateResult.error;
+  } else {
+    // Insert new entry
+    const insertResult = await supabaseClient
+      .from("soul_journal_entries")
+      .insert(row)
+      .select()
+      .single();
+    data = insertResult.data;
+    error = insertResult.error;
+  }
 
   if (error) {
     throw error;

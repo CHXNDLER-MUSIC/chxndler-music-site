@@ -4,6 +4,9 @@ import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { SRGBColorSpace } from "three";
 import { playerStore } from "@/store/usePlayerStore";
+import { useSongs } from "@/hooks/useSongs";
+import { AUDIO_ASSETS_BY_SLUG } from "@/data/audioAssets";
+import { SONG_ELEMENT_MAPPING } from "@/data/songElements";
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode; fallback?: React.ReactNode },
@@ -61,6 +64,29 @@ export default function HeartverseSystemWrapper({
 }: HeartverseSystemWrapperProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [r3fSafe, setR3fSafe] = useState(false);
+  
+  // Get songs from Supabase
+  const { songs: supabaseSongs, loading } = useSongs();
+  
+  // Convert Supabase songs to the format expected by HeartverseSolarSystem
+  const formattedSongs = React.useMemo(() => {
+    return supabaseSongs.map(song => {
+      const asset = AUDIO_ASSETS_BY_SLUG[song.slug];
+      const element = SONG_ELEMENT_MAPPING[song.slug] || 'heart';
+      
+      return {
+        id: song.id,
+        title: song.title,
+        slug: song.slug,
+        element: element,
+        released: song.is_released,
+        status: song.is_released ? 'released' : 'coming_soon',
+        planet: {
+          element: element
+        }
+      };
+    });
+  }, [supabaseSongs]);
   
   // Lazy-load R3F Canvas to avoid evaluating internals before guards
   const R3FCanvas = React.useMemo(() => {
@@ -204,7 +230,7 @@ export default function HeartverseSystemWrapper({
 
         {/* Main Heartverse Solar System */}
         {HeartverseSolarSystemLazy ? <HeartverseSolarSystemLazy 
-          songs={[]}
+          songs={formattedSongs}
           onSongClick={onSongClick}
         /> : null}
         </R3FCanvas> : null}

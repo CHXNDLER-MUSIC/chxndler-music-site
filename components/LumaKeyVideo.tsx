@@ -665,7 +665,12 @@ export default function LumaKeyVideo({
     ...((isSafari || blendScreen) ? { 
       mixBlendMode: isSafari ? 'screen' as const : 'lighten' as const,
       // Isolate the blend context to prevent interference with other elements
-      isolation: 'isolate'
+      isolation: 'isolate',
+      // Additional Safari-specific properties for black background removal
+      ...(isSafari ? {
+        filter: 'contrast(1.15) brightness(1.05) saturate(1.1)',
+        WebkitFilter: 'contrast(1.15) brightness(1.05) saturate(1.1)'
+      } : {})
     } : {}),
     // Do not intercept pointer/scroll events; keep overlay non-interactive
     pointerEvents: 'none',
@@ -727,7 +732,12 @@ export default function LumaKeyVideo({
             // Apply enhanced blend for Safari to remove black backgrounds
             ...((isSafari || blendScreen) ? { 
               mixBlendMode: isSafari ? 'screen' as const : 'lighten' as const,
-              isolation: 'isolate'
+              isolation: 'isolate',
+              // Additional Safari-specific fallback video styling
+              ...(isSafari ? {
+                filter: 'contrast(1.15) brightness(1.05) saturate(1.1)',
+                WebkitFilter: 'contrast(1.15) brightness(1.05) saturate(1.1)'
+              } : {})
             } : {}),
             ...(maskCss ? ({ maskImage: maskCss, WebkitMaskImage: maskCss } as any) : {}),
           }}

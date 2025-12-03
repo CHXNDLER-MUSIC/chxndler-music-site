@@ -245,6 +245,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           errorMessage = "Network error. Please check your connection and try again.";
         } else if (error.message.includes('column') && error.message.includes('is_private')) {
           errorMessage = "Database schema error. Please contact support - the is_private column needs to be added.";
+        } else if (error.message.includes('unique or exclusion constraint') || error.message.includes('ON CONFLICT')) {
+          errorMessage = "Database constraint error. Please contact support - the database constraints need to be updated.";
         }
       } else if (typeof error === 'object' && error !== null) {
         const err = error as any;

@@ -8,9 +8,10 @@ interface PopoutShellProps {
   onClose: () => void;
   children: ReactNode;
   pageIndicator?: string; // Optional, for binder's "1 / 6" display
+  compact?: boolean; // Optional, for smaller modal size
 }
 
-export default function PopoutShell({ title, onClose, children, pageIndicator }: PopoutShellProps) {
+export default function PopoutShell({ title, onClose, children, pageIndicator, compact = false }: PopoutShellProps) {
   return (
     <>
       {/* Dark backdrop overlay */}
@@ -30,7 +31,7 @@ export default function PopoutShell({ title, onClose, children, pageIndicator }:
           className="binder-hologram-container"
           style={{
             width: 'min(80vw, 450px)',
-            height: '35vh',
+            height: compact ? '28vh' : '35vh',
             display: 'flex',
             flexDirection: 'column',
             padding: '10px 14px 0px 14px',

@@ -3,8 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
-import { useAudioManager } from "@/contexts/AudioManagerContext";
-import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
 import { playerStore } from "@/store/usePlayerStore";
 import { useCycleList } from "@/lib/useCycleList";
 import { track } from "@/lib/analytics";
@@ -43,7 +41,6 @@ function ElementIcon({ name }) {
 }
 
 export default function SongDropdown({ items = [], initialActiveId, onChange, currentId }) {
-  const audioManager = useAudioManager();
   const { activeId, setActiveId, next, prev, handleKeyDown } = useCycleList(items, initialActiveId, onChange);
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
@@ -414,14 +411,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                   setActiveId(s.id);
                   setOpen(false);
                   
-                  // Trigger centralized audio sequence: stopAll → warp → button → selected song
-                  try {
-                    const key = trackKeyFromSlug(s.id);
-                    if (key) {
-                      void audioManager.playSongSequence(key);
-                    }
-                  } catch {}
-                  // Still notify parent to update UI state (planets, etc.)
+                  // Notify parent to update UI state and trigger MediaPlayer sequence
                   if (onChange) onChange(s.id);
                   
                   try { 

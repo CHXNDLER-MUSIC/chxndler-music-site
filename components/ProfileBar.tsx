@@ -55,6 +55,9 @@ interface ProfileBarProps {
   savedAlienElement?: string; // Element from HUD signup flow
   profileRefreshTrigger?: number; // Increment this to trigger profile refresh
   onOpenHeartCoin?: () => void;
+  // Wrapper visibility conditions to avoid hook count mismatch
+  _wrapperHydrated?: boolean;
+  _wrapperHasEnteredHeartverse?: boolean;
 }
 
 export default function ProfileBar({
@@ -68,7 +71,9 @@ export default function ProfileBar({
   savedAlienName,
   savedAlienElement,
   profileRefreshTrigger = 0,
-  onOpenHeartCoin
+  onOpenHeartCoin,
+  _wrapperHydrated = true,
+  _wrapperHasEnteredHeartverse = true
 }: ProfileBarProps) {
   // ALL HOOKS MUST BE DECLARED BEFORE ANY EARLY RETURNS
   // Use global UI state for profile bar visibility
@@ -449,6 +454,11 @@ export default function ProfileBar({
   };
   
   const currentElementData = ELEMENTS.find(e => e.name === currentElement) || ELEMENTS[0];
+
+  // Check wrapper visibility conditions AFTER all hooks are called
+  if (!_wrapperHydrated || !_wrapperHasEnteredHeartverse) {
+    return null;
+  }
 
   return (
     <div 

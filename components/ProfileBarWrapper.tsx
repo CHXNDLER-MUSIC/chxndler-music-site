@@ -21,10 +21,13 @@ export default function ProfileBarWrapper(props: Props) {
     setHydrated(true);
   }, []);
 
-  // Early returns only after all hooks are called
-  if (!hydrated) return null;
-  if (!hasEnteredHeartverse) return null;
-
-  return <ProfileBar {...props} />;
+  // Always render ProfileBar to avoid hook count mismatch, but pass visibility conditions
+  return (
+    <ProfileBar 
+      {...props} 
+      _wrapperHydrated={hydrated}
+      _wrapperHasEnteredHeartverse={hasEnteredHeartverse}
+    />
+  );
 }
 

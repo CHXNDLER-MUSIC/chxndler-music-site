@@ -2,17 +2,22 @@ import { supabaseClient } from "./supabaseClient";
 import type { SongRow } from "@/types/song";
 
 export async function fetchSongs(): Promise<SongRow[]> {
-  const { data, error } = await supabaseClient
-    .from("songs")
-    .select("*")
-    .order("created_at", { ascending: true });
+  try {
+    const { data, error } = await supabaseClient
+      .from("songs")
+      .select("*")
+      .order("created_at", { ascending: true });
 
-  if (error) {
-    console.error("Error fetching songs", error);
+    if (error) {
+      console.error("Error fetching songs", error);
+      return [];
+    }
+
+    return data ?? [];
+  } catch (err) {
+    console.error("fetchSongs exception:", err);
     return [];
   }
-
-  return data ?? [];
 }
 
 export async function fetchReleasedSongs(): Promise<SongRow[]> {

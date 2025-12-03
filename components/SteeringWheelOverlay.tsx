@@ -481,9 +481,9 @@ export default function SteeringWheelOverlay({
               srcMp4={wheelSrc}
               // Enhanced chroma key with Safari-specific adjustments
               keyColor={(vconf as any)?.keyColor ?? [0, 0, 0]}
-              // More aggressive settings for Safari to remove black backgrounds
-              keyTolerance={(vconf as any)?.keyTolerance ?? (isSafariUA ? 0.35 : 0.12)}
-              keySoftness={(vconf as any)?.keySoftness ?? (isSafariUA ? 0.20 : 0.07)}
+              // Much more aggressive settings for Safari to remove black backgrounds
+              keyTolerance={(vconf as any)?.keyTolerance ?? (isSafariUA ? 0.55 : 0.12)}
+              keySoftness={(vconf as any)?.keySoftness ?? (isSafariUA ? 0.35 : 0.07)}
               keyMode={'chroma'}
               // Enable blend so fallback never shows black
               blendScreen
@@ -514,10 +514,13 @@ export default function SteeringWheelOverlay({
                 filter: isDimmingOverlayActive ? 'brightness(0.65) saturate(1.0)' : undefined,
                 opacity: isDimmingOverlayActive ? 0.95 : 1,
                 transition: isDimmingOverlayActive ? 'filter 250ms ease, opacity 250ms ease' : 'none',
-                // Additional Safari-specific styling
+                // Additional Safari-specific styling for enhanced black removal
                 ...(isSafariUA ? {
                   mixBlendMode: 'screen',
-                  isolation: 'isolate'
+                  isolation: 'isolate',
+                  // Safari-specific properties
+                  filter: 'contrast(1.2) saturate(1.1)',
+                  WebkitFilter: 'contrast(1.2) saturate(1.1)'
                 } : {})
               }}
             />

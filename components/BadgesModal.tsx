@@ -167,7 +167,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     }
 
     return (
-      <PopoutShell title="BADGE DETAILS" onClose={onClose}>
+      <PopoutShell title="BADGE DETAILS" onClose={onClose} compact={true}>
         {badgeDetailContent}
       </PopoutShell>
     );
@@ -309,7 +309,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     }
 
     return (
-      <PopoutShell title={categoryInfo?.displayName || "CATEGORY"} onClose={onClose}>
+      <PopoutShell title={categoryInfo?.displayName || "CATEGORY"} onClose={onClose} compact={true}>
         {categoryContent}
       </PopoutShell>
     );
@@ -332,7 +332,25 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
 
       {embedded && (
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-white">BADGES</h2>
+          <h2 
+            className="text-xl font-bold"
+            style={{ 
+              color: '#FF69B4', 
+              textShadow: '0 0 8px rgba(255,105,180,0.6)', 
+              fontSize: '12px',
+              fontWeight: 'bold'
+            }}
+          >
+            BADGES
+          </h2>
+          {/* Thin pink neon line */}
+          <div 
+            className="w-full h-px mt-3"
+            style={{
+              background: 'linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)',
+              boxShadow: '0 0 4px rgba(255,105,180,0.6)'
+            }}
+          />
         </div>
       )}
 
@@ -349,72 +367,62 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       )}
 
       {!loading && !error && (
-        <div className="relative flex flex-col items-center justify-center min-h-[200px]">
-          {/* Inner dark tinted container like binder */}
-          <div 
-            className="relative p-4 rounded-lg backdrop-blur-sm"
-            style={{
-              background: 'rgba(0,0,0,0.4)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              backdropFilter: 'blur(8px)'
-            }}
-          >
-            {/* Badge categories in responsive grid */}
-            <div className="grid grid-cols-3 gap-4">
-              {/* Top row */}
-              {badgeCategories.slice(0, 3).map((category) => {
-                const displayInfo = getCategoryDisplayInfo(category);
-                return (
-                  <div key={category.id} className="flex flex-col items-center space-y-2">
-                    <button
-                      onClick={() => handleCategoryClick(category.id)}
-                      className="relative w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
-                      style={{
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
-                      }}
-                    >
-                      <img
-                        src={displayInfo.image}
-                        alt={displayInfo.displayName}
-                        className="w-12 h-12 object-cover rounded-full group-hover:scale-110 transition-transform"
-                        draggable={false}
-                      />
-                    </button>
-                    <span className="text-white/70 text-xs font-medium text-center max-w-20">
-                      {displayInfo.displayName}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            
-            {/* Bottom row */}
-            <div className="grid grid-cols-3 gap-4 mt-4">
-              {badgeCategories.slice(3, 6).map((category) => {
-                const displayInfo = getCategoryDisplayInfo(category);
-                return (
-                  <div key={category.id} className="flex flex-col items-center space-y-2">
-                    <button
-                      onClick={() => handleCategoryClick(category.id)}
-                      className="relative w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
-                      style={{
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
-                      }}
-                    >
-                      <img
-                        src={displayInfo.image}
-                        alt={displayInfo.displayName}
-                        className="w-12 h-12 object-cover rounded-full group-hover:scale-110 transition-transform"
-                        draggable={false}
-                      />
-                    </button>
-                    <span className="text-white/70 text-xs font-medium text-center max-w-20">
-                      {displayInfo.displayName}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+        <div className="relative flex flex-col items-center justify-center p-6">
+          {/* Badge categories in responsive grid - background extends throughout display */}
+          <div className="grid grid-cols-3 gap-4">
+            {/* Top row */}
+            {badgeCategories.slice(0, 3).map((category) => {
+              const displayInfo = getCategoryDisplayInfo(category);
+              return (
+                <div key={category.id} className="flex flex-col items-center space-y-2">
+                  <button
+                    onClick={() => handleCategoryClick(category.id)}
+                    className="relative w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
+                    style={{
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
+                    }}
+                  >
+                    <img
+                      src={displayInfo.image}
+                      alt={displayInfo.displayName}
+                      className="w-12 h-12 object-cover rounded-full group-hover:scale-110 transition-transform"
+                      draggable={false}
+                    />
+                  </button>
+                  <span className="text-white/70 text-xs font-medium text-center max-w-20">
+                    {displayInfo.displayName}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Bottom row */}
+          <div className="grid grid-cols-3 gap-4 mt-4">
+            {badgeCategories.slice(3, 6).map((category) => {
+              const displayInfo = getCategoryDisplayInfo(category);
+              return (
+                <div key={category.id} className="flex flex-col items-center space-y-2">
+                  <button
+                    onClick={() => handleCategoryClick(category.id)}
+                    className="relative w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
+                    style={{
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
+                    }}
+                  >
+                    <img
+                      src={displayInfo.image}
+                      alt={displayInfo.displayName}
+                      className="w-12 h-12 object-cover rounded-full group-hover:scale-110 transition-transform"
+                      draggable={false}
+                    />
+                  </button>
+                  <span className="text-white/70 text-xs font-medium text-center max-w-20">
+                    {displayInfo.displayName}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -426,7 +434,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   }
 
   return (
-    <PopoutShell title="BADGES" onClose={onClose}>
+    <PopoutShell title="BADGES" onClose={onClose} compact={true}>
       {badgesContent}
     </PopoutShell>
   );
