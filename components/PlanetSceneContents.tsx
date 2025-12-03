@@ -6,9 +6,10 @@ import {
   centerPlanet, 
   elementPlanets, 
   songPlanets, 
-  ElementPlanet, 
+  ElementPlanet as ElementPlanetData, 
   SongPlanet 
 } from './planet-data';
+import { ElementPlanet } from './ElementPlanet';
 
 // Import Three.js and R3F hooks dynamically to avoid SSR issues
 let useFrame: any;
@@ -73,19 +74,18 @@ function CenterPlanet() {
   );
 }
 
-function ElementPlanetMesh({ planet }: { planet: ElementPlanet }) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const texture = useTexture(planet.texturePath);
+function ElementPlanetMesh({ planet }: { planet: ElementPlanetData }) {
+  const groupRef = useRef<THREE.Group>(null);
   const { updatePosition, activePlanetId } = usePlanetPositions();
 
   useFrame(({ clock }) => {
-    if (meshRef.current) {
+    if (groupRef.current) {
       const time = clock.getElapsedTime();
       const angle = time * planet.orbitSpeed;
       const x = Math.cos(angle) * planet.orbitRadius;
       const z = Math.sin(angle) * planet.orbitRadius;
       
-      meshRef.current.position.set(x, 0, z);
+      groupRef.current.position.set(x, 0, z);
       
       updatePosition(planet.id, {
         x,
@@ -99,24 +99,13 @@ function ElementPlanetMesh({ planet }: { planet: ElementPlanet }) {
   const isActive = activePlanetId === planet.id;
 
   return (
-    <mesh ref={meshRef} scale={isActive ? 1.2 : 1}>
-      <sphereGeometry args={[2, 32, 32]} />
-      <meshStandardMaterial 
-        map={texture} 
-        emissive={isActive ? new THREE.Color(0x333333) : new THREE.Color(0x000000)}
-      />
-      {isActive && (
-        <mesh scale={1.1}>
-          <sphereGeometry args={[2, 32, 32]} />
-          <meshBasicMaterial 
-            color={0x6366f1} 
-            transparent 
-            opacity={0.3} 
-            side={THREE.BackSide}
-          />
-        </mesh>
-      )}
-    </mesh>
+    <ElementPlanet
+      ref={groupRef}
+      texturePath={planet.texturePath}
+      size={4}
+      scale={isActive ? 1.2 : 1}
+      isActive={isActive}
+    />
   );
 }
 

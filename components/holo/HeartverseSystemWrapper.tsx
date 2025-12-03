@@ -67,13 +67,9 @@ export default function HeartverseSystemWrapper({
     () => {
       if (typeof window === 'undefined') return null;
       
-      return dynamic(() => import("@react-three/fiber").then((m) => m.Canvas as any), {
+      return dynamic(() => import("@react-three/fiber").then((m) => ({ default: m.Canvas })), {
         ssr: false,
-        loading: () => null,
-        onError: (error) => {
-          console.error('Failed to load R3F Canvas:', error);
-          return null;
-        }
+        loading: () => null
       });
     },
     []
@@ -152,7 +148,7 @@ export default function HeartverseSystemWrapper({
         }}
       >
         {/* Safely render R3F Canvas only when all checks pass */}
-        <R3FCanvas
+        {R3FCanvas && <R3FCanvas
         className="absolute inset-0"
         style={{ background: 'transparent' }}
         // Responsive DPR settings
@@ -210,11 +206,11 @@ export default function HeartverseSystemWrapper({
         
 
         {/* Main Heartverse Solar System */}
-        <HeartverseSolarSystemLazy 
+        {HeartverseSolarSystemLazy && <HeartverseSolarSystemLazy 
           songs={[]}
-          onSongClick={() => {}}
-        />
-        </R3FCanvas>
+          onSongClick={onSongClick}
+        />}
+        </R3FCanvas>}
       </div>
     </SafeWrapper>
   );

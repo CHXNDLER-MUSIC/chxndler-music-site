@@ -1,8 +1,19 @@
+import { planetAppearances } from './planet-appearances';
+
 export type ElementId = 'HEART' | 'WATER' | 'LIGHTNING' | 'DARKNESS';
+
+export interface PlanetVisualAppearance {
+  primaryColor: string;
+  surface: string;
+  atmosphere: string;
+  shape: string;
+  surfaceElements: string;
+}
 
 export interface PlanetBase {
   id: string;
   name: string;
+  appearance?: PlanetVisualAppearance;
 }
 
 export interface CenterPlanet extends PlanetBase {
@@ -73,7 +84,7 @@ export const elementPlanets: ElementPlanet[] = [
   },
 ];
 
-export const songPlanets: SongPlanet[] = [
+const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
   // Heart songs (21 songs) - distributed across 4 concentric rings for better spacing
   {
     id: 'ALWAYS_ON_MY_MIND',
@@ -478,6 +489,20 @@ export const songPlanets: SongPlanet[] = [
     released: true,
   },
 ];
+
+// Merge song planets with their appearance data
+export const songPlanets: SongPlanet[] = baseSongPlanets.map(planet => ({
+  ...planet,
+  appearance: planetAppearances[planet.id] || {
+    primaryColor: planet.elementId === 'HEART' ? '#FC54AF' : 
+                  planet.elementId === 'WATER' ? '#38B6FF' :
+                  planet.elementId === 'LIGHTNING' ? '#F2EF1D' : '#000000',
+    surface: 'Generic planetary surface',
+    atmosphere: 'Clear atmosphere',
+    shape: 'Rounded sphere',
+    surfaceElements: 'Basic terrain features'
+  }
+}));
 
 export const allPlanets: Planet[] = [
   centerPlanet,

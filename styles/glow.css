@@ -1,3 +1,9 @@
+/* Warp effect fallback animation */
+@keyframes pulse {
+  0% { opacity: 0.3; transform: scale(1); }
+  100% { opacity: 0.8; transform: scale(1.05); }
+}
+
 /* Hologram glow + panel styling */
 .holo-panel {
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.2));

@@ -263,11 +263,21 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
   // Connect audio manager context to sky/background changes
   React.useEffect(() => {
+    // Skip context sky updates during Start button warp to avoid interference
+    if (startButtonWarpRef.current || isWarping || startInFlightRef.current) {
+      return;
+    }
+    
     if (audioManager.currentTrackInfo && audioManager.currentTrackInfo.id) {
       // Update sky when context track changes (maintains warp effect without breaking state)
       try {
         const newSky = skyFor(audioManager.currentTrackInfo.id);
         if (newSky && (newSky.key !== sky.key)) {
+          console.log('🎨 Context overriding sky!', {
+            from: sky.key,
+            to: newSky.key,
+            trackInfo: audioManager.currentTrackInfo.id
+          });
           setSky(newSky);
         }
       } catch (error) {
@@ -280,7 +290,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         setCurTrack(matchingTrack);
       }
     }
-  }, [audioManager.currentTrackInfo, sky.key, curTrack]);
+  }, [audioManager.currentTrackInfo, curTrack, isWarping]);
 
   // Guard: wait until blue HUD and beam are fully hidden before continuing (with a hard cap)
   const waitUntilBlueHidden = React.useCallback((next) => {
@@ -1057,7 +1067,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
   const handleStartClick = React.useCallback(async () => {
     // Synchronous guard for rapid double clicks
-    if (startInFlightRef.current) return;
+    if (startInFlightRef.current) {
+      console.log('❌ Start blocked - already in flight');
+      return;
+    }
     startInFlightRef.current = true;
     // Block main player audio during Start/home warp flow
     try { if (typeof window !== 'undefined') { window.__BLOCK_MAIN_AUDIO = true; } } catch (e) {}
@@ -1105,10 +1118,18 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         setPendingHomePower(true);
 
         // Trigger the warp effect
+        console.log('🌟 Triggering warp (non-logged user):', { 
+          beforeFlySignal: flySignal, 
+          currentSky: sky.key,
+          spaceSky: SPACE_SKY,
+          audioTrackInfo: audioManager.currentTrackInfo 
+        });
         setAllowWarp(true);
         setSky(SPACE_SKY);
         setNextSky(null);
-        setFlySignal((n) => n + 1);
+        setFlySignal((n) => {
+            return n + 1;
+        });
         setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
 
         // Ensure post-warp login markers are cleared for non-logged-in flow
@@ -1148,7 +1169,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       setAllowWarp(true);
       setSky(SPACE_SKY);
       setNextSky(null);
-      setFlySignal((n) => n + 1);
+      setFlySignal((n) => {
+        return n + 1;
+      });
       setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
       
       // Store user data for post-warp audio handling

@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { PlanetPositionsProvider, usePlanetPositions } from './planet-positions-context';
 import { PlanetMinimapV2 } from './PlanetMinimapV2';
 import { centerPlanet, elementPlanets, songPlanets } from './planet-data';
+import { generatePlanetMaterial, getShapeModifications } from './planet-material-generator';
 
 interface Planet3D {
   mesh: THREE.Mesh;
@@ -104,19 +105,23 @@ function ThreeJSScene({ zoomLevel }: { zoomLevel: number }) {
       kind: 'center'
     });
 
-    // Element planets - space them evenly around the center (90° apart) with custom shapes
+    // Element planets - space them evenly around the center (90° apart) using sprite planes
     elementPlanets.forEach((planet, index) => {
-      const geometry = getElementGeometry(planet.elementId);
+      const geometry = new THREE.PlaneGeometry(4, 4);
       const texture = textureLoader.load(planet.texturePath);
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
+      texture.colorSpace = THREE.SRGBColorSpace;
+      
       const material = new THREE.MeshStandardMaterial({ 
         map: texture,
+        transparent: true,
+        alphaTest: 0.2,
+        side: THREE.DoubleSide,
         emissive: getElementEmissive(planet.elementId),
-        emissiveIntensity: 0.05,
+        emissiveIntensity: 0.1,
         roughness: 0.7,
         metalness: 0.3
       });
+      
       const mesh = new THREE.Mesh(geometry, material);
       scene.add(mesh);
       planets.push({
@@ -138,13 +143,54 @@ function ThreeJSScene({ zoomLevel }: { zoomLevel: number }) {
 
     Object.entries(songsByElement).forEach(([elementId, songs]) => {
       songs.forEach((song, index) => {
-        const geometry = new THREE.SphereGeometry(1, 16, 16);
-        const material = new THREE.MeshStandardMaterial({ 
-          color: song.released ? 0x00ff88 : 0x666666,
-          opacity: song.released ? 1 : 0.7,
-          transparent: !song.released
-        });
-        const mesh = new THREE.Mesh(geometry, material);
+        // Generate material based on visual appearance
+        let planetMaterial;
+        let geometry;
+        
+        if (song.appearance) {
+          const materialData = generatePlanetMaterial(song.appearance, textureLoader, song.id);
+          planetMaterial = materialData.material;
+          
+          // Get shape modifications
+          const shapeData = getShapeModifications(song.appearance);
+          
+          if (shapeData.geometry.type === 'box') {
+            geometry = new THREE.BoxGeometry(1, 1, 1, 8, 8, 8);
+          } else {
+            geometry = new THREE.SphereGeometry(1, shapeData.geometry.segments, shapeData.geometry.segments);
+          }
+          
+          // Apply scale modifications
+          geometry.scale(shapeData.scaleModification.x, shapeData.scaleModification.y, shapeData.scaleModification.z);
+          
+          // Add some noise for jagged/fragmented effects
+          if (shapeData.deformation === 'jagged') {
+            const positions = geometry.attributes.position;
+            for (let i = 0; i < positions.count; i++) {
+              const x = positions.getX(i);
+              const y = positions.getY(i);
+              const z = positions.getZ(i);
+              
+              // Add noise to vertex positions
+              const noise = (Math.random() - 0.5) * 0.2;
+              positions.setX(i, x + noise);
+              positions.setY(i, y + noise);
+              positions.setZ(i, z + noise);
+            }
+            positions.needsUpdate = true;
+            geometry.computeVertexNormals();
+          }
+        } else {
+          // Fallback to original simple material
+          geometry = new THREE.SphereGeometry(1, 16, 16);
+          planetMaterial = new THREE.MeshStandardMaterial({ 
+            color: song.released ? 0x00ff88 : 0x666666,
+            opacity: song.released ? 1 : 0.7,
+            transparent: !song.released
+          });
+        }
+        
+        const mesh = new THREE.Mesh(geometry, planetMaterial);
         scene.add(mesh);
         
         // Space songs evenly around their element
@@ -234,15 +280,14 @@ function ThreeJSScene({ zoomLevel }: { zoomLevel: number }) {
             data: centerPlanet
           });
         } else if (planet.kind === 'element' && planet.orbitRadius && planet.orbitSpeed) {
-          // Element planets orbit center with starting angle offset and rotate to show texture
+          // Element planets orbit center with starting angle offset and always face camera
           const angle = (planet.startAngle || 0) + (time * planet.orbitSpeed);
           const x = Math.cos(angle) * planet.orbitRadius;
           const z = Math.sin(angle) * planet.orbitRadius;
           planet.mesh.position.set(x, 0, z);
           
-          // Rotate the planet to show texture detail
-          planet.mesh.rotation.y = time * 0.05;
-          planet.mesh.rotation.x = time * 0.02;
+          // Make sprite always face the camera (billboard behavior)
+          planet.mesh.lookAt(camera.position);
           
           const elementData = elementPlanets.find(p => p.id === planet.id)!;
           updatePosition(planet.id, {

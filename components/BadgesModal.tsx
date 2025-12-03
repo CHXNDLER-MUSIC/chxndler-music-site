@@ -16,19 +16,36 @@ type Props = {
 
 export default function BadgesModal({ open, onClose, embedded = false }: Props) {
   const { profile } = useProfile();
-  const { badgeCategories, loading, error } = useBadges();
+  const { badgeCategories, loading, error, badges } = useBadges();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedBadge, setSelectedBadge] = useState<BadgeWithProgress | null>(null);
 
-  // Six badge categories matching your requirements
-  const sixCategories = [
-    { id: "soul-star", name: "SOUL STAR", emoji: "⭐", image: "/badges/soul star.webp" },
-    { id: "achievements", name: "ACHIEVEMENTS", emoji: "🏆", image: "/badges/collector.webp" },
-    { id: "elemental-streak", name: "ELEMENTAL STREAK", emoji: "🔷", image: "/badges/elemental streak.webp" },
-    { id: "listening", name: "LISTENING", emoji: "🎵", image: "/badges/listening.webp" },
-    { id: "heartcoin", name: "HEARTCOINS", emoji: "💛", image: "/badges/currency.webp" },
-    { id: "community", name: "MILESTONES", emoji: "👣", image: "/badges/community.webp" }
-  ];
+  // Map badge categories to display info with images
+  const getCategoryDisplayInfo = (category: any) => {
+    const imageMap: { [key: string]: string } = {
+      'soul-star': '/badges/soul star.webp',
+      'achievements': '/badges/collector.webp', 
+      'elemental-streak': '/badges/elemental streak.webp',
+      'listening': '/badges/listening.webp',
+      'heartcoin': '/badges/currency.webp',
+      'community': '/badges/community.webp'
+    };
+
+    const nameMap: { [key: string]: string } = {
+      'soul-star': 'SOUL STAR',
+      'achievements': 'ACHIEVEMENTS',
+      'elemental-streak': 'ELEMENTAL STREAK', 
+      'listening': 'LISTENING',
+      'heartcoin': 'HEARTCOINS',
+      'community': 'MILESTONES'
+    };
+
+    return {
+      ...category,
+      image: imageMap[category.id] || '/badges/collector.webp',
+      displayName: nameMap[category.id] || category.name
+    };
+  };
 
   // Handle category click with sound
   const handleCategoryClick = (categoryId: string) => {
@@ -36,7 +53,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     setSelectedCategory(categoryId);
   };
 
-  // Get actual badges for a category, fallback to empty if not found
+  // Get actual badges for a category from the hook
   const getBadgesForCategory = (categoryId: string): BadgeWithProgress[] => {
     const category = badgeCategories.find(cat => cat.id === categoryId);
     return category?.badges || [];
@@ -159,7 +176,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   // Category view
   if (selectedCategory) {
     const categoryBadges = getBadgesForCategory(selectedCategory);
-    const categoryInfo = sixCategories.find(cat => cat.id === selectedCategory);
+    const originalCategory = badgeCategories.find(cat => cat.id === selectedCategory);
+    const categoryInfo = originalCategory ? getCategoryDisplayInfo(originalCategory) : null;
     
     const categoryContent = (
       <div className="relative space-y-4">
@@ -283,7 +301,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             </svg>
           </button>
           <div className="text-center mb-6">
-            <h2 className="text-xl font-bold text-white">{categoryInfo?.name}</h2>
+            <h2 className="text-xl font-bold text-white">{categoryInfo?.displayName}</h2>
           </div>
           {categoryContent}
         </div>
@@ -291,7 +309,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     }
 
     return (
-      <PopoutShell title={categoryInfo?.name || "CATEGORY"} onClose={onClose}>
+      <PopoutShell title={categoryInfo?.displayName || "CATEGORY"} onClose={onClose}>
         {categoryContent}
       </PopoutShell>
     );
@@ -331,65 +349,71 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       )}
 
       {!loading && !error && (
-        <div className="relative flex flex-col items-center justify-center min-h-[300px]">
+        <div className="relative flex flex-col items-center justify-center min-h-[200px]">
           {/* Inner dark tinted container like binder */}
           <div 
-            className="relative p-6 rounded-lg backdrop-blur-sm"
+            className="relative p-4 rounded-lg backdrop-blur-sm"
             style={{
               background: 'rgba(0,0,0,0.4)',
               border: '1px solid rgba(255,255,255,0.1)',
               backdropFilter: 'blur(8px)'
             }}
           >
-            {/* Six badge category circles in 3x2 grid */}
-            <div className="grid grid-cols-3 gap-6">
-              {/* Top row - 3 badges */}
-              {sixCategories.slice(0, 3).map((category) => (
-                <div key={category.id} className="flex flex-col items-center space-y-2">
-                  <button
-                    onClick={() => handleCategoryClick(category.id)}
-                    className="relative w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
-                    style={{
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
-                    }}
-                  >
-                    <img
-                      src={category.image}
-                      alt={category.name}
-                      className="w-12 h-12 object-cover rounded-full group-hover:scale-110 transition-transform"
-                      draggable={false}
-                    />
-                  </button>
-                  <span className="text-white/70 text-xs font-medium text-center max-w-20">
-                    {category.name}
-                  </span>
-                </div>
-              ))}
+            {/* Badge categories in responsive grid */}
+            <div className="grid grid-cols-3 gap-4">
+              {/* Top row */}
+              {badgeCategories.slice(0, 3).map((category) => {
+                const displayInfo = getCategoryDisplayInfo(category);
+                return (
+                  <div key={category.id} className="flex flex-col items-center space-y-2">
+                    <button
+                      onClick={() => handleCategoryClick(category.id)}
+                      className="relative w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
+                      style={{
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
+                      }}
+                    >
+                      <img
+                        src={displayInfo.image}
+                        alt={displayInfo.displayName}
+                        className="w-12 h-12 object-cover rounded-full group-hover:scale-110 transition-transform"
+                        draggable={false}
+                      />
+                    </button>
+                    <span className="text-white/70 text-xs font-medium text-center max-w-20">
+                      {displayInfo.displayName}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
             
-            {/* Bottom row - 3 badges */}
-            <div className="grid grid-cols-3 gap-6 mt-6">
-              {sixCategories.slice(3, 6).map((category) => (
-                <div key={category.id} className="flex flex-col items-center space-y-2">
-                  <button
-                    onClick={() => handleCategoryClick(category.id)}
-                    className="relative w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
-                    style={{
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
-                    }}
-                  >
-                    <img
-                      src={category.image}
-                      alt={category.name}
-                      className="w-12 h-12 object-cover rounded-full group-hover:scale-110 transition-transform"
-                      draggable={false}
-                    />
-                  </button>
-                  <span className="text-white/70 text-xs font-medium text-center max-w-20">
-                    {category.name}
-                  </span>
-                </div>
-              ))}
+            {/* Bottom row */}
+            <div className="grid grid-cols-3 gap-4 mt-4">
+              {badgeCategories.slice(3, 6).map((category) => {
+                const displayInfo = getCategoryDisplayInfo(category);
+                return (
+                  <div key={category.id} className="flex flex-col items-center space-y-2">
+                    <button
+                      onClick={() => handleCategoryClick(category.id)}
+                      className="relative w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
+                      style={{
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
+                      }}
+                    >
+                      <img
+                        src={displayInfo.image}
+                        alt={displayInfo.displayName}
+                        className="w-12 h-12 object-cover rounded-full group-hover:scale-110 transition-transform"
+                        draggable={false}
+                      />
+                    </button>
+                    <span className="text-white/70 text-xs font-medium text-center max-w-20">
+                      {displayInfo.displayName}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
