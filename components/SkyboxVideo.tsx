@@ -111,6 +111,7 @@ export default function SkyboxVideo({
   // Do not trigger on initial mount; only on subsequent flySignal changes
   const flyInitRef = React.useRef(false);
   React.useEffect(() => {
+    console.log('🎬 SkyboxVideo flySignal effect:', { flySignal, allowWarp, showLightspeed });
     if (!flyInitRef.current) { flyInitRef.current = true; return; }
     if (typeof flySignal !== 'number') return;
     // Brief camera zoom/blur

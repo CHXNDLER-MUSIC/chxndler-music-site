@@ -19,6 +19,7 @@ import { ProfileProvider } from "@/contexts/ProfileContext";
 import { AudioManagerProvider } from "@/contexts/AudioManagerContext";
 import { TourProvider } from "@/contexts/TourContext";
 import { MenuStateProvider } from "@/contexts/MenuStateContext";
+import CustomCursor from "@/components/CustomCursor";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://chxndler.world"),
@@ -126,6 +127,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ) : null}
       </head>
       <body className="font-sans bg-[#020016]">
+        <CustomCursor />
         <AuthProvider>
           <ProfileProvider>
             <AudioManagerProvider>

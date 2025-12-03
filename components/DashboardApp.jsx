@@ -1066,6 +1066,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose]);
 
   const handleStartClick = React.useCallback(async () => {
+    console.log('🚀 START button clicked!', { flySignal, allowWarp, isWarping });
     // Synchronous guard for rapid double clicks
     if (startInFlightRef.current) {
       console.log('❌ Start blocked - already in flight');
@@ -1170,6 +1171,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       setSky(SPACE_SKY);
       setNextSky(null);
       setFlySignal((n) => {
+        console.log('🎆 Setting flySignal from', n, 'to', n + 1);
         return n + 1;
       });
       setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });

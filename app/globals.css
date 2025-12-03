@@ -21,14 +21,15 @@
   }
 }
 
-/* Custom cursor styling */
-* {
-  cursor: url('/elements/curs.png') 16 16, auto;
+/* Hide default cursor on desktop for custom cursor component */
+html, body {
+  cursor: none;
 }
 
-/* Ensure cursor works on interactive elements */
-a, button, input, select, textarea, [role="button"], [tabindex]:not([tabindex="-1"]) {
-  cursor: url('/elements/curs.png') 16 16, pointer;
+@media (max-width: 768px) {
+  html, body {
+    cursor: auto;
+  }
 }
 
 /* Removed global position: relative rule that was causing click blocking issues */
