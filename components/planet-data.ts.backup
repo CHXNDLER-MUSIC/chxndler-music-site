@@ -321,7 +321,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     kind: 'song',
     elementId: 'LIGHTNING',
     orbitRadius: 5.5,
-    orbitSpeed: 0.18,
+    orbitSpeed: 0.45,
     released: true,
   },
   {
@@ -348,7 +348,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     kind: 'song',
     elementId: 'LIGHTNING',
     orbitRadius: 5.5,
-    orbitSpeed: 0.20,
+    orbitSpeed: 0.50,
     released: true,
   },
   {
@@ -366,7 +366,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     kind: 'song',
     elementId: 'LIGHTNING',
     orbitRadius: 6.8,
-    orbitSpeed: 0.22,
+    orbitSpeed: 0.55,
     released: true,
   },
   {
@@ -384,7 +384,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     kind: 'song',
     elementId: 'LIGHTNING',
     orbitRadius: 6.8,
-    orbitSpeed: 0.24,
+    orbitSpeed: 0.60,
     released: true,
   },
   {
@@ -402,7 +402,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     kind: 'song',
     elementId: 'LIGHTNING',
     orbitRadius: 8.1,
-    orbitSpeed: 0.26,
+    orbitSpeed: 0.65,
     released: true,
   },
   {
@@ -420,7 +420,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     kind: 'song',
     elementId: 'LIGHTNING',
     orbitRadius: 8.1,
-    orbitSpeed: 0.28,
+    orbitSpeed: 0.70,
     released: true,
   },
 

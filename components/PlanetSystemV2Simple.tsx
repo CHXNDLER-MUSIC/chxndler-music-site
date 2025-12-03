@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { PlanetPositionsProvider, usePlanetPositions } from './planet-positions-context';
 import { PlanetMinimapV2 } from './PlanetMinimapV2';
-import { centerPlanet, elementPlanets, songPlanets } from './planet-data';
+import { centerPlanet, elementPlanets, songPlanets, SongPlanet } from './planet-data';
 import { generatePlanetMaterial, getShapeModifications } from './planet-material-generator';
 
 interface Planet3D {
@@ -18,7 +18,69 @@ interface Planet3D {
   startAngle?: number;
 }
 
-function ThreeJSScene({ zoomLevel }: { zoomLevel: number }) {
+// Create particle system for atmospheric effects
+function createParticleSystem(song: SongPlanet, planetMesh: THREE.Mesh, particleCount: number, scene: THREE.Scene) {
+  const particles = new THREE.BufferGeometry();
+  const positions = new Float32Array(particleCount * 3);
+  const colors = new Float32Array(particleCount * 3);
+  const velocities = new Float32Array(particleCount * 3);
+
+  const atmosphere = song.appearance?.atmosphere.toLowerCase() || '';
+  
+  // Set particle color based on atmosphere description
+  let particleColor = new THREE.Color(0xffffff);
+  if (atmosphere.includes('pink')) particleColor = new THREE.Color(0xff69b4);
+  else if (atmosphere.includes('blue')) particleColor = new THREE.Color(0x4169e1);
+  else if (atmosphere.includes('yellow') || atmosphere.includes('gold')) particleColor = new THREE.Color(0xffd700);
+  else if (atmosphere.includes('violet') || atmosphere.includes('purple')) particleColor = new THREE.Color(0x9400d3);
+  else if (atmosphere.includes('green')) particleColor = new THREE.Color(0x32cd32);
+  else if (atmosphere.includes('orange')) particleColor = new THREE.Color(0xff8c00);
+  else if (atmosphere.includes('red')) particleColor = new THREE.Color(0xff0000);
+  else if (atmosphere.includes('teal') || atmosphere.includes('cyan')) particleColor = new THREE.Color(0x008b8b);
+
+  for (let i = 0; i < particleCount; i++) {
+    // Random positions around the planet
+    const radius = 0.4 + Math.random() * 0.6;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.random() * Math.PI;
+    
+    positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+    positions[i * 3 + 1] = radius * Math.cos(phi);
+    positions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta);
+
+    // Particle colors with some variation
+    colors[i * 3] = particleColor.r + (Math.random() - 0.5) * 0.2;
+    colors[i * 3 + 1] = particleColor.g + (Math.random() - 0.5) * 0.2;
+    colors[i * 3 + 2] = particleColor.b + (Math.random() - 0.5) * 0.2;
+
+    // Particle velocities for movement
+    velocities[i * 3] = (Math.random() - 0.5) * 0.02;
+    velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.02;
+    velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.02;
+  }
+
+  particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  particles.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  particles.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+
+  const particleMaterial = new THREE.PointsMaterial({
+    size: 0.05,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.6,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+
+  const particleSystem = new THREE.Points(particles, particleMaterial);
+  particleSystem.position.copy(planetMesh.position);
+  scene.add(particleSystem);
+
+  // Store reference for animation
+  (planetMesh as any).particleSystem = particleSystem;
+}
+
+function ThreeJSScene({ zoomLevel, setZoomLevel }: { zoomLevel: number, setZoomLevel: (value: number | ((prev: number) => number)) => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene>();
   const rendererRef = useRef<THREE.WebGLRenderer>();
@@ -84,21 +146,34 @@ function ThreeJSScene({ zoomLevel }: { zoomLevel: number }) {
     // Create planets
     const planets: Planet3D[] = [];
 
-    // Center planet with texture
-    const centerGeometry = new THREE.SphereGeometry(3.5, 64, 64);
+    // Center planet - heart shape with antennas using plane geometry to show texture properly
+    const centerGeometry = new THREE.PlaneGeometry(7, 7);
     const centerTexture = textureLoader.load('/textures/center-planet.webp');
-    centerTexture.wrapS = THREE.RepeatWrapping;
-    centerTexture.wrapT = THREE.RepeatWrapping;
+    centerTexture.colorSpace = THREE.SRGBColorSpace;
     const centerMaterial = new THREE.MeshStandardMaterial({ 
       map: centerTexture,
-      emissive: 0x221100,
-      emissiveIntensity: 0.1,
-      roughness: 0.8,
-      metalness: 0.2
+      transparent: true,
+      alphaTest: 0.2,
+      side: THREE.DoubleSide,
+      emissive: 0xff1493,  // Bright pink emissive
+      emissiveIntensity: 1.5, // Much brighter than elemental planets (1.0)
+      roughness: 0.05, // Very smooth for maximum glow
+      metalness: 0.0   // No metallic for pure glow
     });
     const centerMesh = new THREE.Mesh(centerGeometry, centerMaterial);
     centerMesh.position.set(0, 0, 0);
     scene.add(centerMesh);
+
+    // Add bright pink point light to center planet for maximum glow
+    const centerLight = new THREE.PointLight(
+      0xff1493, // Bright pink light
+      2.5,      // Very high intensity (higher than elemental planets' 1.5)
+      30,       // Large range to illuminate everything
+      0.8       // Slower decay for wider illumination
+    );
+    centerLight.position.set(0, 0, 0);
+    scene.add(centerLight);
+
     planets.push({
       mesh: centerMesh,
       id: centerPlanet.id,
@@ -116,14 +191,24 @@ function ThreeJSScene({ zoomLevel }: { zoomLevel: number }) {
         transparent: true,
         alphaTest: 0.2,
         side: THREE.DoubleSide,
-        emissive: getElementEmissive(planet.elementId),
-        emissiveIntensity: 0.1,
-        roughness: 0.7,
-        metalness: 0.3
+        emissive: getElementGlowColor(planet.elementId),
+        emissiveIntensity: 1.0, // Maximum brightness for light emission
+        roughness: 0.1, // Very smooth for maximum glow
+        metalness: 0.0  // No metallic for pure glow effect
       });
       
       const mesh = new THREE.Mesh(geometry, material);
       scene.add(mesh);
+
+      // Add bright point light for each elemental planet
+      const pointLight = new THREE.PointLight(
+        getElementLightColor(planet.elementId), 
+        1.5, // High intensity
+        20,  // Range of light
+        1    // Decay rate
+      );
+      scene.add(pointLight);
+
       planets.push({
         mesh,
         id: planet.id,
@@ -131,6 +216,16 @@ function ThreeJSScene({ zoomLevel }: { zoomLevel: number }) {
         orbitRadius: planet.orbitRadius,
         orbitSpeed: planet.orbitSpeed,
         startAngle: (index * Math.PI * 2) / elementPlanets.length // Evenly space around circle
+      });
+
+      // Store light reference for position updates
+      planets.push({
+        mesh: pointLight as any, // Store light as mesh for position updates
+        id: `${planet.id}_light`,
+        kind: 'element_light',
+        orbitRadius: planet.orbitRadius,
+        orbitSpeed: planet.orbitSpeed,
+        startAngle: (index * Math.PI * 2) / elementPlanets.length
       });
     });
 
@@ -146,9 +241,11 @@ function ThreeJSScene({ zoomLevel }: { zoomLevel: number }) {
         // Generate material based on visual appearance
         let planetMaterial;
         let geometry;
+        let materialData;
         
-        if (song.appearance) {
-          const materialData = generatePlanetMaterial(song.appearance, textureLoader, song.id);
+        if (song.appearance && song.released) {
+          // Only use unique appearance for released songs
+          materialData = generatePlanetMaterial(song.appearance, textureLoader, song.id);
           planetMaterial = materialData.material;
           
           // Get shape modifications
@@ -163,35 +260,148 @@ function ThreeJSScene({ zoomLevel }: { zoomLevel: number }) {
           // Apply scale modifications
           geometry.scale(shapeData.scaleModification.x, shapeData.scaleModification.y, shapeData.scaleModification.z);
           
-          // Add some noise for jagged/fragmented effects
-          if (shapeData.deformation === 'jagged') {
+          // Apply advanced deformations for unique planet shapes
+          if (shapeData.deformation !== 'none') {
             const positions = geometry.attributes.position;
-            for (let i = 0; i < positions.count; i++) {
-              const x = positions.getX(i);
-              const y = positions.getY(i);
-              const z = positions.getZ(i);
-              
-              // Add noise to vertex positions
-              const noise = (Math.random() - 0.5) * 0.2;
-              positions.setX(i, x + noise);
-              positions.setY(i, y + noise);
-              positions.setZ(i, z + noise);
+            
+            switch (shapeData.deformation) {
+              case 'jagged':
+                // Chaotic noise for jagged, angular planets
+                for (let i = 0; i < positions.count; i++) {
+                  const x = positions.getX(i);
+                  const y = positions.getY(i);
+                  const z = positions.getZ(i);
+                  
+                  const noise = (Math.random() - 0.5) * 0.3;
+                  positions.setX(i, x + noise);
+                  positions.setY(i, y + noise);
+                  positions.setZ(i, z + noise);
+                }
+                break;
+                
+              case 'fragmented':
+                // Break apart into chunks
+                for (let i = 0; i < positions.count; i++) {
+                  const x = positions.getX(i);
+                  const y = positions.getY(i);
+                  const z = positions.getZ(i);
+                  
+                  // Create separation between vertex clusters
+                  const chunkNoise = Math.random() > 0.7 ? (Math.random() - 0.5) * 0.5 : 0;
+                  positions.setX(i, x + chunkNoise);
+                  positions.setY(i, y + chunkNoise);
+                  positions.setZ(i, z + chunkNoise);
+                }
+                break;
+                
+              case 'cracked':
+                // Create crack-like indentations
+                for (let i = 0; i < positions.count; i++) {
+                  const x = positions.getX(i);
+                  const y = positions.getY(i);
+                  const z = positions.getZ(i);
+                  
+                  const length = Math.sqrt(x*x + y*y + z*z);
+                  const crack = Math.sin(x * 10) * Math.sin(y * 10) * Math.sin(z * 10) * 0.1;
+                  const factor = (length + crack) / length;
+                  
+                  positions.setX(i, x * factor);
+                  positions.setY(i, y * factor);
+                  positions.setZ(i, z * factor);
+                }
+                break;
+                
+              case 'bumpy':
+                // Add bumpy dance floor texture
+                for (let i = 0; i < positions.count; i++) {
+                  const x = positions.getX(i);
+                  const y = positions.getY(i);
+                  const z = positions.getZ(i);
+                  
+                  const bump = Math.sin(x * 8) * Math.cos(z * 8) * 0.1;
+                  positions.setY(i, y + bump);
+                }
+                break;
+                
+              case 'hexagonal':
+                // Create hexagonal faceting for honeycomb effect
+                for (let i = 0; i < positions.count; i++) {
+                  const x = positions.getX(i);
+                  const y = positions.getY(i);
+                  const z = positions.getZ(i);
+                  
+                  const angle = Math.atan2(z, x);
+                  const hexAngle = Math.round(angle / (Math.PI / 3)) * (Math.PI / 3);
+                  const radius = Math.sqrt(x*x + z*z);
+                  
+                  positions.setX(i, Math.cos(hexAngle) * radius);
+                  positions.setZ(i, Math.sin(hexAngle) * radius);
+                }
+                break;
+                
+              case 'pixelated':
+                // Quantize positions for 8-bit effect
+                for (let i = 0; i < positions.count; i++) {
+                  const x = positions.getX(i);
+                  const y = positions.getY(i);
+                  const z = positions.getZ(i);
+                  
+                  const quantize = (val: number) => Math.round(val * 4) / 4;
+                  positions.setX(i, quantize(x));
+                  positions.setY(i, quantize(y));
+                  positions.setZ(i, quantize(z));
+                }
+                break;
             }
+            
             positions.needsUpdate = true;
             geometry.computeVertexNormals();
           }
         } else {
-          // Fallback to original simple material
+          // Fallback for unreleased songs or songs without appearance data
           geometry = new THREE.SphereGeometry(1, 16, 16);
           planetMaterial = new THREE.MeshStandardMaterial({ 
             color: song.released ? 0x00ff88 : 0x666666,
-            opacity: song.released ? 1 : 0.7,
-            transparent: !song.released
+            opacity: song.released ? 1 : 0.6,
+            transparent: !song.released,
+            roughness: 0.8,
+            metalness: 0.1
           });
+          
+          // Create empty materialData for unreleased songs
+          materialData = {
+            material: planetMaterial,
+            hasGlow: false,
+            hasParticles: false
+          };
         }
         
+        const scale = 0.3;
+        geometry.scale(scale, scale, scale);
         const mesh = new THREE.Mesh(geometry, planetMaterial);
         scene.add(mesh);
+
+        // Create glow effect if needed (only for released songs)
+        if (song.released && song.appearance && materialData.hasGlow && materialData.glowMaterial) {
+          const glowGeometry = new THREE.SphereGeometry(scale * 1.1, 32, 32);
+          const glowMesh = new THREE.Mesh(glowGeometry, materialData.glowMaterial);
+          glowMesh.position.copy(mesh.position);
+          scene.add(glowMesh);
+          
+          // Store reference for position updates
+          planets.push({
+            mesh: glowMesh,
+            id: `${song.id}_glow`,
+            kind: 'glow',
+            orbitRadius: song.orbitRadius,
+            orbitSpeed: song.orbitSpeed,
+            elementId: song.elementId,
+            released: song.released,
+            startAngle: (index * Math.PI * 2) / songs.length
+          });
+        }
+
+        // Particle systems removed per user request - no floating effects around song planets
         
         // Space songs evenly around their element
         const angleOffset = (index * Math.PI * 2) / songs.length;
@@ -242,8 +452,21 @@ function ThreeJSScene({ zoomLevel }: { zoomLevel: number }) {
     };
 
     const onWheel = (event: WheelEvent) => {
-      // Disable scroll wheel zoom - only buttons should control zoom
       event.preventDefault();
+      
+      // Slow scroll wheel zoom - smaller increments for smooth zooming
+      const zoomSpeed = 0.05; // Small increment for gradual zoom
+      const deltaY = event.deltaY;
+      
+      if (deltaY > 0) {
+        // Zoom out
+        const newZoom = Math.max(zoomLevel - zoomSpeed, 0.4);
+        setZoomLevel(newZoom);
+      } else {
+        // Zoom in  
+        const newZoom = Math.min(zoomLevel + zoomSpeed, 2);
+        setZoomLevel(newZoom);
+      }
     };
 
     renderer.domElement.addEventListener('mousedown', onMouseDown);
@@ -256,13 +479,12 @@ function ThreeJSScene({ zoomLevel }: { zoomLevel: number }) {
     const animate = () => {
       const time = clock.getElapsedTime();
       
-      // Smooth zoom interpolation
-      zoomRef.current.target = zoomLevel;
-      zoomRef.current.current += (zoomRef.current.target - zoomRef.current.current) * 0.1;
+      // Apply zoom directly from state
+      const effectiveZoom = zoomLevel;
       
       // Update camera position using spherical coordinates
       const baseRadius = controlsRef.current.radius; // Use the current radius from mouse wheel/controls
-      const effectiveRadius = baseRadius / zoomRef.current.current; // Simple division for zoom
+      const effectiveRadius = baseRadius / effectiveZoom; // Apply zoom directly
       const x = effectiveRadius * Math.sin(controlsRef.current.phi) * Math.cos(controlsRef.current.theta);
       const y = effectiveRadius * Math.cos(controlsRef.current.phi);
       const z = effectiveRadius * Math.sin(controlsRef.current.phi) * Math.sin(controlsRef.current.theta);
@@ -273,8 +495,8 @@ function ThreeJSScene({ zoomLevel }: { zoomLevel: number }) {
       // Update planets
       planetsRef.current.forEach((planet) => {
         if (planet.kind === 'center') {
-          // Center planet stays at origin and rotates slowly to show texture
-          planet.mesh.rotation.y = time * 0.02;
+          // Center planet stays at origin and faces camera (billboard behavior)
+          planet.mesh.lookAt(camera.position);
           updatePosition(planet.id, {
             x: 0, y: 0, z: 0,
             data: centerPlanet
@@ -295,6 +517,13 @@ function ThreeJSScene({ zoomLevel }: { zoomLevel: number }) {
             data: elementData
           });
           
+        } else if (planet.kind === 'element_light' && planet.orbitRadius && planet.orbitSpeed) {
+          // Element lights follow their planets
+          const angle = (planet.startAngle || 0) + (time * planet.orbitSpeed);
+          const x = Math.cos(angle) * planet.orbitRadius;
+          const z = Math.sin(angle) * planet.orbitRadius;
+          planet.mesh.position.set(x, 0, z);
+          
         } else if (planet.kind === 'song' && planet.elementId && planet.orbitRadius && planet.orbitSpeed) {
           // Song planets orbit their element planet (which is also moving)
           const elementPlanet = planetsRef.current.find(p => p.id === planet.elementId);
@@ -311,11 +540,22 @@ function ThreeJSScene({ zoomLevel }: { zoomLevel: number }) {
             const z = elementPos.z + localZ;
             planet.mesh.position.set(x, 0, z);
             
+            
             const songData = songPlanets.find(p => p.id === planet.id)!;
             updatePosition(planet.id, {
               x, y: 0, z,
               data: songData
             });
+          }
+        } else if (planet.kind === 'glow' && planet.elementId && planet.orbitRadius && planet.orbitSpeed) {
+          // Glow effects follow their parent planet
+          const parentPlanet = planetsRef.current.find(p => p.id === planet.id.replace('_glow', ''));
+          if (parentPlanet) {
+            planet.mesh.position.copy(parentPlanet.mesh.position);
+            
+            // Animate glow intensity
+            const glowMaterial = planet.mesh.material as THREE.MeshBasicMaterial;
+            glowMaterial.opacity = 0.2 + Math.sin(time * 2) * 0.1;
           }
         }
 
@@ -386,6 +626,26 @@ function getElementEmissive(elementId: string): number {
     case 'LIGHTNING': return 0x332a0a;
     case 'DARKNESS': return 0x1a0a33;
     default: return 0x111111;
+  }
+}
+
+function getElementGlowColor(elementId: string): number {
+  switch (elementId) {
+    case 'HEART': return 0xff1493;    // Bright pink light
+    case 'WATER': return 0x4169e1;    // Bright blue light  
+    case 'LIGHTNING': return 0xffff00; // Bright yellow light
+    case 'DARKNESS': return 0xffffff;  // Bright white light
+    default: return 0x888888;
+  }
+}
+
+function getElementLightColor(elementId: string): number {
+  switch (elementId) {
+    case 'HEART': return 0xff69b4;    // Pink light emission
+    case 'WATER': return 0x87ceeb;    // Blue light emission
+    case 'LIGHTNING': return 0xffd700; // Yellow light emission  
+    case 'DARKNESS': return 0xffffff;  // White light emission
+    default: return 0x888888;
   }
 }
 
@@ -497,20 +757,34 @@ export function PlanetSystemV2() {
         {/* Zoom controls */}
         <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
           <button
-            onClick={() => setZoomLevel((z) => Math.min(z + 0.2, 2))}
+            onClick={() => {
+              console.log('Zoom In clicked, current:', zoomLevel);
+              setZoomLevel((z) => {
+                const newZoom = Math.min(z + 0.2, 2);
+                console.log('New zoom level:', newZoom);
+                return newZoom;
+              });
+            }}
             className="rounded-xl bg-black/60 px-3 py-1 text-xs text-white backdrop-blur hover:bg-black/70 transition-colors"
           >
-            Zoom In
+            Zoom In ({zoomLevel.toFixed(1)})
           </button>
           <button
-            onClick={() => setZoomLevel((z) => Math.max(z - 0.2, 0.4))}
+            onClick={() => {
+              console.log('Zoom Out clicked, current:', zoomLevel);
+              setZoomLevel((z) => {
+                const newZoom = Math.max(z - 0.2, 0.4);
+                console.log('New zoom level:', newZoom);
+                return newZoom;
+              });
+            }}
             className="rounded-xl bg-black/60 px-3 py-1 text-xs text-white backdrop-blur hover:bg-black/70 transition-colors"
           >
-            Zoom Out
+            Zoom Out ({zoomLevel.toFixed(1)})
           </button>
         </div>
 
-        <ThreeJSScene zoomLevel={zoomLevel} />
+        <ThreeJSScene zoomLevel={zoomLevel} setZoomLevel={setZoomLevel} />
       </div>
 
       <div className="mt-3">
