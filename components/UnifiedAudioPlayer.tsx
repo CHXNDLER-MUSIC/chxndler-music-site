@@ -2,7 +2,9 @@
 
 import React, { useCallback, useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { songs } from "@/data/songs";
+import { useSongs } from "@/hooks/useSongs";
+import { AUDIO_ASSETS_BY_SLUG } from "@/data/audioAssets";
+import { SONG_ELEMENT_MAPPING } from "@/data/songElements";
 import { TRACKS, TRACK_INFO, type TrackKey, useAudioManager } from "@/contexts/AudioManagerContext";
 import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
 import SongDropdown from "./SongDropdown";
@@ -74,17 +76,28 @@ export default function UnifiedAudioPlayer({ initialTrackId }: UnifiedAudioPlaye
   // Progress bar reference for click handling
   const progressBarRef = useRef<HTMLDivElement>(null);
   
-  // Filter songs to only include those that have track info (available tracks)
-  const availableSongs = Object.keys(TRACK_INFO).map(trackId => {
-    const trackInfo = TRACK_INFO[trackId];
-    return {
-      id: trackId,
-      title: trackInfo.title,
-      oneLiner: trackInfo.oneLiner || "",
-      // Add placeholder planet info for compatibility
-      planet: { radius: 1, color: "#38B6FF", orbitRadius: 3, orbitSpeed: 0.5, tilt: 0.2 }
-    };
-  });
+  // Get songs from Supabase
+  const { songs: supabaseSongs, loading } = useSongs();
+  
+  // Filter released songs and combine with asset data
+  const availableSongs = supabaseSongs
+    .filter(song => song.is_released)
+    .map(song => {
+      const asset = AUDIO_ASSETS_BY_SLUG[song.slug];
+      if (!asset) return null;
+      
+      return {
+        id: song.slug,
+        title: song.title,
+        oneLiner: `Released ${new Date(song.created_at).getFullYear()}`,
+        src: asset.src,
+        cover: asset.cover,
+        element: SONG_ELEMENT_MAPPING[song.slug] || 'heart',
+        // Add placeholder planet info for compatibility
+        planet: { radius: 1, color: "#38B6FF", orbitRadius: 3, orbitSpeed: 0.5, tilt: 0.2 }
+      };
+    })
+    .filter(Boolean);
   
   // Calculate progress (0-1)
   const progress = duration > 0 ? currentTime / duration : 0;

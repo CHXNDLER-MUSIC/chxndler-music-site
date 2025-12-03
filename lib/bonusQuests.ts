@@ -1,5 +1,6 @@
 import { supabaseClient } from '@/lib/supabaseClient';
 import { BonusQuestRow, UserBonusQuestRow, BonusQuestWithCompletion, QuestCompletionResult } from '@/types/bonusQuests';
+import { awardHeartCoins } from '@/utils/heartcoins';
 
 /**
  * Fetches bonus quests, optionally overlaying completion for a user.
@@ -113,12 +114,71 @@ export async function completeBonusQuest(
   onElementCardAwarded?: () => void
 ): Promise<QuestCompletionResult> {
   try {
+    // Validate user authentication by checking if we can get current session
+    const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+    
+    if (sessionError) {
+      console.error('Session validation error:', sessionError);
+      return {
+        success: false,
+        message: 'Authentication required to complete quests'
+      };
+    }
+
+    if (!session?.user) {
+      return {
+        success: false,
+        message: 'Please sign up or log in to complete quests and earn Heart Coins'
+      };
+    }
+
+    // Verify the provided userId matches the authenticated user
+    if (session.user.id !== userId) {
+      console.error('User ID mismatch:', { providedUserId: userId, sessionUserId: session.user.id });
+      return {
+        success: false,
+        message: 'User authentication mismatch'
+      };
+    }
+
     // Check if user has already maxed out this quest
     if (quest.max_total_completions !== null && quest.times_completed >= quest.max_total_completions) {
       return {
         success: false,
         message: 'Quest already completed'
       };
+    }
+
+    // Check daily completion limit
+    if (quest.max_times_per_day > 0) {
+      // Get user's completion record to check last completion date
+      const { data: userCompletion, error: completionCheckError } = await supabaseClient
+        .from('user_bonus_quests')
+        .select('last_completed_at')
+        .eq('user_id', userId)
+        .eq('bonus_quest_id', quest.id)
+        .maybeSingle();
+
+      if (completionCheckError) {
+        console.error('Error checking quest completion:', completionCheckError);
+        return {
+          success: false,
+          message: 'Error validating quest completion status'
+        };
+      }
+
+      if (userCompletion?.last_completed_at) {
+        const lastCompleted = new Date(userCompletion.last_completed_at);
+        const today = new Date();
+        const isToday = lastCompleted.toDateString() === today.toDateString();
+        
+        if (isToday) {
+          return {
+            success: false,
+            message: 'You can only complete this quest once per day. Come back tomorrow!'
+          };
+        }
+      }
     }
 
     // Special handling for LISTEN_ELEMENT_SONG
@@ -135,13 +195,31 @@ export async function completeBonusQuest(
     const rewards: { heartcoins?: number; element_card?: boolean } = {};
     
     if (quest.reward_heartcoins > 0) {
-      rewards.heartcoins = quest.reward_heartcoins;
-      onHeartCoinsAwarded?.(quest.reward_heartcoins);
+      try {
+        await awardHeartCoins(
+          supabaseClient,
+          userId,
+          quest.reward_heartcoins,
+          `Quest completed: ${quest.title}`,
+          { quest_id: quest.id, quest_key: quest.quest_key }
+        );
+        rewards.heartcoins = quest.reward_heartcoins;
+        onHeartCoinsAwarded?.(quest.reward_heartcoins);
+        console.log(`✅ Awarded ${quest.reward_heartcoins} HeartCoins for completing quest: ${quest.title}`);
+      } catch (heartCoinError) {
+        console.error('Failed to award HeartCoins:', heartCoinError);
+        return {
+          success: false,
+          message: 'Quest completed but failed to award HeartCoins. Please contact support.'
+        };
+      }
     }
     
     if (quest.reward_element_card) {
       rewards.element_card = true;
       onElementCardAwarded?.();
+      // TODO: Implement actual element card awarding logic
+      console.log('✅ Element card reward should be awarded');
     }
 
     // Persist user completion record. Prefer a safe select+update/insert pattern

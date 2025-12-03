@@ -1738,7 +1738,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         />
         
         {/* 3D Planet System */}
-        <HeartverseSystemWrapper 
+        {HeartverseSystemWrapper && <HeartverseSystemWrapper 
           showAll={homeMode}
           onSongClick={(songId) => {
             try {
@@ -1750,7 +1750,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               console.error("Failed to handle planet song click:", error);
             }
           }}
-        />
+        />}
         
       <SkyboxVideo
         brightness={0.95}
@@ -2346,7 +2346,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   });
                   return null;
                 })()}
-                <HUDPanel
+                {HUDPanel && <HUDPanel
                   inConsole
                   songs={hudSongs}
                   onSongChange={onSongChange}
@@ -2369,7 +2369,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   onJournalCompleted={handleJournalCompleted}
                   onBeamColorChange={handleBeamToggle}
                   todaysPrompt={todaysPrompt}
-                />
+                />}
               </div>
               {!showHUD ? (
                 <button
@@ -2405,7 +2405,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             {/* Hidden MediaPlayer for audio functionality only (mount only when a song is selected/pending) */}
             {(userSelected || pendingTrackPlay) ? (
             <div className="hidden">
-              <MediaPlayer
+              {MediaPlayer && <MediaPlayer
                 onSkyChange={(webm, mp4, key) => setNextSky({ webm, mp4, key })}
                 onPlayingChange={(p) => { 
                   setIsPlaying(p);
@@ -2481,7 +2481,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 onIndexChange={(i) => setChannelIdxWithLog(i)}
                 autoPlayOnIndex={false}
                 unlockPlays={false}
-              />
+              />}
             </div>
             ) : null}
           </div>

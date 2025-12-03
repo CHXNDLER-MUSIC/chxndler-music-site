@@ -1,65 +1,31 @@
-export type ElementKind = 'WATER' | 'HEART' | 'LIGHTNING' | 'DARKNESS';
+import { supabaseClient } from "./supabaseClient";
+import type { SongRow } from "@/types/song";
 
-export type Song = {
-  title: string;
-  slug: string;
-  audioSrc: string;
-  coverSrc: string;
-  bg: 'space' | 'ocean' | 'paris' | 'generic';
-  element: ElementKind;
-  theme: Record<string, string>; // CSS variables
-};
+export async function fetchSongs(): Promise<SongRow[]> {
+  const { data, error } = await supabaseClient
+    .from("songs")
+    .select("*")
+    .order("created_at", { ascending: true });
 
-export const songs: Song[] = [
-  {
-    title: 'OCEAN GIRL',
-    slug: 'ocean-girl',
-    audioSrc: '/tracks/ocean-girl.opus',
-    coverSrc: '/covers/OCEAN GIRL.webp',
-    bg: 'ocean',
-    element: 'WATER',
-    theme: {
-      '--color-primary': '#19E3FF',
-      '--glow-1': 'rgba(25,227,255,0.6)',
-      '--glow-2': 'rgba(25,227,255,0.25)',
-    },
-  },
-  {
-    title: 'PARIS',
-    slug: 'paris',
-    audioSrc: '/tracks/paris.mp3',
-    coverSrc: '/covers/PARIS.webp',
-    bg: 'paris',
-    element: 'HEART',
-    theme: {
-      '--color-primary': '#FC54AF',
-      '--glow-1': 'rgba(252,84,175,0.6)',
-      '--glow-2': 'rgba(252,84,175,0.25)',
-    },
-  },
-  {
-    title: 'BRAIN FREEZE',
-    slug: 'brain-freeze',
-    audioSrc: '/tracks/brain-freeze.mp3',
-    coverSrc: '/covers/BRAIN FREEZE.webp',
-    bg: 'space',
-    element: 'LIGHTNING',
-    theme: {
-      '--color-primary': '#F2EF1D',
-      '--glow-1': 'rgba(242,239,29,0.6)',
-      '--glow-2': 'rgba(242,239,29,0.25)',
-    },
-  },
-];
+  if (error) {
+    console.error("Error fetching songs", error);
+    return [];
+  }
 
-export function getSongBySlug(slug: string): Song | undefined {
-  const s = String(slug || '').toLowerCase();
-  return songs.find(x => x.slug === s);
+  return data ?? [];
 }
 
-export function getNextSongSlug(slug: string): string {
-  const idx = songs.findIndex(s => s.slug === slug);
-  if (idx < 0) return songs[0]?.slug || '';
-  const next = (idx + 1) % songs.length;
-  return songs[next].slug;
+export async function fetchReleasedSongs(): Promise<SongRow[]> {
+  const { data, error } = await supabaseClient
+    .from("songs")
+    .select("*")
+    .eq("is_released", true)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching released songs", error);
+    return [];
+  }
+
+  return data ?? [];
 }

@@ -3,7 +3,9 @@
 import React, { useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { playerStore } from '@/store/usePlayerStore';
-import { buildPlanetSongs } from '@/lib/planets';
+import { useSongs } from '@/hooks/useSongs';
+import { AUDIO_ASSETS_BY_SLUG } from '@/data/audioAssets';
+import { SONG_ELEMENT_MAPPING } from '@/data/songElements';
 import SongList from '@/components/holo/SongList';
 import HoloAudioBridge from '@/components/holo/HoloAudioBridge';
 
@@ -18,12 +20,43 @@ const PlanetSystem = dynamic(() => import('@/components/holo/PlanetSystem'), {
 });
 
 export default function HoloPanel() {
-  // Initialize songs once on mount
+  const { songs: supabaseSongs, loading } = useSongs();
+
+  // Convert Supabase songs to the format expected by the planet system
+  const holoSongs = React.useMemo(() => {
+    return supabaseSongs.map(song => {
+      const asset = AUDIO_ASSETS_BY_SLUG[song.slug];
+      const element = SONG_ELEMENT_MAPPING[song.slug] || 'heart';
+      
+      return {
+        id: song.id,
+        title: song.title,
+        slug: song.slug,
+        status: song.is_released ? 'released' : 'coming_soon',
+        planet: {
+          element: element,
+          radius: 0.7,
+          color: element === 'heart' ? '#FC54AF' : 
+                 element === 'water' ? '#38B6FF' :
+                 element === 'lightning' ? '#F2EF1D' : '#6A4C93',
+          orbitRadius: element === 'heart' ? 5.5 : 
+                      element === 'water' ? 6.5 :
+                      element === 'lightning' ? 7.0 : 6.0,
+          orbitSpeed: 0.5,
+          tilt: 0.2
+        },
+        audioSrc: asset?.src,
+        coverSrc: asset?.cover
+      };
+    });
+  }, [supabaseSongs]);
+
+  // Initialize songs when they're loaded
   useEffect(() => {
-    const { holoSongs } = buildPlanetSongs();
-    
-    playerStore.getState().initSongs(holoSongs);
-  }, []);
+    if (holoSongs.length > 0) {
+      playerStore.getState().initSongs(holoSongs);
+    }
+  }, [holoSongs]);
 
   const [storeSnap, setStoreSnap] = React.useState(() => playerStore.getState());
   React.useEffect(() => playerStore.subscribe(() => setStoreSnap(playerStore.getState())), []);

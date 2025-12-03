@@ -232,24 +232,38 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         }, 2000);
       }
     } catch (error) {
-      try {
-        // Provide clearer diagnostics
+      console.error('Failed to save journal entry:', error);
+      
+      let errorMessage = "Failed to cast your signal. Please try again.";
+      
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        if (error.message.includes('permission') || error.message.includes('auth')) {
+          errorMessage = "Authentication error. Please refresh the page and try again.";
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = "Network error. Please check your connection and try again.";
+        } else if (error.message.includes('column') && error.message.includes('is_private')) {
+          errorMessage = "Database schema error. Please contact support - the is_private column needs to be added.";
+        }
+      } else if (typeof error === 'object' && error !== null) {
         const err = error as any;
-        console.error('Failed to save journal entry:', err);
         console.error('Error details:', {
           message: err?.message,
           code: err?.code,
           details: err?.details,
           hint: err?.hint,
         });
-      } catch (logErr) {
-        console.error('Failed to log error details for journal save');
+        if (err?.message) {
+          errorMessage = `Database error: ${err.message}`;
+        }
       }
+      
       setJournalState(prev => ({
         ...prev,
-        errorMessage: "Failed to cast your signal. Please try again."
+        errorMessage
       }));
-      setTimeout(() => setJournalState(prev => ({ ...prev, errorMessage: "" })), 3000);
+      setTimeout(() => setJournalState(prev => ({ ...prev, errorMessage: "" })), 5000);
     } finally {
       setJournalState(prev => ({ ...prev, isLoading: false }));
     }
@@ -545,6 +559,19 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                         >
                           {entryEmoji} {entry.element}
                         </span>
+                        {/* Privacy indicator */}
+                        {entry.is_private && (
+                          <span 
+                            className="text-xs px-2 py-1 rounded-full uppercase font-semibold"
+                            style={{
+                              background: 'rgba(255, 255, 255, 0.1)',
+                              color: '#FFFFFF',
+                              border: '1px solid rgba(255, 255, 255, 0.3)'
+                            }}
+                          >
+                            PRIVATE
+                          </span>
+                        )}
                         {/* Preview of first few words */}
                         <div 
                           className="text-xs opacity-70 truncate flex-1"
@@ -555,6 +582,28 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                       </div>
                       
                       <div className="flex items-center gap-2">
+                        {/* Privacy toggle button */}
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            sfx.play('click', 0.6);
+                            try {
+                              await updateJournalEntry(entry.id, { is_private: !entry.is_private });
+                            } catch (error) {
+                              console.error('Failed to update privacy:', error);
+                            }
+                          }}
+                          className="px-2 py-1 rounded text-xs transition-all opacity-60 hover:opacity-100"
+                          style={{
+                            color: entry.is_private ? entryColor : '#808080',
+                            background: entry.is_private ? `${entryColor}10` : 'rgba(128, 128, 128, 0.1)',
+                            border: `1px solid ${entry.is_private ? entryColor : '#808080'}40`
+                          }}
+                          title={entry.is_private ? "Make public" : "Make private"}
+                        >
+                          {entry.is_private ? 'PVT' : 'PUB'}
+                        </button>
+                        
                         {/* Delete button */}
                         <button
                           onClick={(e) => handleDeleteClick(entry.id, e)}
@@ -687,11 +736,24 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                         {entry.soul_star && (
                           <div>
                             <div className="flex items-center justify-between mb-1">
-                              <div 
-                                className="text-xs font-semibold uppercase tracking-wider"
-                                style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
-                              >
-                                🌟 Your Soul Star
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="text-xs font-semibold uppercase tracking-wider"
+                                  style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
+                                >
+                                  🌟 Your Soul Star
+                                </div>
+                                {/* Privacy status in expanded view */}
+                                <span 
+                                  className="text-xs px-2 py-1 rounded-full uppercase font-semibold"
+                                  style={{
+                                    background: entry.is_private ? `${entryColor}15` : 'rgba(34, 197, 94, 0.15)',
+                                    color: entry.is_private ? entryColor : '#22C55E',
+                                    border: entry.is_private ? `1px solid ${entryColor}40` : '1px solid rgba(34, 197, 94, 0.4)'
+                                  }}
+                                >
+                                  {entry.is_private ? 'PRIVATE' : 'PUBLIC'}
+                                </span>
                               </div>
                               {!isEditing && (
                                 <button

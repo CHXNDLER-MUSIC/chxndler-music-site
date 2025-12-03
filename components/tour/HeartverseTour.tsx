@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { sfx } from '@/lib/sfx';
 
 export interface TourStep {
   id: string;
@@ -517,6 +518,7 @@ function TourOverlay() {
   const handleAction = (action: 'next' | 'previous' | 'skip' | 'close') => {
     switch (action) {
       case 'next':
+        sfx.play('click', 0.6);
         if (currentStep === steps.length - 1) {
           closeTour();
         } else {
