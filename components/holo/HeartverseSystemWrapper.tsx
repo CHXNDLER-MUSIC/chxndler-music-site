@@ -63,17 +63,14 @@ export default function HeartverseSystemWrapper({
   const [r3fSafe, setR3fSafe] = useState(false);
   
   // Lazy-load R3F Canvas to avoid evaluating internals before guards
-  const R3FCanvas: any = React.useMemo(
-    () => {
-      if (typeof window === 'undefined') return null;
-      
-      return dynamic(() => import("@react-three/fiber").then((m) => ({ default: m.Canvas })), {
-        ssr: false,
-        loading: () => null
-      });
-    },
-    []
-  );
+  const R3FCanvas = React.useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    
+    return dynamic(() => import("@react-three/fiber").then((mod) => ({ default: mod.Canvas })), {
+      ssr: false,
+      loading: () => null
+    });
+  }, []);
   // Lazy-load the solar system too, only render it when safe
   const HeartverseSolarSystemLazy: any = React.useMemo(
     () => {
@@ -148,7 +145,7 @@ export default function HeartverseSystemWrapper({
         }}
       >
         {/* Safely render R3F Canvas only when all checks pass */}
-        {R3FCanvas && <R3FCanvas
+        {R3FCanvas ? <R3FCanvas
         className="absolute inset-0"
         style={{ background: 'transparent' }}
         // Responsive DPR settings
@@ -206,11 +203,11 @@ export default function HeartverseSystemWrapper({
         
 
         {/* Main Heartverse Solar System */}
-        {HeartverseSolarSystemLazy && <HeartverseSolarSystemLazy 
+        {HeartverseSolarSystemLazy ? <HeartverseSolarSystemLazy 
           songs={[]}
           onSongClick={onSongClick}
-        />}
-        </R3FCanvas>}
+        /> : null}
+        </R3FCanvas> : null}
       </div>
     </SafeWrapper>
   );
