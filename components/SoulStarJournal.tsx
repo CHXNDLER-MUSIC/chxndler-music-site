@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
 import { sfx } from "@/lib/sfx";
 import { useDailyReflectionStatus } from "@/hooks/useDailyReflectionStatus";
-import { saveSoulStarEntry } from "@/lib/soulStarJournal";
+import { supabaseClient } from "@/lib/supabaseClient";
 
 interface DailyPrompt {
   id: string; // Add the daily prompt ID
@@ -36,16 +36,21 @@ interface JournalEntry {
   entry_date: string;
   element: string;
   intention?: string;
-  reflection?: string;
-  intention_response?: string;
-  reflection_response?: string;
+  prompt?: string;
   soul_star?: string;
   is_private?: boolean;
 }
 
+type SoulJournalEntry = {
+  entryDate: string;
+  element: string | null;
+  intention: string | null;
+  prompt: string | null;
+  soulStar: string | null;
+  isPrivate: boolean;
+};
+
 interface JournalState {
-  intentionResponse: string;
-  reflectionResponse: string;
   soulStar: string;
   isLoading: boolean;
   saveMessage: string;
@@ -79,8 +84,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const [editResponse, setEditResponse] = useState<string>("");
   const journalRef = useRef<HTMLDivElement>(null);
   const [journalState, setJournalState] = useState<JournalState>({
-    intentionResponse: "",
-    reflectionResponse: "",
     soulStar: "",
     isLoading: false,
     saveMessage: "",
@@ -152,8 +155,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
     if (todayEntry) {
       setJournalState(prev => ({
         ...prev,
-        intentionResponse: todayEntry.intention_response || "",
-        reflectionResponse: todayEntry.reflection_response || "",
         soulStar: todayEntry.soul_star || "",
         isPrivate: todayEntry.is_private ?? false,
         // If there's already a soul_star for today, mark as submitted to lock UI
@@ -163,8 +164,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       // Reset state for new entry
       setJournalState(prev => ({
         ...prev,
-        intentionResponse: "",
-        reflectionResponse: "",
         soulStar: "",
         isPrivate: false,
         isSubmitted: false,
@@ -197,40 +196,85 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       setJournalState(prev => ({ ...prev, isLoading: true }));
       sfx.play('click', 0.8);
 
-      // Use the new saveSoulStarEntry function to save to soul_journal_entries table
-      const currentPrompt = {
-        id: dailyPrompt.id,
-        prompt_date: dailyPrompt.prompt_date,
-        element: dailyPrompt.element,
-        prompt: dailyPrompt.reflection.text,
-        intention: dailyPrompt.intention.text
-      };
+      // Get daily prompt details for auto-population
+      let dailyPromptDetails = null;
+      try {
+        const { data: promptData, error: promptError } = await supabaseClient
+          .from("soul_daily_prompts")
+          .select(`
+            id,
+            element,
+            intention_prompt_id,
+            reflection_prompt_id,
+            soul_prompts_intention:intention_prompt_id(text),
+            soul_prompts_reflection:reflection_prompt_id(text)
+          `)
+          .eq("prompt_date", today)
+          .eq("element", profile.element)
+          .single();
 
-      const saved = await saveSoulStarEntry({
-        userId: user.id,
-        currentPrompt,
-        soulStarText: journalState.soulStar.trim(),
-        isPrivate: journalState.isPrivate,
-      });
-
-      if (saved) {
-        // Mark reflection as complete to hide notifications
-        markReflectionComplete();
-
-        setJournalState(prev => ({
-          ...prev,
-          saveMessage: "Signal cast into the stars",
-          isSubmitted: true,
-        }));
-        
-        // Notify parent that journal was completed
-        onJournalCompleted?.();
-        
-        setTimeout(() => {
-          setJournalState(prev => ({ ...prev, saveMessage: "" }));
-          onClose(); // Close the popout on success
-        }, 2000);
+        if (promptError) {
+          console.warn('Could not fetch daily prompt details:', promptError.message);
+        } else {
+          dailyPromptDetails = promptData;
+        }
+      } catch (promptFetchError) {
+        console.warn('Failed to fetch daily prompt details:', promptFetchError);
       }
+
+      // Auto-populate intention and prompt from daily prompt
+      const intentionText = dailyPromptDetails?.soul_prompts_intention?.text || 
+                           dailyPrompt.intention?.text || null;
+      
+      const promptText = dailyPromptDetails?.soul_prompts_reflection?.text || 
+                        dailyPrompt.reflection?.text || null;
+
+      // Use direct Supabase insert to soul_journal_entries table with proper upsert
+      const { data, error } = await supabaseClient
+        .from("soul_journal_entries")
+        .upsert(
+          {
+            user_id: user.id,
+            entry_date: today,
+            element: profile.element,
+            intention: intentionText,
+            prompt: promptText,
+            soul_star: journalState.soulStar.trim(),
+          },
+          { onConflict: "user_id,entry_date,element" }
+        )
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+        });
+        throw error;
+      }
+
+      console.log('Successfully saved journal entry:', data);
+
+      // Mark reflection as complete to hide notifications
+      markReflectionComplete();
+
+      setJournalState(prev => ({
+        ...prev,
+        saveMessage: "Signal cast into the stars",
+        isSubmitted: true,
+      }));
+      
+      // Notify parent that journal was completed
+      onJournalCompleted?.();
+      
+      setTimeout(() => {
+        setJournalState(prev => ({ ...prev, saveMessage: "" }));
+        onClose(); // Close the popout on success
+      }, 2000);
+
     } catch (error) {
       console.error('Failed to save journal entry:', error);
       
@@ -243,19 +287,22 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           errorMessage = "Authentication error. Please refresh the page and try again.";
         } else if (error.message.includes('network') || error.message.includes('fetch')) {
           errorMessage = "Network error. Please check your connection and try again.";
-        } else if (error.message.includes('column') && error.message.includes('is_private')) {
-          errorMessage = "Database schema error. Please contact support - the is_private column needs to be added.";
+        } else if (error.message.includes('unique') || error.message.includes('constraint')) {
+          errorMessage = `Database constraint error. Please contact support. (${error.message})`;
+        } else if (error.message.includes('no unique or exclusion constraint')) {
+          errorMessage = `Database schema error. The soul_journal_entries table needs a unique constraint. (${error.message})`;
+        } else if (error.message.includes('table') && error.message.includes('not found')) {
+          errorMessage = `Database table error. Please contact support. (${error.message})`;
+        } else {
+          errorMessage = `Database error: ${error.message}`;
         }
       } else if (typeof error === 'object' && error !== null) {
         const err = error as any;
-        console.error('Error details:', {
-          message: err?.message,
-          code: err?.code,
-          details: err?.details,
-          hint: err?.hint,
-        });
+        console.error('Full error object:', err);
         if (err?.message) {
           errorMessage = `Database error: ${err.message}`;
+        } else {
+          errorMessage = `Unknown error occurred: ${JSON.stringify(err)}`;
         }
       }
       
@@ -577,7 +624,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                           className="text-xs opacity-70 truncate flex-1"
                           style={{ color: '#FFFFFF', maxWidth: '200px' }}
                         >
-                          {entry.soul_star ? entry.soul_star.substring(0, 50) + (entry.soul_star.length > 50 ? '...' : '') : 'No content'}
+                          {entry.soul_star ? entry.soul_star.substring(0, 50) + (entry.soul_star.length > 50 ? '...' : '') : 'No entry'}
                         </div>
                       </div>
                       
@@ -660,14 +707,14 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                           </div>
                         )}
                         
-                        {/* Prompt */}
-                        {entry.reflection && (
+                        {/* Today's Prompt */}
+                        {entry.prompt && (
                           <div>
                             <div 
                               className="text-xs font-semibold mb-1 uppercase tracking-wider"
                               style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
                             >
-                              💭 Prompt
+                              💭 Today's Prompt
                             </div>
                             <div 
                               className="text-sm leading-relaxed"
@@ -679,58 +726,11 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                 border: `1px solid ${entryColor}15`
                               }}
                             >
-                              {entry.reflection}
+                              {entry.prompt}
                             </div>
                           </div>
                         )}
 
-                        {/* User Response to Intention */}
-                        {entry.intention_response && (
-                          <div>
-                            <div 
-                              className="text-xs font-semibold mb-1 uppercase tracking-wider"
-                              style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
-                            >
-                              💝 Your Intention Response
-                            </div>
-                            <div 
-                              className="text-sm leading-relaxed"
-                              style={{ 
-                                color: '#FFFFFF',
-                                background: 'rgba(0,0,0,0.2)',
-                                padding: '8px',
-                                borderRadius: '6px',
-                                border: `1px solid ${entryColor}15`
-                              }}
-                            >
-                              {entry.intention_response}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* User Response to Prompt */}
-                        {entry.reflection_response && (
-                          <div>
-                            <div 
-                              className="text-xs font-semibold mb-1 uppercase tracking-wider"
-                              style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
-                            >
-                              🤔 Your Prompt Response
-                            </div>
-                            <div 
-                              className="text-sm leading-relaxed"
-                              style={{ 
-                                color: '#FFFFFF',
-                                background: 'rgba(0,0,0,0.2)',
-                                padding: '8px',
-                                borderRadius: '6px',
-                                border: `1px solid ${entryColor}15`
-                              }}
-                            >
-                              {entry.reflection_response}
-                            </div>
-                          </div>
-                        )}
                         
                         {/* User Response */}
                         {entry.soul_star && (

@@ -265,6 +265,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       }
       // Clear the main tab preference after using it
       delete (window as any).heartCoinInitialTab;
+      // Clear the store flag after using it
+      delete (window as any).heartCoinFromStore;
     }
   }, [open]); // Run when modal opens
 
@@ -282,6 +284,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   useEffect(() => {
     const handleOpenHeartCoinCards = (e: CustomEvent) => {
       try {
+        // Don't override tab settings if this is from the STORE menu
+        if (typeof window !== 'undefined' && (window as any).heartCoinFromStore) {
+          // Just open the modal, don't change tab settings
+          setOpen(true);
+          return;
+        }
+        
         // Set the modal to open with USE tab and CARDS sub-tab
         setActiveTab('USE');
         setActiveUseTab('CARDS');
@@ -757,6 +766,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           itemId: item.id,
           itemTitle: item.title,
@@ -1064,7 +1074,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           </div>
           
           {/* Header */}
-          <div className="text-center mb-3 mt-2">
+          <div className="text-center mb-3 mt-2 ml-8 -mr-2">
             <div 
               className="text-lg font-bold mb-2"
               style={{ 

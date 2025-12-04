@@ -6658,7 +6658,7 @@ export default function HUDPanel({
                                 </div>
                                 
                                 <div style={{ marginBottom: '8px' }}>
-                                  <span style={{ color: '#FFFF00', fontSize: '10px', fontWeight: 'bold' }}>REFLECTION: </span>
+                                  <span style={{ color: '#FFFF00', fontSize: '10px', fontWeight: 'bold' }}>PROMPT: </span>
                                   <span style={{ color: '#FFFF00', fontSize: '10px', fontStyle: 'italic' }}>{entry.reflection}</span>
                                 </div>
                                 

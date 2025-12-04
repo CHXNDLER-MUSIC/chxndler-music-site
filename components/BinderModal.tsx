@@ -759,8 +759,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                 <div 
                   className="rounded-3xl shadow-2xl cursor-pointer"
                   style={{
-                    width: 'min(320px, 50vw)',
-                    height: 'min(448px, 55vh)',
+                    width: 'min(420px, 65vw)',
+                    height: 'min(550px, 70vh)',
                     boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
                     border: '2px solid rgba(255,255,255,0.1)',
                     borderRadius: '24px',
@@ -820,7 +820,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
 
 
           {/* Dynamic Content - Binder Cards or Full Collection */}
-          <div className="relative mt-1 h-full overflow-y-auto" style={{ maxHeight: 'calc(40vh - 90px)' }}>
+          <div className="relative mt-1 h-full overflow-y-auto pb-8" style={{ maxHeight: 'calc(45vh - 60px)' }}>
             {!showFullCollection ? (
               binderPage === 'first' ? (
                 // User's Binder - First Page - Show 5 initial slots
@@ -878,7 +878,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                             ? '0 0 15px rgba(255,105,180,0.3)' 
                             : '0 0 5px rgba(255,105,180,0.1)',
                           aspectRatio: '3/4',
-                          height: '80px'
+                          height: '100px'
                         }}
                       >
                         <div className="relative">
@@ -994,7 +994,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                         style={{
                           boxShadow: '0 0 5px rgba(255,105,180,0.1)',
                           aspectRatio: '3/4',
-                          height: '80px'
+                          height: '100px'
                         }}
                       >
                         <div className="relative h-full w-full flex items-center justify-center">

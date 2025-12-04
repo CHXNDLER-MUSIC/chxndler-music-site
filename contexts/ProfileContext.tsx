@@ -85,9 +85,7 @@ interface JournalEntry {
   element: string;
   prompt_id: string | null;
   intention: string | null;
-  reflection: string | null;
-  intention_response: string | null;
-  reflection_response: string | null;
+  prompt: string | null;
   soul_star: string | null;
   is_private: boolean;
   created_at: string;
@@ -125,7 +123,7 @@ interface ProfileContextType {
   journalEntries: JournalEntry[];
   loadJournalEntries: (userId: string) => Promise<void>;
   saveJournalEntry: (entry: Omit<JournalEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<JournalEntry | null>;
-  updateJournalEntry: (entryId: string, updates: Partial<Pick<JournalEntry, 'soul_star' | 'intention' | 'reflection' | 'intention_response' | 'reflection_response' | 'is_private'>>) => Promise<void>;
+  updateJournalEntry: (entryId: string, updates: Partial<Pick<JournalEntry, 'soul_star' | 'intention' | 'prompt' | 'is_private'>>) => Promise<void>;
   deleteJournalEntry: (entryId: string) => Promise<void>;
   getDailyPrompts: () => Promise<DailyPrompts | null>;
   isJournalOpen: boolean;
@@ -537,7 +535,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateJournalEntry = async (entryId: string, updates: Partial<Pick<JournalEntry, 'soul_star' | 'intention' | 'reflection' | 'intention_response' | 'reflection_response' | 'is_private'>>) => {
+  const updateJournalEntry = async (entryId: string, updates: Partial<Pick<JournalEntry, 'soul_star' | 'intention' | 'prompt' | 'is_private'>>) => {
     try {
       const { error } = await supabaseClient
         .from('soul_journal_entries')

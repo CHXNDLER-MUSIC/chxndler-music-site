@@ -349,72 +349,83 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       )}
 
       {!loading && !error && (
-        <div className="relative flex flex-col items-center justify-center min-h-[200px]">
-          {/* Inner dark tinted container like binder */}
+        <div 
+          className="absolute inset-0 flex flex-col items-center justify-center backdrop-blur-sm"
+          style={{
+            background: 'rgba(0,0,0,0.4)',
+            backdropFilter: 'blur(8px)',
+            borderRadius: '14px',
+            padding: '20px',
+            paddingTop: '60px',
+            boxShadow: '0 0 30px rgba(252,84,175,0.3), 0 0 60px rgba(252,84,175,0.15), inset 0 0 30px rgba(252,84,175,0.1)'
+          }}
+        >
+          {/* Additional pink glow behind container */}
           <div 
-            className="relative p-4 rounded-lg backdrop-blur-sm"
+            className="absolute inset-0"
             style={{
-              background: 'rgba(0,0,0,0.4)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              backdropFilter: 'blur(8px)'
+              background: 'radial-gradient(ellipse 80% 60% at 50% 50%, rgba(252,84,175,0.08) 0%, rgba(252,84,175,0.04) 40%, transparent 70%)',
+              borderRadius: '14px',
+              pointerEvents: 'none',
+              zIndex: -1
             }}
-          >
-            {/* Badge categories in responsive grid */}
-            <div className="grid grid-cols-3 gap-4">
-              {/* Top row */}
-              {badgeCategories.slice(0, 3).map((category) => {
-                const displayInfo = getCategoryDisplayInfo(category);
-                return (
-                  <div key={category.id} className="flex flex-col items-center space-y-2">
-                    <button
-                      onClick={() => handleCategoryClick(category.id)}
-                      className="relative w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
-                      style={{
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
-                      }}
-                    >
-                      <img
-                        src={displayInfo.image}
-                        alt={displayInfo.displayName}
-                        className="w-12 h-12 object-cover rounded-full group-hover:scale-110 transition-transform"
-                        draggable={false}
-                      />
-                    </button>
-                    <span className="text-white/70 text-xs font-medium text-center max-w-20">
-                      {displayInfo.displayName}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            
-            {/* Bottom row */}
-            <div className="grid grid-cols-3 gap-4 mt-4">
-              {badgeCategories.slice(3, 6).map((category) => {
-                const displayInfo = getCategoryDisplayInfo(category);
-                return (
-                  <div key={category.id} className="flex flex-col items-center space-y-2">
-                    <button
-                      onClick={() => handleCategoryClick(category.id)}
-                      className="relative w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
-                      style={{
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
-                      }}
-                    >
-                      <img
-                        src={displayInfo.image}
-                        alt={displayInfo.displayName}
-                        className="w-12 h-12 object-cover rounded-full group-hover:scale-110 transition-transform"
-                        draggable={false}
-                      />
-                    </button>
-                    <span className="text-white/70 text-xs font-medium text-center max-w-20">
-                      {displayInfo.displayName}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+          />
+          
+          {/* Badge categories in responsive grid */}
+          <div className="grid grid-cols-3 gap-4 sm:gap-6">
+            {/* Top row */}
+            {badgeCategories.slice(0, 3).map((category) => {
+              const displayInfo = getCategoryDisplayInfo(category);
+              return (
+                <div key={category.id} className="flex flex-col items-center space-y-2">
+                  <button
+                    onClick={() => handleCategoryClick(category.id)}
+                    className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
+                    style={{
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
+                    }}
+                  >
+                    <img
+                      src={displayInfo.image}
+                      alt={displayInfo.displayName}
+                      className="w-8 h-8 sm:w-12 sm:h-12 object-cover rounded-full group-hover:scale-110 transition-transform"
+                      draggable={false}
+                    />
+                  </button>
+                  <span className="text-white/70 text-xs font-medium text-center max-w-16 sm:max-w-20">
+                    {displayInfo.displayName}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Bottom row */}
+          <div className="grid grid-cols-3 gap-4 sm:gap-6 mt-4">
+            {badgeCategories.slice(3, 6).map((category) => {
+              const displayInfo = getCategoryDisplayInfo(category);
+              return (
+                <div key={category.id} className="flex flex-col items-center space-y-2">
+                  <button
+                    onClick={() => handleCategoryClick(category.id)}
+                    className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
+                    style={{
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
+                    }}
+                  >
+                    <img
+                      src={displayInfo.image}
+                      alt={displayInfo.displayName}
+                      className="w-8 h-8 sm:w-12 sm:h-12 object-cover rounded-full group-hover:scale-110 transition-transform"
+                      draggable={false}
+                    />
+                  </button>
+                  <span className="text-white/70 text-xs font-medium text-center max-w-16 sm:max-w-20">
+                    {displayInfo.displayName}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

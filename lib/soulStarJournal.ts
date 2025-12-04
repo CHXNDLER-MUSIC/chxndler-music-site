@@ -67,7 +67,7 @@ export async function loadSoulStarFullLog(userId: string): Promise<SoulStarLogEn
       soul_daily_prompts (
         prompt_date,
         element,
-        reflection,
+        prompt,
         intention
       )
     `)
@@ -89,7 +89,7 @@ export async function loadSoulStarFullLog(userId: string): Promise<SoulStarLogEn
     soulStar: entry.soul_star,
     isPrivate: entry.is_private,
     promptDate: entry.soul_daily_prompts?.prompt_date || entry.entry_date,
-    prompt: entry.soul_daily_prompts?.reflection || '',
+    prompt: entry.soul_daily_prompts?.prompt || '',
     intention: entry.soul_daily_prompts?.intention || null,
   }));
 }
