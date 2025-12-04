@@ -388,15 +388,38 @@ export default function SkyboxVideo({
               <source src="/skies/lightspeed.mp4" type="video/mp4" />
             </video>
             
-            {/* CSS-based fallback warp effect when video is missing */}
+            {/* Enhanced CSS-based fallback warp effect when video is missing */}
             <div 
               className="absolute inset-0 h-full w-full"
               style={{
-                opacity: showLightspeed ? 0.8 : 0,
+                opacity: showLightspeed ? 1 : 0,
                 transition: 'opacity 220ms ease',
                 pointerEvents: 'none',
-                background: 'radial-gradient(circle at center, rgba(252, 84, 175, 0.3) 0%, rgba(252, 84, 175, 0.1) 50%, transparent 100%)',
-                animation: showLightspeed ? 'pulse 0.6s ease-in-out infinite alternate' : 'none'
+                background: `
+                  radial-gradient(ellipse 150% 100% at 50% 50%, 
+                    rgba(0, 255, 255, 0.6) 0%, 
+                    rgba(128, 0, 255, 0.4) 30%, 
+                    rgba(255, 0, 128, 0.3) 60%, 
+                    transparent 100%),
+                  linear-gradient(45deg, 
+                    rgba(255, 255, 255, 0.1) 0%, 
+                    transparent 50%, 
+                    rgba(255, 255, 255, 0.1) 100%)
+                `,
+                animation: showLightspeed ? 'warpEffect 1.2s ease-out' : 'none',
+                mixBlendMode: 'screen'
+              }}
+            />
+            <div
+              className="absolute inset-0 h-full w-full"
+              style={{
+                opacity: showLightspeed ? 0.6 : 0,
+                transition: 'opacity 220ms ease',
+                pointerEvents: 'none',
+                background: 'linear-gradient(0deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%)',
+                animation: showLightspeed ? 'warpStreaks 0.8s ease-in-out' : 'none',
+                transform: showLightspeed ? 'scaleY(20)' : 'scaleY(1)',
+                transformOrigin: 'center'
               }}
             />
           </>

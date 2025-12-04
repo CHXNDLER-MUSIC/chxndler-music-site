@@ -9,15 +9,7 @@ import { SONG_ELEMENT_MAPPING } from '@/data/songElements';
 import SongList from '@/components/holo/SongList';
 import HoloAudioBridge from '@/components/holo/HoloAudioBridge';
 
-// WebGL scene must remain client-only
-const PlanetSystem = dynamic(() => import('@/components/holo/PlanetSystem'), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-full items-center justify-center text-cyan-300/70">
-      Loading hologram…
-    </div>
-  ),
-});
+// No 3D rendering needed in this panel - it's handled by the main dashboard
 
 export default function HoloPanel() {
   const { songs: supabaseSongs, loading } = useSongs();

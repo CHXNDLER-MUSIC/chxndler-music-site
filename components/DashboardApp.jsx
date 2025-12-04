@@ -13,7 +13,13 @@ import { Slot } from "@/components/Slot";
 import { DASHBOARD } from "@/config/dashboard";
 import dynamic from "next/dynamic";
 const HUDPanel = dynamic(() => import("@/components/HUDPanel"), { ssr: false });
-const HeartverseSystemWrapper = dynamic(() => import("@/components/holo/HeartverseSystemWrapper"), { ssr: false });
+const HeartverseSystemWrapper = dynamic(
+  () => import("@/components/holo/HeartverseSystemWrapper"),
+  {
+    ssr: false,
+    loading: () => null,
+  }
+);
 const HoloHUD = dynamic(() => import("@/components/HoloHUD"), { ssr: false });
 import { skyFor, introSky } from "@/lib/sky";
 import { youtubeSkyFor, HOME_YOUTUBE_SKY } from "@/lib/sky-youtube";
@@ -1718,7 +1724,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         />
         
         {/* 3D Planet System */}
-        {HeartverseSystemWrapper && <HeartverseSystemWrapper 
+        <HeartverseSystemWrapper 
           showAll={homeMode}
           onSongClick={(songId) => {
             try {
@@ -1730,7 +1736,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               console.error("Failed to handle planet song click:", error);
             }
           }}
-        />}
+        />
         
       <SkyboxVideo
         brightness={0.95}

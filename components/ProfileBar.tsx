@@ -408,19 +408,6 @@ export default function ProfileBar({
     return () => window.removeEventListener('openBinderCard', handleOpenBinderCard as EventListener);
   }, []);
 
-  if (loading) {
-    return (
-      <div className="fixed top-0 left-0 right-0 z-[200] h-16 bg-black/40 backdrop-blur-lg border-b border-white/20">
-        <div className="flex items-center justify-between h-full px-6">
-          <div className="animate-pulse flex items-center space-x-4">
-            <div className="w-10 h-10 bg-white/20 rounded-full"></div>
-            <div className="w-24 h-4 bg-white/20 rounded"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const currentElement = contextProfile?.element || savedAlienElement || null;
   // Show balance as soon as profile is available; don't wait on currentUser state
   const heartCoins = contextProfile?.heartcoin_balance ?? 0;
@@ -437,6 +424,19 @@ export default function ProfileBar({
       profileName: contextProfile?.name
     });
   }, [currentUser, contextProfile, heartCoins]);
+
+  if (loading) {
+    return (
+      <div className="fixed top-0 left-0 right-0 z-[200] h-16 bg-black/40 backdrop-blur-lg border-b border-white/20">
+        <div className="flex items-center justify-between h-full px-6">
+          <div className="animate-pulse flex items-center space-x-4">
+            <div className="w-10 h-10 bg-white/20 rounded-full"></div>
+            <div className="w-24 h-4 bg-white/20 rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Add a manual refresh function for debugging
   const forceRefreshProfile = async () => {
