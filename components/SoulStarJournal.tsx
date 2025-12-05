@@ -166,7 +166,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
     if (!profile?.element) return;
 
     const todayEntry = journalEntries.find(entry => 
-      entry.created_date === today && entry.element === profile.element
+      entry.entry_date === today && entry.element === profile.element
     );
     if (todayEntry) {
       setSoulStarText(todayEntry.soul_star || "");
@@ -186,27 +186,14 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   };
 
   const handleSaveEntry = async () => {
-    const supabase = supabaseClient;
-    
     try {
-      // Get the current session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-        setError("Authentication error. Please refresh the page and try again.");
-        return;
-      }
-
       // Validate user is signed in
-      if (!session?.user?.id) {
+      if (!user?.id) {
         if (openWelcomeHome) {
           openWelcomeHome();
         }
         return;
       }
-
-      const userId = session.user.id;
 
       // Validate soulStarText is not empty
       if (!soulStarText.trim()) {
@@ -220,27 +207,21 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       setSuccessMessage("");
       sfx.play('click', 0.8);
 
-      // Insert row into soul_journal_entries
-      const payload = {
-        user_id: userId,
+      // Use ProfileContext's saveJournalEntry which handles upsert properly
+      const result = await saveJournalEntry({
+        entry_date: today,
         element: selectedElement,
         intention: intentionText,
         prompt: currentPromptText,
-        soul_star: soulStarText.trim()
-      };
+        soul_star: soulStarText.trim(),
+        is_private: journalState.isPrivate
+      });
 
-      const { data, error } = await supabase
-        .from('soul_journal_entries')
-        .insert(payload)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Full Supabase error object:', error);
-        throw error;
+      if (!result) {
+        throw new Error("Failed to save journal entry");
       }
 
-      console.log('Successfully saved journal entry:', data);
+      console.log('Successfully saved journal entry:', result);
 
       // Mark reflection as complete to hide notifications
       markReflectionComplete();
@@ -276,7 +257,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         } else if (error.message.includes('network') || error.message.includes('fetch')) {
           errorMessage = "Network error. Please check your connection and try again.";
         } else if (error.message.includes('unique') || error.message.includes('constraint')) {
-          errorMessage = `Database constraint error. Please contact support. (${error.message})`;
+          errorMessage = "This entry already exists for today. Try editing the existing entry instead.";
         } else if (error.message.includes('table') && error.message.includes('not found')) {
           errorMessage = `Database table error. Please contact support. (${error.message})`;
         } else {
@@ -547,7 +528,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               </div>
             ) : (
               journalEntries.map((entry) => {
-                const entryDate = new Date(entry.created_date).toLocaleDateString('en-US', {
+                const entryDate = new Date(entry.entry_date).toLocaleDateString('en-US', {
                   month: 'short',
                   day: 'numeric',
                   year: 'numeric'

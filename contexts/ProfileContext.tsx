@@ -450,7 +450,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         .from('soul_journal_entries')
         .select('*')
         .eq('user_id', userId)
-        .order('created_date', { ascending: false });
+        .order('entry_date', { ascending: false });
 
       if (error) {
         console.error('Error loading journal entries:', error);
@@ -509,7 +509,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         .upsert(
           entryData,
           { 
-            onConflict: 'user_id,entry_date',
+            onConflict: 'user_id,entry_date,element',
             ignoreDuplicates: false 
           }
         )
