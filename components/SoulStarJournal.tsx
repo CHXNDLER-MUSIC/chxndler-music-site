@@ -103,9 +103,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
   const today = new Date().toISOString().slice(0, 10);
   const todayFormatted = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
     year: 'numeric',
-    month: 'long',
+    month: 'numeric',
     day: 'numeric'
   });
 
@@ -445,6 +444,23 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           FULL LOG
         </button>
 
+        {/* Element Badge - Under Full Log */}
+        {!showHistory && (
+          <div className="absolute top-14 left-4">
+            <span 
+              className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
+              style={{
+                background: `${elementTheme.color}20`,
+                border: `1px solid ${elementTheme.color}60`,
+                color: elementTheme.color,
+                textShadow: `0 0 4px ${elementTheme.glow}`
+              }}
+            >
+              {elementEmoji} {dailyPrompt.element} element
+            </span>
+          </div>
+        )}
+
         {/* Close button */}
         <button
           onClick={handleClose}
@@ -651,7 +667,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                               className="text-xs font-semibold mb-1 uppercase tracking-wider"
                               style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
                             >
-                              ✨ Today's Intention
+                              ✨ INTENTION
                             </div>
                             <div 
                               className="text-sm leading-relaxed"
@@ -675,7 +691,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                               className="text-xs font-semibold mb-1 uppercase tracking-wider"
                               style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
                             >
-                              💭 Today's Prompt
+                              💭 PROMPT
                             </div>
                             <div 
                               className="text-sm leading-relaxed"
@@ -795,27 +811,15 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             {/* Date and Element with pending notification */}
             <div className="text-center mb-2">
               <div 
-                className="text-base font-semibold mb-1"
-                style={{ color: '#FFFFFF' }}
+                className="text-lg font-bold uppercase tracking-wider mb-1"
+                style={{ 
+                  color: elementTheme.color,
+                  textShadow: `0 0 12px ${elementTheme.glow}, 0 0 24px ${elementTheme.color}60`,
+                  letterSpacing: '2px'
+                }}
               >
                 {todayFormatted}
               </div>
-              
-              {/* Element Badge */}
-              <div className="flex justify-center items-center mb-1">
-                <span 
-                  className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
-                  style={{
-                    background: `${elementTheme.color}20`,
-                    border: `1px solid ${elementTheme.color}60`,
-                    color: elementTheme.color,
-                    textShadow: `0 0 4px ${elementTheme.glow}`
-                  }}
-                >
-                  {elementEmoji} {dailyPrompt.element} element
-                </span>
-              </div>
-              
             </div>
 
             {/* Intention & Prompt Section */}
@@ -834,7 +838,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     className="text-sm font-semibold mb-1 uppercase tracking-wider"
                     style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
                   >
-                    ✨ Today's Intention
+                    ✨ INTENTION
                   </div>
                   <div 
                     className="text-sm leading-relaxed mb-1"

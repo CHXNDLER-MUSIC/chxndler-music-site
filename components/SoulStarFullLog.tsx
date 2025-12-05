@@ -326,7 +326,7 @@ export default function SoulStarFullLog({ userId }: SoulStarFullLogProps) {
                       className="text-xs font-semibold uppercase tracking-wider"
                       style={{ color: entryColor, textShadow: `0 0 2px ${entryGlow}` }}
                     >
-                      ⭐ YOUR SOUL STAR
+                      ⭐ SOUL STAR
                     </div>
                     {!isEditing && (
                       <button

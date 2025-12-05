@@ -93,8 +93,23 @@ export function useBonusQuests(): UseBonusQuestsReturn {
         }
       );
 
-      // If quest was completed successfully, refetch quests to update UI
+      // If quest was completed successfully, update local state immediately
       if (result.success) {
+        // Update local state to mark quest as completed
+        setBonusQuests(currentQuests => 
+          currentQuests.map(q => 
+            q.id === quest.id 
+              ? { 
+                  ...q, 
+                  times_completed: (q.times_completed || 0) + 1,
+                  can_complete: q.max_total_completions === null || 
+                    (q.times_completed + 1) < q.max_total_completions
+                }
+              : q
+          )
+        );
+
+        // Also refetch to ensure server state is in sync
         await fetchQuests();
       }
 

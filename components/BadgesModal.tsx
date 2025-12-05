@@ -370,8 +370,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           />
           
           {/* Centered content container */}
-          <div className="absolute inset-0 flex items-center justify-center pt-8 pb-16">
-            <div className="flex flex-col items-center justify-center space-y-24 h-full">
+          <div className="absolute inset-0 flex items-center justify-center pt-4 pb-4">
+            <div className="flex flex-col items-center justify-center space-y-32 h-full">
               {/* Top row - first 3 categories */}
               <div className="grid grid-cols-3 gap-6">
                 {badgeCategories.slice(0, 3).map((category) => {

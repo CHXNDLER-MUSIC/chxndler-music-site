@@ -1,11 +1,20 @@
 "use client";
 
-import React, { useMemo, useRef } from "react";
+import React, { useMemo, useRef, useState, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Group } from "three";
 import { buildPlanetSongs, ELEMENT_COLORS, type Element } from "@/lib/planets";
+import { useAuth } from "@/app/providers/AuthProvider";
+import { supabaseClient } from "@/lib/supabaseClient";
 
 type Element4 = "heart" | "water" | "lightning" | "darkness";
+
+type Star = {
+  id: string;
+  x: number;
+  y: number;
+  z: number;
+};
 
 interface HeartverseSolarSystemProps {
   songs?: Array<{ id: string; title?: string; element?: Element4; planet?: { element?: Element4 } }>;
@@ -22,8 +31,94 @@ function Sphere({ radius, color }: { radius: number; color: string }) {
   );
 }
 
+// Star component - glowing sphere for soul journal entries
+function StarMesh({ position }: { position: [number, number, number] }) {
+  return (
+    <group position={position}>
+      <mesh>
+        <sphereGeometry args={[0.15, 16, 16]} />
+        <meshStandardMaterial 
+          color="#FFD700" 
+          emissive="#FFD700" 
+          emissiveIntensity={0.8}
+          metalness={0.1}
+          roughness={0.3}
+        />
+      </mesh>
+      {/* Glow effect */}
+      <mesh scale={[2, 2, 2]}>
+        <sphereGeometry args={[0.15, 8, 8]} />
+        <meshBasicMaterial 
+          color="#FFD700" 
+          transparent 
+          opacity={0.2}
+        />
+      </mesh>
+    </group>
+  );
+}
+
 export default function HeartverseSolarSystem({ songs: propSongs, onSongClick }: HeartverseSolarSystemProps) {
   const systemRef = useRef<Group>(null);
+  const { user } = useAuth();
+  const [stars, setStars] = useState<Star[]>([]);
+
+  // Fetch and subscribe to soul stars
+  useEffect(() => {
+    if (!user?.id) {
+      setStars([]);
+      return;
+    }
+
+    // Fetch existing stars
+    const fetchStars = async () => {
+      try {
+        const { data, error } = await supabaseClient
+          .from('soul_stars')
+          .select('id, x, y, z')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: true });
+
+        if (error) {
+          console.error('Error fetching soul stars:', error);
+        } else {
+          setStars(data || []);
+        }
+      } catch (error) {
+        console.error('Error in fetchStars:', error);
+      }
+    };
+
+    fetchStars();
+
+    // Set up realtime subscription
+    const channel = supabaseClient
+      .channel('soul_stars_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'soul_stars',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('New soul star inserted:', payload);
+          const newStar = payload.new as Star & { user_id: string };
+          setStars((prev) => [...prev, {
+            id: newStar.id,
+            x: newStar.x,
+            y: newStar.y,
+            z: newStar.z,
+          }]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabaseClient.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   // Source songs: use provided or build from library
   const songs = useMemo(() => {
@@ -113,6 +208,11 @@ export default function HeartverseSolarSystem({ songs: propSongs, onSongClick }:
           </group>
         );
       })}
+
+      {/* Soul Stars - journal entry stars scattered around the system */}
+      {stars.map((star) => (
+        <StarMesh key={star.id} position={[star.x, star.y, star.z]} />
+      ))}
     </group>
   );
 }

@@ -210,6 +210,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   });
   const [heartCoins, setHeartCoins] = useState(0);
   const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
+  const [selectedCardForPurchase, setSelectedCardForPurchase] = useState<Card | null>(null);
   const [showItemDetail, setShowItemDetail] = useState(false);
   const [showHeartCoinPurchase, setShowHeartCoinPurchase] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -766,25 +767,22 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     setIsProcessing(true);
     
     try {
-      const response = await fetch('/api/purchase-item-with-heartcoins', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          itemId: item.id,
-          itemTitle: item.title,
-          priceHeartCoins: item.priceHeartCoins,
-        }),
+      const { data, error } = await supabaseClient.rpc('purchase_item_with_heartcoins', {
+        p_item_id: item.id,
+        p_item_name: item.title,
+        p_price_heartcoins: item.priceHeartCoins,
+        p_user_id: profile.id,
       });
-      
-      const result = await response.json();
-      
-      if (response.ok) {
-        // Success! Update UI and profile
-        try { sfx.play('click', 0.7); } catch {}
-        
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.success === false) {
+        throw new Error(data.error || 'Purchase failed');
+      }
+
+      if (data.success === true) {
         // Update local heart coins state
         const newBalance = (profile.heartcoin_balance || 0) - item.priceHeartCoins;
         updateHeartCoins(newBalance);
@@ -792,24 +790,86 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         // Refresh profile to update HeartCoin balance
         await refreshProfile();
         
-        // Show success and go back to store
-        setTimeout(() => {
-          handleBackToStore();
-        }, 1500);
+        // Play success sound
+        try { sfx.play('/sounds/card-ding.mp3', 0.7); } catch {}
         
-      } else if (response.status === 400 && result.error?.includes('insufficient')) {
-        // Insufficient HeartCoins - handled in UI
-      } else {
-        throw new Error(result.error || 'Purchase failed');
+        // Open shipping modal
+        setShowPhysicalForm(true);
       }
     } catch (error) {
       console.error('HeartCoin purchase error:', error);
+      // Show user-facing error
+      alert(error.message || 'Purchase failed. Please try again.');
     } finally {
       setIsProcessing(false);
     }
   };
 
+  const handleConfirmOrder = async () => {
+    if (!profile?.id || !selectedCardForPurchase || isProcessing) return;
 
+    // Validate shipping information
+    if (!shippingInfo.fullName || !shippingInfo.street || !shippingInfo.city || !shippingInfo.state || !shippingInfo.zip || !shippingInfo.country) {
+      alert('Please fill in all shipping information fields');
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      const orderData = {
+        user_id: profile.id,
+        card_key: selectedCardForPurchase.card_name,
+        full_name: shippingInfo.fullName,
+        address_line1: shippingInfo.street,
+        address_line2: null, // Optional field not collected yet
+        city: shippingInfo.city,
+        state: shippingInfo.state,
+        postal_code: shippingInfo.zip,
+        country: shippingInfo.country,
+        cost_heartcoins: selectedCardForPurchase.physicalCost || 0,
+        status: 'pending'
+      };
+
+      const { error } = await supabaseClient
+        .from('physical_card_orders')
+        .insert([orderData]);
+
+      if (error) {
+        console.error('Error creating order:', error);
+        alert('Failed to create order. Please try again.');
+        return;
+      }
+
+      // Deduct HeartCoins from user balance
+      if (onHeartCoinsChange && selectedCardForPurchase.physicalCost) {
+        const newBalance = heartCoins - selectedCardForPurchase.physicalCost;
+        await onHeartCoinsChange(newBalance);
+        setHeartCoins(newBalance);
+      }
+
+      // Reset form and show success
+      setShowPhysicalForm(false);
+      setSelectedCardForPurchase(null);
+      setShippingInfo({
+        fullName: '',
+        street: '',
+        city: '',
+        state: '',
+        zip: '',
+        country: ''
+      });
+
+      alert('Order confirmed! Your physical card will be shipped soon.');
+      try { sfx.play('success', 0.8); } catch {}
+
+    } catch (error) {
+      console.error('Order confirmation error:', error);
+      alert('Failed to confirm order. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const handleInviteFriend = () => {
     if (dailyQuests.friendInviteConfirm) return; // Already complete
@@ -1929,6 +1989,20 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       Shipping Information
                                     </h2>
 
+                                    {selectedCardForPurchase && (
+                                      <div className="mb-3 p-3 bg-purple-500/20 border border-purple-400/40 rounded">
+                                        <div className="text-center text-white">
+                                          <div className="text-sm mb-1">Purchasing Physical Card:</div>
+                                          <div className="font-bold text-lg" style={{ color: '#FFD700', textShadow: '0 0 6px rgba(255,215,0,0.8)' }}>
+                                            {selectedCardForPurchase.card_name}
+                                          </div>
+                                          <div className="text-xs text-white/80">
+                                            Cost: {selectedCardForPurchase.physicalCost} Heart Coins
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+
                                     <div>
                                       <input
                                         type="text"
@@ -2013,11 +2087,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       }}
                                       onClick={() => {
                                         try { sfx.play('click', 0.8); } catch {}
-                                        // Handle confirm order logic here
-                                        console.log('Order confirmed:', shippingInfo);
+                                        handleConfirmOrder();
                                       }}
+                                      disabled={isProcessing}
                                     >
-                                      CONFIRM ORDER
+                                      {isProcessing ? 'PROCESSING...' : 'CONFIRM ORDER'}
                                     </button>
                                   </div>
                                 ) : (
@@ -2146,6 +2220,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     }}
                                     onClick={() => {
                                       try { sfx.play('click', 0.7); } catch {}
+                                      setSelectedCardForPurchase(card);
                                       setShowPhysicalForm(!showPhysicalForm);
                                       setShowDigitalForm(false);
                                     }}
