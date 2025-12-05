@@ -192,7 +192,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         </button>
         
         {/* Badge grid matching binder layout */}
-        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3 sm:gap-4 max-h-80 sm:max-h-96 overflow-y-auto p-2">
+        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3 sm:gap-4 max-h-[60vh] sm:max-h-[65vh] overflow-y-auto p-2">
           {categoryBadges.length > 0 ? categoryBadges.map((badge, index) => (
             <div key={index} className="flex flex-col items-center space-y-2">
               <div className="relative">
@@ -349,29 +349,14 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       )}
 
       {!loading && !error && (
-        <div 
-          className="absolute inset-0 backdrop-blur-sm"
-          style={{
-            background: 'rgba(0,0,0,0.4)',
-            backdropFilter: 'blur(8px)',
-            borderRadius: '14px',
-            boxShadow: '0 0 30px rgba(252,84,175,0.3), 0 0 60px rgba(252,84,175,0.15), inset 0 0 30px rgba(252,84,175,0.1)'
-          }}
-        >
-          {/* Additional pink glow behind container */}
-          <div 
-            className="absolute inset-0"
-            style={{
-              background: 'radial-gradient(ellipse 80% 60% at 50% 50%, rgba(252,84,175,0.08) 0%, rgba(252,84,175,0.04) 40%, transparent 70%)',
-              borderRadius: '14px',
-              pointerEvents: 'none',
-              zIndex: -1
-            }}
-          />
-          
+        <div className="relative h-full p-4 flex items-center justify-center">
+          {/* Debug info */}
+          <div className="absolute top-4 left-4 text-white text-xs bg-black/50 p-2 rounded">
+            Categories: {badgeCategories.length}, Loading: {loading.toString()}, Error: {error || 'none'}
+          </div>
+
           {/* Centered content container */}
-          <div className="absolute inset-0 flex items-center justify-center pt-4 pb-4">
-            <div className="flex flex-col items-center justify-center space-y-32 h-full">
+          <div className="flex flex-col items-center justify-center space-y-16">
               {/* Top row - first 3 categories */}
               <div className="grid grid-cols-3 gap-6">
                 {badgeCategories.slice(0, 3).map((category) => {

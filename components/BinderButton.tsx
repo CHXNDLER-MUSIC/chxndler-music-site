@@ -445,14 +445,14 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
           style={{
-            paddingTop: '10px'
+            paddingTop: '60px'
           }}
         >
           <div
             className="binder-hologram-container overflow-hidden"
             style={{
               width: 'min(92vw, 700px)',
-              height: '25vh',
+              height: '70vh',
               padding: '8px 12px 0px 12px',
               borderRadius: 18,
               background: 'rgba(0,0,0,0.6)',

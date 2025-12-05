@@ -29,12 +29,12 @@ export function useBonusQuests(): UseBonusQuestsReturn {
   useEffect(() => {
     const getCurrentUser = async () => {
       try {
-        const { data: { user }, error } = await supabaseClient.auth.getUser();
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
         if (error) {
           // Log but do not surface error to UI; quests are public
-          console.warn('Non-fatal: getUser error; treating as logged out:', error);
+          console.warn('Non-fatal: getSession error; treating as logged out:', error);
         }
-        setCurrentUserId(user?.id || null);
+        setCurrentUserId(session?.user?.id || null);
       } catch (e) {
         // Also non-fatal; treat as logged out
         console.warn('Non-fatal: exception in getCurrentUser; treating as logged out');
@@ -80,7 +80,7 @@ export function useBonusQuests(): UseBonusQuestsReturn {
     }
 
     try {
-      const result = await completeBonusQuest(quest.quest_key, currentUserId);
+      const result = await completeBonusQuest(currentUserId, quest);
 
       // Update quest status based on result
       if (result.success) {

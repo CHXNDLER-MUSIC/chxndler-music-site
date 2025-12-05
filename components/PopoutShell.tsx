@@ -21,17 +21,14 @@ export default function PopoutShell({ title, onClose, children, pageIndicator }:
       
       {/* Main modal container - exact copy from Binder */}
       <div 
-        className="fixed inset-0 z-[2147483647] flex items-start justify-center"
-        style={{
-          paddingTop: '2vh'
-        }}
+        className="fixed inset-0 z-[2147483647] flex items-center justify-center"
       >
         <div
           className="binder-hologram-container"
           style={{
             width: 'min(90vw, 650px)',
-            height: '95vh',
-            minHeight: '800px',
+            height: '85vh',
+            minHeight: '700px',
             display: 'flex',
             flexDirection: 'column',
             padding: '0px',
@@ -130,7 +127,7 @@ export default function PopoutShell({ title, onClose, children, pageIndicator }:
           {/* Page Number Display - exact copy from Binder, only show if provided */}
           {pageIndicator && (
             <div 
-              className="absolute bottom-0 left-1/2 transform -translate-x-1/2"
+              className="absolute bottom-2 left-1/2 transform -translate-x-1/2"
               style={{
                 color: '#FF69B4',
                 fontSize: '12px',

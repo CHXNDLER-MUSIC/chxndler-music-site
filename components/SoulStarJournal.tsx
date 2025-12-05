@@ -226,8 +226,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       // Mark reflection as complete to hide notifications
       markReflectionComplete();
 
-      // Clear soulStarText and set success message
-      setSoulStarText("");
+      // Keep soulStarText content and set success message (don't clear it)
       setSuccessMessage("Your signal was cast into the stars.");
       setJournalState(prev => ({
         ...prev,
@@ -879,15 +878,17 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               <textarea
                 value={soulStarText}
                 onChange={(e) => setSoulStarText(e.target.value)}
-                placeholder="Write your soul's message for today... What wants to be expressed?"
+                placeholder={journalState.isSubmitted ? "Your soul star has been cast into the stars ✨" : "Write your soul's message for today... What wants to be expressed?"}
                 className="w-full h-16 p-2 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
                 disabled={isSaving || journalState.isSubmitted}
+                readOnly={journalState.isSubmitted}
                 style={{
-                  background: 'rgba(0,0,0,0.6)',
-                  border: `1px solid ${elementTheme.color}40`,
-                  boxShadow: `0 0 10px ${elementTheme.color}20`,
-                  opacity: (isSaving || journalState.isSubmitted) ? 0.7 : 1,
-                  pointerEvents: (isSaving || journalState.isSubmitted) ? 'none' as any : 'auto'
+                  background: journalState.isSubmitted ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.6)',
+                  border: journalState.isSubmitted ? `1px solid ${elementTheme.color}20` : `1px solid ${elementTheme.color}40`,
+                  boxShadow: journalState.isSubmitted ? 'none' : `0 0 10px ${elementTheme.color}20`,
+                  opacity: (isSaving || journalState.isSubmitted) ? 0.5 : 1,
+                  pointerEvents: (isSaving || journalState.isSubmitted) ? 'none' as any : 'auto',
+                  cursor: journalState.isSubmitted ? 'not-allowed' : 'text'
                 }}
                 onFocus={(e) => {
                   if (journalState.isSubmitted) return;
@@ -987,7 +988,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   }}
                 >
                   {journalState.isSubmitted
-                    ? 'Your soul star shines above'
+                    ? 'your soul star shines above'
                     : (isSaving ? 'CASTING...' : 'Cast into the Stars')}
                 </button>
               )}

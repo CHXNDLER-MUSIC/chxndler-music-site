@@ -772,7 +772,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   className="rounded-3xl shadow-2xl cursor-pointer"
                   style={{
                     width: 'min(650px, 90vw)',
-                    height: 'min(250px, 25vh)',
+                    height: 'min(500px, 70vh)',
                     boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
                     border: '2px solid rgba(255,255,255,0.1)',
                     borderRadius: '24px',
@@ -985,7 +985,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                 </div>
                 
                 {/* Second row of 5 locked slots */}
-                <div className="grid gap-2 grid-cols-5 mt-1 p-2">
+                <div className="grid gap-2 grid-cols-5 mt-1 p-2 pb-0">
                   {Array.from({ length: 5 }, (_, index) => {
                     const slotIndex = index + 5; // Slots 5-9
                     
@@ -1117,7 +1117,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
 
                   {/* Second row of 5 locked slots */}
-                  <div className="grid gap-2 grid-cols-5 mt-1 p-2">
+                  <div className="grid gap-2 grid-cols-5 mt-1 p-2 pb-0">
                     {Array.from({ length: 5 }, (_, index) => {
                       const slotIndex = index + 15; // Slots 15-19
                       
@@ -1250,7 +1250,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
 
                   {/* Second row of 5 locked slots */}
-                  <div className="grid gap-2 grid-cols-5 mt-1 p-2">
+                  <div className="grid gap-2 grid-cols-5 mt-1 p-2 pb-0">
                     {Array.from({ length: 5 }, (_, index) => {
                       const slotIndex = index + 25; // Slots 25-29
                       
@@ -1383,7 +1383,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
 
                   {/* Second row of 5 locked slots */}
-                  <div className="grid gap-2 grid-cols-5 mt-1 p-2">
+                  <div className="grid gap-2 grid-cols-5 mt-1 p-2 pb-0">
                     {Array.from({ length: 5 }, (_, index) => {
                       const slotIndex = index + 35; // Slots 35-39
                       
@@ -1516,7 +1516,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
 
                   {/* Second row of 5 locked slots */}
-                  <div className="grid gap-2 grid-cols-5 mt-1 p-2">
+                  <div className="grid gap-2 grid-cols-5 mt-1 p-2 pb-0">
                     {Array.from({ length: 5 }, (_, index) => {
                       const slotIndex = index + 45; // Slots 45-49
                       
@@ -1649,7 +1649,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
 
                   {/* Second row of 5 locked slots */}
-                  <div className="grid gap-2 grid-cols-5 mt-1 p-2">
+                  <div className="grid gap-2 grid-cols-5 mt-1 p-2 pb-0">
                     {Array.from({ length: 5 }, (_, index) => {
                       const slotIndex = index + 55; // Slots 55-59
                       

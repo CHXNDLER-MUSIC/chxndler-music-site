@@ -815,6 +815,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         // Play success sound
         try { sfx.play('/sounds/card-ding.mp3', 0.7); } catch {}
         
+        // Set up for shipping modal with item details
+        setSelectedCardForPurchase({
+          id: item.id,
+          card_name: item.title,
+          physicalCost: item.priceHeartCoins,
+          digitalCost: 0,
+          description: item.description
+        } as Card);
+        
         // Open shipping modal
         setShowPhysicalForm(true);
       }
