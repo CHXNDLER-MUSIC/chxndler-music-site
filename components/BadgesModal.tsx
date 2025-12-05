@@ -316,9 +316,9 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   }
 
   // Main badges view - six circular categories
-  const badgesContent = (
-    <>
-      {embedded && (
+  if (embedded) {
+    return (
+      <div className="relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 w-8 h-8 rounded-full border border-pink-400/60 flex items-center justify-center text-pink-400 hover:text-pink-200 transition-colors"
@@ -328,36 +328,22 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
         </button>
-      )}
 
-      {embedded && (
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-white">BADGES</h2>
         </div>
-      )}
 
-      {loading && (
-        <div className="text-center text-white/60">
-          Loading badges...
-        </div>
-      )}
+        {loading && (
+          <div className="text-center text-white/60">Loading badges...</div>
+        )}
 
-      {error && !loading && (
-        <div className="text-center text-red-400 text-sm">
-          Error loading badges: {error}
-        </div>
-      )}
+        {error && !loading && (
+          <div className="text-center text-red-400 text-sm">Error loading badges: {error}</div>
+        )}
 
-      {!loading && !error && (
-        <div className="relative h-full p-4 flex items-center justify-center">
-          {/* Debug info */}
-          <div className="absolute top-4 left-4 text-white text-xs bg-black/50 p-2 rounded">
-            Categories: {badgeCategories.length}, Loading: {loading.toString()}, Error: {error || 'none'}
-          </div>
-
-          {/* Centered content container */}
-          <div className="flex flex-col items-center justify-center space-y-16">
-              {/* Top row - first 3 categories */}
+        {!loading && !error && (
+          <div className="relative h-full p-4 flex items-center justify-center">
+            <div className="flex flex-col items-center justify-center space-y-16">
               <div className="grid grid-cols-3 gap-6">
                 {badgeCategories.slice(0, 3).map((category) => {
                   const displayInfo = getCategoryDisplayInfo(category);
@@ -385,7 +371,6 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                 })}
               </div>
               
-              {/* Bottom row - last 3 categories */}
               <div className="grid grid-cols-3 gap-6">
                 {badgeCategories.slice(3, 6).map((category) => {
                   const displayInfo = getCategoryDisplayInfo(category);
@@ -414,18 +399,86 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
               </div>
             </div>
           </div>
-        </div>
-      )}
-    </>
-  );
-
-  if (embedded) {
-    return <div className="relative">{badgesContent}</div>;
+        )}
+      </div>
+    );
   }
 
   return (
     <PopoutShell title="BADGES" onClose={onClose}>
-      {badgesContent}
+      <div className="relative h-full">
+        {loading && (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-white/60">Loading badges...</div>
+          </div>
+        )}
+
+        {error && !loading && (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center text-red-400 text-sm">Error loading badges: {error}</div>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <div className="relative h-full p-4 flex items-center justify-center">
+            <div className="flex flex-col items-center justify-center space-y-16">
+              <div className="grid grid-cols-3 gap-6">
+                {badgeCategories.slice(0, 3).map((category) => {
+                  const displayInfo = getCategoryDisplayInfo(category);
+                  return (
+                    <div key={category.id} className="flex flex-col items-center space-y-2">
+                      <button
+                        onClick={() => handleCategoryClick(category.id)}
+                        className="relative w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
+                        style={{
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
+                        }}
+                      >
+                        <img
+                          src={displayInfo.image}
+                          alt={displayInfo.displayName}
+                          className="w-12 h-12 object-cover rounded-full group-hover:scale-110 transition-transform"
+                          draggable={false}
+                        />
+                      </button>
+                      <span className="text-white/70 text-xs font-medium text-center max-w-20">
+                        {displayInfo.displayName}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              <div className="grid grid-cols-3 gap-6">
+                {badgeCategories.slice(3, 6).map((category) => {
+                  const displayInfo = getCategoryDisplayInfo(category);
+                  return (
+                    <div key={category.id} className="flex flex-col items-center space-y-2">
+                      <button
+                        onClick={() => handleCategoryClick(category.id)}
+                        className="relative w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
+                        style={{
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
+                        }}
+                      >
+                        <img
+                          src={displayInfo.image}
+                          alt={displayInfo.displayName}
+                          className="w-12 h-12 object-cover rounded-full group-hover:scale-110 transition-transform"
+                          draggable={false}
+                        />
+                      </button>
+                      <span className="text-white/70 text-xs font-medium text-center max-w-20">
+                        {displayInfo.displayName}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </PopoutShell>
   );
 }

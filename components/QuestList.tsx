@@ -132,7 +132,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
         // Save to localStorage to persist across sessions for today
         const today = new Date().toDateString();
         localStorage.setItem(`quest_element_${today}`, 'true');
-        showCelebration(`✨ Element touched! Your ${todaysElement.name} energy is awakened! +1 HeartCoin earned.`);
+        showCelebration(`✨ Element touched! Your ${todaysElement.name} energy is awakened! +1 earned.`);
       } else {
         const errorData = await response.json();
         console.error('Heart coin update failed:', errorData);
@@ -156,7 +156,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
     // Save to localStorage to persist across sessions for today
     const today = new Date().toDateString();
     localStorage.setItem(`quest_journal_${today}`, 'true');
-    showCelebration("🌟 Soul reflection complete! Your inner wisdom has been honored. +1 HeartCoin earned.");
+    showCelebration("🌟 Soul reflection complete! Your inner wisdom has been honored. +1 earned.");
   };
 
   const handleInviteFriend = async () => {
@@ -170,7 +170,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
       // Save to localStorage to persist across sessions for today
       const today = new Date().toDateString();
       localStorage.setItem(`quest_invite_${today}`, 'true');
-      showCelebration("📱 Message sent! Now confirm to complete the quest and earn your HeartCoin.");
+      showCelebration("📱 Message sent! Now confirm to complete the quest and earn your reward.");
     };
     
     if (navigator.share) {
@@ -215,7 +215,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
         // Save to localStorage to persist across sessions for today
         const today = new Date().toDateString();
         localStorage.setItem(`quest_invite_confirm_${today}`, 'true');
-        showCelebration("💕 Love shared! You've planted a seed of connection. +1 HeartCoin earned.");
+        showCelebration("💕 Love shared! You've planted a seed of connection. +1 earned.");
       } else {
         const errorData = await response.json();
         console.error('Bonus quest completion failed:', errorData);
@@ -247,13 +247,13 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
         if (response.ok) {
           const data = await response.json();
           console.log('Heart coin update successful:', data);
-          setCheckInMessage("Welcome to the show. You've checked in! You received +5 HEART COINS.");
+          setCheckInMessage("Welcome to the show. You've checked in! You received +5.");
           setSecretPhrase("");
           setQuestStatus(prev => ({ ...prev, liveShow: true }));
           // Save to localStorage to persist across sessions for today
           const today = new Date().toDateString();
           localStorage.setItem(`quest_liveshow_${today}`, 'true');
-          showCelebration("🎵 Live show magic! You're part of something special tonight. +5 HeartCoins earned!");
+          showCelebration("🎵 Live show magic! You're part of something special tonight. +5 earned!");
         } else {
           const errorData = await response.json();
           console.error('Heart coin update failed:', errorData);
@@ -410,7 +410,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <h4 className="text-white font-semibold mb-1">1. Tap the Element of the Day</h4>
-              <p className="text-white/80 text-sm mb-2">Touch the glowing planet to receive one HeartCoin.</p>
+              <p className="text-white/80 text-sm mb-3 leading-relaxed min-h-[2.5rem] flex items-center">Touch the glowing planet to receive one.</p>
             </div>
             <div className="flex items-center gap-2">
               {/* Today's Element Icon */}
@@ -474,7 +474,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
                   ? '✓ Complete' 
                   : !isAuthenticated 
                     ? 'Log in to complete' 
-                    : '+1 HeartCoin'
+                    : '+1'
                 }
               </div>
             </div>
@@ -492,7 +492,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <h4 className="text-white font-semibold mb-1">2. Soul Stare - Daily Reflection</h4>
-              <p className="text-white/80 text-sm mb-2">Answer today's introspective question to earn one HeartCoin.</p>
+              <p className="text-white/80 text-sm mb-3 leading-relaxed min-h-[2.5rem] flex items-center">Answer today's introspective question to earn one.</p>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -540,7 +540,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
                   ? '✓ Complete' 
                   : !isAuthenticated 
                     ? 'Log in to complete' 
-                    : '+1 HeartCoin'
+                    : '+1'
                 }
               </div>
             </div>
@@ -571,8 +571,8 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <h4 className="text-white font-semibold mb-1">1. Invite a Friend</h4>
-              <p className="text-white/80 text-sm mb-2">Share the Heartverse with someone you love. When they join, you both earn HeartCoins.</p>
-              <p className="text-white/60 text-xs">(1 MAX per day)</p>
+              <p className="text-white/80 text-sm mb-2">Share the Heartverse with someone you love. When they join, you both earn rewards.</p>
+              <p className="text-white/60 text-xs">(+1 /day)</p>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -645,7 +645,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
                     ? 'Log in to complete'
                     : questStatus.inviteFriend
                       ? 'Click to Confirm'
-                      : '+1 HeartCoin'
+                      : '+1'
                 }
               </div>
             </div>
@@ -664,7 +664,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <h4 className="text-white font-semibold mb-1">2. Attend a Live Show</h4>
-                <p className="text-white/80 text-sm">Check in at a CHXNDLER show to receive bonus HeartCoins.</p>
+                <p className="text-white/80 text-sm">Check in at a CHXNDLER show to receive bonus rewards.</p>
               </div>
               {!showCheckIn && (
                 <div className="flex items-center gap-2">
@@ -718,7 +718,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
                       ? '✓ Complete' 
                       : !isAuthenticated 
                         ? 'Log in to complete' 
-                        : '+5 HeartCoins'
+                        : '+5'
                     }
                   </div>
                 </div>
