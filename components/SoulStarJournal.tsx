@@ -217,16 +217,13 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         is_private: journalState.isPrivate
       });
 
-      if (!result) {
-        throw new Error("Failed to save journal entry");
-      }
-
       console.log('Successfully saved journal entry:', result);
 
       // Mark reflection as complete to hide notifications
       markReflectionComplete();
 
-      // Keep soulStarText content and set success message (don't clear it)
+      // Clear the text input, set success message and mark as submitted
+      setSoulStarText("");
       setSuccessMessage("Your signal was cast into the stars.");
       setJournalState(prev => ({
         ...prev,
@@ -246,34 +243,16 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
     } catch (error) {
       console.error('Failed to save journal entry:', error);
       
-      let errorMessage = "Failed to cast your signal. Please try again.";
+      let errorMessage = "Failed to save your journal entry. Please try again.";
       
       if (error instanceof Error) {
         console.error('Error message:', error.message);
         console.error('Error stack:', error.stack);
-        if (error.message.includes('permission') || error.message.includes('auth')) {
-          errorMessage = "Authentication error. Please refresh the page and try again.";
-        } else if (error.message.includes('network') || error.message.includes('fetch')) {
-          errorMessage = "Network error. Please check your connection and try again.";
-        } else if (error.message.includes('column') && error.message.includes('is_private')) {
-          errorMessage = "Database schema error. Please contact support - the is_private column needs to be added.";
-        } else if (error.message.includes('unique or exclusion constraint') || error.message.includes('ON CONFLICT')) {
-          errorMessage = "Database constraint error. Please contact support - the database constraints need to be updated.";
-        } else if (error.message.includes('unique') || error.message.includes('constraint')) {
-          errorMessage = "This entry already exists for today. Try editing the existing entry instead.";
-        } else if (error.message.includes('table') && error.message.includes('not found')) {
-          errorMessage = `Database table error. Please contact support. (${error.message})`;
-        } else {
-          errorMessage = `Database error: ${error.message}`;
-        }
+        errorMessage = "Failed to save your journal entry. Please try again.";
       } else if (typeof error === 'object' && error !== null) {
         const err = error as any;
         console.error('Full error object:', err);
-        if (err?.message) {
-          errorMessage = `Database error: ${err.message}`;
-        } else {
-          errorMessage = `Unknown error occurred: ${JSON.stringify(err)}`;
-        }
+        errorMessage = "Failed to save your journal entry. Please try again.";
       }
       
       setError(errorMessage);

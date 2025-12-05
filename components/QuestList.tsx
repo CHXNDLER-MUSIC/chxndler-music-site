@@ -572,7 +572,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
             <div className="flex-1">
               <h4 className="text-white font-semibold mb-1">1. Invite a Friend</h4>
               <p className="text-white/80 text-sm mb-2">Share the Heartverse with someone you love. When they join, you both earn rewards.</p>
-              <p className="text-white/60 text-xs">(+1 /day)</p>
+              <p className="text-white/60 text-xs">+1 /day</p>
             </div>
             <div className="flex items-center gap-2">
               <button

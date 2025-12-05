@@ -19,6 +19,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   const { badgeCategories, loading, error, badges } = useBadges();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedBadge, setSelectedBadge] = useState<BadgeWithProgress | null>(null);
+  const [selectedElement, setSelectedElement] = useState<string | null>(null);
 
   // Map badge categories to display info with images
   const getCategoryDisplayInfo = (category: any) => {
@@ -56,7 +57,27 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   // Get actual badges for a category from the hook
   const getBadgesForCategory = (categoryId: string): BadgeWithProgress[] => {
     const category = badgeCategories.find(cat => cat.id === categoryId);
-    return category?.badges || [];
+    let badges = category?.badges || [];
+    
+    // Filter by element for elemental-streak category
+    if (categoryId === 'elemental-streak' && selectedElement) {
+      badges = badges.filter(badge => 
+        badge.badge_name?.toLowerCase().includes(selectedElement.toLowerCase()) ||
+        badge.description?.toLowerCase().includes(selectedElement.toLowerCase())
+      );
+    }
+    
+    return badges;
+  };
+
+  // Get the 4 elemental types
+  const getElementalBadges = (): { element: string, name: string, icon: string }[] => {
+    return [
+      { element: 'heart', name: 'HEART', icon: '/badges/heart radiance.webp' },
+      { element: 'water', name: 'WATER', icon: '/badges/ocean surge.webp' },
+      { element: 'lightning', name: 'LIGHTNING', icon: '/badges/quick charge.webp' },
+      { element: 'darkness', name: 'DARKNESS', icon: '/badges/fading shadow.webp' }
+    ];
   };
 
   // Badge detail modal
@@ -185,11 +206,55 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           onClick={() => {
             sfx.play('click');
             setSelectedCategory(null);
+            setSelectedElement(null);
           }}
           className="mb-4 text-[#38B6FF] hover:text-[#38B6FF]/80 transition text-sm"
         >
           ← Back to Categories
         </button>
+        
+        {/* Elemental badges at top for elemental-streak category */}
+        {selectedCategory === 'elemental-streak' && (
+          <div className="mb-6">
+            <div className="grid grid-cols-4 gap-3 justify-center">
+              {getElementalBadges().map((elemental) => (
+                <div key={elemental.element} className="flex flex-col items-center space-y-2">
+                  <button
+                    onClick={() => {
+                      sfx.play('click');
+                      setSelectedElement(selectedElement === elemental.element ? null : elemental.element);
+                    }}
+                    className={`relative w-12 h-12 sm:w-14 sm:h-14 rounded-full transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden ${
+                      selectedElement === elemental.element 
+                        ? 'bg-gradient-to-br from-blue-600/80 to-purple-700/90 border-2 border-blue-400/60'
+                        : 'bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50'
+                    }`}
+                    style={{
+                      boxShadow: selectedElement === elemental.element 
+                        ? '0 4px 12px rgba(59,130,246,0.4), 0 0 20px rgba(59,130,246,0.3)'
+                        : '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
+                    }}
+                  >
+                    <img
+                      src={elemental.icon}
+                      alt={elemental.name}
+                      className="w-8 h-8 sm:w-10 sm:h-10 object-cover rounded-full group-hover:scale-110 transition-transform"
+                      draggable={false}
+                    />
+                  </button>
+                  <span className="text-white/70 text-xs font-medium text-center">
+                    {elemental.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+            {selectedElement && (
+              <div className="text-center mt-3 text-sm text-blue-400">
+                Showing {selectedElement.toUpperCase()} element badges
+              </div>
+            )}
+          </div>
+        )}
         
         {/* Badge grid matching binder layout */}
         <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3 sm:gap-4 max-h-[60vh] sm:max-h-[65vh] overflow-y-auto p-2">
@@ -360,8 +425,19 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         )}
 
         {!loading && !error && (
-          <div className="relative h-full p-4 flex items-center justify-center">
-            <div className="flex flex-col items-center justify-center space-y-16">
+          <div className="relative h-full p-4 pb-1 flex items-center justify-center">
+            {/* Background glow effect for all badges */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div 
+                className="w-64 h-32 rounded-full"
+                style={{
+                  background: 'radial-gradient(ellipse 100% 60% at 50% 50%, rgba(255,105,180,0.15) 0%, rgba(138,43,226,0.1) 40%, transparent 70%)',
+                  filter: 'blur(40px)',
+                  transform: 'scale(1.2)'
+                }}
+              />
+            </div>
+            <div className="relative z-10 flex flex-col items-center justify-center space-y-4">
               <div className="grid grid-cols-3 gap-6">
                 {badgeCategories.slice(0, 3).map((category) => {
                   const displayInfo = getCategoryDisplayInfo(category);
@@ -438,8 +514,19 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         )}
 
         {!loading && !error && (
-          <div className="relative h-full p-4 flex items-center justify-center">
-            <div className="flex flex-col items-center justify-center space-y-16">
+          <div className="relative h-full p-4 pb-1 flex items-center justify-center">
+            {/* Background glow effect for all badges */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div 
+                className="w-64 h-32 rounded-full"
+                style={{
+                  background: 'radial-gradient(ellipse 100% 60% at 50% 50%, rgba(255,105,180,0.15) 0%, rgba(138,43,226,0.1) 40%, transparent 70%)',
+                  filter: 'blur(40px)',
+                  transform: 'scale(1.2)'
+                }}
+              />
+            </div>
+            <div className="relative z-10 flex flex-col items-center justify-center space-y-4">
               <div className="grid grid-cols-3 gap-6">
                 {badgeCategories.slice(0, 3).map((category) => {
                   const displayInfo = getCategoryDisplayInfo(category);

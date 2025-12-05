@@ -471,59 +471,55 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       } = await supabaseClient.auth.getSession();
 
       if (sessionError) {
-        console.error('Error getting session:', sessionError.message);
-        return null;
+        console.error('Error getting session:', sessionError.message, sessionError);
+        throw new Error(`Authentication error: ${sessionError.message}`);
       }
 
       const user = session?.user;
       if (!user) {
         console.error('No user session found');
-        return null;
+        throw new Error('You must be logged in to save journal entries');
       }
 
-      // Only include columns that exist in the current database schema
-      const entryData: any = {
+      // Prepare data for upsert with correct schema
+      const entryData = {
         user_id: user.id,
-        entry_date: entry.entry_date,
-        element: entry.element,
         intention: entry.intention,
+        prompt: entry.prompt,
         soul_star: entry.soul_star,
+        entry_date: new Date().toISOString().slice(0, 10), // ISO date string YYYY-MM-DD
+        is_private: entry.is_private || false
       };
 
-      // Only add these columns if they have values (they may not exist in the schema yet)
-      if (entry.prompt_id !== null && entry.prompt_id !== undefined) {
-        entryData.prompt_id = entry.prompt_id;
-      }
-      if (entry.intention_response !== null && entry.intention_response !== undefined) {
-        entryData.intention_response = entry.intention_response;
-      }
-      if (entry.reflection_response !== null && entry.reflection_response !== undefined) {
-        entryData.reflection_response = entry.reflection_response;
-      }
-      if (entry.is_private !== null && entry.is_private !== undefined) {
-        entryData.is_private = entry.is_private;
-      }
+      console.log('Saving journal entry with data:', entryData);
 
       const { data, error } = await supabaseClient
         .from('soul_journal_entries')
         .upsert(
           entryData,
           { 
-            onConflict: 'user_id,entry_date,element',
-            ignoreDuplicates: false 
+            onConflict: 'user_id, entry_date',
+            returning: 'representation'
           }
         )
         .select()
         .single();
 
+      console.log('Upsert result - data:', data, 'error:', error);
+
       if (error) {
         console.error('Error saving journal entry:', error.message || error.details || error);
-        return null;
+        throw new Error(`Failed to save journal entry: ${error.message || error.details || 'Unknown database error'}`);
+      }
+
+      if (!data) {
+        console.error('No data returned from upsert operation');
+        throw new Error('No data returned from save operation');
       }
 
       // Update local state
       setJournalEntries(prev => {
-        const filtered = prev.filter(e => e.entry_date !== data.entry_date || e.element !== data.element);
+        const filtered = prev.filter(e => e.entry_date !== data.entry_date);
         return [data, ...filtered].sort((a, b) => 
           new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime()
         );
@@ -532,7 +528,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       return data;
     } catch (error) {
       console.error('Error in saveJournalEntry:', error);
-      return null;
+      throw error; // Re-throw to let caller handle
     }
   };
 

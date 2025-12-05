@@ -77,7 +77,7 @@ export default function ProfileBar({
 }: ProfileBarProps) {
   // ALL HOOKS MUST BE DECLARED BEFORE ANY EARLY RETURNS
   // Use global UI state for profile bar visibility
-  const { hasEnteredHeartverse, warpFullyComplete } = useUIState();
+  const { hasEnteredHeartverse } = useUIState();
   // Use ProfileContext for profile data
   const { profile: contextProfile, loading, updateProfile, refreshProfile, isJournalOpen, setIsJournalOpen } = useProfile();
   // Use UI store for name prompt
@@ -177,15 +177,16 @@ export default function ProfileBar({
   // Load completion status on mount and when profile changes
   useEffect(() => {
     if (contextProfile?.id) {
-      checkJournalCompletion().then(setJournalCompletedToday);
+      // Start fresh each session - only mark as completed when user submits in this session
+      setJournalCompletedToday(false);
     }
   }, [contextProfile?.id, profileRefreshTrigger]);
   
   // Check journal completion status when journal opens/closes
   useEffect(() => {
     if (contextProfile?.id && !isJournalOpen) {
-      // When journal closes, check if it was completed
-      checkJournalCompletion().then(setJournalCompletedToday);
+      // When journal closes, only keep completion state if it was marked during submission
+      // Don't re-check database since we want session-based completion tracking
     }
   }, [isJournalOpen, contextProfile?.id]);
 
@@ -219,9 +220,8 @@ export default function ProfileBar({
   const handleJournalCompleted = async () => {
     // Refresh profile data to get updated HeartCoin balance
     await refreshProfile();
-    // Check completion status
-    const completed = await checkJournalCompletion();
-    setJournalCompletedToday(completed);
+    // Mark as completed since we know the journal was just submitted
+    setJournalCompletedToday(true);
     // Notify parent component
     onJournalCompleted?.();
   };
@@ -465,9 +465,8 @@ export default function ProfileBar({
       className="fixed top-0 left-0 right-0 z-[300] h-16 bg-black/40 backdrop-blur-lg border-b border-white/20 transition-opacity duration-500 ease-in-out"
     >
       <div className="relative h-full">
-        {/* Hamburger Menu - Far Top Left - Only show after warp effect fully completes */}
-        {warpFullyComplete && (
-          <div className="absolute top-2 left-1 z-10">
+        {/* Hamburger Menu - Far Top Left */}
+        <div className="absolute top-2 left-1 z-10">
             <GlowingHamburgerMenu
             onItemClick={(label) => {
               console.log(`Menu item clicked: ${label}`);
@@ -513,8 +512,7 @@ export default function ProfileBar({
               }
             }}
           />
-          </div>
-        )}
+        </div>
 
         {/* Main Flex Layout */}
         <div className="flex items-center justify-between h-full pl-16 sm:pl-20 pr-2 min-w-0">

@@ -16,7 +16,7 @@ export default function PopoutShell({ title, onClose, children, pageIndicator, c
     <>
       {/* Dark backdrop overlay */}
       <div 
-        className="fixed inset-0 z-[2147483646] bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 z-[2147483646] bg-transparent"
         onClick={onClose}
       />
       
@@ -28,13 +28,13 @@ export default function PopoutShell({ title, onClose, children, pageIndicator, c
           className="binder-hologram-container"
           style={{
             width: compact ? 'min(80vw, 450px)' : 'min(90vw, 650px)',
-            height: compact ? '28vh' : '85vh',
+            height: compact ? '25vh' : '85vh',
             minHeight: compact ? 'auto' : '700px',
             display: 'flex',
             flexDirection: 'column',
             padding: '0px',
             borderRadius: 14,
-            background: 'rgba(0,0,0,0.6)',
+            background: 'rgba(0,0,0,0.85)',
             border: '1px solid rgba(255,105,180,0.55)',
             boxShadow: '0 -8px 25px rgba(255,105,180,0.4), 0 -4px 15px rgba(255,105,180,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,105,180,0.45)',
             backdropFilter: 'blur(12px) saturate(140%)',
@@ -122,19 +122,24 @@ export default function PopoutShell({ title, onClose, children, pageIndicator, c
 
           {/* Content container - exact copy from Binder */}
           <div className="flex-1 relative flex flex-col" style={{ maxHeight: 'calc(100% - 40px)', paddingBottom: '0px' }}>
-            <div className="flex-1">
+            <div className="flex-1" style={{ paddingBottom: '30px' }}>
               {children}
             </div>
             {/* Page Number Display - positioned directly after content */}
             {pageIndicator && (
               <div 
-                className="text-center pt-1 pb-1"
+                className="text-center"
                 style={{
                   color: '#FF69B4',
                   fontSize: '12px',
                   fontWeight: 'bold',
                   textShadow: '0 0 4px rgba(255,105,180,0.6)',
-                  pointerEvents: 'none'
+                  pointerEvents: 'none',
+                  position: 'absolute',
+                  bottom: '8px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  zIndex: 10
                 }}
               >
                 {pageIndicator}

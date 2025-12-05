@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useProfile } from '@/contexts/ProfileContext';
 import HeartversePopup from "@/components/HeartversePopup";
@@ -123,6 +123,29 @@ export default function HeartCoinModal({ open, onClose }: Props) {
   const [currentPage, setCurrentPage] = useState(0);
   const [activeTab, setActiveTab] = useState('use');
   const itemsPerPage = 6;
+
+  // Check for initial tab settings from collect card button
+  useEffect(() => {
+    if (open) {
+      try {
+        // Check if we should open directly to cards tab
+        if (typeof window !== 'undefined') {
+          const initialTab = (window as any).heartCoinInitialTab;
+          const initialUseTab = (window as any).heartCoinInitialUseTab;
+          
+          if (initialTab === 'USE' && initialUseTab === 'CARDS') {
+            setActiveTab('cards');
+            
+            // Clear the window variables after use
+            delete (window as any).heartCoinInitialTab;
+            delete (window as any).heartCoinInitialUseTab;
+          }
+        }
+      } catch (err) {
+        console.warn('Error checking initial tab settings:', err);
+      }
+    }
+  }, [open]);
 
   async function signInWithGoogle() {
     setError(null);
