@@ -1074,7 +1074,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           </div>
           
           {/* Header */}
-          <div className="text-center mb-3 mt-2 ml-8 -mr-2">
+          <div className="text-center mb-3 mt-2">
             <div 
               className="text-lg font-bold mb-2"
               style={{ 
@@ -1516,7 +1516,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               </button>
                               
                               {/* Item Details */}
-                              <div className="flex-1 ml-2">
+                              <div className="flex-1 ml-1 -mr-1">
                                 {showHeartCoinPurchase ? (
                                   /* HeartCoin Purchase Confirmation */
                                   <div className="text-center">

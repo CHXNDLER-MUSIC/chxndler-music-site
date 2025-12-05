@@ -29,7 +29,7 @@ export default function PopoutShell({ title, onClose, children, pageIndicator }:
         <div
           className="binder-hologram-container"
           style={{
-            width: 'min(70vw, 400px)',
+            width: 'min(90vw, 650px)',
             height: 'min(50vh, 400px)',
             maxHeight: '80vh',
             display: 'flex',

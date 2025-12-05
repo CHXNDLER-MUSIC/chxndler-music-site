@@ -34,6 +34,7 @@ interface SoulStarJournalProps {
 interface JournalEntry {
   id: string;
   entry_date: string;
+  created_date: string;
   element: string;
   intention?: string;
   prompt?: string;
@@ -150,7 +151,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
     // Load existing entry for today if it exists
     const todayEntry = journalEntries.find(entry => 
-      entry.entry_date === today && entry.element === profile.element
+      entry.created_date === today && entry.element === profile.element
     );
     if (todayEntry) {
       setJournalState(prev => ({
@@ -235,13 +236,12 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         .upsert(
           {
             user_id: user.id,
-            entry_date: today,
             element: profile.element,
             intention: intentionText,
             prompt: promptText,
             soul_star: journalState.soulStar.trim(),
           },
-          { onConflict: "user_id,entry_date,element" }
+          { onConflict: "user_id,created_date,element" }
         )
         .select()
         .single();
@@ -567,7 +567,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               </div>
             ) : (
               journalEntries.map((entry) => {
-                const entryDate = new Date(entry.entry_date).toLocaleDateString('en-US', {
+                const entryDate = new Date(entry.created_date).toLocaleDateString('en-US', {
                   month: 'short',
                   day: 'numeric',
                   year: 'numeric'
