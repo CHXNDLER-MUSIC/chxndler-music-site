@@ -10,6 +10,7 @@ interface UseBonusQuestsReturn {
   isLoggedIn: boolean;
   refetchQuests: () => Promise<void>;
   completeQuest: (quest: BonusQuestWithCompletion) => Promise<QuestCompletionResult>;
+  questStatus: Record<string, 'pending' | 'completed' | 'error'>;
 }
 
 /**
@@ -21,6 +22,7 @@ export function useBonusQuests(): UseBonusQuestsReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [questStatus, setQuestStatus] = useState<Record<string, 'pending' | 'completed' | 'error'>>({});
   const isLoggedIn = !!currentUserId;
 
   // Get current user (safe: don't error if not logged in)
@@ -78,23 +80,15 @@ export function useBonusQuests(): UseBonusQuestsReturn {
     }
 
     try {
-      const result = await completeBonusQuest(
-        currentUserId,
-        quest,
-        // TODO: Wire up existing heart coins handler
-        (amount: number) => {
-          console.log(`Awarded ${amount} heart coins`);
-          // This should call your existing heart coins update function
-        },
-        // TODO: Wire up existing element card handler
-        () => {
-          console.log('Awarded element card');
-          // This should call your existing element card award function
-        }
-      );
+      const result = await completeBonusQuest(quest.quest_key, currentUserId);
 
-      // If quest was completed successfully, update local state immediately
+      // Update quest status based on result
       if (result.success) {
+        setQuestStatus(prev => ({
+          ...prev,
+          [quest.quest_key]: 'completed',
+        }));
+
         // Update local state to mark quest as completed
         setBonusQuests(currentQuests => 
           currentQuests.map(q => 
@@ -111,6 +105,11 @@ export function useBonusQuests(): UseBonusQuestsReturn {
 
         // Also refetch to ensure server state is in sync
         await fetchQuests();
+      } else {
+        setQuestStatus(prev => ({
+          ...prev,
+          [quest.quest_key]: 'error',
+        }));
       }
 
       return result;
@@ -129,6 +128,7 @@ export function useBonusQuests(): UseBonusQuestsReturn {
     error,
     isLoggedIn,
     refetchQuests: fetchQuests,
-    completeQuest
+    completeQuest,
+    questStatus
   };
 }

@@ -8,6 +8,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { track } from "@/lib/analytics";
 import { useBonusQuests } from '@/hooks/useBonusQuests';
 import { BonusQuestWithCompletion } from '@/types/bonusQuests';
+import { useUIStore } from "@/store/useUIStore";
 
 // Store item interface
 interface StoreItem {
@@ -189,7 +190,8 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, onOpenBinder, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, isActive = false, journalCompleted = false, onJournalCompleted, onClose, ...restProps }: Props) {
   const { profile, refreshProfile, setIsJournalOpen } = useProfile();
-  const [open, setOpen] = useState(false);
+  const { openModal, closeModal, isModalOpen } = useUIStore();
+  const open = isActive || isModalOpen('heartCoin');
   const [activeTab, setActiveTab] = useState<'EARN' | 'USE'>('EARN');
   const [activeUseTab, setActiveUseTab] = useState<'MERCH' | 'CARDS'>('MERCH');
   const [activeEarnTab, setActiveEarnTab] = useState<'DAILY QUESTS' | 'BONUS QUESTS'>('DAILY QUESTS');
@@ -247,11 +249,19 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
   // Check for initial tab preference from hamburger menu
   const [isFromHamburger, setIsFromHamburger] = useState(false);
+  const [isFromStore, setIsFromStore] = useState(false);
   
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).heartCoinInitialTab) {
       setActiveTab((window as any).heartCoinInitialTab);
       setIsFromHamburger(true);
+      
+      // Check if this is from the STORE menu specifically
+      const isFromStoreWindow = (window as any).heartCoinFromStore;
+      if (isFromStoreWindow) {
+        setIsFromStore(true);
+      }
+      
       // Check for initial USE sub-tab preference
       if ((window as any).heartCoinInitialUseTab) {
         setActiveUseTab((window as any).heartCoinInitialUseTab);
@@ -264,6 +274,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         // Clear the selected card after using it
         delete (window as any).heartCoinSelectedCard;
       }
+      
+      // If this is from the STORE menu, explicitly ensure MERCH tab is selected
+      // This provides additional protection against any race conditions
+      if (isFromStoreWindow) {
+        setActiveTab('USE');
+        setActiveUseTab('MERCH');
+      }
+      
       // Clear the main tab preference after using it
       delete (window as any).heartCoinInitialTab;
       // Clear the store flag after using it
@@ -274,21 +292,25 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // Open modal when isActive becomes true (for hamburger menu integration)
   useEffect(() => {
     if (isActive && !open) {
-      setOpen(true);
+      openModal('heartCoin');
     } else if (!isActive && open) {
-      setOpen(false);
+      closeModal();
       setIsFromHamburger(false);
     }
-  }, [isActive, open]);
+    // Reset isFromStore when modal closes
+    if (!open && isFromStore) {
+      setIsFromStore(false);
+    }
+  }, [isActive, open, openModal, closeModal, isFromStore]);
 
   // Listen for openHeartCoinCards event from collect card button
   useEffect(() => {
     const handleOpenHeartCoinCards = (e: CustomEvent) => {
       try {
         // Don't override tab settings if this is from the STORE menu
-        if (typeof window !== 'undefined' && (window as any).heartCoinFromStore) {
+        if (isFromStore || (typeof window !== 'undefined' && (window as any).heartCoinFromStore)) {
           // Just open the modal, don't change tab settings
-          setOpen(true);
+          openModal('heartCoin');
           return;
         }
         
@@ -302,7 +324,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         }
         
         // Open the modal
-        setOpen(true);
+        openModal('heartCoin');
         
         // Track the event
         try {
@@ -322,7 +344,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
     window.addEventListener('openHeartCoinCards', handleOpenHeartCoinCards as EventListener);
     return () => window.removeEventListener('openHeartCoinCards', handleOpenHeartCoinCards as EventListener);
-  }, []);
+  }, [isFromStore, openModal]);
 
   // Fetch cards from Supabase
   const fetchCards = async () => {
@@ -518,7 +540,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [statusType, setStatusType] = useState<'idle' | 'success' | 'error'>('idle');
   
   // Bonus quests hook
-  const { bonusQuests, loading: bonusQuestsLoading, error: bonusQuestsError, isLoggedIn, completeQuest } = useBonusQuests();
+  const { bonusQuests, loading: bonusQuestsLoading, error: bonusQuestsError, isLoggedIn, completeQuest, questStatus } = useBonusQuests();
 
   // Get today's element (rotate daily)
   const getTodaysElement = () => {
@@ -706,7 +728,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       setDailyQuests(prev => ({ ...prev, elementTapped: true }));
       
       // Close heart coin display and open blue display
-      setOpen(false);
+      closeModal();
       try { onOpenBlueDisplay?.(); } catch {}
     }
   };
@@ -716,7 +738,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       try { sfx.play('click', 0.8); } catch {}
       
       // Close heart coin display and open journal
-      setOpen(false);
+      closeModal();
       try { 
         // Use the ProfileContext journal state to open the journal popup
         setIsJournalOpen(true);
@@ -735,7 +757,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     }
     
     // Close heart coin display
-    setOpen(false);
+    closeModal();
     
     // Open store popover with CARDS tab (where users can spend HeartCoins)
     window.dispatchEvent(new CustomEvent('openStoreCards', {
@@ -817,23 +839,20 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     setIsProcessing(true);
 
     try {
-      const orderData = {
-        user_id: profile.id,
-        card_key: selectedCardForPurchase.card_name,
-        full_name: shippingInfo.fullName,
-        address_line1: shippingInfo.street,
-        address_line2: null, // Optional field not collected yet
-        city: shippingInfo.city,
-        state: shippingInfo.state,
-        postal_code: shippingInfo.zip,
-        country: shippingInfo.country,
-        cost_heartcoins: selectedCardForPurchase.physicalCost || 0,
-        status: 'pending'
-      };
-
-      const { error } = await supabaseClient
-        .from('physical_card_orders')
-        .insert([orderData]);
+      const { data, error } = await supabaseClient
+        .from('orders')
+        .insert({
+          user_id: profile.id,
+          item_id: selectedCardForPurchase.id || selectedCardForPurchase.card_name,
+          item_name: selectedCardForPurchase.card_name,
+          price_heartcoins: selectedCardForPurchase.physicalCost || 0,
+          full_name: shippingInfo.fullName,
+          address: shippingInfo.street,
+          city: shippingInfo.city,
+          state: shippingInfo.state,
+          zip: shippingInfo.zip,
+          country: shippingInfo.country
+        });
 
       if (error) {
         console.error('Error creating order:', error);
@@ -861,7 +880,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       });
 
       alert('Order confirmed! Your physical card will be shipped soon.');
-      try { sfx.play('success', 0.8); } catch {}
+      try { sfx.play('/sounds/card-ding.mp3', 0.7); } catch {}
 
     } catch (error) {
       console.error('Order confirmation error:', error);
@@ -973,7 +992,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       e.preventDefault();
       try { sfx.play('click', 0.8); } catch {}
       try { onCloseBlueDisplay?.(); } catch {}
-      setOpen(true);
+      openModal('heartCoin');
     }
   };
 
@@ -1097,7 +1116,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           <button
             onClick={() => {
               try { sfx.play('close', 0.8); } catch {}
-              setOpen(false);
+              closeModal();
               setIsFromHamburger(false);
               try { onOpenBlueDisplay?.(); } catch {}
               try { onClose?.(); } catch {}
@@ -1355,12 +1374,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             handleBonusQuestComplete(quest);
                           }
                         }}
-                        disabled={!isLoggedIn || (!quest.can_complete && !inviteFriendShared) || quest.times_completed >= (quest.max_total_completions || Infinity)}
+                        disabled={!isLoggedIn || questStatus[quest.quest_key] === 'completed' || (!quest.can_complete && !inviteFriendShared) || quest.times_completed >= (quest.max_total_completions || Infinity)}
                         className="px-2 py-1 text-xs rounded border transition-colors font-bold"
                         style={{
                           background: !isLoggedIn
                             ? 'rgba(100,100,100,0.3)'
-                            : quest.times_completed > 0 && quest.max_total_completions === 1 
+                            : questStatus[quest.quest_key] === 'completed' || (quest.times_completed > 0 && quest.max_total_completions === 1)
                             ? 'rgba(0,255,0,0.2)' 
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? 'rgba(0,0,0,0.3)'
@@ -1369,7 +1388,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 : 'rgba(100,100,100,0.3)',
                           color: !isLoggedIn
                             ? '#666'
-                            : quest.times_completed > 0 && quest.max_total_completions === 1 
+                            : questStatus[quest.quest_key] === 'completed' || (quest.times_completed > 0 && quest.max_total_completions === 1)
                             ? '#00FF00' 
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? '#F2EF1D'
@@ -1378,28 +1397,28 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 : '#666',
                           borderColor: !isLoggedIn
                             ? 'rgba(100,100,100,0.6)'
-                            : quest.times_completed > 0 && quest.max_total_completions === 1 
+                            : questStatus[quest.quest_key] === 'completed' || (quest.times_completed > 0 && quest.max_total_completions === 1)
                             ? '#00FF00' 
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? '#F2EF1D'
                               : quest.can_complete 
                                 ? 'rgba(255,255,255,0.6)'
                                 : 'rgba(100,100,100,0.6)',
-                          borderWidth: quest.times_completed > 0 && quest.max_total_completions === 1 
+                          borderWidth: questStatus[quest.quest_key] === 'completed' || (quest.times_completed > 0 && quest.max_total_completions === 1)
                             ? '2px'
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? '2px'
                               : '1px',
                           textShadow: !isLoggedIn
                             ? 'none'
-                            : quest.times_completed > 0 && quest.max_total_completions === 1 
+                            : questStatus[quest.quest_key] === 'completed' || (quest.times_completed > 0 && quest.max_total_completions === 1)
                             ? '0 0 8px #00FF00, 0 0 16px #00FF00' 
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? '0 0 10px #F2EF1D'
                               : 'none',
                           boxShadow: !isLoggedIn
                             ? 'none'
-                            : quest.times_completed > 0 && quest.max_total_completions === 1 
+                            : questStatus[quest.quest_key] === 'completed' || (quest.times_completed > 0 && quest.max_total_completions === 1)
                             ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)' 
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? '0 0 20px rgba(242,239,29,0.8), inset 0 0 10px rgba(242,239,29,0.2)'
@@ -1408,7 +1427,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       >
                         {!isLoggedIn
                           ? 'Log in to complete this quest'
-                          : (quest.times_completed > 0 && quest.max_total_completions === 1 
+                          : (questStatus[quest.quest_key] === 'completed' || (quest.times_completed > 0 && quest.max_total_completions === 1)
                             ? 'COMPLETED' 
                             : quest.quest_key === 'ATTEND_LIVESTREAM' 
                               ? 'CHECK IN'
@@ -1417,8 +1436,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 : 'COMPLETE')}
                       </button>
                       <span className="text-sm flex items-center" style={{ 
-                        color: quest.times_completed > 0 && quest.max_total_completions === 1 ? '#666' : '#90EE90', 
-                        textShadow: quest.times_completed > 0 && quest.max_total_completions === 1 ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' 
+                        color: questStatus[quest.quest_key] === 'completed' || (quest.times_completed > 0 && quest.max_total_completions === 1) ? '#666' : '#90EE90', 
+                        textShadow: questStatus[quest.quest_key] === 'completed' || (quest.times_completed > 0 && quest.max_total_completions === 1) ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' 
                       }}>
                         {quest.reward_notes || `+${quest.reward_heartcoins}`}
                         <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />

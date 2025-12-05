@@ -919,27 +919,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                                     <img
                                       src={getCardImage(collectedCard.cards.card_name, collectedCard.cards.element)}
                                       alt={collectedCard.cards.card_name}
-                                      className={
-                                        isLocked
-                                          ? "w-full h-full object-cover rounded blur-xl brightness-50 opacity-60 transition-all duration-300"
-                                          : "w-full h-full object-cover rounded transition-all duration-300"
-                                      }
+                                      className="w-full h-full object-cover rounded transition-all duration-300"
                                       draggable={false}
                                     />
-                                    {isLocked && (
-                                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-                                        <div className={`px-2 py-1 rounded-lg bg-black/60 text-[9px] font-semibold tracking-wide backdrop-blur-md ${
-                                          gateState === 'comingSoon'
-                                            ? 'border border-pink-400/70 text-pink-100 shadow-[0_0_15px_rgba(252,84,175,0.7)]'
-                                            : cardData.min_tier === 'dreamer'
-                                              ? 'border border-yellow-400/70 text-yellow-100 shadow-[0_0_15px_rgba(255,215,0,0.7)]'
-                                              : cardData.min_tier === 'lover'
-                                                ? 'border border-pink-400/70 text-pink-100 shadow-[0_0_15px_rgba(252,84,175,0.7)]'
-                                                : 'border border-pink-400/70 text-pink-100 shadow-[0_0_15px_rgba(252,84,175,0.7)]'
-                                        }`}>
-                                        </div>
-                                      </div>
-                                    )}
                                     <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-green-500/80 rounded-full flex items-center justify-center">
                                       <svg viewBox="0 0 24 24" width="10" height="10" fill="white">
                                         <path d="M20 6L9 17l-5-5"/>

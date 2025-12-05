@@ -419,7 +419,8 @@ export default function SteeringWheelOverlay({
             } catch { return false; }
           })();
           // Choose best source per browser with capability check
-          const wheelSrc = (isSafariUA && canPlayHvc)
+          // Use default webm on server to prevent hydration mismatch
+          const wheelSrc = (typeof window !== 'undefined' && isSafariUA && canPlayHvc)
             ? "/cockpit/wheel_transparent.mov"
             : "/cockpit/wheel_less_transparent.webm";
 

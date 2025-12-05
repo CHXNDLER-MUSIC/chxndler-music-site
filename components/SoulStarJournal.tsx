@@ -168,11 +168,12 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       entry.entry_date === today && entry.element === profile.element
     );
     if (todayEntry) {
+      const hasContent = !!(todayEntry.soul_star && todayEntry.soul_star.trim().length > 0);
       setSoulStarText(todayEntry.soul_star || "");
       setJournalState(prev => ({
         ...prev,
         isPrivate: todayEntry.is_private ?? false,
-        isSubmitted: !!(todayEntry.soul_star && todayEntry.soul_star.trim().length > 0),
+        isSubmitted: hasContent,
       }));
     } else {
       setSoulStarText("");
