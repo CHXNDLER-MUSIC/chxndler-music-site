@@ -663,6 +663,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       const result = await completeQuest(quest);
       
       if (result.success) {
+        // Award heart coins using existing system
+        if (result.rewards?.heartcoins && profile) {
+          updateHeartCoins(heartCoins + result.rewards.heartcoins);
+        }
+        
         setCheckInMessage(`Quest completed! +${quest.reward_heartcoins} Heart Coins earned`);
         setStatusType('success');
         setTimeout(() => {
@@ -1516,7 +1521,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               </button>
                               
                               {/* Item Details */}
-                              <div className="flex-1 ml-1 -mr-1">
+                              <div className="flex-1 ml-0 -mr-3">
                                 {showHeartCoinPurchase ? (
                                   /* HeartCoin Purchase Confirmation */
                                   <div className="text-center">
@@ -2230,7 +2235,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       {/* Enlarged Card Modal */}
       {enlargedCard && (
         <div 
-          className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[9999] rounded-lg"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[2147483648] rounded-lg"
           onClick={() => setEnlargedCard(null)}
         >
           <div 

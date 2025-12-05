@@ -121,15 +121,21 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
       const response = await fetch('/api/heart-coins/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ heartCoinsToAdd: 1 })
       });
       
       if (response.ok) {
+        const data = await response.json();
+        console.log('Heart coin update successful:', data);
         setQuestStatus(prev => ({ ...prev, elementOfDay: true }));
         // Save to localStorage to persist across sessions for today
         const today = new Date().toDateString();
         localStorage.setItem(`quest_element_${today}`, 'true');
         showCelebration(`✨ Element touched! Your ${todaysElement.name} energy is awakened! +1 HeartCoin earned.`);
+      } else {
+        const errorData = await response.json();
+        console.error('Heart coin update failed:', errorData);
       }
     } catch (error) {
       console.error('Failed to award heart coin:', error);
@@ -198,15 +204,21 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
       const response = await fetch('/api/heart-coins/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ heartCoinsToAdd: 1 })
       });
       
       if (response.ok) {
+        const data = await response.json();
+        console.log('Heart coin update successful:', data);
         setQuestStatus(prev => ({ ...prev, inviteFriendConfirm: true }));
         // Save to localStorage to persist across sessions for today
         const today = new Date().toDateString();
         localStorage.setItem(`quest_invite_confirm_${today}`, 'true');
         showCelebration("💕 Love shared! You've planted a seed of connection. +1 HeartCoin earned.");
+      } else {
+        const errorData = await response.json();
+        console.error('Heart coin update failed:', errorData);
       }
     } catch (error) {
       console.error('Failed to award heart coin:', error);
@@ -226,10 +238,13 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
         const response = await fetch('/api/heart-coins/update', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ heartCoinsToAdd: 5 })
         });
         
         if (response.ok) {
+          const data = await response.json();
+          console.log('Heart coin update successful:', data);
           setCheckInMessage("Welcome to the show. You've checked in! You received +5 HEART COINS.");
           setSecretPhrase("");
           setQuestStatus(prev => ({ ...prev, liveShow: true }));
@@ -237,6 +252,10 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
           const today = new Date().toDateString();
           localStorage.setItem(`quest_liveshow_${today}`, 'true');
           showCelebration("🎵 Live show magic! You're part of something special tonight. +5 HeartCoins earned!");
+        } else {
+          const errorData = await response.json();
+          console.error('Heart coin update failed:', errorData);
+          setCheckInMessage("Error awarding heart coins. Please try again.");
         }
       } catch (error) {
         console.error('Failed to award heart coins:', error);

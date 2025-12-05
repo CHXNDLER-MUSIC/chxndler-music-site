@@ -57,6 +57,14 @@ export const TRACK_INFO: Record<string, TrackInfo> = {
     skyTexture: '/sky/ocean-girl-sky.webp',
     oneLiner: 'Love flows back like the tide.'
   },
+  'ocean-girl-acoustic': {
+    id: 'ocean-girl-acoustic',
+    title: 'OCEAN GIRL (ACOUSTIC)',
+    artist: 'CHXNDLER',
+    coverUrl: '/covers/OCEAN GIRL (ACOUSTIC).webp',
+    skyTexture: '/sky/ocean-girl-sky.webp',
+    oneLiner: 'Love flows back like the tide.'
+  },
   'be-my-bee': {
     id: 'be-my-bee',
     title: 'BE MY BEE',

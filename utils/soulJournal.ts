@@ -49,7 +49,7 @@ export async function saveSoulStarEntry(
   const { data, error } = await supabaseClient
     .from('soul_journal_entries')
     .upsert(payload, {
-      onConflict: 'user_id,entry_date,element',
+      onConflict: 'user_id,entry_date',
       ignoreDuplicates: false,
     })
     .select('*')

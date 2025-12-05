@@ -290,10 +290,36 @@ export async function completeBonusQuest(
           hint: (insertError as any)?.hint,
           code: (insertError as any)?.code,
         });
-        return {
-          success: false,
-          message: 'Failed to save quest completion'
-        };
+        
+        // Handle unique constraint violation - user already has completion record
+        if ((insertError as any)?.code === '23505') {
+          console.log('User already has completion record, attempting update instead...');
+          
+          // Try to update instead
+          const { error: updateError } = await supabaseClient
+            .from('user_bonus_quests')
+            .update({
+              times_completed: (quest.times_completed || 0) + 1,
+              last_completed_at: nowIso,
+            })
+            .eq('user_id', userId)
+            .eq('bonus_quest_id', quest.id);
+
+          if (updateError) {
+            console.error('Error updating after failed insert:', updateError);
+            return {
+              success: false,
+              message: 'Failed to save quest completion'
+            };
+          }
+          
+          console.log('Successfully updated completion record via fallback');
+        } else {
+          return {
+            success: false,
+            message: 'Failed to save quest completion'
+          };
+        }
       }
     }
 

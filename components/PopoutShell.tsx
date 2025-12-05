@@ -23,15 +23,15 @@ export default function PopoutShell({ title, onClose, children, pageIndicator }:
       <div 
         className="fixed inset-0 z-[2147483647] flex items-start justify-center"
         style={{
-          paddingTop: '10vh'
+          paddingTop: '8vh'
         }}
       >
         <div
           className="binder-hologram-container"
           style={{
             width: 'min(90vw, 650px)',
-            height: 'min(50vh, 400px)',
-            maxHeight: '80vh',
+            height: '90vh',
+            minHeight: '600px',
             display: 'flex',
             flexDirection: 'column',
             padding: '0px',

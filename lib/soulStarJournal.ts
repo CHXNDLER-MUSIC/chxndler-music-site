@@ -34,16 +34,15 @@ export async function saveSoulStarEntry({
 }: SaveSoulStarEntryParams) {
   const row = {
     user_id: userId,
-    prompt_id: currentPrompt.id,
     entry_date: currentPrompt.prompt_date,
     element: currentPrompt.element,
     soul_star: soulStarText,
-    is_private: isPrivate,
+    intention: currentPrompt.intention || null,
   };
 
   const { data, error } = await supabaseClient
     .from("soul_journal_entries")
-    .upsert(row, { onConflict: "user_id,prompt_id" })
+    .upsert(row, { onConflict: "user_id,entry_date" })
     .select()
     .single();
 
