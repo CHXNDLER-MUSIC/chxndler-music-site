@@ -1578,7 +1578,111 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
   // Provide CSS variables globally (avoids any runtime style factory edge cases)
 
-  // Removed early return to avoid React hooks count mismatch
+  if (!mounted) {
+    // Return a black screen with proper dimensions while loading
+    return (
+      <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden" style={{ minWidth: '100vw', minHeight: '100vh' }}>
+        {/* Profile Bar visibility handled via ProfileBarWrapper (guards hydration + flag) */}
+        <ProfileBarWrapper 
+          onCodeClick={() => {}}
+          onDigitalBinderClick={() => {}}
+          onBadgesClick={() => {}}
+          onCloseBlueDisplay={() => setShowHUD(false)}
+          onOpenBlueDisplay={() => {
+            // Force open blue display without toggle logic
+            if (!showHUD && beamColor === 'blue') {
+              setBeamEnabled(true);
+              setShowHUD(true);
+            } else if (beamColor !== 'blue') {
+              handleBeamToggle('blue');
+            }
+          }}
+          onOpenJournal={handleOpenJournal}
+          onJournalCompleted={handleJournalCompleted}
+          onBeamColorChange={handleBeamToggle}
+          profileRefreshTrigger={profileRefreshTrigger}
+          todaysPrompt={todaysPrompt}
+        />
+        
+        <div className="absolute inset-0 bg-black" />
+        {/* Ensure cockpit frame preloads immediately alongside lightbeam base */}
+        <div 
+          className="fixed z-20 pointer-events-none cockpit-bg"
+          style={{ top: 0, left: 0, right: 0, bottom: 0 }}
+          aria-hidden="true" 
+        />
+        {/* Render the steering wheel video immediately on opening screen */}
+        <div
+          style={{
+            position: 'fixed',
+            // Slight upward nudge to align with cockpit wheel area
+            bottom: '0vh',
+            left: '50vw',
+            transform: 'translateX(-50%)',
+            width: 'calc(clamp(460px, 80vmin, 980px) * 0.8)',
+            height: 'calc(clamp(460px, 80vmin, 980px) * 0.8)',
+            // Above dimming overlay (z-[89]) and lightbeam base (z-[100]) to ensure visibility
+            zIndex: 101,
+            pointerEvents: 'none',
+            contain: 'layout paint',
+            willChange: 'opacity, transform',
+            outline: (typeof window !== 'undefined' && window.localStorage.getItem('WHEEL_DEBUG') === '1') ? '2px dashed rgba(255,0,0,0.5)' : undefined,
+          }}
+        >
+          {(() => {
+            const isSafariUA = (() => {
+              try {
+                const ua = navigator.userAgent;
+                return /safari/i.test(ua) && !/chrome|crios|android/i.test(ua);
+              } catch { return false; }
+            })();
+            const canPlayHvc = (() => {
+              try {
+                const v = document.createElement('video');
+                const c1 = v.canPlayType('video/mp4; codecs="hvc1"');
+                const c2 = v.canPlayType('video/mp4; codecs="hev1"');
+                const c3 = v.canPlayType('video/quicktime');
+                return !!(c1 || c2 || c3);
+              } catch { return false; }
+            })();
+            // Always use default webm on initial render to prevent hydration mismatch
+            // Safari/HEVC detection will work on subsequent renders
+            const wheelSrc = (isSafariUA && canPlayHvc)
+              ? "/cockpit/wheel_transparent.mov"
+              : "/cockpit/wheel_less_transparent.webm";
+            if (wheelPlain) {
+              return (
+            <video
+              src={wheelSrc}
+              autoPlay
+              muted
+              loop
+              playsInline
+              aria-label="wheel-video-plain"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', background: 'transparent' }}
+            />
+            );
+            }
+            return (
+            <LumaKeyVideo
+              srcMp4={wheelSrc}
+              threshold={0.02}
+              softness={0.04}
+              saturation={1.0}
+              contrast={1.15}
+              offsetYRatio={0}
+              paused={false}
+              forceEnabled
+              highQuality
+              className="block"
+              style={{ width: '100%', height: '100%', background: 'transparent' }}
+            />
+            );
+          })()}
+        </div>
+      </main>
+    );
+  }
   const SHOW_CENTER_BEAM = true; // Enable center light beam
   // HUD vertical sizing + offset mapping so inner items shift down as height shrinks
   const hudHeightFactor = 0.01; // tiny height to force top edge down

@@ -1,14 +1,13 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { cookies } from 'next/headers';
-import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
+import { supabaseClient } from '@/lib/supabaseClient';
 import { redeemSecretPhrase } from '@/lib/redeemSecretPhrase';
 
 export async function POST(req: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('sb-access-token')?.value || '';
+    // Use the same authentication approach as bonus quest API
+    const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
     
-    if (!token) {
+    if (sessionError || !session?.user) {
       return NextResponse.json({ 
         status: 'error',
         code: 'UNAUTHORIZED',
@@ -16,18 +15,7 @@ export async function POST(req: NextRequest) {
       }, { status: 401 });
     }
 
-    const supabase = createSupabaseServerClientWithJwt(token);
-    const { data: userResult, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !userResult?.user) {
-      return NextResponse.json({ 
-        status: 'error',
-        code: 'UNAUTHORIZED',
-        message: 'Authentication failed' 
-      }, { status: 401 });
-    }
-
-    const user = userResult.user;
+    const user = session.user;
     const body = await req.json();
     
     const { context, phrase } = body;
@@ -51,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     // Call the redemption logic
     const result = await redeemSecretPhrase({
-      supabase,
+      supabase: supabaseClient,
       userId: user.id,
       context: context.trim(),
       phrase: phrase.trim()

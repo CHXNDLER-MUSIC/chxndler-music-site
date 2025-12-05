@@ -10,6 +10,7 @@ import { sfx } from "@/lib/sfx";
 import HeartCardCheckout from "./HeartCardCheckout";
 import HeartCardSuccess from "./HeartCardSuccess";
 import { ELEMENT_COLORS, type Element } from "@/lib/planets";
+import { useAudioManager } from "@/contexts/AudioManagerContext";
 
 // Helper function to determine element from title/slug
 const getTrackElement = (title: string, slug?: string): Element => {
@@ -181,6 +182,9 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   const [mounted, setMounted] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [hasRealCard, setHasRealCard] = useState(false);
+  
+  // Get current track info from audio manager
+  const { currentTrackInfo } = useAudioManager();
   
   // Collection panel state
   const [showCollectionPanel, setShowCollectionPanel] = useState(false);
@@ -779,16 +783,17 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                           try {
                             (window as any).heartCoinInitialTab = 'USE';
                             (window as any).heartCoinInitialUseTab = 'CARDS';
-                            // Store the card name for filtering
-                            (window as any).heartCoinSelectedCard = title;
+                            // Store the currently playing song name for filtering
+                            (window as any).heartCoinSelectedCard = currentTrackInfo?.title || title;
                           } catch {}
                           
                           // Emit custom event to open HeartCoin modal with card filter
                           try {
+                            const currentSongTitle = currentTrackInfo?.title || title;
                             const heartCoinEvent = new CustomEvent('openHeartCoinCards', {
                               detail: { 
-                                cardTitle: title,
-                                songSlug: title?.toLowerCase().replace(/\s+/g, '-'),
+                                cardTitle: currentSongTitle,
+                                songSlug: currentSongTitle?.toLowerCase().replace(/\s+/g, '-'),
                                 cardSrc: src 
                               }
                             });
@@ -796,10 +801,11 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                           } catch {}
                           
                           try {
+                            const currentSongTitle = currentTrackInfo?.title || title;
                             track('collect_card_clicked', { 
-                              song_slug: title?.toLowerCase().replace(/\s+/g, '-'),
+                              song_slug: currentSongTitle?.toLowerCase().replace(/\s+/g, '-'),
                               card_src: src,
-                              payload: { song_title: title, card_image: src, action: 'open_heartcoin_with_card' } 
+                              payload: { song_title: currentSongTitle, card_image: src, action: 'open_heartcoin_with_card' } 
                             });
                           } catch {}
                         }}

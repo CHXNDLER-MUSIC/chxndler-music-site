@@ -9,7 +9,7 @@ INSERT INTO bonus_quests (
   (
     'INVITE_FRIEND',
     'Invite a Friend',
-    'Share the Heartverse with someone you love. When they join, you both earn HEART coins.',
+    'Share the Heartverse with someone you love. When they join, you both earn rewards.',
     'COMMUNITY',
     true,
     true,
@@ -18,14 +18,14 @@ INSERT INTO bonus_quests (
     null, -- No total limit, can invite multiple friends
     3,
     false,
-    '+3 (1 max per day)'
+    '+1 /day'
   ),
   
   -- Core quest: Attend Livestream
   (
     'ATTEND_LIVESTREAM',
     'Attend a Livestream or Live Show',
-    'Check in at a CHXNDLER show to receive bonus HEART coins.',
+    'Check in at a CHXNDLER show to receive bonus rewards.',
     'COMMUNITY',
     true,
     true,

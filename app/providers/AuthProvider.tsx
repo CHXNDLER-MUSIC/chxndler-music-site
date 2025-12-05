@@ -29,6 +29,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             hasUser: !!session?.user, 
             userId: session?.user?.id 
           });
+          
+          // Set initial cookies if session exists
+          if (session?.access_token) {
+            document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=3600; SameSite=Strict; Secure=${window.location.protocol === 'https:'}`;
+            if (session.refresh_token) {
+              document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=604800; SameSite=Strict; Secure=${window.location.protocol === 'https:'}`;
+            }
+          }
         }
       } catch (error) {
         console.error('AuthProvider: Error in getInitialSession:', error);
@@ -47,6 +55,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           hasUser: !!session?.user,
           userId: session?.user?.id 
         });
+        
+        // Sync session tokens to cookies for API routes
+        if (session?.access_token) {
+          document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=3600; SameSite=Strict; Secure=${window.location.protocol === 'https:'}`;
+          if (session.refresh_token) {
+            document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=604800; SameSite=Strict; Secure=${window.location.protocol === 'https:'}`;
+          }
+        } else {
+          // Clear cookies when no session
+          document.cookie = 'sb-access-token=; path=/; max-age=0';
+          document.cookie = 'sb-refresh-token=; path=/; max-age=0';
+        }
         
         setUser(session?.user ?? null);
         setLoading(false);

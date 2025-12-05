@@ -34,43 +34,18 @@ export async function saveSoulStarEntry({
 }: SaveSoulStarEntryParams) {
   const row = {
     user_id: userId,
-    prompt_id: currentPrompt.id,
     entry_date: currentPrompt.prompt_date,
     element: currentPrompt.element,
     soul_star: soulStarText,
-    is_private: isPrivate,
+    intention: currentPrompt.intention || null,
   };
 
-  // First try to find existing entry
-  const { data: existingEntry } = await supabaseClient
+  // Use upsert for efficient insert/update
+  const { data, error } = await supabaseClient
     .from("soul_journal_entries")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("prompt_id", currentPrompt.id)
+    .upsert(row, { onConflict: "user_id,entry_date" })
+    .select()
     .single();
-
-  let data, error;
-  
-  if (existingEntry) {
-    // Update existing entry
-    const updateResult = await supabaseClient
-      .from("soul_journal_entries")
-      .update(row)
-      .eq("id", existingEntry.id)
-      .select()
-      .single();
-    data = updateResult.data;
-    error = updateResult.error;
-  } else {
-    // Insert new entry
-    const insertResult = await supabaseClient
-      .from("soul_journal_entries")
-      .insert(row)
-      .select()
-      .single();
-    data = insertResult.data;
-    error = insertResult.error;
-  }
 
   if (error) {
     throw error;
@@ -92,7 +67,7 @@ export async function loadSoulStarFullLog(userId: string): Promise<SoulStarLogEn
       soul_daily_prompts (
         prompt_date,
         element,
-        reflection,
+        prompt,
         intention
       )
     `)
@@ -114,7 +89,7 @@ export async function loadSoulStarFullLog(userId: string): Promise<SoulStarLogEn
     soulStar: entry.soul_star,
     isPrivate: entry.is_private,
     promptDate: entry.soul_daily_prompts?.prompt_date || entry.entry_date,
-    prompt: entry.soul_daily_prompts?.reflection || '',
+    prompt: entry.soul_daily_prompts?.prompt || '',
     intention: entry.soul_daily_prompts?.intention || null,
   }));
 }

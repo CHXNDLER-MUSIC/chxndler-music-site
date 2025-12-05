@@ -418,10 +418,16 @@ export default function SteeringWheelOverlay({
               return !!(c1 || c2 || c3);
             } catch { return false; }
           })();
-          // Choose best source per browser with capability check
-          const wheelSrc = (isSafariUA && canPlayHvc)
-            ? "/cockpit/wheel_transparent.mov"
-            : "/cockpit/wheel_less_transparent.webm";
+          
+          // Use state to manage video source to prevent hydration mismatch
+          const [wheelSrc, setWheelSrc] = useState("/cockpit/wheel_less_transparent.webm");
+          
+          // Update source after mount to prevent hydration mismatch
+          useEffect(() => {
+            if (isSafariUA && canPlayHvc) {
+              setWheelSrc("/cockpit/wheel_transparent.mov");
+            }
+          }, [isSafariUA, canPlayHvc]);
 
           if (disable) {
             // If explicitly disabled, still render a plain <video> so the wheel is visible

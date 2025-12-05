@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import HeartverseButton from "@/components/HeartverseButton";
 import { sfx } from "@/lib/sfx";
+import { useUIStore } from "@/store/useUIStore";
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   asChild?: boolean;
@@ -15,7 +16,8 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 export default function BinderButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onBeamColorChange, isActive = false, ...restProps }: Props) {
-  const [open, setOpen] = useState(false);
+  const { openModal, closeModal, isModalOpen } = useUIStore();
+  const open = isModalOpen('binder');
   const [cardOpen, setCardOpen] = useState(false);
   const [showFullCollection, setShowFullCollection] = useState(true);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
@@ -317,7 +319,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
   useEffect(() => {
     const handleOpenDigitalBinder = () => {
       try { onCloseBlueDisplay?.(); } catch {}
-      setOpen(true);
+      openModal('binder');
       setShowFullCollection(true);
       setSelectedElement(null);
       setSelectedCardName('All');
@@ -327,7 +329,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
 
     window.addEventListener('openDigitalBinder', handleOpenDigitalBinder);
     return () => window.removeEventListener('openDigitalBinder', handleOpenDigitalBinder);
-  }, [onCloseBlueDisplay]);
+  }, [onCloseBlueDisplay, openModal]);
 
   // Auto-select card when preselected card is set
   useEffect(() => {
@@ -424,7 +426,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
           className="fixed inset-0 z-[2147483646] flex items-center justify-center"
           style={{
             pointerEvents: 'none',
-            paddingTop: '400px'
+            paddingTop: '140px'
           }}
         >
           <div
@@ -443,15 +445,15 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center"
           style={{
-            paddingTop: '300px'
+            paddingTop: '60px'
           }}
         >
           <div
             className="binder-hologram-container overflow-hidden"
             style={{
               width: 'min(92vw, 700px)',
-              height: '80vh',
-              padding: '10px 14px 0px 14px',
+              height: '70vh',
+              padding: '8px 12px 0px 12px',
               borderRadius: 18,
               background: 'rgba(0,0,0,0.6)',
               border: '1px solid rgba(255,105,180,0.55)',
@@ -496,7 +498,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
           <button
             onClick={() => {
               try { sfx.play('close', 0.8); } catch {}
-              setOpen(false);
+              closeModal();
               // Show blue display when closing binder popup
               try { onOpenBlueDisplay?.(); } catch {}
             }}
@@ -648,6 +650,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                       try { sfx.play('click', 0.8); } catch {}
                       setPreselectedCard(currentCard.name);
                       setSelectedCard(currentCard);
+                      openModal('binderCard');
                       setCardOpen(true);
                     }}
                   />
@@ -656,7 +659,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                     const cards = getFilteredCards();
                     return cards.length > 1 && (
                       <div 
-                        className="text-[10px] mt-2"
+                        className="text-[10px] mt-1"
                         style={{ 
                           color: '#FFB6C1', 
                           textShadow: '0 0 4px rgba(255,182,193,0.6)'
@@ -882,6 +885,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                             rarity: 'Common',
                             element: 'ALL'
                           });
+                          openModal('binderCard');
                           setCardOpen(true);
                         }}
                         onMouseEnter={(e) => {
@@ -1035,6 +1039,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
           style={{ paddingTop: '40vh' }}
           onClick={() => {
             try { sfx.play('close', 0.8); } catch {}
+            closeModal();
             setCardOpen(false);
           }}
         >
@@ -1073,6 +1078,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
             <button
               onClick={() => {
                 try { sfx.play('close', 0.8); } catch {}
+                closeModal();
                 setCardOpen(false);
               }}
               className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200"

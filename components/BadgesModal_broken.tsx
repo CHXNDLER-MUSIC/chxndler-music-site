@@ -167,7 +167,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     }
 
     return (
-      <PopoutShell title="BADGE DETAILS" onClose={onClose} compact={true}>
+      <PopoutShell title="BADGE DETAILS" onClose={onClose}>
         {badgeDetailContent}
       </PopoutShell>
     );
@@ -309,7 +309,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     }
 
     return (
-      <PopoutShell title={categoryInfo?.displayName || "CATEGORY"} onClose={onClose} compact={true}>
+      <PopoutShell title={categoryInfo?.displayName || "CATEGORY"} onClose={onClose}>
         {categoryContent}
       </PopoutShell>
     );
@@ -330,25 +330,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         </button>
 
         <div className="text-center mb-6">
-          <h2 
-            className="text-xl font-bold"
-            style={{ 
-              color: '#FF69B4', 
-              textShadow: '0 0 8px rgba(255,105,180,0.6)', 
-              fontSize: '12px',
-              fontWeight: 'bold'
-            }}
-          >
-            BADGES
-          </h2>
-          {/* Thin pink neon line */}
-          <div 
-            className="w-full h-px mt-3"
-            style={{
-              background: 'linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)',
-              boxShadow: '0 0 4px rgba(255,105,180,0.6)'
-            }}
-          />
+          <h2 className="text-2xl font-bold text-white">BADGES</h2>
         </div>
 
         {loading && (
@@ -360,8 +342,19 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         )}
 
         {!loading && !error && (
-          <div className="relative h-full p-4 flex items-center justify-center">
-            <div className="flex flex-col items-center justify-center space-y-16">
+          <div className="relative h-full">
+            {/* Pink glow background effects */}
+            <div 
+              className="absolute inset-0"
+              style={{
+                background: 'radial-gradient(ellipse 80% 60% at 50% 50%, rgba(252,84,175,0.12) 0%, rgba(252,84,175,0.06) 40%, transparent 70%)',
+                borderRadius: '14px',
+                pointerEvents: 'none'
+              }}
+            />
+            
+            <div className="relative h-full p-4 flex items-center justify-center">
+              <div className="flex flex-col items-center justify-center space-y-16">
               <div className="grid grid-cols-3 gap-6">
                 {badgeCategories.slice(0, 3).map((category) => {
                   const displayInfo = getCategoryDisplayInfo(category);
@@ -371,7 +364,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                         onClick={() => handleCategoryClick(category.id)}
                         className="relative w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
                         style={{
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(252,84,175,0.4), 0 0 40px rgba(252,84,175,0.2)'
                         }}
                       >
                         <img
@@ -398,7 +391,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                         onClick={() => handleCategoryClick(category.id)}
                         className="relative w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
                         style={{
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(252,84,175,0.4), 0 0 40px rgba(252,84,175,0.2)'
                         }}
                       >
                         <img
@@ -423,7 +416,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   }
 
   return (
-    <PopoutShell title="BADGES" onClose={onClose} compact={true}>
+    <PopoutShell title="BADGES" onClose={onClose}>
       <div className="relative h-full">
         {loading && (
           <div className="flex items-center justify-center h-full">
@@ -438,8 +431,19 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         )}
 
         {!loading && !error && (
-          <div className="relative h-full p-4 flex items-center justify-center">
-            <div className="flex flex-col items-center justify-center space-y-16">
+          <div className="relative h-full">
+            {/* Pink glow background effects */}
+            <div 
+              className="absolute inset-0"
+              style={{
+                background: 'radial-gradient(ellipse 80% 60% at 50% 50%, rgba(252,84,175,0.12) 0%, rgba(252,84,175,0.06) 40%, transparent 70%)',
+                borderRadius: '14px',
+                pointerEvents: 'none'
+              }}
+            />
+            
+            <div className="relative h-full p-4 flex items-center justify-center">
+              <div className="flex flex-col items-center justify-center space-y-16">
               <div className="grid grid-cols-3 gap-6">
                 {badgeCategories.slice(0, 3).map((category) => {
                   const displayInfo = getCategoryDisplayInfo(category);
@@ -449,7 +453,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                         onClick={() => handleCategoryClick(category.id)}
                         className="relative w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
                         style={{
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(252,84,175,0.4), 0 0 40px rgba(252,84,175,0.2)'
                         }}
                       >
                         <img
@@ -476,7 +480,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                         onClick={() => handleCategoryClick(category.id)}
                         className="relative w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
                         style={{
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(252,84,175,0.4), 0 0 40px rgba(252,84,175,0.2)'
                         }}
                       >
                         <img

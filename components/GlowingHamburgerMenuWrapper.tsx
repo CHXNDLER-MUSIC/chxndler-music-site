@@ -14,16 +14,18 @@ import WelcomeHomeModal from "./WelcomeHomeModal";
 import { useUIState } from "@/lib/use-ui-state";
 import { useTour } from "@/contexts/TourContext";
 import { useMenuState } from "@/contexts/MenuStateContext";
+import { useUIStore } from "@/store/useUIStore";
 
 export default function GlowingHamburgerMenuWrapper({ hidden = false }: { hidden?: boolean }) {
-  const [codeOpen, setCodeOpen] = useState(false);
-  const [chxndlerOpen, setChxndlerOpen] = useState(false);
-  const [journeyOpen, setJourneyOpen] = useState(false);
-  const [binderOpen, setBinderOpen] = useState(false);
-  const [badgesOpen, setBadgesOpen] = useState(false);
-  const [heartCoinOpen, setHeartCoinOpen] = useState(false);
-  const [journalOpen, setJournalOpen] = useState(false);
-  const [welcomeHomeOpen, setWelcomeHomeOpen] = useState(false);
+  const { openModal, closeModal, isModalOpen } = useUIStore();
+  const codeOpen = isModalOpen('code');
+  const chxndlerOpen = isModalOpen('chxndler');
+  const journeyOpen = isModalOpen('journey');
+  const binderOpen = isModalOpen('binder');
+  const badgesOpen = isModalOpen('badges');
+  const heartCoinOpen = isModalOpen('heartCoin');
+  const journalOpen = isModalOpen('journal');
+  const welcomeHomeOpen = isModalOpen('welcomeHome');
   
   const { hasEnteredHeartverse } = useUIState();
   const tour = useTour();
@@ -39,32 +41,40 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false }: { hidden
   const handleItemClick = (label: string) => {
     switch (label) {
       case "ABOUT":
-        setChxndlerOpen(true);
+        openModal('chxndler');
         break;
       // Handle dynamic journey titles:
       case "JOURNEY":
       case "MY JOURNEY":
-        setJourneyOpen(true);
+        openModal('journey');
         break;
       case "BINDER":
-        setBinderOpen(true);
+        openModal('binder');
         break;
       case "JOURNAL":
-        setJournalOpen(true);
+        openModal('journal');
         break;
       case "BADGES":
-        setBadgesOpen(true);
+        openModal('badges');
         break;
       case "STORE":
-        // Set initial tab preference to USE tab with MERCH sub-tab for heart coin modal
+        // Clear any existing tab preferences and set initial tab preference to USE tab and MERCH sub-tab for heart coin modal
         if (typeof window !== 'undefined') {
+          // Clear any existing preferences first
+          delete (window as any).heartCoinInitialTab;
+          delete (window as any).heartCoinInitialUseTab;
+          delete (window as any).heartCoinSelectedCard;
+          
+          // Set our preferences
           (window as any).heartCoinInitialTab = 'USE';
           (window as any).heartCoinInitialUseTab = 'MERCH';
+          // Set a flag to indicate this is from the STORE menu
+          (window as any).heartCoinFromStore = true;
         }
-        setHeartCoinOpen(true);
+        openModal('heartCoin');
         break;
       case "CHXNDLER":
-        setChxndlerOpen(true);
+        openModal('chxndler');
         break;
       case "SIGNAL":
         // Handle Signal functionality
@@ -87,20 +97,20 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false }: { hidden
       {/* Journal popout */}
       <SoulStarJournal 
         isOpen={journalOpen}
-        onClose={() => setJournalOpen(false)}
+        onClose={() => closeModal()}
       />
       {/* Binder popout */}
       {binderOpen && (
         <BinderModal 
           open={binderOpen}
-          onClose={() => setBinderOpen(false)}
+          onClose={() => closeModal()}
         />
       )}
       {/* Badges popout */}
       <BadgesButton
         style={{ display: 'none' }}
         isActive={badgesOpen}
-        onClick={() => setBadgesOpen(!badgesOpen)}
+        onClick={() => badgesOpen ? closeModal() : openModal('badges')}
       />
       {/* Direct Code Popup for ABOUT functionality */}
       {codeOpen && (
@@ -126,7 +136,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false }: { hidden
           >
             {/* Close button */}
             <button
-              onClick={() => setCodeOpen(false)}
+              onClick={() => closeModal()}
               className="absolute top-2 right-4 text-cyan-400 hover:text-cyan-200 cursor-pointer w-8 h-8 rounded-full border border-cyan-400/80 flex items-center justify-center"
               style={{ 
                 fontSize: '16px',
@@ -199,26 +209,26 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false }: { hidden
       {/* JourneyModal for MY JOURNEY functionality */}
       <JourneyModal 
         open={journeyOpen} 
-        onClose={() => setJourneyOpen(false)} 
+        onClose={() => closeModal()} 
       />
       {/* Hidden ChxndlerButton to handle the modal functionality */}
       <ChxndlerButton
         style={{ display: 'none' }}
         open={chxndlerOpen}
-        onOpenChange={setChxndlerOpen}
-        onOpenWelcomeHome={() => setWelcomeHomeOpen(true)}
+        onOpenChange={(open) => open ? openModal('chxndler') : closeModal()}
+        onOpenWelcomeHome={() => openModal('welcomeHome')}
       />
       {/* Hidden HeartCoinButton to handle the store modal functionality */}
       <HeartCoinButton
         data-tour-id="heartcoins"
         style={{ display: 'none' }}
         isActive={heartCoinOpen}
-        onClose={() => setHeartCoinOpen(false)}
+        onClose={() => closeModal()}
       />
       {/* Welcome Home Modal */}
       <WelcomeHomeModal
         open={welcomeHomeOpen}
-        onClose={() => setWelcomeHomeOpen(false)}
+        onClose={() => closeModal()}
       />
     </>
   );

@@ -6,7 +6,7 @@ BEGIN;
 -- Create relics table
 CREATE TABLE IF NOT EXISTS public.relics (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  relic_name text NOT NULL,
+  relic_name text NOT NULL UNIQUE,
   icon_url text,
   description text,
   created_at timestamptz NOT NULL DEFAULT now()

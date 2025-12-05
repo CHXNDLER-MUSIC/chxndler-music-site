@@ -26,7 +26,7 @@ export function useDailyReflectionStatus() {
       const todayReflection = journalEntries.find(entry => 
         entry.entry_date === today && 
         entry.element === profile.element &&
-        (entry.reflection_response || entry.soul_star) // Has written something substantial
+        entry.soul_star && entry.soul_star.trim().length > 0 // Has written something substantial
       );
 
       // If no reflection found for today, user has pending reflection

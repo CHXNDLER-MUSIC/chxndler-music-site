@@ -1520,8 +1520,12 @@ export default function HUDPanel({
   useEffect(() => {
     const handleOpenStore = (e) => {
       try {
-        // Open the store popover
-        if (!showStorePopover) {
+        // If store popover is already open, just switch to MERCH tab
+        if (showStorePopover) {
+          setStoreActiveTab('MERCH');
+        } else {
+          // Otherwise open store popover and set MERCH tab
+          setStoreActiveTab('MERCH');
           openStorePopover();
         }
         
@@ -2939,37 +2943,105 @@ export default function HUDPanel({
                         </div>
                       </div>
 
-                      {/* White track line pinned to the bottom of blue display */}
+                      {/* Enhanced glowing track line pinned to the bottom of blue display */}
                       {(() => {
                         try {
                           const a = liveAudioRef?.current;
                           const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
                           const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
                           const pct = liveDur > 0 ? Math.max(0, Math.min(100, (liveTime / liveDur) * 100)) : 0;
+                          
+                          // Get element-based color for enhanced glow
+                          const TRACK_ELEMENT_COLORS = {
+                            heart: "#FC54AF",
+                            water: "#38B6FF", 
+                            lightning: "#F2EF1D",
+                            darkness: "#FFFFFF"
+                          };
+                          const currentSong = resolvedSongs.find(s => s.id === active);
+                          const element = currentSong?.icon || 'heart';
+                          const elementColor = TRACK_ELEMENT_COLORS[element] || '#38B6FF';
+                          
                           return (
                             <div 
-                              className="hud-white-track"
+                              className="hud-enhanced-track"
                               style={{
                                 position: 'absolute',
-                                left: 8,
-                                right: 8,
-                                bottom: 0,
-                                height: 8,
+                                left: 6,
+                                right: 6,
+                                bottom: -1,
+                                height: 10,
                                 borderRadius: 9999,
-                                background: 'rgba(255,255,255,0.08)',
+                                background: 'rgba(0,0,0,0.4)',
+                                border: '1px solid rgba(255,255,255,0.1)',
                                 overflow: 'hidden',
                               }}
                               aria-hidden
                             >
+                              {/* Background glow */}
+                              <div
+                                style={{
+                                  position: 'absolute',
+                                  inset: 0,
+                                  background: `linear-gradient(90deg, transparent, ${elementColor}25, transparent)`,
+                                  borderRadius: 9999,
+                                }}
+                              />
+                              
+                              {/* Additional ambient glow layer */}
+                              <div
+                                style={{
+                                  position: 'absolute',
+                                  inset: -2,
+                                  background: `radial-gradient(ellipse, ${elementColor}20 0%, transparent 70%)`,
+                                  borderRadius: 9999,
+                                  filter: 'blur(4px)'
+                                }}
+                              />
+                              
+                              {/* Progress fill with enhanced bright glow */}
                               <div
                                 style={{
                                   width: `${pct}%`,
                                   height: '100%',
-                                  background: '#ffffff',
+                                  background: `linear-gradient(90deg, ${elementColor}, ${elementColor}ff, ${elementColor})`,
                                   borderRadius: 9999,
-                                  boxShadow: '0 0 10px rgba(255,255,255,0.85), 0 0 20px rgba(255,255,255,0.5), 0 0 36px rgba(255,255,255,0.25)'
+                                  boxShadow: `
+                                    0 0 12px ${elementColor}ff,
+                                    0 0 24px ${elementColor}dd,
+                                    0 0 36px ${elementColor}aa,
+                                    0 0 48px ${elementColor}77,
+                                    inset 0 1px 0 rgba(255,255,255,0.4)
+                                  `,
+                                  transition: 'width 200ms ease-out',
+                                  filter: 'brightness(1.2) saturate(1.1)'
                                 }}
                               />
+                              
+                              {/* Progress handle with bright glow */}
+                              {pct > 0 && (
+                                <div
+                                  style={{
+                                    position: 'absolute',
+                                    top: '50%',
+                                    left: `${pct}%`,
+                                    transform: 'translateX(-50%) translateY(-50%)',
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: '50%',
+                                    background: `radial-gradient(circle, ${elementColor}, ${elementColor}dd)`,
+                                    boxShadow: `
+                                      0 0 8px ${elementColor}ff,
+                                      0 0 16px ${elementColor}dd,
+                                      0 0 24px ${elementColor}aa,
+                                      0 0 32px ${elementColor}77,
+                                      0 1px 3px rgba(0,0,0,0.4)
+                                    `,
+                                    transition: 'left 200ms ease-out',
+                                    filter: 'brightness(1.3) saturate(1.2)'
+                                  }}
+                                />
+                              )}
                             </div>
                           );
                         } catch {
@@ -6658,7 +6730,7 @@ export default function HUDPanel({
                                 </div>
                                 
                                 <div style={{ marginBottom: '8px' }}>
-                                  <span style={{ color: '#FFFF00', fontSize: '10px', fontWeight: 'bold' }}>REFLECTION: </span>
+                                  <span style={{ color: '#FFFF00', fontSize: '10px', fontWeight: 'bold' }}>PROMPT: </span>
                                   <span style={{ color: '#FFFF00', fontSize: '10px', fontStyle: 'italic' }}>{entry.reflection}</span>
                                 </div>
                                 
