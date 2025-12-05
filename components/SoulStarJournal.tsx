@@ -7,7 +7,7 @@ import { useDailyReflectionStatus } from "@/hooks/useDailyReflectionStatus";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 interface DailyPrompt {
-  id: string; // Add the daily prompt ID
+  id: string;
   prompt_date: string;
   element: string;
   intention: {
@@ -52,7 +52,6 @@ type SoulJournalEntry = {
 };
 
 interface JournalState {
-  soulStar: string;
   isLoading: boolean;
   saveMessage: string;
   errorMessage: string;
@@ -84,8 +83,17 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const [editingEntry, setEditingEntry] = useState<string | null>(null);
   const [editResponse, setEditResponse] = useState<string>("");
   const journalRef = useRef<HTMLDivElement>(null);
+  
+  // Component state variables as specified
+  const [selectedElement, setSelectedElement] = useState<string>("");
+  const [intentionText, setIntentionText] = useState<string>("");
+  const [currentPromptText, setCurrentPromptText] = useState<string>("");
+  const [soulStarText, setSoulStarText] = useState<string>("");
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [successMessage, setSuccessMessage] = useState<string>("");
+  
   const [journalState, setJournalState] = useState<JournalState>({
-    soulStar: "",
     isLoading: false,
     saveMessage: "",
     errorMessage: "",
@@ -115,6 +123,15 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
     }
   }, [isOpen, profile?.element, journalEntries]);
 
+  // Update state variables when daily prompt loads
+  useEffect(() => {
+    if (dailyPrompt && profile?.element) {
+      setSelectedElement(profile.element);
+      setIntentionText(dailyPrompt.intention?.text || "");
+      setCurrentPromptText(dailyPrompt.reflection?.text || "");
+    }
+  }, [dailyPrompt, profile?.element]);
+
   // Handle click outside to close
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -138,7 +155,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       setDailyPrompt(prompt);
     } catch (error) {
       console.error('Failed to load daily prompt:', error);
-      // Set error state that will be displayed to user
       setJournalState(prev => ({
         ...prev,
         errorMessage: "Unable to load today's soul prompt from database. Please contact support."
@@ -149,23 +165,20 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const loadExistingEntry = () => {
     if (!profile?.element) return;
 
-    // Load existing entry for today if it exists
     const todayEntry = journalEntries.find(entry => 
       entry.created_date === today && entry.element === profile.element
     );
     if (todayEntry) {
+      setSoulStarText(todayEntry.soul_star || "");
       setJournalState(prev => ({
         ...prev,
-        soulStar: todayEntry.soul_star || "",
         isPrivate: todayEntry.is_private ?? false,
-        // If there's already a soul_star for today, mark as submitted to lock UI
         isSubmitted: !!(todayEntry.soul_star && todayEntry.soul_star.trim().length > 0),
       }));
     } else {
-      // Reset state for new entry
+      setSoulStarText("");
       setJournalState(prev => ({
         ...prev,
-        soulStar: "",
         isPrivate: false,
         isSubmitted: false,
       }));
@@ -173,86 +186,57 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   };
 
   const handleSaveEntry = async () => {
-    // Check if user is logged in
-    if (!user?.id || !profile?.element) {
-      if (openWelcomeHome) {
-        openWelcomeHome();
-      }
-      return;
-    }
-
-    if (!dailyPrompt) return;
-
-    // Validate input
-    if (!journalState.soulStar.trim()) {
-      setJournalState(prev => ({
-        ...prev,
-        errorMessage: "Please write something in your Soul Star before casting it into the stars."
-      }));
-      setTimeout(() => setJournalState(prev => ({ ...prev, errorMessage: "" })), 3000);
-      return;
-    }
-
+    const supabase = supabaseClient;
+    
     try {
-      setJournalState(prev => ({ ...prev, isLoading: true }));
+      // Get the current session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        setError("Authentication error. Please refresh the page and try again.");
+        return;
+      }
+
+      // Validate user is signed in
+      if (!session?.user?.id) {
+        if (openWelcomeHome) {
+          openWelcomeHome();
+        }
+        return;
+      }
+
+      const userId = session.user.id;
+
+      // Validate soulStarText is not empty
+      if (!soulStarText.trim()) {
+        setError("Please write something in your Soul Star before casting it into the stars.");
+        setTimeout(() => setError(""), 3000);
+        return;
+      }
+
+      setIsSaving(true);
+      setError("");
+      setSuccessMessage("");
       sfx.play('click', 0.8);
 
-      // Get daily prompt details for auto-population
-      let dailyPromptDetails = null;
-      try {
-        const { data: promptData, error: promptError } = await supabaseClient
-          .from("soul_daily_prompts")
-          .select(`
-            id,
-            element,
-            intention_prompt_id,
-            reflection_prompt_id,
-            soul_prompts_intention:intention_prompt_id(text),
-            soul_prompts_reflection:reflection_prompt_id(text)
-          `)
-          .eq("prompt_date", today)
-          .eq("element", profile.element)
-          .single();
+      // Insert row into soul_journal_entries
+      const payload = {
+        user_id: userId,
+        element: selectedElement,
+        intention: intentionText,
+        prompt: currentPromptText,
+        soul_star: soulStarText.trim()
+      };
 
-        if (promptError) {
-          console.warn('Could not fetch daily prompt details:', promptError.message);
-        } else {
-          dailyPromptDetails = promptData;
-        }
-      } catch (promptFetchError) {
-        console.warn('Failed to fetch daily prompt details:', promptFetchError);
-      }
-
-      // Auto-populate intention and prompt from daily prompt
-      const intentionText = dailyPromptDetails?.soul_prompts_intention?.text || 
-                           dailyPrompt.intention?.text || null;
-      
-      const promptText = dailyPromptDetails?.soul_prompts_reflection?.text || 
-                        dailyPrompt.reflection?.text || null;
-
-      // Use direct Supabase insert to soul_journal_entries table with proper upsert
-      const { data, error } = await supabaseClient
-        .from("soul_journal_entries")
-        .upsert(
-          {
-            user_id: user.id,
-            element: profile.element,
-            intention: intentionText,
-            prompt: promptText,
-            soul_star: journalState.soulStar.trim(),
-          },
-          { onConflict: "user_id,created_date,element" }
-        )
+      const { data, error } = await supabase
+        .from('soul_journal_entries')
+        .insert(payload)
         .select()
         .single();
 
       if (error) {
-        console.error('Supabase error details:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint,
-        });
+        console.error('Full Supabase error object:', error);
         throw error;
       }
 
@@ -261,18 +245,22 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       // Mark reflection as complete to hide notifications
       markReflectionComplete();
 
+      // Clear soulStarText and set success message
+      setSoulStarText("");
+      setSuccessMessage("Your signal was cast into the stars.");
       setJournalState(prev => ({
         ...prev,
-        saveMessage: "Signal cast into the stars",
         isSubmitted: true,
+        saveMessage: "Signal cast into the stars"
       }));
       
       // Notify parent that journal was completed
       onJournalCompleted?.();
       
       setTimeout(() => {
+        setSuccessMessage("");
         setJournalState(prev => ({ ...prev, saveMessage: "" }));
-        onClose(); // Close the popout on success
+        onClose();
       }, 2000);
 
     } catch (error) {
@@ -289,8 +277,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           errorMessage = "Network error. Please check your connection and try again.";
         } else if (error.message.includes('unique') || error.message.includes('constraint')) {
           errorMessage = `Database constraint error. Please contact support. (${error.message})`;
-        } else if (error.message.includes('no unique or exclusion constraint')) {
-          errorMessage = `Database schema error. The soul_journal_entries table needs a unique constraint. (${error.message})`;
         } else if (error.message.includes('table') && error.message.includes('not found')) {
           errorMessage = `Database table error. Please contact support. (${error.message})`;
         } else {
@@ -306,13 +292,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         }
       }
       
-      setJournalState(prev => ({
-        ...prev,
-        errorMessage
-      }));
-      setTimeout(() => setJournalState(prev => ({ ...prev, errorMessage: "" })), 5000);
+      setError(errorMessage);
+      setTimeout(() => setError(""), 5000);
     } finally {
-      setJournalState(prev => ({ ...prev, isLoading: false }));
+      setIsSaving(false);
     }
   };
 
@@ -324,7 +307,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const handleEntryClick = (entryId: string) => {
     sfx.play('click', 0.6);
     setExpandedEntry(expandedEntry === entryId ? null : entryId);
-    setEditingEntry(null); // Close any editing when clicking on an entry
+    setEditingEntry(null);
   };
 
   const handleEditClick = (entry: JournalEntry, e: React.MouseEvent) => {
@@ -342,7 +325,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       setEditResponse("");
     } catch (error) {
       console.error('Failed to update entry:', error);
-      // Could add error state here
     }
   };
 
@@ -354,7 +336,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         await deleteJournalEntry(entryId);
       } catch (error) {
         console.error('Failed to delete entry:', error);
-        // Could add error state here
       }
     }
   };
@@ -461,7 +442,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             zIndex: -1
           }}
         />
-
 
         {/* Full Log Button - Top Left */}
         <button
@@ -730,7 +710,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                             </div>
                           </div>
                         )}
-
                         
                         {/* User Response */}
                         {entry.soul_star && (
@@ -858,7 +837,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               
             </div>
 
-            {/* Intention & Reflection Section */}
+            {/* Intention & Prompt Section */}
             {dailyPrompt && (
               <div className="mb-1 space-y-0.5 -mt-1">
                 {/* Intention */}
@@ -884,7 +863,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   </div>
                 </div>
 
-                {/* Reflection Prompt */}
+                {/* Prompt */}
                 <div 
                   className="p-2 rounded-lg"
                   style={{
@@ -909,21 +888,20 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               </div>
             )}
 
-
             {/* Soul Star - Main Journal Entry */}
             <div className="mb-1">
               <textarea
-                value={journalState.soulStar}
-                onChange={(e) => setJournalState(prev => ({ ...prev, soulStar: e.target.value }))}
+                value={soulStarText}
+                onChange={(e) => setSoulStarText(e.target.value)}
                 placeholder="Write your soul's message for today... What wants to be expressed?"
                 className="w-full h-16 p-2 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
-                disabled={journalState.isLoading || journalState.isSubmitted}
+                disabled={isSaving || journalState.isSubmitted}
                 style={{
                   background: 'rgba(0,0,0,0.6)',
                   border: `1px solid ${elementTheme.color}40`,
                   boxShadow: `0 0 10px ${elementTheme.color}20`,
-                  opacity: (journalState.isLoading || journalState.isSubmitted) ? 0.7 : 1,
-                  pointerEvents: (journalState.isLoading || journalState.isSubmitted) ? 'none' as any : 'auto'
+                  opacity: (isSaving || journalState.isSubmitted) ? 0.7 : 1,
+                  pointerEvents: (isSaving || journalState.isSubmitted) ? 'none' as any : 'auto'
                 }}
                 onFocus={(e) => {
                   if (journalState.isSubmitted) return;
@@ -937,9 +915,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               />
             </div>
 
-
             {/* Messages */}
-            {journalState.errorMessage && (
+            {(error || journalState.errorMessage) && (
               <div 
                 className="mb-1 p-3 rounded-lg text-center text-red-400"
                 style={{ 
@@ -947,11 +924,11 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   border: '1px solid rgba(239, 68, 68, 0.3)'
                 }}
               >
-                {journalState.errorMessage}
+                {error || journalState.errorMessage}
               </div>
             )}
 
-            {journalState.saveMessage && (
+            {(successMessage || journalState.saveMessage) && (
               <div 
                 className="mb-1 p-3 rounded-lg text-center"
                 style={{ 
@@ -961,7 +938,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   textShadow: '0 0 8px #22C55E'
                 }}
               >
-                ✨ {journalState.saveMessage} ✨
+                ✨ {successMessage || journalState.saveMessage} ✨
               </div>
             )}
 
@@ -1000,32 +977,32 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   >
                     ALIEN profile
                   </span>
-                  {' '}to submit a reflection.
+                  {' '}to submit a entry.
                 </button>
               ) : (
                 <button
                   onClick={journalState.isSubmitted ? undefined : handleSaveEntry}
-                  disabled={!journalState.isSubmitted && (!journalState.soulStar.trim() || journalState.isLoading)}
+                  disabled={!journalState.isSubmitted && (!soulStarText.trim() || isSaving)}
                   className="px-6 py-1 rounded-lg font-semibold transition-all duration-200"
                   style={{
-                    background: (!journalState.isSubmitted && journalState.soulStar.trim() && !journalState.isLoading) ? `${elementTheme.color}30` : `${elementTheme.color}10`,
+                    background: (!journalState.isSubmitted && soulStarText.trim() && !isSaving) ? `${elementTheme.color}30` : `${elementTheme.color}10`,
                     border: journalState.isSubmitted ? `2px solid #00FF00` : `2px solid ${elementTheme.color}60`,
                     color: journalState.isSubmitted ? '#00FF00' : elementTheme.color,
                     boxShadow: journalState.isSubmitted
                       ? `0 0 20px #00FF00, 0 0 40px #00FF0040, inset 0 0 10px #00FF0020`
-                      : (!journalState.isSubmitted && journalState.soulStar.trim() && !journalState.isLoading)
+                      : (!journalState.isSubmitted && soulStarText.trim() && !isSaving)
                         ? `0 0 20px ${elementTheme.glow}, 0 0 40px ${elementTheme.color}40, inset 0 0 10px ${elementTheme.color}20`
                         : 'none',
                     textShadow: journalState.isSubmitted ? `0 0 8px #00FF00` : `0 0 4px ${elementTheme.glow}`,
                     pointerEvents: journalState.isSubmitted ? 'none' : 'auto',
                     cursor: journalState.isSubmitted
                       ? 'default'
-                      : ((!journalState.isSubmitted && journalState.soulStar.trim() && !journalState.isLoading) ? 'pointer' : 'not-allowed')
+                      : ((!journalState.isSubmitted && soulStarText.trim() && !isSaving) ? 'pointer' : 'not-allowed')
                   }}
                 >
                   {journalState.isSubmitted
                     ? 'Your soul star shines above'
-                    : (journalState.isLoading ? 'CASTING...' : 'Cast into the Stars')}
+                    : (isSaving ? 'CASTING...' : 'Cast into the Stars')}
                 </button>
               )}
             </div>

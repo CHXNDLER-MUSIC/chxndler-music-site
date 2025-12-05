@@ -201,16 +201,16 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
     setLoading(true);
     
     try {
-      const response = await fetch('/api/heart-coins/update', {
+      const response = await fetch('/api/bonus-quests/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ heartCoinsToAdd: 1 })
+        body: JSON.stringify({ questKey: 'INVITE_FRIEND' })
       });
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Heart coin update successful:', data);
+        console.log('Bonus quest completion successful:', data);
         setQuestStatus(prev => ({ ...prev, inviteFriendConfirm: true }));
         // Save to localStorage to persist across sessions for today
         const today = new Date().toDateString();
@@ -218,10 +218,12 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
         showCelebration("💕 Love shared! You've planted a seed of connection. +1 HeartCoin earned.");
       } else {
         const errorData = await response.json();
-        console.error('Heart coin update failed:', errorData);
+        console.error('Bonus quest completion failed:', errorData);
+        showCelebration("❌ Failed to complete quest. Please try again.");
       }
     } catch (error) {
-      console.error('Failed to award heart coin:', error);
+      console.error('Failed to complete bonus quest:', error);
+      showCelebration("❌ Failed to complete quest. Please try again.");
     } finally {
       setLoading(false);
     }

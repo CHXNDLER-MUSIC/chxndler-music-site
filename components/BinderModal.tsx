@@ -833,7 +833,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
 
 
           {/* Dynamic Content - Binder Cards or Full Collection */}
-          <div className="relative mt-1 h-full overflow-y-auto pb-20" style={{ maxHeight: 'calc(35vh - 30px)' }}>
+          <div className="relative mt-1 h-full overflow-y-auto pb-4" style={{ maxHeight: 'calc(100% - 60px)' }}>
             {!showFullCollection ? (
               binderPage === 'first' ? (
                 // User's Binder - First Page - Show 5 initial slots
