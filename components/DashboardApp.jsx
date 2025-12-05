@@ -1639,7 +1639,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 return !!(c1 || c2 || c3);
               } catch { return false; }
             })();
-            const wheelSrc = (typeof window !== 'undefined' && isSafariUA && canPlayHvc)
+            // Always use default webm on initial render to prevent hydration mismatch
+            // Safari/HEVC detection will work on subsequent renders
+            const wheelSrc = (isSafariUA && canPlayHvc)
               ? "/cockpit/wheel_transparent.mov"
               : "/cockpit/wheel_less_transparent.webm";
             if (wheelPlain) {

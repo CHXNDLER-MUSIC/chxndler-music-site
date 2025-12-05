@@ -120,25 +120,26 @@ export default function PopoutShell({ title, onClose, children, pageIndicator }:
           />
 
           {/* Content container - exact copy from Binder */}
-          <div className="flex-1 relative" style={{ maxHeight: 'calc(100% - 80px)' }}>
-            {children}
-          </div>
-
-          {/* Page Number Display - exact copy from Binder, only show if provided */}
-          {pageIndicator && (
-            <div 
-              className="absolute bottom-2 left-1/2 transform -translate-x-1/2"
-              style={{
-                color: '#FF69B4',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                textShadow: '0 0 4px rgba(255,105,180,0.6)',
-                pointerEvents: 'none'
-              }}
-            >
-              {pageIndicator}
+          <div className="flex-1 relative flex flex-col" style={{ maxHeight: 'calc(100% - 40px)', paddingBottom: '0px' }}>
+            <div className="flex-1">
+              {children}
             </div>
-          )}
+            {/* Page Number Display - positioned directly after content */}
+            {pageIndicator && (
+              <div 
+                className="text-center pt-1 pb-1"
+                style={{
+                  color: '#FF69B4',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  textShadow: '0 0 4px rgba(255,105,180,0.6)',
+                  pointerEvents: 'none'
+                }}
+              >
+                {pageIndicator}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </>
