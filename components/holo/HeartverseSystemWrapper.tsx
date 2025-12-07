@@ -62,6 +62,8 @@ export default function HeartverseSystemWrapper({
   hideUntilPlaying = false,
   onSongClick
 }: HeartverseSystemWrapperProps) {
+  return null; // TEMP disable 3D
+  
   const [isMounted, setIsMounted] = useState(false);
   const [r3fSafe, setR3fSafe] = useState(false);
   
@@ -98,20 +100,13 @@ export default function HeartverseSystemWrapper({
     });
   }, []);
   // Lazy-load the solar system too, only render it when safe
-  const HeartverseSolarSystemLazy: any = React.useMemo(
+  const HeartverseSolarSystemLazy = React.useMemo(
     () => {
       if (typeof window === 'undefined') return null;
       
-      return dynamic(() => import("./HeartverseSolarSystem").then((m) => {
-        console.log("HeartverseSolarSystem import result:", m);
-        return { default: m.default };
-      }), {
+      return dynamic(() => import("./HeartverseSolarSystem"), {
         ssr: false,
-        loading: () => null,
-        onError: (error) => {
-          console.error('Failed to load HeartverseSolarSystem:', error);
-          return null;
-        }
+        loading: () => null
       });
     },
     []
@@ -157,6 +152,7 @@ export default function HeartverseSystemWrapper({
     return null;
   }
 
+
   return (
     <SafeWrapper>
       <div
@@ -168,12 +164,13 @@ export default function HeartverseSystemWrapper({
           transform: 'translateZ(0)',
           WebkitTransform: 'translateZ(0)',
           backfaceVisibility: 'hidden' as any,
+          zIndex: 5, // Below UI controls but above background
         }}
       >
         {/* Safely render R3F Canvas only when all checks pass */}
         {R3FCanvas ? <R3FCanvas
         className="absolute inset-0"
-        style={{ background: 'transparent' }}
+        style={{ background: 'transparent', pointerEvents: 'none' }}
         // Responsive DPR settings
         dpr={(() => {
           if (typeof window !== 'undefined') {

@@ -7,7 +7,7 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabase-browser";
 import { ProfileTier } from "@/types/card";
 
 // Types for user owned cards and badges
@@ -64,11 +64,11 @@ interface Profile {
   profile_complete: boolean | null;
   created_at: string | null;
   updated_at: string | null;
-  tier: ProfileTier; // default "wanderer"
-  has_seen_tour?: boolean | null; // for onboarding tour
-  profile_image_url?: string | null; // for profile image selection
-  daily_streak?: number | null; // daily streak counter
-  last_streak_activity_date?: string | null; // last date streak was updated
+  tier: ProfileTier;
+  has_seen_tour?: boolean | null;
+  profile_image_url?: string | null;
+  daily_streak?: number | null;
+  last_streak_activity_date?: string | null;
   cards: OwnedCardRow[];
   badges: OwnedBadgeRow[];
   // Legacy fields for compatibility
@@ -94,7 +94,7 @@ interface JournalEntry {
 }
 
 interface DailyPrompts {
-  id: string; // Add the daily prompt ID
+  id: string;
   prompt_date: string;
   element: string;
   intention: {
@@ -144,11 +144,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
 
-      // Prefer getSession to avoid noisy "Auth session missing" errors when logged out
       const {
         data: { session },
         error: sessionError,
-      } = await supabaseClient.auth.getSession();
+      } = await supabase.auth.getSession();
 
       if (sessionError) {
         console.error("Error getting session:", sessionError.message, sessionError);
@@ -162,7 +161,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
 
       // Read profile only; trigger is responsible for creation
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from("profiles")
         .select(
           "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour"
@@ -185,7 +184,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       // Fetch user cards and badges in parallel
       const [{ data: cardRows, error: cardError }, { data: badgeRows, error: badgeError }] =
         await Promise.all([
-          supabaseClient
+          supabase
             .from("user_cards")
             .select(`
               id,
@@ -201,7 +200,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
               )
             `)
             .eq("user_id", user.id),
-          supabaseClient
+          supabase
             .from("user_badges")
             .select(`
               id,
@@ -225,14 +224,16 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         console.error("Error loading user_badges", badgeError);
       }
 
-      // Debug heartcoin data from database
-      console.log('ProfileContext: Raw database profile data:', {
-        id: data.id,
-        name: data.name,
-        heartcoin_balance: data.heartcoin_balance,
-        heartcoin_total: data.heartcoin_total,
-        dataType: typeof data.heartcoin_balance
-      });
+      // Debug heartcoin data from database - only in development
+      if (process.env.NODE_ENV === "development") {
+        console.log('ProfileContext: Raw database profile data:', {
+          id: data.id,
+          name: data.name,
+          heartcoin_balance: data.heartcoin_balance,
+          heartcoin_total: data.heartcoin_total,
+          dataType: typeof data.heartcoin_balance
+        });
+      }
 
       // Map database columns to interface format
       const mappedProfile: Profile = {
@@ -256,7 +257,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         badges: badgeRows ?? [],
       };
 
-      console.log('ProfileContext: Mapped profile HeartCoin balance:', mappedProfile.heartcoin_balance);
+      if (process.env.NODE_ENV === "development") {
+        console.log('ProfileContext: Mapped profile HeartCoin balance:', mappedProfile.heartcoin_balance);
+      }
 
       setProfile(mappedProfile);
     } catch (error) {
@@ -276,7 +279,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const {
         data: { session },
         error: sessionError,
-      } = await supabaseClient.auth.getSession();
+      } = await supabase.auth.getSession();
 
       if (sessionError) {
         console.error("Error getting session:", sessionError.message, sessionError);
@@ -297,7 +300,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       if (updates.profile_complete !== undefined) dbUpdates.profile_complete = updates.profile_complete;
       
       // Update the existing profile (no insert logic - trigger handles creation)
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from("profiles")
         .update(dbUpdates)
         .eq("id", user.id)
@@ -363,7 +366,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const {
         data: { session },
         error: sessionError,
-      } = await supabaseClient.auth.getSession();
+      } = await supabase.auth.getSession();
 
       if (sessionError) {
         console.error("Error getting session:", sessionError.message, sessionError);
@@ -380,7 +383,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
 
       // Update the profile name
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from("profiles")
         .update({ 
           name: name.trim(),
@@ -405,48 +408,75 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // STABLE useEffect - only depends on user ID changes
   useEffect(() => {
-    // Subscribe to auth state changes
-    const {
-      data: { subscription },
-    } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
-      console.log('ProfileContext: Auth state changed:', { event, userId: session?.user?.id });
-      
-      if (session?.user) {
-        console.log('ProfileContext: User session detected, fetching profile...');
-        await fetchProfile();
-        await loadJournalEntries(session.user.id);
-      } else {
-        setProfile(null);
-        setUser(null);
-        setJournalEntries([]);
+    if (!user?.id) {
+      setProfile(null);
+      setJournalEntries([]);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadUserData = async () => {
+      setLoading(true);
+
+      try {
+        await Promise.all([
+          fetchProfile(),
+          loadJournalEntries(user.id)
+        ]);
+      } catch (error) {
+        console.error("Error loading user data:", error);
+      }
+
+      if (!cancelled) {
         setLoading(false);
       }
-    });
+    };
+
+    loadUserData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]); // ONLY depend on user.id
+
+  // Auth state subscription - stable, no dependencies
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (process.env.NODE_ENV === "development") {
+          console.log('ProfileContext: Auth state changed:', { event, userId: session?.user?.id });
+        }
+        
+        setUser(session?.user || null);
+      }
+    );
 
     // Listen for forced profile refresh events
     const handleProfileUpdate = async () => {
-      console.log('Profile update event received, forcing refresh...');
+      if (process.env.NODE_ENV === "development") {
+        console.log('Profile update event received, forcing refresh...');
+      }
       await fetchProfile();
     };
 
     window.addEventListener('auth:profile-updated', handleProfileUpdate);
     window.addEventListener('profile:force-refresh', handleProfileUpdate);
 
-    // Initial fetch on mount
-    fetchProfile();
-
     return () => {
       subscription.unsubscribe();
       window.removeEventListener('auth:profile-updated', handleProfileUpdate);
       window.removeEventListener('profile:force-refresh', handleProfileUpdate);
     };
-  }, []);
+  }, []); // Empty dependency array - only run once
 
   // Journal helper functions
   const loadJournalEntries = async (userId: string) => {
     try {
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from('soul_journal_entries')
         .select('*')
         .eq('user_id', userId)
@@ -468,7 +498,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const {
         data: { session },
         error: sessionError,
-      } = await supabaseClient.auth.getSession();
+      } = await supabase.auth.getSession();
 
       if (sessionError) {
         console.error('Error getting session:', sessionError.message, sessionError);
@@ -491,9 +521,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         is_private: entry.is_private || false
       };
 
-      console.log('Saving journal entry with data:', entryData);
+      if (process.env.NODE_ENV === "development") {
+        console.log('Saving journal entry with data:', entryData);
+      }
 
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from('soul_journal_entries')
         .upsert(
           entryData,
@@ -505,7 +537,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         .select()
         .single();
 
-      console.log('Upsert result - data:', data, 'error:', error);
+      if (process.env.NODE_ENV === "development") {
+        console.log('Upsert result - data:', data, 'error:', error);
+      }
 
       if (error) {
         console.error('Error saving journal entry:', error.message || error.details || error);
@@ -534,7 +568,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   const updateJournalEntry = async (entryId: string, updates: Partial<Pick<JournalEntry, 'soul_star' | 'intention' | 'prompt' | 'is_private'>>) => {
     try {
-      const { error } = await supabaseClient
+      const { error } = await supabase
         .from('soul_journal_entries')
         .update({
           ...updates,
@@ -562,7 +596,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   const deleteJournalEntry = async (entryId: string) => {
     try {
-      const { error } = await supabaseClient
+      const { error } = await supabase
         .from('soul_journal_entries')
         .delete()
         .eq('id', entryId);
@@ -611,7 +645,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from("profiles")
         .update({ phone })
         .eq("id", user.id)

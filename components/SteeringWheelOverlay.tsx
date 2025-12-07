@@ -295,6 +295,7 @@ export default function SteeringWheelOverlay({
     process.env.NEXT_PUBLIC_START_BUTTON === '1' ||
     process.env.NEXT_PUBLIC_PLAY_BUTTON_STYLE === 'start'
   );
+  
 
   return (
     <div
@@ -840,6 +841,7 @@ export default function SteeringWheelOverlay({
       {!hideStartButton && <button
         onClick={handleLaunch}
         data-no-track
+        data-clickable="true"
         className={`pointer-events-auto wheel-play${isStart ? ' chx' : ''} no-spotlight${isStart && startPulseOn ? ' start-pulse' : ''}`}
         style={{
           position: "absolute",

@@ -2110,7 +2110,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
 
       {/* Spotify popout overlay */}
       {typeof document !== 'undefined' && showSpotifyPopover && spEmbedUrl ? createPortal(
-        <div className="sp-overlay" role="dialog" aria-label="Spotify player" onClick={() => setShowSpotifyPopover(false)}>
+        <div className="sp-overlay" role="dialog" aria-label="Spotify player" onClick={() => setShowSpotifyPopover(false)} data-clickable="true">
           <div className="sp-popover" onClick={(e) => { e.stopPropagation(); }}>
             <button
               aria-label="Close"
@@ -2138,7 +2138,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       ) : null}
 
       {typeof document !== 'undefined' && showApplePopover && amEmbedUrl ? createPortal(
-        <div className="am-overlay" role="dialog" aria-label="Apple Music player" onClick={() => setShowApplePopover(false)}>
+        <div className="am-overlay" role="dialog" aria-label="Apple Music player" onClick={() => setShowApplePopover(false)} data-clickable="true">
           <div className="am-popover" onClick={(e) => { e.stopPropagation(); }}>
             <button
               aria-label="Close"

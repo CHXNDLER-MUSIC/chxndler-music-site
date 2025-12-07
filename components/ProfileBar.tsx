@@ -121,7 +121,9 @@ export default function ProfileBar({
   // Listen for direct profile refresh events
   useEffect(() => {
     const handleDirectProfileRefresh = () => {
-      console.log('ProfileBar: Direct profile refresh event received');
+      if (process.env.NODE_ENV === "development") {
+        console.log('ProfileBar: Direct profile refresh event received');
+      }
       refreshProfile();
     };
 
@@ -136,13 +138,15 @@ export default function ProfileBar({
 
   // Debug profile changes
   useEffect(() => {
-    console.log('ProfileBar: contextProfile changed:', {
-      name: contextProfile?.name,
-      element: contextProfile?.element,
-      profile_complete: contextProfile?.profile_complete,
-      loading: loading,
-      currentUser: currentUser?.id
-    });
+    if (process.env.NODE_ENV === "development") {
+      console.log('ProfileBar: contextProfile changed:', {
+        name: contextProfile?.name,
+        element: contextProfile?.element,
+        profile_complete: contextProfile?.profile_complete,
+        loading: loading,
+        currentUser: currentUser?.id
+      });
+    }
   }, [contextProfile, loading, currentUser]);
 
 
@@ -414,15 +418,17 @@ export default function ProfileBar({
   
   // Debug heart coins calculation
   useEffect(() => {
-    console.log('ProfileBar: HeartCoins calculation:', {
-      hasCurrentUser: !!currentUser,
-      hasContextProfile: !!contextProfile,
-      heartcoin_balance: contextProfile?.heartcoin_balance,
-      heartcoin_total: contextProfile?.heartcoin_total,
-      calculatedHeartCoins: heartCoins,
-      profileId: contextProfile?.id,
-      profileName: contextProfile?.name
-    });
+    if (process.env.NODE_ENV === "development") {
+      console.log('ProfileBar: HeartCoins calculation:', {
+        hasCurrentUser: !!currentUser,
+        hasContextProfile: !!contextProfile,
+        heartcoin_balance: contextProfile?.heartcoin_balance,
+        heartcoin_total: contextProfile?.heartcoin_total,
+        calculatedHeartCoins: heartCoins,
+        profileId: contextProfile?.id,
+        profileName: contextProfile?.name
+      });
+    }
   }, [currentUser, contextProfile, heartCoins]);
 
   if (loading) {

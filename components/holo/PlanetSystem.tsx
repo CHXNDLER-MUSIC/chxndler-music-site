@@ -270,6 +270,8 @@ function InvalidateOnState() {
 }
 
 export default function PlanetSystem({ showAll = false, hideUntilPlaying = false }: { showAll?: boolean; hideUntilPlaying?: boolean }) {
+  return null; // TEMP disable 3D
+  
   // CONFIG NOTES:
   // - Element positions and radii come from lib/planetConfig.ts (ELEMENT_POSITIONS, ELEMENT_ORBIT_RADIUS).
   // - Per-element song orbit speeds come from lib/planetConfig.ts (ELEMENT_SONG_ORBIT_SPEEDS).

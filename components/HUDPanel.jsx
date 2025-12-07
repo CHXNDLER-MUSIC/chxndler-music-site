@@ -4358,6 +4358,7 @@ export default function HUDPanel({
                       padding: 20
                     }}
                     onClick={() => setShowCardPopup(false)}
+                    data-clickable="true"
                   >
                     <div
                       style={{
@@ -4545,6 +4546,7 @@ export default function HUDPanel({
                       padding: 20
                     }}
                     onClick={() => setShowFullCollection(false)}
+                    data-clickable="true"
                   >
                     <div
                       style={{
@@ -4856,6 +4858,7 @@ export default function HUDPanel({
                     role="dialog"
                     aria-label="Apple Music Player"
                     onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowApplePopover(false); }}
+                    data-clickable="true"
                     style={{
                       position: 'fixed',
                       inset: 0,
@@ -4925,6 +4928,7 @@ export default function HUDPanel({
                     role="dialog"
                     aria-label="Spotify Player"
                     onClick={() => { try { sfx.play('close', 0.4); } catch {}; setShowSpotifyPopover(false); }}
+                    data-clickable="true"
                     style={{
                       position: 'fixed',
                       inset: 0,
@@ -4995,6 +4999,7 @@ export default function HUDPanel({
                     aria-label="YouTube Player"
                     className="yt-overlay"
                     onClick={() => setShowYouTubePopover(false)}
+                    data-clickable="true"
                     style={{
                       position: 'fixed',
                       inset: 0,

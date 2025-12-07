@@ -51,6 +51,10 @@ import GlowingHamburgerMenuWrapper from "@/components/GlowingHamburgerMenuWrappe
 export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  if (process.env.NODE_ENV === "development") {
+    console.log('🚨 DashboardApp rendering - checking for click blockers...');
+  }
   
   // Audio manager context for centralized track state
   const audioManager = useAudioManager();
@@ -116,6 +120,27 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       router.replace(newUrl);
     }
   }, [searchParams, router, openNamePrompt]);
+
+  // EMERGENCY DEBUG: Try to detect what's blocking clicks
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      console.log('🚨 EMERGENCY DEBUG: Adding click debugging...');
+    }
+    
+    const detectClickBlocker = (e) => {
+      if (process.env.NODE_ENV === "development") {
+        console.log('🖱️ Document click detected at:', e.clientX, e.clientY);
+        console.log('🖱️ Target element:', e.target);
+        console.log('🖱️ Event prevented?', e.defaultPrevented);
+      }
+    };
+    
+    document.addEventListener('click', detectClickBlocker, true);
+    
+    return () => {
+      document.removeEventListener('click', detectClickBlocker, true);
+    };
+  }, []);
   
   // Profile context for user and profile data
   const { profile } = useProfile();
@@ -186,7 +211,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [channelIdx, setChannelIdx] = useState(-1); // Set to invalid index to prevent any auto track loading
   // Wrapper for setChannelIdx with logging for song selection debugging
   const setChannelIdxWithLog = (newIdx) => {
-    console.log('🎵 Playing track:', tracks[newIdx]?.title);
+    if (process.env.NODE_ENV === "development") {
+      console.log('🎵 Playing track:', tracks[newIdx]?.title);
+    }
     setChannelIdx(newIdx);
   };
   const [isPlaying, setIsPlaying] = useState(false);
@@ -247,6 +274,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [joinAlienOpen, setJoinAlienOpen] = useState(false); // track join alien button state for pink beam
   const [beamColor, setBeamColor] = useState('blue'); // track active beam color
   const [showDimmingOverlay, setShowDimmingOverlay] = useState(true); // show dimming overlay on initial load
+  const [hasWarped, setHasWarped] = useState(false); // track if user has completed initial warp
   const [beamTransitioning, setBeamTransitioning] = useState(false); // prevent rapid beam changes
   const [explicitClose, setExplicitClose] = useState(false); // track when explicitly closing without opening another display
   const [shouldOpenJournal, setShouldOpenJournal] = useState(false); // track when journal should be opened
@@ -279,11 +307,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       try {
         const newSky = skyFor(audioManager.currentTrackInfo.id);
         if (newSky && (newSky.key !== sky.key)) {
-          console.log('🎨 Context overriding sky!', {
-            from: sky.key,
-            to: newSky.key,
-            trackInfo: audioManager.currentTrackInfo.id
-          });
+          if (process.env.NODE_ENV === "development") {
+            console.log('🎨 Context overriding sky!', {
+              from: sky.key,
+              to: newSky.key,
+              trackInfo: audioManager.currentTrackInfo.id
+            });
+          }
           setSky(newSky);
         }
       } catch (error) {
@@ -544,7 +574,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       console.warn('DashboardApp: onSongChange called with empty id; ignoring selection');
       return;
     }
-    console.log('🎵 onSongChange - id:', id, 'slug:', slug);
+    if (process.env.NODE_ENV === "development") {
+      console.log('🎵 onSongChange - id:', id, 'slug:', slug);
+    }
     
     // First try exact slug match
     let idx = tracks.findIndex(t => (t.slug || '').toLowerCase() === slug);
@@ -560,12 +592,16 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     
     if (idx < 0) {
       console.warn('DashboardApp: onSongChange - track not found for id:', id, 'slug:', slug);
-      console.log('Available tracks:', tracks.map(t => ({title: t.title, slug: t.slug})));
+      if (process.env.NODE_ENV === "development") {
+        console.log('Available tracks:', tracks.map(t => ({title: t.title, slug: t.slug})));
+      }
       return;
     }
     const selectedTrack = tracks[idx];
-    console.log('🎵 Song selected:', selectedTrack.title);
-    console.log('🎵 Current state before update:', { userSelected, homeMode, pendingTrackPlay, curTrack: curTrack?.slug });
+    if (process.env.NODE_ENV === "development") {
+      console.log('🎵 Song selected:', selectedTrack.title);
+      console.log('🎵 Current state before update:', { userSelected, homeMode, pendingTrackPlay, curTrack: curTrack?.slug });
+    }
     // Unblock main player audio now that a song is explicitly selected
     try { if (typeof window !== 'undefined') { window.__BLOCK_MAIN_AUDIO = false; } } catch (e) {}
     
@@ -639,7 +675,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     pendingTrackIndexRef.current = idx;
     // Set the current track directly for immediate UI updates
     setCurTrack(selectedTrack);
-    console.log('🎵 State updated - new curTrack:', selectedTrack.slug, 'userSelected: true, pendingTrackPlay: true');
+    if (process.env.NODE_ENV === "development") {
+      console.log('🎵 State updated - new curTrack:', selectedTrack.slug, 'userSelected: true, pendingTrackPlay: true');
+    }
     
     // Always switch the base sky immediately so it can load under the overlay.
     // Do not start a new warp if one is already in progress; just update the pending track.
@@ -1072,10 +1110,14 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose]);
 
   const handleStartClick = React.useCallback(async () => {
-    console.log('🚀 START button clicked!', { flySignal, allowWarp, isWarping });
+    if (process.env.NODE_ENV === "development") {
+      console.log('🚀 START button clicked!', { flySignal, allowWarp, isWarping });
+    }
     // Synchronous guard for rapid double clicks
     if (startInFlightRef.current) {
-      console.log('❌ Start blocked - already in flight');
+      if (process.env.NODE_ENV === "development") {
+        console.log('❌ Start blocked - already in flight');
+      }
       return;
     }
     startInFlightRef.current = true;
@@ -1137,6 +1179,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         setFlySignal((n) => {
             return n + 1;
         });
+        setHasWarped(true);
         setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
 
         // Ensure post-warp login markers are cleared for non-logged-in flow
@@ -1180,6 +1223,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         console.log('🎆 Setting flySignal from', n, 'to', n + 1);
         return n + 1;
       });
+      setHasWarped(true);
       setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
       
       // Store user data for post-warp audio handling
@@ -1604,7 +1648,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           todaysPrompt={todaysPrompt}
         />
         
-        <div className="absolute inset-0 bg-black" />
+        <div className="absolute inset-0 bg-black pointer-events-none" />
         {/* Ensure cockpit frame preloads immediately alongside lightbeam base */}
         <div 
           className="fixed z-20 pointer-events-none cockpit-bg"
@@ -1707,11 +1751,71 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden" style={{ minWidth: '100vw', minHeight: '100vh' }}>
-      
+      <div className="relative w-full h-full">
+        {!hasWarped && (
+          <div className="absolute inset-0 z-30 bg-black/80 opacity-80 pointer-events-none">
+            <div 
+              className="absolute inset-0"
+              style={{
+                background: 'rgba(0, 0, 0, 0.7)',
+                transition: 'opacity 500ms ease-out',
+                pointerEvents: 'none'
+              }}
+            />
+          </div>
+        )}
+
+
+        {/* START button positioned on steering wheel (matching original position) */}
+        {!hasWarped && (
+          <button
+            onClick={handleStartClick}
+            className="pointer-events-auto wheel-play chx no-spotlight start-pulse"
+            style={{
+              position: 'fixed',
+              bottom: 'calc(-2vh + 35vh - 72px)',
+              left: '50%',
+              width: '100px',
+              height: '100px',
+              borderRadius: '50%',
+              transform: 'translate(-50%, 0)',
+              zIndex: 105,
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              pointerEvents: 'auto',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            aria-label="Start"
+            title="Start"
+          >
+            <span className="glyph" style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img
+                src="/elements/start.webp?v=20250915c"
+                alt="Start"
+                className="chx-icon"
+                style={{ width: '80%', height: '80%', objectFit: 'contain' }}
+                onError={(e) => { 
+                  try { 
+                    const img = e.currentTarget; 
+                    img.onerror = null; 
+                    img.src = '/elements/start.webp'; 
+                  } catch {} 
+                }}
+              />
+            </span>
+          </button>
+        )}
+
+        {/* MAIN COCKPIT CONTENT */}
+        <div className="relative z-10 pointer-events-auto">
+          
       {/* Loading state - show minimal content before mounting */}
       {!mounted ? (
         <>
-          <div className="absolute inset-0 bg-black" />
+          <div className="absolute inset-0 bg-black pointer-events-none" />
           {/* Ensure cockpit frame preloads immediately alongside lightbeam base */}
           <div 
             className="fixed z-20 pointer-events-none cockpit-bg"
@@ -1814,10 +1918,11 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         todaysPrompt={todaysPrompt}
       />
       
-      <div 
-        className="absolute inset-0"
-        style={{ ...blurWrapperStyle, top: 0 }}
-      >
+      <div className="relative z-10 pointer-events-auto">
+        <div 
+          className="absolute inset-0"
+          style={{ ...blurWrapperStyle, top: 0, pointerEvents: 'auto' }}
+        >
         <PrewarmThree />
         <AmbientSpace 
           ambientSrc={!profile ? "/tracks/space-music.opus" : "/tracks/welcome-back.opus"} 
@@ -1827,8 +1932,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           userSelectedSong={userSelected} 
         />
         
-        {/* 3D Planet System */}
-        <HeartverseSystemWrapper 
+        {/* TEMPORARILY DISABLED 3D SYSTEM */}
+        {/* <HeartverseSystemWrapper 
           showAll={homeMode}
           onSongClick={(songId) => {
             try {
@@ -1840,7 +1945,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               console.error("Failed to handle planet song click:", error);
             }
           }}
-        />
+        /> */}
         
       <SkyboxVideo
         brightness={0.95}
@@ -2326,7 +2431,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       <SteeringWheelOverlay
         POS={POS}
         playing={isPlaying}
-        showUI={uiUnlocked && showOverlayUI && !warpActive && !showDimmingOverlay}
+        showUI={showOverlayUI && !warpActive}
         uiUnlocked={uiUnlocked}
         joinAlienOpen={joinAlienOpen}
         blueActive={beamColor === 'blue' && !!(beamEnabled || showHUD)}
@@ -2335,6 +2440,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         closeAllSignal={uiCloseSignal}
         suspendUI={warpActive}
         hideStartButton={false}
+        hasWarped={hasWarped}
         onPowerToggle={() => { 
           // Manual power toggle should not start new welcome audio, but don't interrupt if it's already playing
           if (!welcomeOnStartRef.current) {
@@ -2461,7 +2567,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   todaysPrompt={todaysPrompt}
                 />}
               </div>
-              {!showHUD ? (
+              {!showHUD && hasWarped ? (
                 <button
                   type="button"
                   className="absolute inset-0 pointer-events-auto"
@@ -2607,14 +2713,15 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           {/* Light-beam styles moved to globals to avoid nested styled-jsx */}
         </div>
       ) : null}
+      </div>
 
 
       {/* HoloHUD disabled - blue displays removed */}
 
 
       {/* Simple Dimming Overlay */}
-      {mounted && showDimmingOverlay ? (
-        <div className="fixed inset-0 z-[89] pointer-events-none">
+      {!hasWarped && (
+        <div className="absolute inset-0 z-40 bg-black/80 opacity-80 pointer-events-none">
           <div 
             className="absolute inset-0"
             style={{
@@ -2638,7 +2745,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             />
           ) : null}
         </div>
-      ) : null}
+      )}
 
       {/* Background preloader: defer until Start unlock to avoid heavy work on load */}
       {mounted && uiUnlocked ? (
@@ -2702,8 +2809,11 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
           {/* Hamburger Menu for CODE access - Only show after profile name loads */}
           <GlowingHamburgerMenuWrapper hidden={homeMode || !profile?.name} />
+
         </>
       )}
+        </div>
+      </div>
 
     </main>
   );

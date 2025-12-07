@@ -69,13 +69,14 @@
 }
 
 /* Hide default cursor on desktop for custom cursor component */
-html, body {
-  cursor: none;
-}
-
-@media (max-width: 768px) {
+@media (min-width: 769px) {
   html, body {
-    cursor: auto;
+    cursor: none;
+  }
+  
+  /* Ensure clickable elements still register pointer events */
+  button, a, [role="button"], input, textarea, select {
+    cursor: none !important;
   }
 }
 
@@ -424,6 +425,26 @@ main {
   0%   { opacity: 0; transform: scale(0.8); filter: blur(2px) saturate(1) brightness(1); }
   25%  { opacity: 1; transform: scale(1.0); filter: blur(0)   saturate(1.1) brightness(1.05); }
   100% { opacity: 0; transform: scale(1.9); filter: blur(10px) saturate(1.25) brightness(1.1); }
+}
+
+/* EMERGENCY FIX: Force disable pointer events on specific problematic overlays */
+.sp-overlay:not([data-clickable="true"]),
+.am-overlay:not([data-clickable="true"]),
+*[style*="z-index: 2147483647"]:not([data-clickable="true"]) {
+  pointer-events: none !important;
+}
+
+/* Force enable pointer events on buttons and interactive elements */
+button,
+a[href],
+input,
+textarea,
+select,
+[role="button"],
+[onclick],
+.clickable,
+*[data-clickable="true"] {
+  pointer-events: auto !important;
 }
 
 /* --- Glow + pulse --- */

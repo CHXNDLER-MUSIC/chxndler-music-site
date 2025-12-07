@@ -90,6 +90,20 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
   const [showApplePopover, setShowApplePopover] = useState(false);
   const [amEmbedUrl, setAmEmbedUrl] = useState<string | null>(null);
 
+  // DEBUG: Log popover states and force reset if stuck
+  useEffect(() => {
+    console.log('🎵 StreamingButtons popover states:', { showSpotifyPopover, showApplePopover });
+    // TEMPORARY FIX: Force close any stuck popovers
+    if (showSpotifyPopover) {
+      console.log('🚨 FORCE CLOSING STUCK SPOTIFY POPOVER');
+      setShowSpotifyPopover(false);
+    }
+    if (showApplePopover) {
+      console.log('🚨 FORCE CLOSING STUCK APPLE POPOVER');
+      setShowApplePopover(false);
+    }
+  }, [showSpotifyPopover, showApplePopover]);
+
   // Close on Escape
   useEffect(() => {
     if (!showSpotifyPopover) return;
@@ -210,6 +224,7 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
           aria-label="Spotify"
           className="sp-overlay"
           onClick={() => setShowSpotifyPopover(false)}
+          data-clickable="true"
         >
           <div className="sp-popover" onClick={(e) => e.stopPropagation()} style={{ height: spEmbedUrl ? spotifyEmbedHeight(spEmbedUrl) : undefined }}>
             <button
@@ -243,6 +258,7 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
           aria-label="Apple Music"
           className="am-overlay"
           onClick={() => setShowApplePopover(false)}
+          data-clickable="true"
         >
           <div className="am-popover" onClick={(e) => e.stopPropagation()}>
             <button

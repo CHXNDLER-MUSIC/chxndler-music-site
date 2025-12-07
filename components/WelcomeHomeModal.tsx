@@ -12,6 +12,8 @@ type Props = {
 };
 
 export default function WelcomeHomeModal({ open, onClose }: Props) {
+  if (!open) return null;
+
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

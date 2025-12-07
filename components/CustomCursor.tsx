@@ -43,8 +43,9 @@ export default function CustomCursor() {
         backgroundSize: "contain",
         backgroundRepeat: "no-repeat",
         pointerEvents: "none",
-        zIndex: 2147483647,
+        zIndex: 9999,
         transform: "translate3d(0, 0, 0)",
+        userSelect: "none",
       }}
     />
   );

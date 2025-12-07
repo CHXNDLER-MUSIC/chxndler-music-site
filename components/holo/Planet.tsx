@@ -977,7 +977,7 @@ export default function Planet({
                element === 'magic' ? 1.4 : 1.1) *
               1.0
             }
-            depthFactor={depthFactor}
+            depthFactor={depthFactorRef.current}
           />
         )}
         
@@ -1189,7 +1189,7 @@ export default function Planet({
              element === 'lightning' ? 1.35 : 
              element === 'magic' ? 1.5 : 1.2)
           }
-          depthFactor={depthFactor}
+          depthFactor={depthFactorRef.current}
         />
       </mesh>
 
