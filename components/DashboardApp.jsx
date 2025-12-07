@@ -1111,21 +1111,25 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
   const handleStartClick = React.useCallback(async () => {
     if (process.env.NODE_ENV === "development") {
-      console.log('🚀 START button clicked!', { flySignal, allowWarp, isWarping });
+      console.log('🚀 START button clicked!', { flySignal, allowWarp, isWarping, startInFlight: startInFlightRef.current });
     }
     // Synchronous guard for rapid double clicks
     if (startInFlightRef.current) {
       if (process.env.NODE_ENV === "development") {
-        console.log('❌ Start blocked - already in flight');
+        console.log('❌ Start blocked - already in flight', { startInFlightRef: startInFlightRef.current });
       }
       return;
     }
+    console.log('✅ Setting startInFlightRef to true');
     startInFlightRef.current = true;
     // Block main player audio during Start/home warp flow
     try { if (typeof window !== 'undefined') { window.__BLOCK_MAIN_AUDIO = true; } } catch (e) {}
     try {
       // Prevent multiple clicks while warping
-      if (isWarping) return;
+      if (isWarping) {
+        console.log('🚫 Start blocked - already warping', { isWarping });
+        return;
+      }
 
       // Reset any existing modals
       setShowWelcomeHomeModal(false);
@@ -1176,11 +1180,21 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         setAllowWarp(true);
         setSky(SPACE_SKY);
         setNextSky(null);
+        console.log('🌟 About to trigger warp - setting flySignal');
         setFlySignal((n) => {
+            console.log('🌟 flySignal update:', n, '->', n + 1);
             return n + 1;
         });
         setHasWarped(true);
         setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
+
+        // Fallback timeout to reset startInFlightRef if callbacks don't fire
+        setTimeout(() => {
+          if (startInFlightRef.current) {
+            console.log('⚠️ Fallback: Resetting startInFlightRef after timeout');
+            startInFlightRef.current = false;
+          }
+        }, 5000);
 
         // Ensure post-warp login markers are cleared for non-logged-in flow
         try { delete window.postWarpUser; delete window.postWarpProfileComplete; } catch {}
@@ -1219,12 +1233,21 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       setAllowWarp(true);
       setSky(SPACE_SKY);
       setNextSky(null);
+      console.log('🌟 About to trigger warp (logged in) - setting flySignal');
       setFlySignal((n) => {
-        console.log('🎆 Setting flySignal from', n, 'to', n + 1);
+        console.log('🎆 flySignal update (logged in):', n, '->', n + 1);
         return n + 1;
       });
       setHasWarped(true);
       setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
+      
+      // Fallback timeout to reset startInFlightRef if callbacks don't fire
+      setTimeout(() => {
+        if (startInFlightRef.current) {
+          console.log('⚠️ Fallback: Resetting startInFlightRef after timeout (logged in user)');
+          startInFlightRef.current = false;
+        }
+      }, 5000);
       
       // Store user data for post-warp audio handling
       window.postWarpUser = user;
@@ -1234,6 +1257,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       console.error('Error in handleStartClick:', error);
       // On error, reset warp state and only show Welcome Home modal for non-logged in users
       setIsWarping(false);
+      // Reset the start in-flight ref so start button can be clicked again
+      startInFlightRef.current = false;
       // Only show modal if user is not logged in
       if (!profile?.id) {
         setShowWelcomeHomeModal(true);
@@ -1978,7 +2003,11 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         lightspeedYoutubeUrl={'https://youtu.be/KFssNa5WvKc'}
         onWarpSfxEnd={() => {
           // Allow Start to be clicked again after warp sfx completes
-          try { startInFlightRef.current = false; } catch {}
+          console.log('🎵 Warp SFX ended - resetting startInFlightRef', { before: startInFlightRef.current });
+          try { 
+            startInFlightRef.current = false; 
+            console.log('🎵 startInFlightRef reset to:', startInFlightRef.current);
+          } catch {}
           // Keep main player audio blocked on home warp (until a song is selected)
           try { if (!pendingTrackPlay && !userSelected && typeof window !== 'undefined') { window.__BLOCK_MAIN_AUDIO = true; } } catch (e) {}
           // Welcome modal and planet visibility sequencing after warp
@@ -2196,7 +2225,11 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         }}
         onFlyEnd={() => {
           // Clear Start in-flight lock once warp fully ends
-          try { startInFlightRef.current = false; } catch {}
+          console.log('🚀 Warp fly ended - resetting startInFlightRef', { before: startInFlightRef.current });
+          try { 
+            startInFlightRef.current = false; 
+            console.log('🚀 startInFlightRef reset to:', startInFlightRef.current);
+          } catch {}
           setWarpActive(false);
           setAllowWarp(false);
           setLandingMode(false); // leave landing mode after first warp
