@@ -1,6 +1,7 @@
--- Update bonus quest reward notes to match UI requirements
+-- Update bonus quest reward notes and description to match UI requirements
 UPDATE bonus_quests 
-SET reward_notes = '+1 /day' 
+SET reward_notes = '+1 /day',
+    description = 'Share the Heartverse with someone you love.\nWhen they join, you both earn HEART coins.'
 WHERE quest_key = 'INVITE_FRIEND';
 
 UPDATE bonus_quests 

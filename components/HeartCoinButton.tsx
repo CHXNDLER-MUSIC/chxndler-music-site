@@ -1348,7 +1348,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         }}
                       >
                         {!isLoggedIn
-                          ? 'Log in to complete this quest'
+                          ? 'Log in to complete'
                           : (quest.times_completed > 0 && quest.max_total_completions === 1 
                             ? 'COMPLETED' 
                             : quest.quest_key === 'ATTEND_LIVESTREAM' 
@@ -1925,66 +1925,50 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       {/* User Section */}
                                       <div className="flex flex-col items-center flex-1">
                                         <div 
-                                          className="text-sm font-bold mb-3"
-                                          style={{ 
-                                            color: '#FFFFFF', 
-                                            textShadow: '0 0 4px rgba(255,255,255,0.6)' 
+                                          className="font-bold text-white text-lg mb-3"
+                                          style={{
+                                            textShadow: '0 0 4px rgba(255,255,255,0.6)'
                                           }}
                                         >
                                           User
                                         </div>
                                         
-                                        <div className="flex items-center gap-1">
-                                          <img
-                                            src="/elements/heart-coin.webp"
-                                            alt="Heart Coin"
-                                            className="w-8 h-8"
-                                            style={{
-                                              filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
-                                            }}
-                                          />
-                                          <span 
-                                            className="text-lg font-bold"
+                                        {/* Current Heart Coins */}
+                                        <div className="flex flex-col items-center space-y-2">
+                                          <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
+                                          <div 
+                                            className="text-xl font-bold"
                                             style={{ 
-                                              color: '#F2EF1D',
-                                              textShadow: '0 0 6px rgba(242,239,29,0.8)'
+                                              color: '#FFFFFF', 
+                                              textShadow: '0 0 6px rgba(255,255,255,0.8)' 
                                             }}
                                           >
                                             {profile?.id ? heartCoins : 0}
-                                          </span>
+                                          </div>
                                         </div>
                                       </div>
-
                                       {/* Cost Section */}
                                       <div className="flex flex-col items-center flex-1">
                                         <div 
-                                          className="text-sm font-bold mb-3"
-                                          style={{ 
-                                            color: '#FFFFFF', 
-                                            textShadow: '0 0 4px rgba(255,255,255,0.6)' 
+                                          className="font-bold text-white text-lg mb-3"
+                                          style={{
+                                            textShadow: '0 0 4px rgba(255,255,255,0.6)'
                                           }}
                                         >
                                           Cost
                                         </div>
                                         
-                                        <div className="flex items-center gap-1">
-                                          <img
-                                            src="/elements/heart-coin.webp"
-                                            alt="Heart Coin"
-                                            className="w-8 h-8"
-                                            style={{
-                                              filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
-                                            }}
-                                          />
-                                          <span 
-                                            className="text-lg font-bold"
+                                        <div className="flex flex-col items-center space-y-2">
+                                          <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
+                                          <div 
+                                            className="text-xl font-bold"
                                             style={{ 
-                                              color: '#F2EF1D',
-                                              textShadow: '0 0 6px rgba(242,239,29,0.8)'
+                                              color: '#FFFFFF', 
+                                              textShadow: '0 0 6px rgba(255,255,255,0.8)' 
                                             }}
                                           >
                                             {card.physicalCost}
-                                          </span>
+                                          </div>
                                         </div>
                                       </div>
                                     </div>

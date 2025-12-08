@@ -435,15 +435,9 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
                   </svg>
                 </div>
                 <h3 className="text-lg font-bold text-white mb-2">No Cards Yet</h3>
-                <p className="text-sm text-white/60 mb-4">
+                <p className="text-sm text-white/60">
                   Start your collection by exploring the HEARTVERSE and completing quests.
                 </p>
-                <button
-                  onClick={onClose}
-                  className="px-4 py-2 bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black font-bold rounded-lg hover:scale-105 transition-all duration-200"
-                >
-                  Explore HEARTVERSE
-                </button>
               </div>
             )}
           </div>

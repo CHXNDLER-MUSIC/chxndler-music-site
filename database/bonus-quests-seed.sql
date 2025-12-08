@@ -9,7 +9,7 @@ INSERT INTO bonus_quests (
   (
     'INVITE_FRIEND',
     'Invite a Friend',
-    'Share the Heartverse with someone you love. When they join, you both earn HEART coins.',
+    'Share the Heartverse with someone you love.\nWhen they join, you both earn HEART coins.',
     'COMMUNITY',
     true,
     true,

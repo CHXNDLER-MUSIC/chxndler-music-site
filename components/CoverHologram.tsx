@@ -727,34 +727,13 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                           // Close the card modal
                           setShowCard(false);
                           
-                          // Set HeartCoin modal to open with CARDS tab
-                          try {
-                            (window as any).heartCoinInitialTab = 'cards';
-                            // Store the currently playing song name for filtering
-                            (window as any).heartCoinSelectedCard = currentTrackInfo?.title || title;
-                            // Clear store flag to ensure proper tab navigation
-                            delete (window as any).heartCoinFromStore;
-                          } catch {}
-                          
-                          // Emit custom event to open HeartCoin modal with card filter
-                          try {
-                            const currentSongTitle = currentTrackInfo?.title || title;
-                            const heartCoinEvent = new CustomEvent('openHeartCoinCards', {
-                              detail: { 
-                                cardTitle: currentSongTitle,
-                                songSlug: currentSongTitle?.toLowerCase().replace(/\s+/g, '-'),
-                                cardSrc: src 
-                              }
-                            });
-                            window.dispatchEvent(heartCoinEvent);
-                          } catch {}
-                          
+                          // Track the event but don't open any modal
                           try {
                             const currentSongTitle = currentTrackInfo?.title || title;
                             track('collect_card_clicked', { 
                               song_slug: currentSongTitle?.toLowerCase().replace(/\s+/g, '-'),
                               card_src: src,
-                              payload: { song_title: currentSongTitle, card_image: src, action: 'open_heartcoin_with_card' } 
+                              payload: { song_title: currentSongTitle, card_image: src, action: 'card_collected' } 
                             });
                           } catch {}
                         }}

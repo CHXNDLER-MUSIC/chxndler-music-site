@@ -444,6 +444,21 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           FULL LOG
         </button>
 
+        {/* Heart Element Button - Top Left under FULL LOG */}
+        {!showHistory && (
+          <button
+            className="absolute top-12 left-4 text-xs font-semibold transition-all duration-200 hover:opacity-100 px-2 py-1 rounded"
+            style={{
+              background: `${elementTheme.color}20`,
+              border: `1px solid ${elementTheme.color}60`,
+              color: elementTheme.color,
+              textShadow: `0 0 4px ${elementTheme.glow}`
+            }}
+          >
+            {elementEmoji} {dailyPrompt.element} ELEMENT
+          </button>
+        )}
+
         {/* Close button */}
         <button
           onClick={handleClose}
@@ -800,20 +815,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 {todayFormatted}
               </div>
               
-              {/* Element Badge */}
-              <div className="flex justify-center items-center mb-1">
-                <span 
-                  className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
-                  style={{
-                    background: `${elementTheme.color}20`,
-                    border: `1px solid ${elementTheme.color}60`,
-                    color: elementTheme.color,
-                    textShadow: `0 0 4px ${elementTheme.glow}`
-                  }}
-                >
-                  {elementEmoji} {dailyPrompt.element} element
-                </span>
-              </div>
               
             </div>
 

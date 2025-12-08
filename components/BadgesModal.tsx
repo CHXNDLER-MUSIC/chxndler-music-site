@@ -201,6 +201,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                     sfx.play('click');
                     setSelectedBadge(badge);
                   }}
+                  onMouseEnter={() => sfx.play('hover')}
                   className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/60 border border-white/20 hover:border-white/40 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
                   title={badge.description ? `${badge.badge_name}: ${badge.description} (${badge.current || 0}/${badge.total || 0})` : badge.badge_name}
                 >
@@ -380,6 +381,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                     <div key={category.id} className="flex flex-col items-center space-y-2">
                       <button
                         onClick={() => handleCategoryClick(category.id)}
+                        onMouseEnter={() => sfx.play('hover')}
                         className="relative w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
                         style={{
                           boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
@@ -408,6 +410,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                     <div key={category.id} className="flex flex-col items-center space-y-2">
                       <button
                         onClick={() => handleCategoryClick(category.id)}
+                        onMouseEnter={() => sfx.play('hover')}
                         className="relative w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
                         style={{
                           boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
