@@ -454,15 +454,15 @@ export default function SteeringWheelOverlay({
                   // Ultra-aggressive Safari styling to eliminate all black backgrounds
                   ...(isSafariUA ? {
                     mixBlendMode: 'screen',
-                    filter: 'brightness(1.4) contrast(1.6) saturate(1.3) hue-rotate(3deg)',
+                    filter: 'brightness(2.0) contrast(2.5) saturate(1.4) hue-rotate(3deg)',
                     position: 'relative',
                     zIndex: 1,
                     isolation: 'isolate',
-                    WebkitFilter: 'brightness(1.4) contrast(1.6) saturate(1.3)',
-                    backdropFilter: 'brightness(1.2)',
+                    WebkitFilter: 'brightness(2.0) contrast(2.5) saturate(1.4)',
+                    backdropFilter: 'brightness(1.3) contrast(1.2)',
                     // Enhanced circular mask with softer edges for better black removal
-                    WebkitMaskImage: 'radial-gradient(circle at 50% 58%, black 35%, transparent 75%)',
-                    maskImage: 'radial-gradient(circle at 50% 58%, black 35%, transparent 75%)'
+                    WebkitMaskImage: 'radial-gradient(circle at 50% 58%, black 30%, transparent 70%)',
+                    maskImage: 'radial-gradient(circle at 50% 58%, black 30%, transparent 70%)'
                   } : {})
                 }}
                 onError={(e) => {
@@ -509,11 +509,11 @@ export default function SteeringWheelOverlay({
                     position: 'relative',
                     zIndex: 1,
                     isolation: 'isolate',
-                    WebkitFilter: 'brightness(1.4) contrast(1.6) saturate(1.3)',
-                    backdropFilter: 'brightness(1.2)',
+                    WebkitFilter: 'brightness(2.0) contrast(2.5) saturate(1.4)',
+                    backdropFilter: 'brightness(1.3) contrast(1.2)',
                     // Enhanced circular mask with softer edges for maximum black removal
-                    WebkitMaskImage: 'radial-gradient(circle at 50% 58%, black 35%, transparent 75%)',
-                    maskImage: 'radial-gradient(circle at 50% 58%, black 35%, transparent 75%)'
+                    WebkitMaskImage: 'radial-gradient(circle at 50% 58%, black 30%, transparent 70%)',
+                    maskImage: 'radial-gradient(circle at 50% 58%, black 30%, transparent 70%)'
                   } : {})
                 }}
                 onError={(e) => {
@@ -942,6 +942,20 @@ export default function SteeringWheelOverlay({
       </button>}
 
       <style jsx>{`
+        /* Safari-specific video chroma key enhancement */
+        @media not all and (min-resolution:.001dpcm) {
+          @supports (-webkit-appearance:none) {
+            video[aria-label*="wheel-video"] {
+              mix-blend-mode: screen !important;
+              filter: brightness(2.2) contrast(2.8) saturate(1.5) !important;
+              -webkit-filter: brightness(2.2) contrast(2.8) saturate(1.5) !important;
+              backdrop-filter: brightness(1.4) contrast(1.3) !important;
+              -webkit-backdrop-filter: brightness(1.4) contrast(1.3) !important;
+              -webkit-mask-image: radial-gradient(circle at 50% 58%, black 25%, transparent 65%) !important;
+              mask-image: radial-gradient(circle at 50% 58%, black 25%, transparent 65%) !important;
+            }
+          }
+        }
         .wheel-play {
           position: relative;
           display:grid; place-items:center; font-size:22px; font-weight:700; color:#00ffd0;
