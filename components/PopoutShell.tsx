@@ -30,8 +30,9 @@ export default function PopoutShell({ title, onClose, children, pageIndicator }:
           className="binder-hologram-container"
           style={{
             width: 'min(90vw, 650px)',
-            height: '95vh',
-            minHeight: '800px',
+            height: 'auto',
+            maxHeight: '95vh',
+            minHeight: '600px',
             display: 'flex',
             flexDirection: 'column',
             padding: '0px',
@@ -123,7 +124,7 @@ export default function PopoutShell({ title, onClose, children, pageIndicator }:
           />
 
           {/* Content container - exact copy from Binder */}
-          <div className="flex-1 relative" style={{ maxHeight: 'calc(100% - 80px)' }}>
+          <div className="flex-1 relative overflow-hidden" style={{ maxHeight: 'calc(100% - 80px)' }}>
             {children}
           </div>
 

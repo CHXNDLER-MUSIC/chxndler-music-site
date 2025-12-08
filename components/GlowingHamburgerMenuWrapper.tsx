@@ -122,7 +122,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false }: { hidden
       <BadgesButton
         style={{ display: 'none' }}
         isActive={badgesOpen}
-        onClick={() => setBadgesOpen(!badgesOpen)}
+        onClick={() => setBadgesOpen(false)}
       />
       {/* Direct Code Popup for ABOUT functionality */}
       {codeOpen && (

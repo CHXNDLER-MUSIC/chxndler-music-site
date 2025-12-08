@@ -267,9 +267,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [showMenus, setShowMenus] = useState(false);
   
   // Derive display states from UI phase
-  const showDimmingOverlay = uiPhase !== "landed"; // dim during intro and warp, clear when landed
+  const showDimmingOverlay = uiPhase === "intro" && !userClickedStart; // dim only during intro phase, clear when START is clicked
   const showProfileBar = uiPhase === "landed"; // show immediately when landed (no delay)
-  const cockpitVisible = uiPhase === "landed"; // cockpit fully visible only when landed
+  const cockpitVisible = uiPhase === "landed" || userClickedStart; // cockpit visible when START is clicked or landed
   const uiUnlocked = uiPhase === "landed"; // UI unlocked when landed
   const showOverlayUI = uiPhase === "landed"; // overlay UI when landed
 
@@ -2145,6 +2145,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             // Reveal UI elements together (beam + HUD + buttons) now
             setShowHUD(true);
             setBeamEnabled(true);
+            setBeamColor('blue'); // Ensure beam color is restored to blue
             setBeamOnly(false);
             setShowOverlayUI(true);
             // Safety: if base video readiness callback is delayed, start music after a grace period

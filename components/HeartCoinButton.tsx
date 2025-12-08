@@ -2022,45 +2022,56 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   </div>
                                 ) : (
                                   /* Digital Purchase Form */
-                                  <div className="text-center space-y-4">
-                                    <h2 
-                                      className="text-lg font-bold mb-4"
-                                      style={{ 
-                                        color: '#FFFFFF', 
-                                        textShadow: '0 0 6px rgba(255,255,255,0.8)' 
-                                      }}
-                                    >
-                                      {profile?.username || 'User'}
-                                    </h2>
-
-                                    {/* Current Heart Coins */}
-                                    <div className="flex flex-col items-center space-y-2 mb-4">
-                                      <div className="flex items-center gap-2">
-                                        <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
+                                  <div className="text-center">
+                                    {/* User and Cost - Side by Side */}
+                                    <div className="flex justify-between items-start mb-3">
+                                      {/* User Section */}
+                                      <div className="flex flex-col items-center flex-1">
                                         <div 
-                                          className="text-xl font-bold"
-                                          style={{ 
-                                            color: '#FFFFFF', 
-                                            textShadow: '0 0 6px rgba(255,255,255,0.8)' 
+                                          className="font-bold text-white text-lg mb-3"
+                                          style={{
+                                            textShadow: '0 0 4px rgba(255,255,255,0.6)'
                                           }}
                                         >
-                                          {profile?.id ? heartCoins : 0}
+                                          User
+                                        </div>
+                                        
+                                        {/* Current Heart Coins */}
+                                        <div className="flex flex-col items-center space-y-2">
+                                          <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
+                                          <div 
+                                            className="text-xl font-bold"
+                                            style={{ 
+                                              color: '#FFFFFF', 
+                                              textShadow: '0 0 6px rgba(255,255,255,0.8)' 
+                                            }}
+                                          >
+                                            {profile?.id ? heartCoins : 0}
+                                          </div>
                                         </div>
                                       </div>
-                                    </div>
-
-                                    {/* Cost */}
-                                    <div className="flex flex-col items-center space-y-2 mb-4">
-                                      <div className="flex items-center gap-2">
-                                        <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-8 h-8" />
+                                      {/* Cost Section */}
+                                      <div className="flex flex-col items-center flex-1">
                                         <div 
-                                          className="text-lg font-bold"
-                                          style={{ 
-                                            color: '#FFFFFF', 
-                                            textShadow: '0 0 4px rgba(255,255,255,0.6)' 
+                                          className="font-bold text-white text-lg mb-3"
+                                          style={{
+                                            textShadow: '0 0 4px rgba(255,255,255,0.6)'
                                           }}
                                         >
-                                          {card.digitalCost}
+                                          Cost
+                                        </div>
+                                        
+                                        <div className="flex flex-col items-center space-y-2">
+                                          <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
+                                          <div 
+                                            className="text-xl font-bold"
+                                            style={{ 
+                                              color: '#FFFFFF', 
+                                              textShadow: '0 0 6px rgba(255,255,255,0.8)' 
+                                            }}
+                                          >
+                                            {card.digitalCost}
+                                          </div>
                                         </div>
                                       </div>
                                     </div>

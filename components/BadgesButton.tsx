@@ -220,7 +220,6 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       <button
         data-tour-id="badges"
         onClick={handleClick} 
-        onMouseEnter={onHoverSound}
         className="p-1 rounded-lg transition-all duration-200 w-20 h-16"
         style={{
           transition: 'all 0.3s ease',

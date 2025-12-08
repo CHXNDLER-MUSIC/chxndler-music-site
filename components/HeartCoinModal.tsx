@@ -375,34 +375,77 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
           /* Cards Tab */
           <div className="text-center text-white/60">
             <div className="mb-8">
-              <h3 className="text-xl font-bold text-white mb-4">AVAILABLE CARDS</h3>
-              <p className="text-sm">Purchase cards with HeartCoins to add them to your collection.</p>
+              <h3 className="text-xl font-bold text-white mb-4">YOUR CARDS</h3>
+              <p className="text-sm">Your collected cards from the HEARTVERSE.</p>
             </div>
-            
-            {/* Placeholder for cards that can be purchased */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Example card item - replace with actual card data */}
-              <div className="p-4 bg-black/20 rounded-lg border border-white/10">
-                <div className="h-32 bg-gradient-to-br from-pink-500/20 to-purple-500/20 rounded mb-3 flex items-center justify-center">
-                  <span className="text-white/40 text-sm">CARD PREVIEW</span>
+
+            {/* Cards Grid */}
+            {profile?.cards && profile.cards.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto pr-2">
+                {profile.cards.map((userCard) => (
+                  <div 
+                    key={userCard.id} 
+                    className="group relative bg-black/30 rounded-lg p-3 hover:bg-black/40 transition-all duration-300 hover:scale-[1.02]"
+                  >
+                    {/* Card Image Placeholder */}
+                    <div className="aspect-[3/4] bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-lg mb-2 flex items-center justify-center border border-white/20">
+                      <div className="text-center">
+                        <div className="w-8 h-8 mx-auto mb-1 bg-white/20 rounded-full flex items-center justify-center">
+                          <svg className="w-4 h-4 text-white/60" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="text-xs text-white/40">CARD</div>
+                      </div>
+                    </div>
+                    
+                    {/* Card Info */}
+                    <div className="text-center">
+                      <h4 className="text-sm font-bold text-white truncate mb-1">
+                        {userCard.cards?.card_name || 'Unknown Card'}
+                      </h4>
+                      
+                      {/* Element & Rarity */}
+                      <div className="flex justify-between items-center text-xs">
+                        {userCard.cards?.element && (
+                          <span className="px-2 py-1 bg-white/10 rounded text-white/70 capitalize">
+                            {userCard.cards.element}
+                          </span>
+                        )}
+                        {userCard.cards?.rarity && (
+                          <span className="px-2 py-1 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded text-yellow-200 capitalize">
+                            {userCard.cards.rarity}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* Acquired Date */}
+                      <div className="text-xs text-white/40 mt-1">
+                        Acquired {new Date(userCard.acquired_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto mb-4 bg-white/10 rounded-full flex items-center justify-center">
+                  <svg className="w-8 h-8 text-white/40" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                  </svg>
                 </div>
-                <h4 className="text-white font-bold mb-2">SAMPLE CARD</h4>
-                <div className="flex items-center justify-center gap-1 mb-3">
-                  <img
-                    src="/elements/heart-coin.webp"
-                    alt="Heart Coin"
-                    className="w-4 h-4 object-contain"
-                    style={{
-                      filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
-                    }}
-                  />
-                  <span className="text-sm font-bold text-[#F2EF1D]">5</span>
-                </div>
-                <button className="w-full py-2 px-3 rounded-lg bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black font-bold text-xs hover:scale-105 transition-all duration-200">
-                  PURCHASE
+                <h3 className="text-lg font-bold text-white mb-2">No Cards Yet</h3>
+                <p className="text-sm text-white/60 mb-4">
+                  Start your collection by exploring the HEARTVERSE and completing quests.
+                </p>
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black font-bold rounded-lg hover:scale-105 transition-all duration-200"
+                >
+                  Explore HEARTVERSE
                 </button>
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>

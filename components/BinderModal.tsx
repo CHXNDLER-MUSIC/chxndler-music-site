@@ -93,7 +93,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
   const [binderPage, setBinderPage] = useState<'first' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth'>('first');
   // Purchase flow state machine
   const [selectedPurchaseType, setSelectedPurchaseType] = useState<'digital' | 'physical' | null>(null);
-  const [purchaseState, setPurchaseState] = useState<'idle' | 'insufficient' | 'digital-preview' | 'confirm-digital' | 'physical-form' | 'success'>('idle');
+  const [purchaseState, setPurchaseState] = useState<'idle' | 'insufficient' | 'digital-preview' | 'confirm-digital' | 'confirm-physical' | 'physical-form' | 'success'>('idle');
 
   // Full song collection data structure
   const songCollection = [
@@ -153,8 +153,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
   const rarities = ['All', 'Common', 'Rare'];
   
   // Card costs
-  const digitalCost = 20;
-  const physicalCost = 30;
+  const digitalCost = 5;
+  const physicalCost = 20;
 
   // Shipping form state
   const [shippingForm, setShippingForm] = useState({
@@ -391,10 +391,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       // Always show digital preview for digital purchases
       setPurchaseState('digital-preview');
     } else {
-      // For physical purchases, always show the shipping form in the right panel
-      setPurchaseState('physical-form');
-      // Prefill shipping form if user has previous orders
-      prefillShippingForm();
+      // For physical purchases, show confirmation first
+      setPurchaseState('confirm-physical');
     }
   };
 
@@ -432,6 +430,13 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     setPurchaseState('idle');
     setShippingErrors({});
     // Keep shipping form data for user convenience - don't clear it
+  };
+
+  const handlePhysicalConfirm = () => {
+    // After physical confirmation, show shipping form
+    setPurchaseState('physical-form');
+    // Prefill shipping form if user has previous orders
+    prefillShippingForm();
   };
 
   const openHeartCoinPopout = () => {
@@ -833,7 +838,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
 
 
           {/* Dynamic Content - Binder Cards or Full Collection */}
-          <div className="relative mt-1 h-full overflow-y-auto" style={{ maxHeight: 'calc(100% - 60px)' }}>
+          <div className="relative overflow-y-auto flex-shrink-0 pb-2" style={{ maxHeight: '100%' }}>
             {!showFullCollection ? (
               binderPage === 'first' ? (
                 // User's Binder - First Page - Show 5 initial slots
@@ -889,14 +894,16 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                         style={{
                           boxShadow: hasCard || isFirstSlotWithChxndler
                             ? '0 0 20px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.4)' 
+                            : !hasCard && !isFirstSlotWithChxndler && !isLockedSlot
+                            ? '0 0 15px rgba(255,105,180,0.4), 0 0 25px rgba(255,105,180,0.2), 0 0 35px rgba(255,105,180,0.1)'
                             : '0 0 5px rgba(255,105,180,0.1)',
                           aspectRatio: '2/3',
-                          border: !hasCard && !isFirstSlotWithChxndler 
-                            ? '2px dotted rgba(255,105,180,0.3)' 
+                          border: !hasCard && !isFirstSlotWithChxndler && !isLockedSlot
+                            ? '2px dotted rgba(255,105,180,0.5)' 
                             : undefined
                         }}
                       >
-                        <div className="relative">
+                        <div className="relative w-full h-full">
                           {hasCard && collectedCard?.cards ? (
                             <>
                               {(() => {
@@ -979,13 +986,10 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                             </>
                           ) : (
                             <div 
-                              className="w-full h-full bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded flex items-center justify-center" 
-                              style={{ 
-                                border: 'none'
-                              }}
+                              className="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded flex items-center justify-center"
                             >
                               <div 
-                                className="text-xs font-bold text-center"
+                                className="text-xs font-bold"
                                 style={{ 
                                   color: '#FFB6C1', 
                                   textShadow: '0 0 4px rgba(255,182,193,0.6)',
@@ -1003,7 +1007,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                 </div>
                 
                 {/* Second row of 5 locked slots */}
-                <div className="grid gap-2 grid-cols-5 mt-1 px-2 pt-2">
+                <div className="grid gap-2 grid-cols-5 mt-1 px-2">
                   {Array.from({ length: 5 }, (_, index) => {
                     const slotIndex = index + 5; // Slots 5-9
                     
@@ -1667,7 +1671,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
 
                   {/* Second row of 5 locked slots */}
-                  <div className="grid gap-2 grid-cols-5 mt-1 px-2 pt-2">
+                  <div className="grid gap-2 grid-cols-5 mt-1 px-2">
                     {Array.from({ length: 5 }, (_, index) => {
                       const slotIndex = index + 55; // Slots 55-59
                       
@@ -1853,6 +1857,39 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                 </div>
               )}
 
+              {/* State D: Confirm physical purchase */}
+              {purchaseState === 'confirm-physical' && selectedPurchaseType === 'physical' && (
+                <div className="mt-2">
+                  <div 
+                    className="text-center mb-3 text-xs p-2 rounded"
+                    style={{ 
+                      backgroundColor: 'rgba(34,197,94,0.1)',
+                      border: '1px solid rgba(34,197,94,0.3)',
+                      color: '#86EFAC'
+                    }}
+                  >
+                    <div className="mb-1">Confirm purchase of {getFilteredCards()[currentCardIndex]?.name} {selectedPurchaseType.toUpperCase()}.</div>
+                    <div>This will cost {getCost(selectedPurchaseType)} HeartCoins.</div>
+                  </div>
+                  
+                  <div className="flex justify-center gap-2">
+                    <button
+                      onClick={handlePhysicalConfirm}
+                      className="px-3 py-1 rounded border border-green-400/60 bg-green-500/10 hover:bg-green-500/20 transition-all duration-200 text-xs text-green-300"
+                      style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)' }}
+                    >
+                      Confirm Purchase
+                    </button>
+                    <button
+                      onClick={resetPurchaseState}
+                      className="px-3 py-1 rounded border border-pink-400/60 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs text-pink-300"
+                      style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* State E: Purchase successful */}
               {purchaseState === 'success' && selectedPurchaseType && (

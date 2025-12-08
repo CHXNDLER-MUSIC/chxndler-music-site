@@ -451,17 +451,18 @@ export default function SteeringWheelOverlay({
                   background: 'transparent',
                   transform: 'scale(1.0)',
                   transformOrigin: 'bottom center',
-                  // Enhanced Safari-specific styling to remove black backgrounds
+                  // Ultra-aggressive Safari styling to eliminate all black backgrounds
                   ...(isSafariUA ? {
                     mixBlendMode: 'screen',
-                    filter: 'brightness(1.3) contrast(1.4) saturate(1.2)',
-                    // Additional techniques to eliminate black
+                    filter: 'brightness(1.4) contrast(1.6) saturate(1.3) hue-rotate(3deg)',
                     position: 'relative',
                     zIndex: 1,
                     isolation: 'isolate',
-                    // Circular mask to remove black corners
-                    WebkitMaskImage: 'radial-gradient(circle at 50% 58%, black 40%, transparent 70%)',
-                    maskImage: 'radial-gradient(circle at 50% 58%, black 40%, transparent 70%)'
+                    WebkitFilter: 'brightness(1.4) contrast(1.6) saturate(1.3)',
+                    backdropFilter: 'brightness(1.2)',
+                    // Enhanced circular mask with softer edges for better black removal
+                    WebkitMaskImage: 'radial-gradient(circle at 50% 58%, black 35%, transparent 75%)',
+                    maskImage: 'radial-gradient(circle at 50% 58%, black 35%, transparent 75%)'
                   } : {})
                 }}
                 onError={(e) => {
@@ -502,15 +503,17 @@ export default function SteeringWheelOverlay({
                   filter: isDimmingOverlayActive ? 'brightness(0.65) saturate(1.0)' : (isSafariUA ? 'brightness(1.3) contrast(1.4) saturate(1.2)' : undefined),
                   opacity: isDimmingOverlayActive ? 0.95 : 1,
                   transition: isDimmingOverlayActive ? 'filter 250ms ease, opacity 250ms ease' : 'none',
-                  // Enhanced Safari-specific styling to remove black backgrounds
+                  // Ultra-aggressive Safari styling to eliminate all black backgrounds  
                   ...(isSafariUA ? {
                     mixBlendMode: 'screen',
                     position: 'relative',
                     zIndex: 1,
                     isolation: 'isolate',
-                    // Circular mask to remove black corners
-                    WebkitMaskImage: 'radial-gradient(circle at 50% 58%, black 40%, transparent 70%)',
-                    maskImage: 'radial-gradient(circle at 50% 58%, black 40%, transparent 70%)'
+                    WebkitFilter: 'brightness(1.4) contrast(1.6) saturate(1.3)',
+                    backdropFilter: 'brightness(1.2)',
+                    // Enhanced circular mask with softer edges for maximum black removal
+                    WebkitMaskImage: 'radial-gradient(circle at 50% 58%, black 35%, transparent 75%)',
+                    maskImage: 'radial-gradient(circle at 50% 58%, black 35%, transparent 75%)'
                   } : {})
                 }}
                 onError={(e) => {
@@ -533,21 +536,21 @@ export default function SteeringWheelOverlay({
               srcMp4={wheelSrc}
               // Enhanced chroma key with Safari-specific adjustments to target black/dark backgrounds
               keyColor={(vconf as any)?.keyColor ?? [0, 0, 0]}
-              // Very aggressive settings for Safari to completely remove black/dark backgrounds
-              keyTolerance={(vconf as any)?.keyTolerance ?? (isSafariUA ? 0.9 : 0.12)}
-              keySoftness={(vconf as any)?.keySoftness ?? (isSafariUA ? 0.5 : 0.07)}
+              // Ultra-aggressive settings for Safari to completely remove black/dark backgrounds
+              keyTolerance={(vconf as any)?.keyTolerance ?? (isSafariUA ? 0.98 : 0.12)}
+              keySoftness={(vconf as any)?.keySoftness ?? (isSafariUA ? 0.95 : 0.07)}
               keyMode={'chroma'}
               // Enhanced blend modes for Safari
               blendScreen={true}
               // Enable fallback but allow chroma key to work for Safari
               fallbackEnabled={true}
               minCoverageRatio={isSafariUA ? 0.001 : 0.0008}
-              // Reduced circle protection for Safari to allow more background removal
+              // Minimal circle protection for Safari to allow maximum background removal
               protectCircle={true}
               protectCenterXRatio={0.5}
               protectCenterYRatio={0.58}
-              protectRadiusRatio={isSafariUA ? 0.35 : 0.47}
-              protectFeatherRatio={isSafariUA ? 0.08 : 0.08}
+              protectRadiusRatio={isSafariUA ? 0.2 : 0.47}
+              protectFeatherRatio={isSafariUA ? 0.1 : 0.08}
               // Enhanced color correction for Safari
               saturation={(vconf as any)?.saturation ?? (isSafariUA ? 1.25 : 1.0)}
               contrast={(vconf as any)?.contrast ?? (isSafariUA ? 1.3 : 1.05)}
@@ -568,16 +571,18 @@ export default function SteeringWheelOverlay({
                 filter: isDimmingOverlayActive ? 'brightness(0.65) saturate(1.0)' : (isSafariUA ? 'brightness(1.1) contrast(1.1)' : undefined),
                 opacity: isDimmingOverlayActive ? 0.95 : 1,
                 transition: isDimmingOverlayActive ? 'filter 250ms ease, opacity 250ms ease' : 'none',
-                // Enhanced Safari-specific styling for better transparency and black removal
+                // Ultra-aggressive Safari styling for maximum black background removal
                 ...(isSafariUA ? {
                   mixBlendMode: 'screen',
                   isolation: 'isolate',
                   WebkitMaskComposite: 'xor',
                   WebkitBackfaceVisibility: 'hidden',
-                  // Additional black removal techniques
-                  filter: 'brightness(1.15) contrast(1.2) saturate(1.1)',
-                  // Ensure black pixels become transparent
-                  background: 'transparent'
+                  // Maximum black removal through CSS filters - more aggressive
+                  filter: 'brightness(1.5) contrast(2.0) saturate(1.3) hue-rotate(2deg)',
+                  background: 'transparent',
+                  // Additional CSS properties to eliminate black pixels
+                  WebkitFilter: 'brightness(1.5) contrast(2.0) saturate(1.3)',
+                  backdropFilter: 'brightness(1.2) contrast(1.1)'
                 } : {})
               }}
             />

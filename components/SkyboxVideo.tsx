@@ -276,7 +276,7 @@ export default function SkyboxVideo({
               style={{
                 position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
                 width: '177.78vh', height: '100vh', minWidth: '100vw', minHeight: '56.25vw',
-                opacity: showLightspeed ? 0.95 : 1,
+                opacity: 1,
                 filter: `brightness(${brightness})${flying ? ' saturate(1.1) blur(1.2px)' : ''}`,
                 transition: 'transform 650ms ease, filter 650ms ease',
               }}

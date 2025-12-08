@@ -72,7 +72,7 @@ export default function ProfileBar({
 }: ProfileBarProps) {
   // ALL HOOKS MUST BE DECLARED BEFORE ANY EARLY RETURNS
   // Use global UI state for profile bar visibility
-  const { hasEnteredHeartverse, warpFullyComplete } = useUIState();
+  const { hasEnteredHeartverse, warpFullyComplete, setWarpFullyComplete } = useUIState();
   // Use ProfileContext for profile data
   const { profile: contextProfile, loading, updateProfile, refreshProfile, isJournalOpen, setIsJournalOpen } = useProfile();
   // Use UI store for name prompt
@@ -104,6 +104,36 @@ export default function ProfileBar({
   const [showQuests, setShowQuests] = useState(false);
   const heartBtnRef = useRef<HTMLButtonElement>(null);
   const [heartPopoverPos, setHeartPopoverPos] = useState<{left: number, top: number, width?: number, height?: number} | null>(null);
+
+  // Chrome-specific immediate fallback for button visibility
+  useEffect(() => {
+    if (!warpFullyComplete && typeof window !== 'undefined') {
+      const isChrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1 && 
+                      navigator.userAgent.toLowerCase().indexOf('edg') === -1;
+      
+      if (isChrome) {
+        // For Chrome, set warpFullyComplete to true immediately to show buttons
+        const immediateTimer = setTimeout(() => {
+          console.log('ProfileBar: Chrome immediate fallback - setting warpFullyComplete to true');
+          setWarpFullyComplete(true);
+        }, 100); // Very short delay to allow for proper initialization
+        
+        return () => clearTimeout(immediateTimer);
+      }
+    }
+  }, [warpFullyComplete, setWarpFullyComplete]);
+
+  // General fallback to ensure warp completion after reasonable delay
+  useEffect(() => {
+    if (!warpFullyComplete) {
+      const fallbackTimer = setTimeout(() => {
+        console.log('ProfileBar: General fallback setting warpFullyComplete to true');
+        setWarpFullyComplete(true);
+      }, 1500); // 1.5 second fallback for all browsers
+
+      return () => clearTimeout(fallbackTimer);
+    }
+  }, [warpFullyComplete, setWarpFullyComplete]);
 
   // Respond to profile refresh trigger
   useEffect(() => {
@@ -1315,6 +1345,7 @@ export default function ProfileBar({
       <SoulStarJournal 
         isOpen={isJournalOpen} 
         onClose={() => setIsJournalOpen(false)}
+        openWelcomeHome={() => setShowWelcomeHome(true)}
         onJournalCompleted={handleJournalCompleted}
       />
 
