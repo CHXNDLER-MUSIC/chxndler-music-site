@@ -201,6 +201,7 @@ export default function ProfileBar({
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabaseBrowser.auth.getUser();
+      console.log('ProfileBar: Initial user fetch:', { hasUser: !!user, userId: user?.id });
       setCurrentUser(user);
     };
 
@@ -208,7 +209,12 @@ export default function ProfileBar({
 
     // Subscribe to auth changes
     const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange(async (event, session) => {
-      console.log('ProfileBar: Auth state changed:', { event, userId: session?.user?.id });
+      console.log('ProfileBar: Auth state changed:', { 
+        event, 
+        hasUser: !!session?.user, 
+        userId: session?.user?.id,
+        userEmail: session?.user?.email 
+      });
       setCurrentUser(session?.user ?? null);
       
       // If user just signed in, force a profile refresh to ensure UI updates
@@ -422,19 +428,6 @@ export default function ProfileBar({
     return null;
   }
 
-  if (loading) {
-    return (
-      <div className="fixed top-0 left-0 right-0 z-[200] h-16 bg-black/40 backdrop-blur-lg border-b border-white/20">
-        <div className="flex items-center justify-between h-full px-6">
-          <div className="animate-pulse flex items-center space-x-4">
-            <div className="w-10 h-10 bg-white/20 rounded-full"></div>
-            <div className="w-24 h-4 bg-white/20 rounded"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Calculate variables for render - single source of truth
   const isLoggedIn = !!currentUser;
   const currentElement = contextProfile?.element || savedAlienElement || null;
@@ -449,10 +442,11 @@ export default function ProfileBar({
     hasEnteredHeartverse,
     hasUser: isLoggedIn,
     hasProfile: !!contextProfile,
-    loading,
+    profileLoading: loading,
     heartCoinBalance,
     profileName: contextProfile?.name,
     profileElement: currentElement,
+    currentUserId: currentUser?.id,
     timestamp: new Date().toISOString()
   });
 
