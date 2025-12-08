@@ -1967,7 +1967,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                               textShadow: '0 0 6px rgba(255,255,255,0.8)' 
                                             }}
                                           >
-                                            {card.physicalCost}
+                                            {card.physicalCost || 'undefined'}
                                           </div>
                                         </div>
                                       </div>
@@ -2356,7 +2356,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       {/* Enlarged Card Modal */}
       {enlargedCard && (
         <div 
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[2147483648] rounded-lg"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] rounded-lg"
           onClick={() => setEnlargedCard(null)}
         >
           <div 

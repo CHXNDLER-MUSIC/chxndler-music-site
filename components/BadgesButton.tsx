@@ -152,28 +152,12 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       return badge.icon_url;
     }
     
-    // Only proceed with string checks if badgeName exists
+    // Try to construct badge image path from badge name
     if (badgeName) {
-      // Heart badges
-      if (badgeName.includes('Ember') || badgeName.includes('Bloom') || badgeName.includes('Pulse') || 
-          badgeName.includes('Radiance') || badgeName.includes('Devotion') || badgeName.includes('Love')) {
-        return '❤️';
-      }
-      // Water badges
-      if (badgeName.includes('Ripple') || badgeName.includes('Flow') || badgeName.includes('Tide') || 
-          badgeName.includes('Surge') || badgeName.includes('Depth') || badgeName.includes('Drift')) {
-        return '💧';
-      }
-      // Lightning badges
-      if (badgeName.includes('Spark') || badgeName.includes('Flash') || badgeName.includes('Charge') || 
-          badgeName.includes('Storm') || badgeName.includes('Ascend')) {
-        return '⚡';
-      }
-      // Darkness badges
-      if (badgeName.includes('Shadow') || badgeName.includes('Veil') || badgeName.includes('Eclipse') || 
-          badgeName.includes('Dusk') || badgeName.includes('Midnight') || badgeName.includes('Night')) {
-        return '🌑';
-      }
+      // Convert badge name to filename format (lowercase, spaces to hyphens)
+      const filename = badgeName.toLowerCase().replace(/\s+/g, '-');
+      const imagePath = `/badges/${filename}.webp`;
+      return imagePath;
     }
     
     // Category-based fallbacks
@@ -192,12 +176,29 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
   };
 
   const getElementFromBadge = (badge: BadgeWithProgress) => {
-    if (!badge.description) return null;
-    const description = badge.description;
-    if (description.includes('❤️ HEART')) return 'HEART';
-    if (description.includes('💧 WATER')) return 'WATER';
-    if (description.includes('⚡ LIGHTNING')) return 'LIGHTNING';
-    if (description.includes('🌑 DARKNESS')) return 'DARKNESS';
+    // First check for sub_category field
+    if (badge.sub_category) {
+      return badge.sub_category.toUpperCase();
+    }
+    
+    // Fallback: parse from badge name for elemental streak badges
+    if (badge.category === 'elemental-streak' && badge.badge_name) {
+      const name = badge.badge_name.toLowerCase();
+      if (name.includes('heart')) return 'HEART';
+      if (name.includes('water')) return 'WATER';
+      if (name.includes('lightning')) return 'LIGHTNING';
+      if (name.includes('darkness')) return 'DARKNESS';
+    }
+    
+    // Legacy fallback: parse from description
+    if (badge.description) {
+      const description = badge.description;
+      if (description.includes('❤️ HEART')) return 'HEART';
+      if (description.includes('💧 WATER')) return 'WATER';
+      if (description.includes('⚡ LIGHTNING')) return 'LIGHTNING';
+      if (description.includes('🌑 DARKNESS')) return 'DARKNESS';
+    }
+    
     return null;
   };
 
@@ -397,54 +398,10 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     Choose a category to explore your badges and track your progress through the Heartverse.
                   </div>
                   
-                  <div className="flex flex-col items-center justify-center gap-1 w-full">
-                    {/* First row: Soul Star, Achievements, Elemental Streak */}
-                    <div className="flex justify-center items-center gap-6">
-                      {badgeCategories.slice(0, 3).map((category) => (
-                        <div
-                          key={category.id}
-                          className="text-center cursor-pointer group flex-shrink-0"
-                          onClick={() => {
-                            try { sfx.play('click', 0.7); } catch {}
-                            setSelectedCategory(category.id);
-                            setCurrentPage(0);
-                          }}
-                        >
-                          <div 
-                            className="w-20 h-20 rounded-full border-2 border-pink-400/60 hover:border-pink-400/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105 flex items-center justify-center"
-                            style={{
-                              boxShadow: `0 0 15px ${category.color}40`,
-                              background: `linear-gradient(135deg, ${category.color}20, rgba(252,84,175,0.1))`
-                            }}
-                          >
-                            <img
-                              src={getBadgeIcon(category.id)}
-                              alt={category.name}
-                              className="w-16 h-16 object-cover rounded-full transition-all duration-300"
-                              style={{
-                                filter: `drop-shadow(0 0 8px ${category.color})`
-                              }}
-                              draggable={false}
-                            />
-                          </div>
-                          
-                          <div 
-                            className="text-xs mt-1 font-bold"
-                            style={{ 
-                              color: category.color, 
-                              textShadow: `0 0 4px ${category.color}80`,
-                              fontSize: '10px'
-                            }}
-                          >
-                            {category.name}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {/* Second row: Listening, HeartCoin, Community */}
-                    <div className="flex justify-center items-center gap-6">
-                      {badgeCategories.slice(3, 6).map((category) => (
+                  <div className="flex flex-col items-center justify-center w-full">
+                    {/* Categories arranged in a centered grid */}
+                    <div className="grid grid-cols-3 gap-x-6 gap-y-4 place-items-center">
+                      {badgeCategories.slice(0, 6).map((category) => (
                         <div
                           key={category.id}
                           className="text-center cursor-pointer group flex-shrink-0"
@@ -662,94 +619,114 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                             </button>
                           </div>
 
-                          {/* Current page badges - 6 rows of 5 badges each */}
+                          {/* Current page badges - dynamically rendered grid */}
                           <div className="space-y-3">
-                            {Array.from({ length: 6 }, (_, containerIndex) => (
-                              <div key={containerIndex} className="flex justify-center gap-4">
-                                {Array.from({ length: 5 }, (_, badgeIndex) => {
-                                  const badges = filterBadgesByElement(category.badges);
-                                  const pageOffset = currentPage * 30; // 30 badges per page (6 rows × 5 badges)
-                                  const overallIndex = pageOffset + containerIndex * 5 + badgeIndex;
-                                  const badge = badges[overallIndex];
-                                  
-                                  return (
+                            {(() => {
+                              const badges = filterBadgesByElement(category.badges);
+                              const pageOffset = currentPage * 30;
+                              const pageBadges = badges.slice(pageOffset, pageOffset + 30);
+                              
+                              if (pageBadges.length === 0) {
+                                return (
+                                  <div className="text-center text-white/50 text-sm py-8">
+                                    No badges available for this category
+                                  </div>
+                                );
+                              }
+                              
+                              // Group badges into rows of up to 5
+                              const rows = [];
+                              for (let i = 0; i < pageBadges.length; i += 5) {
+                                rows.push(pageBadges.slice(i, i + 5));
+                              }
+                              
+                              return rows.map((rowBadges, rowIndex) => (
+                                <div key={rowIndex} className="flex justify-center gap-4">
+                                  {rowBadges.map((badge, badgeIndex) => (
                                     <div key={badgeIndex} className="flex flex-col items-center space-y-2">
                                       <div className="relative">
                                         <button
                                           onClick={() => {
-                                            if (badge) {
-                                              try { sfx.play('click', 0.6); } catch {}
-                                              setSelectedBadge(badge);
-                                            }
+                                            try { sfx.play('click', 0.6); } catch {}
+                                            setSelectedBadge(badge);
+                                          }}
+                                          onMouseEnter={() => {
+                                            try { sfx.play('hover', 0.4); } catch {}
                                           }}
                                           className="relative w-12 h-12 rounded-full bg-black/60 border border-white/20 hover:border-white/40 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
-                                          title={badge ? (badge.description ? `${badge.badge_name}: ${badge.description}` : badge.badge_name) : 'Badge Slot'}
-                                          disabled={!badge}
+                                          title={badge.description ? `${badge.badge_name}: ${badge.description}` : badge.badge_name}
                                           style={{
-                                            opacity: badge ? (isUnlocked(badge) ? 1 : 0.4) : 0.2,
-                                            filter: badge ? (isUnlocked(badge) ? 'none' : 'grayscale(80%)') : 'grayscale(100%)',
+                                            opacity: isUnlocked(badge) ? 1 : 0.4,
+                                            filter: isUnlocked(badge) ? 'none' : 'grayscale(80%)',
                                           }}
                                         >
-                                          {badge ? (
-                                            <>
-                                              {/* Progress ring */}
-                                              {badge.progress !== undefined && badge.progress < 100 && (
-                                                <div className="absolute inset-0">
-                                                  <svg className="w-12 h-12 transform -rotate-90" viewBox="0 0 48 48">
-                                                    <circle
-                                                      cx="24"
-                                                      cy="24"
-                                                      r="22"
-                                                      fill="none"
-                                                      stroke="rgba(255,255,255,0.1)"
-                                                      strokeWidth="2"
-                                                    />
-                                                    <circle
-                                                      cx="24"
-                                                      cy="24"
-                                                      r="22"
-                                                      fill="none"
-                                                      stroke={isUnlocked(badge) ? "#10B981" : category.color}
-                                                      strokeWidth="2"
-                                                      strokeLinecap="round"
-                                                      strokeDasharray={`${2 * Math.PI * 22}`}
-                                                      strokeDashoffset={`${2 * Math.PI * 22 * (1 - (badge.progress || 0) / 100)}`}
-                                                      className="transition-all duration-300"
-                                                    />
-                                                  </svg>
-                                                </div>
-                                              )}
-                                              
-                                              <div className={`absolute inset-0 rounded-full overflow-hidden transition-opacity ${isUnlocked(badge) ? 'opacity-100' : 'opacity-40 group-hover:opacity-60'}`}>
-                                                {typeof getBadgeDisplayIcon(badge, category.id) === 'string' && getBadgeDisplayIcon(badge, category.id).startsWith('http') ? (
+                                          {/* Progress ring */}
+                                          {badge.progress !== undefined && badge.progress < 100 && (
+                                            <div className="absolute inset-0">
+                                              <svg className="w-12 h-12 transform -rotate-90" viewBox="0 0 48 48">
+                                                <circle
+                                                  cx="24"
+                                                  cy="24"
+                                                  r="22"
+                                                  fill="none"
+                                                  stroke="rgba(255,255,255,0.1)"
+                                                  strokeWidth="2"
+                                                />
+                                                <circle
+                                                  cx="24"
+                                                  cy="24"
+                                                  r="22"
+                                                  fill="none"
+                                                  stroke={isUnlocked(badge) ? "#10B981" : category.color}
+                                                  strokeWidth="2"
+                                                  strokeLinecap="round"
+                                                  strokeDasharray={`${2 * Math.PI * 22}`}
+                                                  strokeDashoffset={`${2 * Math.PI * 22 * (1 - (badge.progress || 0) / 100)}`}
+                                                  className="transition-all duration-300"
+                                                />
+                                              </svg>
+                                            </div>
+                                          )}
+                                          
+                                          <div className={`absolute inset-0 rounded-full overflow-hidden transition-opacity ${isUnlocked(badge) ? 'opacity-100' : 'opacity-40 group-hover:opacity-60'}`}>
+                                            {(() => {
+                                              const icon = getBadgeDisplayIcon(badge, category.id);
+                                              // Check if it's an image path (starts with / or http) or just an emoji
+                                              if (typeof icon === 'string' && (icon.startsWith('/') || icon.startsWith('http'))) {
+                                                return (
                                                   <img
-                                                    src={getBadgeDisplayIcon(badge, category.id)}
+                                                    src={icon}
                                                     alt={badge.badge_name}
                                                     className="w-full h-full object-cover"
                                                     draggable={false}
+                                                    onError={(e) => {
+                                                      // Fallback to emoji if image fails to load
+                                                      const target = e.target as HTMLImageElement;
+                                                      const container = target.parentElement;
+                                                      if (container) {
+                                                        container.innerHTML = '<div class="w-full h-full flex items-center justify-center text-lg">🏅</div>';
+                                                      }
+                                                    }}
                                                   />
-                                                ) : (
+                                                );
+                                              } else {
+                                                return (
                                                   <div className="w-full h-full flex items-center justify-center text-lg">
-                                                    {getBadgeDisplayIcon(badge, category.id)}
+                                                    {icon}
                                                   </div>
-                                                )}
-                                              </div>
-                                              
-                                              {!isUnlocked(badge) && (
-                                                <div className="absolute inset-0.5 bg-black/40 rounded-full flex items-center justify-center">
-                                                  <div className="w-1.5 h-1.5 bg-white/20 rounded-full" />
-                                                </div>
-                                              )}
-                                            </>
-                                          ) : (
-                                            // Empty slot placeholder
-                                            <div className="w-full h-full flex items-center justify-center">
-                                              <div className="w-6 h-6 border-2 border-dashed border-white/10 rounded-full" />
+                                                );
+                                              }
+                                            })()}
+                                          </div>
+                                          
+                                          {!isUnlocked(badge) && (
+                                            <div className="absolute inset-0.5 bg-black/40 rounded-full flex items-center justify-center">
+                                              <div className="w-1.5 h-1.5 bg-white/20 rounded-full" />
                                             </div>
                                           )}
                                         </button>
                                         
-                                        {badge && badge.progress !== undefined && badge.progress > 0 && badge.progress < 100 && (
+                                        {badge.progress !== undefined && badge.progress > 0 && badge.progress < 100 && (
                                           <div 
                                             className="absolute -bottom-0.5 -right-0.5 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold"
                                             style={{ 
@@ -761,21 +738,21 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                                           </div>
                                         )}
                                         
-                                        {badge && isUnlocked(badge) && (
+                                        {isUnlocked(badge) && (
                                           <div className="absolute -bottom-0.5 -right-0.5 bg-green-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
                                             ✓
                                           </div>
                                         )}
                                       </div>
                                       
-                                      <div className="text-white/80 text-xs text-center max-w-16 font-medium" style={{ textShadow: '0 0 4px rgba(255,255,255,0.3)', opacity: badge ? 1 : 0.3 }}>
-                                        {badge ? badge.badge_name : '—'}
+                                      <div className="text-white/80 text-xs text-center max-w-16 font-medium" style={{ textShadow: '0 0 4px rgba(255,255,255,0.3)' }}>
+                                        {badge.badge_name}
                                       </div>
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            ))}
+                                  ))}
+                                </div>
+                              ));
+                            })()}
                           </div>
                         </div>
                       )}
@@ -842,6 +819,17 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     <p className="text-white/70 text-xs px-2">
                       {selectedBadge.description}
                     </p>
+                  )}
+                  
+                  {selectedBadge.requirement && (
+                    <div className="space-y-1 px-2">
+                      <div className="text-white/50 text-xs font-semibold uppercase tracking-wider">
+                        Requirement
+                      </div>
+                      <p className="text-white/60 text-xs">
+                        {selectedBadge.requirement}
+                      </p>
+                    </div>
                   )}
                   
                   {selectedBadge.progress !== undefined && (

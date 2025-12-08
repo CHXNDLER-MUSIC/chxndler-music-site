@@ -15,6 +15,7 @@ export interface Badge {
   description: string | null;
   requirement: string | null;
   category: BadgeCategory;
+  sub_category?: string | null;
   created_at: string;
 }
 

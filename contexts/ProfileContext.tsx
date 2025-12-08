@@ -105,7 +105,7 @@ interface DailyPrompts {
     element: string;
     prompt_type: string;
   };
-  reflection: {
+  soul_star: {
     id: string;
     text: string;
     element: string;
@@ -491,7 +491,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         entryData.intention = entry.intention;
       }
       if (entry.prompt !== null && entry.prompt !== undefined) {
-        entryData.reflection = entry.prompt; // Map prompt to reflection column
+        entryData.soul_star = entry.prompt; // Map prompt to soul_star column
       }
       if (entry.prompt_id !== null && entry.prompt_id !== undefined) {
         entryData.prompt_id = entry.prompt_id;
@@ -601,7 +601,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
       
       // Validate that we received proper data structure
-      if (!data.element || !data.intention || !data.reflection) {
+      if (!data.element || !data.intention || !data.soul_star) {
         throw new Error('Invalid prompt data received from database');
       }
       

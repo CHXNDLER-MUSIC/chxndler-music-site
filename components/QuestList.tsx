@@ -663,98 +663,98 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <h4 className="text-white font-semibold mb-1">2. Attend a Live Show</h4>
-                <p className="text-white/80 text-sm">Check in at a CHXNDLER show to receive bonus HeartCoins.</p>
-              </div>
-              {!showCheckIn && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setShowCheckIn(true)}
-                    disabled={questStatus.liveShow || !isAuthenticated}
-                    className={`px-4 py-2 rounded text-sm transition-all duration-200 ${
-                      questStatus.liveShow
-                        ? 'bg-green-600/30 border border-green-500/50 text-green-300 cursor-not-allowed'
-                        : !isAuthenticated
-                          ? 'bg-gray-600/30 border border-gray-500/50 text-gray-300 cursor-not-allowed'
-                          : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300'
-                    }`}
-                    style={{
-                      boxShadow: questStatus.liveShow
-                        ? '0 0 10px rgba(0,255,0,0.3)'
-                        : !isAuthenticated
-                          ? '0 0 10px rgba(100,100,100,0.3)'
-                          : '0 0 10px rgba(252,84,175,0.3)',
-                      textShadow: questStatus.liveShow
-                        ? '0 0 4px rgba(0,255,0,0.6)'
-                        : !isAuthenticated
-                          ? '0 0 4px rgba(100,100,100,0.6)'
-                          : '0 0 4px rgba(252,84,175,0.6)'
-                    }}
-                  >
-                    {questStatus.liveShow 
-                      ? '✓ CHECKED IN' 
-                      : !isAuthenticated 
-                        ? 'LOG IN TO COMPLETE' 
-                        : 'CHECK IN'
-                    }
-                  </button>
-                  <div 
-                    className={`font-bold text-sm ${
-                      questStatus.liveShow 
-                        ? 'text-green-400' 
-                        : !isAuthenticated 
-                          ? 'text-gray-400' 
-                          : 'text-pink-400'
-                    }`}
-                    style={{ 
-                      textShadow: questStatus.liveShow 
-                        ? '0 0 4px rgba(0,255,0,0.6)' 
-                        : !isAuthenticated
-                          ? '0 0 4px rgba(100,100,100,0.6)'
-                          : '0 0 4px rgba(252,84,175,0.6)' 
-                    }}
-                  >
-                    {questStatus.liveShow 
-                      ? '✓ Complete' 
-                      : !isAuthenticated 
-                        ? 'Log in to complete' 
-                        : '+1-5'
-                    }
+                <h4 className="text-white font-semibold mb-1">3. Attend a Livestream or Live Show</h4>
+                {!showCheckIn ? (
+                  <p className="text-white/80 text-sm">Check in at a CHXNDLER show or stream to receive bonus HEART coins.</p>
+                ) : (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={secretPhrase}
+                      onChange={(e) => setSecretPhrase(e.target.value)}
+                      placeholder="Enter the secret phrase..."
+                      className="w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-cyan-400 focus:outline-none"
+                      style={{
+                        boxShadow: '0 0 8px rgba(0,255,255,0.2)',
+                      }}
+                      autoFocus
+                    />
                   </div>
-                </div>
-              )}
-            </div>
-
-            {showCheckIn && !checkInMessage && !questStatus.liveShow && isAuthenticated && (
-              <div className="space-y-3 pt-2">
-                <div 
-                  className="text-center text-white/90 text-sm"
-                  style={{ textShadow: '0 0 4px rgba(255,255,255,0.6)' }}
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={
+                    questStatus.liveShow 
+                      ? undefined 
+                      : showCheckIn 
+                        ? handleCheckInSubmit 
+                        : () => {
+                            try { sfx.play('click', 0.8); } catch {}
+                            setShowCheckIn(true);
+                          }
+                  }
+                  disabled={questStatus.liveShow || !isAuthenticated || (showCheckIn && loading)}
+                  className={`px-4 py-2 rounded text-sm transition-all duration-200 ${
+                    questStatus.liveShow
+                      ? 'bg-green-600/30 border border-green-500/50 text-green-300 cursor-not-allowed'
+                      : !isAuthenticated
+                        ? 'bg-gray-600/30 border border-gray-500/50 text-gray-300 cursor-not-allowed'
+                        : showCheckIn
+                          ? 'bg-cyan-600/30 hover:bg-cyan-600/40 border border-cyan-500/50 text-cyan-300'
+                          : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300'
+                  }`}
+                  style={{
+                    boxShadow: questStatus.liveShow
+                      ? '0 0 10px rgba(0,255,0,0.3)'
+                      : !isAuthenticated
+                        ? '0 0 10px rgba(100,100,100,0.3)'
+                        : showCheckIn
+                          ? '0 0 10px rgba(0,255,255,0.3)'
+                          : '0 0 10px rgba(252,84,175,0.3)',
+                    textShadow: questStatus.liveShow
+                      ? '0 0 4px rgba(0,255,0,0.6)'
+                      : !isAuthenticated
+                        ? '0 0 4px rgba(100,100,100,0.6)'
+                        : showCheckIn
+                          ? '0 0 4px rgba(0,255,255,0.6)'
+                          : '0 0 4px rgba(252,84,175,0.6)'
+                  }}
                 >
-                  Enter the secret phrase:
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={secretPhrase}
-                    onChange={(e) => setSecretPhrase(e.target.value)}
-                    placeholder="Secret phrase..."
-                    className="flex-1 rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-cyan-400 focus:outline-none"
-                  />
-                  <button
-                    onClick={handleCheckInSubmit}
-                    disabled={loading}
-                    className="px-4 py-2 bg-cyan-600/30 hover:bg-cyan-600/40 border border-cyan-500/50 text-cyan-300 rounded text-sm transition-all duration-200 disabled:opacity-50"
-                    style={{
-                      boxShadow: '0 0 10px rgba(0,255,255,0.3)',
-                      textShadow: '0 0 4px rgba(0,255,255,0.6)'
-                    }}
-                  >
-                    {loading ? 'SUBMITTING...' : 'SUBMIT'}
-                  </button>
+                  {questStatus.liveShow 
+                    ? '✓ CHECKED IN' 
+                    : !isAuthenticated 
+                      ? 'LOG IN TO COMPLETE' 
+                      : showCheckIn
+                        ? (loading ? 'SUBMITTING...' : 'SUBMIT')
+                        : 'CHECK IN'
+                  }
+                </button>
+                <div 
+                  className={`font-bold text-sm ${
+                    questStatus.liveShow 
+                      ? 'text-green-400' 
+                      : !isAuthenticated 
+                        ? 'text-gray-400' 
+                        : 'text-pink-400'
+                  }`}
+                  style={{ 
+                    textShadow: questStatus.liveShow 
+                      ? '0 0 4px rgba(0,255,0,0.6)' 
+                      : !isAuthenticated
+                        ? '0 0 4px rgba(100,100,100,0.6)'
+                        : '0 0 4px rgba(252,84,175,0.6)' 
+                  }}
+                >
+                  {questStatus.liveShow 
+                    ? '✓ Complete' 
+                    : !isAuthenticated 
+                      ? 'Log in to complete' 
+                      : '+1-5'
+                  }
                 </div>
               </div>
-            )}
+            </div>
 
             {checkInMessage && (
               <div 

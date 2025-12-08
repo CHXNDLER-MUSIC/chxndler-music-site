@@ -16,7 +16,7 @@ interface DailyPrompt {
     element: string;
     prompt_type: string;
   };
-  reflection: {
+  soul_star: {
     id: string;
     text: string;
     element: string;
@@ -127,7 +127,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
     if (dailyPrompt && profile?.element) {
       setSelectedElement(profile.element);
       setIntentionText(dailyPrompt.intention?.text || "");
-      setCurrentPromptText(dailyPrompt.reflection?.text || "");
+      setCurrentPromptText(dailyPrompt.soul_star?.text || "");
     }
   }, [dailyPrompt, profile?.element]);
 
@@ -870,7 +870,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     className="text-sm leading-relaxed"
                     style={{ color: '#FFFFFF' }}
                   >
-                    {dailyPrompt.reflection.text}
+                    {dailyPrompt.soul_star.text}
                   </div>
                 </div>
               </div>
