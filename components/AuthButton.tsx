@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/app/providers/AuthProvider';
-import { supabaseClient } from '@/lib/supabaseClient';
+import { supabaseBrowser } from '@/lib/supabase-browser';
 import { sfx } from '@/lib/sfx';
 import WelcomeHomeModal from '@/components/WelcomeHomeModal';
 import ProfilePopover from '@/components/ProfilePopover';
@@ -35,7 +35,7 @@ export default function AuthButton() {
 
       setProfileLoading(true);
       try {
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabaseBrowser
           .from('profiles')
           .select('id, name, element, profile_image_url')
           .eq('id', user.id)
@@ -71,7 +71,7 @@ export default function AuthButton() {
       if (!user) return;
       
       try {
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabaseBrowser
           .from('profiles')
           .select('id, name, element, profile_image_url')
           .eq('id', user.id)

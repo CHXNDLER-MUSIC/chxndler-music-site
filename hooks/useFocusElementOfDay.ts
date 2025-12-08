@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabaseClient";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 import type { ElementType } from "@/lib/planetConfig";
 
 type FocusRecord = {

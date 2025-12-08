@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 import type { User } from "@supabase/supabase-js";
 
 interface AuthContextValue {
@@ -18,17 +18,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const getInitialSession = async () => {
       try {
-        console.log('AuthProvider: Getting initial session...');
-        const { data: { session }, error } = await supabaseClient.auth.getSession();
+        const { data: { session }, error } = await supabaseBrowser.auth.getSession();
         
         if (error) {
           console.error('AuthProvider: Error getting session:', error.message);
         } else {
           setUser(session?.user ?? null);
-          console.log('AuthProvider: Initial session loaded:', { 
-            hasUser: !!session?.user, 
-            userId: session?.user?.id 
-          });
+          if (process.env.NODE_ENV === "development") {
+            console.log('AuthProvider: Initial session loaded:', { 
+              hasUser: !!session?.user, 
+              userId: session?.user?.id 
+            });
+          }
           
           // Set initial cookies if session exists
           if (session?.access_token) {
@@ -48,13 +49,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     getInitialSession();
 
     // Subscribe to auth state changes
-    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
+    const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('AuthProvider: Auth state changed:', { 
-          event, 
-          hasUser: !!session?.user,
-          userId: session?.user?.id 
-        });
+        if (process.env.NODE_ENV === "development") {
+          console.log('AuthProvider: Auth state changed:', { 
+            event, 
+            hasUser: !!session?.user,
+            userId: session?.user?.id 
+          });
+        }
         
         // Sync session tokens to cookies for API routes
         if (session?.access_token) {

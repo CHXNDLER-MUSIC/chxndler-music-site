@@ -61,7 +61,7 @@ const DEFAULT_COVER = '/covers/CHXNDLER.webp';
 const DEFAULT_CARD = '/cards/CHXNDLER.webp';
 const FALLBACK_COVER = '/elements/logo.webp';
 
-function ElementIcon({ name, size = 18, glow = true }) {
+const ElementIcon = React.memo(function ElementIcon({ name, size = 18, glow = true }) {
   if (!name) return null;
   const n = String(name).toLowerCase();
   
@@ -109,9 +109,9 @@ function ElementIcon({ name, size = 18, glow = true }) {
       />
     </span>
   );
-}
+});
 
-export default function HUDPanel({
+const HUDPanel = React.memo(function HUDPanel({
   title = "OCEAN GIRL",
   subtitle = "Love flows back like tide.",
   songs,
@@ -830,7 +830,6 @@ export default function HUDPanel({
         }
 
         if (!session?.user) {
-          console.log('💰 No user session, skipping heart coins fetch');
           return;
         }
 
@@ -844,7 +843,6 @@ export default function HUDPanel({
         if (profileError) {
           // If profile doesn't exist yet, handle gracefully
           if (profileError.code === 'PGRST116') {
-            console.log('💰 No profile found yet, setting heart coins to 0');
             setHeartCoinsCount(0);
             return;
           }
@@ -852,7 +850,6 @@ export default function HUDPanel({
           return;
         }
 
-        console.log('💰 Heart coins fetched:', profile?.heartcoin_balance || 0);
         setHeartCoinsCount(profile?.heartcoin_balance || 0);
         
       } catch (error) {
@@ -1174,7 +1171,9 @@ export default function HUDPanel({
         setProfileSetupStep(1);
         
         // Show completion message somewhere or trigger celebration
-        console.log('Profile completed successfully!');
+        if (process.env.NODE_ENV === "development") {
+          console.log('Profile completed successfully!');
+        }
       }
     } catch (error) {
       console.error('Exception completing profile:', error);
@@ -7392,4 +7391,6 @@ export default function HUDPanel({
       />
     </motion.section>
   );
-}
+});
+
+export default HUDPanel;

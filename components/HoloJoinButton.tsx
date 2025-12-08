@@ -72,9 +72,6 @@ export default function HoloJoinButton({
             linear-gradient(180deg, #0b0b0b, #000 64%);
           box-shadow:
             0 16px 30px rgba(0,0,0,.6),
-            0 0 30px ${hubColor}88,
-            0 0 60px ${hubColor}55,
-            0 0 100px ${hubColor}33,
             inset 0 2px 0 rgba(255,255,255,.25),
             inset 0 -6px 14px rgba(0,0,0,.7);
           transition: transform 120ms ease, box-shadow 180ms ease, filter 180ms ease;
@@ -87,9 +84,6 @@ export default function HoloJoinButton({
           transform: scale(1.05);
           box-shadow:
             0 20px 38px rgba(0,0,0,.65),
-            0 0 40px ${hubColor}FF,
-            0 0 80px ${hubColor}BB,
-            0 0 120px ${hubColor}77,
             inset 0 2px 0 rgba(255,255,255,.3),
             inset 0 -8px 18px rgba(0,0,0,.7);
           filter: brightness(1.04) saturate(1.08);
@@ -102,10 +96,6 @@ export default function HoloJoinButton({
           animation: joinActivePulse 2.0s ease-in-out infinite;
           box-shadow:
             0 18px 36px rgba(0,0,0,.8),
-            0 0 40px ${hubColor}FF,
-            0 0 80px ${hubColor}CC,
-            0 0 120px ${hubColor}88,
-            0 0 160px ${hubColor}44,
             inset 0 2px 0 rgba(255,255,255,.35),
             inset 0 -6px 14px rgba(0,0,0,.7);
           filter: brightness(1.3) saturate(1.4);
@@ -127,10 +117,6 @@ export default function HoloJoinButton({
             filter: brightness(1.3) saturate(1.4);
             box-shadow:
               0 18px 36px rgba(0,0,0,.8),
-              0 0 40px ${hubColor}FF,
-              0 0 80px ${hubColor}CC,
-              0 0 120px ${hubColor}88,
-              0 0 160px ${hubColor}44,
               inset 0 2px 0 rgba(255,255,255,.35),
               inset 0 -6px 14px rgba(0,0,0,.7);
           }
@@ -138,10 +124,6 @@ export default function HoloJoinButton({
             filter: brightness(1.45) saturate(1.6);
             box-shadow:
               0 20px 40px rgba(0,0,0,.9),
-              0 0 50px ${hubColor}FF,
-              0 0 100px ${hubColor}EE,
-              0 0 150px ${hubColor}AA,
-              0 0 200px ${hubColor}66,
               inset 0 2px 0 rgba(255,255,255,.4),
               inset 0 -6px 14px rgba(0,0,0,.7);
           }

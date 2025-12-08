@@ -10,7 +10,13 @@ import { useAudioManager } from "@/contexts/AudioManagerContext";
 import { useProfile } from "@/hooks/useProfile";
 import { sfx } from "@/lib/sfx";
 
-export default function SteeringWheelOverlay({
+// Helper to detect Safari browser
+const isSafariUA =
+  typeof navigator !== "undefined" &&
+  /safari/i.test(navigator.userAgent) &&
+  !/chrome|android/i.test(navigator.userAgent);
+
+const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
   onLaunch,
   POS,
   playing,
@@ -269,6 +275,61 @@ export default function SteeringWheelOverlay({
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
+  // Plain wheel state for debugging (moved from render function)
+  const [plainWheel, setPlainWheel] = useState<boolean>(() => {
+    try {
+      if (typeof window === 'undefined') return false;
+      const force = window.localStorage.getItem('WHEEL_FORCE_LUMA') === '1';
+      if (force) return false;
+      const ls = window.localStorage.getItem('PLAIN_WHEEL');
+      if (ls === '1') return true;
+      if (ls === '0') return false;
+      return false;
+    } catch {
+      return false;
+    }
+  });
+  
+  // Set up plain wheel toggle effects (moved from render function)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    // Set default LUMA mode if not set
+    try {
+      const ls = window.localStorage.getItem('PLAIN_WHEEL');
+      if (ls === null) {
+        window.localStorage.setItem('PLAIN_WHEEL', '0');
+      }
+    } catch {}
+    
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.key === 'W' || e.key === 'w') && (e.metaKey || e.ctrlKey || e.shiftKey)) {
+        e.preventDefault();
+        setPlainWheel(prev => {
+          const next = !prev;
+          try { window.localStorage.setItem('PLAIN_WHEEL', next ? '1' : '0'); } catch {}
+          try { console.log(`Wheel video mode: ${next ? 'PLAIN' : 'LUMA'}`); } catch {}
+          return next;
+        });
+      }
+    };
+    
+    window.addEventListener('keydown', onKey);
+    
+    // expose manual toggle for convenience
+    (window as any).__toggleWheelVideo = () => setPlainWheel(prev => {
+      const next = !prev;
+      try { window.localStorage.setItem('PLAIN_WHEEL', next ? '1' : '0'); } catch {}
+      try { console.log(`Wheel video mode: ${next ? 'PLAIN' : 'LUMA'}`); } catch {}
+      return next;
+    });
+    
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      try { delete (window as any).__toggleWheelVideo; } catch {}
+    };
+  }, []);
+
   // Sync key CSS variables to :root so portal-rendered elements can align to the blue button
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -350,45 +411,6 @@ export default function SteeringWheelOverlay({
         />
         {/* Wheel video with luma key: remove black background; no circle crop, allow hands to extend. */}
         {(() => {
-          // Allow a quick debug toggle to show a plain <video> instead of luma-keyed canvas
-          const [plainWheel, setPlainWheel] = (function usePlainWheel() {
-            const [v, setV] = React.useState<boolean>(() => {
-              try {
-                const force = window.localStorage.getItem('WHEEL_FORCE_LUMA') === '1';
-                if (force) return false;
-                const ls = window.localStorage.getItem('PLAIN_WHEEL');
-                if (ls === '1') return true;
-                if (ls === '0') return false;
-                // Default to LUMA on first load so black box is keyed out
-                window.localStorage.setItem('PLAIN_WHEEL', '0');
-                return false;
-              } catch {
-                return false;
-              }
-            });
-            React.useEffect(() => {
-              const onKey = (e: KeyboardEvent) => {
-                if ((e.key === 'W' || e.key === 'w') && (e.metaKey || e.ctrlKey || e.shiftKey)) {
-                  e.preventDefault();
-                  setV(prev => {
-                    const next = !prev; try { window.localStorage.setItem('PLAIN_WHEEL', next ? '1' : '0'); } catch {}
-                    // eslint-disable-next-line no-console
-                    try { console.log(`Wheel video mode: ${next ? 'PLAIN' : 'LUMA'}`); } catch {}
-                    return next;
-                  });
-                }
-              };
-              window.addEventListener('keydown', onKey);
-              // expose manual toggle for convenience
-              (window as any).__toggleWheelVideo = () => setV(prev => {
-                const next = !prev; try { window.localStorage.setItem('PLAIN_WHEEL', next ? '1' : '0'); } catch {}
-                try { console.log(`Wheel video mode: ${next ? 'PLAIN' : 'LUMA'}`); } catch {}
-                return next;
-              });
-              return () => { window.removeEventListener('keydown', onKey); try { delete (window as any).__toggleWheelVideo; } catch {} };
-            }, []);
-            return [v, setV] as const;
-          })();
           // Kill-switch controlled via localStorage to diagnose performance issues
           let disable = false;
           try {
@@ -402,15 +424,7 @@ export default function SteeringWheelOverlay({
               disable = !force && (disable || v === '1' || v === 'true');
             }
           } catch {}
-          // Detect Safari for enhanced chroma key settings
-          const isSafariUA = (function() {
-            try {
-              const ua = navigator.userAgent;
-              return /safari/i.test(ua) && !/chrome|crios|android/i.test(ua);
-            } catch {
-              return false;
-            }
-          })();
+          // Safari detection already defined at top of file
           // Prefer MOV with alpha only if the browser claims support for HEVC/H.265
           const canPlayHvc = (() => {
             try {
@@ -451,18 +465,9 @@ export default function SteeringWheelOverlay({
                   background: 'transparent',
                   transform: 'scale(1.0)',
                   transformOrigin: 'bottom center',
-                  // Ultra-aggressive Safari styling to eliminate all black backgrounds
+                  // Preserve wheel appearance for Safari
                   ...(isSafariUA ? {
-                    mixBlendMode: 'screen',
-                    filter: 'brightness(2.0) contrast(2.5) saturate(1.4) hue-rotate(3deg)',
-                    position: 'relative',
-                    zIndex: 1,
-                    isolation: 'isolate',
-                    WebkitFilter: 'brightness(2.0) contrast(2.5) saturate(1.4)',
-                    backdropFilter: 'brightness(1.3) contrast(1.2)',
-                    // Enhanced circular mask with softer edges for better black removal
-                    WebkitMaskImage: 'radial-gradient(circle at 50% 58%, black 30%, transparent 70%)',
-                    maskImage: 'radial-gradient(circle at 50% 58%, black 30%, transparent 70%)'
+                    background: 'transparent'
                   } : {})
                 }}
                 onError={(e) => {
@@ -503,17 +508,9 @@ export default function SteeringWheelOverlay({
                   filter: isDimmingOverlayActive ? 'brightness(0.65) saturate(1.0)' : (isSafariUA ? 'brightness(1.3) contrast(1.4) saturate(1.2)' : undefined),
                   opacity: isDimmingOverlayActive ? 0.95 : 1,
                   transition: isDimmingOverlayActive ? 'filter 250ms ease, opacity 250ms ease' : 'none',
-                  // Ultra-aggressive Safari styling to eliminate all black backgrounds  
+                  // Preserve wheel appearance for Safari
                   ...(isSafariUA ? {
-                    mixBlendMode: 'screen',
-                    position: 'relative',
-                    zIndex: 1,
-                    isolation: 'isolate',
-                    WebkitFilter: 'brightness(2.0) contrast(2.5) saturate(1.4)',
-                    backdropFilter: 'brightness(1.3) contrast(1.2)',
-                    // Enhanced circular mask with softer edges for maximum black removal
-                    WebkitMaskImage: 'radial-gradient(circle at 50% 58%, black 30%, transparent 70%)',
-                    maskImage: 'radial-gradient(circle at 50% 58%, black 30%, transparent 70%)'
+                    background: 'transparent'
                   } : {})
                 }}
                 onError={(e) => {
@@ -534,27 +531,26 @@ export default function SteeringWheelOverlay({
           return (
             <LumaKeyVideo
               srcMp4={wheelSrc}
-              // Enhanced chroma key with Safari-specific adjustments to target black/dark backgrounds
+              // Target pure black background for removal
               keyColor={(vconf as any)?.keyColor ?? [0, 0, 0]}
-              // Ultra-aggressive settings for Safari to completely remove black/dark backgrounds
-              keyTolerance={(vconf as any)?.keyTolerance ?? (isSafariUA ? 0.98 : 0.12)}
-              keySoftness={(vconf as any)?.keySoftness ?? (isSafariUA ? 0.95 : 0.07)}
+              // Aggressive but precise black removal - higher tolerance for Safari
+              keyTolerance={(vconf as any)?.keyTolerance ?? (isSafariUA ? 0.85 : 0.12)}
+              keySoftness={(vconf as any)?.keySoftness ?? (isSafariUA ? 0.3 : 0.07)}
               keyMode={'chroma'}
-              // Enhanced blend modes for Safari
-              blendScreen={true}
-              // Enable fallback but allow chroma key to work for Safari
+              // Enable screen blending to eliminate dark pixels
+              blendScreen={isSafariUA}
               fallbackEnabled={true}
               minCoverageRatio={isSafariUA ? 0.001 : 0.0008}
-              // Minimal circle protection for Safari to allow maximum background removal
-              protectCircle={true}
+              // Disable circle protection to allow full background removal
+              protectCircle={false}
               protectCenterXRatio={0.5}
               protectCenterYRatio={0.58}
-              protectRadiusRatio={isSafariUA ? 0.2 : 0.47}
-              protectFeatherRatio={isSafariUA ? 0.1 : 0.08}
-              // Enhanced color correction for Safari
-              saturation={(vconf as any)?.saturation ?? (isSafariUA ? 1.25 : 1.0)}
-              contrast={(vconf as any)?.contrast ?? (isSafariUA ? 1.3 : 1.05)}
-              brightness={isSafariUA ? 1.1 : 1.0}
+              protectRadiusRatio={0}
+              protectFeatherRatio={0}
+              // Conservative color correction to preserve wheel appearance
+              saturation={(vconf as any)?.saturation ?? 1.0}
+              contrast={(vconf as any)?.contrast ?? 1.0}
+              brightness={1.0}
               offsetYRatio={0}
               paused={paused}
               forceEnabled
@@ -571,18 +567,13 @@ export default function SteeringWheelOverlay({
                 filter: isDimmingOverlayActive ? 'brightness(0.65) saturate(1.0)' : (isSafariUA ? 'brightness(1.1) contrast(1.1)' : undefined),
                 opacity: isDimmingOverlayActive ? 0.95 : 1,
                 transition: isDimmingOverlayActive ? 'filter 250ms ease, opacity 250ms ease' : 'none',
-                // Ultra-aggressive Safari styling for maximum black background removal
+                // Minimal Safari styling to preserve wheel appearance
                 ...(isSafariUA ? {
-                  mixBlendMode: 'screen',
-                  isolation: 'isolate',
-                  WebkitMaskComposite: 'xor',
-                  WebkitBackfaceVisibility: 'hidden',
-                  // Maximum black removal through CSS filters - more aggressive
-                  filter: 'brightness(1.5) contrast(2.0) saturate(1.3) hue-rotate(2deg)',
                   background: 'transparent',
-                  // Additional CSS properties to eliminate black pixels
-                  WebkitFilter: 'brightness(1.5) contrast(2.0) saturate(1.3)',
-                  backdropFilter: 'brightness(1.2) contrast(1.1)'
+                  // Remove all filters to preserve wheel's natural look
+                  filter: 'none',
+                  WebkitFilter: 'none',
+                  backdropFilter: 'none'
                 } : {})
               }}
             />
@@ -942,20 +933,6 @@ export default function SteeringWheelOverlay({
       </button>}
 
       <style jsx>{`
-        /* Safari-specific video chroma key enhancement */
-        @media not all and (min-resolution:.001dpcm) {
-          @supports (-webkit-appearance:none) {
-            video[aria-label*="wheel-video"] {
-              mix-blend-mode: screen !important;
-              filter: brightness(2.2) contrast(2.8) saturate(1.5) !important;
-              -webkit-filter: brightness(2.2) contrast(2.8) saturate(1.5) !important;
-              backdrop-filter: brightness(1.4) contrast(1.3) !important;
-              -webkit-backdrop-filter: brightness(1.4) contrast(1.3) !important;
-              -webkit-mask-image: radial-gradient(circle at 50% 58%, black 25%, transparent 65%) !important;
-              mask-image: radial-gradient(circle at 50% 58%, black 25%, transparent 65%) !important;
-            }
-          }
-        }
         .wheel-play {
           position: relative;
           display:grid; place-items:center; font-size:22px; font-weight:700; color:#00ffd0;
@@ -1310,4 +1287,6 @@ export default function SteeringWheelOverlay({
       <audio ref={buttonRef} src="/audio/click.mp3" preload="auto" />
     </div>
   );
-}
+});
+
+export default SteeringWheelOverlay;

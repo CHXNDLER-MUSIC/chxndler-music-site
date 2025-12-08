@@ -6,8 +6,10 @@ import React, {
   useState,
   useEffect,
   ReactNode,
+  useMemo,
+  useCallback,
 } from "react";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 import { ProfileTier } from "@/types/card";
 
 // Types for user owned cards and badges
@@ -148,7 +150,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const {
         data: { session },
         error: sessionError,
-      } = await supabaseClient.auth.getSession();
+      } = await supabaseBrowser.auth.getSession();
 
       if (sessionError) {
         console.error("Error getting session:", sessionError.message, sessionError);
@@ -162,7 +164,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
 
       // Read profile only; trigger is responsible for creation
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabaseBrowser
         .from("profiles")
         .select(
           "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour"
@@ -185,7 +187,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       // Fetch user cards and badges in parallel
       const [{ data: cardRows, error: cardError }, { data: badgeRows, error: badgeError }] =
         await Promise.all([
-          supabaseClient
+          supabaseBrowser
             .from("user_cards")
             .select(`
               id,
@@ -201,7 +203,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
               )
             `)
             .eq("user_id", user.id),
-          supabaseClient
+          supabaseBrowser
             .from("user_badges")
             .select(`
               id,
@@ -225,15 +227,6 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         console.error("Error loading user_badges", badgeError);
       }
 
-      // Debug heartcoin data from database
-      console.log('ProfileContext: Raw database profile data:', {
-        id: data.id,
-        name: data.name,
-        heartcoin_balance: data.heartcoin_balance,
-        heartcoin_total: data.heartcoin_total,
-        dataType: typeof data.heartcoin_balance
-      });
-
       // Map database columns to interface format
       const mappedProfile: Profile = {
         id: data.id,
@@ -256,8 +249,6 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         badges: badgeRows ?? [],
       };
 
-      console.log('ProfileContext: Mapped profile HeartCoin balance:', mappedProfile.heartcoin_balance);
-
       setProfile(mappedProfile);
     } catch (error) {
       console.error("Error in fetchProfile:", error);
@@ -267,16 +258,16 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     await fetchProfile();
-  };
+  }, []);
 
-  const updateProfile = async (updates: Partial<Profile>) => {
+  const updateProfile = useCallback(async (updates: Partial<Profile>) => {
     try {
       const {
         data: { session },
         error: sessionError,
-      } = await supabaseClient.auth.getSession();
+      } = await supabaseBrowser.auth.getSession();
 
       if (sessionError) {
         console.error("Error getting session:", sessionError.message, sessionError);
@@ -297,7 +288,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       if (updates.profile_complete !== undefined) dbUpdates.profile_complete = updates.profile_complete;
       
       // Update the existing profile (no insert logic - trigger handles creation)
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabaseBrowser
         .from("profiles")
         .update(dbUpdates)
         .eq("id", user.id)
@@ -338,9 +329,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Error in updateProfile:", error);
     }
-  };
+  }, [profile]);
 
-  const updateProfileNameAndElement = async (
+  const updateProfileNameAndElement = useCallback(async (
     name: string,
     elementLabel: string
   ) => {
@@ -356,14 +347,14 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       element: elementCode,
       profile_complete: !!(name && elementCode),
     });
-  };
+  }, [updateProfile]);
 
-  const updateProfileName = async (name: string) => {
+  const updateProfileName = useCallback(async (name: string) => {
     try {
       const {
         data: { session },
         error: sessionError,
-      } = await supabaseClient.auth.getSession();
+      } = await supabaseBrowser.auth.getSession();
 
       if (sessionError) {
         console.error("Error getting session:", sessionError.message, sessionError);
@@ -380,7 +371,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
 
       // Update the profile name
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabaseBrowser
         .from("profiles")
         .update({ 
           name: name.trim(),
@@ -403,17 +394,21 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       console.error("Error in updateProfileName:", error);
       throw error;
     }
-  };
+  }, [profile]);
 
   useEffect(() => {
     // Subscribe to auth state changes
     const {
       data: { subscription },
-    } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
-      console.log('ProfileContext: Auth state changed:', { event, userId: session?.user?.id });
+    } = supabaseBrowser.auth.onAuthStateChange(async (event, session) => {
+      if (process.env.NODE_ENV === "development") {
+        console.log('ProfileContext: Auth state changed:', { event, userId: session?.user?.id });
+      }
       
       if (session?.user) {
-        console.log('ProfileContext: User session detected, fetching profile...');
+        if (process.env.NODE_ENV === "development") {
+          console.log('ProfileContext: User session detected, fetching profile...');
+        }
         await fetchProfile();
         await loadJournalEntries(session.user.id);
       } else {
@@ -426,7 +421,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
     // Listen for forced profile refresh events
     const handleProfileUpdate = async () => {
-      console.log('Profile update event received, forcing refresh...');
+      if (process.env.NODE_ENV === "development") {
+        console.log('Profile update event received, forcing refresh...');
+      }
       await fetchProfile();
     };
 
@@ -444,9 +441,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Journal helper functions
-  const loadJournalEntries = async (userId: string) => {
+  const loadJournalEntries = useCallback(async (userId: string) => {
     try {
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabaseBrowser
         .from('soul_journal_entries')
         .select('*')
         .eq('user_id', userId)
@@ -461,14 +458,14 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error in loadJournalEntries:', error);
     }
-  };
+  }, []);
 
-  const saveJournalEntry = async (entry: Omit<JournalEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<JournalEntry | null> => {
+  const saveJournalEntry = useCallback(async (entry: Omit<JournalEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<JournalEntry | null> => {
     try {
       const {
         data: { session },
         error: sessionError,
-      } = await supabaseClient.auth.getSession();
+      } = await supabaseBrowser.auth.getSession();
 
       if (sessionError) {
         console.error('Error getting session:', sessionError.message);
@@ -504,7 +501,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         entryData.is_private = entry.is_private;
       }
 
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabaseBrowser
         .from('soul_journal_entries')
         .upsert(
           entryData,
@@ -534,11 +531,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       console.error('Error in saveJournalEntry:', error);
       return null;
     }
-  };
+  }, []);
 
-  const updateJournalEntry = async (entryId: string, updates: Partial<Pick<JournalEntry, 'soul_star' | 'intention' | 'prompt' | 'is_private'>>) => {
+  const updateJournalEntry = useCallback(async (entryId: string, updates: Partial<Pick<JournalEntry, 'soul_star' | 'intention' | 'prompt' | 'is_private'>>) => {
     try {
-      const { error } = await supabaseClient
+      const { error } = await supabaseBrowser
         .from('soul_journal_entries')
         .update({
           ...updates,
@@ -562,11 +559,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       console.error('Error updating journal entry:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const deleteJournalEntry = async (entryId: string) => {
+  const deleteJournalEntry = useCallback(async (entryId: string) => {
     try {
-      const { error } = await supabaseClient
+      const { error } = await supabaseBrowser
         .from('soul_journal_entries')
         .delete()
         .eq('id', entryId);
@@ -581,9 +578,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       console.error('Error deleting journal entry:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const getDailyPrompts = async (): Promise<DailyPrompts | null> => {
+  const getDailyPrompts = useCallback(async (): Promise<DailyPrompts | null> => {
     try {
       const response = await fetch('/api/soulPrompt/daily');
       
@@ -606,16 +603,16 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       console.error('Error in getDailyPrompts:', error);
       throw error; // Re-throw so journal component can handle it
     }
-  };
+  }, []);
 
-  const savePhone = async (phone: string) => {
+  const savePhone = useCallback(async (phone: string) => {
     if (!user) {
       console.error('No user found - cannot save phone');
       return;
     }
 
     try {
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabaseBrowser
         .from("profiles")
         .update({ phone })
         .eq("id", user.id)
@@ -637,9 +634,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Error in savePhone:", error);
     }
-  };
+  }, [user, profile]);
 
-  const value: ProfileContextType = {
+  const value: ProfileContextType = useMemo(() => ({
     profile,
     user,
     loading,
@@ -656,7 +653,24 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     getDailyPrompts,
     isJournalOpen,
     setIsJournalOpen,
-  };
+  }), [
+    profile,
+    user,
+    loading,
+    refreshProfile,
+    updateProfileNameAndElement,
+    updateProfile,
+    updateProfileName,
+    savePhone,
+    journalEntries,
+    loadJournalEntries,
+    saveJournalEntry,
+    updateJournalEntry,
+    deleteJournalEntry,
+    getDailyPrompts,
+    isJournalOpen,
+    setIsJournalOpen,
+  ]);
 
   return (
     <ProfileContext.Provider value={value}>

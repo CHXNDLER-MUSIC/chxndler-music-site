@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { sfx } from "@/lib/sfx";
 import Image from "next/image";
 import { useProfile } from '@/contexts/ProfileContext';
-import { supabaseClient } from "@/lib/supabaseClient";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 import { track } from "@/lib/analytics";
 import { useBonusQuests } from '@/hooks/useBonusQuests';
 import { BonusQuestWithCompletion } from '@/types/bonusQuests';
@@ -196,6 +196,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [selectedCardElement, setSelectedCardElement] = useState<string | null>(null);
   const [selectedSong, setSelectedSong] = useState<string>('');
   const [showPhysicalForm, setShowPhysicalForm] = useState(false);
+  const [showPhysicalConfirm, setShowPhysicalConfirm] = useState(false);
   const [showDigitalForm, setShowDigitalForm] = useState(false);
   const [currentMerchIndex, setCurrentMerchIndex] = useState(0);
   const [flippedItems, setFlippedItems] = useState<Set<string>>(new Set());
@@ -327,7 +328,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const fetchCards = async () => {
     setIsLoadingCards(true);
     try {
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabaseBrowser
         .from('cards')
         .select('id, card_name, element, rarity, artwork_url, description, is_released, min_tier')
         .order('card_name');
@@ -338,9 +339,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       const cardsWithCosts = data.map(card => ({
         ...card,
         digitalCost: card.digitalCost || (card.rarity?.toLowerCase() === 'legendary' ? 50 : 
-                     card.rarity?.toLowerCase() === 'rare' ? 25 : 20),
+                     card.rarity?.toLowerCase() === 'rare' ? 5 : 5),
         physicalCost: card.physicalCost || (card.rarity?.toLowerCase() === 'legendary' ? 75 :
-                      card.rarity?.toLowerCase() === 'rare' ? 35 : 30)
+                      card.rarity?.toLowerCase() === 'rare' ? 20 : 20)
       }));
       
       setCards(cardsWithCosts);
@@ -1916,6 +1917,129 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       {card.description}
                                     </p>
                                   </>
+                                ) : showPhysicalConfirm ? (
+                                  /* Physical Purchase Confirmation */
+                                  <div className="text-center">
+                                    {/* User and Cost - Side by Side */}
+                                    <div className="flex justify-between items-start mb-3">
+                                      {/* User Section */}
+                                      <div className="flex flex-col items-center flex-1">
+                                        <div 
+                                          className="text-sm font-bold mb-3"
+                                          style={{ 
+                                            color: '#FFFFFF', 
+                                            textShadow: '0 0 4px rgba(255,255,255,0.6)' 
+                                          }}
+                                        >
+                                          User
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-1">
+                                          <img
+                                            src="/elements/heart-coin.webp"
+                                            alt="Heart Coin"
+                                            className="w-8 h-8"
+                                            style={{
+                                              filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
+                                            }}
+                                          />
+                                          <span 
+                                            className="text-lg font-bold"
+                                            style={{ 
+                                              color: '#F2EF1D',
+                                              textShadow: '0 0 6px rgba(242,239,29,0.8)'
+                                            }}
+                                          >
+                                            {profile?.id ? heartCoins : 0}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      {/* Cost Section */}
+                                      <div className="flex flex-col items-center flex-1">
+                                        <div 
+                                          className="text-sm font-bold mb-3"
+                                          style={{ 
+                                            color: '#FFFFFF', 
+                                            textShadow: '0 0 4px rgba(255,255,255,0.6)' 
+                                          }}
+                                        >
+                                          Cost
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-1">
+                                          <img
+                                            src="/elements/heart-coin.webp"
+                                            alt="Heart Coin"
+                                            className="w-8 h-8"
+                                            style={{
+                                              filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
+                                            }}
+                                          />
+                                          <span 
+                                            className="text-lg font-bold"
+                                            style={{ 
+                                              color: '#F2EF1D',
+                                              textShadow: '0 0 6px rgba(242,239,29,0.8)'
+                                            }}
+                                          >
+                                            {card.physicalCost}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    <div 
+                                      className="text-sm mb-4"
+                                      style={{ 
+                                        color: heartCoins >= card.physicalCost ? '#90EE90' : '#FF6B6B', 
+                                        textShadow: heartCoins >= card.physicalCost 
+                                          ? '0 0 4px rgba(144,238,144,0.8)' 
+                                          : '0 0 4px rgba(255,107,107,0.8)'
+                                      }}
+                                    >
+                                      {(profile?.id ? heartCoins : 0) >= card.physicalCost 
+                                        ? 'You can purchase this card!' 
+                                        : 'You need more heart coins'}
+                                    </div>
+
+                                    <button 
+                                      className="w-full px-4 py-2 rounded border transition-colors mb-2"
+                                      style={{ 
+                                        backgroundColor: (profile?.id ? heartCoins : 0) >= card.physicalCost 
+                                          ? 'rgba(0,255,0,0.2)' 
+                                          : 'rgba(255,0,0,0.2)',
+                                        borderColor: (profile?.id ? heartCoins : 0) >= card.physicalCost 
+                                          ? 'rgba(0,255,0,0.6)' 
+                                          : 'rgba(255,0,0,0.6)',
+                                        color: (profile?.id ? heartCoins : 0) >= card.physicalCost ? '#90EE90' : '#FF6B6B', 
+                                        textShadow: (profile?.id ? heartCoins : 0) >= card.physicalCost 
+                                          ? '0 0 4px rgba(144,238,144,0.8)' 
+                                          : '0 0 4px rgba(255,107,107,0.8)',
+                                        fontWeight: 'bold'
+                                      }}
+                                      disabled={(profile?.id ? heartCoins : 0) < card.physicalCost}
+                                      onClick={() => {
+                                        try { sfx.play('click', 0.8); } catch {}
+                                        if ((profile?.id ? heartCoins : 0) >= card.physicalCost) {
+                                          setShowPhysicalConfirm(false);
+                                          setShowPhysicalForm(true);
+                                        }
+                                      }}
+                                    >
+                                      CONFIRM
+                                    </button>
+
+                                    <button 
+                                      className="w-full px-4 py-1 rounded border border-gray-500/60 bg-gray-500/20 hover:bg-gray-500/30 transition-colors text-white text-xs"
+                                      onClick={() => {
+                                        try { sfx.play('close', 0.4); } catch {}
+                                        setShowPhysicalConfirm(false);
+                                      }}
+                                    >
+                                      BACK
+                                    </button>
+                                  </div>
                                 ) : showPhysicalForm ? (
                                   /* Shipping Form */
                                   <div className="space-y-3">
@@ -2137,6 +2261,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       try { sfx.play('click', 0.7); } catch {}
                                       setShowDigitalForm(!showDigitalForm);
                                       setShowPhysicalForm(false);
+                                      setShowPhysicalConfirm(false);
                                     }}
                                   >
                                     <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-4 h-4" />{card.digitalCost} DIGITAL
@@ -2144,20 +2269,21 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   
                                   <button 
                                     className={`flex items-center gap-1 px-2 py-1 rounded border transition-colors text-sm ${
-                                      showPhysicalForm 
+                                      showPhysicalForm || showPhysicalConfirm 
                                         ? 'border-purple-400/80 bg-purple-400/30' 
                                         : 'border-purple-500/60 bg-purple-500/20 hover:bg-purple-500/30'
                                     }`}
                                     style={{ 
-                                      color: showPhysicalForm ? '#E6E6FA' : '#DA70D6', 
-                                      textShadow: showPhysicalForm 
+                                      color: showPhysicalForm || showPhysicalConfirm ? '#E6E6FA' : '#DA70D6', 
+                                      textShadow: showPhysicalForm || showPhysicalConfirm 
                                         ? '0 0 6px rgba(230,230,250,0.8)' 
                                         : '0 0 4px rgba(218,112,214,0.8)',
-                                      boxShadow: showPhysicalForm ? '0 0 15px rgba(218,112,214,0.4)' : 'none'
+                                      boxShadow: showPhysicalForm || showPhysicalConfirm ? '0 0 15px rgba(218,112,214,0.4)' : 'none'
                                     }}
                                     onClick={() => {
                                       try { sfx.play('click', 0.7); } catch {}
-                                      setShowPhysicalForm(!showPhysicalForm);
+                                      setShowPhysicalConfirm(!showPhysicalConfirm);
+                                      setShowPhysicalForm(false);
                                       setShowDigitalForm(false);
                                     }}
                                   >

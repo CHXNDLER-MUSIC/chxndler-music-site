@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useRef, useState, useEffect } from "react";
+import React, { useCallback, useRef, useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useSongs } from "@/hooks/useSongs";
 import { AUDIO_ASSETS_BY_SLUG } from "@/data/audioAssets";
@@ -14,7 +14,7 @@ const SONG_TRACK_MAP: Record<string, TrackKey> = {
   "baby": "BABY",
   "be-my-bee": "BE_MY_BEE",
   "ocean-girl": "OCEAN_GIRL",
-  "colors-home": "COLORS_HOME",
+  "space-music": "SPACE_MUSIC",
   "game-boy-heart": "GAME_BOY_HEART",
   "house-party": "HOUSE_PARTY",
   "kid-forever": "KID_FOREVER",
@@ -60,7 +60,7 @@ interface UnifiedAudioPlayerProps {
   initialTrackId?: string;
 }
 
-export default function UnifiedAudioPlayer({ initialTrackId }: UnifiedAudioPlayerProps) {
+const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrackId }: UnifiedAudioPlayerProps) {
   // Use existing audio manager with centralized state
   const audioManager = useAudioManager();
   
@@ -79,25 +79,28 @@ export default function UnifiedAudioPlayer({ initialTrackId }: UnifiedAudioPlaye
   // Get songs from Supabase
   const { songs: supabaseSongs, loading } = useSongs();
   
-  // Filter released songs and combine with asset data
-  const availableSongs = supabaseSongs
-    .filter(song => song.is_released)
-    .map(song => {
-      const asset = AUDIO_ASSETS_BY_SLUG[song.slug];
-      if (!asset) return null;
-      
-      return {
-        id: song.slug,
-        title: song.title,
-        oneLiner: `Released ${new Date(song.created_at).getFullYear()}`,
-        src: asset.src,
-        cover: asset.cover,
-        element: SONG_ELEMENT_MAPPING[song.slug] || 'heart',
-        // Add placeholder planet info for compatibility
-        planet: { radius: 1, color: "#38B6FF", orbitRadius: 3, orbitSpeed: 0.5, tilt: 0.2 }
-      };
-    })
-    .filter(Boolean);
+  // Filter released songs and combine with asset data - memoized for performance
+  const availableSongs = useMemo(() => 
+    supabaseSongs
+      .filter(song => song.is_released)
+      .map(song => {
+        const asset = AUDIO_ASSETS_BY_SLUG[song.slug];
+        if (!asset) return null;
+        
+        return {
+          id: song.slug,
+          title: song.title,
+          oneLiner: `Released ${new Date(song.created_at).getFullYear()}`,
+          src: asset.src,
+          cover: asset.cover,
+          element: SONG_ELEMENT_MAPPING[song.slug] || 'heart',
+          // Add placeholder planet info for compatibility
+          planet: { radius: 1, color: "#38B6FF", orbitRadius: 3, orbitSpeed: 0.5, tilt: 0.2 }
+        };
+      })
+      .filter(Boolean), 
+    [supabaseSongs]
+  );
   
   // Calculate progress (0-1)
   const progress = duration > 0 ? currentTime / duration : 0;
@@ -193,13 +196,16 @@ export default function UnifiedAudioPlayer({ initialTrackId }: UnifiedAudioPlaye
     };
   }, [audioManager, currentAudioElement]);
 
-  // Prepare dropdown items for SongDropdown component
-  const dropdownItems = availableSongs.map(song => ({
-    id: song.id,
-    title: song.title,
-    slug: song.id,
-    icon: ELEMENT_MAP[song.id] || "music",
-  }));
+  // Prepare dropdown items for SongDropdown component - memoized
+  const dropdownItems = useMemo(() => 
+    availableSongs.map(song => ({
+      id: song.id,
+      title: song.title,
+      slug: song.id,
+      icon: ELEMENT_MAP[song.id] || "music",
+    })), 
+    [availableSongs]
+  );
 
   return (
     <motion.div
@@ -305,7 +311,9 @@ export default function UnifiedAudioPlayer({ initialTrackId }: UnifiedAudioPlaye
       </div>
     </motion.div>
   );
-}
+});
+
+export default UnifiedAudioPlayer;
 
 // Helper function to format time in MM:SS format
 function formatTime(seconds: number): string {

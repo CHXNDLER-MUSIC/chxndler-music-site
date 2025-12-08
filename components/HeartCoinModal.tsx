@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useProfile } from '@/contexts/ProfileContext';
 import HeartversePopup from "@/components/HeartversePopup";
 
@@ -136,7 +136,7 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
     setMessage(null);
     setLoading(true);
     try {
-      const { error } = await supabaseClient.auth.signInWithOAuth({
+      const { error } = await supabaseBrowser.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo: window.location.origin + "/auth/callback" },
       });
@@ -154,7 +154,7 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
     setMessage(null);
     setLoading(true);
     try {
-      const { error } = await supabaseClient.auth.signInWithOtp({
+      const { error } = await supabaseBrowser.auth.signInWithOtp({
         email,
         options: { emailRedirectTo: window.location.origin + "/auth/callback?profileSetup=1" },
       });
@@ -173,7 +173,7 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
     setMessage(null);
     setLoading(true);
     try {
-      const { error } = await supabaseClient.auth.signInWithOtp({
+      const { error } = await supabaseBrowser.auth.signInWithOtp({
         phone,
       });
       if (error) throw error;

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BonusQuestWithCompletion, QuestCompletionResult } from '@/types/bonusQuests';
 import { getBonusQuestsForUser, completeBonusQuest } from '@/lib/bonusQuests';
-import { supabaseClient } from '@/lib/supabaseClient';
+import { supabaseBrowser } from '@/lib/supabase-browser';
 
 interface UseBonusQuestsReturn {
   bonusQuests: BonusQuestWithCompletion[];
@@ -27,7 +27,7 @@ export function useBonusQuests(): UseBonusQuestsReturn {
   useEffect(() => {
     const getCurrentUser = async () => {
       try {
-        const { data: { user }, error } = await supabaseClient.auth.getUser();
+        const { data: { user }, error } = await supabaseBrowser.auth.getUser();
         if (error) {
           // Log but do not surface error to UI; quests are public
           console.warn('Non-fatal: getUser error; treating as logged out:', error);

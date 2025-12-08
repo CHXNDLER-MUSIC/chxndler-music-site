@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useTour } from '@/contexts/TourContext';
-import { supabaseClient } from '@/lib/supabaseClient';
+import { supabaseBrowser } from '@/lib/supabase-browser';
 import { elementIcons } from '@/lib/elementIcons';
 import { sfx } from '@/lib/sfx';
 
@@ -206,7 +206,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
   // Fetch all relics from database
   const fetchAllRelics = async () => {
     try {
-      const { data: relicsData, error: relicsError } = await supabaseClient
+      const { data: relicsData, error: relicsError } = await supabaseBrowser
         .from('relics')
         .select('id, label, image_url, code')
         .eq('kind', 'RELIC')
@@ -317,7 +317,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
     try {
       // Fetch all relics and unlocked badges/relics in parallel
       const [badgeResult, relicResult] = await Promise.all([
-        supabaseClient
+        supabaseBrowser
           .from('user_badges')
           .select(`
             id,
@@ -331,7 +331,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
             )
           `)
           .eq('user_id', user.id),
-        supabaseClient
+        supabaseBrowser
           .from('user_relics')
           .select(`
             id,
@@ -455,7 +455,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
       if (Object.keys(updates).length > 0) {
         updates.updated_at = new Date().toISOString();
 
-        const { error } = await supabaseClient
+        const { error } = await supabaseBrowser
           .from('profiles')
           .update(updates)
           .eq('id', user.id);
@@ -496,7 +496,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
     try { sfx.play('click', 0.8); } catch {}
     
     try {
-      const { error } = await supabaseClient.auth.signOut();
+      const { error } = await supabaseBrowser.auth.signOut();
       if (error) {
         console.error('Error signing out:', error);
       } else {
@@ -1279,7 +1279,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   
                   try {
                     // Update user's element in profile
-                    const { error } = await supabaseClient
+                    const { error } = await supabaseBrowser
                       .from('profiles')
                       .update({
                         element: currentElement.name,

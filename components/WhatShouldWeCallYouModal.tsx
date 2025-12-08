@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useUIStore } from "@/store/useUIStore";
 import { useProfile as useNewProfile } from "@/hooks/useProfile";
 import { useProfile } from "@/contexts/ProfileContext";
@@ -47,7 +47,7 @@ export default function WhatShouldWeCallYouModal() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
+        const { data: { user } } = await supabaseBrowser.auth.getUser();
         setCurrentUser(user);
       } finally {
         setAuthChecked(true);

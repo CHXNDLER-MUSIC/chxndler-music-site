@@ -54,6 +54,7 @@ export default function SkyboxVideo({
   const lsStartRef = useRef<number | null>(null);
   const flyEndCalledRef = useRef(false);
   const firstRunRef = useRef(true);
+  const warpSoundPlayingRef = useRef(false);
   // Stable refs for callback props to avoid effect thrash on each render
   const onFlyEndRef = useRef(onFlyEnd);
   const onBasePlayingRef = useRef(onBasePlaying);
@@ -111,9 +112,11 @@ export default function SkyboxVideo({
   // Do not trigger on initial mount; only on subsequent flySignal changes
   const flyInitRef = React.useRef(false);
   React.useEffect(() => {
-    console.log('🎬 SkyboxVideo flySignal effect:', { flySignal, allowWarp, showLightspeed });
+    if (DEBUG_MEDIA) dlog('🎬 SkyboxVideo flySignal effect:', { flySignal, allowWarp, showLightspeed });
     if (!flyInitRef.current) { flyInitRef.current = true; return; }
     if (typeof flySignal !== 'number') return;
+    if (!allowWarp) return; // Don't trigger warp effect if warp is disabled
+    if (warpSoundPlayingRef.current) return; // Prevent double warp sounds
     // Brief camera zoom/blur
     setFlying(true);
     const t = setTimeout(() => setFlying(false), 700);
@@ -127,10 +130,18 @@ export default function SkyboxVideo({
       // Delay warp SFX slightly to sync with lightspeed video, and notify when it ends
       setTimeout(() => {
         try {
+          warpSoundPlayingRef.current = true;
           sfx.playAndWait('warp', 0.7).then(() => {
+            warpSoundPlayingRef.current = false;
             try { onWarpSfxEnd && onWarpSfxEnd(); } catch {}
-          }).catch(() => { try { onWarpSfxEnd && onWarpSfxEnd(); } catch {} });
-        } catch { try { onWarpSfxEnd && onWarpSfxEnd(); } catch {} }
+          }).catch(() => { 
+            warpSoundPlayingRef.current = false;
+            try { onWarpSfxEnd && onWarpSfxEnd(); } catch {} 
+          });
+        } catch { 
+          warpSoundPlayingRef.current = false;
+          try { onWarpSfxEnd && onWarpSfxEnd(); } catch {} 
+        }
       }, 100);
       flyEndCalledRef.current = false;
       if (onFlyStart) try { onFlyStart(); } catch {}
@@ -150,12 +161,13 @@ export default function SkyboxVideo({
     } catch {}
 
     return () => { clearTimeout(t); if (lsTimerRef.current !== undefined) { window.clearTimeout(lsTimerRef.current); lsTimerRef.current = undefined; } };
-  }, [flySignal]);
+  }, [flySignal, allowWarp, showLightspeed, holdLightspeed, minDurationMs, lsYtEmbedUrl]);
 
   // Disable auto warp on initial page open unless allowWarp is true
   React.useEffect(() => {
     if (!allowWarp) { firstRunRef.current = false; return; }
     if (!firstRunRef.current) return;
+    if (warpSoundPlayingRef.current) return; // Prevent double warp sounds
     firstRunRef.current = false;
     try {
       setShowLightspeed(true);
@@ -168,10 +180,18 @@ export default function SkyboxVideo({
       // Delay warp SFX slightly to sync with lightspeed video, and notify when it ends
       setTimeout(() => {
         try {
+          warpSoundPlayingRef.current = true;
           sfx.playAndWait('warp', 0.7).then(() => {
+            warpSoundPlayingRef.current = false;
             try { onWarpSfxEnd && onWarpSfxEnd(); } catch {}
-          }).catch(() => { try { onWarpSfxEnd && onWarpSfxEnd(); } catch {} });
-        } catch { try { onWarpSfxEnd && onWarpSfxEnd(); } catch {} }
+          }).catch(() => { 
+            warpSoundPlayingRef.current = false;
+            try { onWarpSfxEnd && onWarpSfxEnd(); } catch {} 
+          });
+        } catch { 
+          warpSoundPlayingRef.current = false;
+          try { onWarpSfxEnd && onWarpSfxEnd(); } catch {} 
+        }
       }, 100);
       if (!holdLightspeed) {
         if (lsTimerRef.current !== undefined) window.clearTimeout(lsTimerRef.current);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { supabaseClient } from '@/lib/supabaseClient';
+import { supabaseBrowser } from '@/lib/supabase-browser';
 
 interface Profile {
   id: string;
@@ -44,7 +44,7 @@ export function useProfile(): UseProfileReturn {
       setError(null);
 
       // Get current session
-      const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabaseBrowser.auth.getSession();
       
       if (sessionError) {
         console.error('Error getting session:', {
@@ -65,7 +65,7 @@ export function useProfile(): UseProfileReturn {
       }
 
       // Fetch profile using the correct column names
-      let { data: profileData, error: profileError } = await supabaseClient
+      let { data: profileData, error: profileError } = await supabaseBrowser
         .from('profiles')
         .select('id, email, phone, name, element, profile_complete, created_at, updated_at')
         .eq('id', currentUser.id)
@@ -117,7 +117,7 @@ export function useProfile(): UseProfileReturn {
       // Filter out has_completed_onboarding from updates if column doesn't exist
       const updateData = { ...updates, updated_at: new Date().toISOString() };
       
-      let { data, error } = await supabaseClient
+      let { data, error } = await supabaseBrowser
         .from('profiles')
         .update(updateData)
         .eq('id', user.id)
@@ -153,7 +153,7 @@ export function useProfile(): UseProfileReturn {
 
   // Set up auth state listener and initial fetch
   useEffect(() => {
-    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
+    const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           await fetchProfile();

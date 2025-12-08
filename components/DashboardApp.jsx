@@ -182,11 +182,19 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [channelIdx, setChannelIdx] = useState(-1); // Set to invalid index to prevent any auto track loading
   // Wrapper for setChannelIdx with logging for song selection debugging
   const setChannelIdxWithLog = (newIdx) => {
-    console.log('🎵 Playing track:', tracks[newIdx]?.title);
+    if (process.env.NODE_ENV === "development") {
+      console.log('🎵 Playing track:', tracks[newIdx]?.title);
+    }
     setChannelIdx(newIdx);
   };
   const [isPlaying, setIsPlaying] = useState(false);
-  const [sky, setSky] = useState(introSky);
+  const [sky, setSkyInternal] = useState(introSky);
+  
+  // Wrapper to prevent unnecessary sky updates
+  const setSky = useCallback((newSky) => {
+    if (!newSky || (sky && newSky.key === sky.key)) return;
+    setSkyInternal(newSky);
+  }, [sky]);
   const [links, setLinks] = useState({ spotify: LINKS.spotify, apple: LINKS.apple });
   const [userSelected, setUserSelected] = useState(false);
   const [curTrack, setCurTrack] = useState(null); // No default track - user must explicitly select
@@ -339,11 +347,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       try {
         const newSky = skyFor(audioManager.currentTrackInfo.id);
         if (newSky && (newSky.key !== sky.key)) {
-          console.log('🎨 Context overriding sky!', {
-            from: sky.key,
-            to: newSky.key,
-            trackInfo: audioManager.currentTrackInfo.id
-          });
+          if (process.env.NODE_ENV === "development") {
+            console.log('🎨 Context overriding sky!', {
+              from: sky.key,
+              to: newSky.key,
+              trackInfo: audioManager.currentTrackInfo.id
+            });
+          }
           setSky(newSky);
         }
       } catch (error) {
@@ -373,7 +383,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     };
     setTimeout(step, TICK);
   }, []);
-  const SPACE_SKY = { webm: "/skies/space.webm", mp4: "/skies/space.mp4", key: "space" };
+  const SPACE_SKY = { webm: "", mp4: "", key: "space", youtubeUrl: "https://youtu.be/gHDxkhQ4FbY" };
 
   // Spotlight follows Start button dimensions/position exactly
   const [spotlightPos, setSpotlightPos] = useState({ x: null, y: null, r: null });
@@ -604,7 +614,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       console.warn('DashboardApp: onSongChange called with empty id; ignoring selection');
       return;
     }
-    console.log('🎵 onSongChange - id:', id, 'slug:', slug);
+    if (process.env.NODE_ENV === "development") {
+      console.log('🎵 onSongChange - id:', id, 'slug:', slug);
+    }
     
     // IMMEDIATELY hide blue display and light beam when song is selected
     setShowHUD(false);
@@ -624,12 +636,16 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     
     if (idx < 0) {
       console.warn('DashboardApp: onSongChange - track not found for id:', id, 'slug:', slug);
-      console.log('Available tracks:', tracks.map(t => ({title: t.title, slug: t.slug})));
+      if (process.env.NODE_ENV === "development") {
+        console.log('Available tracks:', tracks.map(t => ({title: t.title, slug: t.slug})));
+      }
       return;
     }
     const selectedTrack = tracks[idx];
-    console.log('🎵 Song selected:', selectedTrack.title);
-    console.log('🎵 Current state before update:', { userSelected, homeMode, pendingTrackPlay, curTrack: curTrack?.slug });
+    if (process.env.NODE_ENV === "development") {
+      console.log('🎵 Song selected:', selectedTrack.title);
+      console.log('🎵 Current state before update:', { userSelected, homeMode, pendingTrackPlay, curTrack: curTrack?.slug });
+    }
     // Unblock main player audio now that a song is explicitly selected
     try { if (typeof window !== 'undefined') { window.__BLOCK_MAIN_AUDIO = false; } } catch (e) {}
     
@@ -703,7 +719,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     pendingTrackIndexRef.current = idx;
     // Set the current track directly for immediate UI updates
     setCurTrack(selectedTrack);
-    console.log('🎵 State updated - new curTrack:', selectedTrack.slug, 'userSelected: true, pendingTrackPlay: true');
+    if (process.env.NODE_ENV === "development") {
+      console.log('🎵 State updated - new curTrack:', selectedTrack.slug, 'userSelected: true, pendingTrackPlay: true');
+    }
     
     // Always switch the base sky immediately so it can load under the overlay.
     // Do not start a new warp if one is already in progress; just update the pending track.
@@ -724,7 +742,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         // BACKUP TIMER: Ensure warp completes even if audio callback fails (Chrome compatibility)
         setTimeout(() => {
           if (!warpFullyComplete) {
-            console.log("🔧 BACKUP: Setting warpFullyComplete to true (song selection warp)");
+            if (process.env.NODE_ENV === "development") {
+        console.log("🔧 BACKUP: Setting warpFullyComplete to true (song selection warp)");
+      }
             setWarpFullyComplete(true);
           }
         }, WARP_DURATION_MS + 500);
@@ -752,7 +772,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       // BACKUP TIMER: Ensure warp completes even if audio callback fails (Chrome compatibility)
       setTimeout(() => {
         if (!warpFullyComplete) {
+          if (process.env.NODE_ENV === "development") {
           console.log("🔧 BACKUP: Setting warpFullyComplete to true (auto warp)");
+        }
           setWarpFullyComplete(true);
         }
       }, WARP_DURATION_MS + 500);
@@ -891,7 +913,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // BACKUP TIMER: Ensure warp completes even if audio callback fails (Chrome compatibility)
     setTimeout(() => {
       if (!warpFullyComplete) {
+        if (process.env.NODE_ENV === "development") {
         console.log("🔧 BACKUP: Setting warpFullyComplete to true (initial slug warp)");
+      }
         setWarpFullyComplete(true);
       }
     }, WARP_DURATION_MS + 500);
@@ -1208,7 +1232,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // BACKUP TIMER: Ensure warp completes even if audio callback fails (Chrome compatibility)
     setTimeout(() => {
       if (!warpFullyComplete) {
-        console.log("🔧 BACKUP: Setting warpFullyComplete to true (audio callback may have failed)");
+        if (process.env.NODE_ENV === "development") {
+          console.log("🔧 BACKUP: Setting warpFullyComplete to true (audio callback may have failed)");
+        }
         setWarpFullyComplete(true);
       }
     }, WARP_DURATION_MS + 500); // Add 500ms buffer beyond the expected warp duration
@@ -1229,17 +1255,23 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
     // When warp finishes, move to landed phase
     setTimeout(() => {
-      console.log("🛬 LANDING COMPLETE - Full cockpit reveal");
+      if (process.env.NODE_ENV === "development") {
+        console.log("🛬 LANDING COMPLETE - Full cockpit reveal");
+      }
       setUiPhase("landed");
       startInFlightRef.current = false;
       
       // CRITICAL: Mark user has entered Heartverse to show profile bar
       try { 
         enterHeartverse(); 
-        console.log("✅ User entered Heartverse - profile bar will show immediately");
+        if (process.env.NODE_ENV === "development") {
+          console.log("✅ User entered Heartverse - profile bar will show immediately");
+        }
       } catch { 
         setHasEnteredHeartverse(true); 
-        console.log("✅ Fallback: set hasEnteredHeartverse to true");
+        if (process.env.NODE_ENV === "development") {
+          console.log("✅ Fallback: set hasEnteredHeartverse to true");
+        }
       }
       
       // Enable remaining systems for landed state
@@ -1374,13 +1406,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   // Listen for tour skip event to trigger warp effect
   React.useEffect(() => {
     const handleTourSkipped = () => {
-      console.log('Tour skipped - triggering warp effect');
-      // Use setIsWarping with function form to get current state
+        // Use setIsWarping with function form to get current state
       setIsWarping(currentWarping => {
-        console.log('Current isWarping state:', currentWarping);
-        if (!currentWarping) {
-          console.log('Starting warp sequence...');
-          setHomeIntroEnabled(true);
+          if (!currentWarping) {
+            setHomeIntroEnabled(true);
           setPendingOverlayReveal(true);
           setUiUnlocked(true);
           setAllowWarp(true);
@@ -1395,19 +1424,15 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             window.postWarpUser = null;
             window.postWarpProfileComplete = false;
           }
-          console.log('Warp sequence initiated');
-          return true; // Set to warping
+            return true; // Set to warping
         } else {
-          console.log('Warp already in progress, skipping');
-          return currentWarping; // Keep current state
+            return currentWarping; // Keep current state
         }
       });
     };
 
-    console.log('Adding tour:skipped event listener');
     window.addEventListener('tour:skipped', handleTourSkipped);
     return () => {
-      console.log('Removing tour:skipped event listener');
       window.removeEventListener('tour:skipped', handleTourSkipped);
     };
   }, []);
@@ -1423,7 +1448,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   useEffect(() => {
     const handler = (e) => {
       const target = e.target;
-      console.log("🖱 Global click:", {
+      if (process.env.NODE_ENV === "development" && false) { // Disabled very verbose log
+        console.log("🖱 Global click:", {
         tag: target?.tagName,
         id: target?.id,
         className: target?.className,
@@ -1432,7 +1458,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         title: target?.getAttribute("title"),
         isStartButton: target?.getAttribute("aria-label") === "Start",
         isWheelPlay: target?.classList?.contains("wheel-play") || false,
-      });
+        });
+      }
     };
     window.addEventListener("click", handler);
     return () => window.removeEventListener("click", handler);
@@ -1768,17 +1795,14 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const handleCodeClick = () => {
     // Change beam color to white when Code button is clicked
     handleBeamToggle('white');
-    console.log('Code button clicked - beam changed to white');
   };
 
   const handleDigitalBinderClick = () => {
     // TODO: Implement Digital Binder modal/route
-    console.log('Digital Binder button clicked');
   };
 
   const handleBadgesClick = () => {
     // TODO: Implement Badges modal/route
-    console.log('Badges button clicked');
   };
 
 
@@ -1900,6 +1924,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           
           // Mark that warp effect is fully complete (including sound effects)
           setWarpFullyComplete(true);
+          
+          // Disable warp to prevent additional warp sounds
+          setAllowWarp(false);
           
           // Welcome modal will be shown after UI reveal below
           
@@ -2054,17 +2081,20 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               setPowerBusy(false);
               setLandingRevealReady(true);
               setWarpActive(false); // CRITICAL: End warp state to allow light beam and other UI to show
-              console.log("🚀 WARP END: Synchronized cockpit reveal - all UI elements visible");
-              console.log("🛸 POST-WARP STATES:", { 
-                cockpitVisible: true,
-                uiUnlocked: true,
-                showOverlayUI: true,
-                showProfileBar: true,
-                cockpitVisible: "should be true now"
-              });
+              if (process.env.NODE_ENV === "development") {
+                console.log("🚀 WARP END: Synchronized cockpit reveal - all UI elements visible");
+                console.log("🛸 POST-WARP STATES:", { 
+                  cockpitVisible: true,
+                  uiUnlocked: true,
+                  showOverlayUI: true,
+                  showProfileBar: true,
+                  cockpitVisible: "should be true now"
+                });
+              }
               
               // Show welcome modal for non-logged users (synchronized with blue display reveal)
-              if (!profile?.id && !userSelected && !pendingTrackPlay && userClickedStart) {
+              // Only show if not already open to prevent excessive re-renders
+              if (!profile?.id && !userSelected && !pendingTrackPlay && userClickedStart && !showWelcomeHomeModal) {
                 setShowWelcomeHomeModal(true);
               }
             } catch {}
@@ -2431,16 +2461,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 {(() => {
                   const currentIdValue = (homeMode && !userSelected && !pendingTrackPlay) ? undefined : curTrack?.slug;
                   const showAllValue = !currentIdValue;
-                  // Debug HUD visibility inputs and currentId calculation
-                  console.log('🎵 HUD currentId calculation:', { 
-                    homeMode, 
-                    userSelected, 
-                    pendingTrackPlay, 
-                    curTrack: curTrack?.slug,
-                    currentIdValue,
-                    condition: `(${homeMode} && !${userSelected} && !${pendingTrackPlay})`,
-                    result: (homeMode && !userSelected && !pendingTrackPlay)
-                  });
                   debugLog({
                     homeMode,
                     userSelected,

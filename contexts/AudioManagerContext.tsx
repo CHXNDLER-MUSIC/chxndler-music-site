@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useEffect, useRef } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useMemo } from "react";
 
 // Music and voiceover tracks
 // Track info for audio and visual display
@@ -73,14 +73,6 @@ export const TRACK_INFO: Record<string, TrackInfo> = {
     skyTexture: '/sky/be-my-bee-sky.webp',
     oneLiner: 'Love\'s sweet buzz, then the sting.'
   },
-  'colors-home': {
-    id: 'colors-home',
-    title: 'COLORS OF OUR HOME',
-    artist: 'CHXNDLER',
-    coverUrl: '/covers/COLORS OF OUR HOME.webp',
-    skyTexture: '/sky/colors-home-sky.webp',
-    oneLiner: 'From isolation to a world in color.'
-  },
   'game-boy-heart': {
     id: 'game-boy-heart',
     title: 'GAME BOY HEART',
@@ -128,6 +120,14 @@ export const TRACK_INFO: Record<string, TrackInfo> = {
     coverUrl: '/covers/WE\'RE JUST FRIENDS.webp',
     skyTexture: '/sky/were-just-friends-sky.webp',
     oneLiner: 'Lines blur between us.'
+  },
+  'space-music': {
+    id: 'space-music',
+    title: 'SPACE MUSIC',
+    artist: 'CHXNDLER',
+    coverUrl: '/covers/SPACE.webp',
+    skyTexture: '/sky/space-sky.webp',
+    oneLiner: 'Journey through the cosmos.'
   }
 };
 
@@ -193,7 +193,7 @@ export function AudioManagerProvider({ children }: { children: React.ReactNode }
 
   // Track state - single source of truth
   const [currentTrackInfo, setCurrentTrackInfoState] = React.useState<TrackInfo | null>(
-    TRACK_INFO['baby'] || null  // Default to baby only on initial load
+    TRACK_INFO['space-music'] || null  // Default to space music track on initial load
   );
   const [isPlaying, setIsPlaying] = React.useState(false);
 
@@ -305,7 +305,7 @@ export function AudioManagerProvider({ children }: { children: React.ReactNode }
     return foregroundRef.current;
   }, []);
 
-  const api: AudioManagerApi = {
+  const api: AudioManagerApi = useMemo(() => ({
     playStartSequence,
     playSongSequence,
     stopAllAudio: stopAllAudioInternal,
@@ -314,7 +314,15 @@ export function AudioManagerProvider({ children }: { children: React.ReactNode }
     currentTrackInfo,
     setCurrentTrackInfo,
     isPlaying,
-  };
+  }), [
+    playStartSequence,
+    playSongSequence,
+    stopAllAudioInternal,
+    getCurrentAudio,
+    currentTrackInfo,
+    setCurrentTrackInfo,
+    isPlaying
+  ]);
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }

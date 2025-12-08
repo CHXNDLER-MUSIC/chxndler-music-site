@@ -49,15 +49,17 @@ export default function PreloadMedia({ maxImage = 6, maxAudio = 3, maxVideo = 2,
     const images = tlist.map(t => t.cover).filter(Boolean) as string[];
     const audios = tlist.map(t => t.src).filter(Boolean) as string[];
     const skySet = new Set<string>();
-    tlist.forEach(t => { const s = skyFor(t.slug); if (s?.mp4) skySet.add(s.mp4); });
-    // Always include intro + default space
-    if (introSky?.mp4) skySet.add(introSky.mp4);
-    skySet.add("/skies/space.mp4");
-    // Ensure space.mp4 is preloaded first for fastest home landing
-    const videos = [
-      '/skies/space.mp4',
-      ...Array.from(skySet).filter((v) => v !== '/skies/space.mp4')
-    ];
+    tlist.forEach(t => { 
+      const s = skyFor(t.slug); 
+      // Only add videos that have valid paths and aren't empty fallbacks
+      if (s?.mp4 && s.mp4 !== "" && s.key !== "space-sky") skySet.add(s.mp4); 
+    });
+    // Only include intro sky if it has a valid path
+    if (introSky?.mp4 && introSky.mp4 !== "") skySet.add(introSky.mp4);
+    
+    // Don't preload space.mp4 since it doesn't exist - avoid 404 errors
+    // const videos array will be empty if no sky videos exist, which is fine
+    const videos = Array.from(skySet);
 
     // Simple concurrency helper
     async function runQueue<T>(items: T[], worker: (item: T) => Promise<void>, concurrency: number) {

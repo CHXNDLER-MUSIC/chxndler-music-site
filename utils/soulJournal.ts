@@ -100,7 +100,7 @@ export async function loadSoulStarFullLog(
 }
 
 // Convenience wrappers using the default browser client
-import { supabaseClient as defaultClient } from '@/lib/supabaseClient';
+import { supabaseBrowser as defaultClient } from '@/lib/supabase-browser';
 
 export async function saveSoulStarEntryDefault(
   userId: string,

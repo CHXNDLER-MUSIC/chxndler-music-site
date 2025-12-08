@@ -42,6 +42,8 @@ export const YOUTUBE_SKIES: Record<string, string> = {
   'were-just-friends-acoustic': 'https://youtu.be/EMwPpuhs3fs',
   'were-just-friends-dmvrco-remix': 'https://youtu.be/EMwPpuhs3fs',
   'were-just-friends-mickey-jas-remix': 'https://youtu.be/EMwPpuhs3fs',
+  // Space music mapping
+  'space-music': 'https://youtu.be/gHDxkhQ4FbY',
 };
 
 export function youtubeSkyFor(slug?: string): string | undefined {

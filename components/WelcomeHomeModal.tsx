@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { sfx } from "@/lib/sfx";
@@ -11,7 +11,7 @@ type Props = {
   onClose: () => void;
 };
 
-export default function WelcomeHomeModal({ open, onClose }: Props) {
+const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }: Props) {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -19,9 +19,18 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
   
   const { profile, updateProfile } = useProfile();
   
+  // Memoize profile status to prevent unnecessary re-renders
+  const isLoggedIn = useMemo(() => !!profile?.id, [profile?.id]);
+  
+  // Use useEffect for logging to prevent render-time side effects
+  useEffect(() => {
+    if (isLoggedIn) {
+      console.log('🚫 Modal not rendering: user logged in', profile?.id);
+    }
+  }, [isLoggedIn, profile?.id]);
+  
   // Safety check: Never show welcome modal for logged-in users
-  if (profile?.id) {
-    console.log('🚫 Modal not rendering: user logged in', profile.id);
+  if (isLoggedIn) {
     return null;
   }
   
@@ -97,12 +106,29 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
     }
   }
 
-  if (typeof document === 'undefined') {
-    console.log('🚫 Modal not rendering: not mounted');
+  // Memoize render status logging to prevent unnecessary logs
+  const renderStatus = useMemo(() => {
+    if (typeof document === 'undefined') {
+      return { shouldRender: false, reason: 'not mounted' };
+    }
+    return { shouldRender: true, reason: 'ready', open, hasProfile: isLoggedIn };
+  }, [open, isLoggedIn]);
+
+  // Log only when render status actually changes
+  useEffect(() => {
+    if (!renderStatus.shouldRender) {
+      console.log('🚫 Modal not rendering:', renderStatus.reason);
+    } else {
+      console.log('✅ Modal should render:', { 
+        open: renderStatus.open, 
+        hasProfile: renderStatus.hasProfile 
+      });
+    }
+  }, [renderStatus]);
+
+  if (!renderStatus.shouldRender) {
     return null;
   }
-
-  console.log('✅ Modal should render:', { open, hasProfile: !!profile?.id });
 
   return createPortal(
     <>
@@ -298,4 +324,6 @@ export default function WelcomeHomeModal({ open, onClose }: Props) {
     </>,
     document.body
   );
-}
+});
+
+export default WelcomeHomeModal;

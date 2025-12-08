@@ -6,6 +6,7 @@ export interface Badge {
   icon_url: string | null;
   description: string | null;
   requirement: string | null;
+  category: string | null;
   created_at: string;
 }
 

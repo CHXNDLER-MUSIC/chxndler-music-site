@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useProfile } from '@/contexts/ProfileContext';
-import { supabaseClient } from '@/lib/supabaseClient';
+import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Badge, UserBadge, BadgeWithProgress, BadgeCategory, BADGE_CATEGORIES } from '@/types/badges';
 
 export function useBadges() {
@@ -15,7 +15,7 @@ export function useBadges() {
   // Fetch all badges
   const fetchBadges = async () => {
     try {
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabaseBrowser
         .from('badges')
         .select('*')
         .order('created_at', { ascending: true });
@@ -41,7 +41,7 @@ export function useBadges() {
     }
 
     try {
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabaseBrowser
         .from('user_badges')
         .select(`
           *,
@@ -117,70 +117,42 @@ export function useBadges() {
         name: "SOUL STAR",
         emoji: "⭐️",
         color: "#FFD700",
-        badges: badgesWithProgress.filter(badge => 
-          badge.badge_name.toLowerCase().includes('soul') ||
-          badge.badge_name.toLowerCase().includes('reflection')
-        )
+        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.SOUL_STAR)
       },
       {
         id: BADGE_CATEGORIES.ACHIEVEMENTS,
         name: "ACHIEVEMENTS",
         emoji: "🏆",
         color: "#38B6FF",
-        badges: badgesWithProgress.filter(badge => 
-          badge.badge_name.toLowerCase().includes('first') ||
-          badge.badge_name.toLowerCase().includes('collector') ||
-          badge.badge_name.toLowerCase().includes('witness') ||
-          badge.badge_name.toLowerCase().includes('supporter')
-        )
+        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.ACHIEVEMENTS)
       },
       {
         id: BADGE_CATEGORIES.ELEMENTAL_STREAK,
         name: "ELEMENTAL STREAK",
         emoji: "💠",
         color: "#FC54AF",
-        badges: badgesWithProgress.filter(badge => 
-          badge.badge_name.toLowerCase().includes('heart') ||
-          badge.badge_name.toLowerCase().includes('water') ||
-          badge.badge_name.toLowerCase().includes('lightning') ||
-          badge.badge_name.toLowerCase().includes('darkness') ||
-          badge.badge_name.toLowerCase().includes('element')
-        )
+        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.ELEMENTAL_STREAK)
       },
       {
         id: BADGE_CATEGORIES.LISTENING,
         name: "LISTENING",
         emoji: "🎵",
         color: "#9333EA",
-        badges: badgesWithProgress.filter(badge => 
-          badge.badge_name.toLowerCase().includes('listen') ||
-          badge.badge_name.toLowerCase().includes('track') ||
-          badge.badge_name.toLowerCase().includes('song') ||
-          badge.badge_name.toLowerCase().includes('music')
-        )
+        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.LISTENING)
       },
       {
         id: BADGE_CATEGORIES.HEARTCOIN,
         name: "HEARTCOIN",
         emoji: "💰",
         color: "#F59E0B",
-        badges: badgesWithProgress.filter(badge => 
-          badge.badge_name.toLowerCase().includes('coin') ||
-          badge.badge_name.toLowerCase().includes('treasure') ||
-          badge.badge_name.toLowerCase().includes('prosperity')
-        )
+        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.HEARTCOIN)
       },
       {
         id: BADGE_CATEGORIES.COMMUNITY,
         name: "COMMUNITY",
         emoji: "🌐",
         color: "#10B981",
-        badges: badgesWithProgress.filter(badge => 
-          badge.badge_name.toLowerCase().includes('community') ||
-          badge.badge_name.toLowerCase().includes('friend') ||
-          badge.badge_name.toLowerCase().includes('invite') ||
-          badge.badge_name.toLowerCase().includes('follow')
-        )
+        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.COMMUNITY)
       }
     ].filter(category => category.badges.length > 0); // Only show categories with badges
   };
@@ -193,7 +165,7 @@ export function useBadges() {
     }
 
     try {
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabaseBrowser
         .from('user_badges')
         .insert({
           user_id: user.id,

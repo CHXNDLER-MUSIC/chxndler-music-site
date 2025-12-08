@@ -10,6 +10,7 @@ type SkyVideoInfo = {
   key: string;
   webm: string;
   mp4: string;
+  youtubeUrl?: string;
 };
 
 type VerificationResult = {
@@ -19,10 +20,15 @@ type VerificationResult = {
   isDefault: boolean;
 };
 export function skyFor(slug?: string) {
-  // Default fallback sky
-  const DEFAULT_SPACE = { key: "space-sky", webm: "/skies/space.webm", mp4: "/skies/space.mp4" };
+  // Safe fallback when no sky videos exist - return empty paths to avoid 404s
+  const DEFAULT_FALLBACK = { key: "space-sky", webm: "", mp4: "" };
   
-  if (!slug) return DEFAULT_SPACE;
+  if (!slug) return DEFAULT_FALLBACK;
+  
+  // Special mapping for space-music to use space-sky (YouTube embed)
+  if (slug === "space-music") {
+    return { key: "space-sky", webm: "", mp4: "", youtubeUrl: "https://youtu.be/gHDxkhQ4FbY" };
+  }
   
   try {
     // Try dynamic discovery first
@@ -51,8 +57,8 @@ export function skyFor(slug?: string) {
     console.warn('Error in dynamic sky discovery for slug:', slug, error);
   }
   
-  // Final fallback to space
-  return DEFAULT_SPACE;
+  // Final fallback - no video to avoid 404s
+  return DEFAULT_FALLBACK;
 }
 
 // Use the lightspeed warp as the initial looping sky
@@ -154,8 +160,8 @@ export function getAllSkyMappings(): Record<string, SkyVideoInfo> {
     };
   });
   
-  // Ensure space sky is always available as fallback
-  result['space'] = { key: "space-sky", webm: "/skies/space.webm", mp4: "/skies/space.mp4" };
+  // Ensure space sky is always available as fallback (YouTube embed)
+  result['space'] = { key: "space-sky", webm: "", mp4: "", youtubeUrl: "https://youtu.be/gHDxkhQ4FbY" };
   
   return result;
 }

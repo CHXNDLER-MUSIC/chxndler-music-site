@@ -302,9 +302,9 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
 
   async function loadEventsV2Data() {
     try {
-      // Import createClient from the correct path
-      const { createClient } = await import('@/lib/supabaseClient');
-      const supabase = createClient();
+      // Import the single browser client
+      const { supabaseBrowser } = await import('@/lib/supabase-browser');
+      const supabase = supabaseBrowser;
 
       // Get counts for different event types using count: 'exact', head: true
       const eventQueries = [

@@ -18,7 +18,7 @@ INSERT INTO bonus_quests (
     null, -- No total limit, can invite multiple friends
     3,
     false,
-    '+3 (1 max per day)'
+    '+3 /day'
   ),
   
   -- Core quest: Attend Livestream
@@ -34,7 +34,7 @@ INSERT INTO bonus_quests (
     null, -- No total limit, can attend multiple shows
     5,
     false,
-    '+1-5 (1 max per day)'
+    '+1-5'
   ),
 
 -- Insert rotating featured quests (non-core)

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
 import { sfx } from "@/lib/sfx";
 import { useDailyReflectionStatus } from "@/hooks/useDailyReflectionStatus";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 
 interface DailyPrompt {
   id: string;

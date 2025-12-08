@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useUIStore } from '@/store/useUIStore';
 
@@ -17,62 +17,90 @@ export default function NamePromptOnLogin() {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (!mounted) return;
-    
-    // Check for completeProfile parameter in multiple ways
+  // Memoize parameter checks to prevent unnecessary re-calculations
+  const parameterChecks = useMemo(() => {
     const shouldComplete = searchParams.get('completeProfile') === '1';
     const urlHasCompleteProfile = typeof window !== 'undefined' && window.location.search.includes('completeProfile=1');
-    
-    // ALSO check for welcome parameter - this happens when user clicks magic link but is already logged in
     const isWelcomeFromMagicLink = searchParams.get('welcome') === '1';
     const urlHasWelcome = typeof window !== 'undefined' && window.location.search.includes('welcome=1');
     
-    console.log('🔍 NamePromptOnLogin check:', { 
-      mounted, 
-      shouldComplete, 
+    return {
+      shouldComplete,
       urlHasCompleteProfile,
       isWelcomeFromMagicLink,
       urlHasWelcome,
-      searchParamsString: searchParams.toString(),
-      url: typeof window !== 'undefined' ? window.location.href : 'server-side'
-    });
+      shouldOpen: shouldComplete || urlHasCompleteProfile || isWelcomeFromMagicLink || urlHasWelcome
+    };
+  }, [searchParams]);
+
+  // Memoize debug data to prevent object creation on every render
+  const debugData = useMemo(() => ({
+    mounted, 
+    ...parameterChecks,
+    searchParamsString: searchParams.toString(),
+    url: typeof window !== 'undefined' ? window.location.href : 'server-side'
+  }), [mounted, parameterChecks, searchParams]);
+
+  // Only log when debug data actually changes
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 NamePromptOnLogin check:', debugData);
+    }
+  }, [debugData]);
+
+  const handleOpenPrompt = useCallback(() => {
+    try { 
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 Calling openNamePromptFromAuth...');
+      }
+      openNamePromptFromAuth(); 
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ openNamePromptFromAuth called successfully');
+      }
+    } catch (e) {
+      console.error('❌ Failed to open name prompt from auth:', e);
+    }
+  }, [openNamePromptFromAuth]);
+
+  const handleCleanupURL = useCallback(() => {
+    try {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('completeProfile');
+      const newUrl = params.toString() ? `/?${params.toString()}` : '/';
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🧹 Cleaning up URL from', window.location.href, 'to', newUrl);
+      }
+      router.replace(newUrl);
+    } catch (e) {
+      console.warn('Failed to clean up URL parameters:', e);
+    }
+  }, [searchParams, router]);
+
+  useEffect(() => {
+    if (!mounted) return;
     
-    if (!shouldComplete && !urlHasCompleteProfile && !isWelcomeFromMagicLink && !urlHasWelcome) {
-      console.log('🚫 No completeProfile or welcome parameter found, not opening modal');
+    if (!parameterChecks.shouldOpen) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🚫 No completeProfile or welcome parameter found, not opening modal');
+      }
       return;
     }
 
-    console.log('✅ Opening name prompt from auth');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ Opening name prompt from auth');
+    }
+
     // Open prompt exactly once per arrival - use a small delay to ensure all components are ready
-    const timeoutId = setTimeout(() => {
-      try { 
-        console.log('🔄 Calling openNamePromptFromAuth...');
-        openNamePromptFromAuth(); 
-        console.log('✅ openNamePromptFromAuth called successfully');
-      } catch (e) {
-        console.error('❌ Failed to open name prompt from auth:', e);
-      }
-    }, 100); // Small delay to ensure components are ready
+    const timeoutId = setTimeout(handleOpenPrompt, 100);
 
     // Clean up URL after a longer delay
-    const cleanupTimeoutId = setTimeout(() => {
-      try {
-        const params = new URLSearchParams(searchParams.toString());
-        params.delete('completeProfile');
-        const newUrl = params.toString() ? `/?${params.toString()}` : '/';
-        console.log('🧹 Cleaning up URL from', window.location.href, 'to', newUrl);
-        router.replace(newUrl);
-      } catch (e) {
-        console.warn('Failed to clean up URL parameters:', e);
-      }
-    }, 2000); // Increased delay so you can see the modal
+    const cleanupTimeoutId = setTimeout(handleCleanupURL, 2000);
 
     return () => {
       clearTimeout(timeoutId);
       clearTimeout(cleanupTimeoutId);
     };
-  }, [mounted, searchParams, openNamePromptFromAuth, router]);
+  }, [mounted, parameterChecks.shouldOpen, handleOpenPrompt, handleCleanupURL]);
 
   // Temporary debug button - remove after testing
   if (typeof window !== 'undefined' && window.location.search.includes('debug=1')) {

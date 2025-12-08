@@ -18,45 +18,14 @@ export type SkyMapping = {
 };
 
 /**
- * Hardcoded list of available sky videos (for client-side usage)
- * In a real implementation, this could be generated at build time
+ * Available sky videos (currently none exist in /public/skies/, so using empty list)
+ * This prevents 404 errors. Videos should be added here when actual files exist.
+ * In a real implementation, this could be generated at build time from actual files.
  */
 const AVAILABLE_SKY_VIDEOS: SkyVideoFile[] = [
-  { filename: 'alien-house-party-acoustic.mp4', path: '/skies/alien-house-party-acoustic.mp4', slug: 'alien-house-party', variant: 'acoustic' },
-  { filename: 'alien-house-party.mp4', path: '/skies/alien-house-party.mp4', slug: 'alien-house-party' },
-  { filename: 'alone.mp4', path: '/skies/alone.mp4', slug: 'alone' },
-  { filename: 'always-on-my-mind-remix.mp4', path: '/skies/always-on-my-mind-remix.mp4', slug: 'always-on-my-mind', variant: 'remix' },
-  { filename: 'always-on-my-mind.mp4', path: '/skies/always-on-my-mind.mp4', slug: 'always-on-my-mind' },
-  { filename: 'american-dream.mp4', path: '/skies/american-dream.mp4', slug: 'american-dream' },
-  { filename: 'baby.mp4', path: '/skies/baby.mp4', slug: 'baby' },
-  { filename: 'be-my-bee-acoustic.mp4', path: '/skies/be-my-bee-acoustic.mp4', slug: 'be-my-bee', variant: 'acoustic' },
-  { filename: 'be-my-bee.mp4', path: '/skies/be-my-bee.mp4', slug: 'be-my-bee' },
-  { filename: 'brain-freeze.mp4', path: '/skies/brain-freeze.mp4', slug: 'brain-freeze' },
-  { filename: 'collide.mp4', path: '/skies/collide.mp4', slug: 'collide' },
-  { filename: 'colors-of-our-home-bluma.mp4', path: '/skies/colors-of-our-home-bluma.mp4', slug: 'colors-of-our-home', variant: 'bluma' },
-  { filename: 'colors-of-our-home.mp4', path: '/skies/colors-of-our-home.mp4', slug: 'colors-of-our-home' },
-  { filename: 'feeling-this.mp4', path: '/skies/feeling-this.mp4', slug: 'feeling-this' },
-  { filename: 'game-boy-heart.mp4', path: '/skies/game-boy-heart.mp4', slug: 'game-boy-heart' },
-  { filename: 'home-acoustic.mp4', path: '/skies/home-acoustic.mp4', slug: 'home', variant: 'acoustic' },
-  { filename: 'home.mp4', path: '/skies/home.mp4', slug: 'home' },
-  { filename: 'i-might-fall-in-love-with-you.mp4', path: '/skies/i-might-fall-in-love-with-you.mp4', slug: 'i-might-fall-in-love-with-you' },
-  { filename: 'kid-forever.mp4', path: '/skies/kid-forever.mp4', slug: 'kid-forever' },
-  { filename: 'letting-go.mp4', path: '/skies/letting-go.mp4', slug: 'letting-go' },
-  { filename: 'lightspeed.mp4', path: '/skies/lightspeed.mp4', slug: 'lightspeed' },
-  { filename: 'little-black-heart.mp4', path: '/skies/little-black-heart.mp4', slug: 'little-black-heart' },
-  { filename: 'ocean-girl-acoustic.mp4', path: '/skies/ocean-girl-acoustic.mp4', slug: 'ocean-girl', variant: 'acoustic' },
-  { filename: 'ocean-girl-remix.mp4', path: '/skies/ocean-girl-remix.mp4', slug: 'ocean-girl', variant: 'remix' },
-  { filename: 'ocean-girl.mp4', path: '/skies/ocean-girl.mp4', slug: 'ocean-girl' },
-  { filename: 'paris.mp4', path: '/skies/paris.mp4', slug: 'paris' },
-  { filename: 'pink-moon.mp4', path: '/skies/pink-moon.mp4', slug: 'pink-moon' },
-  { filename: 'pokemon.mp4', path: '/skies/pokemon.mp4', slug: 'pokemon' },
-  { filename: 'somebody-to-love.mp4', path: '/skies/somebody-to-love.mp4', slug: 'somebody-to-love' },
-  { filename: 'space.mp4', path: '/skies/space.mp4', slug: 'space' },
-  { filename: 'tienes-un-amigo.mp4', path: '/skies/tienes-un-amigo.mp4', slug: 'tienes-un-amigo' },
-  { filename: 'were-just-friends-acoustic.mp4', path: '/skies/were-just-friends-acoustic.mp4', slug: 'were-just-friends', variant: 'acoustic' },
-  { filename: 'were-just-friends-dmvrco-remix.mp4', path: '/skies/were-just-friends-dmvrco-remix.mp4', slug: 'were-just-friends', variant: 'dmvrco-remix' },
-  { filename: 'were-just-friends-mickey-jas-remix.mp4', path: '/skies/were-just-friends-mickey-jas-remix.mp4', slug: 'were-just-friends', variant: 'mickey-jas-remix' },
-  { filename: 'were-just-friends.mp4', path: '/skies/were-just-friends.mp4', slug: 'were-just-friends' }
+  // No sky videos currently exist in /public/skies/
+  // Add entries here when video files are actually uploaded to public/skies/
+  // Example: { filename: 'space.mp4', path: '/skies/space.mp4', slug: 'space' },
 ];
 
 /**
