@@ -105,35 +105,18 @@ export default function ProfileBar({
   const heartBtnRef = useRef<HTMLButtonElement>(null);
   const [heartPopoverPos, setHeartPopoverPos] = useState<{left: number, top: number, width?: number, height?: number} | null>(null);
 
-  // Chrome-specific immediate fallback for button visibility
+  // Browser-agnostic fallback to ensure warp completion
   useEffect(() => {
-    if (!warpFullyComplete && typeof window !== 'undefined') {
-      const isChrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1 && 
-                      navigator.userAgent.toLowerCase().indexOf('edg') === -1;
-      
-      if (isChrome) {
-        // For Chrome, set warpFullyComplete to true immediately to show buttons
-        const immediateTimer = setTimeout(() => {
-          console.log('ProfileBar: Chrome immediate fallback - setting warpFullyComplete to true');
-          setWarpFullyComplete(true);
-        }, 100); // Very short delay to allow for proper initialization
-        
-        return () => clearTimeout(immediateTimer);
-      }
-    }
-  }, [warpFullyComplete, setWarpFullyComplete]);
-
-  // General fallback to ensure warp completion after reasonable delay
-  useEffect(() => {
-    if (!warpFullyComplete) {
+    if (!warpFullyComplete && hasEnteredHeartverse) {
+      // If user has entered Heartverse but warp isn't marked complete, force it
       const fallbackTimer = setTimeout(() => {
-        console.log('ProfileBar: General fallback setting warpFullyComplete to true');
+        console.log('ProfileBar: Fallback - user entered but warp not complete, forcing warpFullyComplete');
         setWarpFullyComplete(true);
-      }, 1500); // 1.5 second fallback for all browsers
+      }, 500); // Short delay for all browsers
 
       return () => clearTimeout(fallbackTimer);
     }
-  }, [warpFullyComplete, setWarpFullyComplete]);
+  }, [warpFullyComplete, hasEnteredHeartverse, setWarpFullyComplete]);
 
   // Respond to profile refresh trigger
   useEffect(() => {
@@ -433,6 +416,12 @@ export default function ProfileBar({
     return () => window.removeEventListener('openBinderCard', handleOpenBinderCard as EventListener);
   }, []);
 
+
+  // Only hide the bar if user hasn't entered Heartverse yet
+  if (!hasEnteredHeartverse) {
+    return null;
+  }
+
   if (loading) {
     return (
       <div className="fixed top-0 left-0 right-0 z-[200] h-16 bg-black/40 backdrop-blur-lg border-b border-white/20">
@@ -446,155 +435,140 @@ export default function ProfileBar({
     );
   }
 
+  // Calculate variables for render - single source of truth
+  const isLoggedIn = !!currentUser;
   const currentElement = contextProfile?.element || savedAlienElement || null;
-  // Show balance as soon as profile is available; don't wait on currentUser state
-  const heartCoins = contextProfile?.heartcoin_balance ?? 0;
-  
-  // Debug heart coins calculation
-  useEffect(() => {
-    console.log('ProfileBar: HeartCoins calculation:', {
-      hasCurrentUser: !!currentUser,
-      hasContextProfile: !!contextProfile,
-      heartcoin_balance: contextProfile?.heartcoin_balance,
-      heartcoin_total: contextProfile?.heartcoin_total,
-      calculatedHeartCoins: heartCoins,
-      profileId: contextProfile?.id,
-      profileName: contextProfile?.name
-    });
-  }, [currentUser, contextProfile, heartCoins]);
+  const heartCoinBalance = contextProfile?.heartcoin_balance ?? 0;
 
-  // Add a manual refresh function for debugging
-  const forceRefreshProfile = async () => {
-    console.log('ProfileBar: Manual profile refresh triggered');
-    await refreshProfile();
-    
-    // Also fetch directly from API for comparison
-    try {
-      const response = await fetch('/api/debug-heartcoins');
-      const debugData = await response.json();
-      console.log('ProfileBar: Debug API data:', debugData);
-    } catch (error) {
-      console.error('ProfileBar: Error fetching debug data:', error);
-    }
-  };
-  
   const currentElementData = ELEMENTS.find(e => e.name === currentElement) || ELEMENTS[0];
+
+  // Safe debug log after all variables are declared
+  console.log("DEBUG ProfileBar render", {
+    browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",
+    warpFullyComplete,
+    hasEnteredHeartverse,
+    hasUser: isLoggedIn,
+    hasProfile: !!contextProfile,
+    loading,
+    heartCoinBalance,
+    profileName: contextProfile?.name,
+    profileElement: currentElement,
+    timestamp: new Date().toISOString()
+  });
 
   return (
     <div 
       className="fixed top-0 left-0 right-0 z-[300] h-16 bg-black/40 backdrop-blur-lg border-b border-white/20 transition-opacity duration-500 ease-in-out"
     >
       <div className="relative h-full">
-        {/* Hamburger Menu - Far Top Left - Only show after warp effect fully completes */}
-        {warpFullyComplete && (
-          <div className="absolute top-2 left-1 z-10">
-            <GlowingHamburgerMenu
-            onItemClick={(label) => {
-              console.log(`Menu item clicked: ${label}`);
-              
-              switch (label) {
-                case "THE CODE":
-                  setIsCodePopoutOpen(true);
-                  onCodeClick?.();
-                  break;
-                case "JOURNEY":
-                case "MY JOURNEY":
-                  try { onCloseBlueDisplay?.(); } catch {}
-                  setIsJourneyModalOpen(true);
-                  break;
-                case "JOURNAL":
-                  try { onCloseBlueDisplay?.(); } catch {}
-                  try { onBeamColorChange?.('yellow'); } catch {}
-                  setIsJournalOpen(true);
-                  break;
-                case "BINDER":
-                  try { onCloseBlueDisplay?.(); } catch {}
-                  togglePanel('binder');
-                  onDigitalBinderClick?.();
-                  break;
-                case "BADGES":
-                  try { onCloseBlueDisplay?.(); } catch {}
-                  togglePanel('badges');
-                  break;
-                case "ABOUT":
-                  try { onCloseBlueDisplay?.(); } catch {}
-                  setIsChxndlerPopoutOpen(true);
-                  break;
-                case "STORE":
-                  try { onCloseBlueDisplay?.(); } catch {}
-                  // Open HeartCoinButton modal directly on USE tab with CARDS sub-tab
-                  setActivePanel('heartcoins');
-                  // Store the initial tab preference for HeartCoinButton
-                  if (typeof window !== 'undefined') {
-                    (window as any).heartCoinInitialTab = 'USE';
-                    (window as any).heartCoinInitialUseTab = 'CARDS';
-                  }
-                  break;
-              }
-            }}
-          />
-          </div>
-        )}
+        {/* Hamburger Menu - Far Top Left - Show after entering Heartverse */}
+        <div className="absolute top-2 left-1 z-10">
+          <GlowingHamburgerMenu
+          onItemClick={(label) => {
+            console.log(`Menu item clicked: ${label}`);
+            
+            switch (label) {
+              case "THE CODE":
+                setIsCodePopoutOpen(true);
+                onCodeClick?.();
+                break;
+              case "JOURNEY":
+              case "MY JOURNEY":
+                try { onCloseBlueDisplay?.(); } catch {}
+                setIsJourneyModalOpen(true);
+                break;
+              case "JOURNAL":
+                try { onCloseBlueDisplay?.(); } catch {}
+                try { onBeamColorChange?.('yellow'); } catch {}
+                setIsJournalOpen(true);
+                break;
+              case "BINDER":
+                try { onCloseBlueDisplay?.(); } catch {}
+                togglePanel('binder');
+                onDigitalBinderClick?.();
+                break;
+              case "BADGES":
+                try { onCloseBlueDisplay?.(); } catch {}
+                togglePanel('badges');
+                break;
+              case "ABOUT":
+                try { onCloseBlueDisplay?.(); } catch {}
+                setIsChxndlerPopoutOpen(true);
+                break;
+              case "STORE":
+                try { onCloseBlueDisplay?.(); } catch {}
+                // Open HeartCoinButton modal directly on USE tab with CARDS sub-tab
+                setActivePanel('heartcoins');
+                // Store the initial tab preference for HeartCoinButton
+                if (typeof window !== 'undefined') {
+                  (window as any).heartCoinInitialTab = 'USE';
+                  (window as any).heartCoinInitialUseTab = 'CARDS';
+                }
+                break;
+            }
+          }}
+        />
+        </div>
 
-        {/* Main Flex Layout */}
+        {/* Main Flex Layout - Three sections: Left, Center, Right */}
         <div className="flex items-center justify-between h-full pl-16 pr-2 min-w-0">
-          {/* Left Side */}
+          {/* Left Side - Empty space (hamburger is absolutely positioned) */}
           <div className="flex items-center flex-1 min-w-0">
-            {/* Auth Button - Only show after warp effect fully completes */}
-            {warpFullyComplete && (
-              <div className="relative ml-3">
-                <AuthButton />
-              </div>
-            )}
-
+            {/* Space for hamburger menu - no content here */}
           </div>
 
+          {/* Center Section - Middle pill UI */}
+          <div className="flex items-center justify-center flex-shrink-0">
+            {/* This is where the "existing middle pill" would go */}
+            {/* Currently empty but structured for future pill UI */}
+          </div>
 
-          {/* Right Side */}
+          {/* Right Side - Both HeartCoinButton and AuthButton */}
           <div className="flex items-center flex-shrink-0 mr-0 space-x-2">
+            {/* Heart Coin Button with Count */}
+            <div className="flex items-center space-x-0.5">
+              <HeartCoinButton 
+                onHoverSound={() => sfx.play('hover', 0.8)}
+                onCloseBlueDisplay={onCloseBlueDisplay}
+                onOpenBlueDisplay={onOpenBlueDisplay}
+                onOpenJournal={onOpenJournal}
+                heartCoins={heartCoinBalance}
+                isActive={activePanel === 'heartcoins'}
+                onClick={() => togglePanel('heartcoins')}
+                journalCompleted={journalCompletedToday}
+                onJournalCompleted={handleJournalCompleted}
+                onHeartCoinsChange={(newAmount) => {
+                  // Update through ProfileContext
+                  updateProfile({ heartcoin_balance: newAmount });
+                }}
+                onClose={() => setActivePanel(null)}
+              />
+              
+              {/* Heart Coin Count */}
+              <span 
+                className="font-bold text-lg"
+                style={{ 
+                  color: '#FFFFFF',
+                  textShadow: `
+                    0 0 5px #FFFFFF,
+                    0 0 10px #FFFFFF,
+                    0 0 15px #FFFFFF,
+                    0 0 20px #FFFFFF,
+                    0 0 25px #FFFFFF,
+                    0 0 30px #FFFFFF
+                  `,
+                  filter: 'brightness(1.5)',
+                  letterSpacing: '0.05em'
+                }}
+              >
+                {heartCoinBalance}
+              </span>
+            </div>
 
-            {/* Heart Coin Button with Count - Only show after warp effect fully completes */}
-            {warpFullyComplete && (
-              <div className="flex items-center space-x-0.5">
-                <HeartCoinButton 
-                  onHoverSound={() => sfx.play('hover', 0.8)}
-                  onCloseBlueDisplay={onCloseBlueDisplay}
-                  onOpenBlueDisplay={onOpenBlueDisplay}
-                  onOpenJournal={onOpenJournal}
-                  heartCoins={heartCoins}
-                  isActive={activePanel === 'heartcoins'}
-                  onClick={() => togglePanel('heartcoins')}
-                  journalCompleted={journalCompletedToday}
-                  onJournalCompleted={handleJournalCompleted}
-                  onHeartCoinsChange={(newAmount) => {
-                    // Update through ProfileContext
-                    updateProfile({ heartcoin_balance: newAmount });
-                  }}
-                  onClose={() => setActivePanel(null)}
-                />
-                
-                {/* Heart Coin Count */}
-                <span 
-                  className="font-bold text-lg"
-                  style={{ 
-                    color: '#FFFFFF',
-                    textShadow: `
-                      0 0 5px #FFFFFF,
-                      0 0 10px #FFFFFF,
-                      0 0 15px #FFFFFF,
-                      0 0 20px #FFFFFF,
-                      0 0 25px #FFFFFF,
-                      0 0 30px #FFFFFF
-                    `,
-                    filter: 'brightness(1.5)',
-                    letterSpacing: '0.05em'
-                  }}
-                >
-                  {heartCoins}
-                </span>
-              </div>
-            )}
-
+            {/* Login/Name Button - Always show after entering Heartverse */}
+            <div className="relative">
+              <AuthButton />
+            </div>
           </div>
         </div>
       </div>
@@ -1229,7 +1203,7 @@ export default function ProfileBar({
                     textShadow: '0 0 8px rgba(255,105,180,0.8)' 
                   }}
                 >
-                  {heartCoins}
+                  {heartCoinBalance}
                 </div>
               </div>
             </div>

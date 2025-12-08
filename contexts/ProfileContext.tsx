@@ -157,6 +157,20 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
 
       const user = session?.user;
+      
+      // Debug log for ProfileContext
+      if (typeof window !== 'undefined') {
+        console.log("DEBUG ProfileContext fetchProfile", {
+          browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",
+          hasSession: !!session,
+          hasUser: !!user,
+          userId: user?.id,
+          userEmail: user?.email,
+          sessionError: sessionError?.message,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
       setUser(user);
       if (!user) {
         setProfile(null);
@@ -248,6 +262,21 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         cards: cardRows ?? [],
         badges: badgeRows ?? [],
       };
+
+      // Debug log when profile is successfully loaded
+      if (typeof window !== 'undefined') {
+        console.log("DEBUG ProfileContext profile loaded", {
+          browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",
+          profileId: mappedProfile.id,
+          profileName: mappedProfile.name,
+          profileElement: mappedProfile.element,
+          heartcoinBalance: mappedProfile.heartcoin_balance,
+          profileComplete: mappedProfile.profile_complete,
+          cardsCount: mappedProfile.cards.length,
+          badgesCount: mappedProfile.badges.length,
+          timestamp: new Date().toISOString()
+        });
+      }
 
       setProfile(mappedProfile);
     } catch (error) {
@@ -401,17 +430,35 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabaseBrowser.auth.onAuthStateChange(async (event, session) => {
-      if (process.env.NODE_ENV === "development") {
-        console.log('ProfileContext: Auth state changed:', { event, userId: session?.user?.id });
+      // Debug log for auth state changes
+      if (typeof window !== 'undefined') {
+        console.log("DEBUG ProfileContext auth state change", {
+          browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",
+          event,
+          hasSession: !!session,
+          userId: session?.user?.id,
+          userEmail: session?.user?.email,
+          timestamp: new Date().toISOString()
+        });
       }
       
       if (session?.user) {
-        if (process.env.NODE_ENV === "development") {
-          console.log('ProfileContext: User session detected, fetching profile...');
+        if (typeof window !== 'undefined') {
+          console.log("DEBUG ProfileContext user session detected, fetching profile", {
+            browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",
+            userId: session.user.id,
+            timestamp: new Date().toISOString()
+          });
         }
         await fetchProfile();
         await loadJournalEntries(session.user.id);
       } else {
+        if (typeof window !== 'undefined') {
+          console.log("DEBUG ProfileContext no user session, clearing profile", {
+            browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",
+            timestamp: new Date().toISOString()
+          });
+        }
         setProfile(null);
         setUser(null);
         setJournalEntries([]);

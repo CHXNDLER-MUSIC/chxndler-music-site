@@ -436,15 +436,14 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
               return !!(c1 || c2 || c3 || mp4);
             } catch { return false; }
           })();
-          // Choose best source per browser - prefer files that work best in Safari
+          // Choose best source per browser - prefer transparent files
           const wheelSrc = (function() {
             if (isSafariUA) {
-              // For Safari, always use the standard MP4 to ensure compatibility
-              // This prevents issues with HEVC codec support detection
-              return "/cockpit/wheel.mp4";
+              // For Safari, use the transparent MP4 to ensure compatibility with transparency
+              return "/cockpit/wheel_transparent.mp4";
             }
-            // Other browsers: use WebM or fallback
-            return "/cockpit/wheel_less_transparent.webm";
+            // Other browsers: use transparent WebM
+            return "/cockpit/wheel_transparent.webm";
           })();
 
           if (disable) {
@@ -471,15 +470,15 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
                   } : {})
                 }}
                 onError={(e) => {
-                  // Fallback to standard MP4 if primary source fails
+                  // Fallback to transparent MP4 if primary source fails
                   const video = e.currentTarget;
-                  if (!video.src.includes('wheel.mp4')) {
-                    video.src = '/cockpit/wheel.mp4';
+                  if (!video.src.includes('wheel_transparent.mp4')) {
+                    video.src = '/cockpit/wheel_transparent.mp4';
                   }
                 }}
               >
                 <source src={wheelSrc} type="video/mp4" />
-                <source src="/cockpit/wheel.mp4" type="video/mp4" />
+                <source src="/cockpit/wheel_transparent.mp4" type="video/mp4" />
                 <source src="/cockpit/wheel_transparent.webm" type="video/webm" />
               </video>
             );
@@ -514,15 +513,15 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
                   } : {})
                 }}
                 onError={(e) => {
-                  // Fallback to standard MP4 if primary source fails
+                  // Fallback to transparent MP4 if primary source fails
                   const video = e.currentTarget;
-                  if (!video.src.includes('wheel.mp4')) {
-                    video.src = '/cockpit/wheel.mp4';
+                  if (!video.src.includes('wheel_transparent.mp4')) {
+                    video.src = '/cockpit/wheel_transparent.mp4';
                   }
                 }}
               >
                 <source src={wheelSrc} type="video/mp4" />
-                <source src="/cockpit/wheel.mp4" type="video/mp4" />
+                <source src="/cockpit/wheel_transparent.mp4" type="video/mp4" />
                 <source src="/cockpit/wheel_transparent.webm" type="video/webm" />
               </video>
             );

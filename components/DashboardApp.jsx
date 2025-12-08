@@ -1188,19 +1188,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     setShowHeartCoinModal(true);
   }, []);
 
-  // Listen for openHeartCoinCards event from CoverHologram
-  useEffect(() => {
-    const handleOpenHeartCoinCards = (event) => {
-      console.log('📋 Opening HeartCoin modal with CARDS tab:', event.detail);
-      openHeartCoinModal('cards');
-    };
-
-    window.addEventListener('openHeartCoinCards', handleOpenHeartCoinCards);
-    
-    return () => {
-      window.removeEventListener('openHeartCoinCards', handleOpenHeartCoinCards);
-    };
-  }, [openHeartCoinModal]);
 
   // START BUTTON HANDLER - TRIGGERS WARP SEQUENCE
   // CLEAN START BUTTON HANDLER - UI Phase State Machine
