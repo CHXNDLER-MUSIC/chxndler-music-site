@@ -469,37 +469,44 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
       if (sessionError) {
         console.error('Error getting session:', sessionError.message);
-        return null;
+        throw new Error(`Authentication error: ${sessionError.message}`);
       }
 
       const user = session?.user;
       if (!user) {
         console.error('No user session found');
-        return null;
+        throw new Error('No user session found. Please log in again.');
       }
 
-      // Only include columns that exist in the current database schema
+      // Build entry data with only the core columns that should exist
       const entryData: any = {
         user_id: user.id,
         entry_date: entry.entry_date,
         element: entry.element,
-        intention: entry.intention,
-        soul_star: entry.soul_star,
+        soul_star: entry.soul_star?.trim() || null,
       };
 
-      // Only add these columns if they have values (they may not exist in the schema yet)
+      // Add optional columns that may exist
+      if (entry.intention !== null && entry.intention !== undefined) {
+        entryData.intention = entry.intention;
+      }
+      if (entry.prompt !== null && entry.prompt !== undefined) {
+        entryData.reflection = entry.prompt; // Map prompt to reflection column
+      }
       if (entry.prompt_id !== null && entry.prompt_id !== undefined) {
         entryData.prompt_id = entry.prompt_id;
       }
-      if (entry.intention_response !== null && entry.intention_response !== undefined) {
-        entryData.intention_response = entry.intention_response;
+
+      // Try to add optional columns that may not exist yet in all databases
+      try {
+        if (entry.is_private !== null && entry.is_private !== undefined) {
+          entryData.is_private = entry.is_private;
+        }
+      } catch (error) {
+        console.warn('is_private column may not exist in database schema');
       }
-      if (entry.reflection_response !== null && entry.reflection_response !== undefined) {
-        entryData.reflection_response = entry.reflection_response;
-      }
-      if (entry.is_private !== null && entry.is_private !== undefined) {
-        entryData.is_private = entry.is_private;
-      }
+
+      console.log('Saving journal entry with data:', entryData);
 
       const { data, error } = await supabaseBrowser
         .from('soul_journal_entries')
@@ -514,8 +521,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (error) {
-        console.error('Error saving journal entry:', error.message || error.details || error);
-        return null;
+        console.error('Database error details:', error);
+        throw new Error(`Failed to save journal entry: ${error.message || error.details || 'Unknown database error'}`);
       }
 
       // Update local state
@@ -529,7 +536,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       return data;
     } catch (error) {
       console.error('Error in saveJournalEntry:', error);
-      return null;
+      throw error; // Re-throw so the UI can show the specific error
     }
   }, []);
 

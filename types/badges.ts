@@ -1,12 +1,20 @@
 // Badge types for Supabase integration
 
+export type BadgeCategory = 
+  | 'elemental-streak'
+  | 'collector'
+  | 'currency'
+  | 'soul'
+  | 'listening'
+  | 'community';
+
 export interface Badge {
   id: string;
   badge_name: string;
   icon_url: string | null;
   description: string | null;
   requirement: string | null;
-  category: string | null;
+  category: BadgeCategory;
   created_at: string;
 }
 
@@ -18,8 +26,8 @@ export interface UserBadge {
   badge?: Badge; // For joined queries
 }
 
-export interface BadgeCategory {
-  id: string;
+export interface BadgeCategoryData {
+  id: BadgeCategory;
   name: string;
   emoji: string;
   color: string;
@@ -31,17 +39,14 @@ export interface BadgeWithProgress extends Badge {
   current?: number; // current progress value
   total?: number; // total requirement for badge
   unlocked?: boolean; // whether user has earned this badge
-  category?: string; // badge category for filtering
 }
 
 // Badge category definitions
-export const BADGE_CATEGORIES = {
-  SOUL_STAR: 'soul-star',
-  ACHIEVEMENTS: 'achievements', 
+export const BADGE_CATEGORIES: Record<string, BadgeCategory> = {
   ELEMENTAL_STREAK: 'elemental-streak',
+  COLLECTOR: 'collector',
+  CURRENCY: 'currency',
+  SOUL: 'soul',
   LISTENING: 'listening',
-  HEARTCOIN: 'heartcoin',
   COMMUNITY: 'community'
 } as const;
-
-export type BadgeCategoryId = typeof BADGE_CATEGORIES[keyof typeof BADGE_CATEGORIES];

@@ -537,7 +537,7 @@ export default function ProfileBar({
         )}
 
         {/* Main Flex Layout */}
-        <div className="flex items-center justify-between h-full pl-16 sm:pl-20 pr-2 min-w-0">
+        <div className="flex items-center justify-between h-full pl-16 pr-2 min-w-0">
           {/* Left Side */}
           <div className="flex items-center flex-1 min-w-0">
             {/* Auth Button - Only show after warp effect fully completes */}

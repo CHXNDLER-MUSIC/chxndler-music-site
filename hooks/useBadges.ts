@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useProfile } from '@/contexts/ProfileContext';
 import { supabaseBrowser } from '@/lib/supabase-browser';
-import { Badge, UserBadge, BadgeWithProgress, BadgeCategory, BADGE_CATEGORIES } from '@/types/badges';
+import { Badge, UserBadge, BadgeWithProgress, BadgeCategoryData, BADGE_CATEGORIES } from '@/types/badges';
 
 export function useBadges() {
   const { user, profile } = useProfile();
@@ -17,7 +17,7 @@ export function useBadges() {
     try {
       const { data, error } = await supabaseBrowser
         .from('badges')
-        .select('*')
+        .select('id, badge_name, icon_url, description, requirement, category, created_at')
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -108,24 +108,10 @@ export function useBadges() {
   };
 
   // Get badges organized by categories
-  const getBadgeCategories = (): BadgeCategory[] => {
+  const getBadgeCategories = (): BadgeCategoryData[] => {
     const badgesWithProgress = badges.map(calculateBadgeProgress);
 
     return [
-      {
-        id: BADGE_CATEGORIES.SOUL_STAR,
-        name: "SOUL STAR",
-        emoji: "⭐️",
-        color: "#FFD700",
-        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.SOUL_STAR)
-      },
-      {
-        id: BADGE_CATEGORIES.ACHIEVEMENTS,
-        name: "ACHIEVEMENTS",
-        emoji: "🏆",
-        color: "#38B6FF",
-        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.ACHIEVEMENTS)
-      },
       {
         id: BADGE_CATEGORIES.ELEMENTAL_STREAK,
         name: "ELEMENTAL STREAK",
@@ -134,18 +120,32 @@ export function useBadges() {
         badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.ELEMENTAL_STREAK)
       },
       {
+        id: BADGE_CATEGORIES.COLLECTOR,
+        name: "COLLECTOR",
+        emoji: "🏆",
+        color: "#38B6FF",
+        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.COLLECTOR)
+      },
+      {
+        id: BADGE_CATEGORIES.CURRENCY,
+        name: "HEARTCOIN",
+        emoji: "💰",
+        color: "#F59E0B",
+        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.CURRENCY)
+      },
+      {
+        id: BADGE_CATEGORIES.SOUL,
+        name: "SOUL STAR",
+        emoji: "⭐️",
+        color: "#FFD700",
+        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.SOUL)
+      },
+      {
         id: BADGE_CATEGORIES.LISTENING,
         name: "LISTENING",
         emoji: "🎵",
         color: "#9333EA",
         badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.LISTENING)
-      },
-      {
-        id: BADGE_CATEGORIES.HEARTCOIN,
-        name: "HEARTCOIN",
-        emoji: "💰",
-        color: "#F59E0B",
-        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.HEARTCOIN)
       },
       {
         id: BADGE_CATEGORIES.COMMUNITY,

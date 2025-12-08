@@ -251,14 +251,21 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       if (error instanceof Error) {
         console.error('Error message:', error.message);
         console.error('Error stack:', error.stack);
-        if (error.message.includes('permission') || error.message.includes('auth')) {
+        
+        if (error.message.includes('Authentication error') || error.message.includes('No user session')) {
+          errorMessage = "Please log in again to save your entry.";
+        } else if (error.message.includes('permission') || error.message.includes('auth')) {
           errorMessage = "Authentication error. Please refresh the page and try again.";
         } else if (error.message.includes('network') || error.message.includes('fetch')) {
           errorMessage = "Network error. Please check your connection and try again.";
         } else if (error.message.includes('unique') || error.message.includes('constraint')) {
           errorMessage = "This entry already exists for today. Try editing the existing entry instead.";
+        } else if (error.message.includes('column') && error.message.includes('does not exist')) {
+          errorMessage = "Database schema error. Please contact support to update the database.";
         } else if (error.message.includes('table') && error.message.includes('not found')) {
           errorMessage = `Database table error. Please contact support. (${error.message})`;
+        } else if (error.message.includes('Failed to save journal entry')) {
+          errorMessage = `Database error: ${error.message.replace('Failed to save journal entry: ', '')}`;
         } else {
           errorMessage = `Database error: ${error.message}`;
         }

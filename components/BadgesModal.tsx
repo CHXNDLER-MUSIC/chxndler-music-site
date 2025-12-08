@@ -5,7 +5,7 @@ import { useProfile } from "@/contexts/ProfileContext";
 import { useBadges } from "@/hooks/useBadges";
 import BadgeCategoryButton from "@/components/BadgeCategoryButton";
 import PopoutShell from "@/components/PopoutShell";
-import { BadgeWithProgress, BadgeCategory } from "@/types/badges";
+import { BadgeWithProgress, BadgeCategoryData } from "@/types/badges";
 import { sfx } from "@/lib/sfx";
 
 type Props = {
@@ -21,23 +21,23 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   const [selectedBadge, setSelectedBadge] = useState<BadgeWithProgress | null>(null);
 
   // Map badge categories to display info with images
-  const getCategoryDisplayInfo = (category: any) => {
+  const getCategoryDisplayInfo = (category: BadgeCategoryData) => {
     const imageMap: { [key: string]: string } = {
-      'soul-star': '/badges/soul star.webp',
-      'achievements': '/badges/collector.webp', 
+      'soul': '/badges/soul star.webp',
+      'collector': '/badges/collector.webp', 
       'elemental-streak': '/badges/elemental streak.webp',
       'listening': '/badges/listening.webp',
-      'heartcoin': '/badges/currency.webp',
+      'currency': '/badges/currency.webp',
       'community': '/badges/community.webp'
     };
 
     const nameMap: { [key: string]: string } = {
-      'soul-star': 'SOUL STAR',
-      'achievements': 'ACHIEVEMENTS',
+      'soul': 'SOUL STAR',
+      'collector': 'COLLECTOR',
       'elemental-streak': 'ELEMENTAL STREAK', 
       'listening': 'LISTENING',
-      'heartcoin': 'HEARTCOINS',
-      'community': 'MILESTONES'
+      'currency': 'HEARTCOIN',
+      'community': 'COMMUNITY'
     };
 
     return {
@@ -371,8 +371,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           />
           
           {/* Centered content container */}
-          <div className="absolute inset-0 flex items-center justify-center pt-8 pb-16">
-            <div className="flex flex-col items-center justify-center space-y-24 h-full">
+          <div className="absolute inset-0 flex items-center justify-center pt-8 pb-8">
+            <div className="flex flex-col items-center justify-center space-y-16 h-full">
               {/* Top row - first 3 categories */}
               <div className="grid grid-cols-3 gap-6">
                 {badgeCategories.slice(0, 3).map((category) => {
@@ -442,7 +442,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   }
 
   return (
-    <PopoutShell title="BADGES" onClose={onClose}>
+    <PopoutShell title="BADGES" onClose={onClose} pageIndicator="1 / 6">
       {badgesContent}
     </PopoutShell>
   );
