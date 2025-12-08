@@ -133,8 +133,8 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   const CARD_URLS: Record<string, string> = {
     // Special/back + brand
     'back': 'https://ik.imagekit.io/CHXNDLER/card/back.png?updatedAt=1762388351170',
-    'chxndler': 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
-    'chxndler_home': 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
+    'chxndler': '/cards/CHXNDLER.webp',
+    'chxndler_home': '/cards/CHXNDLER.webp',
 
     // Cards by song
     'baby': 'https://ik.imagekit.io/CHXNDLER/card/baby.png?updatedAt=1762388345192',
@@ -779,10 +779,9 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                           // Close the card modal
                           setShowCard(false);
                           
-                          // Set HeartCoin modal to open with USE tab and CARDS sub-tab
+                          // Set HeartCoin modal to open with CARDS tab
                           try {
-                            (window as any).heartCoinInitialTab = 'USE';
-                            (window as any).heartCoinInitialUseTab = 'CARDS';
+                            (window as any).heartCoinInitialTab = 'cards';
                             // Store the currently playing song name for filtering
                             (window as any).heartCoinSelectedCard = currentTrackInfo?.title || title;
                           } catch {}

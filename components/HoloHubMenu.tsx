@@ -231,7 +231,7 @@ export default function HoloHubMenu({
           hrefLower.includes('youtube-nocookie.') ||
           hrefLower.includes('music.youtube.')
         ) {
-          try { window.open('https://www.youtube.com/@chxndler_music', '_blank', 'noopener,noreferrer'); } catch {}
+          try { window.open(it.href!, '_blank', 'noopener,noreferrer'); } catch {}
         }
         // Spotify: prefer embedded player
         else if (idLower === 'sp' || hrefLower.includes('open.spotify.com')) {

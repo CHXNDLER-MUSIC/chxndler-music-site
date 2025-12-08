@@ -7,6 +7,11 @@ import { useProfile as useNewProfile } from "@/hooks/useProfile";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useTour } from "@/contexts/TourContext";
 
+const DEBUG_MODAL = false; // Set to true for detailed logs
+const debugModal = (message, data) => {
+  if (DEBUG_MODAL) debugModal(message, data);
+};
+
 export default function WhatShouldWeCallYouModal() {
   // Hooks (fixed order; all at top)
   const { showNamePrompt, namePromptFromAuth, closeNamePrompt, openElementSelection } = useUIStore();
@@ -29,7 +34,7 @@ export default function WhatShouldWeCallYouModal() {
 
   // Debug modal state changes
   useEffect(() => {
-    console.log('🎭 WhatShouldWeCallYouModal state:', { 
+    debugModal('🎭 WhatShouldWeCallYouModal state:', { 
       showNamePrompt, 
       namePromptFromAuth, 
       mounted, 
@@ -75,7 +80,7 @@ export default function WhatShouldWeCallYouModal() {
 
       // Play join-alien.mp3 sound
       const audio = new Audio('/audio/join-alien.mp3');
-      audio.play().catch(e => console.log('Audio play failed:', e));
+      audio.play().catch(e => debugModal('Audio play failed:', e));
       
       // Save the name but don't complete onboarding yet - still need element selection
       await updateProfileName(trimmedName);
@@ -119,7 +124,7 @@ export default function WhatShouldWeCallYouModal() {
     // If this modal was opened from auth callback (namePromptFromAuth=true),
     // never auto-close it - let the user explicitly interact with it
     if (namePromptFromAuth) {
-      console.log('🔒 Modal opened from auth - preventing auto-close');
+      debugModal('🔒 Modal opened from auth - preventing auto-close');
       return;
     }
     
@@ -130,7 +135,7 @@ export default function WhatShouldWeCallYouModal() {
       // this wasn't triggered by the explicit auth callback flow AND
       // modal is still open (to prevent stale closures)
       if (showNamePrompt && !namePromptFromAuth && currentUser && profile && profile.name && profile.name.trim() !== '') {
-        console.log('🚪 Auto-closing name prompt - user already has complete profile');
+        debugModal('🚪 Auto-closing name prompt - user already has complete profile');
         closeNamePrompt();
       }
     }, 200);
@@ -151,19 +156,19 @@ export default function WhatShouldWeCallYouModal() {
 
   // Early returns come after all hooks
   if (!mounted) {
-    console.log('🚫 Modal not rendering: not mounted');
+    debugModal('🚫 Modal not rendering: not mounted');
     return null;
   }
   if (!showNamePrompt) {
-    console.log('🚫 Modal not rendering: showNamePrompt=false');
+    debugModal('🚫 Modal not rendering: showNamePrompt=false');
     return null;
   }
   if (typeof document === 'undefined') {
-    console.log('🚫 Modal not rendering: document undefined');
+    debugModal('🚫 Modal not rendering: document undefined');
     return null;
   }
 
-  console.log('✅ Rendering WhatShouldWeCallYouModal', { 
+  debugModal('✅ Rendering WhatShouldWeCallYouModal', { 
     showNamePrompt, 
     namePromptFromAuth, 
     mounted,
@@ -177,7 +182,7 @@ export default function WhatShouldWeCallYouModal() {
   // Force visibility with inline styles for Chrome
   const forceVisible = showNamePrompt && mounted;
   
-  console.log('🎨 Modal visibility state:', { showNamePrompt, mounted, forceVisible });
+  debugModal('🎨 Modal visibility state:', { showNamePrompt, mounted, forceVisible });
   
   return (
     <>

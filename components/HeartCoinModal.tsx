@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useProfile } from '@/contexts/ProfileContext';
 import HeartversePopup from "@/components/HeartversePopup";
@@ -8,6 +8,7 @@ import HeartversePopup from "@/components/HeartversePopup";
 type Props = {
   open: boolean;
   onClose: () => void;
+  initialTab?: 'use' | 'cards';
 };
 
 type StoreItem = {
@@ -113,7 +114,7 @@ const storeItems: StoreItem[] = [
   }
 ];
 
-export default function HeartCoinModal({ open, onClose }: Props) {
+export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Props) {
   const { profile } = useProfile();
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -121,8 +122,14 @@ export default function HeartCoinModal({ open, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
-  const [activeTab, setActiveTab] = useState('use');
+  const [activeTab, setActiveTab] = useState(initialTab);
   const itemsPerPage = 6;
+
+  useEffect(() => {
+    if (open) {
+      setActiveTab(initialTab);
+    }
+  }, [open, initialTab]);
 
   async function signInWithGoogle() {
     setError(null);

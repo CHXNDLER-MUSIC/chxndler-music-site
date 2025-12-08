@@ -198,6 +198,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [showStarsModal, setShowStarsModal] = useState(false);
   const [showWelcomeHomeModal, setShowWelcomeHomeModal] = useState(false);
   const [showHeartCoinModal, setShowHeartCoinModal] = useState(false);
+  const [heartCoinModalTab, setHeartCoinModalTab] = useState('use');
   // Track if user actually clicked START button (vs just app loading)
   const [userClickedStart, setUserClickedStart] = useState(false);
   // Legacy state variables will be defined after UI phase variables below
@@ -247,6 +248,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [shouldOpenJournal, setShouldOpenJournal] = useState(false); // track when journal should be opened
   const [safariRefreshKey, setSafariRefreshKey] = useState(0); // Safari refresh mechanism
   
+  // DEBUG LOGGING HELPER
+  const DEBUG = false; // Set to true for detailed logs
+  const debugLog = (message, data) => {
+    if (DEBUG) console.log(message, data);
+  };
+
   // UI PHASE STATE MACHINE - replaces complex boolean logic (plain JavaScript)
   // Phases: "intro" | "warping" | "landed"
   const [uiPhase, setUiPhase] = useState("intro");
@@ -261,7 +268,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   
   // Derive display states from UI phase
   const showDimmingOverlay = uiPhase !== "landed"; // dim during intro and warp, clear when landed
-  const showProfileBar = uiPhase === "landed" && showMenus; // only show when fully landed and after warp
+  const showProfileBar = uiPhase === "landed"; // show immediately when landed (no delay)
   const cockpitVisible = uiPhase === "landed"; // cockpit fully visible only when landed
   const uiUnlocked = uiPhase === "landed"; // UI unlocked when landed
   const showOverlayUI = uiPhase === "landed"; // overlay UI when landed
@@ -275,9 +282,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const warpActive = isWarping; // derive from phase instead of separate state
   const setWarpActive = () => {}; // no-op since managed by phase system
   
-  // Debug: Log UI phase changes (force recompile)
+  // Debug: Log UI phase changes (only when DEBUG is true)
   useEffect(() => {
-    console.log("🎭 UI PHASE CHANGED:", { 
+    debugLog("🎭 UI PHASE CHANGED:", { 
       uiPhase,
       isIntro,
       isWarping, 
@@ -292,25 +299,15 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     });
   }, [uiPhase, isIntro, isWarping, isLanded, showDimmingOverlay, showProfileBar, showMenus, profile?.name]);
 
-  // Effect to show menus after a brief delay when landed (simulating warp completion)
+  // Effect to show menus when landed (immediate, no delay needed since profile bar now shows immediately)
   useEffect(() => {
-    const isChrome = navigator.userAgent.includes('Chrome');
-    console.log("🍔 MENU TIMER EFFECT:", { isLanded, showMenus, browser: isChrome ? 'Chrome' : 'Other' });
+    debugLog("🍔 MENU EFFECT:", { isLanded, showMenus });
     
     if (isLanded && !showMenus) {
-      console.log("🍔 Setting menu timer...");
-      // Use shorter delay for Chrome to test if timing is the issue
-      const delay = isChrome ? 1000 : 2000;
-      const timer = setTimeout(() => {
-        console.log("🍔 Menu timer fired - setting showMenus to true");
-        setShowMenus(true);
-      }, delay);
-      return () => {
-        console.log("🍔 Clearing menu timer");
-        clearTimeout(timer);
-      };
+      debugLog("🍔 Landing complete - showing menus immediately");
+      setShowMenus(true);
     } else if (!isLanded && showMenus) {
-      console.log("🍔 Not landed - hiding menus");
+      debugLog("🍔 Not landed - hiding menus");
       setShowMenus(false);
     }
   }, [isLanded, showMenus]);
@@ -1133,6 +1130,26 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     }
   }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose]);
 
+  // Function to open HeartCoin modal with a specific tab
+  const openHeartCoinModal = React.useCallback((tab = 'use') => {
+    setHeartCoinModalTab(tab);
+    setShowHeartCoinModal(true);
+  }, []);
+
+  // Listen for openHeartCoinCards event from CoverHologram
+  useEffect(() => {
+    const handleOpenHeartCoinCards = (event) => {
+      console.log('📋 Opening HeartCoin modal with CARDS tab:', event.detail);
+      openHeartCoinModal('cards');
+    };
+
+    window.addEventListener('openHeartCoinCards', handleOpenHeartCoinCards);
+    
+    return () => {
+      window.removeEventListener('openHeartCoinCards', handleOpenHeartCoinCards);
+    };
+  }, [openHeartCoinModal]);
+
   // START BUTTON HANDLER - TRIGGERS WARP SEQUENCE
   // CLEAN START BUTTON HANDLER - UI Phase State Machine
   const WARP_DURATION_MS = 3000; // Match the minDurationMs from SkyboxVideo
@@ -1176,14 +1193,14 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
     // When warp finishes, move to landed phase
     setTimeout(() => {
-      console.log("🛬 LANDING COMPLETE");
+      console.log("🛬 LANDING COMPLETE - Full cockpit reveal");
       setUiPhase("landed");
       startInFlightRef.current = false;
       
       // CRITICAL: Mark user has entered Heartverse to show profile bar
       try { 
         enterHeartverse(); 
-        console.log("✅ User entered Heartverse - profile bar should show");
+        console.log("✅ User entered Heartverse - profile bar will show immediately");
       } catch { 
         setHasEnteredHeartverse(true); 
         console.log("✅ Fallback: set hasEnteredHeartverse to true");
@@ -1378,7 +1395,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         ariaLabel: target?.getAttribute("aria-label"),
         title: target?.getAttribute("title"),
         isStartButton: target?.getAttribute("aria-label") === "Start",
-        isWheelPlay: target?.className?.includes("wheel-play"),
+        isWheelPlay: target?.classList?.contains("wheel-play") || false,
       });
     };
     window.addEventListener("click", handler);
@@ -1747,7 +1764,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           }
         }}
         onOpenJournal={handleOpenJournal}
-        onOpenHeartCoin={() => setShowHeartCoinModal(true)}
+        onOpenHeartCoin={() => openHeartCoinModal('use')}
         onJournalCompleted={handleJournalCompleted}
         onBeamColorChange={handleBeamToggle}
         savedAlienName={savedProfileName}
@@ -1816,6 +1833,27 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         onWarpSfxEnd={() => {
           // Simple cleanup - core UI transitions handled by phase state machine
           console.log("🎵 Warp SFX ended");
+          
+          // FALLBACK: Ensure cockpit is fully revealed if Start button warp
+          if (startButtonWarpRef.current && uiPhase !== "landed") {
+            console.log("🛬 FALLBACK: Start button warp SFX ended, forcing landed state");
+            setUiPhase("landed");
+            startInFlightRef.current = false;
+            
+            // Ensure user entered Heartverse state
+            try { 
+              enterHeartverse(); 
+            } catch { 
+              setHasEnteredHeartverse(true); 
+            }
+            
+            // Enable remaining systems
+            setBeamEnabled(true);
+            setShowHUD(true);
+            setBeamOnly(false);
+            setPowerBusy(false);
+            setLandingRevealReady(true);
+          }
           
           // Keep main player audio blocked on home warp (until a song is selected)
           try { 
@@ -2016,24 +2054,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             setPendingOverlayReveal(false);
           }
           
-          // FALLBACK: Ensure synchronized cockpit reveal for Start button warps
-          if (startButtonWarpRef.current) {
-            try { 
-              setUiUnlocked(true);
-              setShowOverlayUI(true);
-              setCockpitLanded(true);
-              setBeamEnabled(true);
-              setShowHUD(true);
-              setShowProfileBar(true);
-              setWarpActive(false);
-              console.log('🚀 START FALLBACK: Synchronized cockpit reveal - all UI elements visible');
-              
-              // Show welcome modal for non-logged users (fallback synchronization with blue display)
-              if (!profile?.id && !userSelected && !pendingTrackPlay && userClickedStart) {
-                setShowWelcomeHomeModal(true);
-              }
-            } catch {}
-          }
+          // Note: Cockpit reveal is now handled by the phase state machine above
         }}
         onFlyStart={() => {
           setWarpActive(true);
@@ -2628,7 +2649,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       {/* Heart Coin Modal */}
       <HeartCoinModal 
         open={showHeartCoinModal} 
-        onClose={() => setShowHeartCoinModal(false)} 
+        onClose={() => setShowHeartCoinModal(false)}
+        initialTab={heartCoinModalTab}
       />
 
       {/* Authentication Error Notification */}
@@ -2655,8 +2677,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         )}
       </AnimatePresence>
 
-      {/* Hamburger Menu for CODE access - Only show after warp effect is fully complete and profile loaded */}
-      <GlowingHamburgerMenuWrapper hidden={!showMenus || !profile?.name} />
+      {/* Hamburger Menu for CODE access - Only show after warp effect is fully complete */}
+      <GlowingHamburgerMenuWrapper hidden={!showMenus} />
 
     </main>
   );

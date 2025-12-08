@@ -35,7 +35,7 @@ export const LINKS = {
   // Updated to current handles (lowercase, canonical URLs)
   instagram: "https://www.instagram.com/chxndlerthealien/",
   tiktok: "https://www.tiktok.com/@chxndlerthealien",
-  youtube: "https://www.youtube.com/@chxndler_music",
+  youtube: "https://www.youtube.com/@chxndlerthealien",
   spotify: "https://open.spotify.com/artist/6O2eoUA8ZWY0lwjsa3E3Yo?si=XjqSGq-zT6CtaRoefZ5Pfg",
   apple: "https://music.apple.com/us/artist/chxndler/1660901437",
 };
