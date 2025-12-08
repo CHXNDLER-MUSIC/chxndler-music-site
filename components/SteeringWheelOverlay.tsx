@@ -415,13 +415,20 @@ export default function SteeringWheelOverlay({
               const c1 = v.canPlayType('video/mp4; codecs="hvc1"');
               const c2 = v.canPlayType('video/mp4; codecs="hev1"');
               const c3 = v.canPlayType('video/quicktime');
-              return !!(c1 || c2 || c3);
+              const mp4 = v.canPlayType('video/mp4; codecs="avc1.42E01E"');
+              return !!(c1 || c2 || c3 || mp4);
             } catch { return false; }
           })();
-          // Choose best source per browser with capability check
-          const wheelSrc = (isSafariUA && canPlayHvc)
-            ? "/cockpit/wheel_transparent.mov"
-            : "/cockpit/wheel_less_transparent.webm";
+          // Choose best source per browser - prefer files that work best in Safari
+          const wheelSrc = (function() {
+            if (isSafariUA) {
+              // Safari: try MOV first (native transparency), fallback to MP4
+              if (canPlayHvc) return "/cockpit/wheel_transparent.mov";
+              return "/cockpit/wheel_no_bg.mp4"; // Use no-bg version for better chroma key
+            }
+            // Other browsers: use WebM or fallback
+            return "/cockpit/wheel_less_transparent.webm";
+          })();
 
           if (disable) {
             // If explicitly disabled, still render a plain <video> so the wheel is visible
@@ -442,6 +449,11 @@ export default function SteeringWheelOverlay({
                   background: 'transparent',
                   transform: 'scale(1.0)',
                   transformOrigin: 'bottom center',
+                  // Safari-specific styling to help with black backgrounds
+                  ...(isSafariUA ? {
+                    mixBlendMode: 'screen',
+                    filter: 'brightness(1.1) contrast(1.2) saturate(1.1)'
+                  } : {})
                 }}
               />
             );
@@ -481,23 +493,25 @@ export default function SteeringWheelOverlay({
               srcMp4={wheelSrc}
               // Enhanced chroma key with Safari-specific adjustments
               keyColor={(vconf as any)?.keyColor ?? [0, 0, 0]}
-              // More aggressive settings for Safari to remove black backgrounds
-              keyTolerance={(vconf as any)?.keyTolerance ?? (isSafariUA ? 0.35 : 0.12)}
-              keySoftness={(vconf as any)?.keySoftness ?? (isSafariUA ? 0.20 : 0.07)}
+              // Much more aggressive settings for Safari to completely remove black backgrounds
+              keyTolerance={(vconf as any)?.keyTolerance ?? (isSafariUA ? 0.65 : 0.12)}
+              keySoftness={(vconf as any)?.keySoftness ?? (isSafariUA ? 0.35 : 0.07)}
               keyMode={'chroma'}
-              // Enable blend so fallback never shows black
-              blendScreen
-              // Keep minimal fallback to prevent vanishing on dark frames
-              fallbackEnabled={true}
-              minCoverageRatio={isSafariUA ? 0.0002 : 0.0008}
-              // Preserve wheel region while keying outside background
-              protectCircle
+              // Enhanced blend modes for Safari
+              blendScreen={true}
+              // Disable fallback on Safari to prevent black showing through
+              fallbackEnabled={!isSafariUA}
+              minCoverageRatio={isSafariUA ? 0.0001 : 0.0008}
+              // More aggressive circle protection for Safari
+              protectCircle={true}
               protectCenterXRatio={0.5}
               protectCenterYRatio={0.58}
-              protectRadiusRatio={0.47}
-              protectFeatherRatio={0.08}
-              saturation={(vconf as any)?.saturation ?? (isSafariUA ? 1.1 : 1.0)}
-              contrast={(vconf as any)?.contrast ?? (isSafariUA ? 1.15 : 1.05)}
+              protectRadiusRatio={isSafariUA ? 0.52 : 0.47}
+              protectFeatherRatio={isSafariUA ? 0.12 : 0.08}
+              // Enhanced color correction for Safari
+              saturation={(vconf as any)?.saturation ?? (isSafariUA ? 1.25 : 1.0)}
+              contrast={(vconf as any)?.contrast ?? (isSafariUA ? 1.3 : 1.05)}
+              brightness={isSafariUA ? 1.1 : 1.0}
               offsetYRatio={0}
               paused={paused}
               forceEnabled
@@ -511,13 +525,15 @@ export default function SteeringWheelOverlay({
                 background: 'transparent',
                 transform: 'scale(1.0)',
                 transformOrigin: 'bottom center',
-                filter: isDimmingOverlayActive ? 'brightness(0.65) saturate(1.0)' : undefined,
+                filter: isDimmingOverlayActive ? 'brightness(0.65) saturate(1.0)' : (isSafariUA ? 'brightness(1.1) contrast(1.1)' : undefined),
                 opacity: isDimmingOverlayActive ? 0.95 : 1,
                 transition: isDimmingOverlayActive ? 'filter 250ms ease, opacity 250ms ease' : 'none',
-                // Additional Safari-specific styling
+                // Enhanced Safari-specific styling for better transparency
                 ...(isSafariUA ? {
                   mixBlendMode: 'screen',
-                  isolation: 'isolate'
+                  isolation: 'isolate',
+                  WebkitMaskComposite: 'xor',
+                  WebkitBackfaceVisibility: 'hidden'
                 } : {})
               }}
             />

@@ -117,7 +117,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const { profile } = useProfile();
   
   // Global UI state for profile bar visibility
-  const { setHasEnteredHeartverse, enterHeartverse, setWarpFullyComplete } = useUIState();
+  const { setHasEnteredHeartverse, enterHeartverse, setWarpFullyComplete, warpFullyComplete } = useUIState();
   
   // Global wheel render mode (LUMA vs PLAIN). Must be top-level to obey Hooks rules.
   // Use false initially to match SSR, then sync with localStorage after hydration
@@ -198,6 +198,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [showStarsModal, setShowStarsModal] = useState(false);
   const [showWelcomeHomeModal, setShowWelcomeHomeModal] = useState(false);
   const [showHeartCoinModal, setShowHeartCoinModal] = useState(false);
+  // Track if user actually clicked START button (vs just app loading)
+  const [userClickedStart, setUserClickedStart] = useState(false);
   // Legacy state variables will be defined after UI phase variables below
   // Guard to prevent rapid double-trigger of Start flow before state updates
   const startInFlightRef = React.useRef(false);
@@ -254,9 +256,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const isWarping = uiPhase === "warping"; 
   const isLanded = uiPhase === "landed";
   
+  // Add state for menu timing
+  const [showMenus, setShowMenus] = useState(false);
+  
   // Derive display states from UI phase
   const showDimmingOverlay = uiPhase !== "landed"; // dim during intro and warp, clear when landed
-  const showProfileBar = uiPhase === "landed"; // only show when fully landed
+  const showProfileBar = uiPhase === "landed" && showMenus; // only show when fully landed and after warp
   const cockpitVisible = uiPhase === "landed"; // cockpit fully visible only when landed
   const uiUnlocked = uiPhase === "landed"; // UI unlocked when landed
   const showOverlayUI = uiPhase === "landed"; // overlay UI when landed
@@ -279,9 +284,37 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       isLanded,
       showDimmingOverlay,
       showProfileBar,
-      "ProfileBar should show": isLanded
+      showMenus,
+      profileName: profile?.name,
+      "ProfileBar should show": isLanded,
+      "Menus should show": showMenus,
+      userAgent: navigator.userAgent.includes('Chrome') ? 'Chrome' : 'Other'
     });
-  }, [uiPhase, isIntro, isWarping, isLanded, showDimmingOverlay, showProfileBar]);
+  }, [uiPhase, isIntro, isWarping, isLanded, showDimmingOverlay, showProfileBar, showMenus, profile?.name]);
+
+  // Effect to show menus after a brief delay when landed (simulating warp completion)
+  useEffect(() => {
+    const isChrome = navigator.userAgent.includes('Chrome');
+    console.log("🍔 MENU TIMER EFFECT:", { isLanded, showMenus, browser: isChrome ? 'Chrome' : 'Other' });
+    
+    if (isLanded && !showMenus) {
+      console.log("🍔 Setting menu timer...");
+      // Use shorter delay for Chrome to test if timing is the issue
+      const delay = isChrome ? 1000 : 2000;
+      const timer = setTimeout(() => {
+        console.log("🍔 Menu timer fired - setting showMenus to true");
+        setShowMenus(true);
+      }, delay);
+      return () => {
+        console.log("🍔 Clearing menu timer");
+        clearTimeout(timer);
+      };
+    } else if (!isLanded && showMenus) {
+      console.log("🍔 Not landed - hiding menus");
+      setShowMenus(false);
+    }
+  }, [isLanded, showMenus]);
+
   // Saved profile name from HUD signup flow
   const [savedProfileName, setSavedProfileName] = useState('');
   // Saved profile element from HUD signup flow
@@ -873,7 +906,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     
     // Enable UI and prepare for blue display (no warp effect)
     setUiUnlocked(true);
-    setShowDimmingOverlay(false);
     setLandingRevealReady(true);
     setWarpActive(false); // Ensure warp is not active
     
@@ -1110,6 +1142,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
     if (startInFlightRef.current) return;
     startInFlightRef.current = true;
+
+    // Mark that user actually clicked START
+    setUserClickedStart(true);
 
     // Enter warp phase immediately
     setUiPhase("warping");
@@ -1792,10 +1827,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           // Mark that warp effect is fully complete (including sound effects)
           setWarpFullyComplete(true);
           
-          // Show welcome modal for non-logged users (simplified)
-          if (!profile?.id && !userSelected && !pendingTrackPlay) {
-            setShowWelcomeHomeModal(true);
-          }
+          // Welcome modal will be shown after UI reveal below
           
           // After a song is selected, reveal ONLY the selected planet post-warp
           if (userSelected || pendingTrackPlay) {
@@ -1940,7 +1972,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             try { 
               setUiUnlocked(true);
               setShowOverlayUI(true);
-              setShowDimmingOverlay(false);
               setCockpitLanded(true);
               setBeamEnabled(true);
               setShowHUD(true);
@@ -1957,6 +1988,11 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 showProfileBar: true,
                 cockpitVisible: "should be true now"
               });
+              
+              // Show welcome modal for non-logged users (synchronized with blue display reveal)
+              if (!profile?.id && !userSelected && !pendingTrackPlay && userClickedStart) {
+                setShowWelcomeHomeModal(true);
+              }
             } catch {}
             // Ensure homepage shows all planets after warp
             
@@ -1985,13 +2021,17 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             try { 
               setUiUnlocked(true);
               setShowOverlayUI(true);
-              setShowDimmingOverlay(false);
               setCockpitLanded(true);
               setBeamEnabled(true);
               setShowHUD(true);
               setShowProfileBar(true);
               setWarpActive(false);
               console.log('🚀 START FALLBACK: Synchronized cockpit reveal - all UI elements visible');
+              
+              // Show welcome modal for non-logged users (fallback synchronization with blue display)
+              if (!profile?.id && !userSelected && !pendingTrackPlay && userClickedStart) {
+                setShowWelcomeHomeModal(true);
+              }
             } catch {}
           }
         }}
@@ -2387,7 +2427,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   style={{ background:'transparent', zIndex: 30, cursor:'pointer' }}
                   onClick={() => {
                     if (!uiUnlocked) return;
-                    setShowDimmingOverlay(false);
                     setHomeMode(true);
                     try { playerStore.setState({ mainId: null }); } catch {}
                     // Check if welcome audio is currently playing before disabling
@@ -2616,8 +2655,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         )}
       </AnimatePresence>
 
-      {/* Hamburger Menu for CODE access - Only show when landed and profile loaded */}
-      <GlowingHamburgerMenuWrapper hidden={!isLanded || !profile?.name} />
+      {/* Hamburger Menu for CODE access - Only show after warp effect is fully complete and profile loaded */}
+      <GlowingHamburgerMenuWrapper hidden={!showMenus || !profile?.name} />
 
     </main>
   );

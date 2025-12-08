@@ -83,15 +83,29 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false }: { hidden
     }
   };
 
+  // Debug logging for Chrome issue
+  useEffect(() => {
+    console.log("🍔 HAMBURGER WRAPPER:", { 
+      hidden, 
+      shouldShow: !hidden,
+      browser: navigator.userAgent.includes('Chrome') ? 'Chrome' : 'Other'
+    });
+  }, [hidden]);
+
   return (
     <>
-      {!hidden && (
+      <div style={{ 
+        visibility: hidden ? 'hidden' : 'visible',
+        opacity: hidden ? 0 : 1,
+        pointerEvents: hidden ? 'none' : 'auto',
+        transition: 'opacity 0.3s ease'
+      }}>
         <GlowingHamburgerMenu 
           onItemClick={handleItemClick}
           externalIsOpen={isMenuOpen}
           onMenuToggle={setMenuOpen}
         />
-      )}
+      </div>
       {/* Journal popout */}
       <SoulStarJournal 
         isOpen={journalOpen}

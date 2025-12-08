@@ -103,10 +103,9 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
   const today = new Date().toISOString().slice(0, 10);
   const todayFormatted = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+    month: 'numeric',
+    day: 'numeric',
+    year: 'numeric'
   });
 
   // Load daily prompt when opened
