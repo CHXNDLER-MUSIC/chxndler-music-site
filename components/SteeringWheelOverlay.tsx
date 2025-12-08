@@ -789,15 +789,15 @@ export default function SteeringWheelOverlay({
 
 
 
-      {/* "Enter the Heartverse" text above start button - only show before UI is unlocked */}
-      {!hideStartButton && !isUIUnlocked && (
+      {/* "Enter the Heartverse" text above start button - show on initial screen, hide when START clicked/warp starts */}
+      {!hideStartButton && !isUIUnlocked && !suspendUI && (
         <div
           style={{
             position: "absolute",
             bottom: `calc(-2vh + ${vs * 0.35}px + 40px)`, // Positioned higher above the start button
             left: '50%',
             transform: 'translate(-50%, 0)',
-            zIndex: 104, // Just below the start button
+            zIndex: 9998, // Just below the start button (9999)
             pointerEvents: 'none',
             textAlign: 'center'
           }}
@@ -843,9 +843,9 @@ export default function SteeringWheelOverlay({
           height: startSize * 1.02,
           borderRadius: 9999,
           transform: `translate(-50%, 0)`,
-          zIndex: 105,
-          // Ensure this button doesn't interfere with join form clicks
-          pointerEvents: joinAlienOpen ? 'none' : 'auto',
+          zIndex: 9999, // HIGHEST z-index to ensure always clickable
+          // ALWAYS allow pointer events for Start button
+          pointerEvents: 'auto',
         }}
         onMouseEnter={() => { if (!mounted) return; try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
         aria-label={isStart ? "Start" : (playing ? "Pause" : "Play")}

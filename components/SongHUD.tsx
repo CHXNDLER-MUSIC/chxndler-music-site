@@ -43,18 +43,3 @@ export default function SongHUD({ title, coverSrc, element }: { title: string; c
     </div>
   );
 }
-<style jsx>{`
-  .hud-cover{
-    outline:1px solid rgba(25,227,255,.20);
-    box-shadow: 0 0 18px rgba(25,227,255,.12);
-    transition: transform .15s ease, box-shadow .2s ease, outline-color .2s ease;
-  }
-  .hud-cover:hover{
-    transform: translateZ(0) scale(1.05);
-    outline-color: rgba(25,227,255,.8);
-    box-shadow: 0 0 42px rgba(25,227,255,.6), 0 0 70px rgba(25,227,255,.35);
-  }
-  /* Subtle blue tint by default, stronger on hover */
-  .hud-blue-fill-overlay{ background-color: rgba(25, 227, 255, 0.12); transition: background-color .2s ease; }
-  .hud-cover:hover .hud-blue-fill-overlay{ background-color: rgba(25, 227, 255, 0.30); }
-`}</style>

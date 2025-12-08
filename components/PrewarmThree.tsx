@@ -1,19 +1,23 @@
 "use client";
 import { useEffect } from "react";
+import { ENABLE_HEARTVERSE_3D } from "@/config/features";
 
 export default function PrewarmThree() {
   useEffect(() => {
     (async () => {
       try {
-        // Global kill-switch to disable any 3D prewarming while investigating performance
-        const DISABLE_3D_DEFAULT = true;
+        // ⚠️ TEMPORARY 3D SYSTEM SHUTDOWN - Use feature flag to disable 3D prewarming
+        // This prevents preloading React Three Fiber when 3D system is disabled
+        if (!ENABLE_HEARTVERSE_3D) return;
+        
+        // Also respect local storage override for additional control
         const disable3D = (() => {
           try {
             const v = typeof window !== 'undefined' ? window.localStorage.getItem('DISABLE_3D_PLANETS') : null;
             if (v === '0') return false;
             if (v === '1') return true;
           } catch {}
-          return DISABLE_3D_DEFAULT;
+          return false; // Default to enabled when feature flag is true
         })();
         if (disable3D) return;
         // Skip prewarming on constrained devices

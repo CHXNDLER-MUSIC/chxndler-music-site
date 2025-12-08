@@ -11,9 +11,11 @@ import SteeringWheelOverlay from "@/components/SteeringWheelOverlay";
 import StationDialOverlay from "@/components/StationDialOverlay";
 import { Slot } from "@/components/Slot";
 import { DASHBOARD } from "@/config/dashboard";
+import { ENABLE_HEARTVERSE_3D } from "@/config/features";
 import dynamic from "next/dynamic";
 const HUDPanel = dynamic(() => import("@/components/HUDPanel"), { ssr: false });
-const HeartverseSystemWrapper = dynamic(() => import("@/components/holo/HeartverseSystemWrapper"), { ssr: false });
+// ⚠️ 3D SYSTEM COMPLETELY DISABLED - HeartverseSystemWrapper import removed
+// const HeartverseSystemWrapper = ENABLE_HEARTVERSE_3D ? dynamic(() => import("@/components/holo/HeartverseSystemWrapper"), { ssr: false }) : null;
 const HoloHUD = dynamic(() => import("@/components/HoloHUD"), { ssr: false });
 import { skyFor, introSky } from "@/lib/sky";
 import { youtubeSkyFor, HOME_YOUTUBE_SKY } from "@/lib/sky-youtube";
@@ -196,18 +198,16 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [showStarsModal, setShowStarsModal] = useState(false);
   const [showWelcomeHomeModal, setShowWelcomeHomeModal] = useState(false);
   const [showHeartCoinModal, setShowHeartCoinModal] = useState(false);
-  const [warpActive, setWarpActive] = useState(false);
-  const [isWarping, setIsWarping] = useState(false);
+  // Legacy state variables will be defined after UI phase variables below
   // Guard to prevent rapid double-trigger of Start flow before state updates
   const startInFlightRef = React.useRef(false);
   const [nextSky, setNextSky] = useState(null);
   const [beamOnly, setBeamOnly] = useState(true);
   const [beamEnabled, setBeamEnabled] = useState(false);
   const [powerBusy, setPowerBusy] = useState(false);
-  const [showOverlayUI, setShowOverlayUI] = useState(false); // comms + join buttons
   const [uiCloseSignal, setUiCloseSignal] = useState(0); // increment to force-close buttons/menus during warp
   // Gate overlay + HUD power-up until Start is pressed (or deep link)
-  const [uiUnlocked, setUiUnlocked] = useState(false);
+  // NOTE: uiUnlocked and showOverlayUI now derived from uiPhase below
   const [allowWarp, setAllowWarp] = useState(!initialSlug); // show lightspeed on opening homepage
   const [landingMode, setLandingMode] = useState(true); // initial screen state
   const [landingRevealReady, setLandingRevealReady] = useState(false); // when true, allow initial overlay to hide
@@ -240,12 +240,48 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [cardModalOpen, setCardModalOpen] = useState(false); // track card modal state for beam dimming
   const [joinAlienOpen, setJoinAlienOpen] = useState(false); // track join alien button state for pink beam
   const [beamColor, setBeamColor] = useState('blue'); // track active beam color
-  const [showDimmingOverlay, setShowDimmingOverlay] = useState(true); // show dimming overlay on initial load
   const [beamTransitioning, setBeamTransitioning] = useState(false); // prevent rapid beam changes
   const [explicitClose, setExplicitClose] = useState(false); // track when explicitly closing without opening another display
   const [shouldOpenJournal, setShouldOpenJournal] = useState(false); // track when journal should be opened
   const [safariRefreshKey, setSafariRefreshKey] = useState(0); // Safari refresh mechanism
-  // ProfileBar will self-decide whether to render based on global state
+  
+  // UI PHASE STATE MACHINE - replaces complex boolean logic (plain JavaScript)
+  // Phases: "intro" | "warping" | "landed"
+  const [uiPhase, setUiPhase] = useState("intro");
+  
+  // DERIVED STATES from uiPhase - much cleaner than individual booleans
+  const isIntro = uiPhase === "intro";
+  const isWarping = uiPhase === "warping"; 
+  const isLanded = uiPhase === "landed";
+  
+  // Derive display states from UI phase
+  const showDimmingOverlay = uiPhase !== "landed"; // dim during intro and warp, clear when landed
+  const showProfileBar = uiPhase === "landed"; // only show when fully landed
+  const cockpitVisible = uiPhase === "landed"; // cockpit fully visible only when landed
+  const uiUnlocked = uiPhase === "landed"; // UI unlocked when landed
+  const showOverlayUI = uiPhase === "landed"; // overlay UI when landed
+
+  // Legacy compatibility: Dummy setters for old code that might still reference them
+  // These don't actually change state since values are now derived from uiPhase
+  const setShowOverlayUI = () => { /* no-op: derived from uiPhase */ };
+  const setUiUnlocked = () => { /* no-op: derived from uiPhase */ };
+  
+  // Legacy state variables - now derived from phase system
+  const warpActive = isWarping; // derive from phase instead of separate state
+  const setWarpActive = () => {}; // no-op since managed by phase system
+  
+  // Debug: Log UI phase changes (force recompile)
+  useEffect(() => {
+    console.log("🎭 UI PHASE CHANGED:", { 
+      uiPhase,
+      isIntro,
+      isWarping, 
+      isLanded,
+      showDimmingOverlay,
+      showProfileBar,
+      "ProfileBar should show": isLanded
+    });
+  }, [uiPhase, isIntro, isWarping, isLanded, showDimmingOverlay, showProfileBar]);
   // Saved profile name from HUD signup flow
   const [savedProfileName, setSavedProfileName] = useState('');
   // Saved profile element from HUD signup flow
@@ -1065,131 +1101,69 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     }
   }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose]);
 
-  const handleStartClick = React.useCallback(async () => {
-    console.log('🚀 START button clicked!', { flySignal, allowWarp, isWarping });
-    // Synchronous guard for rapid double clicks
-    if (startInFlightRef.current) {
-      console.log('❌ Start blocked - already in flight');
-      return;
-    }
+  // START BUTTON HANDLER - TRIGGERS WARP SEQUENCE
+  // CLEAN START BUTTON HANDLER - UI Phase State Machine
+  const WARP_DURATION_MS = 3000; // Match the minDurationMs from SkyboxVideo
+  
+  const handleStartClick = React.useCallback(() => {
+    console.log("🚀 START CLICKED");
+
+    if (startInFlightRef.current) return;
     startInFlightRef.current = true;
-    // Block main player audio during Start/home warp flow
-    try { if (typeof window !== 'undefined') { window.__BLOCK_MAIN_AUDIO = true; } } catch (e) {}
+
+    // Enter warp phase immediately
+    setUiPhase("warping");
+    
+    // Trigger existing warp visual/audio systems
+    setAllowWarp(true);
+    setSky(SPACE_SKY);
+    setFlySignal(n => n + 1);
+    setHomeMode(true);
+    setUserSelected(false);
+    setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
+    
+    // Play warp sound if available
+    try { sfx.play('join', 0.9); } catch {}
+    
+    // Stop any existing audio
     try {
-      // Prevent multiple clicks while warping
-      if (isWarping) return;
+      const audioEl = document.querySelector('audio[data-audio-player="1"]');
+      if (audioEl) {
+        audioEl.pause();
+        audioEl.currentTime = 0;
+        audioEl.muted = true;
+      }
+      setIsPlaying(false);
+      playerStore.setState({ mainId: null });
+    } catch (e) {
+      console.error("Error stopping audio (non-critical):", e);
+    }
 
-      // Reset any existing modals
-      setShowWelcomeHomeModal(false);
+    // When warp finishes, move to landed phase
+    setTimeout(() => {
+      console.log("🛬 LANDING COMPLETE");
+      setUiPhase("landed");
+      startInFlightRef.current = false;
       
-      // Get current user session to determine behavior path
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      const user = session?.user;
-      
-      if (!user) {
-        // USER IS NOT LOGGED IN - Run warp effect first, then show Welcome Home modal
-        setIsWarping(true);
-        // Flag to show Welcome Home modal after warp completes
-        setShouldShowWelcomeModal(true);
-        // Prepare UI reveal sequencing for homepage
-        welcomeOnStartRef.current = true;
-        setHomeIntroEnabled(true);
-        setPendingOverlayReveal(true);
-        setUiUnlocked(true);
-        setShowDimmingOverlay(false);
-        setLandingRevealReady(true);
-
-        // Prepare warp to homepage
-        setUserSelected(false);
-        setHomeMode(true); // Set to true so welcome audio can play
-        startButtonWarpRef.current = true;
-
-        // Stop any playing main track audio
-        try {
-          const a = document.querySelector('audio[data-audio-player="1"]');
-          if (a) { a.pause(); try { a.currentTime = 0; } catch {}; try { a.muted = true; } catch {}; try { a.removeAttribute('src'); } catch {}; try { a.load(); } catch {} }
-        } catch {}
-        setIsPlaying(false);
-        try { playerStore.setState({ mainId: null }); } catch {}
-
-        // Prepare UI state for warp
-        setShowHUD(false);
-        setShowOverlayUI(false);
-        setBeamEnabled(false);
-        setPendingHomePower(true);
-
-        // Trigger the warp effect
-        console.log('🌟 Triggering warp (non-logged user):', { 
-          beforeFlySignal: flySignal, 
-          currentSky: sky.key,
-          spaceSky: SPACE_SKY,
-          audioTrackInfo: audioManager.currentTrackInfo 
-        });
-        setAllowWarp(true);
-        setSky(SPACE_SKY);
-        setNextSky(null);
-        setFlySignal((n) => {
-            return n + 1;
-        });
-        setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
-
-        // Ensure post-warp login markers are cleared for non-logged-in flow
-        try { delete window.postWarpUser; delete window.postWarpProfileComplete; } catch {}
-        return;
+      // CRITICAL: Mark user has entered Heartverse to show profile bar
+      try { 
+        enterHeartverse(); 
+        console.log("✅ User entered Heartverse - profile bar should show");
+      } catch { 
+        setHasEnteredHeartverse(true); 
+        console.log("✅ Fallback: set hasEnteredHeartverse to true");
       }
       
-      // USER IS LOGGED IN - Run warp effect first, then transition to cockpit with audio
-      setIsWarping(true);
-      welcomeOnStartRef.current = true;
-      setHomeIntroEnabled(true);
-      setPendingOverlayReveal(true);
-      setUiUnlocked(true);
-      setShowDimmingOverlay(false);
+      // Enable remaining systems for landed state
+      setBeamEnabled(true);
+      setShowHUD(true);
+      setBeamOnly(false);
+      setPowerBusy(false);
       setLandingRevealReady(true);
       
-      // Prepare warp to homepage
-      setUserSelected(false);
-      setHomeMode(false);
-      startButtonWarpRef.current = true;
-      
-      // Stop any playing main track audio
-      try {
-        const a = document.querySelector('audio[data-audio-player="1"]');
-        if (a) { a.pause(); try { a.currentTime = 0; } catch {}; try { a.muted = true; } catch {}; try { a.removeAttribute('src'); } catch {}; try { a.load(); } catch {} }
-      } catch {}
-      setIsPlaying(false);
-      try { playerStore.setState({ mainId: null }); } catch {}
-      
-      // Prepare UI state for warp
-      setShowHUD(false);
-      setShowOverlayUI(false);
-      setBeamEnabled(false);
-      setPendingHomePower(true);
-      
-      // Trigger the warp effect
-      setAllowWarp(true);
-      setSky(SPACE_SKY);
-      setNextSky(null);
-      setFlySignal((n) => {
-        console.log('🎆 Setting flySignal from', n, 'to', n + 1);
-        return n + 1;
-      });
-      setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
-      
-      // Store user data for post-warp audio handling
-      window.postWarpUser = user;
-      window.postWarpProfileComplete = profile?.profile_complete;
-      
-    } catch (error) {
-      console.error('Error in handleStartClick:', error);
-      // On error, reset warp state and only show Welcome Home modal for non-logged in users
-      setIsWarping(false);
-      // Only show modal if user is not logged in
-      if (!profile?.id) {
-        setShowWelcomeHomeModal(true);
-      }
-    }
-  }, [profile?.profile_complete, isWarping, openNamePrompt]);
+    }, WARP_DURATION_MS);
+    
+  }, []);
 
   // Handle opening journal: opens journal view in Soul Sky popover
   const handleOpenJournal = React.useCallback(() => {
@@ -1357,6 +1331,25 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     try { (window).__CHX_SHOW_DIMMING_OVERLAY = !!showDimmingOverlay; } catch {}
   }, [uiUnlocked, showDimmingOverlay]);
 
+  // GLOBAL CLICK LOGGER FOR DEBUGGING (temporary)
+  useEffect(() => {
+    const handler = (e) => {
+      const target = e.target;
+      console.log("🖱 Global click:", {
+        tag: target?.tagName,
+        id: target?.id,
+        className: target?.className,
+        dataNoTrack: target?.getAttribute("data-no-track"),
+        ariaLabel: target?.getAttribute("aria-label"),
+        title: target?.getAttribute("title"),
+        isStartButton: target?.getAttribute("aria-label") === "Start",
+        isWheelPlay: target?.className?.includes("wheel-play"),
+      });
+    };
+    window.addEventListener("click", handler);
+    return () => window.removeEventListener("click", handler);
+  }, []);
+
   // Compute effective playing state: true if main track OR space music is playing
   const effectivelyPlaying = useMemo(() => {
     // Main track is playing
@@ -1421,7 +1414,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         delete window.forceWelcomeVO;
       }
     };
-  }, [homeMode, homeIntroEnabled, welcomeHasPlayed, firstStartDone, uiUnlocked, showOverlayUI, pendingOverlayReveal, ambientSuspended, warpActive]);
+  }, [homeMode, homeIntroEnabled, welcomeHasPlayed, firstStartDone, isLanded, pendingOverlayReveal, ambientSuspended, warpActive]);
 
   // Helper function to get beam gradient based on active beam color
   const getBeamGradient = useMemo(() => {
@@ -1508,11 +1501,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     return gradients[beamColor] || gradients.blue;
   }, [beamColor]);
 
-  // Memoize expensive style calculations
+  // Memoize expensive style calculations  
   const blurWrapperStyle = useMemo(() => ({
-    filter: cardModalOpen ? 'blur(2px)' : 'none',
-    transition: 'filter 300ms ease'
-  }), [cardModalOpen]);
+    filter: cardModalOpen && !warpActive ? 'blur(2px)' : 'none', // No blur during warp
+    transition: 'filter 300ms ease',
+    opacity: 1 // Always full opacity, never dim the content
+  }), [cardModalOpen, warpActive]);
 
   const lightBeamStyle = useMemo(() => {
     // Position the light beam lower to align with the moved display
@@ -1524,10 +1518,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       width: 'var(--display-width)',
       transform: 'translate3d(-50%,0,0)',
       // Tie beam visibility to overlay UI being shown and Start having been pressed, and hide during warp
-      opacity: (uiUnlocked && showOverlayUI && (beamEnabled || showHUD) && !warpActive) ? (cardModalOpen ? 0.3 : 1) : 0,
+      opacity: (cockpitVisible && (beamEnabled || showHUD) && !warpActive) ? (cardModalOpen ? 0.3 : 1) : 0,
       transition: 'opacity 400ms ease-in-out'
     };
-  }, [beamEnabled, showHUD, cardModalOpen, uiUnlocked, showOverlayUI, warpActive]);
+  }, [beamEnabled, showHUD, cardModalOpen, cockpitVisible, warpActive]);
 
   // Compute background-position for the lightbeam base PNG so it anchors under the blue button
   const [beamBaseBgPos, setBeamBaseBgPos] = useState(null);
@@ -1576,8 +1570,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // Return a black screen with proper dimensions while loading
     return (
       <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden" style={{ minWidth: '100vw', minHeight: '100vh' }}>
-        {/* Profile Bar visibility handled via ProfileBarWrapper (guards hydration + flag) */}
-        <ProfileBarWrapper 
+        {/* Profile Bar - only show when landed */}
+        {showProfileBar && <ProfileBarWrapper 
           onCodeClick={() => {}}
           onDigitalBinderClick={() => {}}
           onBadgesClick={() => {}}
@@ -1596,9 +1590,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           onBeamColorChange={handleBeamToggle}
           profileRefreshTrigger={profileRefreshTrigger}
           todaysPrompt={todaysPrompt}
-        />
+        />}
         
-        <div className="absolute inset-0 bg-black" />
+        {/* Dimming overlay - controlled by UI phase state machine */}
+        {showDimmingOverlay && (
+          <div className="pointer-events-none absolute inset-0 bg-black/60 backdrop-blur-sm z-[40]" />
+        )}
         {/* Ensure cockpit frame preloads immediately alongside lightbeam base */}
         <div 
           className="fixed z-20 pointer-events-none cockpit-bg"
@@ -1699,8 +1696,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white max-w-screen overflow-x-hidden" style={{ minWidth: '100vw', minHeight: '100vh' }}>
-      {/* Profile Bar visibility handled via ProfileBarWrapper (guards hydration + flag) */}
-      <ProfileBarWrapper 
+      {/* Profile Bar - only show when landed */}
+      {showProfileBar && <ProfileBarWrapper 
         onCodeClick={handleCodeClick}
         onDigitalBinderClick={handleDigitalBinderClick}
         onBadgesClick={handleBadgesClick}
@@ -1722,7 +1719,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         savedAlienElement={savedProfileElement}
         profileRefreshTrigger={profileRefreshTrigger}
         todaysPrompt={todaysPrompt}
-      />
+      />}
       
       <div 
         className="absolute inset-0"
@@ -1737,8 +1734,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           userSelectedSong={userSelected} 
         />
         
-        {/* 3D Planet System */}
-        {HeartverseSystemWrapper && <HeartverseSystemWrapper 
+        {/* 3D Planet System - COMPLETELY DISABLED */}
+        {/* {ENABLE_HEARTVERSE_3D && HeartverseSystemWrapper && <HeartverseSystemWrapper 
           showAll={homeMode}
           onSongClick={(songId) => {
             try {
@@ -1750,7 +1747,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               console.error("Failed to handle planet song click:", error);
             }
           }}
-        />}
+        />} */}
         
       <SkyboxVideo
         brightness={0.95}
@@ -1761,7 +1758,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         allowWarp={allowWarp}
         // Keep the lightspeed overlay visible until overlay UI appears
         holdLightspeed={true}
-        readyToReveal={uiUnlocked && showOverlayUI}
+        readyToReveal={isLanded}
         minDurationMs={3000}
         offsetY="-1vh"
         // Use the current track's YouTube sky as soon as a selection is in progress
@@ -1770,7 +1767,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           const slug = curTrack?.slug;
           const mapped = slug ? youtubeSkyFor(slug) : undefined;
           // On the homepage, always prefer the space video; do not show a track's video
-          if (homeMode) return uiUnlocked ? HOME_YOUTUBE_SKY : undefined;
+          if (homeMode) return isLanded ? HOME_YOUTUBE_SKY : undefined;
           // Off-home (song view): show the mapped YouTube sky as soon as a selection is happening
           // or after playback has started (ytSkyStartedSlug guard), so users see it right after clicking.
           if (slug && mapped) {
@@ -1782,43 +1779,22 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         // Use provided YouTube clip for lightspeed overlay on opening and Start
         lightspeedYoutubeUrl={'https://youtu.be/KFssNa5WvKc'}
         onWarpSfxEnd={() => {
-          // Allow Start to be clicked again after warp sfx completes
-          try { startInFlightRef.current = false; } catch {}
-          // Keep main player audio blocked on home warp (until a song is selected)
-          try { if (!pendingTrackPlay && !userSelected && typeof window !== 'undefined') { window.__BLOCK_MAIN_AUDIO = true; } } catch (e) {}
-          // Welcome modal and planet visibility sequencing after warp
+          // Simple cleanup - core UI transitions handled by phase state machine
+          console.log("🎵 Warp SFX ended");
           
-          // Reset warp state when warp effect completes
-          setIsWarping(false);
+          // Keep main player audio blocked on home warp (until a song is selected)
+          try { 
+            if (!pendingTrackPlay && !userSelected && typeof window !== 'undefined') { 
+              window.__BLOCK_MAIN_AUDIO = true; 
+            } 
+          } catch (e) {}
           
           // Mark that warp effect is fully complete (including sound effects)
           setWarpFullyComplete(true);
           
-          // Handle post-warp logic based on login state (for Start button warps)
-          let wasLoggedInDuringWarp = false;
-          if (isWarping) {
-            const postWarpUser = window.postWarpUser;
-            const postWarpProfileComplete = window.postWarpProfileComplete;
-            wasLoggedInDuringWarp = !!postWarpUser;
-            
-            // Clean up temporary storage
-            delete window.postWarpUser;
-            delete window.postWarpProfileComplete;
-            
-            if (postWarpUser) {
-              // User IS logged in - no auto-play audio after warp
-              // audioHeartverse.playWelcomeHomeAndSpaceMusic(); // DISABLED
-              // Clear any pending welcome modal flags for logged in users
-              setShouldShowWelcomeModal(false);
-            }
-          }
-          
-          // Show welcome home modal after warp effect completes (only for non-logged in users)
-          // Don't show if user was logged in during warp OR if currently logged in
-          const currentlyLoggedIn = !!profile?.id;
-          if (shouldShowWelcomeModal && !userSelected && !pendingTrackPlay && !wasLoggedInDuringWarp && !currentlyLoggedIn) {
+          // Show welcome modal for non-logged users (simplified)
+          if (!profile?.id && !userSelected && !pendingTrackPlay) {
             setShowWelcomeHomeModal(true);
-            setShouldShowWelcomeModal(false); // Reset flag after showing modal
           }
           
           // After a song is selected, reveal ONLY the selected planet post-warp
@@ -1960,12 +1936,28 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               //   try { window.dispatchEvent(new CustomEvent('ambient:play')); } catch {}
               // }, 300);
             }
-            try { setShowOverlayUI(true); } catch {}
-            try { setBeamEnabled(true); } catch {}
-            try { setShowHUD(true); } catch {}
-            try { setBeamOnly(false); } catch {}
-            try { setPowerBusy(false); } catch {}
-            try { setLandingRevealReady(true); } catch {}
+            // SYNCHRONIZED COCKPIT REVEAL - ALL TOGETHER AT WARP END
+            try { 
+              setUiUnlocked(true);
+              setShowOverlayUI(true);
+              setShowDimmingOverlay(false);
+              setCockpitLanded(true);
+              setBeamEnabled(true);
+              setShowHUD(true);
+              setShowProfileBar(true);
+              setBeamOnly(false);
+              setPowerBusy(false);
+              setLandingRevealReady(true);
+              setWarpActive(false); // CRITICAL: End warp state to allow light beam and other UI to show
+              console.log("🚀 WARP END: Synchronized cockpit reveal - all UI elements visible");
+              console.log("🛸 POST-WARP STATES:", { 
+                cockpitVisible: true,
+                uiUnlocked: true,
+                showOverlayUI: true,
+                showProfileBar: true,
+                cockpitVisible: "should be true now"
+              });
+            } catch {}
             // Ensure homepage shows all planets after warp
             
             try { 
@@ -1986,6 +1978,21 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             }
             
             setPendingOverlayReveal(false);
+          }
+          
+          // FALLBACK: Ensure synchronized cockpit reveal for Start button warps
+          if (startButtonWarpRef.current) {
+            try { 
+              setUiUnlocked(true);
+              setShowOverlayUI(true);
+              setShowDimmingOverlay(false);
+              setCockpitLanded(true);
+              setBeamEnabled(true);
+              setShowHUD(true);
+              setShowProfileBar(true);
+              setWarpActive(false);
+              console.log('🚀 START FALLBACK: Synchronized cockpit reveal - all UI elements visible');
+            } catch {}
           }
         }}
         onFlyStart={() => {
@@ -2236,14 +2243,14 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       <SteeringWheelOverlay
         POS={POS}
         playing={isPlaying}
-        showUI={uiUnlocked && showOverlayUI && !warpActive && !showDimmingOverlay}
-        uiUnlocked={uiUnlocked}
+        showUI={isLanded}
+        uiUnlocked={isLanded}
         joinAlienOpen={joinAlienOpen}
         blueActive={beamColor === 'blue' && !!(beamEnabled || showHUD)}
         onJoinToggle={setJoinAlienOpen}
         onBeamColorChange={handleBeamToggle}
         closeAllSignal={uiCloseSignal}
-        suspendUI={warpActive}
+        suspendUI={isWarping}
         hideStartButton={false}
         onPowerToggle={() => { 
           // Manual power toggle should not start new welcome audio, but don't interrupt if it's already playing
@@ -2284,7 +2291,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               paddingTop: '0px',
               zIndex: 93,
               ['--hud-y']: `${hudYOffset}px`,
-              pointerEvents: (uiUnlocked && showOverlayUI && !showDimmingOverlay) ? 'auto' : 'none'
+              pointerEvents: cockpitVisible ? 'auto' : 'none'
             }}
           >
             <div className="relative h-full w-full p-0" style={{ overflow: 'visible' }} suppressHydrationWarning>
@@ -2294,8 +2301,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 suppressHydrationWarning
                 key={safariRefreshKey} // Force re-render on Safari when needed
                 style={(() => {
-                  const normalCondition = uiUnlocked && showOverlayUI && showHUD && !warpActive && !showDimmingOverlay;
-                  // First page should NOT show the blue display until Start unlocks UI
+                  const normalCondition = cockpitVisible && showHUD;
+                  // Blue display shows when cockpit is fully visible
                   const shouldShow = normalCondition;
                   // Debug visibility conditions (optional)
                   debugLog({
@@ -2493,7 +2500,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       {SHOW_CENTER_BEAM && mounted ? (
         <div 
           className="fixed pointer-events-none z-[95] light-beam"
-          style={{ ...lightBeamStyle, display: uiUnlocked ? 'block' : 'none' }}
+          style={{ ...lightBeamStyle, display: cockpitVisible ? 'block' : 'none' }}
         >
           {/* Single main beam */}
           <div 
@@ -2521,8 +2528,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       {/* HoloHUD disabled - blue displays removed */}
 
 
-      {/* Simple Dimming Overlay */}
-      {mounted && showDimmingOverlay ? (
+      {/* Simple Dimming Overlay - ONLY controlled by cockpitVisible */}
+      {mounted && !cockpitVisible ? (
         <div className="fixed inset-0 z-[89] pointer-events-none">
           <div 
             className="absolute inset-0"
@@ -2609,8 +2616,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         )}
       </AnimatePresence>
 
-      {/* Hamburger Menu for CODE access - Only show after profile name loads */}
-      <GlowingHamburgerMenuWrapper hidden={homeMode || !profile?.name} />
+      {/* Hamburger Menu for CODE access - Only show when landed and profile loaded */}
+      <GlowingHamburgerMenuWrapper hidden={!isLanded || !profile?.name} />
 
     </main>
   );
