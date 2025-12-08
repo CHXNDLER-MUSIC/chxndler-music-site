@@ -395,8 +395,11 @@ export default function SteeringWheelOverlay({
             if (typeof window !== 'undefined') {
               const v = window.localStorage.getItem('DISABLE_WHEEL_VIDEO');
               const force = window.localStorage.getItem('WHEEL_FORCE_LUMA') === '1';
+              const safariPlain = window.localStorage.getItem('SAFARI_PLAIN_WHEEL') === '1';
+              // Force plain video for Safari by default to avoid black background issues
+              if (isSafariUA) disable = true;
               // Respect force-luma override to ensure we don't render the plain black-box video
-              disable = !force && (v === '1' || v === 'true');
+              disable = !force && (disable || v === '1' || v === 'true');
             }
           } catch {}
           // Detect Safari for enhanced chroma key settings
@@ -422,9 +425,9 @@ export default function SteeringWheelOverlay({
           // Choose best source per browser - prefer files that work best in Safari
           const wheelSrc = (function() {
             if (isSafariUA) {
-              // Safari: try MOV first (native transparency), fallback to MP4
-              if (canPlayHvc) return "/cockpit/wheel_transparent.mov";
-              return "/cockpit/wheel_no_bg.mp4"; // Use no-bg version for better chroma key
+              // For Safari, always use the standard MP4 to ensure compatibility
+              // This prevents issues with HEVC codec support detection
+              return "/cockpit/wheel.mp4";
             }
             // Other browsers: use WebM or fallback
             return "/cockpit/wheel_less_transparent.webm";
@@ -434,7 +437,6 @@ export default function SteeringWheelOverlay({
             // If explicitly disabled, still render a plain <video> so the wheel is visible
             return (
               <video
-                src={wheelSrc}
                 autoPlay
                 muted
                 loop
@@ -449,13 +451,31 @@ export default function SteeringWheelOverlay({
                   background: 'transparent',
                   transform: 'scale(1.0)',
                   transformOrigin: 'bottom center',
-                  // Safari-specific styling to help with black backgrounds
+                  // Enhanced Safari-specific styling to remove black backgrounds
                   ...(isSafariUA ? {
                     mixBlendMode: 'screen',
-                    filter: 'brightness(1.1) contrast(1.2) saturate(1.1)'
+                    filter: 'brightness(1.3) contrast(1.4) saturate(1.2)',
+                    // Additional techniques to eliminate black
+                    position: 'relative',
+                    zIndex: 1,
+                    isolation: 'isolate',
+                    // Circular mask to remove black corners
+                    WebkitMaskImage: 'radial-gradient(circle at 50% 58%, black 40%, transparent 70%)',
+                    maskImage: 'radial-gradient(circle at 50% 58%, black 40%, transparent 70%)'
                   } : {})
                 }}
-              />
+                onError={(e) => {
+                  // Fallback to standard MP4 if primary source fails
+                  const video = e.currentTarget;
+                  if (!video.src.includes('wheel.mp4')) {
+                    video.src = '/cockpit/wheel.mp4';
+                  }
+                }}
+              >
+                <source src={wheelSrc} type="video/mp4" />
+                <source src="/cockpit/wheel.mp4" type="video/mp4" />
+                <source src="/cockpit/wheel_transparent.webm" type="video/webm" />
+              </video>
             );
           }
           // Keep the wheel rendering under all conditions (always playing)
@@ -465,7 +485,6 @@ export default function SteeringWheelOverlay({
           if (plainWheel) {
             return (
               <video
-                src={wheelSrc}
                 autoPlay
                 muted
                 loop
@@ -480,34 +499,55 @@ export default function SteeringWheelOverlay({
                   background: 'transparent',
                   transform: 'scale(1.0)',
                   transformOrigin: 'bottom center',
-                  filter: isDimmingOverlayActive ? 'brightness(0.65) saturate(1.0)' : undefined,
+                  filter: isDimmingOverlayActive ? 'brightness(0.65) saturate(1.0)' : (isSafariUA ? 'brightness(1.3) contrast(1.4) saturate(1.2)' : undefined),
                   opacity: isDimmingOverlayActive ? 0.95 : 1,
                   transition: isDimmingOverlayActive ? 'filter 250ms ease, opacity 250ms ease' : 'none',
+                  // Enhanced Safari-specific styling to remove black backgrounds
+                  ...(isSafariUA ? {
+                    mixBlendMode: 'screen',
+                    position: 'relative',
+                    zIndex: 1,
+                    isolation: 'isolate',
+                    // Circular mask to remove black corners
+                    WebkitMaskImage: 'radial-gradient(circle at 50% 58%, black 40%, transparent 70%)',
+                    maskImage: 'radial-gradient(circle at 50% 58%, black 40%, transparent 70%)'
+                  } : {})
                 }}
-              />
+                onError={(e) => {
+                  // Fallback to standard MP4 if primary source fails
+                  const video = e.currentTarget;
+                  if (!video.src.includes('wheel.mp4')) {
+                    video.src = '/cockpit/wheel.mp4';
+                  }
+                }}
+              >
+                <source src={wheelSrc} type="video/mp4" />
+                <source src="/cockpit/wheel.mp4" type="video/mp4" />
+                <source src="/cockpit/wheel_transparent.webm" type="video/webm" />
+              </video>
             );
           }
 
           return (
             <LumaKeyVideo
               srcMp4={wheelSrc}
-              // Enhanced chroma key with Safari-specific adjustments
+              // Enhanced chroma key with Safari-specific adjustments to target black/dark backgrounds
               keyColor={(vconf as any)?.keyColor ?? [0, 0, 0]}
-              // Much more aggressive settings for Safari to completely remove black backgrounds
-              keyTolerance={(vconf as any)?.keyTolerance ?? (isSafariUA ? 0.65 : 0.12)}
-              keySoftness={(vconf as any)?.keySoftness ?? (isSafariUA ? 0.35 : 0.07)}
+              // Very aggressive settings for Safari to completely remove black/dark backgrounds
+              keyTolerance={(vconf as any)?.keyTolerance ?? (isSafariUA ? 0.9 : 0.12)}
+              keySoftness={(vconf as any)?.keySoftness ?? (isSafariUA ? 0.5 : 0.07)}
               keyMode={'chroma'}
               // Enhanced blend modes for Safari
               blendScreen={true}
-              // Disable fallback on Safari to prevent black showing through
-              fallbackEnabled={!isSafariUA}
-              minCoverageRatio={isSafariUA ? 0.0001 : 0.0008}
-              // More aggressive circle protection for Safari
+              // Enable fallback but allow chroma key to work for Safari
+              fallbackEnabled={true}
+              minCoverageRatio={isSafariUA ? 0.001 : 0.0008}
+              // Reduced circle protection for Safari to allow more background removal
               protectCircle={true}
               protectCenterXRatio={0.5}
               protectCenterYRatio={0.58}
-              protectRadiusRatio={isSafariUA ? 0.52 : 0.47}
-              protectFeatherRatio={isSafariUA ? 0.12 : 0.08}
+              protectRadiusRatio={isSafariUA ? 0.35 : 0.47}
+              protectFeatherRatio={isSafariUA ? 0.08 : 0.08}
               // Enhanced color correction for Safari
               saturation={(vconf as any)?.saturation ?? (isSafariUA ? 1.25 : 1.0)}
               contrast={(vconf as any)?.contrast ?? (isSafariUA ? 1.3 : 1.05)}
@@ -528,12 +568,16 @@ export default function SteeringWheelOverlay({
                 filter: isDimmingOverlayActive ? 'brightness(0.65) saturate(1.0)' : (isSafariUA ? 'brightness(1.1) contrast(1.1)' : undefined),
                 opacity: isDimmingOverlayActive ? 0.95 : 1,
                 transition: isDimmingOverlayActive ? 'filter 250ms ease, opacity 250ms ease' : 'none',
-                // Enhanced Safari-specific styling for better transparency
+                // Enhanced Safari-specific styling for better transparency and black removal
                 ...(isSafariUA ? {
                   mixBlendMode: 'screen',
                   isolation: 'isolate',
                   WebkitMaskComposite: 'xor',
-                  WebkitBackfaceVisibility: 'hidden'
+                  WebkitBackfaceVisibility: 'hidden',
+                  // Additional black removal techniques
+                  filter: 'brightness(1.15) contrast(1.2) saturate(1.1)',
+                  // Ensure black pixels become transparent
+                  background: 'transparent'
                 } : {})
               }}
             />

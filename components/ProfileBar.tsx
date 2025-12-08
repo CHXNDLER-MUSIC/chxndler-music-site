@@ -510,10 +510,12 @@ export default function ProfileBar({
         <div className="flex items-center justify-between h-full pl-16 sm:pl-20 pr-2 min-w-0">
           {/* Left Side */}
           <div className="flex items-center flex-1 min-w-0">
-            {/* Auth Button - Clickable */}
-            <div className="relative ml-3">
-              <AuthButton />
-            </div>
+            {/* Auth Button - Only show after warp effect fully completes */}
+            {warpFullyComplete && (
+              <div className="relative ml-3">
+                <AuthButton />
+              </div>
+            )}
 
           </div>
 
@@ -521,47 +523,47 @@ export default function ProfileBar({
           {/* Right Side */}
           <div className="flex items-center flex-shrink-0 mr-0 space-x-2">
 
-
-
-            {/* Heart Coin Button with Count */}
-            <div className="flex items-center space-x-0.5">
-              <HeartCoinButton 
-                onHoverSound={() => sfx.play('hover', 0.8)}
-                onCloseBlueDisplay={onCloseBlueDisplay}
-                onOpenBlueDisplay={onOpenBlueDisplay}
-                onOpenJournal={onOpenJournal}
-                heartCoins={heartCoins}
-                isActive={activePanel === 'heartcoins'}
-                onClick={() => togglePanel('heartcoins')}
-                journalCompleted={journalCompletedToday}
-                onJournalCompleted={handleJournalCompleted}
-                onHeartCoinsChange={(newAmount) => {
-                  // Update through ProfileContext
-                  updateProfile({ heartcoin_balance: newAmount });
-                }}
-                onClose={() => setActivePanel(null)}
-              />
-              
-              {/* Heart Coin Count */}
-              <span 
-                className="font-bold text-lg"
-                style={{ 
-                  color: '#FFFFFF',
-                  textShadow: `
-                    0 0 5px #FFFFFF,
-                    0 0 10px #FFFFFF,
-                    0 0 15px #FFFFFF,
-                    0 0 20px #FFFFFF,
-                    0 0 25px #FFFFFF,
-                    0 0 30px #FFFFFF
-                  `,
-                  filter: 'brightness(1.5)',
-                  letterSpacing: '0.05em'
-                }}
-              >
-                {heartCoins}
-              </span>
-            </div>
+            {/* Heart Coin Button with Count - Only show after warp effect fully completes */}
+            {warpFullyComplete && (
+              <div className="flex items-center space-x-0.5">
+                <HeartCoinButton 
+                  onHoverSound={() => sfx.play('hover', 0.8)}
+                  onCloseBlueDisplay={onCloseBlueDisplay}
+                  onOpenBlueDisplay={onOpenBlueDisplay}
+                  onOpenJournal={onOpenJournal}
+                  heartCoins={heartCoins}
+                  isActive={activePanel === 'heartcoins'}
+                  onClick={() => togglePanel('heartcoins')}
+                  journalCompleted={journalCompletedToday}
+                  onJournalCompleted={handleJournalCompleted}
+                  onHeartCoinsChange={(newAmount) => {
+                    // Update through ProfileContext
+                    updateProfile({ heartcoin_balance: newAmount });
+                  }}
+                  onClose={() => setActivePanel(null)}
+                />
+                
+                {/* Heart Coin Count */}
+                <span 
+                  className="font-bold text-lg"
+                  style={{ 
+                    color: '#FFFFFF',
+                    textShadow: `
+                      0 0 5px #FFFFFF,
+                      0 0 10px #FFFFFF,
+                      0 0 15px #FFFFFF,
+                      0 0 20px #FFFFFF,
+                      0 0 25px #FFFFFF,
+                      0 0 30px #FFFFFF
+                    `,
+                    filter: 'brightness(1.5)',
+                    letterSpacing: '0.05em'
+                  }}
+                >
+                  {heartCoins}
+                </span>
+              </div>
+            )}
 
           </div>
         </div>

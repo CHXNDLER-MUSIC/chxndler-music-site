@@ -172,7 +172,7 @@ export const BADGE_ICONS: Record<string, BadgeAsset> = {
   soulStar: {
     id: "soul_star", 
     name: "Soul Star",
-    src: "/badges/soul.webp" // Using same soul icon for soul-star category
+    src: "/badges/soul star.webp"
   },
   collector: {
     id: "collector",
@@ -196,12 +196,12 @@ export const BADGE_ICONS: Record<string, BadgeAsset> = {
   firstListen: {
     id: "first_listen",
     name: "First Listen", 
-    src: "/badges/listening.webp"
+    src: "/badges/first listen.webp"
   },
   deepListener: {
     id: "deep_listener",
     name: "Deep Listener",
-    src: "/badges/listening.webp"
+    src: "/badges/deep listener.webp"
   },
   
   // HeartCoin/Currency badges
@@ -227,7 +227,7 @@ export const BADGE_ICONS: Record<string, BadgeAsset> = {
   digitalCollector: {
     id: "digital_collector",
     name: "Digital Collector", 
-    src: "/badges/collector.webp"
+    src: "/badges/digital collector.webp"
   },
   
   // Special achievement badges
@@ -389,7 +389,7 @@ export const getTrackBySlug = (slug: string): TrackAsset | undefined => {
 // Utility function to get badge by category ID
 export const getBadgeIcon = (categoryId: string): string => {
   const badgeMap: Record<string, string> = {
-    'soul-star': BADGE_ICONS.soul.src,
+    'soul-star': BADGE_ICONS.soulStar.src,
     'achievements': BADGE_ICONS.collector.src,
     'elemental-streak': BADGE_ICONS.elementalStreak.src,
     'listening': BADGE_ICONS.listening.src,

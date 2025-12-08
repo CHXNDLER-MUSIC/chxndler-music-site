@@ -784,6 +784,8 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                             (window as any).heartCoinInitialTab = 'cards';
                             // Store the currently playing song name for filtering
                             (window as any).heartCoinSelectedCard = currentTrackInfo?.title || title;
+                            // Clear store flag to ensure proper tab navigation
+                            delete (window as any).heartCoinFromStore;
                           } catch {}
                           
                           // Emit custom event to open HeartCoin modal with card filter

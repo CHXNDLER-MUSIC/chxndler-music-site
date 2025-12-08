@@ -144,33 +144,36 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
     );
   }
 
-  const getBadgeIcon = (badge: BadgeWithProgress, categoryId: string) => {
-    const badgeName = badge.badge_name;
+  const getBadgeDisplayIcon = (badge: BadgeWithProgress, categoryId: string) => {
+    const badgeName = badge.badge_name || '';
     
     // Return icon URL if available, otherwise use fallback icons
     if (badge.icon_url) {
       return badge.icon_url;
     }
     
-    // Heart badges
-    if (badgeName.includes('Ember') || badgeName.includes('Bloom') || badgeName.includes('Pulse') || 
-        badgeName.includes('Radiance') || badgeName.includes('Devotion') || badgeName.includes('Love')) {
-      return '❤️';
-    }
-    // Water badges
-    if (badgeName.includes('Ripple') || badgeName.includes('Flow') || badgeName.includes('Tide') || 
-        badgeName.includes('Surge') || badgeName.includes('Depth') || badgeName.includes('Drift')) {
-      return '💧';
-    }
-    // Lightning badges
-    if (badgeName.includes('Spark') || badgeName.includes('Flash') || badgeName.includes('Charge') || 
-        badgeName.includes('Storm') || badgeName.includes('Ascend')) {
-      return '⚡';
-    }
-    // Darkness badges
-    if (badgeName.includes('Shadow') || badgeName.includes('Veil') || badgeName.includes('Eclipse') || 
-        badgeName.includes('Dusk') || badgeName.includes('Midnight') || badgeName.includes('Night')) {
-      return '🌑';
+    // Only proceed with string checks if badgeName exists
+    if (badgeName) {
+      // Heart badges
+      if (badgeName.includes('Ember') || badgeName.includes('Bloom') || badgeName.includes('Pulse') || 
+          badgeName.includes('Radiance') || badgeName.includes('Devotion') || badgeName.includes('Love')) {
+        return '❤️';
+      }
+      // Water badges
+      if (badgeName.includes('Ripple') || badgeName.includes('Flow') || badgeName.includes('Tide') || 
+          badgeName.includes('Surge') || badgeName.includes('Depth') || badgeName.includes('Drift')) {
+        return '💧';
+      }
+      // Lightning badges
+      if (badgeName.includes('Spark') || badgeName.includes('Flash') || badgeName.includes('Charge') || 
+          badgeName.includes('Storm') || badgeName.includes('Ascend')) {
+        return '⚡';
+      }
+      // Darkness badges
+      if (badgeName.includes('Shadow') || badgeName.includes('Veil') || badgeName.includes('Eclipse') || 
+          badgeName.includes('Dusk') || badgeName.includes('Midnight') || badgeName.includes('Night')) {
+        return '🌑';
+      }
     }
     
     // Category-based fallbacks
@@ -190,10 +193,11 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
 
   const getElementFromBadge = (badge: BadgeWithProgress) => {
     if (!badge.description) return null;
-    if (badge.description.includes('❤️ HEART')) return 'HEART';
-    if (badge.description.includes('💧 WATER')) return 'WATER';
-    if (badge.description.includes('⚡ LIGHTNING')) return 'LIGHTNING';
-    if (badge.description.includes('🌑 DARKNESS')) return 'DARKNESS';
+    const description = badge.description;
+    if (description.includes('❤️ HEART')) return 'HEART';
+    if (description.includes('💧 WATER')) return 'WATER';
+    if (description.includes('⚡ LIGHTNING')) return 'LIGHTNING';
+    if (description.includes('🌑 DARKNESS')) return 'DARKNESS';
     return null;
   };
 
@@ -256,7 +260,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       {isActive && (
         <div 
           className="fixed inset-0 z-[2147483647] flex items-start justify-center relative"
-          style={{ paddingTop: '10vh' }}
+          style={{ paddingTop: '5vh' }}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               try { sfx.play('close', 0.8); } catch {}
@@ -273,7 +277,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
             aria-hidden="true"
             style={{
               position: 'absolute',
-              top: 'calc(10vh - 20px)',
+              top: 'calc(5vh - 20px)',
               left: '50%',
               transform: 'translateX(-50%)',
               width: 'min(110vw, 840px)',
@@ -291,7 +295,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
               maxWidth: '700px',
               minHeight: 'min(60vh, 500px)',
               maxHeight: '90vh',
-              padding: '10px 14px 8px 14px',
+              padding: '10px 14px 4px 14px',
               borderRadius: 18,
               background: 'linear-gradient(135deg, rgba(255,105,180,0.10), rgba(0,0,0,0.60))',
               border: '1px solid rgba(255,105,180,0.55)',
@@ -394,7 +398,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     Choose a category to explore your badges and track your progress through the Heartverse.
                   </div>
                   
-                  <div className="flex flex-col items-center justify-center gap-3 w-full">
+                  <div className="flex flex-col items-center justify-center gap-1 w-full">
                     {/* First row: Soul Star, Achievements, Elemental Streak */}
                     <div className="flex justify-center items-center gap-6">
                       {badgeCategories.slice(0, 3).map((category) => (
@@ -718,16 +722,16 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                                               )}
                                               
                                               <div className={`absolute inset-0 rounded-full overflow-hidden transition-opacity ${isUnlocked(badge) ? 'opacity-100' : 'opacity-40 group-hover:opacity-60'}`}>
-                                                {typeof getBadgeIcon(badge, category.id) === 'string' && getBadgeIcon(badge, category.id).startsWith('http') ? (
+                                                {typeof getBadgeDisplayIcon(badge, category.id) === 'string' && getBadgeDisplayIcon(badge, category.id).startsWith('http') ? (
                                                   <img
-                                                    src={getBadgeIcon(badge, category.id)}
+                                                    src={getBadgeDisplayIcon(badge, category.id)}
                                                     alt={badge.badge_name}
                                                     className="w-full h-full object-cover"
                                                     draggable={false}
                                                   />
                                                 ) : (
                                                   <div className="w-full h-full flex items-center justify-center text-lg">
-                                                    {getBadgeIcon(badge, category.id)}
+                                                    {getBadgeDisplayIcon(badge, category.id)}
                                                   </div>
                                                 )}
                                               </div>
@@ -814,7 +818,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                         />
                       ) : (
                         <div className="relative z-10 text-lg opacity-60">
-                          {getBadgeIcon(selectedBadge, selectedCategory || '')}
+                          {getBadgeDisplayIcon(selectedBadge, selectedCategory || '')}
                         </div>
                       )}
                       {!isUnlocked(selectedBadge) && (

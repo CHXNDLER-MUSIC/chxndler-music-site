@@ -606,6 +606,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     }
     console.log('🎵 onSongChange - id:', id, 'slug:', slug);
     
+    // IMMEDIATELY hide blue display and light beam when song is selected
+    setShowHUD(false);
+    setBeamEnabled(false);
+    
     // First try exact slug match
     let idx = tracks.findIndex(t => (t.slug || '').toLowerCase() === slug);
     // If not found, try exact title slugification match
@@ -716,6 +720,14 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         // Trigger warp sequence
         setAllowWarp(true);
         setFlySignal((n) => n + 1);
+        
+        // BACKUP TIMER: Ensure warp completes even if audio callback fails (Chrome compatibility)
+        setTimeout(() => {
+          if (!warpFullyComplete) {
+            console.log("🔧 BACKUP: Setting warpFullyComplete to true (song selection warp)");
+            setWarpFullyComplete(true);
+          }
+        }, WARP_DURATION_MS + 500);
       }, 300);
     }
     
@@ -736,6 +748,14 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // Also ensure UI is unlocked before allowing automatic warps
     if (!userSelected && !startButtonWarpRef.current && !warpActive && uiUnlocked && prevIdxRef.current !== channelIdx) {
       setFlySignal((n) => n + 1);
+      
+      // BACKUP TIMER: Ensure warp completes even if audio callback fails (Chrome compatibility)
+      setTimeout(() => {
+        if (!warpFullyComplete) {
+          console.log("🔧 BACKUP: Setting warpFullyComplete to true (auto warp)");
+          setWarpFullyComplete(true);
+        }
+      }, WARP_DURATION_MS + 500);
     }
     prevIdxRef.current = channelIdx;
   }, [channelIdx, mounted, userSelected, warpActive, uiUnlocked]);
@@ -867,6 +887,14 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     setAllowWarp(true);
     setNextSky(skyFor(t.slug));
     setFlySignal((n) => n + 1);
+    
+    // BACKUP TIMER: Ensure warp completes even if audio callback fails (Chrome compatibility)
+    setTimeout(() => {
+      if (!warpFullyComplete) {
+        console.log("🔧 BACKUP: Setting warpFullyComplete to true (initial slug warp)");
+        setWarpFullyComplete(true);
+      }
+    }, WARP_DURATION_MS + 500);
   }, [mounted, initialSlug]);
   // Disable auto actions on random interactions; nothing should trigger on click/touch/move
   React.useEffect(() => { /* intentionally empty */ }, [mounted]);
@@ -1176,6 +1204,14 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     
     // Play warp sound if available
     try { sfx.play('join', 0.9); } catch {}
+    
+    // BACKUP TIMER: Ensure warp completes even if audio callback fails (Chrome compatibility)
+    setTimeout(() => {
+      if (!warpFullyComplete) {
+        console.log("🔧 BACKUP: Setting warpFullyComplete to true (audio callback may have failed)");
+        setWarpFullyComplete(true);
+      }
+    }, WARP_DURATION_MS + 500); // Add 500ms buffer beyond the expected warp duration
     
     // Stop any existing audio
     try {

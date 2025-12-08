@@ -275,7 +275,6 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
   { title: "WE'RE JUST FRIENDS", youtube:"https://www.youtube.com/watch?v=eQ4uBMn6cQ0" },
   { title: "HOUSE PARTY", youtube:"https://www.youtube.com/watch?v=B6EyIK-gE1c" },
   { title: "PARIS", youtube:"https://www.youtube.com/watch?v=J2qrS9EGRw8" },
-  { title: "BABY | Official Lyric video", youtube:"https://youtu.be/4J0YaoWKRjI" },
 ];
 
 const MAPPED = RAW.map((t, idx) => {
