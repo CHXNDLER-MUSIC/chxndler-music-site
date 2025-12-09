@@ -118,21 +118,32 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         )}
         
         {/* Requirement text - Always show */}
-        <div className="text-center space-y-1">
-          <div className="text-white/50 text-xs uppercase tracking-wider">REQUIREMENT</div>
-          <div className="text-white text-sm font-medium">
+        <div className="text-center space-y-2 py-2">
+          <div className="text-white/50 text-xs uppercase tracking-wider font-bold">REQUIREMENT</div>
+          <div className="text-white text-sm font-medium bg-white/5 rounded px-3 py-2">
             {(() => {
+              console.log('Badge data:', selectedBadge); // Debug log
+              
               // Try formatRequirementText first
-              const formattedText = formatRequirementText(selectedBadge);
-              if (formattedText) return formattedText;
+              try {
+                const formattedText = formatRequirementText(selectedBadge);
+                console.log('Formatted text:', formattedText); // Debug log
+                if (formattedText) return formattedText;
+              } catch (e) {
+                console.error('formatRequirementText error:', e);
+              }
               
               // Try custom requirement_text
-              if (selectedBadge.requirement_text) return selectedBadge.requirement_text;
+              if (selectedBadge.requirement_text) {
+                return selectedBadge.requirement_text;
+              }
               
               // Build from available data
-              const count = selectedBadge.total || selectedBadge.requirement_count || 1;
-              const type = selectedBadge.requirement_type || 'achievement';
-              return `${count} ${type.replace(/_/g, ' ')}${count === 1 ? '' : 's'}`;
+              const count = selectedBadge.total || selectedBadge.requirement_count || 3;
+              const type = selectedBadge.requirement_type || 'reflections';
+              const displayText = `${count} ${type.replace(/_/g, ' ')}${count === 1 ? '' : 's'}`;
+              console.log('Fallback text:', displayText); // Debug log
+              return displayText;
             })()}
           </div>
         </div>
@@ -424,7 +435,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           />
           
           {/* Content container */}
-          <div className="flex flex-col items-center justify-center space-y-4 py-6">
+          <div className="flex flex-col items-center justify-center space-y-4 pt-6 pb-2">
               {/* Top row - first 3 categories */}
               <div className="grid grid-cols-3 gap-6">
                 {badgeCategories.slice(0, 3).map((category) => {
@@ -446,7 +457,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                           draggable={false}
                         />
                       </button>
-                      <span className="text-white/70 text-xs font-medium text-center max-w-20">
+                      <span className="text-white text-xs font-medium text-center max-w-20">
                         {displayInfo.displayName}
                       </span>
                     </div>
@@ -475,7 +486,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                           draggable={false}
                         />
                       </button>
-                      <span className="text-white/70 text-xs font-medium text-center max-w-20">
+                      <span className="text-white text-xs font-medium text-center max-w-20">
                         {displayInfo.displayName}
                       </span>
                     </div>

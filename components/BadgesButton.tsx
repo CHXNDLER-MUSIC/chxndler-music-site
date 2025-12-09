@@ -5,6 +5,7 @@ import { sfx } from "@/lib/sfx";
 import { useBadges } from "@/hooks/useBadges";
 import { BadgeWithProgress, BadgeCategory as BadgeCategoryType } from "@/types/badges";
 import { getBadgeIcon } from "@/config/assets";
+import { formatRequirementText } from "@/lib/badgeProgress";
 
 type Badge = {
   name: string;
@@ -821,16 +822,16 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     </p>
                   )}
                   
-                  {selectedBadge.requirement_text && (
-                    <div className="space-y-1 px-2">
-                      <div className="text-white/50 text-xs font-semibold uppercase tracking-wider">
-                        Requirement
-                      </div>
-                      <p className="text-white/60 text-xs">
-                        {selectedBadge.requirement_text}
-                      </p>
+                  {/* Requirement section - Always show */}
+                  <div className="space-y-1 px-2">
+                    <div className="text-white/50 text-xs font-semibold uppercase tracking-wider">
+                      REQUIREMENT
                     </div>
-                  )}
+                    <p className="text-white/60 text-xs">
+                      {formatRequirementText(selectedBadge) || selectedBadge.requirement_text || 
+                       `${selectedBadge.total || selectedBadge.requirement_count || 1} ${(selectedBadge.requirement_type || 'achievement').replace(/_/g, ' ')}${(selectedBadge.total || selectedBadge.requirement_count || 1) === 1 ? '' : 's'}`}
+                    </p>
+                  </div>
                   
                   {selectedBadge.progress !== undefined && (
                     <div className="space-y-1">

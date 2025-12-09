@@ -101,6 +101,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
     isSubmitted: false,
   });
 
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+
   const today = new Date().toISOString().slice(0, 10);
   const todayFormatted = new Date().toLocaleDateString('en-US', {
     month: 'numeric',
@@ -112,6 +114,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   useEffect(() => {
     if (isOpen) {
       loadDailyPrompt();
+      setShowLoginPrompt(false);
     }
   }, [isOpen]);
 
@@ -188,6 +191,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
     try {
       // Validate user is signed in
       if (!user?.id) {
+        setShowLoginPrompt(true);
         if (openWelcomeHome) {
           openWelcomeHome();
         }
@@ -881,7 +885,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               <textarea
                 value={soulStarText}
                 onChange={(e) => setSoulStarText(e.target.value)}
-                placeholder="Write your soul's message for today... What wants to be expressed?"
+                placeholder={(!user?.id || !profile?.element) ? "Cast into the stars" : "Write your soul's message for today... What wants to be expressed?"}
                 className="w-full h-16 p-2 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
                 disabled={isSaving || journalState.isSubmitted}
                 style={{
@@ -944,28 +948,34 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     textShadow: `0 0 4px ${elementTheme.glow}`
                   }}
                 >
-                  Create an{' '}
-                  <span
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log('🔥 ALIEN profile button clicked!');
-                      onClose();
-                      if (openWelcomeHome) {
-                        console.log('🚀 Calling openWelcomeHome()');
-                        openWelcomeHome();
-                      } else {
-                        console.log('❌ openWelcomeHome not available');
-                      }
-                    }}
-                    className="underline cursor-pointer hover:opacity-80"
-                    style={{
-                      textDecoration: 'underline',
-                      textUnderlineOffset: '2px'
-                    }}
-                  >
-                    ALIEN profile
-                  </span>
-                  {' '}to submit a entry.
+                  {showLoginPrompt ? (
+                    <>
+                      Create an{' '}
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          console.log('🔥 ALIEN profile button clicked!');
+                          onClose();
+                          if (openWelcomeHome) {
+                            console.log('🚀 Calling openWelcomeHome()');
+                            openWelcomeHome();
+                          } else {
+                            console.log('❌ openWelcomeHome not available');
+                          }
+                        }}
+                        className="underline cursor-pointer hover:opacity-80"
+                        style={{
+                          textDecoration: 'underline',
+                          textUnderlineOffset: '2px'
+                        }}
+                      >
+                        ALIEN profile
+                      </span>
+                      {' '}to submit a entry.
+                    </>
+                  ) : (
+                    'Cast into the Stars'
+                  )}
                 </button>
               ) : (
                 <button

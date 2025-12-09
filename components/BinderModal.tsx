@@ -747,12 +747,19 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       >
 
           {/* Card popup - positioned absolutely within binder bounds */}
-          {cardOpen && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+          {cardOpen && selectedCard && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm z-50">
               {/* Large card display */}
               <div 
                 className="relative flex items-center justify-center"
-                style={{ maxHeight: '90%', maxWidth: '60%' }}
+                style={{ 
+                  maxHeight: '90%', 
+                  maxWidth: '60%',
+                  minWidth: '300px',
+                  minHeight: '400px',
+                  width: '100%',
+                  height: '100%'
+                }}
               >
                 {/* Back arrow - positioned at top left of card */}
                 <button
@@ -777,10 +784,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                 <div 
                   className="rounded-3xl shadow-2xl cursor-pointer"
                   style={{
-                    width: '100%',
-                    height: '100%',
-                    maxWidth: '400px',
-                    maxHeight: '600px',
+                    width: '300px',
+                    height: '450px',
                     aspectRatio: '2/3',
                     boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
                     border: '2px solid rgba(255,255,255,0.1)',
@@ -847,7 +852,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
               binderPage === 'first' ? (
                 // User's Binder - First Page - Show 5 initial slots
               <div className="relative pb-0">
-                <div className="flex flex-wrap gap-3 p-2 justify-center">
+                <div className="grid gap-2 grid-cols-5 p-2 place-items-center">
                   {Array.from({ length: 5 }, (_, index) => {
                     // Check if there's a collected card for this slot
                     const collectedCard = profile?.cards?.[index];
@@ -867,7 +872,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                             ? 'border-white/5 cursor-default'
                             : hasCard || isFirstSlotWithChxndler
                             ? 'border-white/10 cursor-pointer hover:scale-105' 
-                            : 'border-white/10 cursor-default'
+                            : 'border-white/10 cursor-pointer hover:scale-105'
                         }`}
                         onClick={() => {
                           if (isLockedSlot) {
@@ -892,8 +897,15 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                               element: 'ALL'
                             });
                             setCardOpen(true);
+                          } else if (!hasCard && !isFirstSlotWithChxndler && !isLockedSlot) {
+                            // Empty slot: open HeartCoin modal with CARDS tab
+                            try { sfx.play('click', 0.4); } catch {}
+                            try {
+                              window.dispatchEvent(new CustomEvent('openHeartCoinCards', {
+                                detail: { source: 'binder_empty_slot' }
+                              }));
+                            } catch {}
                           }
-                          // Removed click functionality for empty containers
                         }}
                         style={{
                           boxShadow: hasCard || isFirstSlotWithChxndler
@@ -1011,7 +1023,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                 </div>
                 
                 {/* Second row of 5 locked slots */}
-                <div className="flex flex-wrap gap-3 mt-1 px-2 justify-center">
+                <div className="grid gap-2 grid-cols-5 mt-1 p-2 place-items-center">
                   {Array.from({ length: 5 }, (_, index) => {
                     const slotIndex = index + 5; // Slots 5-9
                     

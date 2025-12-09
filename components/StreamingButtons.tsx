@@ -7,7 +7,7 @@ import { toAppleEmbed, appleEmbedHeight } from "@/lib/apple";
 import { createPortal } from "react-dom";
 import { useAudio } from "@/app/providers/AudioProvider";
 
-export default function StreamingButtons({ pos, links, showControls = true }:{ pos: { xVw:number; yVh:number; sizePx:number; gapPx?:number; tilt?:string; vertical?: boolean; mobile?: {sizePx:number; gapPx?:number}; tablet?: {sizePx:number; gapPx?:number} }, links:{ spotify?:string; apple?:string }, showControls?: boolean }){
+export default function StreamingButtons({ pos, links, showControls = true }:{ pos: { xVw:number; yVh:number; sizePx:number; gapPx?:number; tilt?:string; vertical?: boolean; mobile?: {sizePx:number; gapPx?:number}; tablet?: {sizePx:number; gapPx?:number} }, links:{ spotify?:string; apple?:string; youtube?:string }, showControls?: boolean }){
   const { playing, play, pause, volume, setVolume } = useAudio();
   // Get responsive size based on screen width
   const getResponsiveSize = () => {
@@ -121,6 +121,17 @@ export default function StreamingButtons({ pos, links, showControls = true }:{ p
       fill="currentColor"
     >
       <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+    </svg>
+  );
+
+  const YoutubeIcon = (
+    <svg
+      width={iconSize}
+      height={iconSize}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+    >
+      <path d="M23 12s0-3.2-.4-4.7a3.1 3.1 0 00-2.2-2.2C18.9 4.5 12 4.5 12 4.5s-6.9 0-8.4.6A3.1 3.1 0 001.4 7.3C1 8.8 1 12 1 12s0 3.2.4 4.7a3.1 3.1 0 002.2 2.2c1.5.6 8.4.6 8.4.6s6.9 0 8.4-.6a3.1 3.1 0 002.2-2.2c.4-1.5.4-4.7.4-4.7zM10 15.5v-7l6 3.5-6 3.5z" />
     </svg>
   );
 
@@ -293,6 +304,38 @@ export default function StreamingButtons({ pos, links, showControls = true }:{ p
           </IconButtonShell>
         </div>
       )}
+
+      {/* YouTube Button */}
+      {links.youtube && (
+        <div
+          className="wrap"
+          style={vertical
+            // Position below Apple in vertical layout
+            ? { left: `calc(${pos.xVw}vw - ${size/2}px - 18px)`, top: `calc(${pos.yVh}vh + ${gap + size}px + 49px)`, width: size, height: size, transform: tilt }
+            // Position to the right in horizontal layout
+            : { left: `calc(${pos.xVw}vw + ${(size + gap) * 1.5}px - 16px)`, top: `calc(${pos.yVh}vh - ${size/2}px + 45px)`, width: size, height: size, transform: tilt }
+          }
+        >
+          <span className="socket" aria-hidden />
+          <IconButtonShell
+            title="Watch on YouTube"
+            href={links.youtube}
+            color="#FF0000"
+            onClickFX={playClick}
+            onHoverFX={playHover}
+            onClick={() => {
+              try {
+                window.open(links.youtube!, '_blank', 'noopener,noreferrer');
+              } catch {
+                // Fallback if window.open fails
+              }
+            }}
+          >
+            {YoutubeIcon}
+          </IconButtonShell>
+        </div>
+      )}
+      
       <style jsx>{`
         .wrap{ position:absolute; z-index:40; pointer-events:auto; transform-origin:center; overflow:visible; }
         .wrap:hover{ z-index:60; }

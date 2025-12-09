@@ -4939,7 +4939,7 @@ const HUDPanel = React.memo(function HUDPanel({
                       onClick={(e) => { e.stopPropagation(); }}
                       style={{
                         position: 'relative',
-                        width: 'min(88vw, 420px)',
+                        width: 'min(88vw, 520px)',
                         background: 'rgba(0,0,0,0.9)',
                         border: '1px solid rgba(29,185,84,0.6)',
                         boxShadow: '0 18px 46px rgba(0,0,0,0.55), 0 0 32px rgba(29,185,84,0.35)',
@@ -7126,7 +7126,7 @@ const HUDPanel = React.memo(function HUDPanel({
           </div>
         </div>
 
-        {/* Song selector positioned outside content opacity container to avoid beamOnly blocking */}
+        {/* Song selector and Media Player positioned outside content opacity container to avoid beamOnly blocking */}
         <div className="absolute" style={{ 
           left: inConsole ? 6 : 8, 
           bottom: 'calc(80px - 24px + 68px)', // Nudge dropdown higher slightly (+12px)
@@ -7177,6 +7177,201 @@ const HUDPanel = React.memo(function HUDPanel({
                 // Stay in place; DashboardApp.onSongChange handles switch without spotlight/route
               }}
             />
+            
+            {/* Media Player Controls positioned below dropdown, outside content opacity */}
+            <div ref={playerRef} style={{ 
+              marginTop: '8px',
+              height: '60px',
+              position: 'relative'
+            }}>
+              <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '10px', paddingBottom: 10, position: 'relative' }}>
+                <div className="flex flex-wrap items-start gap-3 pt-0 pr-2 pl-2 pb-0">
+                  <div className="controls-row flex items-start justify-start gap-4 w-full" style={{ paddingTop: 4 }}>
+                  <div className="hud-main-stack" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
+                  {/* Top controls: Play/Pause with Lyrics immediately to the right */}
+                  {(() => {
+                    const isHome = !currentId;
+                    const currentSong = resolvedSongs.find(s => s.id === active);
+                    const slug = isHome ? 'homepage' : (currentSong?.id || active || 'homepage');
+                    const hasLyrics = isHome ? true : !!(currentSong && (currentSong.hasLyrics !== false));
+                    const lyricsTitle = isHome ? 'Lyrics for CHXNDLER' : `Lyrics for ${currentSong?.title || 'current track'}`;
+                    const lyricsAria = isHome ? 'View lyrics for CHXNDLER' : `View lyrics for ${currentSong?.title || 'current track'}`;
+                    return (
+                      <>
+                        {/* Controls positioned above waveform */}
+                        <div className="hud-top-controls" style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 8, 
+                          position: 'relative',
+                          zIndex: 6,
+                          borderRadius: '8px',
+                          padding: '4px 8px',
+                          backgroundColor: 'transparent'
+                        }}>
+                        <button 
+                          onClick={handlePlayPause}
+                          className="hud-play-btn-enhanced"
+                          aria-label={playing ? "Pause" : "Play"}
+                          onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                          style={{ marginTop: 1 }}
+                        >
+                          {playing ? (
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                              <rect x="6" y="4" width="4" height="16" rx="1"/>
+                              <rect x="14" y="4" width="4" height="16" rx="1"/>
+                            </svg>
+                          ) : (
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M7 4v16l12-8z"/>
+                            </svg>
+                        )}
+                        </button>
+                        {hasLyrics ? (
+                          <button
+                            ref={lyricsBtnRef}
+                            type="button"
+                            className="hud-lyrics-btn"
+                            style={{ marginTop: 1 }}
+                            title={lyricsTitle}
+                            aria-label={lyricsAria}
+                            data-id="lyrics"
+                            data-song={isHome ? 'CHXNDLER' : (currentSong?.title || '')}
+                            aria-haspopup="dialog"
+                            aria-expanded={showLyricsPopover}
+                            onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                            onClick={() => {
+                              if (showLyricsPopover) { try { sfx.play('close', 0.4); } catch {}; setShowLyricsPopover(false); return; }
+                              openLyricsPopover(slug);
+                            }}
+                          >
+                            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                              <rect x="5" y="5" width="14" height="10" rx="4" ry="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                              <circle cx="8" cy="16" r="1.2" fill="currentColor" />
+                              <circle cx="6.2" cy="18" r="1.1" fill="currentColor" />
+                              <rect x="10" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                              <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                            </svg>
+                          </button>
+                        ) : (
+                          <div
+                            className="lyrics-btn-unavailable-hud"
+                            style={{ marginTop: 1 }}
+                            title={`Lyrics not available for ${currentSong?.title || 'current track'}`}
+                            aria-disabled="true"
+                            data-id="lyrics"
+                            data-song={currentSong?.title || ''}
+                          >
+                            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                              <rect x="5" y="5" width="14" height="10" rx="4" ry="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                              <circle cx="8" cy="16" r="1.2" fill="currentColor" />
+                              <circle cx="6.2" cy="18" r="1.1" fill="currentColor" />
+                              <rect x="10" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                              <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                            </svg>
+                          </div>
+                        )}
+                        </div>
+                        
+                        {/* Waveform progress bar positioned below controls */}
+                        <div className="hud-mini-wave flex items-center justify-center" style={{ marginTop: 8, marginLeft: -8, width: '100%' }}>
+                          <div 
+                            className="waveform"
+                            onClick={handleProgressClick}
+                            onMouseMove={(e) => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const hoverX = e.clientX - rect.left;
+                              const hoverPercentage = (hoverX / rect.width) * 100;
+                              e.currentTarget.style.setProperty('--hover-position', `${hoverPercentage}%`);
+                            }}
+                            style={{
+                              position: 'relative',
+                              border: 'none',
+                              width: '100%',
+                              height: 18,
+                              borderRadius: 0,
+                              background: 'transparent',
+                              cursor: 'pointer'
+                            }}
+                            onMouseEnter={(e) => {
+                              try { sfx.play('hover', 0.3); } catch {}
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.removeProperty('--hover-position');
+                            }}
+                          >
+                            <svg
+                              width="100%"
+                              height="18"
+                              viewBox="0 0 200 18"
+                              preserveAspectRatio="none"
+                              style={{ display: 'block' }}
+                            >
+                              <defs>
+                                {(() => {
+                                  const elementColor = '#19E3FF'; // Default to cyan, will be updated by element detection
+                                  const hexToRgba = (hex, alpha) => {
+                                    const r = parseInt(hex.slice(1, 3), 16);
+                                    const g = parseInt(hex.slice(3, 5), 16);
+                                    const b = parseInt(hex.slice(5, 7), 16);
+                                    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                                  };
+                                  return (
+                                    <>
+                                      <linearGradient id="miniUnplayed" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" stopColor={hexToRgba(elementColor, 0.25)} />
+                                        <stop offset="50%" stopColor={hexToRgba(elementColor, 0.35)} />
+                                        <stop offset="100%" stopColor={hexToRgba(elementColor, 0.25)} />
+                                      </linearGradient>
+                                      <linearGradient id="miniPlayed" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" stopColor={hexToRgba(elementColor, 0.8)} />
+                                        <stop offset="50%" stopColor={hexToRgba(elementColor, 1)} />
+                                        <stop offset="100%" stopColor={hexToRgba(elementColor, 0.8)} />
+                                      </linearGradient>
+                                      <filter id="waveformGlow">
+                                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                                        <feMerge>
+                                          <feMergeNode in="coloredBlur"/>
+                                          <feMergeNode in="SourceGraphic"/>
+                                        </feMerge>
+                                      </filter>
+                                    </>
+                                  );
+                                })()}
+                              </defs>
+                              
+                              {/* Background waveform bars */}
+                              {Array.from({ length: 40 }, (_, i) => {
+                                const height = Math.sin(i * 0.3) * 4 + 8;
+                                const progressPercent = isFinite(duration) && duration > 0 && isFinite(progress) 
+                                  ? (progress / duration) * 100 
+                                  : 0;
+                                const barProgress = (i / 39) * 100;
+                                const isPlayed = barProgress <= progressPercent;
+                                
+                                return (
+                                  <rect
+                                    key={i}
+                                    x={i * 5}
+                                    y={(18 - height) / 2}
+                                    width={3}
+                                    height={height}
+                                    fill={isPlayed ? "url(#miniPlayed)" : "url(#miniUnplayed)"}
+                                    filter="url(#waveformGlow)"
+                                  />
+                                );
+                              })}
+                            </svg>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
+                  </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
       {/* styles moved to app/globals.css to avoid styled-jsx in this module */}
