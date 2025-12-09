@@ -100,9 +100,13 @@ export default function AuthButton() {
 
   // Handle button click
   const handleButtonClick = () => {
+    console.log('AuthButton: Click handler called', { buttonMode, authLoading, profileLoading });
     try { sfx.play('click', 0.4); } catch {}
 
-    if (authLoading || profileLoading) return;
+    if (authLoading || profileLoading) {
+      console.log('AuthButton: Click blocked due to loading state');
+      return;
+    }
 
     switch (buttonMode) {
       case 'login':
@@ -147,11 +151,11 @@ export default function AuthButton() {
           }
         }}
         disabled={authLoading || profileLoading}
-        className="flex items-center font-medium text-lg relative flex-shrink-0 transition-all duration-200 cursor-pointer bg-transparent border-none focus:outline-none disabled:opacity-50 rounded"
+        className="flex items-center font-medium text-lg relative flex-shrink-0 transition-all duration-200 cursor-pointer bg-transparent border-none focus:outline-none disabled:opacity-50 rounded pointer-events-auto"
         style={{ 
           color: getUsernameColor(currentElement),
           filter: 'brightness(1.2)',
-          padding: '0',
+          padding: '8px 12px',
           background: 'transparent',
           transition: 'all 0.3s ease'
         }}

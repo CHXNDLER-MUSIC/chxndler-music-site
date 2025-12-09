@@ -482,7 +482,7 @@ export default function ProfileBar({
         </div>
 
         {/* Auth Button - Positioned separately with more space from hamburger, centered vertically */}
-        <div className="absolute top-1/2 -translate-y-1/2 left-16 z-10">
+        <div className="absolute top-1/2 -translate-y-1/2 left-16 z-50 pointer-events-auto">
           <AuthButton />
         </div>
 

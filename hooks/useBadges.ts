@@ -15,6 +15,8 @@ export function useBadges() {
   // Fetch all badges
   const fetchBadges = async () => {
     try {
+      console.log('DEBUG useBadges: Attempting to fetch badges from Supabase');
+      
       const { data, error } = await supabaseBrowser
         .from('badges')
         .select('id, badge_name, icon_url, description, requirement, category, created_at')
@@ -22,14 +24,15 @@ export function useBadges() {
 
       if (error) {
         console.error('Error fetching badges:', error);
-        setError(error.message);
+        setError(`Badge fetch error: ${error.message}`);
         return;
       }
 
+      console.log('DEBUG useBadges: Successfully fetched badges', { count: data?.length || 0 });
       setBadges(data || []);
     } catch (err) {
       console.error('Error fetching badges:', err);
-      setError('Failed to fetch badges');
+      setError(`Failed to fetch badges: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
@@ -194,15 +197,47 @@ export function useBadges() {
   // Initial data fetch
   useEffect(() => {
     const fetchData = async () => {
+      console.log('DEBUG useBadges: Starting fetch', { 
+        hasUser: !!user, 
+        userId: user?.id, 
+        hasProfile: !!profile,
+        browser: typeof navigator !== 'undefined' ? navigator.userAgent.includes('Chrome') ? 'Chrome' : 'Safari' : 'unknown'
+      });
+      
       setLoading(true);
       setError(null);
       
-      await Promise.all([
-        fetchBadges(),
-        fetchUserBadges()
-      ]);
+      // Set a timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        setLoading(false);
+        setError('Request timed out. Check your connection and Supabase configuration.');
+      }, 10000); // 10 second timeout
       
-      setLoading(false);
+      try {
+        // Always fetch badges (public data)
+        await fetchBadges();
+        
+        // Only fetch user badges if we have a valid user
+        if (user?.id) {
+          await fetchUserBadges();
+        } else {
+          console.warn('useBadges: No user ID, skipping user badges fetch');
+          setUserBadges([]);
+        }
+        
+        clearTimeout(timeoutId);
+        setLoading(false);
+        
+        console.log('DEBUG useBadges: Fetch completed', { 
+          badgesCount: badges.length, 
+          userBadgesCount: userBadges.length 
+        });
+      } catch (err) {
+        clearTimeout(timeoutId);
+        console.error('DEBUG useBadges: Fetch failed with exception:', err);
+        setError(`Fetch failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        setLoading(false);
+      }
     };
 
     fetchData();
