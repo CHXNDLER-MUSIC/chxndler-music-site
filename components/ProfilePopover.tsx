@@ -551,18 +551,18 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
       
       {/* Profile Modal */}
       <div 
-        className="fixed inset-0 flex items-center justify-center"
+        className="fixed inset-0 flex items-start justify-center"
         style={{
           zIndex: 2147483648,
-          marginTop: '-160px'
+          paddingTop: '60px'
         }}
       >
         <div
           className="profile-hologram-container"
           style={{
             width: 'min(92vw, 500px)',
-            minHeight: 'auto',
-            padding: '16px 24px 12px 24px',
+            minHeight: '380px',
+            padding: '16px 24px 6px 24px',
             borderRadius: 18,
             background: 'rgba(0,0,0,0.6)',
             border: '1px solid rgba(0,255,255,0.55)',
@@ -834,9 +834,28 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
             }}
           />
 
-          {/* Profile Image Selection Menu - Inline */}
+          {/* Profile Image Selection Menu - Full Modal Overlay */}
           {showElementMenu && (
-            <div className="mt-3 mb-2 p-4 rounded-lg border border-cyan-400/60 bg-black/40 relative">
+            <div 
+              className="absolute inset-0 p-4 rounded-lg bg-black/90 backdrop-blur-md"
+              style={{ 
+                zIndex: 15,
+                borderRadius: 18,
+                border: '1px solid rgba(0,255,255,0.55)'
+              }}
+            >
+              {/* Header - Top Position */}
+              <div 
+                className="text-center mb-3 text-lg font-bold"
+                style={{ 
+                  color: '#00FFFF', 
+                  textShadow: '0 0 8px rgba(0,255,255,0.6)', 
+                  letterSpacing: '0.05em'
+                }}
+              >
+                CHOOSE YOUR PROFILE IMAGE
+              </div>
+              
               {/* Close button */}
               <button
                 onClick={() => {
@@ -856,24 +875,14 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 ×
               </button>
               
-              {/* Header */}
-              <div 
-                className="text-center mb-3 text-sm font-semibold"
-                style={{ 
-                  color: '#00FFFF', 
-                  textShadow: '0 0 4px rgba(0,255,255,0.6)' 
-                }}
-              >
-                CHOOSE YOUR PROFILE IMAGE
-              </div>
-              
               {/* Elements Section */}
               <div className="mb-2">
                 <div 
                   className="text-center mb-1 text-xs"
                   style={{ 
-                    color: '#00FFFF80', 
-                    fontSize: '10px'
+                    color: '#00FFFF', 
+                    fontSize: '10px',
+                    textShadow: '0 0 4px rgba(0,255,255,0.8)'
                   }}
                 >
                   ELEMENTS
@@ -922,8 +931,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 <div 
                   className="text-center mb-1 text-xs"
                   style={{ 
-                    color: '#00FFFF80', 
-                    fontSize: '10px'
+                    color: '#00FFFF', 
+                    fontSize: '10px',
+                    textShadow: '0 0 4px rgba(0,255,255,0.8)'
                   }}
                 >
                   RELICS
@@ -994,9 +1004,16 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
             </div>
           )}
 
-          {/* Relics Collection Inline Display */}
+          {/* Relics Collection - Full Overlay */}
           {showRelicsInline && (
-            <div className="mt-3 p-4 rounded-lg border border-cyan-400/60 bg-black/40 relative">
+            <div 
+              className="absolute inset-0 p-4 rounded-lg bg-black/90 backdrop-blur-md"
+              style={{ 
+                zIndex: 15,
+                borderRadius: 18,
+                border: '1px solid rgba(0,255,255,0.55)'
+              }}
+            >
               {/* Close button */}
               <button
                 onClick={() => {
@@ -1030,7 +1047,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               </div>
 
               {/* Info text - moved below header */}
-              <div className="text-center mb-4">
+              <div className="text-center mb-2">
                 <p className="text-xs text-white" style={{ textShadow: '0 0 8px rgba(255,255,255,0.85)' }}>
                   Tap the Element of the Day to unlock ancient relics
                 </p>
@@ -1077,7 +1094,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-4 gap-2 mb-2" style={{ maxWidth: '240px', marginLeft: 'auto', marginRight: 'auto' }}>
+                <div className="grid grid-cols-4 gap-2 mb-1" style={{ maxWidth: '240px', marginLeft: 'auto', marginRight: 'auto' }}>
                   {(allRelics.length > 0 ? allRelics.slice(0, 16) : Array.from({ length: 16 }, (_, i) => ({
                     id: `placeholder-${i}`,
                     relic_name: `Relic ${i + 1}`,
@@ -1134,13 +1151,14 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
             </div>
           )}
 
-          {/* Element Info Display */}
+          {/* Element Info Display - Full Overlay */}
           {showElementInfo && profile?.element && (
-            <div className="mt-6 p-4 rounded-lg border-2 border-opacity-60 bg-opacity-20 relative"
-              style={{
-                borderColor: getElementInfo(getCurrentElementData().name).color,
-                backgroundColor: `${getElementInfo(getCurrentElementData().name).color}20`,
-                boxShadow: `0 0 20px ${getElementInfo(getCurrentElementData().name).color}40`
+            <div 
+              className="absolute inset-0 p-4 rounded-lg bg-black/90 backdrop-blur-md"
+              style={{ 
+                zIndex: 15,
+                borderRadius: 18,
+                border: '1px solid rgba(0,255,255,0.55)'
               }}
             >
               {/* Close button - Top Right */}
@@ -1187,7 +1205,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
 
               {/* All Elements Grid - Moved to top */}
               <div className="mb-2">
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-4 gap-2">
                   {getAllElements().map((element, index) => {
                     const elementData = getElementInfo(element.name);
                     const isCurrentlyViewed = getCurrentElementData().name === element.name;
@@ -1202,13 +1220,12 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                         }}
                         className={`relative aspect-square rounded-lg overflow-hidden transition-all duration-200 hover:scale-105 cursor-pointer ${
                           isCurrentlyViewed 
-                            ? 'shadow-lg border-2' 
+                            ? 'border-2' 
                             : 'opacity-60 hover:opacity-80 border-0'
                         }`}
                         style={{
-                          backgroundColor: isCurrentlyViewed ? `${elementData.color}30` : 'rgba(0,0,0,0.3)',
-                          borderColor: isCurrentlyViewed ? elementData.color : 'transparent',
-                          boxShadow: isCurrentlyViewed ? `0 0 15px ${elementData.color}60` : 'none'
+                          backgroundColor: isCurrentlyViewed ? 'transparent' : 'rgba(0,0,0,0.3)',
+                          borderColor: isCurrentlyViewed ? elementData.color : 'transparent'
                         }}
                         title={`View ${element.label} element info`}
                       >
@@ -1240,12 +1257,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               {/* Element Info Layout - Split with info on right */}
               <div className="flex gap-4 mb-2">
                 {/* Left side - Element Icon */}
-                <div className="w-12 h-12 rounded-lg border-2 overflow-hidden flex-shrink-0"
-                  style={{
-                    borderColor: getElementInfo(getCurrentElementData().name).color,
-                    backgroundColor: `${getElementInfo(getCurrentElementData().name).color}30`
-                  }}
-                >
+                <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
                   <img
                     src={getElementInfo(getCurrentElementData().name).icon}
                     alt={getElementInfo(getCurrentElementData().name).title}
@@ -1306,7 +1318,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   }
                 }}
                 disabled={saving || getCurrentElementData().name === profile?.element}
-                className="mt-2 w-full py-3 rounded-lg text-sm font-semibold transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-1 w-full py-3 rounded-lg text-sm font-semibold transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
                   background: `linear-gradient(135deg, ${getElementInfo(getCurrentElementData().name).color}40, ${getElementInfo(getCurrentElementData().name).color}25)`,
                   border: `2px solid ${getElementInfo(getCurrentElementData().name).color}`,

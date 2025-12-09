@@ -7,6 +7,7 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { getCardGateState, getTierDisplayName } from '@/types/card';
 import type { CardGateState } from '@/utils/cardGating';
 import Image from 'next/image';
+import { supabaseBrowser } from '@/lib/supabase-browser';
 
 interface StoreItem {
   id: string;
@@ -218,47 +219,44 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
     setCheckoutError(null);
     
     try {
-      const response = await fetch('/api/purchase-item-with-heartcoins', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          itemId: item.id,
-          itemTitle: item.title,
-          priceHeartCoins: item.priceHeartCoins,
-        }),
+      // Call the new RPC directly
+      const { data, error } = await supabaseBrowser.rpc('purchase_item_with_heartcoins', {
+        p_item_type: 'card',
+        p_item_id: item.id,
       });
       
-      const result = await response.json();
-      
-      if (response.ok) {
-        // Success! Update UI and profile
-        try {
-          sfx.play('click', 0.7);
-        } catch {}
+      if (error) {
+        console.error('RPC Error:', error);
         
-        setPurchaseSuccess(true);
-        setIsOwned(true);
-        
-        // Refresh profile to update HeartCoin balance
-        await refreshProfile();
-        
-        // Notify parent component
-        onPurchaseSuccess?.(item);
-        
-        // Hide checkout panel after brief success display
-        setTimeout(() => {
-          setShowHeartCoinCheckout(false);
-          setPurchaseSuccess(false);
-        }, 2000);
-        
-      } else if (response.status === 400 && result.error?.includes('insufficient')) {
-        // Insufficient HeartCoins
-        setCheckoutError(`You need ${item.priceHeartCoins} HeartCoins but only have ${profile.heartcoin_balance || 0}.`);
-      } else {
-        throw new Error(result.error || 'Purchase failed');
+        // Check if it's an insufficient funds error
+        if (error.message?.includes('Not enough HeartCoins')) {
+          setCheckoutError('Not enough HeartCoins for this purchase.');
+        } else {
+          setCheckoutError('Purchase failed. Please try again.');
+        }
+        return;
       }
+      
+      // Success! Update UI and profile
+      try {
+        sfx.play('click', 0.7);
+      } catch {}
+      
+      setPurchaseSuccess(true);
+      setIsOwned(true);
+      
+      // Refresh profile to update HeartCoin balance
+      await refreshProfile();
+      
+      // Notify parent component
+      onPurchaseSuccess?.(item);
+      
+      // Hide checkout panel after brief success display
+      setTimeout(() => {
+        setShowHeartCoinCheckout(false);
+        setPurchaseSuccess(false);
+      }, 2000);
+      
     } catch (error) {
       console.error('HeartCoin purchase error:', error);
       setCheckoutError('Purchase failed. Please try again.');
@@ -401,11 +399,21 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
                     {item.priceHeartCoins} Heart Coins
                   </span>
                 </div>
+                {hasEnoughHeartCoins ? (
+                  <div className="text-center text-green-400 font-semibold mt-2">
+                    You can purchase this card!
+                  </div>
+                ) : (
+                  <div className="text-center text-red-400 font-semibold mt-2">
+                    Not enough Heart Coins
+                  </div>
+                )}
               </div>
 
               {/* Success message */}
               {purchaseSuccess && (
-                <div className="text-center py-2">
+                <div className="text-center py-4">
+                  <div className="text-2xl font-bold text-green-400 mb-2">SUCCESS!</div>
                   <div className="text-green-400 font-semibold">✓ Added to your collection!</div>
                 </div>
               )}
@@ -433,7 +441,7 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
                         boxShadow: '0 0 20px rgba(242,239,29,0.6), inset 0 2px 0 rgba(255,255,255,0.6), inset 0 -8px 16px rgba(0,0,0,0.22)'
                       } : {}}
                     >
-                      {isSpending ? 'Processing...' : `Spend ${item.priceHeartCoins} Heart Coins`}
+                      {isSpending ? 'Processing...' : 'CONFIRM'}
                     </button>
                   ) : (
                     <div className="rounded-lg border border-red-400/60 bg-red-900/40 px-3 py-2 text-sm text-red-200 text-center">

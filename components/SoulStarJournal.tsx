@@ -37,8 +37,10 @@ interface JournalEntry {
   created_date: string;
   element: string;
   intention?: string;
-  prompt?: string;
-  soul_star?: string;
+  reflection?: string; // prompt question text (was 'prompt')
+  intention_response?: string;
+  reflection_response?: string;
+  soul_star?: string; // user's written reflection text
   is_private?: boolean;
 }
 
@@ -85,7 +87,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const journalRef = useRef<HTMLDivElement>(null);
   
   // Component state variables as specified
-  const [selectedElement, setSelectedElement] = useState<string>("");
   const [intentionText, setIntentionText] = useState<string>("");
   const [currentPromptText, setCurrentPromptText] = useState<string>("");
   const [soulStarText, setSoulStarText] = useState<string>("");
@@ -120,19 +121,18 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
   // Load existing entry on mount
   useEffect(() => {
-    if (isOpen && profile?.element && journalEntries) {
+    if (isOpen && dailyPrompt && journalEntries) {
       loadExistingEntry();
     }
-  }, [isOpen, profile?.element, journalEntries]);
+  }, [isOpen, dailyPrompt, journalEntries]);
 
   // Update state variables when daily prompt loads
   useEffect(() => {
-    if (dailyPrompt && profile?.element) {
-      setSelectedElement(profile.element);
+    if (dailyPrompt) {
       setIntentionText(dailyPrompt.intention?.text || "");
       setCurrentPromptText(dailyPrompt.soul_star?.text || "");
     }
-  }, [dailyPrompt, profile?.element]);
+  }, [dailyPrompt]);
 
   // Handle click outside to close
   useEffect(() => {
@@ -165,17 +165,23 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   };
 
   const loadExistingEntry = () => {
-    if (!profile?.element) return;
+    if (!dailyPrompt?.element) return;
 
     const todayEntry = journalEntries.find(entry => 
-      entry.entry_date === today && entry.element === profile.element
+      entry.entry_date === today && entry.element === dailyPrompt?.element
     );
     if (todayEntry) {
-      setSoulStarText(todayEntry.soul_star || "");
+      // Check if soul_star contains corrupted prompt text and clear it
+      const soulStarValue = todayEntry.soul_star || "";
+      const isCorruptedWithPromptText = dailyPrompt && 
+        (soulStarValue === dailyPrompt.soul_star?.text || 
+         soulStarValue === currentPromptText);
+      
+      setSoulStarText(isCorruptedWithPromptText ? "" : soulStarValue);
       setJournalState(prev => ({
         ...prev,
         isPrivate: todayEntry.is_private ?? false,
-        isSubmitted: !!(todayEntry.soul_star && todayEntry.soul_star.trim().length > 0),
+        isSubmitted: !isCorruptedWithPromptText && !!(soulStarValue && soulStarValue.trim().length > 0),
       }));
     } else {
       setSoulStarText("");
@@ -205,6 +211,13 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         return;
       }
 
+      // Validate dailyPrompt is available
+      if (!dailyPrompt) {
+        setError("Unable to save entry - daily prompt not loaded.");
+        setTimeout(() => setError(""), 3000);
+        return;
+      }
+
       setIsSaving(true);
       setError("");
       setSuccessMessage("");
@@ -213,7 +226,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       // Use ProfileContext's saveJournalEntry which handles upsert properly
       const result = await saveJournalEntry({
         entry_date: today,
-        element: selectedElement,
+        element: dailyPrompt.element,
         prompt_id: dailyPrompt?.id || null,
         intention: dailyPrompt?.intention?.text || null,
         reflection: dailyPrompt?.soul_star?.text || null, // PROMPT QUESTION text goes to reflection column
@@ -406,7 +419,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         className="relative soul-journal-container"
         style={{
           width: '100%',
-          maxHeight: '85vh',
+          maxHeight: '88vh',
           overflowY: 'auto',
           padding: '20px 24px 12px 24px',
           borderRadius: 18,
@@ -697,7 +710,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                         )}
                         
                         {/* Today's Prompt */}
-                        {entry.prompt && (
+                        {entry.reflection && (
                           <div>
                             <div 
                               className="text-xs font-semibold mb-1 uppercase tracking-wider"
@@ -715,7 +728,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                 border: `1px solid ${entryColor}15`
                               }}
                             >
-                              {entry.prompt}
+                              {entry.reflection}
                             </div>
                           </div>
                         )}
@@ -888,7 +901,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               <textarea
                 value={soulStarText}
                 onChange={(e) => setSoulStarText(e.target.value)}
-                placeholder={(!user?.id || !profile?.element) ? "Cast into the stars" : "Write your soul's message for today... What wants to be expressed?"}
+                placeholder={(!user?.id || !profile?.element) ? "Cast into the stars" : "Let your Soul Star speak…"}
                 className="w-full h-16 p-2 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
                 disabled={isSaving || journalState.isSubmitted}
                 style={{

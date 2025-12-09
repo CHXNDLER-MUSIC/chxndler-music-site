@@ -20,6 +20,19 @@ export const supabaseBrowser = createClient(
       detectSessionInUrl: true,
       storage: typeof window !== 'undefined' ? window.localStorage : undefined,
       storageKey: 'supabase.auth.token',
+    },
+    global: {
+      headers: {
+        'X-Client-Info': 'chxndler-music-site/browser'
+      }
+    },
+    db: {
+      schema: 'public'
+    },
+    realtime: {
+      params: {
+        eventsPerSecond: 10
+      }
     }
   }
 );

@@ -808,42 +808,35 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     setIsProcessing(true);
     
     try {
-      const response = await fetch('/api/purchase-item-with-heartcoins', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          itemId: item.id,
-          itemTitle: item.title,
-          priceHeartCoins: item.priceHeartCoins,
-        }),
+      // Call the new RPC directly
+      const { data, error } = await supabaseBrowser.rpc('purchase_item_with_heartcoins', {
+        p_item_type: 'card',
+        p_item_id: item.id,
       });
       
-      const result = await response.json();
-      
-      if (response.ok) {
-        // Success! Update UI and profile
-        try { sfx.play('click', 0.7); } catch {}
+      if (error) {
+        console.error('RPC Error:', error);
         
-        // Update local heart coins state
-        const newBalance = (profile.heartcoin_balance || 0) - item.priceHeartCoins;
-        updateHeartCoins(newBalance);
-        
-        // Refresh profile to update HeartCoin balance
-        await refreshProfile();
-        
-        // Show success and go back to store
-        setTimeout(() => {
-          handleBackToStore();
-        }, 1500);
-        
-      } else if (response.status === 400 && result.error?.includes('insufficient')) {
-        // Insufficient HeartCoins - handled in UI
-      } else {
-        throw new Error(result.error || 'Purchase failed');
+        // Check if it's an insufficient funds error
+        if (error.message?.includes('Not enough HeartCoins')) {
+          // Insufficient HeartCoins - handled in UI
+        } else {
+          console.error('Purchase failed:', error.message);
+        }
+        return;
       }
+      
+      // Success! Update UI and profile
+      try { sfx.play('click', 0.7); } catch {}
+      
+      // Refresh profile to get updated balance from database
+      await refreshProfile();
+      
+      // Show success and go back to store
+      setTimeout(() => {
+        handleBackToStore();
+      }, 1500);
+      
     } catch (error) {
       console.error('HeartCoin purchase error:', error);
     } finally {

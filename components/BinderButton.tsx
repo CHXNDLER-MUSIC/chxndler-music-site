@@ -367,16 +367,20 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
   }, [showFullCollection, selectedElement, selectedRarity]);
 
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
-    try { onClick?.(e); } catch {}
-    if (!e.defaultPrevented) {
-      e.preventDefault();
-      try { sfx.play('click', 0.8); } catch {}
-      // Change beam color to magenta when Binder button is clicked
-      try { onBeamColorChange?.('magenta'); } catch {}
-      // Close blue display first
-      try { onCloseBlueDisplay?.(); } catch {}
-      // Note: Modal opening is now handled by parent component's onClick prop
-    }
+    e.preventDefault();
+    e.stopPropagation();
+    try { sfx.play('click', 0.8); } catch {}
+    // Change beam color to magenta when Binder button is clicked
+    try { onBeamColorChange?.('magenta'); } catch {}
+    // Close blue display first
+    try { onCloseBlueDisplay?.(); } catch {}
+    // Only open the binder modal, don't call other onClick handlers
+    setOpen(true);
+    setShowFullCollection(true);
+    setSelectedElement(null);
+    setSelectedCardName('All');
+    setPreselectedCard(null);
+    setCurrentCardIndex(0);
   };
 
   return (

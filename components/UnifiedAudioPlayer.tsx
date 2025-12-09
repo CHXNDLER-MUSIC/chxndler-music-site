@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { useSongs } from "@/hooks/useSongs";
 import { AUDIO_ASSETS_BY_SLUG } from "@/data/audioAssets";
 import { SONG_ELEMENT_MAPPING } from "@/data/songElements";
-import { TRACKS, TRACK_INFO, type TrackKey, useAudioManager } from "@/contexts/AudioManagerContext";
+import { useAudio, TRACK_INFO } from "@/app/providers/AudioProvider";
 import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
 import SongDropdown from "./SongDropdown";
 
@@ -61,16 +61,18 @@ interface UnifiedAudioPlayerProps {
 }
 
 const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrackId }: UnifiedAudioPlayerProps) {
-  // Use existing audio manager with centralized state
-  const audioManager = useAudioManager();
+  // Use unified audio provider with centralized state
+  const audioManager = useAudio();
   
-  // Get centralized state from audio manager
-  const isPlaying = audioManager.isPlaying;
-  const currentTrackInfo = audioManager.currentTrackInfo;
+  // Get centralized state from audio provider
+  const isPlaying = audioManager.playing;
+  const currentTrackInfo = audioManager.currentTrack;
   
-  // Local state for progress tracking
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  // Use current time and duration from the audio provider
+  const currentTime = audioManager.currentTime;
+  const duration = audioManager.duration;
+  
+  // Track the audio element for additional event handling if needed
   const [currentAudioElement, setCurrentAudioElement] = useState<HTMLAudioElement | null>(null);
   
   // Progress bar reference for click handling
@@ -106,95 +108,42 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
   const progress = duration > 0 ? currentTime / duration : 0;
 
   // Handle track change from dropdown
-  const handleTrackChange = useCallback((newTrackId: string) => {
-    // Update the track info immediately so UI reflects the new selection
-    audioManager.setCurrentTrackInfo(newTrackId);
-    // Note: SongDropdown also calls audioManager.playSongSequence() which handles the warp and audio
+  const handleTrackChange = useCallback(async (newTrackId: string) => {
+    // Play the selected track through the unified audio system
+    try {
+      await audioManager.playTrack(newTrackId);
+    } catch (err) {
+      console.error('Failed to play track:', err);
+    }
   }, [audioManager]);
 
   // Handle play/pause button
   const handleTogglePlay = useCallback(() => {
-    if (!currentAudioElement) return;
-    
     if (isPlaying) {
-      currentAudioElement.pause();
+      audioManager.pause();
     } else {
-      currentAudioElement.play().catch(console.error);
+      audioManager.play();
     }
-  }, [isPlaying, currentAudioElement]);
+  }, [isPlaying, audioManager]);
 
   // Handle progress bar click for seeking
   const handleProgressClick = useCallback((e: React.MouseEvent) => {
     const progressBar = progressBarRef.current;
-    if (!currentAudioElement || !progressBar || duration <= 0) return;
+    if (!progressBar || duration <= 0) return;
     
     const rect = progressBar.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const ratio = Math.max(0, Math.min(1, clickX / rect.width));
     const newTime = ratio * duration;
     
-    currentAudioElement.currentTime = newTime;
-    setCurrentTime(newTime);
-  }, [duration, currentAudioElement]);
+    audioManager.seek(newTime);
+  }, [duration, audioManager]);
 
-  // Monitor the audio manager's foreground audio element for progress tracking only
+  // Keep track of the current audio element for reference
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
-    let cleanupListeners: (() => void) | null = null;
-    
-    const pollForAudio = () => {
-      const currentAudio = audioManager.getCurrentAudio();
-      
-      if (currentAudio && currentAudio !== currentAudioElement) {
-        // Clean up previous listeners
-        if (cleanupListeners) {
-          cleanupListeners();
-        }
-        
-        setCurrentAudioElement(currentAudio);
-        
-        // Set up listeners for progress tracking only
-        const handleTimeUpdate = () => {
-          setCurrentTime(currentAudio.currentTime);
-        };
-        
-        const handleLoadedMetadata = () => {
-          setDuration(currentAudio.duration || 0);
-        };
-        
-        const handleEnded = () => {
-          setCurrentTime(0);
-        };
-        
-        currentAudio.addEventListener("timeupdate", handleTimeUpdate);
-        currentAudio.addEventListener("loadedmetadata", handleLoadedMetadata);
-        currentAudio.addEventListener("ended", handleEnded);
-        
-        // Set initial state
-        setCurrentTime(currentAudio.currentTime);
-        setDuration(currentAudio.duration || 0);
-        
-        cleanupListeners = () => {
-          currentAudio.removeEventListener("timeupdate", handleTimeUpdate);
-          currentAudio.removeEventListener("loadedmetadata", handleLoadedMetadata);
-          currentAudio.removeEventListener("ended", handleEnded);
-        };
-      }
-    };
-    
-    // Poll every 100ms for audio changes
-    intervalId = setInterval(pollForAudio, 100);
-    
-    // Initial check
-    pollForAudio();
-    
-    return () => {
-      clearInterval(intervalId);
-      if (cleanupListeners) {
-        cleanupListeners();
-      }
-    };
-  }, [audioManager, currentAudioElement]);
+    const currentAudio = audioManager.getCurrentAudio();
+    setCurrentAudioElement(currentAudio);
+  }, [audioManager]);
 
   // Prepare dropdown items for SongDropdown component - memoized
   const dropdownItems = useMemo(() => 

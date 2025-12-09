@@ -22,12 +22,32 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
   // Memoize profile status to prevent unnecessary re-renders
   const isLoggedIn = useMemo(() => !!profile?.id, [profile?.id]);
   
+  // Memoize render status logging to prevent unnecessary logs
+  const renderStatus = useMemo(() => {
+    if (typeof document === 'undefined') {
+      return { shouldRender: false, reason: 'not mounted' };
+    }
+    return { shouldRender: true, reason: 'ready', open, hasProfile: isLoggedIn };
+  }, [open, isLoggedIn]);
+
   // Use useEffect for logging to prevent render-time side effects
   useEffect(() => {
     if (isLoggedIn) {
       console.log('🚫 Modal not rendering: user logged in', profile?.id);
     }
   }, [isLoggedIn, profile?.id]);
+
+  // Log only when render status actually changes
+  useEffect(() => {
+    if (!renderStatus.shouldRender) {
+      console.log('🚫 Modal not rendering:', renderStatus.reason);
+    } else {
+      console.log('✅ Modal should render:', { 
+        open: renderStatus.open, 
+        hasProfile: renderStatus.hasProfile 
+      });
+    }
+  }, [renderStatus]);
   
   // Safety check: Never show welcome modal for logged-in users
   if (isLoggedIn) {
@@ -106,26 +126,6 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
     }
   }
 
-  // Memoize render status logging to prevent unnecessary logs
-  const renderStatus = useMemo(() => {
-    if (typeof document === 'undefined') {
-      return { shouldRender: false, reason: 'not mounted' };
-    }
-    return { shouldRender: true, reason: 'ready', open, hasProfile: isLoggedIn };
-  }, [open, isLoggedIn]);
-
-  // Log only when render status actually changes
-  useEffect(() => {
-    if (!renderStatus.shouldRender) {
-      console.log('🚫 Modal not rendering:', renderStatus.reason);
-    } else {
-      console.log('✅ Modal should render:', { 
-        open: renderStatus.open, 
-        hasProfile: renderStatus.hasProfile 
-      });
-    }
-  }, [renderStatus]);
-
   if (!renderStatus.shouldRender) {
     return null;
   }
@@ -168,8 +168,8 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
           className="welcome-hologram-container"
           style={{
             width: 'min(92vw, 700px)',
-            minHeight: 'auto',
-            padding: '10px 14px 16px 14px',
+            minHeight: '480px',
+            padding: '18px 14px 24px 14px',
             borderRadius: 18,
             background: 'rgba(0,0,0,0.6)',
             border: '1px solid rgba(0,255,255,0.55)',
@@ -238,7 +238,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
           style={{ 
             color: '#00FFFF', 
             textShadow: '0 0 8px rgba(0,255,255,0.6)', 
-            fontSize: '16px',
+            fontSize: '20px',
             fontWeight: 'bold'
           }}
         >
@@ -254,9 +254,9 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
           }}
         />
 
-        <p className="relative text-sm mb-2 text-center" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.8), 0 0 16px rgba(0,255,255,0.6), 0 0 24px rgba(0,255,255,0.4)' }}>WELCOME TO THE HEARTVERSE {"<3"}</p>
+        <p className="relative text-base mb-2 text-center" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.8), 0 0 16px rgba(0,255,255,0.6), 0 0 24px rgba(0,255,255,0.4)' }}>WELCOME TO THE HEARTVERSE {"<3"}</p>
         
-        <p className="relative text-sm mb-3" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.6)' }}>CONNECT WITH OTHER ALIENS AND RECEIVE SIGNALS FOR EARLY RELEASES, SECRET TRANSMISSIONS AND EXCLUSIVE EVENTS.</p>
+        <p className="relative text-base mb-3" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.6)' }}>CONNECT WITH OTHER ALIENS AND RECEIVE SIGNALS FOR EARLY RELEASES, SECRET TRANSMISSIONS AND EXCLUSIVE EVENTS.</p>
 
         {error && (
           <div className="relative mb-2 rounded-md bg-red-50/10 border border-red-200/40 p-2 text-sm text-red-200">
@@ -276,7 +276,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
               placeholder="you@example.com"
               required
               disabled={loading}
-              className="block w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none disabled:opacity-50"
+              className="block w-full rounded-md border px-3 py-3 text-base shadow-sm focus:outline-none disabled:opacity-50"
               style={{
                 border: '1px solid rgba(0,255,255,0.4)',
                 background: 'rgba(0,0,0,0.3)',
@@ -296,7 +296,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
                 }
               }}
               disabled={loading || email.length === 0}
-              className="inline-flex items-center justify-center rounded-lg px-8 py-2 text-sm font-medium transition disabled:opacity-50 mb-2"
+              className="inline-flex items-center justify-center rounded-lg px-8 py-3 text-base font-medium transition disabled:opacity-50 mb-2"
             style={message ? {
               background: 'rgba(0,255,0,0.2)',
               border: '1px solid rgba(0,255,0,0.6)',

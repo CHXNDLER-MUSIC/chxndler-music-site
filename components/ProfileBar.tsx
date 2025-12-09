@@ -20,7 +20,6 @@ import { useAuth } from '@/app/providers/AuthProvider';
 import { useUIStore } from '@/store/useUIStore';
 import JoinUsPopup from '@/components/JoinUsPopup';
 import WelcomeHomeModal from '@/components/WelcomeHomeModal';
-import GlowingHamburgerMenu from '@/components/GlowingHamburgerMenu';
 import JourneyModal from '@/components/JourneyModal';
 import SoulStarJournal from '@/components/SoulStarJournal';
 import ProfilePopover from '@/components/ProfilePopover';
@@ -432,54 +431,6 @@ export default function ProfileBar({
       className="fixed top-0 left-0 right-0 z-[300] h-16 bg-black/40 backdrop-blur-lg border-b border-white/20 transition-opacity duration-500 ease-in-out"
     >
       <div className="relative h-full">
-        {/* Hamburger Menu - Far Top Left */}
-        <div className="absolute top-2 left-1 z-10">
-          <GlowingHamburgerMenu
-          onItemClick={(label) => {
-            console.log(`Menu item clicked: ${label}`);
-            
-            switch (label) {
-              case "THE CODE":
-                setIsCodePopoutOpen(true);
-                onCodeClick?.();
-                break;
-              case "JOURNEY":
-              case "MY JOURNEY":
-                try { onCloseBlueDisplay?.(); } catch {}
-                setIsJourneyModalOpen(true);
-                break;
-              case "JOURNAL":
-                try { onCloseBlueDisplay?.(); } catch {}
-                try { onBeamColorChange?.('yellow'); } catch {}
-                setIsJournalOpen(true);
-                break;
-              case "BINDER":
-                try { onCloseBlueDisplay?.(); } catch {}
-                togglePanel('binder');
-                onDigitalBinderClick?.();
-                break;
-              case "BADGES":
-                try { onCloseBlueDisplay?.(); } catch {}
-                togglePanel('badges');
-                break;
-              case "ABOUT":
-                try { onCloseBlueDisplay?.(); } catch {}
-                setIsChxndlerPopoutOpen(true);
-                break;
-              case "STORE":
-                try { onCloseBlueDisplay?.(); } catch {}
-                // Open HeartCoinButton modal directly on USE tab with CARDS sub-tab
-                setActivePanel('heartcoins');
-                // Store the initial tab preference for HeartCoinButton
-                if (typeof window !== 'undefined') {
-                  (window as any).heartCoinInitialTab = 'USE';
-                  (window as any).heartCoinInitialUseTab = 'CARDS';
-                }
-                break;
-            }
-          }}
-        />
-        </div>
 
         {/* Auth Button - Positioned separately with more space from hamburger, centered vertically */}
         <div className="absolute top-1/2 -translate-y-1/2 left-16 z-50 pointer-events-auto">
@@ -745,7 +696,7 @@ export default function ProfileBar({
             className="chxndler-hologram-container"
             style={{
               width: 'min(92vw, 700px)',
-              height: '40vh',
+              height: '35vh',
               padding: '10px 14px 14px 14px',
               borderRadius: 18,
               background: 'rgba(0,0,0,0.6)',

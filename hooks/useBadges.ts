@@ -90,11 +90,11 @@ export function useBadges() {
 
     return [
       {
-        id: BADGE_CATEGORIES.ELEMENTAL_STREAK,
-        name: "ELEMENTAL STREAK",
-        emoji: "💠",
-        color: "#FC54AF",
-        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.ELEMENTAL_STREAK)
+        id: BADGE_CATEGORIES.SOUL,
+        name: "SOUL",
+        emoji: "⭐️",
+        color: "#FFD700",
+        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.SOUL)
       },
       {
         id: BADGE_CATEGORIES.COLLECTOR,
@@ -104,18 +104,25 @@ export function useBadges() {
         badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.COLLECTOR)
       },
       {
+        id: BADGE_CATEGORIES.COMMUNITY,
+        name: "COMMUNITY",
+        emoji: "🌐",
+        color: "#10B981",
+        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.COMMUNITY)
+      },
+      {
+        id: BADGE_CATEGORIES.ELEMENTAL_STREAK,
+        name: "ELEMENTAL STREAK",
+        emoji: "💠",
+        color: "#FC54AF",
+        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.ELEMENTAL_STREAK)
+      },
+      {
         id: BADGE_CATEGORIES.CURRENCY,
-        name: "HEARTCOIN",
+        name: "CURRENCY",
         emoji: "💰",
         color: "#F59E0B",
         badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.CURRENCY)
-      },
-      {
-        id: BADGE_CATEGORIES.SOUL,
-        name: "SOUL STAR",
-        emoji: "⭐️",
-        color: "#FFD700",
-        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.SOUL)
       },
       {
         id: BADGE_CATEGORIES.LISTENING,
@@ -123,13 +130,6 @@ export function useBadges() {
         emoji: "🎵",
         color: "#9333EA",
         badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.LISTENING)
-      },
-      {
-        id: BADGE_CATEGORIES.COMMUNITY,
-        name: "COMMUNITY",
-        emoji: "🌐",
-        color: "#10B981",
-        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.COMMUNITY)
       }
     ].filter(category => category.badges.length > 0); // Only show categories with badges
   };
@@ -181,19 +181,33 @@ export function useBadges() {
       setLoading(true);
       setError(null);
       
-      // Set a timeout to prevent infinite loading
+      // Set a longer timeout to prevent premature failures (increased to 15s)
       const timeoutId = setTimeout(() => {
         setLoading(false);
-        setError('Request timed out. Check your connection and Supabase configuration.');
-      }, 10000); // 10 second timeout
+        setError('Request timed out. Check your connection and try again.');
+      }, 15000);
       
       try {
-        // Always fetch badges (public data)
-        await fetchBadges();
+        // Add retry logic for better reliability
+        const fetchWithRetry = async (fetchFn: () => Promise<void>, retries = 2) => {
+          for (let i = 0; i <= retries; i++) {
+            try {
+              await fetchFn();
+              return;
+            } catch (err) {
+              if (i === retries) throw err;
+              // Wait before retry with exponential backoff
+              await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
+            }
+          }
+        };
+        
+        // Always fetch badges (public data) with retry
+        await fetchWithRetry(fetchBadges);
         
         // Only fetch user badges if we have a valid user
         if (user?.id) {
-          await fetchUserBadges();
+          await fetchWithRetry(fetchUserBadges);
         } else {
           console.warn('useBadges: No user ID, skipping user badges fetch');
           setUserBadges([]);
@@ -209,7 +223,7 @@ export function useBadges() {
       } catch (err) {
         clearTimeout(timeoutId);
         console.error('DEBUG useBadges: Fetch failed with exception:', err);
-        setError(`Fetch failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        setError(`Network error - please check your connection and try again`);
         setLoading(false);
       }
     };
@@ -225,8 +239,17 @@ export function useBadges() {
     error,
     awardBadge,
     refetch: () => {
-      fetchBadges();
-      fetchUserBadges();
+      setLoading(true);
+      setError(null);
+      fetchBadges().then(() => {
+        if (user?.id) {
+          return fetchUserBadges();
+        }
+      }).catch(err => {
+        setError(`Retry failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      }).finally(() => {
+        setLoading(false);
+      });
     }
   };
 }

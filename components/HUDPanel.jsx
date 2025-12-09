@@ -5443,23 +5443,25 @@ const HUDPanel = React.memo(function HUDPanel({
                                         setStoreConfirmProcessing(true);
                                         setStoreConfirmError('');
                                         try {
-                                          const res = await fetch('/api/purchase-item-with-heartcoins', {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ itemId: item.id, itemTitle: item.title, priceHeartCoins: item.heartcoins }),
+                                          // Call the new RPC directly
+                                          const { data, error } = await supabaseClient.rpc('purchase_item_with_heartcoins', {
+                                            p_item_type: 'card',
+                                            p_item_id: item.id,
                                           });
-                                          const data = await res.json().catch(() => ({}));
-                                          if (!res.ok) {
-                                            if (res.status === 400 && String(data?.error || '').toLowerCase().includes('insufficient')) {
-                                              setStoreConfirmError(`You need ${Math.max(0, (item.heartcoins || 0) - (heartCoinsCount || 0))} more Heart Coins`);
-                                            } else if (res.status === 401) {
-                                              setStoreConfirmError('Please sign in to spend Heart Coins');
+                                          
+                                          if (error) {
+                                            console.error('RPC Error:', error);
+                                            
+                                            // Check if it's an insufficient funds error
+                                            if (error.message?.includes('Not enough HeartCoins')) {
+                                              setStoreConfirmError('Not enough HeartCoins for this purchase.');
                                             } else {
-                                              setStoreConfirmError(String(data?.error || 'Purchase failed. Please try again.'));
+                                              setStoreConfirmError('Purchase failed. Please try again.');
                                             }
                                           } else {
                                             try { sfx.play('success', 0.7); } catch {}
-                                            // Optimistically update balance
+                                            // The RPC should handle updating the balance, but we can optimistically update for UI responsiveness
+                                            // Note: This uses the hardcoded price which should ideally come from the database
                                             setHeartCoinsCount((c) => Math.max(0, (c || 0) - (item.heartcoins || 0)));
                                             // Brief success flash then close confirmation
                                             setTimeout(() => {

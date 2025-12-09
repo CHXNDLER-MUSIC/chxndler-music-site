@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
-import { useAudioManager } from "@/contexts/AudioManagerContext";
+import { useAudio } from "@/app/providers/AudioProvider";
 import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
 import { playerStore } from "@/store/usePlayerStore";
 import { useCycleList } from "@/lib/useCycleList";
@@ -43,7 +43,7 @@ function ElementIcon({ name }) {
 }
 
 export default function SongDropdown({ items = [], initialActiveId, onChange, currentId }) {
-  const audioManager = useAudioManager();
+  const audioManager = useAudio();
   const { activeId, setActiveId, next, prev, handleKeyDown } = useCycleList(items, initialActiveId, onChange);
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);

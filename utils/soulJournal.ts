@@ -7,8 +7,10 @@ export type SoulJournalRow = {
   entry_date: string; // YYYY-MM-DD
   element: string;
   intention: string | null;
-  prompt: string | null;
-  soul_star: string | null;
+  reflection: string | null; // prompt question text (was 'prompt')
+  intention_response: string | null;
+  reflection_response: string | null;
+  soul_star: string | null; // user's written reflection text
   is_private: boolean | null;
 };
 
@@ -16,9 +18,9 @@ export type SoulJournalWithPrompt = {
   id: string;
   entry_date: string;
   element: string;
-  soul_star: string | null;
+  soul_star: string | null; // user's written reflection text
   is_private: boolean | null;
-  prompt: string | null;
+  reflection: string | null; // prompt question text (was 'prompt')
   intention: string | null;
 };
 
@@ -34,12 +36,12 @@ export async function saveSoulStarEntry(
     promptDate: string; // YYYY-MM-DD
     promptId: string | null; // references soul_daily_prompts.id
     intention: string | null; // from daily prompt
-    prompt: string | null; // from daily prompt  
-    soulStarText: string;
+    reflection: string | null; // prompt question text (was 'prompt')
+    soulStarText: string; // user's written reflection
     isPrivate: boolean;
   }
 ): Promise<SoulJournalRow> {
-  const { userId, selectedElement, promptDate, promptId, intention, prompt, soulStarText, isPrivate } = params;
+  const { userId, selectedElement, promptDate, promptId, intention, reflection, soulStarText, isPrivate } = params;
 
   const payload: Partial<SoulJournalRow> = {
     user_id: userId,
@@ -47,8 +49,8 @@ export async function saveSoulStarEntry(
     element: selectedElement,
     prompt_id: promptId ?? null,
     intention: intention ?? null,
-    prompt: prompt ?? null,
-    soul_star: soulStarText?.trim() ?? null,
+    reflection: reflection ?? null, // prompt question text
+    soul_star: soulStarText?.trim() ?? null, // user's written reflection
     is_private: isPrivate,
   } as any;
 
@@ -96,9 +98,9 @@ export async function loadSoulStarFullLog(
     id: row.id,
     entry_date: row.entry_date,
     element: row.element,
-    soul_star: row.soul_star ?? null,
+    soul_star: row.soul_star ?? null, // user's written reflection text
     is_private: row.is_private ?? false,
-    prompt: row.soul_daily_prompts?.prompt ?? null,
+    reflection: row.soul_daily_prompts?.prompt ?? null, // prompt question text
     intention: row.soul_daily_prompts?.intention ?? null,
   }));
 
@@ -114,7 +116,7 @@ export async function saveSoulStarEntryDefault(
   promptDate: string,
   promptId: string | null,
   intention: string | null,
-  prompt: string | null,
+  reflection: string | null,
   soulStarText: string,
   isPrivate: boolean
 ) {
@@ -124,7 +126,7 @@ export async function saveSoulStarEntryDefault(
     promptDate,
     promptId,
     intention,
-    prompt,
+    reflection,
     soulStarText,
     isPrivate,
   });

@@ -2679,7 +2679,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       </AnimatePresence>
 
       {/* Hamburger Menu for CODE access - Only show after warp effect is fully complete */}
-      <GlowingHamburgerMenuWrapper hidden={!showMenus} />
+      <GlowingHamburgerMenuWrapper hidden={!showMenus} onBeamColorChange={handleBeamToggle} />
 
     </main>
   );

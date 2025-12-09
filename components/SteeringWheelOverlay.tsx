@@ -6,7 +6,7 @@ import LumaKeyVideo from "@/components/LumaKeyVideo";
 import HoloJoinButton from "@/components/HoloJoinButton";
 import JoinAliens from "@/components/JoinAliens";
 import { LINKS } from "@/config/cockpit";
-import { useAudioManager } from "@/contexts/AudioManagerContext";
+import { useAudio } from "@/app/providers/AudioProvider";
 import { useProfile } from "@/hooks/useProfile";
 import { sfx } from "@/lib/sfx";
 
@@ -69,7 +69,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
   
   // Get user and profile data to determine welcome text
   const { user, profile, needsOnboarding } = useProfile();
-  const audioManager = useAudioManager();
+  const audioManager = useAudio();
   
   // Determine welcome text based on user status
   const getWelcomeText = () => {
@@ -148,7 +148,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
     // Trigger toggle action first so downstream can open streaming links within a user gesture
     try { onLaunch(); } catch {}
 
-    // Start button audio sequence: warp -> button -> ambient + welcome (based on login)
+    // Start button audio sequence: warp -> button -> welcome (based on login) through unified audio
     try { audioManager?.playStartSequence(!!user); } catch {}
     // After first click, stop pulsing the Start button until refresh
     if (startPulseOn) setStartPulseOn(false);

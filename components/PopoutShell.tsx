@@ -131,7 +131,7 @@ export default function PopoutShell({ title, onClose, children, pageIndicator }:
           {/* Page Number Display - exact copy from Binder, only show if provided */}
           {pageIndicator && (
             <div 
-              className="absolute bottom-0 left-1/2 transform -translate-x-1/2"
+              className="absolute bottom-2 left-1/2 transform -translate-x-1/2"
               style={{
                 color: '#FF69B4',
                 fontSize: '12px',

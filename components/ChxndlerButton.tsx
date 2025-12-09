@@ -169,7 +169,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                     sfx.play('click', 0.7);
                     setActiveTab("WE BELIEVE");
                   }}
-                  className={`px-3 py-2 rounded-md text-xs font-semibold transition-all duration-200 ${
+                  className={`px-3 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
                     activeTab === "WE BELIEVE"
                       ? "bg-pink-500/20 text-pink-300 border border-pink-400/50"
                       : "text-white/70 hover:text-white"
@@ -186,7 +186,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                     sfx.play('click', 0.7);
                     setActiveTab("CHXNDLER");
                   }}
-                  className={`px-3 py-2 rounded-md text-xs font-semibold transition-all duration-200 ${
+                  className={`px-3 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
                     activeTab === "CHXNDLER"
                       ? "bg-pink-500/20 text-pink-300 border border-pink-400/50"
                       : "text-white/70 hover:text-white"
@@ -203,7 +203,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                     sfx.play('click', 0.7);
                     setActiveTab("ELEMENTS");
                   }}
-                  className={`px-3 py-2 rounded-md text-xs font-semibold transition-all duration-200 ${
+                  className={`px-3 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
                     activeTab === "ELEMENTS"
                       ? "bg-pink-500/20 text-pink-300 border border-pink-400/50"
                       : "text-white/70 hover:text-white"
@@ -253,7 +253,8 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                   style={{ 
                     fontSize: 20, 
                     color: '#FFFFFF !important', 
-                    textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)'
+                    textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)',
+                    marginTop: '16px'
                   }}
                 >
                   <div className="flex items-start">
@@ -278,7 +279,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                 <div 
                   className="text-center mt-4"
                   style={{ 
-                    fontSize: '14px', 
+                    fontSize: '16px', 
                     color: '#FFFFFF !important', 
                     textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
                     lineHeight: '1.6'
@@ -289,7 +290,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                 <div 
                   className="flex justify-center mt-3"
                   style={{ 
-                    fontSize: '14px', 
+                    fontSize: '16px', 
                     color: '#FFFFFF !important', 
                     textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
                     lineHeight: '1.6'
@@ -315,7 +316,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                 <div 
                   className="text-center mt-4"
                   style={{ 
-                    fontSize: '14px', 
+                    fontSize: '16px', 
                     color: '#FFFFFF !important', 
                     textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
                     lineHeight: '1.6'
@@ -326,7 +327,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                 <div 
                   className="text-center mt-4"
                   style={{ 
-                    fontSize: '12px', 
+                    fontSize: '14px', 
                     color: '#FFFFFF !important', 
                     textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
                     lineHeight: '1.6'

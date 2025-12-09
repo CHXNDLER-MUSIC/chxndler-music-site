@@ -18,6 +18,38 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
   const [editingAvatar, setEditingAvatar] = useState(false);
   const [selectedBadgeId, setSelectedBadgeId] = useState(null);
   const [activeTab, setActiveTab] = useState('cards'); // 'cards' or 'badges'
+  const [enlargedCard, setEnlargedCard] = useState(null);
+  const [isEnlargedCardFlipped, setIsEnlargedCardFlipped] = useState(false);
+
+  // Inject card animation keyframes when enlarged card is shown
+  useEffect(() => {
+    if (enlargedCard && typeof document !== 'undefined') {
+      const existingStyle = document.querySelector('#card-pulse-keyframes');
+      if (!existingStyle) {
+        const style = document.createElement('style');
+        style.id = 'card-pulse-keyframes';
+        style.innerHTML = `
+          @keyframes cardPulse {
+            0%, 100% { 
+              transform: scale(1);
+              filter: saturate(1.06) contrast(1.06) brightness(1.04) drop-shadow(0 0 15px rgba(255, 215, 0, 0.6));
+            }
+            50% { 
+              transform: scale(1.02);
+              filter: saturate(1.1) brightness(1.08) contrast(1.08) drop-shadow(0 0 25px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 50px rgba(255, 215, 0, 0.6));
+            }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+      return () => {
+        const styleElement = document.querySelector('#card-pulse-keyframes');
+        if (styleElement) {
+          styleElement.remove();
+        }
+      };
+    }
+  }, [enlargedCard]);
 
   // Load full profile data when modal opens
   useEffect(() => {
@@ -325,13 +357,14 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
                           return (
                             <div
                               key={card.id}
-                              className="aspect-square rounded-lg p-2 text-center transition-all hover:scale-105"
+                              className="aspect-square rounded-lg p-2 text-center transition-all hover:scale-105 cursor-pointer"
                               style={{
                                 background: `${cardElementColor}20`,
                                 border: `2px solid ${cardElementColor}60`,
                                 boxShadow: `0 0 10px ${cardElementColor}30`
                               }}
                               title={`${card.cards.card_name} (${card.cards.rarity})`}
+                              onClick={() => setEnlargedCard(card.cards)}
                             >
                               {card.cards.image_url ? (
                                 <img 
@@ -428,6 +461,75 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
                     )}
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Enlarged Card Modal */}
+          {enlargedCard && (
+            <div 
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 rounded-lg"
+              onClick={() => {
+                setEnlargedCard(null);
+                setIsEnlargedCardFlipped(false);
+              }}
+            >
+              <div 
+                className="relative w-56 mx-4"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div
+                  className="relative w-full h-80 cursor-pointer"
+                  style={{
+                    perspective: '1000px'
+                  }}
+                  onClick={() => setIsEnlargedCardFlipped(!isEnlargedCardFlipped)}
+                >
+                  <div
+                    className="relative w-full h-full transition-transform duration-700"
+                    style={{
+                      transformStyle: 'preserve-3d',
+                      transform: isEnlargedCardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                    }}
+                  >
+                    {/* Front of card */}
+                    <img
+                      src={enlargedCard.image_url || '/cards/CHXNDLER.webp'}
+                      alt={enlargedCard.card_name}
+                      className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
+                      style={{
+                        filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
+                        animation: 'cardPulse 3s ease-in-out infinite',
+                        backfaceVisibility: 'hidden',
+                        transform: 'rotateY(0deg)'
+                      }}
+                    />
+                    
+                    {/* Back of card */}
+                    <img
+                      src="/cards/back.webp"
+                      alt="Card back"
+                      className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
+                      style={{
+                        filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
+                        animation: 'cardPulse 3s ease-in-out infinite',
+                        backfaceVisibility: 'hidden',
+                        transform: 'rotateY(180deg)'
+                      }}
+                    />
+                  </div>
+                </div>
+                
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEnlargedCard(null);
+                    setIsEnlargedCardFlipped(false);
+                  }}
+                  className="absolute top-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white text-sm font-bold transition-all duration-200 z-10"
+                >
+                  ×
+                </button>
               </div>
             </div>
           )}

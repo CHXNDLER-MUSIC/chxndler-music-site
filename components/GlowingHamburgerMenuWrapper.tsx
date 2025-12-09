@@ -15,7 +15,12 @@ import { useUIState } from "@/lib/use-ui-state";
 import { useTour } from "@/contexts/TourContext";
 import { useMenuState } from "@/contexts/MenuStateContext";
 
-export default function GlowingHamburgerMenuWrapper({ hidden = false }: { hidden?: boolean }) {
+interface GlowingHamburgerMenuWrapperProps {
+  hidden?: boolean;
+  onBeamColorChange?: (color: string) => void;
+}
+
+export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColorChange }: GlowingHamburgerMenuWrapperProps) {
   const [codeOpen, setCodeOpen] = useState(false);
   const [chxndlerOpen, setChxndlerOpen] = useState(false);
   const [journeyOpen, setJourneyOpen] = useState(false);
@@ -47,6 +52,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false }: { hidden
         setJourneyOpen(true);
         break;
       case "BINDER":
+        onBeamColorChange?.('pink');
         setBinderOpen(true);
         break;
       case "JOURNAL":

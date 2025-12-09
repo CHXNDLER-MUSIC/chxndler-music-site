@@ -186,6 +186,22 @@ function playLoopingAudio(src: string): HTMLAudioElement {
 }
 
 export function AudioManagerProvider({ children }: { children: React.ReactNode }) {
+  // If the unified AudioProvider is active, disable this legacy manager to avoid conflicts
+  if (typeof window !== 'undefined' && (window as any).__UNIFIED_AUDIO_ACTIVE) {
+    // Return a stub provider that provides the expected interface but does nothing
+    const stubApi: AudioManagerApi = {
+      playStartSequence: () => Promise.resolve(),
+      playSongSequence: () => Promise.resolve(),
+      stopAllAudio: () => {},
+      bestSourceFor: (t) => t?.opus || t?.mp3 || "",
+      getCurrentAudio: () => null,
+      currentTrackInfo: null,
+      setCurrentTrackInfo: () => {},
+      isPlaying: false,
+    };
+    return <Ctx.Provider value={stubApi}>{children}</Ctx.Provider>;
+  }
+
   const foregroundRef = useRef<HTMLAudioElement | null>(null);
   const ambientRef = useRef<HTMLAudioElement | null>(null);
   const sfxRef = useRef<HTMLAudioElement | null>(null);

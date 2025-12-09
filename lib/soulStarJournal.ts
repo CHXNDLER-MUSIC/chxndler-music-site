@@ -15,7 +15,7 @@ export type CurrentPrompt = {
   id: string;
   prompt_date: string;
   element: string;
-  prompt: string;
+  reflection: string; // prompt question text (was 'prompt')
   intention?: string;
 };
 
@@ -38,8 +38,8 @@ export async function saveSoulStarEntry({
     element: currentPrompt.element,
     prompt_id: currentPrompt.id,
     intention: currentPrompt.intention || null,
-    prompt: currentPrompt.prompt || null,
-    soul_star: soulStarText,
+    reflection: currentPrompt.reflection || null, // prompt question text
+    soul_star: soulStarText, // user's written reflection text
     is_private: isPrivate
   };
 
@@ -91,7 +91,7 @@ export async function loadSoulStarFullLog(userId: string): Promise<SoulStarLogEn
     soulStar: entry.soul_star,
     isPrivate: entry.is_private,
     promptDate: entry.soul_daily_prompts?.prompt_date || entry.entry_date,
-    prompt: entry.soul_daily_prompts?.prompt || '',
+    prompt: entry.soul_daily_prompts?.prompt || '', // Keep this for backward compatibility with existing type
     intention: entry.soul_daily_prompts?.intention || null,
   }));
 }

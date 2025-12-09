@@ -43,7 +43,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
   const [currentPage, setCurrentPage] = useState(0);
   
   // Use Supabase data
-  const { badgeCategories, loading, error } = useBadges();
+  const { badgeCategories, loading, error, refetch } = useBadges();
 
   // Define handleClick function early to avoid initialization errors
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
@@ -122,26 +122,44 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
   // Show error state  
   if (error) {
     console.error('Badges error:', error);
-    // Fall back to showing the button but with no popup
+    // Fall back to showing the button but with error indicator and retry option
     return (
-      <button
-        data-tour-id="badges"
-        onClick={handleClick} 
-        onMouseEnter={onHoverSound}
-        className="p-1 rounded-lg transition-all duration-200 w-20 h-16"
-        style={{
-          transition: 'all 0.3s ease',
-          ...rest.style
-        }}
-        {...rest}
-      >
-        <img
-          src="/elements/badges.webp"
-          alt="Badges"
-          className="w-full h-full object-contain rounded"
-          draggable={false}
-        />
-      </button>
+      <>
+        <button
+          data-tour-id="badges"
+          onClick={handleClick} 
+          onMouseEnter={onHoverSound}
+          className="p-1 rounded-lg transition-all duration-200 w-20 h-16 relative"
+          style={{
+            transition: 'all 0.3s ease',
+            ...rest.style
+          }}
+          {...rest}
+        >
+          <img
+            src="/elements/badges.webp"
+            alt="Badges"
+            className="w-full h-full object-contain rounded opacity-50"
+            draggable={false}
+          />
+          <div className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full"></div>
+        </button>
+        
+        {isActive && (
+          <div className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-gray-800 rounded-lg p-6 max-w-sm mx-4 text-center">
+              <div className="text-red-400 text-lg mb-4">⚠️ Connection Error</div>
+              <div className="text-gray-300 mb-4">{error}</div>
+              <button 
+                onClick={() => { refetch(); }}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 
@@ -273,22 +291,6 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
             }
           }}
         >
-          {/* Soft pink glow behind the popout container */}
-          <div
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              top: 'calc(8vh - 20px)',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 'min(110vw, 840px)',
-              height: 'min(70vh, 560px)',
-              background: 'radial-gradient(ellipse 75% 55% at 50% 35%, rgba(255,105,180,0.35) 0%, rgba(255,105,180,0.18) 45%, rgba(255,105,180,0.08) 70%, transparent 100%)',
-              filter: 'blur(20px)',
-              pointerEvents: 'none',
-              zIndex: 0
-            }}
-          />
           <div
             className="badges-hologram-container flex flex-col"
             style={{
@@ -336,7 +338,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
             </button>
             
             {/* Header */}
-            <div className="flex justify-between items-center mb-3">
+            <div className="flex justify-between items-center mb-3 pt-3">
               {selectedCategory && (
                 <button
                   onClick={() => {
@@ -391,9 +393,9 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     style={{ 
                       whiteSpace: 'pre-wrap', 
                       lineHeight: 1.3, 
-                      fontSize: 11, 
+                      fontSize: 13, 
                       color: '#FF69B4', 
-                      textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,105,180,0.6)', 
+                      textShadow: '0 0 5px #FF69B4, 0 0 10px #FF69B4, 0 0 15px #FF69B4, 0 0 20px #FF1493', 
                       marginTop: '4px' 
                     }}
                   >

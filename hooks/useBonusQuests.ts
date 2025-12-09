@@ -51,14 +51,27 @@ export function useBonusQuests(): UseBonusQuestsReturn {
     setErrorMessage(null);
 
     try {
-      // Add timeout to prevent infinite loading
+      // Add timeout to prevent infinite loading (increased from 8s to 15s)
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Request timeout')), 8000)
+        setTimeout(() => reject(new Error('Request timeout')), 15000)
       );
+      
+      // Add retry logic for network issues
+      const fetchWithRetry = async (retries = 2): Promise<any> => {
+        for (let i = 0; i <= retries; i++) {
+          try {
+            return await getBonusQuestsForUser(currentUserId);
+          } catch (err) {
+            if (i === retries) throw err;
+            // Wait before retry (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
+          }
+        }
+      };
       
       // Always fetch public quests; overlay completion if user exists
       const questsData = await Promise.race([
-        getBonusQuestsForUser(currentUserId),
+        fetchWithRetry(),
         timeoutPromise
       ]);
       
@@ -75,7 +88,7 @@ export function useBonusQuests(): UseBonusQuestsReturn {
       setStatus("error");
       // Use fallback error message to reduce noise
       const errorMessage = error instanceof Error && error.message === 'Request timeout' 
-        ? 'Network timeout - bonus quests unavailable'
+        ? 'Network timeout - please check your connection and try again'
         : 'Bonus quests temporarily unavailable';
       setErrorMessage(errorMessage);
       // Set empty array as fallback so UI continues to work

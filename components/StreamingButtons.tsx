@@ -510,13 +510,13 @@ export default function StreamingButtons({ pos, links, showControls = true }:{ p
           display: flex; align-items: center; justify-content: center; z-index: 2147483647;
         }
         .sp-popover {
-          position: relative; width: min(85vw, 600px);
+          position: relative; width: min(90vw, 750px);
           background: rgba(0,0,0,0.88);
           border: 1px solid rgba(29,185,84,0.6);
           border-radius: 14px; overflow: hidden;
           box-shadow: 0 18px 46px rgba(0,0,0,0.55), 0 0 32px rgba(29,185,84,0.35);
-          /* Higher on screen than before */
-          margin-top: -80px;
+          /* Much higher on screen */
+          margin-top: -200px;
         }
         .sp-close { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%;
           border: 1px solid rgba(255,255,255,0.4); background: rgba(0,0,0,0.45); color: #fff; display: inline-flex;
@@ -595,7 +595,7 @@ export default function StreamingButtons({ pos, links, showControls = true }:{ p
         .volume-display { min-width: 40px; font-weight: 600; color: #9B59B6; }
 
         @media (max-width: 768px) {
-          .sp-popover { margin-top: -60px; width: min(90vw, 480px); }
+          .sp-popover { margin-top: -150px; width: min(95vw, 650px); }
           .am-popover { margin-top: -120px; width: min(90vw, 420px); }
           .lyrics-popover { margin-top: -60px; width: min(90vw, 480px); }
           .volume-popover { margin-top: -60px; width: min(90vw, 320px); }

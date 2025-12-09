@@ -6,7 +6,11 @@ import { playWithAutoplayFallback } from "@/lib/media-retry";
 import { useProfile } from "@/contexts/ProfileContext";
 
 export default function HoloAudioBridge() {
-  // If the new AudioManager is active, disable this legacy bridge to avoid conflicts
+  // If the unified AudioProvider is active, disable this legacy bridge to avoid conflicts
+  if (typeof window !== 'undefined' && (window as any).__UNIFIED_AUDIO_ACTIVE) {
+    return null;
+  }
+  // If the old AudioManager is active, disable this legacy bridge to avoid conflicts
   if (typeof window !== 'undefined' && (window as any).__AUDIO_MANAGER_ACTIVE) {
     return null;
   }

@@ -91,57 +91,50 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
         data-tour-id="nav-toggle"
       >
         <div className="w-8 h-8 flex flex-col justify-center items-center relative">
-          {/* White hamburger lines - Only when closed */}
-          <div 
-            style={{ display: isOpen ? 'none' : 'block' }}
-          >
-            {/* Top Line */}
-            <div
-              className="w-7 h-1 absolute bg-white -translate-y-2.5"
-              style={{
-                boxShadow: "0 0 12px rgba(255, 255, 255, 1), 0 0 24px rgba(255, 255, 255, 0.8), 0 0 36px rgba(255, 255, 255, 0.6)",
-                animation: "neonPulse 2s ease-in-out infinite alternate"
-              }}
-            />
-            {/* Middle Line */}
-            <div
-              className="w-7 h-1 absolute bg-white"
-              style={{
-                boxShadow: "0 0 12px rgba(255, 255, 255, 1), 0 0 24px rgba(255, 255, 255, 0.8), 0 0 36px rgba(255, 255, 255, 0.6)",
-                animation: "neonPulse 2s ease-in-out infinite alternate"
-              }}
-            />
-            {/* Bottom Line */}
-            <div
-              className="w-7 h-1 absolute bg-white translate-y-2.5"
-              style={{
-                boxShadow: "0 0 12px rgba(255, 255, 255, 1), 0 0 24px rgba(255, 255, 255, 0.8), 0 0 36px rgba(255, 255, 255, 0.6)",
-                animation: "neonPulse 2s ease-in-out infinite alternate"
-              }}
-            />
-          </div>
-          
-          {/* Yellow X lines - Only when open */}
-          <div 
-            style={{ display: isOpen ? 'block' : 'none' }}
-          >
-            {/* Top X Line */}
-            <div
-              className="w-7 h-1 absolute rotate-45 bg-yellow-400"
-              style={{
-                boxShadow: "0 0 12px rgba(255, 255, 0, 1), 0 0 24px rgba(255, 255, 0, 0.8), 0 0 36px rgba(255, 255, 0, 0.6)",
-                animation: "neonPulseYellow 2s ease-in-out infinite alternate"
-              }}
-            />
-            {/* Bottom X Line */}
-            <div
-              className="w-7 h-1 absolute -rotate-45 bg-yellow-400"
-              style={{
-                boxShadow: "0 0 12px rgba(255, 255, 0, 1), 0 0 24px rgba(255, 255, 0, 0.8), 0 0 36px rgba(255, 255, 0, 0.6)",
-                animation: "neonPulseYellow 2s ease-in-out infinite alternate"
-              }}
-            />
-          </div>
+          {isOpen ? (
+            /* Yellow X - Only when open */
+            <>
+              <div
+                className="w-7 h-1 absolute rotate-45 bg-yellow-400"
+                style={{
+                  boxShadow: "0 0 12px rgba(255, 255, 0, 1), 0 0 24px rgba(255, 255, 0, 0.8), 0 0 36px rgba(255, 255, 0, 0.6)",
+                  animation: "neonPulseYellow 2s ease-in-out infinite alternate"
+                }}
+              />
+              <div
+                className="w-7 h-1 absolute -rotate-45 bg-yellow-400"
+                style={{
+                  boxShadow: "0 0 12px rgba(255, 255, 0, 1), 0 0 24px rgba(255, 255, 0, 0.8), 0 0 36px rgba(255, 255, 0, 0.6)",
+                  animation: "neonPulseYellow 2s ease-in-out infinite alternate"
+                }}
+              />
+            </>
+          ) : (
+            /* White hamburger lines - Only when closed */
+            <>
+              <div
+                className="w-7 h-1 absolute bg-white -translate-y-2.5"
+                style={{
+                  boxShadow: "0 0 12px rgba(255, 255, 255, 1), 0 0 24px rgba(255, 255, 255, 0.8), 0 0 36px rgba(255, 255, 255, 0.6)",
+                  animation: "neonPulse 2s ease-in-out infinite alternate"
+                }}
+              />
+              <div
+                className="w-7 h-1 absolute bg-white"
+                style={{
+                  boxShadow: "0 0 12px rgba(255, 255, 255, 1), 0 0 24px rgba(255, 255, 255, 0.8), 0 0 36px rgba(255, 255, 255, 0.6)",
+                  animation: "neonPulse 2s ease-in-out infinite alternate"
+                }}
+              />
+              <div
+                className="w-7 h-1 absolute bg-white translate-y-2.5"
+                style={{
+                  boxShadow: "0 0 12px rgba(255, 255, 255, 1), 0 0 24px rgba(255, 255, 255, 0.8), 0 0 36px rgba(255, 255, 255, 0.6)",
+                  animation: "neonPulse 2s ease-in-out infinite alternate"
+                }}
+              />
+            </>
+          )}
         </div>
       </button>
 
