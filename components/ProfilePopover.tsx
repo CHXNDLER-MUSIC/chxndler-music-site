@@ -896,7 +896,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                         setShowElementMenu(false);
                         try { sfx.play('flip', 0.6); } catch {}
                       }}
-                      className={`w-12 h-12 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 ${
+                      className={`w-10 h-10 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 ${
                         selectedImageUrl === element.url
                           ? 'border-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.6)]'
                           : 'border-white/30 hover:border-cyan-400/60'
@@ -1218,7 +1218,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                           setCurrentElementIndex(index);
                           try { sfx.play('click', 0.4); } catch {}
                         }}
-                        className={`relative aspect-square rounded-lg overflow-hidden transition-all duration-200 hover:scale-105 cursor-pointer ${
+                        className={`relative aspect-square rounded-lg overflow-hidden transition-all duration-200 hover:scale-105 cursor-pointer w-14 h-14 ${
                           isCurrentlyViewed 
                             ? 'border-2' 
                             : 'opacity-60 hover:opacity-80 border-0'

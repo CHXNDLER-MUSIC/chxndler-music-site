@@ -161,15 +161,15 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
         className="fixed inset-0 flex items-center justify-center"
         style={{
           zIndex: 2147483648,
-          marginTop: '-160px'
+          marginTop: '-220px'
         }}
       >
         <div
           className="welcome-hologram-container"
           style={{
             width: 'min(92vw, 700px)',
-            minHeight: '480px',
-            padding: '18px 14px 24px 14px',
+            minHeight: 'auto',
+            padding: '18px 14px 18px 14px',
             borderRadius: 18,
             background: 'rgba(0,0,0,0.6)',
             border: '1px solid rgba(0,255,255,0.55)',
@@ -238,7 +238,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
           style={{ 
             color: '#00FFFF', 
             textShadow: '0 0 8px rgba(0,255,255,0.6)', 
-            fontSize: '20px',
+            fontSize: '26px',
             fontWeight: 'bold'
           }}
         >
@@ -254,9 +254,9 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
           }}
         />
 
-        <p className="relative text-base mb-2 text-center" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.8), 0 0 16px rgba(0,255,255,0.6), 0 0 24px rgba(0,255,255,0.4)' }}>WELCOME TO THE HEARTVERSE {"<3"}</p>
+        <p className="relative text-lg mb-2 text-center" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.8), 0 0 16px rgba(0,255,255,0.6), 0 0 24px rgba(0,255,255,0.4)' }}>WELCOME TO THE <span style={{ color: '#FF69B4', textShadow: '0 0 8px rgba(255,105,180,0.8), 0 0 16px rgba(255,105,180,0.6), 0 0 24px rgba(255,105,180,0.4)' }}>HEARTVERSE</span> <span style={{ color: '#FF69B4', textShadow: '0 0 8px rgba(255,105,180,0.8), 0 0 16px rgba(255,105,180,0.6), 0 0 24px rgba(255,105,180,0.4)' }}>{"<3"}</span></p>
         
-        <p className="relative text-base mb-3" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.6)' }}>CONNECT WITH OTHER ALIENS AND RECEIVE SIGNALS FOR EARLY RELEASES, SECRET TRANSMISSIONS AND EXCLUSIVE EVENTS.</p>
+        <p className="relative text-lg mb-3" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.6)', marginLeft: '20px' }}>CONNECT WITH OTHER ALIENS AND RECEIVE SIGNALS FOR EARLY RELEASES, SECRET TRANSMISSIONS AND EXCLUSIVE EVENTS.</p>
 
         {error && (
           <div className="relative mb-2 rounded-md bg-red-50/10 border border-red-200/40 p-2 text-sm text-red-200">
@@ -264,7 +264,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
           </div>
         )}
 
-        <div className="relative space-y-1 -mb-2">
+        <div className="relative space-y-1" style={{ marginLeft: '20px' }}>
 
           {/* Email Login Section */}
           <form onSubmit={signInWithEmail} className="space-y-2">
@@ -276,7 +276,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
               placeholder="you@example.com"
               required
               disabled={loading}
-              className="block w-full rounded-md border px-3 py-3 text-base shadow-sm focus:outline-none disabled:opacity-50"
+              className="block w-full rounded-md border px-3 py-3 text-lg shadow-sm focus:outline-none disabled:opacity-50"
               style={{
                 border: '1px solid rgba(0,255,255,0.4)',
                 background: 'rgba(0,0,0,0.3)',
@@ -288,7 +288,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
           </form>
           
           {/* Single Send Heart Signal Button */}
-          <div className="flex justify-center mt-2">
+          <div className="flex justify-center" style={{ marginTop: '12px' }}>
             <button
               onClick={() => {
                 if (email.length > 0 && !message) {
@@ -296,7 +296,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
                 }
               }}
               disabled={loading || email.length === 0}
-              className="inline-flex items-center justify-center rounded-lg px-8 py-3 text-base font-medium transition disabled:opacity-50 mb-2"
+              className="inline-flex items-center justify-center rounded-lg px-8 py-3 text-lg font-medium transition disabled:opacity-50"
             style={message ? {
               background: 'rgba(0,255,0,0.2)',
               border: '1px solid rgba(0,255,0,0.6)',

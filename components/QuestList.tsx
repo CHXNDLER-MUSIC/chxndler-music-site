@@ -5,6 +5,7 @@ import { sfx } from "@/lib/sfx";
 import SoulStareModal from "./SoulStareModal";
 import { hasAnsweredToday, getTodaysQuestion } from "@/lib/dailyQuestions";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { useProfile } from "@/contexts/ProfileContext";
 
 type Props = {
   onBack: () => void;
@@ -79,6 +80,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const { questStatus, setQuestStatus, todaysElement, todaysQuestion } = useQuestStatus();
+  const { refreshProfile } = useProfile();
 
   // Check authentication status
   useEffect(() => {
@@ -216,6 +218,12 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
         const today = new Date().toDateString();
         localStorage.setItem(`quest_invite_confirm_${today}`, 'true');
         showCelebration("💕 Love shared! You've planted a seed of connection. +1 HeartCoin earned.");
+        
+        // Refresh profile to update heartcoin balance if the response indicates we should
+        if (data.shouldRefreshProfile) {
+          console.debug('🔄 Refreshing profile to update heartcoin balance after bonus quest completion');
+          await refreshProfile();
+        }
       } else {
         const errorData = await response.json();
         console.error('Bonus quest completion failed:', errorData);

@@ -296,7 +296,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
             style={{
               width: 'min(92vw, 700px)',
               maxWidth: '700px',
-              minHeight: 'auto',
+              minHeight: '500px',
               maxHeight: '90vh',
               padding: '10px 14px 24px 14px',
               borderRadius: 18,
@@ -395,7 +395,6 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                       lineHeight: 1.3, 
                       fontSize: 13, 
                       color: '#FF69B4', 
-                      textShadow: '0 0 5px #FF69B4, 0 0 10px #FF69B4, 0 0 15px #FF69B4, 0 0 20px #FF1493', 
                       marginTop: '4px' 
                     }}
                   >

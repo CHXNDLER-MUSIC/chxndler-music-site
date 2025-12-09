@@ -353,20 +353,6 @@ export default function JoinAliens({ visible = true } = {}) {
         </div>
       )}
 
-      {message && (
-        <div style={{
-          padding: '12px',
-          marginBottom: '16px',
-          background: 'rgba(0, 255, 0, 0.1)',
-          border: '1px solid rgba(0, 255, 0, 0.3)',
-          borderRadius: '8px',
-          color: '#4ade80',
-          fontSize: '14px',
-          textAlign: 'center'
-        }}>
-          {message}
-        </div>
-      )}
 
       {/* Phone Number Input */}
       {showPhoneForm && (

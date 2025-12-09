@@ -17,20 +17,40 @@ export async function awardHeartCoins(
   reason: string,
   metadata: Record<string, any> = {}
 ): Promise<void> {
-  const { error } = await supabaseClient
+  console.debug('🪙 Attempting to award HeartCoins:', { userId, amount, reason, metadata });
+  
+  const { data, error } = await supabaseClient
     .from('heartcoin_transactions')
     .insert({
       user_id: userId,
       amount: amount,
-      reason: reason,
+      transaction_type: 'bonus',
+      description: reason,
       metadata: metadata,
       created_at: new Date().toISOString()
-    });
+    })
+    .select('id')
+    .single();
+
+  console.debug('🪙 HeartCoin award response:', { data, error });
 
   if (error) {
-    console.error('Failed to award HeartCoins:', error);
-    throw new Error(`Failed to award HeartCoins: ${error.message}`);
+    console.error('Failed to award HeartCoins (Supabase error):', error);
+    const message =
+      typeof error === 'string'
+        ? error
+        : 'message' in error
+        ? (error as any).message
+        : JSON.stringify(error);
+    throw new Error(`Failed to award HeartCoins: ${message}`);
   }
+
+  if (!data) {
+    console.error('Failed to award HeartCoins: No data returned from insert');
+    throw new Error('Failed to award HeartCoins: No data returned from insert');
+  }
+
+  console.debug('✅ Successfully awarded HeartCoins:', { transactionId: data.id, userId, amount, reason });
 }
 
 /**

@@ -54,10 +54,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // Force profile refresh event to update UI with new heartcoin balance
+    console.log(`✅ Bonus quest '${questKey}' completed successfully for user ${userId}`, { rewards: result.rewards });
+
     return NextResponse.json({
       success: true,
       message: result.message,
-      rewards: result.rewards
+      rewards: result.rewards,
+      shouldRefreshProfile: true
     });
 
   } catch (error) {

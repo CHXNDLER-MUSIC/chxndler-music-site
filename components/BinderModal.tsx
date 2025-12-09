@@ -861,9 +861,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     const collectedCard = profile?.cards?.[index];
                     const hasCard = !!collectedCard?.cards;
                     
-                    // Use binder_slots to determine locked slots
-                    const binderSlots = profile?.binder_slots ?? 0;
-                    const isLockedSlot = index >= binderSlots;
+                    // Use card_slots to determine locked slots
+                    const cardSlots = profile?.card_slots ?? 0;
+                    const isLockedSlot = index >= cardSlots;
                     
                     // Show CHXNDLER card in first slot if no card is there
                     const isFirstSlotWithChxndler = index === 0 && !hasCard;
@@ -1030,8 +1030,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                 <div className="grid gap-2 grid-cols-5 mt-1 px-2 pt-2 pb-0 place-items-center">
                   {Array.from({ length: 5 }, (_, index) => {
                     const slotIndex = index + 5; // Slots 5-9
-                    const binderSlots = profile?.binder_slots ?? 0;
-                    const isLockedSlot = slotIndex >= binderSlots;
+                    const cardSlots = profile?.card_slots ?? 0;
+                    const isLockedSlot = slotIndex >= cardSlots;
                     const collectedCard = profile?.cards?.[slotIndex];
                     const hasCard = !!collectedCard?.cards;
                     

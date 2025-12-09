@@ -370,33 +370,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         // Play button beam effect  
         await playAudioOnce(SFX.BUTTON_BEAM);
         
-        // After warp completes, play welcome message through the main audio player
-        const welcomeTrackId = isLoggedIn ? 'welcome-back' : 'welcome-to-the-heartverse';
-        await api.playTrack(welcomeTrackId);
-        
-        // After welcome message completes, automatically start playing the first available track
-        // Wait for welcome to finish, then auto-play first song
-        const currentAudio = audioRef.current;
-        if (currentAudio) {
-          const onWelcomeEnd = () => {
-            currentAudio.removeEventListener('ended', onWelcomeEnd);
-            // Find the first available track to auto-play
-            const firstTrackId = Object.keys(TRACK_INFO).find(id => 
-              id !== 'welcome-to-the-heartverse' && 
-              id !== 'welcome-back' && 
-              id !== 'space-music'
-            );
-            if (firstTrackId) {
-              // Auto-play the first song after a brief pause
-              setTimeout(() => {
-                api.playTrack(firstTrackId).catch(err => {
-                  console.error('Failed to auto-play first track:', err);
-                });
-              }, 500);
-            }
-          };
-          currentAudio.addEventListener('ended', onWelcomeEnd, { once: true });
-        }
+        // After warp completes, auto-play space music which is the default song for the homepage
+        // This matches the ambient space music that the play/pause button controls
+        await api.playTrack('space-music');
         
       } catch (err) {
         console.error('Failed to play start sequence:', err);

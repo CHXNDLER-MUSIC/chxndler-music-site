@@ -2022,7 +2022,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     >
                                       {(profile?.id ? heartCoins : 0) >= card.physicalCost 
                                         ? 'You can purchase this card!' 
-                                        : 'You need more heart coins'}
+                                        : ''}
                                     </div>
 
                                     <button 
@@ -2124,7 +2124,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     >
                                       {(profile?.id ? heartCoins : 0) >= card.physicalCost 
                                         ? 'You can purchase this card!' 
-                                        : 'You need more heart coins'}
+                                        : ''}
                                     </div>
 
                                     <button 
@@ -2220,7 +2220,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     >
                                       {(profile?.id ? heartCoins : 0) >= card.digitalCost 
                                         ? 'You can purchase this card!' 
-                                        : 'You need more heart coins'}
+                                        : ''}
                                     </div>
 
                                     <button 
@@ -2310,7 +2310,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     >
                                       {(profile?.id ? heartCoins : 0) >= card.physicalCost 
                                         ? 'You can purchase this card!' 
-                                        : 'You need more heart coins'}
+                                        : ''}
                                     </div>
 
                                     <button 

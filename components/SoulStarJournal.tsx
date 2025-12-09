@@ -901,7 +901,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               <textarea
                 value={soulStarText}
                 onChange={(e) => setSoulStarText(e.target.value)}
-                placeholder={(!user?.id || !profile?.element) ? "Cast into the stars" : "Let your Soul Star speak…"}
+                placeholder={(!user?.id || !profile?.element) ? "Let your Soul speak..." : "Let your Soul Star speak…"}
                 className="w-full h-16 p-2 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
                 disabled={isSaving || journalState.isSubmitted}
                 style={{
@@ -968,11 +968,11 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   }}
                   className="px-6 py-1 rounded-lg font-semibold transition-all duration-200"
                   style={{
-                    background: '#F9188010',
-                    border: '2px solid #F9188060',
-                    color: '#F91880',
-                    textShadow: '0 0 8px #F91880',
-                    boxShadow: '0 0 15px #F91880, 0 0 25px #F91880'
+                    background: '#F2EF1D10',
+                    border: '2px solid #F2EF1D60',
+                    color: '#F2EF1D',
+                    textShadow: '0 0 8px #F2EF1D',
+                    boxShadow: '0 0 15px #F2EF1D, 0 0 25px #F2EF1D'
                   }}
                 >
                   Create an{' '}
@@ -1010,7 +1010,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 >
                   {journalState.isSubmitted
                     ? 'Your soul star shines above'
-                    : (isSaving ? 'CASTING...' : 'Cast into the Stars')}
+                    : (isSaving ? 'CASTING...' : 'CAST INTO THE STARS')}
                 </button>
               )}
             </div>
