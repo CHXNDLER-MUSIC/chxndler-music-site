@@ -2516,9 +2516,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 />
               ) : null}
             </div>
-            {/* Hidden MediaPlayer for audio functionality only (mount only when a song is selected/pending) */}
+            {/* MediaPlayer with visible controls (mount only when a song is selected/pending) */}
             {(userSelected || pendingTrackPlay) ? (
-            <div className="hidden">
+            <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 pointer-events-auto">
               {MediaPlayer && <MediaPlayer
                 onSkyChange={(webm, mp4, key) => setNextSky({ webm, mp4, key })}
                 onPlayingChange={(p) => { 

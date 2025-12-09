@@ -212,7 +212,11 @@ export default function JoinAliens({ visible = true } = {}) {
       setTimeout(() => {
         setError(null);
         setMessage(null);
-        setStatus("idle");
+        // Don't reset status to idle if user is not logged in and heart signal was sent
+        // Keep the "Create your ALIEN profile" button visible
+        if (user && profile) {
+          setStatus("idle");
+        }
       }, 3000);
 
     } catch (e) {
@@ -417,35 +421,52 @@ export default function JoinAliens({ visible = true } = {}) {
           width: '100%',
           padding: '12px 24px',
           background: 'transparent',
-          border: status === "saved"
+          border: status === "saved" && heartSignalSent && !user
+            ? '2px solid #F2EF1D'  // Neon yellow for "Create your ALIEN profile"
+            : status === "saved"
             ? '2px solid #00FF00'
-            : status === "saving" || !isValidPhone 
+            : status === "saving" || (!heartSignalSent && !isValidPhone) 
               ? '2px solid rgba(128, 128, 128, 0.3)' 
               : '2px solid #00FFFF',
           borderRadius: '8px',
-          color: status === "saved"
+          color: status === "saved" && heartSignalSent && !user
+            ? '#F2EF1D'  // Neon yellow text for "Create your ALIEN profile"
+            : status === "saved"
             ? '#00FF00'
-            : status === "saving" || !isValidPhone 
+            : status === "saving" || (!heartSignalSent && !isValidPhone) 
               ? 'rgba(128, 128, 128, 0.7)' 
               : '#00FFFF',
           fontSize: '16px',
           fontWeight: '600',
           cursor: status === "saving" || !isValidPhone ? 'not-allowed' : 'pointer',
           transition: 'all 300ms ease',
-          boxShadow: status === "saved"
+          boxShadow: status === "saved" && heartSignalSent && !user
+            ? '0 0 15px rgba(242, 239, 29, 0.5)'  // Neon yellow glow for "Create your ALIEN profile"
+            : status === "saved"
             ? '0 0 15px rgba(0, 255, 0, 0.3)'
-            : status === "saving" || !isValidPhone 
+            : status === "saving" || (!heartSignalSent && !isValidPhone) 
               ? 'none' 
               : '0 0 15px rgba(0, 255, 255, 0.3)',
-          textShadow: status === "saved"
+          textShadow: status === "saved" && heartSignalSent && !user
+            ? '0 0 10px #F2EF1D, 0 0 20px #F2EF1D, 0 0 30px #F2EF1D'  // Neon yellow text glow
+            : status === "saved"
             ? '0 0 10px #00FF00, 0 0 20px #00FF00, 0 0 30px #00FF00'
-            : status === "saving" || !isValidPhone 
+            : status === "saving" || (!heartSignalSent && !isValidPhone) 
               ? 'none' 
               : '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF',
           outline: 'none'
         }}
         onMouseEnter={(e) => {
-          if (status !== "saving" && isValidPhone && status !== "saved") {
+          if (status === "saved" && heartSignalSent && !user) {
+            // Yellow hover effects for "Create your ALIEN profile" button
+            e.target.style.transform = 'translateY(-2px)';
+            e.target.style.background = 'rgba(242, 239, 29, 0.15)';
+            e.target.style.boxShadow = '0 0 40px rgba(242, 239, 29, 0.8), 0 0 60px rgba(242, 239, 29, 0.4), inset 0 0 30px rgba(242, 239, 29, 0.2)';
+            e.target.style.textShadow = '0 0 15px #F2EF1D, 0 0 25px #F2EF1D, 0 0 35px #F2EF1D, 0 0 45px #F2EF1D';
+            e.target.style.borderColor = '#F2EF1D';
+            try { sfx.play('hover.mp3', 0.3); } catch {}
+          } else if (status !== "saving" && isValidPhone && status !== "saved") {
+            // Cyan hover effects for normal state
             e.target.style.transform = 'translateY(-2px)';
             e.target.style.background = 'rgba(0, 255, 255, 0.15)';
             e.target.style.boxShadow = '0 0 40px rgba(0, 255, 255, 0.8), 0 0 60px rgba(0, 255, 255, 0.4), inset 0 0 30px rgba(0, 255, 255, 0.2)';
@@ -455,7 +476,15 @@ export default function JoinAliens({ visible = true } = {}) {
           }
         }}
         onMouseLeave={(e) => {
-          if (status !== "saving" && isValidPhone && status !== "saved") {
+          if (status === "saved" && heartSignalSent && !user) {
+            // Reset to yellow style for "Create your ALIEN profile" button
+            e.target.style.transform = 'translateY(0)';
+            e.target.style.background = 'transparent';
+            e.target.style.boxShadow = '0 0 15px rgba(242, 239, 29, 0.5)';
+            e.target.style.textShadow = '0 0 10px #F2EF1D, 0 0 20px #F2EF1D, 0 0 30px #F2EF1D';
+            e.target.style.borderColor = '#F2EF1D';
+          } else if (status !== "saving" && isValidPhone && status !== "saved") {
+            // Reset to cyan style for normal state
             e.target.style.transform = 'translateY(0)';
             e.target.style.background = 'transparent';
             e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';

@@ -156,12 +156,18 @@ const NeonWaveform: React.FC<NeonWaveformProps> = ({ audioUrl, element }) => {
   }, []);
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex flex-col items-center gap-3" style={{ marginTop: '12px' }}>
       <canvas
         ref={canvasRef}
-        width={600}
+        width={1600}
         height={120}
         className="w-full rounded-xl border border-white/10 bg-transparent"
+        style={{ 
+          maxWidth: 'none',
+          width: '250%',
+          marginLeft: '0',
+          marginRight: '-150%'
+        }}
       />
       <audio ref={audioRef} src={audioUrl} controls className="w-full" />
     </div>

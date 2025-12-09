@@ -1157,19 +1157,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           {/* Tab Content */}
           {activeTab === 'EARN' && (
             <>
-              {/* Description Text */}
-              <div 
-                className="text-base text-center mb-3"
-                style={{ 
-                  color: '#FFFFFF', 
-                  textShadow: '0 0 4px rgba(255,255,255,0.8)', 
-                  fontSize: '14px',
-                  lineHeight: 1.3
-                }}
-              >
-                Heart coins are the energy of the Heartverse. You earn them by exploring, connecting and showing up.
-              </div>
-
               {/* Earn Sub-tabs */}
               <div className="flex justify-center mb-3 space-x-3">
                 {(['DAILY QUESTS', 'BONUS QUESTS'] as const).map((tab) => (
@@ -1208,6 +1195,19 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     {tab}
                   </button>
                 ))}
+              </div>
+
+              {/* Description Text */}
+              <div 
+                className="text-base text-center mb-3"
+                style={{ 
+                  color: '#FFFFFF', 
+                  textShadow: '0 0 4px rgba(255,255,255,0.8)', 
+                  fontSize: '14px',
+                  lineHeight: 1.3
+                }}
+              >
+                Heart coins are the energy of the Heartverse. You earn them by exploring, connecting and showing up.
               </div>
 
           {/* Daily Quests Tab Content */}

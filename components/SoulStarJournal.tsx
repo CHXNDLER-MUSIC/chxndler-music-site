@@ -208,7 +208,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       setIsSaving(true);
       setError("");
       setSuccessMessage("");
-      sfx.play('click', 0.8);
+      sfx.play('star', 0.8);
 
       // Use ProfileContext's saveJournalEntry which handles upsert properly
       const result = await saveJournalEntry({
@@ -939,31 +939,31 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               {/* Cast into the Stars Button - centered */}
               {(!user?.id || !profile?.element) ? (
                 <button
-                  onClick={handleSaveEntry}
+                  onClick={showLoginPrompt ? () => {
+                    sfx.play('button', 0.8);
+                    console.log('🔥 ALIEN profile button clicked!');
+                    onClose();
+                    if (openWelcomeHome) {
+                      console.log('🚀 Calling openWelcomeHome()');
+                      openWelcomeHome();
+                    } else {
+                      console.log('❌ openWelcomeHome not available');
+                    }
+                  } : handleSaveEntry}
                   className="px-6 py-1 rounded-lg font-semibold transition-all duration-200"
                   style={{
-                    background: `${elementTheme.color}10`,
-                    border: `2px solid ${elementTheme.color}60`,
-                    color: elementTheme.color,
-                    textShadow: `0 0 4px ${elementTheme.glow}`
+                    background: showLoginPrompt ? '#F9188010' : `${elementTheme.color}10`,
+                    border: showLoginPrompt ? '2px solid #F9188060' : `2px solid ${elementTheme.color}60`,
+                    color: showLoginPrompt ? '#F91880' : elementTheme.color,
+                    textShadow: showLoginPrompt ? '0 0 8px #F91880' : `0 0 4px ${elementTheme.glow}`,
+                    boxShadow: showLoginPrompt ? '0 0 15px #F91880, 0 0 25px #F91880' : 'none'
                   }}
                 >
                   {showLoginPrompt ? (
                     <>
                       Create an{' '}
                       <span
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          console.log('🔥 ALIEN profile button clicked!');
-                          onClose();
-                          if (openWelcomeHome) {
-                            console.log('🚀 Calling openWelcomeHome()');
-                            openWelcomeHome();
-                          } else {
-                            console.log('❌ openWelcomeHome not available');
-                          }
-                        }}
-                        className="underline cursor-pointer hover:opacity-80"
+                        className="underline"
                         style={{
                           textDecoration: 'underline',
                           textUnderlineOffset: '2px'
