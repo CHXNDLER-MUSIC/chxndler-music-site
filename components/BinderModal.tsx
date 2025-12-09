@@ -776,8 +776,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                 <div 
                   className="rounded-3xl shadow-2xl cursor-pointer"
                   style={{
-                    width: 'min(650px, 90vw)',
-                    height: 'min(450px, 60vh)',
+                    width: 'min(300px, 60vw)',
+                    height: 'min(220px, 35vh)',
                     boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
                     border: '2px solid rgba(255,255,255,0.1)',
                     borderRadius: '24px',
