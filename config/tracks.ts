@@ -79,7 +79,7 @@ const RAW: Omit<Track, "slug" | "type" | "subtitle">[] = [
     { time: 149.8, label: "Bridge", kind: "bridge" },
     { time: 165.4, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "WE'RE JUST FRIENDS (mickey jas Remix)", spotify:"https://open.spotify.com/track/28wYsy2LrfVUT5glavy7hJ", apple:"https://music.apple.com/us/album/were-just-friends-mickey-jas-remix/1785153493?i=1785153499", cover:"/covers/WE'RE JUST FRIENDS (MICKEY JAS REMIX).webp", src: "/tracks/we're-just-friends-mickey-jas-remix.mp3", sections: [
+  { title: "WE'RE JUST FRIENDS (mickey jas Remix)", spotify:"https://open.spotify.com/track/28wYsy2LrfVUT5glavy7hJ", apple:"https://music.apple.com/us/album/were-just-friends-mickey-jas-remix/1785153493?i=1785153499", cover:"/covers/WE'RE JUST FRIENDS (MICKEY JAS REMIX).webp", src: "/tracks/we're-just-friends-mickey-jas-remix.opus", sections: [
     { time: 16.2, label: "Build Up", kind: "verse" },
     { time: 48.9, label: "Drop 1", kind: "chorus" },
     { time: 81.5, label: "Break", kind: "verse" },
@@ -94,7 +94,7 @@ const RAW: Omit<Track, "slug" | "type" | "subtitle">[] = [
     { time: 140.5, label: "Bridge", kind: "bridge" },
     { time: 156.1, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "WE'RE JUST FRIENDS",                  spotify:"https://open.spotify.com/track/2IffMAupdw2alpsISKFs8y", apple:"https://music.apple.com/us/album/were-just-friends/1662517763?i=1662517764", cover:"/covers/WE'RE JUST FRIENDS.webp", src: "/tracks/we're-just-friends.mp3", sections: [
+  { title: "WE'RE JUST FRIENDS",                  spotify:"https://open.spotify.com/track/2IffMAupdw2alpsISKFs8y", apple:"https://music.apple.com/us/album/were-just-friends/1662517763?i=1662517764", cover:"/covers/WE'RE JUST FRIENDS.webp", src: "/tracks/we're-just-friends.opus", sections: [
     { time: 13.8, label: "Verse 1", kind: "verse" },
     { time: 44.5, label: "Chorus 1", kind: "chorus" },
     { time: 75.2, label: "Verse 2", kind: "verse" },
@@ -125,7 +125,7 @@ const RAW: Omit<Track, "slug" | "type" | "subtitle">[] = [
     { time: 148.7, label: "Bridge", kind: "bridge" },
     { time: 164.4, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "WE'RE JUST FRIENDS (DMVRCO Remix)",   spotify:"https://open.spotify.com/track/1WfJUtDFUiz0rUdlGfLQBA", apple:"https://music.apple.com/us/album/were-just-friends-dmvrco-remix/1680307531?i=1680307532", cover:"/covers/WE'RE JUST FRIENDS (DMVRCO REMIX).webp", src: "/tracks/we're-just-friends-dmvrco-remix.mp3", sections: [
+  { title: "WE'RE JUST FRIENDS (DMVRCO Remix)",   spotify:"https://open.spotify.com/track/1WfJUtDFUiz0rUdlGfLQBA", apple:"https://music.apple.com/us/album/were-just-friends-dmvrco-remix/1680307531?i=1680307532", cover:"/covers/WE'RE JUST FRIENDS (DMVRCO REMIX).webp", src: "/tracks/we're-just-friends-dmvrco-remix.opus", sections: [
     { time: 20.5, label: "Build Up", kind: "verse" },
     { time: 53.2, label: "Drop 1", kind: "chorus" },
     { time: 85.9, label: "Break", kind: "verse" },

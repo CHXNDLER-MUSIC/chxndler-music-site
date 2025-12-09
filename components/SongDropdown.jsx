@@ -206,8 +206,8 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
       if (id) { 
         setActiveId(id);
         setOpen(false);
-        // Use onChange to trigger proper warp sequence
-        onChange?.(id);
+        // Audio is handled by parent component via onChange callback
+        if (onChange) onChange(id);
       }
       // Clear hover state
       try { playerStore.getState().setHover(null); } catch {}
@@ -414,14 +414,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                   setActiveId(s.id);
                   setOpen(false);
                   
-                  // Trigger centralized audio sequence: stopAll → warp → button → selected song
-                  try {
-                    const key = trackKeyFromSlug(s.id);
-                    if (key) {
-                      void audioManager.playSongSequence(key);
-                    }
-                  } catch {}
-                  // Still notify parent to update UI state (planets, etc.)
+                  // Audio is handled by parent component via onChange callback
                   if (onChange) onChange(s.id);
                   
                   try { 

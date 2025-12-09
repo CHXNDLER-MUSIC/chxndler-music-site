@@ -518,7 +518,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [statusType, setStatusType] = useState<'idle' | 'success' | 'error'>('idle');
   
   // Bonus quests hook
-  const { bonusQuests, loading: bonusQuestsLoading, error: bonusQuestsError, isLoggedIn, completeQuest } = useBonusQuests();
+  const { quests: bonusQuests, status: bonusQuestsStatus, errorMessage: bonusQuestsError, isLoggedIn, completeQuest } = useBonusQuests();
 
   // Get today's element (rotate daily)
   const getTodaysElement = () => {
@@ -1270,10 +1270,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           {/* Bonus Quests Tab Content */}
           {activeEarnTab === 'BONUS QUESTS' && (
             <div className="mb-4">
-              {bonusQuestsLoading ? (
+              {bonusQuestsStatus === 'loading' ? (
                 <div className="text-center text-white py-4">Loading bonus quests...</div>
-              ) : bonusQuestsError ? (
-                <div className="text-center text-red-400 py-4">Error loading quests: {bonusQuestsError}</div>
+              ) : bonusQuestsStatus === 'error' ? (
+                <div className="text-center text-red-400/70 py-4 text-sm">
+                  Unable to load bonus quests
+                </div>
               ) : bonusQuests.length === 0 ? (
                 <div className="text-center text-white/60 py-4">No bonus quests available</div>
               ) : (
@@ -2128,7 +2130,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       CONFIRM ORDER
                                     </button>
                                   </div>
-                                ) : (
+                                ) : showDigitalForm ? (
                                   /* Digital Purchase Form */
                                   <div className="text-center">
                                     {/* User and Cost - Side by Side */}
@@ -2224,7 +2226,103 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       CONFIRM
                                     </button>
                                   </div>
-                                )}
+                                ) : showPhysicalConfirm ? (
+                                  /* Physical Purchase Form - Same as Digital */
+                                  <div className="text-center">
+                                    {/* User and Cost - Side by Side */}
+                                    <div className="flex justify-between items-start mb-3">
+                                      {/* User Section */}
+                                      <div className="flex flex-col items-center flex-1">
+                                        <div 
+                                          className="font-bold text-white text-lg mb-3"
+                                          style={{
+                                            textShadow: '0 0 4px rgba(255,255,255,0.6)'
+                                          }}
+                                        >
+                                          User
+                                        </div>
+                                        
+                                        {/* Current Heart Coins */}
+                                        <div className="flex flex-col items-center space-y-2">
+                                          <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
+                                          <div 
+                                            className="text-xl font-bold"
+                                            style={{ 
+                                              color: '#FFFFFF', 
+                                              textShadow: '0 0 6px rgba(255,255,255,0.8)' 
+                                            }}
+                                          >
+                                            {profile?.id ? heartCoins : 0}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      {/* Cost Section */}
+                                      <div className="flex flex-col items-center flex-1">
+                                        <div 
+                                          className="font-bold text-white text-lg mb-3"
+                                          style={{
+                                            textShadow: '0 0 4px rgba(255,255,255,0.6)'
+                                          }}
+                                        >
+                                          Cost
+                                        </div>
+                                        
+                                        <div className="flex flex-col items-center space-y-2">
+                                          <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
+                                          <div 
+                                            className="text-xl font-bold"
+                                            style={{ 
+                                              color: '#FFFFFF', 
+                                              textShadow: '0 0 6px rgba(255,255,255,0.8)' 
+                                            }}
+                                          >
+                                            {card.physicalCost}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Status Message */}
+                                    <div 
+                                      className="text-sm mb-4"
+                                      style={{ 
+                                        color: heartCoins >= card.physicalCost ? '#90EE90' : '#FF6B6B', 
+                                        textShadow: heartCoins >= card.physicalCost 
+                                          ? '0 0 4px rgba(144,238,144,0.8)' 
+                                          : '0 0 4px rgba(255,107,107,0.8)'
+                                      }}
+                                    >
+                                      {(profile?.id ? heartCoins : 0) >= card.physicalCost 
+                                        ? 'You can purchase this card!' 
+                                        : 'You need more heart coins'}
+                                    </div>
+
+                                    <button 
+                                      className="w-full px-4 py-2 rounded border transition-colors"
+                                      style={{ 
+                                        backgroundColor: (profile?.id ? heartCoins : 0) >= card.physicalCost 
+                                          ? 'rgba(0,255,0,0.2)' 
+                                          : 'rgba(255,0,0,0.2)',
+                                        borderColor: (profile?.id ? heartCoins : 0) >= card.physicalCost 
+                                          ? 'rgba(0,255,0,0.6)' 
+                                          : 'rgba(255,0,0,0.6)',
+                                        color: (profile?.id ? heartCoins : 0) >= card.physicalCost ? '#90EE90' : '#FF6B6B',
+                                        textShadow: (profile?.id ? heartCoins : 0) >= card.physicalCost 
+                                          ? '0 0 4px rgba(144,238,144,0.8)' 
+                                          : '0 0 4px rgba(255,107,107,0.8)',
+                                        fontWeight: 'bold'
+                                      }}
+                                      disabled={(profile?.id ? heartCoins : 0) < card.physicalCost}
+                                      onClick={() => {
+                                        try { sfx.play('click', 0.8); } catch {}
+                                        // Handle physical purchase logic here
+                                        console.log('Physical purchase confirmed');
+                                      }}
+                                    >
+                                      CONFIRM
+                                    </button>
+                                  </div>
+                                ) : null}
 
                                 {/* Purchase buttons */}
                                 <div className="flex gap-1 mt-2 flex-wrap">

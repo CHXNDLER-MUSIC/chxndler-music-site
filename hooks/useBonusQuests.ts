@@ -4,9 +4,9 @@ import { getBonusQuestsForUser, completeBonusQuest } from '@/lib/bonusQuests';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 
 interface UseBonusQuestsReturn {
-  bonusQuests: BonusQuestWithCompletion[];
-  loading: boolean;
-  error: string | null;
+  quests: BonusQuestWithCompletion[];
+  status: "idle" | "loading" | "success" | "error";
+  errorMessage: string | null;
   isLoggedIn: boolean;
   refetchQuests: () => Promise<void>;
   completeQuest: (quest: BonusQuestWithCompletion) => Promise<QuestCompletionResult>;
@@ -17,10 +17,12 @@ interface UseBonusQuestsReturn {
  * Handles fetching, caching, and completion of bonus quests for the current user
  */
 export function useBonusQuests(): UseBonusQuestsReturn {
-  const [bonusQuests, setBonusQuests] = useState<BonusQuestWithCompletion[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [quests, setQuests] = useState<BonusQuestWithCompletion[]>([]);
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [hasInitialLoad, setHasInitialLoad] = useState(false);
+  const [hasLoggedError, setHasLoggedError] = useState(false);
   const isLoggedIn = !!currentUserId;
 
   // Get current user (safe: don't error if not logged in)
@@ -45,20 +47,43 @@ export function useBonusQuests(): UseBonusQuestsReturn {
 
   // Fetch bonus quests for the current user
   const fetchQuests = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    setStatus("loading");
+    setErrorMessage(null);
 
     try {
+      // Add timeout to prevent infinite loading
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Request timeout')), 8000)
+      );
+      
       // Always fetch public quests; overlay completion if user exists
-      const quests = await getBonusQuestsForUser(currentUserId);
-      setBonusQuests(quests);
+      const questsData = await Promise.race([
+        getBonusQuestsForUser(currentUserId),
+        timeoutPromise
+      ]);
+      
+      setQuests(questsData);
+      setStatus("success");
+      setHasLoggedError(false); // Reset error logging flag on success
     } catch (error) {
-      console.error('Error fetching bonus quests:', error);
-      setError('Failed to load bonus quests');
+      // Only log error once per mount to prevent console spam
+      if (!hasLoggedError) {
+        console.error('Error fetching bonus quests:', error);
+        setHasLoggedError(true);
+      }
+      
+      setStatus("error");
+      // Use fallback error message to reduce noise
+      const errorMessage = error instanceof Error && error.message === 'Request timeout' 
+        ? 'Network timeout - bonus quests unavailable'
+        : 'Bonus quests temporarily unavailable';
+      setErrorMessage(errorMessage);
+      // Set empty array as fallback so UI continues to work
+      setQuests([]);
     } finally {
-      setLoading(false);
+      setHasInitialLoad(true);
     }
-  }, [currentUserId]);
+  }, [currentUserId, hasLoggedError]);
 
   // Fetch quests when user ID is available
   useEffect(() => {
@@ -109,9 +134,9 @@ export function useBonusQuests(): UseBonusQuestsReturn {
   }, [currentUserId, fetchQuests]);
 
   return {
-    bonusQuests,
-    loading,
-    error,
+    quests,
+    status,
+    errorMessage,
     isLoggedIn,
     refetchQuests: fetchQuests,
     completeQuest

@@ -31,8 +31,8 @@ export const TRACKS = {
   PARIS: { mp3: "/tracks/paris.mp3", opus: "/tracks/paris.opus" },
   POKEMON: { mp3: "/tracks/pokemon.mp3", opus: "/tracks/pokemon.opus" },
   WJF: { mp3: "/tracks/we're-just-friends.mp3", opus: "/tracks/we're-just-friends.opus" },
-  WJF_DMVRCO: { mp3: "/tracks/we're-just-friends-dmvrco-remix.mp3" },
-  WJF_MICKEY_JAS: { mp3: "/tracks/we're-just-friends-mickey-jas-remix.mp3" },
+  WJF_DMVRCO: { mp3: "/tracks/we're-just-friends-dmvrco-remix.mp3", opus: "/tracks/we're-just-friends-dmvrco-remix.opus" },
+  WJF_MICKEY_JAS: { mp3: "/tracks/we're-just-friends-mickey-jas-remix.mp3", opus: "/tracks/we're-just-friends-mickey-jas-remix.opus" },
   // Ambient / voiceover
   SPACE_MUSIC: { mp3: "/tracks/space-music.mp3", opus: "/tracks/space-music.opus" },
   WELCOME_TO_HEARTVERSE: { mp3: "/tracks/welcome-to-the-heartverse.mp3", opus: "/tracks/welcome-to-the-heartverse.opus" },

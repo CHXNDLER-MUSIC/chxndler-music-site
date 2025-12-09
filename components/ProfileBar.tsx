@@ -16,6 +16,7 @@ import { createPortal } from 'react-dom';
 import QuestList from '@/components/QuestList';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useProfile } from '@/contexts/ProfileContext';
+import { useAuth } from '@/app/providers/AuthProvider';
 import { useUIStore } from '@/store/useUIStore';
 import JoinUsPopup from '@/components/JoinUsPopup';
 import WelcomeHomeModal from '@/components/WelcomeHomeModal';
@@ -73,13 +74,13 @@ export default function ProfileBar({
   // ALL HOOKS MUST BE DECLARED BEFORE ANY EARLY RETURNS
   // Use global UI state for profile bar visibility
   const { hasEnteredHeartverse, warpFullyComplete, setWarpFullyComplete } = useUIState();
-  // Use ProfileContext for profile data
-  const { profile: contextProfile, loading, updateProfile, refreshProfile, isJournalOpen, setIsJournalOpen } = useProfile();
+  // Use shared contexts for auth and profile data
+  const { user, loading: authLoading } = useAuth();
+  const { profile: contextProfile, loading: profileLoading, updateProfile, refreshProfile, isJournalOpen, setIsJournalOpen } = useProfile();
   // Use UI store for name prompt
   const { openNamePrompt, openElementSelection } = useUIStore();
   const [elementDropdownOpen, setElementDropdownOpen] = useState(false);
   const [journalCompletedToday, setJournalCompletedToday] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [showSignInPopup, setShowSignInPopup] = useState(false);
   const [showLoginTooltip, setShowLoginTooltip] = useState(false);
   const [showWelcomeHome, setShowWelcomeHome] = useState(false);
@@ -148,10 +149,12 @@ export default function ProfileBar({
       name: contextProfile?.name,
       element: contextProfile?.element,
       profile_complete: contextProfile?.profile_complete,
-      loading: loading,
-      currentUser: currentUser?.id
+      profileLoading: profileLoading,
+      authLoading: authLoading,
+      hasUser: !!user,
+      userId: user?.id
     });
-  }, [contextProfile, loading, currentUser]);
+  }, [contextProfile, profileLoading, authLoading, user]);
 
 
   // Check if journal was completed today
@@ -197,37 +200,7 @@ export default function ProfileBar({
     }
   }, [isJournalOpen, contextProfile?.id]);
 
-  // Track authentication state
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabaseBrowser.auth.getUser();
-      console.log('ProfileBar: Initial user fetch:', { hasUser: !!user, userId: user?.id });
-      setCurrentUser(user);
-    };
-
-    getUser();
-
-    // Subscribe to auth changes
-    const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange(async (event, session) => {
-      console.log('ProfileBar: Auth state changed:', { 
-        event, 
-        hasUser: !!session?.user, 
-        userId: session?.user?.id,
-        userEmail: session?.user?.email 
-      });
-      setCurrentUser(session?.user ?? null);
-      
-      // If user just signed in, force a profile refresh to ensure UI updates
-      if (event === 'SIGNED_IN' && session?.user) {
-        console.log('ProfileBar: User signed in, forcing profile refresh...');
-        setTimeout(() => {
-          refreshProfile();
-        }, 500); // Small delay to ensure database is ready
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [refreshProfile]);
+  // Auth state is now handled by useAuth hook, no need for separate tracking
 
   // Handler for when journal gets completed
   const handleJournalCompleted = async () => {
@@ -428,10 +401,12 @@ export default function ProfileBar({
     return null;
   }
 
-  // Calculate variables for render - single source of truth
-  const isLoggedIn = !!currentUser;
+  // Calculate variables for render - single source of truth from shared contexts
+  const isLoggedIn = !!user;
+  const hasProfile = !!contextProfile && !!contextProfile.profile_complete;
   const currentElement = contextProfile?.element || savedAlienElement || null;
   const heartCoinBalance = contextProfile?.heartcoin_balance ?? 0;
+  const loading = authLoading || profileLoading;
 
   const currentElementData = ELEMENTS.find(e => e.name === currentElement) || ELEMENTS[0];
 
@@ -441,12 +416,14 @@ export default function ProfileBar({
     warpFullyComplete,
     hasEnteredHeartverse,
     hasUser: isLoggedIn,
-    hasProfile: !!contextProfile,
-    profileLoading: loading,
+    hasProfile: hasProfile,
+    authLoading: authLoading,
+    profileLoading: profileLoading,
+    loading: loading,
     heartCoinBalance,
     profileName: contextProfile?.name,
     profileElement: currentElement,
-    currentUserId: currentUser?.id,
+    userId: user?.id,
     timestamp: new Date().toISOString()
   });
 
@@ -455,7 +432,7 @@ export default function ProfileBar({
       className="fixed top-0 left-0 right-0 z-[300] h-16 bg-black/40 backdrop-blur-lg border-b border-white/20 transition-opacity duration-500 ease-in-out"
     >
       <div className="relative h-full">
-        {/* Hamburger Menu - Far Top Left - Show after entering Heartverse */}
+        {/* Hamburger Menu - Far Top Left */}
         <div className="absolute top-2 left-1 z-10">
           <GlowingHamburgerMenu
           onItemClick={(label) => {
@@ -504,11 +481,16 @@ export default function ProfileBar({
         />
         </div>
 
-        {/* Main Flex Layout - Three sections: Left, Center, Right */}
-        <div className="flex items-center justify-between h-full pl-16 pr-2 min-w-0">
-          {/* Left Side - Empty space (hamburger is absolutely positioned) */}
+        {/* Auth Button - Positioned separately with more space from hamburger, centered vertically */}
+        <div className="absolute top-1/2 -translate-y-1/2 left-16 z-10">
+          <AuthButton />
+        </div>
+
+        {/* Main Flex Layout - Center and Right */}
+        <div className="flex items-center justify-between h-full pl-52 pr-2 min-w-0">
+          {/* Left Side - Empty space (hamburger menu and auth button are absolutely positioned) */}
           <div className="flex items-center flex-1 min-w-0">
-            {/* Space for hamburger menu - no content here */}
+            {/* Space for hamburger menu and auth button - no content here */}
           </div>
 
           {/* Center Section - Middle pill UI */}
@@ -517,7 +499,7 @@ export default function ProfileBar({
             {/* Currently empty but structured for future pill UI */}
           </div>
 
-          {/* Right Side - Both HeartCoinButton and AuthButton */}
+          {/* Right Side - HeartCoinButton only */}
           <div className="flex items-center flex-shrink-0 mr-0 space-x-2">
             {/* Heart Coin Button with Count */}
             <div className="flex items-center space-x-0.5">
@@ -557,11 +539,6 @@ export default function ProfileBar({
               >
                 {heartCoinBalance}
               </span>
-            </div>
-
-            {/* Login/Name Button - Always show after entering Heartverse */}
-            <div className="relative">
-              <AuthButton />
             </div>
           </div>
         </div>
@@ -1263,7 +1240,7 @@ export default function ProfileBar({
       )}
 
       {/* Login Tooltip - Rendered outside profile bar */}
-      {(!currentUser || !contextProfile) && showLoginTooltip && typeof window !== 'undefined' && createPortal(
+      {(!user || !hasProfile) && showLoginTooltip && typeof window !== 'undefined' && createPortal(
         <div 
           data-tooltip="login-tooltip"
           className="fixed top-20 left-1/2 -translate-x-1/2 rounded-lg bg-black/90 px-4 py-3 text-sm text-white shadow-xl z-[9999] whitespace-nowrap"

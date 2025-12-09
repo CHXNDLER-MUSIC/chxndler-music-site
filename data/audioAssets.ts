@@ -50,7 +50,7 @@ export const AUDIO_ASSETS_BY_SLUG: Record<string, {
     ]
   },
   "we're-just-friends-mickey-jas-remix": {
-    src: "/tracks/we're-just-friends-mickey-jas-remix.mp3",
+    src: "/tracks/we're-just-friends-mickey-jas-remix.opus",
     cover: "/covers/WE'RE JUST FRIENDS (MICKEY JAS REMIX).webp",
     spotify: "https://open.spotify.com/track/28wYsy2LrfVUT5glavy7hJ",
     apple: "https://music.apple.com/us/album/were-just-friends-mickey-jas-remix/1785153493?i=1785153499",
@@ -77,7 +77,7 @@ export const AUDIO_ASSETS_BY_SLUG: Record<string, {
     ]
   },
   "we're-just-friends": {
-    src: "/tracks/we're-just-friends.mp3",
+    src: "/tracks/we're-just-friends.opus",
     cover: "/covers/WE'RE JUST FRIENDS.webp",
     spotify: "https://open.spotify.com/track/2IffMAupdw2alpsISKFs8y",
     apple: "https://music.apple.com/us/album/were-just-friends/1662517763?i=1662517764",
@@ -132,7 +132,7 @@ export const AUDIO_ASSETS_BY_SLUG: Record<string, {
     ]
   },
   "we're-just-friends-dmvrco-remix": {
-    src: "/tracks/we're-just-friends-dmvrco-remix.mp3",
+    src: "/tracks/we're-just-friends-dmvrco-remix.opus",
     cover: "/covers/WE'RE JUST FRIENDS (DMVRCO REMIX).webp",
     spotify: "https://open.spotify.com/track/1WfJUtDFUiz0rUdlGfLQBA",
     apple: "https://music.apple.com/us/album/were-just-friends-dmvrco-remix/1680307531?i=1680307532",

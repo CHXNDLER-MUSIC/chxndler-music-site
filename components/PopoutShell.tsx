@@ -32,7 +32,7 @@ export default function PopoutShell({ title, onClose, children, pageIndicator }:
             width: 'min(90vw, 650px)',
             height: 'auto',
             maxHeight: '95vh',
-            minHeight: '600px',
+            minHeight: '400px',
             display: 'flex',
             flexDirection: 'column',
             padding: '0px',
@@ -124,7 +124,7 @@ export default function PopoutShell({ title, onClose, children, pageIndicator }:
           />
 
           {/* Content container - exact copy from Binder */}
-          <div className="flex-1 relative overflow-hidden" style={{ maxHeight: 'calc(100% - 80px)' }}>
+          <div className="flex-1 relative overflow-hidden" style={{ maxHeight: 'calc(100% - 80px)', display: 'flex', alignItems: 'center' }}>
             {children}
           </div>
 

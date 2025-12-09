@@ -262,7 +262,7 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
               allow="autoplay *; encrypted-media *; clipboard-write"
               loading="lazy"
               width="100%"
-              height={amEmbedUrl ? appleEmbedHeight(amEmbedUrl) : 360}
+              height="400"
               style={{ border: 'none', display: 'block' }}
             />
           </div>
@@ -276,7 +276,7 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
           display: flex; align-items: center; justify-content: center; z-index: 2147483647;
         }
         .sp-popover {
-          position: relative; width: min(88vw, 420px);
+          position: relative; width: min(88vw, 600px);
           background: rgba(0,0,0,0.88);
           border: 1px solid rgba(29,185,84,0.6);
           border-radius: 14px; overflow: hidden;
@@ -296,7 +296,7 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
           display: flex; align-items: center; justify-content: center; z-index: 2147483647;
         }
         .am-popover {
-          position: relative; width: min(90vw, 600px);
+          position: relative; width: min(90vw, 600px); height: 400px;
           background: transparent; /* remove black fill */
           border: 1px solid rgba(255,59,48,0.6);
           border-radius: 14px; overflow: hidden;
@@ -311,7 +311,7 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
         .am-close:active { transform: scale(0.95); }
         @media (max-width: 768px) {
           .sp-popover { margin-top: -60px; }
-          .am-popover { margin-top: -120px; width: min(95vw, 500px); }
+          .am-popover { margin-top: -120px; width: min(95vw, 700px); }
         }
       `}</style>
     </>

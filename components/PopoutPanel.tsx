@@ -73,10 +73,11 @@ export default function PopoutPanel({
     <>
       {/* Hologram base glow */}
       <div 
-        className="fixed inset-0 z-[2147483646] flex items-center justify-center"
+        className="fixed inset-0 z-[2147483646] flex justify-center"
         style={{
           pointerEvents: 'none',
-          paddingTop: '0px'
+          alignItems: 'flex-start',
+          paddingTop: '20vh'
         }}
       >
         <div
@@ -256,7 +257,8 @@ export default function PopoutPanel({
       
       {/* Main popup */}
       <div 
-        className="fixed inset-0 z-[2147483647] flex items-center justify-center p-4"
+        className="fixed inset-0 z-[2147483647] flex justify-center p-4"
+        style={{ alignItems: 'flex-start', paddingTop: '20vh' }}
         onClick={handleBackdropClick}
       >
         <div

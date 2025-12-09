@@ -2,122 +2,55 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/app/providers/AuthProvider';
-import { supabaseBrowser } from '@/lib/supabase-browser';
+import { useProfile } from '@/contexts/ProfileContext';
 import { sfx } from '@/lib/sfx';
 import WelcomeHomeModal from '@/components/WelcomeHomeModal';
 import ProfilePopover from '@/components/ProfilePopover';
 import { useUIStore } from '@/store/useUIStore';
 import { ElementIcon } from '@/lib/elementIcons';
 
-interface ProfileData {
-  id: string;
-  name: string | null;
-  element: string | null;
-  profile_image_url: string | null;
-}
-
 export default function AuthButton() {
   const { user, loading: authLoading } = useAuth();
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [profileLoading, setProfileLoading] = useState(false);
+  const { profile, loading: profileLoading } = useProfile();
   const [showWelcomeHome, setShowWelcomeHome] = useState(false);
   const [showProfilePopover, setShowProfilePopover] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const { openNamePrompt, openElementSelection } = useUIStore();
 
-  // Fetch profile data when user changes
+  // Debug log auth and profile states
   useEffect(() => {
-    async function fetchProfile() {
-      if (!user) {
-        setProfile(null);
-        return;
-      }
-
-      setProfileLoading(true);
-      try {
-        const { data, error } = await supabaseBrowser
-          .from('profiles')
-          .select('id, name, element, profile_image_url')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          console.error('AuthButton: Error fetching profile:', error);
-          setProfile(null);
-        } else {
-          setProfile(data);
-        }
-      } catch (error) {
-        console.error('AuthButton: Error in fetchProfile:', error);
-        setProfile(null);
-      } finally {
-        setProfileLoading(false);
-      }
-    }
-
-    fetchProfile();
-  }, [user]);
-
-  // Listen for profile updates from other components
-  useEffect(() => {
-    const handleProfileUpdate = () => {
-      // Refetch profile when it's updated elsewhere
-      if (user) {
-        fetchProfile();
-      }
-    };
-
-    const fetchProfile = async () => {
-      if (!user) return;
-      
-      try {
-        const { data, error } = await supabaseBrowser
-          .from('profiles')
-          .select('id, name, element, profile_image_url')
-          .eq('id', user.id)
-          .single();
-
-        if (!error) {
-          setProfile(data);
-        }
-      } catch (error) {
-        console.error('AuthButton: Error refetching profile:', error);
-      }
-    };
-
-    // Listen for profile update events
-    window.addEventListener('auth:profile-updated', handleProfileUpdate);
-    window.addEventListener('profile:force-refresh', handleProfileUpdate);
-
-    return () => {
-      window.removeEventListener('auth:profile-updated', handleProfileUpdate);
-      window.removeEventListener('profile:force-refresh', handleProfileUpdate);
-    };
-  }, [user]);
+    console.log('DEBUG AuthButton state:', {
+      browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",
+      hasUser: !!user,
+      userId: user?.id,
+      hasProfile: !!profile,
+      profileName: profile?.name,
+      profileElement: profile?.element,
+      profileComplete: profile?.profile_complete,
+      authLoading,
+      profileLoading,
+      timestamp: new Date().toISOString()
+    });
+  }, [user, profile, authLoading, profileLoading]);
 
   // Get button display info
   const getButtonDisplayInfo = () => {
-    // Loading state
-    if (authLoading || profileLoading) {
+    // Loading state - but only show briefly
+    if ((authLoading || profileLoading) && user === undefined) {
       return { text: 'Loading...', mode: 'loading' as const };
     }
 
     // Mode A: Not logged in
     if (!user) {
-      return { text: 'Log in', mode: 'login' as const };
+      return { text: 'LOG IN', mode: 'login' as const };
     }
 
-    // Mode C: Logged in but missing name
-    if (!profile?.name) {
+    // Mode C: Logged in but missing name or profile is incomplete
+    if (!profile?.name || !profile?.profile_complete) {
       return { text: 'Finish setup', mode: 'setup' as const };
     }
 
-    // Mode B1: Logged in with name but no element - show name only
-    if (!profile?.element) {
-      return { text: profile.name, mode: 'setup' as const };
-    }
-
-    // Mode B2: Logged in with complete profile - show name only (icon will be separate)
+    // Mode B: Complete profile - show name (icon will be separate)
     return { 
       text: profile.name, 
       mode: 'profile' as const 
@@ -155,6 +88,9 @@ export default function AuthButton() {
         } else if (!profile?.element) {
           // Missing element - open element selection
           openElementSelection();
+        } else {
+          // Profile might exist but incomplete - try name prompt first
+          openNamePrompt();
         }
         break;
         
@@ -211,38 +147,13 @@ export default function AuthButton() {
         {/* Profile Image - only show when user has complete profile */}
         {buttonMode === 'profile' && currentElement && (
           <div className="mr-2">
-            {profile?.profile_image_url ? (
-              <img
-                src={profile.profile_image_url}
-                alt={currentElement}
-                width={24}
-                height={24}
-                className="w-6 h-6 rounded-full object-cover"
-                onError={(e) => {
-                  // Fallback to element icon on error
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  const parent = target.parentElement;
-                  if (parent) {
-                    parent.innerHTML = '';
-                    const elementIcon = document.createElement('img');
-                    elementIcon.src = `/elements/${currentElement}.webp`;
-                    elementIcon.alt = currentElement;
-                    elementIcon.width = 24;
-                    elementIcon.height = 24;
-                    elementIcon.className = 'w-6 h-6 object-cover';
-                    parent.appendChild(elementIcon);
-                  }
-                }}
-              />
-            ) : (
-              <ElementIcon 
-                name={currentElement} 
-                alt={currentElement} 
-                width={24} 
-                height={24}
-              />
-            )}
+            <ElementIcon 
+              name={currentElement} 
+              alt={currentElement} 
+              width={24} 
+              height={24}
+              className="w-6 h-6 object-cover"
+            />
           </div>
         )}
         

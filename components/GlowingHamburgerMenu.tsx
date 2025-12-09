@@ -106,8 +106,12 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
               isOpen ? "opacity-0" : ""
             }`}
             style={{
-              boxShadow: "0 0 12px rgba(255, 255, 255, 1), 0 0 24px rgba(255, 255, 255, 0.8), 0 0 36px rgba(255, 255, 255, 0.6)",
-              animation: "neonPulse 2s ease-in-out infinite alternate"
+              boxShadow: isOpen 
+                ? "none"
+                : "0 0 12px rgba(255, 255, 255, 1), 0 0 24px rgba(255, 255, 255, 0.8), 0 0 36px rgba(255, 255, 255, 0.6)",
+              animation: isOpen 
+                ? "none"
+                : "neonPulse 2s ease-in-out infinite alternate"
             }}
           />
           {/* Bottom Line */}

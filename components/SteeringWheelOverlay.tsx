@@ -172,11 +172,11 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
       // If pink display is open, close it
       onJoinToggle?.(false);
       onBeamColorChange?.('off');
-      // Reset local state after beam turns off to avoid blue flash
+      // Reset local state after beam fully fades out to avoid blue flash during fade
       setTimeout(() => {
         suppressNextBeamNotifyRef.current = true;
         setActiveBeamColor('blue');
-      }, 100);
+      }, 400);
     } else {
       // Open pink display with Twitch embed
       setActiveBeamColor('pink');
@@ -741,11 +741,11 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
                     if (activeBeamColor === 'yellow') {
                       // Don't flash blue - just turn off displays then reset color after delay
                       onBeamColorChange?.('off'); // tell parent to turn ALL displays off
-                      // Reset local state after beam turns off to avoid blue flash
+                      // Reset local state after beam fully fades out to avoid blue flash during fade
                       setTimeout(() => {
                         suppressNextBeamNotifyRef.current = true;
                         setActiveBeamColor('blue');
-                      }, 100);
+                      }, 400);
                       // Also cancel any pending transition timers
                       if (yellowFromPinkTimeoutA.current) { window.clearTimeout(yellowFromPinkTimeoutA.current); yellowFromPinkTimeoutA.current = null; }
                       if (yellowFromPinkTimeoutB.current) { window.clearTimeout(yellowFromPinkTimeoutB.current); yellowFromPinkTimeoutB.current = null; }

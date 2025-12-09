@@ -1000,7 +1000,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       // Check if this is part of a pink-to-yellow transition by looking at current beam color
       const skipYellowClose = beamColor === 'pink'; // Don't force-close yellow menu during pink-to-yellow transition
       closeAllDisplays(skipYellowClose);
-      setBeamColor('blue'); // reset baseline without opening HUD
+      // Delay beam color reset until after fade completes to avoid color flash during fade
+      setTimeout(() => {
+        setBeamColor('blue'); // reset baseline without opening HUD
+      }, 400);
       return;
     }
 

@@ -267,6 +267,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       if (typeof window !== 'undefined') {
         console.log("DEBUG ProfileContext profile loaded", {
           browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",
+          loading: false,
+          currentUser: user,
+          profile: mappedProfile,
+          hasUser: true,
+          hasProfile: !!mappedProfile.profile_complete,
           profileId: mappedProfile.id,
           profileName: mappedProfile.name,
           profileElement: mappedProfile.element,

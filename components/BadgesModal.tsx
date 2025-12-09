@@ -351,7 +351,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
 
       {!loading && !error && (
         <div 
-          className="absolute inset-0 backdrop-blur-sm"
+          className="relative backdrop-blur-sm flex items-center justify-center min-h-full"
           style={{
             background: 'rgba(0,0,0,0.4)',
             backdropFilter: 'blur(8px)',
@@ -371,8 +371,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           />
           
           {/* Centered content container */}
-          <div className="absolute inset-0 flex items-center justify-center pt-8 pb-8">
-            <div className="flex flex-col items-center justify-center space-y-16 h-full">
+          <div className="flex flex-col items-center justify-center space-y-6 py-8">
               {/* Top row - first 3 categories */}
               <div className="grid grid-cols-3 gap-6">
                 {badgeCategories.slice(0, 3).map((category) => {
@@ -430,7 +429,6 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                   );
                 })}
               </div>
-            </div>
           </div>
         </div>
       )}
