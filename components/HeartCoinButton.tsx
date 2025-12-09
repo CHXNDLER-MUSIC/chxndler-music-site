@@ -520,6 +520,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [secretPhrase, setSecretPhrase] = useState("");
   const [checkInMessage, setCheckInMessage] = useState("");
   const [enlargedCard, setEnlargedCard] = useState<Card | null>(null);
+  const [isEnlargedCardFlipped, setIsEnlargedCardFlipped] = useState(false);
   const [showCheckInSuccess, setShowCheckInSuccess] = useState(false);
   const [isSubmittingPhrase, setIsSubmittingPhrase] = useState(false);
   const [statusType, setStatusType] = useState<'idle' | 'success' | 'error'>('idle');
@@ -541,6 +542,36 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   useEffect(() => {
     setFlippedItems(new Set());
   }, [currentMerchIndex]);
+
+  // Inject card animation keyframes when enlarged card is shown
+  useEffect(() => {
+    if (enlargedCard && typeof document !== 'undefined') {
+      const existingStyle = document.querySelector('#card-pulse-keyframes');
+      if (!existingStyle) {
+        const style = document.createElement('style');
+        style.id = 'card-pulse-keyframes';
+        style.innerHTML = `
+          @keyframes cardPulse {
+            0%, 100% { 
+              transform: scale(1);
+              filter: saturate(1.06) contrast(1.06) brightness(1.04) drop-shadow(0 0 15px rgba(255, 215, 0, 0.6));
+            }
+            50% { 
+              transform: scale(1.02);
+              filter: saturate(1.1) brightness(1.08) contrast(1.08) drop-shadow(0 0 25px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 50px rgba(255, 215, 0, 0.6));
+            }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+      return () => {
+        const styleElement = document.querySelector('#card-pulse-keyframes');
+        if (styleElement) {
+          styleElement.remove();
+        }
+      };
+    }
+  }, [enlargedCard]);
 
   // Handle image flip for items with alternative images
   const handleImageFlip = (itemId: string) => {
@@ -1450,7 +1481,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   </div>
 
                   <div 
-                    className="text-base text-center mb-1 -ml-4"
+                    className="text-base text-center mb-1"
                     style={{ 
                       color: '#FFFFFF', 
                       textShadow: '0 0 4px rgba(255,255,255,0.8)', 
@@ -1830,7 +1861,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 try { sfx.play('change', 0.6); } catch {}
                                 setSelectedSong(e.target.value);
                               }}
-                              className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1"
+                              className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-[1.5]"
                             >
                               {availableSongs.map(song => (
                                 <option key={song} value={song}>{song}</option>
@@ -1842,7 +1873,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 try { sfx.play('change', 0.6); } catch {}
                                 setSelectedRarity(e.target.value);
                               }}
-                              className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1"
+                              className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-[1]"
                             >
                               <option value="">All Rarities</option>
                               {availableRarities.map(rarity => (
@@ -2451,43 +2482,81 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           )}
 
           
+          {/* Enlarged Card Modal - positioned within heart coin modal */}
+          {enlargedCard && (
+            <div 
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 rounded-lg"
+              onClick={() => setEnlargedCard(null)}
+            >
+              <div 
+                className="relative w-56 mx-4"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div 
+                  className="relative w-full h-auto cursor-pointer"
+                  onClick={() => setIsEnlargedCardFlipped(!isEnlargedCardFlipped)}
+                  style={{
+                    perspective: '1000px',
+                    maxHeight: '320px'
+                  }}
+                >
+                  <div
+                    className="relative w-full h-full transition-transform duration-700 preserve-3d"
+                    style={{
+                      transformStyle: 'preserve-3d',
+                      transform: isEnlargedCardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                    }}
+                  >
+                    {/* Front of card */}
+                    <img
+                      src={enlargedCard.artwork_url || '/cards/CHXNDLER.webp'}
+                      alt={enlargedCard.card_name}
+                      className="w-full h-auto rounded-lg border-4 border-yellow-500/80 shadow-2xl backface-hidden"
+                      style={{
+                        maxHeight: '320px',
+                        objectFit: 'contain',
+                        filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
+                        animation: 'cardPulse 3s ease-in-out infinite',
+                        backfaceVisibility: 'hidden'
+                      }}
+                    />
+                    
+                    {/* Back of card */}
+                    <img
+                      src="/cards/back.webp"
+                      alt="Card back"
+                      className="absolute inset-0 w-full h-auto rounded-lg border-4 border-yellow-500/80 shadow-2xl backface-hidden"
+                      style={{
+                        maxHeight: '320px',
+                        objectFit: 'contain',
+                        filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
+                        animation: 'cardPulse 3s ease-in-out infinite',
+                        backfaceVisibility: 'hidden',
+                        transform: 'rotateY(180deg)'
+                      }}
+                    />
+                  </div>
+                </div>
+                
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    try { sfx.play('close', 0.7); } catch {}
+                    setEnlargedCard(null);
+                    setIsEnlargedCardFlipped(false);
+                  }}
+                  className="absolute top-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white text-sm font-bold transition-all duration-200 z-10"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          )}
+
           </div>
         </div>
       )}
 
-      {/* Enlarged Card Modal */}
-      {enlargedCard && (
-        <div 
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] rounded-lg"
-          onClick={() => setEnlargedCard(null)}
-        >
-          <div 
-            className="relative w-48 mx-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <img
-              src={enlargedCard.artwork_url || '/cards/CHXNDLER.webp'}
-              alt={enlargedCard.card_name}
-              className="w-full h-auto rounded-lg border-4 border-yellow-500/80 shadow-2xl"
-              style={{
-                maxHeight: '300px',
-                objectFit: 'contain',
-                filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))'
-              }}
-            />
-            <button
-              onClick={() => setEnlargedCard(null)}
-              className="absolute top-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white text-sm font-bold transition-all duration-200"
-            >
-              ×
-            </button>
-            <div className="absolute bottom-1 left-1 right-1 bg-black/80 rounded px-2 py-1 text-center">
-              <h3 className="text-yellow-400 font-bold text-xs mb-0.5">{enlargedCard.card_name}</h3>
-              <p className="text-white/80 text-xs">Element: {enlargedCard.element}</p>
-            </div>
-          </div>
-        </div>
-      )}
 
     </>
   );

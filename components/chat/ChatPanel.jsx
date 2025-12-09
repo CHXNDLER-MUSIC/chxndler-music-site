@@ -1389,11 +1389,13 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 return (
                                   <div 
                                     key={`card-slot-${cardIndex}`} 
-                                    className="rounded-lg border border-white/10 backdrop-blur-sm transition-all duration-300 cursor-pointer hover:scale-105"
+                                    className="rounded-lg border border-white/10 backdrop-blur-sm transition-all duration-300 cursor-pointer hover:scale-110 hover:shadow-2xl hover:-translate-y-1"
                                     style={{
-                                      boxShadow: hasCard ? '0 0 5px rgba(255,105,180,0.3)' : '0 0 5px rgba(255,105,180,0.1)',
-                                      aspectRatio: '2.4/3',
-                                      background: 'rgba(0, 0, 0, 0.3)'
+                                      boxShadow: hasCard ? '0 0 8px rgba(255,105,180,0.4), 0 4px 12px rgba(255,105,180,0.2)' : '0 0 5px rgba(255,105,180,0.1)',
+                                      aspectRatio: '2.2/3',
+                                      background: 'rgba(0, 0, 0, 0.3)',
+                                      transform: 'perspective(1000px)',
+                                      backfaceVisibility: 'hidden'
                                     }}
                                     onClick={() => {
                                       if (hasCard && cardSong) {
@@ -1422,9 +1424,10 @@ export default function ChatPanel({ isOpen, onClose }) {
                                         <img
                                           src={getCardImage(cardSong.name, cardSong.element)}
                                           alt={cardSong.name}
-                                          className="w-full h-full object-cover"
+                                          className="w-full h-full object-contain"
                                           style={{
                                             boxShadow: '0 0 10px rgba(255,105,180,0.6)',
+                                            padding: '2px'
                                           }}
                                           onError={(e) => {
                                             // Fallback to icon if image fails to load

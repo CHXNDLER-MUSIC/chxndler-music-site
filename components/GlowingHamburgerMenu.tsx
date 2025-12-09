@@ -64,6 +64,10 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
     }
   };
 
+  const handleHover = () => {
+    sfx.play('hover', 0.5);
+  };
+
   const handleItemClick = (label: string) => {
     sfx.play('click', 0.7);
     
@@ -81,6 +85,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
       {/* Hamburger Button */}
       <button
         onClick={toggleMenu}
+        onMouseEnter={handleHover}
         className="relative transition-all duration-300 hover:scale-105"
         aria-label={isOpen ? "Close menu" : "Open menu"}
         data-tour-id="nav-toggle"
@@ -89,7 +94,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
           {/* Top Line */}
           <div
             className={`w-7 h-1 transition-all duration-300 ${
-              isOpen ? "rotate-45 translate-y-1 bg-yellow-400" : "bg-white"
+              isOpen ? "rotate-45 translate-y-1.5 bg-yellow-400" : "bg-white"
             }`}
             style={{
               boxShadow: isOpen 
@@ -102,8 +107,8 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
           />
           {/* Middle Line */}
           <div
-            className={`w-7 h-1 bg-white transition-all duration-300 mt-1.5 ${
-              isOpen ? "opacity-0" : ""
+            className={`w-7 h-1 transition-all duration-300 mt-1.5 ${
+              isOpen ? "opacity-0 scale-0" : "bg-white"
             }`}
             style={{
               boxShadow: isOpen 
@@ -117,7 +122,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
           {/* Bottom Line */}
           <div
             className={`w-7 h-1 transition-all duration-300 mt-1.5 ${
-              isOpen ? "-rotate-45 -translate-y-3 bg-yellow-400" : "bg-white"
+              isOpen ? "-rotate-45 -translate-y-1.5 bg-yellow-400" : "bg-white"
             }`}
             style={{
               boxShadow: isOpen 
