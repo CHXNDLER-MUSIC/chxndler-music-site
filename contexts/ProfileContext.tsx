@@ -100,8 +100,10 @@ interface JournalEntry {
   element: string;
   prompt_id: string | null;
   intention: string | null;
-  prompt: string | null;
-  soul_star: string | null;
+  reflection: string | null; // prompt question text goes here (was 'prompt')
+  intention_response: string | null;
+  reflection_response: string | null; 
+  soul_star: string | null; // user's written reflection text
   is_private: boolean;
   created_at: string;
   created_date: string;
@@ -139,7 +141,7 @@ interface ProfileContextType {
   journalEntries: JournalEntry[];
   loadJournalEntries: (userId: string) => Promise<void>;
   saveJournalEntry: (entry: Omit<JournalEntry, 'id' | 'user_id' | 'created_at' | 'created_date' | 'updated_at'>) => Promise<JournalEntry | null>;
-  updateJournalEntry: (entryId: string, updates: Partial<Pick<JournalEntry, 'soul_star' | 'intention' | 'prompt' | 'is_private'>>) => Promise<void>;
+  updateJournalEntry: (entryId: string, updates: Partial<Pick<JournalEntry, 'soul_star' | 'intention' | 'reflection' | 'is_private'>>) => Promise<void>;
   deleteJournalEntry: (entryId: string) => Promise<void>;
   getDailyPrompts: () => Promise<DailyPrompts | null>;
   isJournalOpen: boolean;
@@ -589,15 +591,21 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         soul_star: entry.soul_star?.trim() || null,
       };
 
-      // Add optional columns that may exist
-      if (entry.intention !== null && entry.intention !== undefined) {
-        entryData.intention = entry.intention;
-      }
-      if (entry.prompt !== null && entry.prompt !== undefined) {
-        entryData.soul_star = entry.prompt; // Map prompt to soul_star column
-      }
+      // Add fields from daily prompt (element, intention, prompt) 
       if (entry.prompt_id !== null && entry.prompt_id !== undefined) {
         entryData.prompt_id = entry.prompt_id;
+      }
+      if (entry.intention !== null && entry.intention !== undefined) {
+        entryData.intention = entry.intention; // INTENTION from daily prompt
+      }
+      if (entry.reflection !== null && entry.reflection !== undefined) {
+        entryData.reflection = entry.reflection; // PROMPT QUESTION text from daily prompt
+      }
+      if (entry.intention_response !== null && entry.intention_response !== undefined) {
+        entryData.intention_response = entry.intention_response; // USER'S response to intention
+      }
+      if (entry.reflection_response !== null && entry.reflection_response !== undefined) {
+        entryData.reflection_response = entry.reflection_response; // USER'S response to reflection prompt
       }
 
       // Try to add optional columns that may not exist yet in all databases

@@ -92,10 +92,12 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
       >
         <div className="w-8 h-8 flex flex-col justify-center items-center relative">
           {/* White hamburger lines - Only when closed */}
-          <div className={`${isOpen ? 'hidden' : 'block'}`}>
+          <div 
+            style={{ display: isOpen ? 'none' : 'block' }}
+          >
             {/* Top Line */}
             <div
-              className="w-7 h-1 transition-all duration-300 absolute bg-white -translate-y-2.5"
+              className="w-7 h-1 absolute bg-white -translate-y-2.5"
               style={{
                 boxShadow: "0 0 12px rgba(255, 255, 255, 1), 0 0 24px rgba(255, 255, 255, 0.8), 0 0 36px rgba(255, 255, 255, 0.6)",
                 animation: "neonPulse 2s ease-in-out infinite alternate"
@@ -103,7 +105,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
             />
             {/* Middle Line */}
             <div
-              className="w-7 h-1 transition-all duration-300 absolute bg-white"
+              className="w-7 h-1 absolute bg-white"
               style={{
                 boxShadow: "0 0 12px rgba(255, 255, 255, 1), 0 0 24px rgba(255, 255, 255, 0.8), 0 0 36px rgba(255, 255, 255, 0.6)",
                 animation: "neonPulse 2s ease-in-out infinite alternate"
@@ -111,7 +113,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
             />
             {/* Bottom Line */}
             <div
-              className="w-7 h-1 transition-all duration-300 absolute bg-white translate-y-2.5"
+              className="w-7 h-1 absolute bg-white translate-y-2.5"
               style={{
                 boxShadow: "0 0 12px rgba(255, 255, 255, 1), 0 0 24px rgba(255, 255, 255, 0.8), 0 0 36px rgba(255, 255, 255, 0.6)",
                 animation: "neonPulse 2s ease-in-out infinite alternate"
@@ -120,10 +122,12 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
           </div>
           
           {/* Yellow X lines - Only when open */}
-          <div className={`${isOpen ? 'block' : 'hidden'}`}>
+          <div 
+            style={{ display: isOpen ? 'block' : 'none' }}
+          >
             {/* Top X Line */}
             <div
-              className="w-7 h-1 transition-all duration-300 absolute rotate-45 bg-yellow-400"
+              className="w-7 h-1 absolute rotate-45 bg-yellow-400"
               style={{
                 boxShadow: "0 0 12px rgba(255, 255, 0, 1), 0 0 24px rgba(255, 255, 0, 0.8), 0 0 36px rgba(255, 255, 0, 0.6)",
                 animation: "neonPulseYellow 2s ease-in-out infinite alternate"
@@ -131,7 +135,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
             />
             {/* Bottom X Line */}
             <div
-              className="w-7 h-1 transition-all duration-300 absolute -rotate-45 bg-yellow-400"
+              className="w-7 h-1 absolute -rotate-45 bg-yellow-400"
               style={{
                 boxShadow: "0 0 12px rgba(255, 255, 0, 1), 0 0 24px rgba(255, 255, 0, 0.8), 0 0 36px rgba(255, 255, 0, 0.6)",
                 animation: "neonPulseYellow 2s ease-in-out infinite alternate"

@@ -30,6 +30,7 @@ class SFXBus {
     button: "/audio/button.mp3",
     "coin-ding": "/audio/coin-ding.mp3",
     "card-ding": "/audio/card-ding.mp3",
+    star: "/audio/star.mp3",
   };
 
   private ensure() {

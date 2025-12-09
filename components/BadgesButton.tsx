@@ -261,7 +261,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       {isActive && (
         <div 
           className="fixed inset-0 z-[2147483647] flex items-start justify-center relative"
-          style={{ paddingTop: '5vh' }}
+          style={{ paddingTop: '8vh' }}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               try { sfx.play('close', 0.8); } catch {}
@@ -278,7 +278,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
             aria-hidden="true"
             style={{
               position: 'absolute',
-              top: 'calc(5vh - 20px)',
+              top: 'calc(8vh - 20px)',
               left: '50%',
               transform: 'translateX(-50%)',
               width: 'min(110vw, 840px)',
@@ -294,9 +294,9 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
             style={{
               width: 'min(92vw, 700px)',
               maxWidth: '700px',
-              minHeight: 'min(60vh, 500px)',
+              minHeight: 'auto',
               maxHeight: '90vh',
-              padding: '10px 14px 4px 14px',
+              padding: '10px 14px 24px 14px',
               borderRadius: 18,
               background: 'linear-gradient(135deg, rgba(255,105,180,0.10), rgba(0,0,0,0.60))',
               border: '1px solid rgba(255,105,180,0.55)',
@@ -361,9 +361,10 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                 className="absolute left-1/2 transform -translate-x-1/2"
                 style={{ 
                   color: '#FF69B4', 
-                  textShadow: '0 0 8px rgba(255,105,180,0.6)', 
-                  fontSize: '12px',
-                  fontWeight: 'bold'
+                  textShadow: '0 0 15px rgba(255,105,180,0.9), 0 0 25px rgba(255,105,180,0.7)', 
+                  fontSize: '18px',
+                  fontWeight: '900',
+                  letterSpacing: '1px'
                 }}
               >
                 BADGES
@@ -433,8 +434,8 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                           <div 
                             className="text-xs mt-1 font-bold"
                             style={{ 
-                              color: category.color, 
-                              textShadow: `0 0 4px ${category.color}80`,
+                              color: category.name === 'LISTENING' ? '#38B6FF' : category.name === 'COLLECTOR' ? '#ffffff' : category.color, 
+                              textShadow: category.name === 'LISTENING' ? '0 0 4px rgba(56,182,255,0.8)' : category.name === 'COLLECTOR' ? '0 0 4px rgba(255,255,255,0.8)' : `0 0 4px ${category.color}80`,
                               fontSize: '10px'
                             }}
                           >

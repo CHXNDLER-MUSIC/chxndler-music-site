@@ -214,9 +214,12 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       const result = await saveJournalEntry({
         entry_date: today,
         element: selectedElement,
-        intention: intentionText,
-        prompt: currentPromptText,
-        soul_star: soulStarText.trim(),
+        prompt_id: dailyPrompt?.id || null,
+        intention: dailyPrompt?.intention?.text || null,
+        reflection: dailyPrompt?.soul_star?.text || null, // PROMPT QUESTION text goes to reflection column
+        intention_response: null, // Could be used later for intention responses
+        reflection_response: null, // Could be used later for separate reflection responses
+        soul_star: soulStarText.trim(), // USER'S written reflection text
         is_private: journalState.isPrivate
       });
 

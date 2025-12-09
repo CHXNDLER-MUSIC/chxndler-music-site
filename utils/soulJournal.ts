@@ -6,6 +6,8 @@ export type SoulJournalRow = {
   prompt_id: string | null;
   entry_date: string; // YYYY-MM-DD
   element: string;
+  intention: string | null;
+  prompt: string | null;
   soul_star: string | null;
   is_private: boolean | null;
 };
@@ -31,17 +33,21 @@ export async function saveSoulStarEntry(
     selectedElement: string;
     promptDate: string; // YYYY-MM-DD
     promptId: string | null; // references soul_daily_prompts.id
+    intention: string | null; // from daily prompt
+    prompt: string | null; // from daily prompt  
     soulStarText: string;
     isPrivate: boolean;
   }
 ): Promise<SoulJournalRow> {
-  const { userId, selectedElement, promptDate, promptId, soulStarText, isPrivate } = params;
+  const { userId, selectedElement, promptDate, promptId, intention, prompt, soulStarText, isPrivate } = params;
 
   const payload: Partial<SoulJournalRow> = {
     user_id: userId,
     entry_date: promptDate,
     element: selectedElement,
     prompt_id: promptId ?? null,
+    intention: intention ?? null,
+    prompt: prompt ?? null,
     soul_star: soulStarText?.trim() ?? null,
     is_private: isPrivate,
   } as any;
@@ -107,6 +113,8 @@ export async function saveSoulStarEntryDefault(
   selectedElement: string,
   promptDate: string,
   promptId: string | null,
+  intention: string | null,
+  prompt: string | null,
   soulStarText: string,
   isPrivate: boolean
 ) {
@@ -115,6 +123,8 @@ export async function saveSoulStarEntryDefault(
     selectedElement,
     promptDate,
     promptId,
+    intention,
+    prompt,
     soulStarText,
     isPrivate,
   });

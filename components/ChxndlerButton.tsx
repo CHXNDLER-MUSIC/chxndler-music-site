@@ -75,13 +75,13 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
       {open && (
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center p-4"
-          style={{ alignItems: 'center', transform: 'translateY(-100px)' }}
+          style={{ alignItems: 'center', transform: 'translateY(-130px)' }}
         >
           <div
             className="chxndler-hologram-container relative"
             style={{
               width: 'min(92vw, 800px)',
-              minHeight: '300px',
+              minHeight: '380px',
               padding: '20px 20px 6px 20px',
               borderRadius: 18,
               background: 'rgba(0,0,0,0.8)',
@@ -154,7 +154,8 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                 color: '#FFFFFF !important', 
                 textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7), 0 0 20px rgba(255,255,255,0.5)', 
                 fontSize: '20px',
-                fontWeight: 'bold'
+                fontWeight: 'bold',
+                marginTop: '-8px'
               }}
             >
               ABOUT
@@ -233,7 +234,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                 <div 
                   className="text-center mt-4"
                   style={{ 
-                    fontSize: '16px', 
+                    fontSize: '18px', 
                     color: '#FFFFFF !important', 
                     textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
                     lineHeight: '1.6'
@@ -250,7 +251,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                 <div 
                   className="text-left space-y-2 pl-2"
                   style={{ 
-                    fontSize: 18, 
+                    fontSize: 20, 
                     color: '#FFFFFF !important', 
                     textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)'
                   }}

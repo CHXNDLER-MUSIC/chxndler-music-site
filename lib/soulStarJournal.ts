@@ -36,8 +36,11 @@ export async function saveSoulStarEntry({
     user_id: userId,
     entry_date: currentPrompt.prompt_date,
     element: currentPrompt.element,
-    soul_star: soulStarText,
+    prompt_id: currentPrompt.id,
     intention: currentPrompt.intention || null,
+    prompt: currentPrompt.prompt || null,
+    soul_star: soulStarText,
+    is_private: isPrivate
   };
 
   const { data, error } = await supabaseClient
