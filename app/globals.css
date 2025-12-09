@@ -30,13 +30,8 @@
 }
 
 /* Hide default cursor on desktop for custom cursor component */
-html, body {
-  cursor: none;
-}
-
-/* Force all elements to use no cursor on desktop */
 @media (min-width: 769px) {
-  * {
+  html, body, * {
     cursor: none !important;
   }
 }

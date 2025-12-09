@@ -350,15 +350,55 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       // Update current track info immediately
       setState(s => ({ ...s, currentTrack: trackInfo, isLoading: true }));
 
-      // Stop any existing audio
+      // Stop any existing audio and wait a bit to prevent race conditions
       stopAllAudioInternal();
+      
+      // Small delay to ensure audio has fully stopped before starting new track
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Load and play the track
       const a = audioRef.current;
       if (!a) return;
 
+      // Verify we're still trying to play the same track (prevent race conditions)
+      const currentState = state;
+      if (currentState.currentTrack?.id !== trackId) {
+        console.warn('Track changed during loading, aborting playback');
+        return;
+      }
+
       a.src = trackSource;
-      try { a.load(); } catch {}
+      try { 
+        a.load();
+        
+        // Wait for audio to be ready before playing
+        await new Promise<void>((resolve, reject) => {
+          const onCanPlay = () => {
+            cleanup();
+            resolve();
+          };
+          const onError = () => {
+            cleanup();
+            reject(new Error('Audio load failed'));
+          };
+          const cleanup = () => {
+            a.removeEventListener('canplay', onCanPlay);
+            a.removeEventListener('error', onError);
+          };
+          
+          if (a.readyState >= 3) { // Already loaded
+            resolve();
+          } else {
+            a.addEventListener('canplay', onCanPlay, { once: true });
+            a.addEventListener('error', onError, { once: true });
+          }
+        });
+      } catch (loadErr) {
+        console.error('Failed to load track:', loadErr);
+        setState(s => ({ ...s, isLoading: false }));
+        return;
+      }
+      
       setState(s => ({ ...s, src: trackSource, currentTime: 0, duration: 0 }));
 
       try {

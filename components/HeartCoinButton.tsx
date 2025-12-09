@@ -1565,11 +1565,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   /* HeartCoin Purchase Confirmation */
                                   <div className="text-center">
                                     {/* User and Cost - Side by Side */}
-                                    <div className="flex justify-between items-start mb-3">
+                                    <div className="flex justify-between items-start mb-2">
                                       {/* User Section */}
                                       <div className="flex flex-col items-center flex-1">
                                         <div 
-                                          className="font-bold text-white text-lg mb-3"
+                                          className="font-bold text-white text-lg mb-1"
                                           style={{
                                             textShadow: '0 0 4px rgba(255,255,255,0.6)'
                                           }}
@@ -1578,7 +1578,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                         </div>
                                         
                                         {/* Current Heart Coins */}
-                                        <div className="flex flex-col items-center space-y-2">
+                                        <div className="flex flex-col items-center space-y-1">
                                           <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
                                           <div 
                                             className="text-xl font-bold"
@@ -1595,15 +1595,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       {/* Cost Section */}
                                       <div className="flex flex-col items-center flex-1">
                                         <div 
-                                          className="font-bold text-white text-lg mb-3"
+                                          className="font-bold text-white text-lg mb-1"
                                           style={{
                                             textShadow: '0 0 4px rgba(255,255,255,0.6)'
                                           }}
                                         >
-                                          COST
+                                          Cost
                                         </div>
                                         
-                                        <div className="flex flex-col items-center space-y-2">
+                                        <div className="flex flex-col items-center space-y-1">
                                           <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
                                           <div 
                                             className="text-xl font-bold"
@@ -1622,7 +1622,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     {(profile?.id ? heartCoins : 0) >= (selectedItem?.priceHeartCoins || 0) ? (
                                       <>
                                         <div 
-                                          className="text-sm mb-3"
+                                          className="text-sm mb-2"
                                           style={{ 
                                             color: '#90EE90', 
                                             textShadow: '0 0 4px rgba(144,238,144,0.8)'
@@ -1959,11 +1959,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   /* Physical Purchase Confirmation */
                                   <div className="text-center">
                                     {/* User and Cost - Side by Side */}
-                                    <div className="flex justify-between items-start mb-3">
+                                    <div className="flex justify-between items-start mb-2">
                                       {/* User Section */}
                                       <div className="flex flex-col items-center flex-1">
                                         <div 
-                                          className="font-bold text-white text-lg mb-3"
+                                          className="font-bold text-white text-lg mb-1"
                                           style={{
                                             textShadow: '0 0 4px rgba(255,255,255,0.6)'
                                           }}
@@ -1972,7 +1972,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                         </div>
                                         
                                         {/* Current Heart Coins */}
-                                        <div className="flex flex-col items-center space-y-2">
+                                        <div className="flex flex-col items-center space-y-1">
                                           <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
                                           <div 
                                             className="text-xl font-bold"
@@ -1988,7 +1988,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       {/* Cost Section */}
                                       <div className="flex flex-col items-center flex-1">
                                         <div 
-                                          className="font-bold text-white text-lg mb-3"
+                                          className="font-bold text-white text-lg mb-1"
                                           style={{
                                             textShadow: '0 0 4px rgba(255,255,255,0.6)'
                                           }}
@@ -1996,7 +1996,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                           Cost
                                         </div>
                                         
-                                        <div className="flex flex-col items-center space-y-2">
+                                        <div className="flex flex-col items-center space-y-1">
                                           <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
                                           <div 
                                             className="text-xl font-bold"
@@ -2156,11 +2156,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   /* Digital Purchase Form */
                                   <div className="text-center">
                                     {/* User and Cost - Side by Side */}
-                                    <div className="flex justify-between items-start mb-3">
+                                    <div className="flex justify-between items-start mb-2">
                                       {/* User Section */}
                                       <div className="flex flex-col items-center flex-1">
                                         <div 
-                                          className="font-bold text-white text-lg mb-3"
+                                          className="font-bold text-white text-lg mb-1"
                                           style={{
                                             textShadow: '0 0 4px rgba(255,255,255,0.6)'
                                           }}
@@ -2169,7 +2169,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                         </div>
                                         
                                         {/* Current Heart Coins */}
-                                        <div className="flex flex-col items-center space-y-2">
+                                        <div className="flex flex-col items-center space-y-1">
                                           <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
                                           <div 
                                             className="text-xl font-bold"
@@ -2185,7 +2185,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       {/* Cost Section */}
                                       <div className="flex flex-col items-center flex-1">
                                         <div 
-                                          className="font-bold text-white text-lg mb-3"
+                                          className="font-bold text-white text-lg mb-1"
                                           style={{
                                             textShadow: '0 0 4px rgba(255,255,255,0.6)'
                                           }}
@@ -2193,7 +2193,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                           Cost
                                         </div>
                                         
-                                        <div className="flex flex-col items-center space-y-2">
+                                        <div className="flex flex-col items-center space-y-1">
                                           <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
                                           <div 
                                             className="text-xl font-bold"

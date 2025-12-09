@@ -21,6 +21,10 @@ export default function CustomCursor() {
     window.addEventListener("mousemove", handleMove);
     window.addEventListener("resize", handleResize);
 
+    // Preload cursor image
+    const img = new Image();
+    img.src = "/elements/cursor.png";
+
     return () => {
       window.removeEventListener("mousemove", handleMove);
       window.removeEventListener("resize", handleResize);

@@ -8,6 +8,11 @@ class AudioCoordinator {
   private listeners: Set<(source: AudioSource | null) => void> = new Set();
 
   setActiveSource(source: AudioSource | null) {
+    // Don't interfere if unified audio system is active
+    if (typeof window !== 'undefined' && (window as any).__UNIFIED_AUDIO_ACTIVE) {
+      return;
+    }
+    
     if (this.currentSource === source) return;
     
     // Stop all other audio sources when switching

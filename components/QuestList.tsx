@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { sfx } from "@/lib/sfx";
 import SoulStareModal from "./SoulStareModal";
+import SoulStarJournal from "./SoulStarJournal";
 import { hasAnsweredToday, getTodaysQuestion } from "@/lib/dailyQuestions";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useProfile } from "@/contexts/ProfileContext";
@@ -75,6 +76,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
   const [checkInMessage, setCheckInMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [showSoulStare, setShowSoulStare] = useState(false);
+  const [showJournal, setShowJournal] = useState(false);
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
   const [celebrationMessage, setCelebrationMessage] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -150,7 +152,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
     if (questStatus.journalEntry || loading || !isAuthenticated) return;
     
     try { sfx.play('click', 0.8); } catch {}
-    setShowSoulStare(true);
+    setShowJournal(true);
   };
 
   const handleSoulStareComplete = () => {
@@ -159,6 +161,15 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
     const today = new Date().toDateString();
     localStorage.setItem(`quest_journal_${today}`, 'true');
     showCelebration("🌟 Soul reflection complete! Your inner wisdom has been honored. +1 HeartCoin earned.");
+  };
+
+  const handleJournalComplete = () => {
+    setQuestStatus(prev => ({ ...prev, journalEntry: true }));
+    // Save to localStorage to persist across sessions for today
+    const today = new Date().toDateString();
+    localStorage.setItem(`quest_journal_${today}`, 'true');
+    showCelebration("🌟 Soul reflection complete! Your inner wisdom has been honored. +1 HeartCoin earned.");
+    setShowJournal(false);
   };
 
   const handleInviteFriend = async () => {
@@ -787,6 +798,13 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
         onClose={() => setShowSoulStare(false)}
         onComplete={handleSoulStareComplete}
         onOpenBlueDisplay={onOpenBlueDisplay}
+      />
+      
+      {/* Soul Star Journal */}
+      <SoulStarJournal
+        isOpen={showJournal}
+        onClose={() => setShowJournal(false)}
+        onJournalCompleted={handleJournalComplete}
       />
     </div>
   );

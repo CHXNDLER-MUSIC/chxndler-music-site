@@ -16,7 +16,6 @@ import WhatElementAreYouModal from "@/components/WhatElementAreYouModal";
 import NamePromptOnLogin from "@/components/NamePromptOnLogin";
 import StoreProvider from "@/components/StoreProvider";
 import { ProfileProvider } from "@/contexts/ProfileContext";
-import { AudioManagerProvider } from "@/contexts/AudioManagerContext";
 import { TourProvider } from "@/contexts/TourContext";
 import { MenuStateProvider } from "@/contexts/MenuStateContext";
 import CustomCursor from "@/components/CustomCursor";
@@ -130,7 +129,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <CustomCursor />
         <AuthProvider>
           <ProfileProvider>
-            <AudioManagerProvider>
             <AudioProvider>
               <MenuStateProvider>
                 <TourProvider>
@@ -154,7 +152,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </TourProvider>
               </MenuStateProvider>
             </AudioProvider>
-            </AudioManagerProvider>
           </ProfileProvider>
         </AuthProvider>
         {mpId && !analyticsOff ? (
