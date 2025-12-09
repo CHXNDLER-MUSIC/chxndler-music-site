@@ -240,9 +240,10 @@ export default function JoinAliens({ visible = true } = {}) {
         pointerEvents: visible ? 'auto' : 'none', 
         width: '100%',
         height: '100%',
+        minHeight: '480px',
         maxHeight: '100%',
         margin: '0',
-        padding: '15px 20px 20px 20px',
+        padding: '25px 20px 30px 20px',
         background: 'rgba(0, 0, 0, 0.6)',
         backdropFilter: 'blur(12px)',
         border: 'none',
@@ -258,7 +259,7 @@ export default function JoinAliens({ visible = true } = {}) {
       }}
     >
       {/* Countdown Section - Top */}
-      <div style={{ textAlign: 'center', marginBottom: '15px', marginTop: '0px', paddingTop: '0px', flex: '0 0 auto' }}>
+      <div style={{ textAlign: 'center', marginBottom: '25px', marginTop: '10px', paddingTop: '10px', flex: '0 0 auto' }}>
         {/* Neon "Signal Lost" message */}
         <div style={{ marginBottom: '0px' }}>
           <h2 
@@ -266,12 +267,13 @@ export default function JoinAliens({ visible = true } = {}) {
             style={{
               color: '#FC54AF',
               textShadow: `
-                0 0 5px #FC54AF,
-                0 0 10px #FC54AF,
-                0 0 15px #FC54AF,
-                0 0 20px #FC54AF,
-                0 0 35px #FC54AF,
-                0 0 40px #FC54AF
+                0 0 8px #FC54AF,
+                0 0 16px #FC54AF,
+                0 0 24px #FC54AF,
+                0 0 32px #FC54AF,
+                0 0 48px #FC54AF,
+                0 0 64px #FC54AF,
+                0 0 80px #FC54AF
               `,
               animation: 'neonFlicker 2s infinite alternate',
               fontSize: 'clamp(22px, 5vw, 36px)',
@@ -287,15 +289,17 @@ export default function JoinAliens({ visible = true } = {}) {
             style={{
               color: isScrambling ? '#FF00FF' : '#00FFFF',
               textShadow: isScrambling ? `
-                0 0 5px #FF00FF,
-                0 0 10px #FF00FF,
-                0 0 15px #FF00FF,
-                0 0 20px #FF00FF
+                0 0 8px #FF00FF,
+                0 0 16px #FF00FF,
+                0 0 24px #FF00FF,
+                0 0 32px #FF00FF,
+                0 0 40px #FF00FF
               ` : `
-                0 0 5px #00FFFF,
-                0 0 10px #00FFFF,
-                0 0 15px #00FFFF,
-                0 0 20px #00FFFF
+                0 0 8px #00FFFF,
+                0 0 16px #00FFFF,
+                0 0 24px #00FFFF,
+                0 0 32px #00FFFF,
+                0 0 40px #00FFFF
               `,
               animation: isScrambling ? 'neonScramble 0.1s infinite' : 'neonPulse 1.5s infinite',
               transition: 'all 0.05s ease',
@@ -316,11 +320,11 @@ export default function JoinAliens({ visible = true } = {}) {
         width: '100%', 
         height: '1px', 
         background: 'linear-gradient(90deg, transparent, rgba(252, 84, 175, 0.5), transparent)', 
-        margin: '16px 0 8px 0' 
+        margin: '24px 0 16px 0' 
       }} />
 
       {/* Stay Connected Section - Bottom */}
-      <div style={{ marginTop: '0px', flex: '1 1 auto', minHeight: 0 }}>
+      <div style={{ marginTop: '8px', flex: '1 1 auto', minHeight: 0, paddingBottom: '10px' }}>
         {/* Header Text */}
         {showPhoneForm && (
         <div 

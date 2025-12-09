@@ -1094,7 +1094,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-4 gap-2 mb-1" style={{ maxWidth: '240px', marginLeft: 'auto', marginRight: 'auto' }}>
+                <div className="grid grid-cols-4 gap-2 mb-1" style={{ maxWidth: '260px', marginLeft: 'auto', marginRight: 'auto' }}>
                   {(allRelics.length > 0 ? allRelics.slice(0, 16) : Array.from({ length: 16 }, (_, i) => ({
                     id: `placeholder-${i}`,
                     relic_name: `Relic ${i + 1}`,
@@ -1111,7 +1111,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                         key={`relic-inline-${relic.id}`}
                         className="aspect-square rounded-lg border border-white/20 bg-black/40 relative overflow-hidden transition-transform hover:scale-[1.03] disabled:opacity-60 disabled:cursor-not-allowed"
                         style={{
-                          minHeight: '44px'
+                          minHeight: '48px'
                         }}
                         disabled={!isUnlocked}
                         title={isUnlocked ? (hasImage ? `View ${relic.relic_name}` : relic.relic_name || `Relic ${i + 1}`) : 'Locked'}
@@ -1205,7 +1205,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
 
               {/* All Elements Grid - Moved to top */}
               <div className="mb-2">
-                <div className="grid grid-cols-4 gap-2">
+                <div className="flex justify-center items-center gap-3">
                   {getAllElements().map((element, index) => {
                     const elementData = getElementInfo(element.name);
                     const isCurrentlyViewed = getCurrentElementData().name === element.name;
@@ -1218,7 +1218,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                           setCurrentElementIndex(index);
                           try { sfx.play('click', 0.4); } catch {}
                         }}
-                        className={`relative aspect-square rounded-lg overflow-hidden transition-all duration-200 hover:scale-105 cursor-pointer w-14 h-14 ${
+                        className={`relative aspect-square rounded-lg overflow-hidden transition-all duration-200 hover:scale-105 cursor-pointer w-16 h-16 ${
                           isCurrentlyViewed 
                             ? 'border-2' 
                             : 'opacity-60 hover:opacity-80 border-0'

@@ -12,6 +12,7 @@ import HeartverseButton from "@/components/HeartverseButton";
 import SoulStarJournal from "@/components/SoulStarJournal";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { awardHeartCoins } from "@/utils/heartcoins";
+import CockpitHUD from "@/components/CockpitHUD";
 // 2D fallback hologram
 // 2D HUD removed per request; 3D only
 // 3D planet system (requires three/r3f/drei installed)
@@ -2438,7 +2439,7 @@ const HUDPanel = React.memo(function HUDPanel({
                   >
                     <div className="absolute inset-0 opacity-40 bg-white/20" />
                     <div
-                      className="absolute inset-y-0 left-0 bg-[#F2EF1D]/80 shadow-[0_0_12px_rgba(242,239,29,0.8)]"
+                      className="absolute inset-y-0 left-0 bg-[#FC54AF]/80 shadow-[0_0_12px_rgba(252,84,175,0.8)]"
                       style={{ width: `${pct}%` }}
                     />
                     <div
@@ -2451,6 +2452,49 @@ const HUDPanel = React.memo(function HUDPanel({
                 </div>
               );
             })()}
+
+          {/* Music Controls - CockpitHUD */}
+          {track && (
+            <div style={{ 
+              position: 'absolute', 
+              bottom: '80px', 
+              left: '50%', 
+              transform: 'translateX(-50%)',
+              zIndex: 10,
+              pointerEvents: 'auto'
+            }}>
+              <CockpitHUD
+                PATHS={{
+                  logoFallback: '/elements/logo.webp'
+                }}
+                POS={{
+                  hud: {
+                    topVh: 0,
+                    widthVw: 90,
+                    maxPx: 400
+                  }
+                }}
+                BUILD_TAG="HEARTVERSE v1.0"
+                track={track}
+                playing={playing}
+                ready={track?.src}
+                onPrev={() => {
+                  try { sfx.play('click', 0.4); } catch {}
+                  // TODO: implement previous track functionality
+                }}
+                onToggle={() => {
+                  try { sfx.play('click', 0.4); } catch {}
+                  // Dispatch toggle signal to trigger play/pause
+                  window.dispatchEvent(new CustomEvent('togglePlayPause'));
+                }}
+                onNext={() => {
+                  try { sfx.play('click', 0.4); } catch {}
+                  // TODO: implement next track functionality
+                }}
+                audioRef={liveAudioRef}
+              />
+            </div>
+          )}
           
           {/* Cover section at bottom right corner - using CoverHologram for pop-out functionality */}
           <div ref={coverRef} className="absolute hud-cover-pos" style={{ 
