@@ -861,8 +861,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     const collectedCard = profile?.cards?.[index];
                     const hasCard = !!collectedCard?.cards;
                     
-                    // Lock the last two slots (indices 3 and 4)
-                    const isLockedSlot = index === 3 || index === 4;
+                    // Use binder_slots to determine locked slots
+                    const binderSlots = profile?.binder_slots ?? 0;
+                    const isLockedSlot = index >= binderSlots;
                     
                     // Show CHXNDLER card in first slot if no card is there
                     const isFirstSlotWithChxndler = index === 0 && !hasCard;
@@ -1025,31 +1026,106 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   })}
                 </div>
                 
-                {/* Second row of 5 locked slots */}
+                {/* Second row of 5 slots */}
                 <div className="grid gap-2 grid-cols-5 mt-1 px-2 pt-2 pb-0 place-items-center">
                   {Array.from({ length: 5 }, (_, index) => {
                     const slotIndex = index + 5; // Slots 5-9
+                    const binderSlots = profile?.binder_slots ?? 0;
+                    const isLockedSlot = slotIndex >= binderSlots;
+                    const collectedCard = profile?.cards?.[slotIndex];
+                    const hasCard = !!collectedCard?.cards;
                     
                     return (
                       <div
-                        key={`locked-slot-${slotIndex}`}
-                        className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-20 h-28"
+                        key={`slot-${slotIndex}`}
+                        className={`rounded-lg border backdrop-blur-sm transition-all duration-300 w-20 h-28 ${
+                          isLockedSlot
+                            ? 'border-white/5 cursor-default'
+                            : hasCard
+                            ? 'border-white/10 cursor-pointer hover:scale-105' 
+                            : 'border-white/10 cursor-pointer hover:scale-105'
+                        }`}
+                        onClick={() => {
+                          if (isLockedSlot) {
+                            // Do nothing for locked slots or optionally show upgrade modal
+                            return;
+                          }
+                          if (hasCard && collectedCard?.cards) {
+                            try { sfx.play('card-ding', 0.8); } catch {}
+                            setSelectedCard({
+                              name: collectedCard.cards.card_name,
+                              image: getCardImage(collectedCard.cards.card_name, collectedCard.cards.element),
+                              rarity: collectedCard.cards.rarity,
+                              element: collectedCard.cards.element
+                            });
+                            setCardOpen(true);
+                          } else if (!hasCard && !isLockedSlot) {
+                            // Empty slot: open HeartCoin modal with CARDS tab
+                            try { sfx.play('click', 0.4); } catch {}
+                            try {
+                              window.dispatchEvent(new CustomEvent('openHeartCoinCards', {
+                                detail: { source: 'binder_empty_slot' }
+                              }));
+                            } catch {}
+                          }
+                        }}
                         style={{
-                          boxShadow: '0 0 5px rgba(255,105,180,0.1)'
+                          boxShadow: hasCard
+                            ? '0 0 20px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.4)' 
+                            : !hasCard && !isLockedSlot
+                            ? '0 0 15px rgba(255,105,180,0.4), 0 0 25px rgba(255,105,180,0.2), 0 0 35px rgba(255,105,180,0.1)'
+                            : '0 0 5px rgba(255,105,180,0.1)',
+                          aspectRatio: '2/3',
+                          border: !hasCard && !isLockedSlot
+                            ? '2px dotted rgba(255,105,180,0.5)' 
+                            : undefined
                         }}
                       >
-                        <div className="relative h-full w-full flex items-center justify-center">
-                          <div 
-                            className="text-center"
-                            style={{
-                              color: 'rgba(255,105,180,0.4)',
-                              fontSize: '10px',
-                              fontWeight: 'bold',
-                              letterSpacing: '0.5px'
-                            }}
-                          >
-                            LOCKED
-                          </div>
+                        <div className="relative w-full h-full">
+                          {hasCard && collectedCard?.cards ? (
+                            <>
+                              <img
+                                src={getCardImage(collectedCard.cards.card_name, collectedCard.cards.element)}
+                                alt={collectedCard.cards.card_name}
+                                className="w-full h-full object-cover rounded transition-all duration-300"
+                                draggable={false}
+                              />
+                              <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-green-500/80 rounded-full flex items-center justify-center">
+                                <svg viewBox="0 0 24 24" width="10" height="10" fill="white">
+                                  <path d="M20 6L9 17l-5-5"/>
+                                </svg>
+                              </div>
+                            </>
+                          ) : isLockedSlot ? (
+                            <div className="w-full h-full bg-gradient-to-br from-pink-500/5 to-purple-500/5 rounded border-2 border-dashed border-pink-400/20 flex items-center justify-center">
+                              <div 
+                                className="text-xs font-bold text-center"
+                                style={{ 
+                                  color: 'rgba(255,105,180,0.4)', 
+                                  textShadow: '0 0 4px rgba(255,105,180,0.3)',
+                                  fontSize: '10px',
+                                  letterSpacing: '0.5px'
+                                }}
+                              >
+                                LOCKED
+                              </div>
+                            </div>
+                          ) : (
+                            <div 
+                              className="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded flex items-center justify-center"
+                            >
+                              <div 
+                                className="text-xs font-bold"
+                                style={{ 
+                                  color: '#FFB6C1', 
+                                  textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                                  fontSize: '8px'
+                                }}
+                              >
+                                EMPTY
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );

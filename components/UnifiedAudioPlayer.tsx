@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { useSongs } from "@/hooks/useSongs";
 import { AUDIO_ASSETS_BY_SLUG } from "@/data/audioAssets";
 import { SONG_ELEMENT_MAPPING } from "@/data/songElements";
-import { useAudio, TRACK_INFO } from "@/app/providers/AudioProvider";
+import { useAudio, TRACK_INFO, TRACKS, TrackKey } from "@/app/providers/AudioProvider";
 import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
 import SongDropdown from "./SongDropdown";
 
@@ -122,9 +122,17 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
     if (isPlaying) {
       audioManager.pause();
     } else {
-      audioManager.play();
+      // If no track is currently loaded, try to play the first available song
+      if (!audioManager.src || !audioManager.currentTrack) {
+        const firstSong = availableSongs[0];
+        if (firstSong) {
+          handleTrackChange(firstSong.id);
+        }
+      } else {
+        audioManager.play();
+      }
     }
-  }, [isPlaying, audioManager]);
+  }, [isPlaying, audioManager, availableSongs, handleTrackChange]);
 
   // Handle progress bar click for seeking
   const handleProgressClick = useCallback((e: React.MouseEvent) => {
@@ -177,7 +185,7 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
           </div>
 
           {/* Player Controls */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 mt-2">
             
             {/* Play/Pause Button */}
             <button
