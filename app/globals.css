@@ -42,6 +42,21 @@
   }
 }
 
+/* Ensure custom cursor is always on top of everything */
+.custom-cursor-always-top {
+  z-index: 2147483647 !important;
+  position: fixed !important;
+  pointer-events: none !important;
+  isolation: isolate !important;
+  will-change: transform;
+  contain: layout style paint !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+  transform-style: preserve-3d !important;
+  mix-blend-mode: normal !important;
+}
+
 /* Removed global position: relative rule that was causing click blocking issues */
 
 /* Local fonts (place files in /public/fonts) */
@@ -103,7 +118,7 @@
   /* Increased gap to move all displays and beam down together */
   --beam-gap-px: 200px; /* Further reduced to move blue display down */
   /* Pink display vertical nudge to meet the light beam */
-  --pink-bottom-nudge: -100px;
+  --pink-bottom-nudge: 20px;
   /* HUD waveform player bottom offset (raises player inside blue display) */
   /* Nudge down very slightly for spacing */
   --hud-player-bottom-offset: 26px;

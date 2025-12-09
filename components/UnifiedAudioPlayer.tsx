@@ -133,11 +133,12 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
     if (isPlaying) {
       audioManager.pause();
     } else {
-      // If no track is currently loaded, try to play the first available song
+      // If no track is currently loaded, play "space-music" by default
       if (!audioManager.currentTrack || !audioManager.src) {
-        const firstSong = availableSongs[0];
-        if (firstSong) {
-          handleTrackChange(firstSong.id);
+        const spaceMusicSong = availableSongs.find(song => song.id === 'space-music');
+        const defaultSong = spaceMusicSong || availableSongs[0];
+        if (defaultSong) {
+          handleTrackChange(defaultSong.id);
         }
       } else {
         // Track is loaded, just resume playback

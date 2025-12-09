@@ -225,6 +225,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       setSuccessMessage("");
       sfx.play('star', 0.8);
 
+      // Debug logging to help identify the source of invalid UUIDs
+      console.log('Daily prompt data:', dailyPrompt);
+      console.log('Daily prompt ID:', dailyPrompt?.id);
+      
       // Use ProfileContext's saveJournalEntry which handles upsert properly
       const result = await saveJournalEntry({
         entry_date: today,
@@ -697,14 +701,14 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                           </div>
                         )}
                         
-                        {/* Today's Prompt */}
+                        {/* Prompt */}
                         {entry.reflection && (
                           <div>
                             <div 
                               className="text-xs font-semibold mb-1 uppercase tracking-wider"
                               style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
                             >
-                              Today's Prompt
+                              Prompt
                             </div>
                             <div 
                               className="text-sm leading-relaxed"
@@ -721,7 +725,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                           </div>
                         )}
                         
-                        {/* User Response */}
+                        {/* Soul Star */}
                         {entry.soul_star && (
                           <div>
                             <div className="flex items-center justify-between mb-1">
@@ -730,7 +734,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                   className="text-xs font-semibold uppercase tracking-wider"
                                   style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
                                 >
-                                  🌟 Your Soul Star
+                                  🌟 Soul Star
                                 </div>
                                 {/* Privacy status in expanded view */}
                                 <span 

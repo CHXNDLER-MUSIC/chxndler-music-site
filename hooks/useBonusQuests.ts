@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BonusQuestWithCompletion, QuestCompletionResult } from '@/types/bonusQuests';
-import { getBonusQuestsForUser, completeBonusQuest } from '@/lib/bonusQuests';
+import { getBonusQuestsForUser, completeBonusQuestLegacy } from '@/lib/bonusQuests';
 import { supabaseBrowser } from '@/lib/supabase-browser';
+import { useProfile } from '@/contexts/ProfileContext';
 
 interface UseBonusQuestsReturn {
   quests: BonusQuestWithCompletion[];
@@ -24,6 +25,9 @@ export function useBonusQuests(): UseBonusQuestsReturn {
   const [hasInitialLoad, setHasInitialLoad] = useState(false);
   const [hasLoggedError, setHasLoggedError] = useState(false);
   const isLoggedIn = !!currentUserId;
+  
+  // Get profile context for refreshing HeartCoin balance
+  const { refreshProfile } = useProfile();
 
   // Get current user (safe: don't error if not logged in)
   useEffect(() => {
@@ -116,9 +120,10 @@ export function useBonusQuests(): UseBonusQuestsReturn {
     }
 
     try {
-      const result = await completeBonusQuest(
+      const result = await completeBonusQuestLegacy(
         currentUserId,
         quest,
+        undefined, // source
         // TODO: Wire up existing heart coins handler
         (amount: number) => {
           console.log(`Awarded ${amount} heart coins`);
@@ -131,9 +136,12 @@ export function useBonusQuests(): UseBonusQuestsReturn {
         }
       );
 
-      // If quest was completed successfully, refetch quests to update UI
+      // If quest was completed successfully, refetch quests and refresh profile to update HeartCoin balance
       if (result.success) {
-        await fetchQuests();
+        await Promise.all([
+          fetchQuests(),
+          refreshProfile() // Refresh profile to update HeartCoin balance in UI
+        ]);
       }
 
       return result;

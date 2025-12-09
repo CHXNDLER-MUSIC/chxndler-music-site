@@ -8,7 +8,7 @@ export default function JoinAliensBox() {
       className="h-full w-full pointer-events-auto"
       style={{
         // Slightly stronger backward tilt
-        transform: "perspective(1100px) translateY(25px) rotateX(18deg) rotateY(12deg) rotateZ(-2deg) translateX(-40px)",
+        transform: "perspective(1100px) translateY(100px) rotateX(18deg) rotateY(12deg) rotateZ(-2deg) translateX(-40px)",
         transformOrigin: "right top",
       }}
     >

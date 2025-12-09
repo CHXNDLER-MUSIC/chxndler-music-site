@@ -39,7 +39,9 @@ export type QuestKey =
   | 'FOLLOW_SPOTIFY'
   | 'FOLLOW_TIKTOK'
   | 'FOLLOW_INSTAGRAM'
-  | 'FOLLOW_YOUTUBE';
+  | 'FOLLOW_YOUTUBE'
+  | 'SECRET_PHRASE'
+  | 'DAILY_CHECKIN';
 
 export interface QuestCompletionResult {
   success: boolean;

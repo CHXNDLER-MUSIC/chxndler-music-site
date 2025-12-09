@@ -599,11 +599,20 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       if (entry.prompt_id !== null && entry.prompt_id !== undefined) {
         // Validate that prompt_id is a valid UUID before adding it
         const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(entry.prompt_id);
-        if (isValidUUID) {
+        
+        // Special check for known problematic values
+        const isProblematicValue = entry.prompt_id === 'relic-id-here' || 
+                                  entry.prompt_id.includes('relic') ||
+                                  entry.prompt_id.includes('placeholder') ||
+                                  entry.prompt_id.includes('example');
+        
+        if (isValidUUID && !isProblematicValue) {
           entryData.prompt_id = entry.prompt_id;
         } else {
-          console.warn('Invalid UUID for prompt_id, skipping:', entry.prompt_id);
-          // Don't include prompt_id if it's not a valid UUID
+          console.warn('Invalid or problematic UUID for prompt_id, skipping:', entry.prompt_id);
+          // Don't include prompt_id if it's not a valid UUID or contains placeholder text
+          // If the prompt_id is invalid, we should still be able to save the journal entry
+          // The prompt_id column allows NULL values in the database
         }
       }
       if (entry.intention !== null && entry.intention !== undefined) {
@@ -645,6 +654,14 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error('Database error details:', error);
+        console.error('Entry data that failed to save:', entryData);
+        
+        // Provide more specific error messages for common UUID issues
+        if (error.message?.includes('invalid input syntax for type uuid')) {
+          const uuidField = error.message.match(/invalid input syntax for type uuid: "([^"]+)"/)?.[1];
+          throw new Error(`Invalid UUID format detected${uuidField ? ` for value "${uuidField}"` : ''}. Please refresh the page and try again.`);
+        }
+        
         throw new Error(`Failed to save journal entry: ${error.message || error.details || 'Unknown database error'}`);
       }
 

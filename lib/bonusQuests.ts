@@ -1,3 +1,4 @@
+import { SupabaseClient } from '@supabase/supabase-js';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { BonusQuestRow, UserBonusQuestRow, BonusQuestWithCompletion, QuestCompletionResult } from '@/types/bonusQuests';
 import { awardHeartCoins } from '@/utils/heartcoins';
@@ -105,235 +106,230 @@ export async function getBonusQuestsForUser(userId?: string | null): Promise<Bon
 
 /**
  * Completes a bonus quest for the user with proper tracking and rewards
+ * New signature to match requirements
  */
-export async function completeBonusQuest(
+export async function completeBonusQuest(params: {
+  supabase: SupabaseClient;
+  userId: string;
+  bonusQuestId: string;
+}): Promise<void> {
+  const { supabase, userId, bonusQuestId } = params;
+
+  if (!bonusQuestId) {
+    console.error('completeBonusQuest: Missing bonusQuestId', { userId, bonusQuestId });
+    throw new Error('bonusQuestId is required');
+  }
+
+  try {
+    // Get the quest details to check reward_heartcoins
+    const { data: quest, error: questError } = await supabase
+      .from('bonus_quests')
+      .select('*')
+      .eq('id', bonusQuestId)
+      .single();
+
+    if (questError || !quest) {
+      console.error('Failed to fetch quest details:', questError);
+      throw new Error('Quest not found');
+    }
+
+    // Check if already completed (prevent duplicate completion)
+    const { data: existingCompletion } = await supabase
+      .from('user_bonus_quest_completions')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('bonus_quest_id', bonusQuestId)
+      .maybeSingle();
+
+    if (existingCompletion) {
+      console.log('Quest already completed, skipping duplicate');
+      return;
+    }
+
+    // Insert completion record
+    const { error: completionError } = await supabase
+      .from('user_bonus_quest_completions')
+      .insert({
+        user_id: userId,
+        bonus_quest_id: bonusQuestId,
+        completed_at: new Date().toISOString()
+      });
+
+    if (completionError) {
+      console.error('Failed to insert quest completion:', {
+        userId,
+        bonusQuestId,
+        error: completionError
+      });
+      throw new Error(`Failed to complete quest: ${completionError.message}`);
+    }
+
+    // Award HeartCoins if quest has reward
+    if (quest.reward_heartcoins && quest.reward_heartcoins > 0) {
+      await awardHeartCoins(
+        supabase,
+        userId,
+        quest.reward_heartcoins,
+        `Bonus Quest: ${quest.title}`,
+        { quest_id: quest.id }
+      );
+    }
+
+    console.log('Successfully completed quest:', {
+      userId,
+      questId: quest.id,
+      questKey: quest.quest_key,
+      heartCoinsAwarded: quest.reward_heartcoins
+    });
+
+  } catch (error) {
+    console.error('Error in completeBonusQuest:', {
+      userId,
+      bonusQuestId,
+      error
+    });
+    throw error;
+  }
+}
+
+/**
+ * Completes a secret phrase quest with phrase validation
+ */
+export async function completeSecretPhraseQuest(params: {
+  supabase: SupabaseClient;
+  userId: string;
+  bonusQuestId: string;
+  phrase: string;
+}): Promise<void> {
+  const { supabase, userId, bonusQuestId, phrase } = params;
+
+  if (!phrase || !phrase.trim()) {
+    throw new Error('Secret phrase is required');
+  }
+
+  const trimmedPhrase = phrase.trim();
+
+  try {
+    // Look up the secret phrase (case insensitive, active today)
+    const today = new Date().toISOString().split('T')[0];
+    const { data: secretPhrase, error: phraseError } = await supabase
+      .from('secret_phrases')
+      .select('*')
+      .ilike('secret_phrase', trimmedPhrase)
+      .lte('active_date', today)
+      .maybeSingle();
+
+    if (phraseError) {
+      console.error('Error looking up secret phrase:', phraseError);
+      throw new Error('Error validating secret phrase');
+    }
+
+    if (!secretPhrase) {
+      throw new Error('Invalid secret phrase');
+    }
+
+    // Check if user already redeemed this phrase
+    const { data: existingRedemption } = await supabase
+      .from('secret_phrase_redemptions')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('secret_phrase_id', secretPhrase.id)
+      .maybeSingle();
+
+    if (existingRedemption) {
+      throw new Error('Secret phrase already redeemed');
+    }
+
+    // Award HeartCoins from the secret phrase reward
+    if (secretPhrase.reward && secretPhrase.reward > 0) {
+      await awardHeartCoins(
+        supabase,
+        userId,
+        secretPhrase.reward,
+        `Secret Phrase: ${secretPhrase.secret_phrase}`,
+        { secret_phrase_id: secretPhrase.id }
+      );
+    }
+
+    // Insert redemption record
+    const { error: redemptionError } = await supabase
+      .from('secret_phrase_redemptions')
+      .insert({
+        user_id: userId,
+        secret_phrase_id: secretPhrase.id,
+        redeemed_at: new Date().toISOString()
+      });
+
+    if (redemptionError) {
+      console.error('Failed to insert secret phrase redemption:', redemptionError);
+      throw new Error('Failed to record redemption');
+    }
+
+    // Complete the bonus quest
+    await completeBonusQuest({
+      supabase,
+      userId,
+      bonusQuestId
+    });
+
+    console.log('Successfully completed secret phrase quest:', {
+      userId,
+      phrase: secretPhrase.secret_phrase,
+      reward: secretPhrase.reward,
+      bonusQuestId
+    });
+
+  } catch (error) {
+    console.error('Error in completeSecretPhraseQuest:', {
+      userId,
+      bonusQuestId,
+      phrase: trimmedPhrase,
+      error
+    });
+    throw error;
+  }
+}
+
+/**
+ * Legacy function for backward compatibility - converts old signature to new
+ */
+export async function completeBonusQuestLegacy(
   userId: string, 
   quest: BonusQuestWithCompletion,
-  // Optional callbacks for existing reward systems
+  source?: string,
   onHeartCoinsAwarded?: (amount: number) => void,
   onElementCardAwarded?: () => void
 ): Promise<QuestCompletionResult> {
   try {
-    // Validate user authentication by checking if we can get current session
-    const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-    
-    if (sessionError) {
-      console.error('Session validation error:', sessionError);
-      return {
-        success: false,
-        message: 'Authentication required to complete quests'
-      };
-    }
+    // Use the new completeBonusQuest function
+    await completeBonusQuest({
+      supabase: supabaseClient,
+      userId,
+      bonusQuestId: quest.id
+    });
 
-    if (!session?.user) {
-      return {
-        success: false,
-        message: 'Please sign up or log in to complete quests and earn Heart Coins'
-      };
-    }
-
-    // Verify the provided userId matches the authenticated user
-    if (session.user.id !== userId) {
-      console.error('User ID mismatch:', { providedUserId: userId, sessionUserId: session.user.id });
-      return {
-        success: false,
-        message: 'User authentication mismatch'
-      };
-    }
-
-    // Check if user has already maxed out this quest
-    if (quest.max_total_completions !== null && quest.times_completed >= quest.max_total_completions) {
-      return {
-        success: false,
-        message: 'Quest already completed'
-      };
-    }
-
-    // Check daily completion limit
-    if (quest.max_times_per_day > 0) {
-      // Get user's completion record to check last completion date
-      const { data: userCompletion, error: completionCheckError } = await supabaseClient
-        .from('user_bonus_quests')
-        .select('last_completed_at')
-        .eq('user_id', userId)
-        .eq('bonus_quest_id', quest.id)
-        .maybeSingle();
-
-      if (completionCheckError) {
-        console.error('Error checking quest completion:', completionCheckError);
-        return {
-          success: false,
-          message: 'Error validating quest completion status'
-        };
-      }
-
-      if (userCompletion?.last_completed_at) {
-        const lastCompleted = new Date(userCompletion.last_completed_at);
-        const today = new Date();
-        const isToday = lastCompleted.toDateString() === today.toDateString();
-        
-        if (isToday) {
-          return {
-            success: false,
-            message: 'You can only complete this quest once per day. Come back tomorrow!'
-          };
-        }
-      }
-    }
-
-    // Special handling for LISTEN_ELEMENT_SONG
-    if (quest.quest_key === 'LISTEN_ELEMENT_SONG') {
-      // TODO: Verify user actually played their Elemental song
-      // This could integrate with existing analytics/tracking system
-      console.log('TODO: Verify user played elemental song');
-      
-      // TODO: Grant appropriate elemental card to user in Binder
-      console.log('TODO: Grant elemental card to user');
-    }
-
-    // Award quest rewards
-    const rewards: { heartcoins?: number; element_card?: boolean } = {};
-    
+    // Call optional callbacks
     if (quest.reward_heartcoins > 0) {
-      try {
-        await awardHeartCoins(
-          supabaseClient,
-          userId,
-          quest.reward_heartcoins,
-          `Quest completed: ${quest.title}`,
-          { quest_id: quest.id, quest_key: quest.quest_key }
-        );
-        rewards.heartcoins = quest.reward_heartcoins;
-        onHeartCoinsAwarded?.(quest.reward_heartcoins);
-        console.log(`✅ Awarded ${quest.reward_heartcoins} HeartCoins for completing quest: ${quest.title}`);
-      } catch (heartCoinError) {
-        console.error('Failed to award HeartCoins:', heartCoinError);
-        return {
-          success: false,
-          message: 'Quest completed but failed to award HeartCoins. Please contact support.'
-        };
-      }
+      onHeartCoinsAwarded?.(quest.reward_heartcoins);
     }
-    
     if (quest.reward_element_card) {
-      rewards.element_card = true;
       onElementCardAwarded?.();
-      // TODO: Implement actual element card awarding logic
-      console.log('✅ Element card reward should be awarded');
-    }
-
-    // Persist user completion record. Prefer a safe select+update/insert pattern
-    // to avoid depending on a DB unique constraint for onConflict.
-    const nowIso = new Date().toISOString();
-
-    // Try to find an existing completion row
-    const { data: existingRow, error: selectError } = await supabaseClient
-      .from('user_bonus_quests')
-      .select('id, times_completed')
-      .eq('user_id', userId)
-      .eq('bonus_quest_id', quest.id)
-      .maybeSingle();
-
-    if (selectError) {
-      console.error('Error reading existing quest completion (raw):', selectError);
-      console.error('Error reading existing quest completion (details):', {
-        message: (selectError as any)?.message,
-        details: (selectError as any)?.details,
-        hint: (selectError as any)?.hint,
-        code: (selectError as any)?.code,
-      });
-      return {
-        success: false,
-        message: 'Failed to read quest completion state'
-      };
-    }
-
-    if (existingRow) {
-      // Update existing row (increment times_completed)
-      const { error: updateError } = await supabaseClient
-        .from('user_bonus_quests')
-        .update({
-          times_completed: (existingRow.times_completed ?? 0) + 1,
-          last_completed_at: nowIso,
-        })
-        .eq('id', existingRow.id);
-
-      if (updateError) {
-        console.error('Error updating user quest completion (raw):', updateError);
-        console.error('Error updating user quest completion (details):', {
-          message: (updateError as any)?.message,
-          details: (updateError as any)?.details,
-          hint: (updateError as any)?.hint,
-          code: (updateError as any)?.code,
-        });
-        return {
-          success: false,
-          message: 'Failed to save quest completion'
-        };
-      }
-    } else {
-      // Insert new row
-      const { error: insertError } = await supabaseClient
-        .from('user_bonus_quests')
-        .insert({
-          user_id: userId,
-          bonus_quest_id: quest.id,
-          times_completed: 1,
-          last_completed_at: nowIso,
-        });
-
-      if (insertError) {
-        console.error('Error inserting user quest completion (raw):', insertError);
-        console.error('Error inserting user quest completion (details):', {
-          message: (insertError as any)?.message,
-          details: (insertError as any)?.details,
-          hint: (insertError as any)?.hint,
-          code: (insertError as any)?.code,
-        });
-        
-        // Handle unique constraint violation - user already has completion record
-        if ((insertError as any)?.code === '23505') {
-          console.log('User already has completion record, attempting update instead...');
-          
-          // Try to update instead
-          const { error: updateError } = await supabaseClient
-            .from('user_bonus_quests')
-            .update({
-              times_completed: (quest.times_completed || 0) + 1,
-              last_completed_at: nowIso,
-            })
-            .eq('user_id', userId)
-            .eq('bonus_quest_id', quest.id);
-
-          if (updateError) {
-            console.error('Error updating after failed insert:', updateError);
-            return {
-              success: false,
-              message: 'Failed to save quest completion'
-            };
-          }
-          
-          console.log('Successfully updated completion record via fallback');
-        } else {
-          return {
-            success: false,
-            message: 'Failed to save quest completion'
-          };
-        }
-      }
     }
 
     return {
       success: true,
       message: 'Quest completed successfully!',
-      rewards
+      rewards: {
+        heartcoins: quest.reward_heartcoins > 0 ? quest.reward_heartcoins : undefined,
+        element_card: quest.reward_element_card ? true : undefined
+      }
     };
 
   } catch (error) {
-    console.error('Error in completeBonusQuest:', error);
+    console.error('Error in completeBonusQuestLegacy:', error);
     return {
       success: false,
-      message: 'An error occurred while completing the quest'
+      message: error instanceof Error ? error.message : 'An error occurred while completing the quest'
     };
   }
 }

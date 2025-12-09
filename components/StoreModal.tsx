@@ -399,11 +399,7 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
                     {item.priceHeartCoins} Heart Coins
                   </span>
                 </div>
-                {hasEnoughHeartCoins ? (
-                  <div className="text-center text-green-400 font-semibold mt-2">
-                    You can purchase this card!
-                  </div>
-                ) : (
+                {!hasEnoughHeartCoins && (
                   <div className="text-center text-red-400 font-semibold mt-2">
                     Not enough Heart Coins
                   </div>

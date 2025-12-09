@@ -10,6 +10,7 @@ import UserList from './UserList';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import ProfileModal from './ProfileModal';
+import VotingPanel from './VotingPanel';
 
 // Debug flag to control console logging
 const DEBUG = process.env.NODE_ENV === 'development' && false;
@@ -239,6 +240,8 @@ export default function ChatPanel({ isOpen, onClose }) {
   const [badgeStartIndex, setBadgeStartIndex] = useState(0);
   const [binderStartIndex, setBinderStartIndex] = useState(0);
   const [selectedCardPopup, setSelectedCardPopup] = useState(null);
+  const [activeTab, setActiveTab] = useState('chat'); // 'chat', 'voting', 'badges', 'cards'
+  const [isVotingPanelCollapsed, setIsVotingPanelCollapsed] = useState(false); // Start expanded by default
   const channelRef = useRef(null);
 
   // Initialize chat users when chat opens - either authenticated user or anonymous
@@ -940,6 +943,70 @@ export default function ChatPanel({ isOpen, onClose }) {
                           />
                         );
                       })()}
+                    </div>
+                    
+                    {/* Voting Section */}
+                    <div className="border-t border-cyan-400/20">
+                      <button
+                        onClick={() => {
+                          try {
+                            const audio = new Audio('/audio/close.mp3');
+                            audio.volume = 0.5;
+                            audio.play().catch(error => {
+                              console.log('Vote toggle audio play failed:', error);
+                            });
+                          } catch (error) {
+                            console.log('Vote toggle audio creation failed:', error);
+                          }
+                          setIsVotingPanelCollapsed(!isVotingPanelCollapsed);
+                        }}
+                        className="w-full p-2 hover:bg-yellow-400/10 transition-colors duration-200 border-b border-cyan-400/20 flex items-center justify-between relative"
+                        style={{
+                          color: '#F2EF1D',
+                          textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.color = '#FFFF99';
+                          e.target.style.textShadow = '0 0 12px rgba(242, 239, 29, 0.8)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.color = '#F2EF1D';
+                          e.target.style.textShadow = '0 0 8px rgba(242, 239, 29, 0.6)';
+                        }}
+                        title={isVotingPanelCollapsed ? "Show voting" : "Hide voting"}
+                      >
+                        {/* VOTING label on the left */}
+                        {!isUserPanelCollapsed && (
+                          <p 
+                            className="text-xs font-semibold"
+                            style={{
+                              color: '#F2EF1D',
+                              textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
+                            }}
+                          >
+                            🗳️ SONG VOTING
+                          </p>
+                        )}
+                        
+                        {/* Arrow on the right */}
+                        <div 
+                          className="transition-transform duration-200"
+                          style={{
+                            transform: isVotingPanelCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)'
+                          }}
+                        >
+                          ▼
+                        </div>
+                      </button>
+                      
+                      {/* Voting Panel Content */}
+                      <div className={`transition-all duration-300 overflow-hidden ${
+                        isVotingPanelCollapsed ? 'max-h-0 opacity-0' : 'max-h-[400px] opacity-100'
+                      }`}>
+                        {!isVotingPanelCollapsed && !isUserPanelCollapsed && (
+                          <VotingPanel />
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

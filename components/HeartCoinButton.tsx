@@ -8,16 +8,19 @@ import { supabaseBrowser } from "@/lib/supabase-browser";
 import { track } from "@/lib/analytics";
 import { useBonusQuests } from '@/hooks/useBonusQuests';
 import { BonusQuestWithCompletion } from '@/types/bonusQuests';
+import { completeSecretPhraseQuest } from '@/lib/bonusQuests';
 
 // Store item interface
 interface StoreItem {
   id: string;
+  slug: string;
   title: string;
   description: string;
   image: string;
   image2?: string;
   priceUsd: number;
   priceHeartCoins: number;
+  cost?: number;
   stripeUrl: string;
   is_released?: boolean;
   min_tier?: string;
@@ -42,123 +45,145 @@ interface Card {
 const PHYSICAL_ITEMS: StoreItem[] = [
   {
     id: 'necklace',
+    slug: 'necklace',
     title: 'Necklace',
     description: "A symbol of love, connection, and everything this world stands for. It's a keepsake for the people who found home here.",
     image: 'https://ik.imagekit.io/CHXNDLER/STORE/necklace.png',
     priceUsd: 18,
     priceHeartCoins: 12,
+    cost: 12,
     stripeUrl: 'https://buy.stripe.com/bJe3cw99f28R5x7epp4gg0K',
     is_released: true,
     min_tier: 'wanderer'
   },
   {
     id: 'pin',
+    slug: 'pin',
     title: 'PIN',
     description: 'A symbol that you belong here with the people who feel deeply, dream big, and find beauty in being different.',
     image: 'https://ik.imagekit.io/CHXNDLER/STORE/pin.png',
     priceUsd: 4.5,
     priceHeartCoins: 3,
+    cost: 3,
     stripeUrl: 'https://buy.stripe.com/cNi00kfxDeVD3oZ5ST4gg0B',
     is_released: true,
     min_tier: 'wanderer'
   },
   {
     id: 'patch',
+    slug: 'patch',
     title: 'PATCH',
     description: "Stitch this into your world as a quiet reminder that this isn't just music, it's a community.",
     image: 'https://ik.imagekit.io/CHXNDLER/STORE/patch.png',
     image2: 'https://ik.imagekit.io/CHXNDLER/STORE/patch-inverse.png',
     priceUsd: 6,
     priceHeartCoins: 4,
+    cost: 4,
     stripeUrl: 'https://buy.stripe.com/00w5kEgBHdRz1gRgxx4gg0C',
     is_released: true,
     min_tier: 'wanderer'
   },
   {
     id: 'sticker',
+    slug: 'sticker',
     title: 'Sticker',
     description: "A simple reminder that you're part of something bigger. Remember you're not alone in this story.",
     image: 'https://ik.imagekit.io/CHXNDLER/STORE/sticker.png',
     priceUsd: 3,
     priceHeartCoins: 2,
+    cost: 2,
     stripeUrl: 'https://buy.stripe.com/8x24gA99f9Bj1gR6WX4gg0F',
     is_released: true,
     min_tier: 'wanderer'
   },
   {
     id: 'hat',
+    slug: 'hat',
     title: 'Hat',
     description: "A classic you'll wear everywhere. It's lowkey, but it says everything it needs to.",
     image: 'https://ik.imagekit.io/CHXNDLER/STORE/hat.png',
     priceUsd: 30,
     priceHeartCoins: 20,
+    cost: 20,
     stripeUrl: 'https://buy.stripe.com/6oU28s717aFn1gR1CD4gg0I',
     is_released: true,
     min_tier: 'wanderer'
   },
   {
     id: 'keychain',
+    slug: 'keychain',
     title: 'Keychain',
     description: 'A small piece of the HEARTVERSE to carry everywhere. A quiet reminder that you\'re connected, always.',
     image: 'https://ik.imagekit.io/CHXNDLER/STORE/keychain.png',
     priceUsd: 6,
     priceHeartCoins: 4,
+    cost: 4,
     stripeUrl: 'https://buy.stripe.com/8x214o99faFn0cN5ST4gg0H',
     is_released: true,
     min_tier: 'wanderer'
   },
   {
     id: 'house-party-poster',
+    slug: 'house-party-poster',
     title: 'House Party Poster',
     description: 'This poster captures the night the HEARTVERSE came alive. Hang it up and remember when you joined the story.',
     image: 'https://ik.imagekit.io/CHXNDLER/STORE/house-party-poster.png',
     priceUsd: 30,
     priceHeartCoins: 20,
+    cost: 20,
     stripeUrl: 'https://buy.stripe.com/dRm8wQetz14N5x71CD4gg0L',
     is_released: true,
     min_tier: 'wanderer'
   },
   {
     id: 'beanie',
+    slug: 'beanie',
     title: 'Beanie',
     description: "For the ones who wear their hearts out loud and aren't afraid to stand out.",
     image: 'https://ik.imagekit.io/CHXNDLER/STORE/beanie-front.png',
     image2: 'https://ik.imagekit.io/CHXNDLER/STORE/beanie-back.png',
     priceUsd: 30,
     priceHeartCoins: 20,
+    cost: 20,
     stripeUrl: 'https://buy.stripe.com/dRm8wQetz14N5x71CD4gg0L',
     is_released: true,
     min_tier: 'wanderer'
   },
   {
     id: 'button',
+    slug: 'button',
     title: 'Button',
     description: 'A symbol of unity, curiosity, and courage for those who feel deeply and dream beyond the ordinary.',
     image: 'https://ik.imagekit.io/CHXNDLER/STORE/button.png',
     priceUsd: 6,
     priceHeartCoins: 4,
-    stripeUrl: 'https://buy.stripe.com/6oU14oclr8xfbVvbdd4gg0J',
+    cost: 4,
+    stripeUrl: 'https://buy.stripe.com/6oU14oclr8xfbdd4gg0J',
     is_released: true,
     min_tier: 'wanderer'
   },
   {
     id: 'bracelet',
+    slug: 'bracelet',
     title: 'Bracelet',
     description: "A reminder you wear on your wrist that you're growing, healing, and finding your place. It's a quiet symbol that you belong here, with the ones who feel deeply and love endlessly.",
     image: 'https://ik.imagekit.io/CHXNDLER/STORE/bracelet.png',
     priceUsd: 24,
     priceHeartCoins: 16,
+    cost: 16,
     stripeUrl: 'https://buy.stripe.com/aFa8wQ2KR8xf6Bbftt4gg0N',
     is_released: true,
     min_tier: 'wanderer'
   },
   {
     id: 'pick',
+    slug: 'pick',
     title: 'Pick',
     description: 'Your reminder to follow your passion wherever it leads. A glow in the dark pick made for the dreamers and late night creators who carry music like a heartbeat through the dark.',
     image: 'https://ik.imagekit.io/CHXNDLER/STORE/pick.png',
     priceUsd: 6,
     priceHeartCoins: 4,
+    cost: 4,
     stripeUrl: 'https://buy.stripe.com/4gM9AUadj9Bj2kVgxx4gg0O',
     is_released: true,
     min_tier: 'wanderer'
@@ -208,6 +233,19 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     city: '',
     state: '',
     zip: '',
+    country: ''
+  });
+  
+  // Purchase flow states
+  const [step, setStep] = useState<'confirm' | 'shipping' | 'done'>('confirm');
+  const [shippingForm, setShippingForm] = useState({
+    full_name: '',
+    address_line1: '',
+    address_line2: '',
+    city: '',
+    state: '',
+    zip: '',
+    county: '',
     country: ''
   });
   const [heartCoins, setHeartCoins] = useState(0);
@@ -525,6 +563,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [isSubmittingPhrase, setIsSubmittingPhrase] = useState(false);
   const [statusType, setStatusType] = useState<'idle' | 'success' | 'error'>('idle');
   
+  // State for secret phrase quest
+  const [secretPhraseInputVisible, setSecretPhraseInputVisible] = useState<string | null>(null);
+  const [secretPhraseValue, setSecretPhraseValue] = useState("");
+  const [secretPhraseLoading, setSecretPhraseLoading] = useState(false);
+  
   // Bonus quests hook
   const { quests: bonusQuests, status: bonusQuestsStatus, errorMessage: bonusQuestsError, isLoggedIn, completeQuest } = useBonusQuests();
 
@@ -696,6 +739,61 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     }
   };
 
+  // Handle secret phrase quest completion
+  const handleSecretPhraseQuest = async (quest: BonusQuestWithCompletion) => {
+    if (!secretPhraseValue.trim()) {
+      setCheckInMessage('Please enter a secret phrase');
+      setStatusType('error');
+      setTimeout(() => {
+        setCheckInMessage("");
+        setStatusType('idle');
+      }, 2000);
+      return;
+    }
+
+    setSecretPhraseLoading(true);
+    try {
+      await completeSecretPhraseQuest({
+        supabase: supabaseBrowser,
+        userId: profile?.id || '',
+        bonusQuestId: quest.id,
+        phrase: secretPhraseValue
+      });
+
+      // Success - clear input and update UI
+      setSecretPhraseValue('');
+      setSecretPhraseInputVisible(null);
+      setCheckInMessage('Secret phrase accepted! HeartCoins awarded.');
+      setStatusType('success');
+      setShowCheckInSuccess(true);
+      
+      // Refresh quests and profile
+      await Promise.all([
+        completeQuest(quest),  // This will refetch quests
+        refreshProfile()
+      ]);
+
+      setTimeout(() => {
+        setShowCheckInSuccess(false);
+        setCheckInMessage("");
+        setStatusType('idle');
+      }, 3000);
+
+      try { sfx.play('click', 0.7); } catch {}
+    } catch (error) {
+      console.error('Secret phrase quest error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to redeem secret phrase';
+      setCheckInMessage(errorMessage);
+      setStatusType('error');
+      setTimeout(() => {
+        setCheckInMessage("");
+        setStatusType('idle');
+      }, 3000);
+    } finally {
+      setSecretPhraseLoading(false);
+    }
+  };
+
   // Handle bonus quest confirm step for invite friend
   const handleBonusQuestConfirm = async (quest: BonusQuestWithCompletion) => {
     try {
@@ -797,12 +895,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const handleSelectItem = (item: StoreItem) => {
     setSelectedItem(item);
     setShowItemDetail(true);
+    resetPurchaseFlow();
     try { sfx.play('click', 0.6); } catch {}
   };
 
   const handleBackToStore = () => {
     setShowItemDetail(false);
     setSelectedItem(null);
+    resetPurchaseFlow();
     try { sfx.play('close', 0.4); } catch {}
   };
 
@@ -812,10 +912,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     setIsProcessing(true);
     
     try {
-      // Call the new RPC directly
+      // Call the RPC with correct parameters
       const { data, error } = await supabaseBrowser.rpc('purchase_item_with_heartcoins', {
-        p_item_type: 'card',
-        p_item_id: item.id,
+        p_user_id: profile.id,
+        p_item_slug: item.slug,
+        p_cost: item.cost || item.priceHeartCoins
       });
       
       if (error) {
@@ -823,29 +924,89 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         
         // Check if it's an insufficient funds error
         if (error.message?.includes('Not enough HeartCoins')) {
-          // Insufficient HeartCoins - handled in UI
+          // Insufficient HeartCoins - UI will show this state
+          setIsProcessing(false);
+          return;
         } else {
           console.error('Purchase failed:', error.message);
+          setIsProcessing(false);
+          return;
         }
-        return;
       }
       
-      // Success! Update UI and profile
+      // Success! Deduct HeartCoins locally and advance to shipping
       try { sfx.play('click', 0.7); } catch {}
+      
+      // Update local heartcoin balance
+      const newBalance = (profile.heartcoin_balance || 0) - (item.cost || item.priceHeartCoins);
+      
+      // Switch to shipping step
+      setStep('shipping');
+      setIsProcessing(false);
       
       // Refresh profile to get updated balance from database
       await refreshProfile();
       
-      // Show success and go back to store
-      setTimeout(() => {
-        handleBackToStore();
-      }, 1500);
-      
     } catch (error) {
       console.error('HeartCoin purchase error:', error);
-    } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleShippingSubmit = async () => {
+    if (!profile || !selectedItem) return;
+    
+    setIsProcessing(true);
+    
+    try {
+      // Insert into orders table
+      const { error } = await supabaseBrowser
+        .from('orders')
+        .insert({
+          user_id: profile.id,
+          item_slug: selectedItem.slug,
+          heartcoin_cost: selectedItem.cost || selectedItem.priceHeartCoins,
+          full_name: shippingForm.full_name,
+          address_line1: shippingForm.address_line1,
+          address_line2: shippingForm.address_line2,
+          city: shippingForm.city,
+          state: shippingForm.state,
+          zip: shippingForm.zip,
+          county: shippingForm.county,
+          country: shippingForm.country,
+          status: 'pending'
+        });
+      
+      if (error) {
+        console.error('Order creation failed:', error);
+        setIsProcessing(false);
+        return;
+      }
+      
+      // Success! Switch to done step
+      try { sfx.play('click', 0.7); } catch {}
+      setStep('done');
+      setIsProcessing(false);
+      
+    } catch (error) {
+      console.error('Shipping submit error:', error);
+      setIsProcessing(false);
+    }
+  };
+
+  const resetPurchaseFlow = () => {
+    setStep('confirm');
+    setShippingForm({
+      full_name: '',
+      address_line1: '',
+      address_line2: '',
+      city: '',
+      state: '',
+      zip: '',
+      county: '',
+      country: ''
+    });
+    setIsProcessing(false);
   };
 
 
@@ -1334,11 +1495,18 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         onClick={() => {
                           if (quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared) {
                             handleBonusQuestConfirm(quest);
+                          } else if (quest.quest_key === 'SECRET_PHRASE') {
+                            if (secretPhraseInputVisible === quest.id) {
+                              handleSecretPhraseQuest(quest);
+                            } else {
+                              setSecretPhraseInputVisible(quest.id);
+                              setSecretPhraseValue('');
+                            }
                           } else {
                             handleBonusQuestComplete(quest);
                           }
                         }}
-                        disabled={!isLoggedIn || (!quest.can_complete && !inviteFriendShared) || quest.times_completed >= (quest.max_total_completions || Infinity)}
+                        disabled={!isLoggedIn || (!quest.can_complete && !inviteFriendShared) || quest.times_completed >= (quest.max_total_completions || Infinity) || (quest.quest_key === 'SECRET_PHRASE' && secretPhraseLoading)}
                         className="px-2 py-1 text-xs rounded border transition-colors font-bold"
                         style={{
                           background: !isLoggedIn
@@ -1397,6 +1565,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               ? 'CHECK IN'
                               : quest.quest_key === 'INVITE_FRIEND' 
                                 ? (inviteFriendShared ? 'CONFIRM' : 'INVITE FRIEND')
+                                : quest.quest_key === 'SECRET_PHRASE'
+                                  ? (secretPhraseInputVisible === quest.id 
+                                      ? (secretPhraseLoading ? 'SUBMITTING...' : 'SUBMIT')
+                                      : 'ENTER PHRASE')
                                 : 'COMPLETE')}
                       </button>
                       <span className="text-sm flex items-center" style={{ 
@@ -1407,6 +1579,25 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
                       </span>
                     </div>
+                    {/* Secret phrase input field */}
+                    {quest.quest_key === 'SECRET_PHRASE' && secretPhraseInputVisible === quest.id && (
+                      <div className="mt-2 border-t border-white/20 pt-2">
+                        <input
+                          type="text"
+                          value={secretPhraseValue}
+                          onChange={(e) => setSecretPhraseValue(e.target.value)}
+                          placeholder="Enter secret phrase"
+                          className="w-full px-2 py-1 text-xs rounded border bg-black/20 text-white placeholder-white/60 border-white/30 focus:border-white/60 focus:outline-none"
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter' && !secretPhraseLoading) {
+                              handleSecretPhraseQuest(quest);
+                            }
+                          }}
+                          autoFocus
+                          disabled={secretPhraseLoading}
+                        />
+                      </div>
+                    )}
                   </div>
                 ))
               )}
@@ -2026,7 +2217,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       }}
                                     >
                                       {(profile?.id ? heartCoins : 0) >= card.physicalCost 
-                                        ? 'You can purchase this card!' 
+                                        ? '' 
                                         : ''}
                                     </div>
 
@@ -2128,7 +2319,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       }}
                                     >
                                       {(profile?.id ? heartCoins : 0) >= card.physicalCost 
-                                        ? 'You can purchase this card!' 
+                                        ? '' 
                                         : ''}
                                     </div>
 
@@ -2160,62 +2351,56 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 ) : showDigitalForm ? (
                                   /* Digital Purchase Form */
                                   <div className="text-center">
-                                    {/* User and Cost - Side by Side */}
-                                    <div className="flex justify-between items-start mb-2">
-                                      {/* User Section */}
-                                      <div className="flex flex-col items-center flex-1">
+                                    {/* User and Cost - Stacked Layout */}
+                                    <div className="mb-3">
+                                      {/* User Row: User | Heart Coin | Balance */}
+                                      <div className="flex items-center justify-center gap-3 mb-4">
                                         <div 
-                                          className="font-bold text-white text-lg mb-1"
+                                          className="font-bold text-white text-lg"
                                           style={{
                                             textShadow: '0 0 4px rgba(255,255,255,0.6)'
                                           }}
                                         >
                                           User
                                         </div>
-                                        
-                                        {/* Current Heart Coins */}
-                                        <div className="flex flex-col items-center space-y-1">
-                                          <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
-                                          <div 
-                                            className="text-xl font-bold"
-                                            style={{ 
-                                              color: '#FFFFFF', 
-                                              textShadow: '0 0 6px rgba(255,255,255,0.8)' 
-                                            }}
-                                          >
-                                            {profile?.id ? heartCoins : 0}
-                                          </div>
+                                        <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-8 h-8" />
+                                        <div 
+                                          className="text-xl font-bold"
+                                          style={{ 
+                                            color: '#FFFFFF', 
+                                            textShadow: '0 0 6px rgba(255,255,255,0.8)' 
+                                          }}
+                                        >
+                                          {profile?.id ? heartCoins : 0}
                                         </div>
                                       </div>
-                                      {/* Cost Section */}
-                                      <div className="flex flex-col items-center flex-1">
+                                      
+                                      {/* Cost Row: Cost | Heart Coin | Price */}
+                                      <div className="flex items-center justify-center gap-3">
                                         <div 
-                                          className="font-bold text-white text-lg mb-1"
+                                          className="font-bold text-white text-lg"
                                           style={{
                                             textShadow: '0 0 4px rgba(255,255,255,0.6)'
                                           }}
                                         >
                                           Cost
                                         </div>
-                                        
-                                        <div className="flex flex-col items-center space-y-1">
-                                          <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
-                                          <div 
-                                            className="text-xl font-bold"
-                                            style={{ 
-                                              color: '#FFFFFF', 
-                                              textShadow: '0 0 6px rgba(255,255,255,0.8)' 
-                                            }}
-                                          >
-                                            {card.digitalCost}
-                                          </div>
+                                        <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-8 h-8" />
+                                        <div 
+                                          className="text-xl font-bold"
+                                          style={{ 
+                                            color: '#FFFFFF', 
+                                            textShadow: '0 0 6px rgba(255,255,255,0.8)' 
+                                          }}
+                                        >
+                                          {card.digitalCost}
                                         </div>
                                       </div>
                                     </div>
 
                                     {/* Status Message */}
                                     <div 
-                                      className="text-sm mb-4"
+                                      className="text-sm mb-2"
                                       style={{ 
                                         color: heartCoins >= card.digitalCost ? '#90EE90' : '#FF6B6B', 
                                         textShadow: heartCoins >= card.digitalCost 
@@ -2224,7 +2409,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       }}
                                     >
                                       {(profile?.id ? heartCoins : 0) >= card.digitalCost 
-                                        ? 'You can purchase this card!' 
+                                        ? '' 
                                         : ''}
                                     </div>
 
@@ -2314,7 +2499,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       }}
                                     >
                                       {(profile?.id ? heartCoins : 0) >= card.physicalCost 
-                                        ? 'You can purchase this card!' 
+                                        ? '' 
                                         : ''}
                                     </div>
 
@@ -2414,54 +2599,162 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     <div className="font-semibold text-white">{selectedItem.title}</div>
                   </div>
                   
-                  <div className="text-center mb-4">
-                    <div className="relative w-32 h-32 mx-auto mb-3">
-                      <Image
-                        src={selectedItem.image}
-                        alt={selectedItem.title}
-                        fill
-                        className="object-contain rounded-lg"
-                      />
+                  {step === 'confirm' && (
+                    <div className="text-center mb-4">
+                      <div className="relative w-32 h-32 mx-auto mb-3">
+                        <Image
+                          src={selectedItem.image}
+                          alt={selectedItem.title}
+                          fill
+                          className="object-contain rounded-lg"
+                        />
+                      </div>
+                      <p className="text-sm text-white mb-4">{selectedItem.description}</p>
+                      
+                      <div className="flex items-center justify-center gap-2 mb-4">
+                        <span className="text-lg font-bold text-[#F2EF1D]">{selectedItem.priceHeartCoins}</span>
+                        <img
+                          src="/elements/heart-coin.webp"
+                          alt="Heart Coin"
+                          className="w-6 h-6 object-contain"
+                          style={{
+                            filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
+                          }}
+                        />
+                      </div>
+                      
+                      <div className="text-xs text-white/80 mb-4">
+                        Your balance: {profile?.id ? (profile?.heartcoin_balance || 0) : 0} Heart Coins
+                      </div>
+                      
+                      {(profile?.id ? (profile?.heartcoin_balance || 0) : 0) >= selectedItem.priceHeartCoins ? (
+                        <button
+                          onClick={() => handlePurchaseWithHeartCoins(selectedItem)}
+                          disabled={isProcessing}
+                          className={`w-full px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                            isProcessing
+                              ? 'bg-gray-500 cursor-not-allowed text-gray-300'
+                              : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(242,239,29,0.8)]'
+                          }`}
+                          style={!isProcessing ? {
+                            boxShadow: '0 0 20px rgba(242,239,29,0.6), inset 0 2px 0 rgba(255,255,255,0.6), inset 0 -8px 16px rgba(0,0,0,0.22)'
+                          } : {}}
+                        >
+                          {isProcessing ? 'Processing...' : 'CONFIRM'}
+                        </button>
+                      ) : (
+                        <div className="text-sm text-red-400 bg-red-400/20 px-3 py-2 rounded border border-red-400/40">
+                          You need {selectedItem.priceHeartCoins - (profile?.id ? (profile?.heartcoin_balance || 0) : 0)} more Heart Coins
+                        </div>
+                      )}
                     </div>
-                    <p className="text-sm text-white mb-4">{selectedItem.description}</p>
-                    
-                    <div className="flex items-center justify-center gap-2 mb-4">
-                      <span className="text-lg font-bold text-[#F2EF1D]">{selectedItem.priceHeartCoins}</span>
-                      <img
-                        src="/elements/heart-coin.webp"
-                        alt="Heart Coin"
-                        className="w-6 h-6 object-contain"
-                        style={{
-                          filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
-                        }}
-                      />
-                    </div>
-                    
-                    <div className="text-xs text-white/80 mb-4">
-                      Your balance: {profile?.id ? (profile?.heartcoin_balance || 0) : 0} Heart Coins
-                    </div>
-                    
-                    {(profile?.id ? (profile?.heartcoin_balance || 0) : 0) >= selectedItem.priceHeartCoins ? (
+                  )}
+                  
+                  {step === 'shipping' && (
+                    <div className="text-center mb-4">
+                      <div className="text-sm text-green-400 mb-4">
+                        Purchase successful! Please provide shipping details:
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <input
+                          type="text"
+                          placeholder="Full Name"
+                          value={shippingForm.full_name}
+                          onChange={(e) => setShippingForm({...shippingForm, full_name: e.target.value})}
+                          className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Address Line 1"
+                          value={shippingForm.address_line1}
+                          onChange={(e) => setShippingForm({...shippingForm, address_line1: e.target.value})}
+                          className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Address Line 2 (Optional)"
+                          value={shippingForm.address_line2}
+                          onChange={(e) => setShippingForm({...shippingForm, address_line2: e.target.value})}
+                          className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="text"
+                            placeholder="City"
+                            value={shippingForm.city}
+                            onChange={(e) => setShippingForm({...shippingForm, city: e.target.value})}
+                            className="px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                          />
+                          <input
+                            type="text"
+                            placeholder="State"
+                            value={shippingForm.state}
+                            onChange={(e) => setShippingForm({...shippingForm, state: e.target.value})}
+                            className="px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="text"
+                            placeholder="ZIP Code"
+                            value={shippingForm.zip}
+                            onChange={(e) => setShippingForm({...shippingForm, zip: e.target.value})}
+                            className="px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                          />
+                          <input
+                            type="text"
+                            placeholder="County"
+                            value={shippingForm.county}
+                            onChange={(e) => setShippingForm({...shippingForm, county: e.target.value})}
+                            className="px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                          />
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Country"
+                          value={shippingForm.country}
+                          onChange={(e) => setShippingForm({...shippingForm, country: e.target.value})}
+                          className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                        />
+                      </div>
+                      
                       <button
-                        onClick={() => handlePurchaseWithHeartCoins(selectedItem)}
-                        disabled={isProcessing}
-                        className={`w-full px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
-                          isProcessing
+                        onClick={handleShippingSubmit}
+                        disabled={isProcessing || !shippingForm.full_name || !shippingForm.address_line1 || !shippingForm.city || !shippingForm.state || !shippingForm.zip || !shippingForm.country}
+                        className={`w-full mt-4 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                          isProcessing || !shippingForm.full_name || !shippingForm.address_line1 || !shippingForm.city || !shippingForm.state || !shippingForm.zip || !shippingForm.country
                             ? 'bg-gray-500 cursor-not-allowed text-gray-300'
                             : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(242,239,29,0.8)]'
                         }`}
-                        style={!isProcessing ? {
+                        style={!isProcessing && shippingForm.full_name && shippingForm.address_line1 && shippingForm.city && shippingForm.state && shippingForm.zip && shippingForm.country ? {
                           boxShadow: '0 0 20px rgba(242,239,29,0.6), inset 0 2px 0 rgba(255,255,255,0.6), inset 0 -8px 16px rgba(0,0,0,0.22)'
                         } : {}}
                       >
-                        {isProcessing ? 'Processing...' : `Purchase for ${selectedItem.priceHeartCoins} Heart Coins`}
+                        {isProcessing ? 'Processing...' : 'CONFIRM SHIPPING'}
                       </button>
-                    ) : (
-                      <div className="text-sm text-red-400 bg-red-400/20 px-3 py-2 rounded border border-red-400/40">
-                        You need {selectedItem.priceHeartCoins - (profile?.id ? (profile?.heartcoin_balance || 0) : 0)} more Heart Coins
+                    </div>
+                  )}
+                  
+                  {step === 'done' && (
+                    <div className="text-center mb-4">
+                      <div className="text-green-400 text-lg font-semibold mb-4">
+                        Order Complete! 🎉
                       </div>
-                    )}
-                  </div>
+                      <div className="text-sm text-white/80 mb-4">
+                        Your {selectedItem.title} has been ordered and will be shipped to the address provided.
+                      </div>
+                      <div className="text-xs text-white/60 mb-4">
+                        You'll receive an email confirmation and tracking information once your order ships.
+                      </div>
+                      <button
+                        onClick={handleBackToStore}
+                        className="px-6 py-2 bg-white/20 border border-white/40 rounded text-white hover:bg-white/30 transition-all duration-200 text-sm"
+                      >
+                        Back to Store
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
             </div>

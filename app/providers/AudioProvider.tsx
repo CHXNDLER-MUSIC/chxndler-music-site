@@ -218,6 +218,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     a.addEventListener("loadstart", onLoadStart);
     a.addEventListener("canplaythrough", onLoadEnd);
     
+    // Disable browser media session to prevent title overlays
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = null;
+      navigator.mediaSession.setActionHandler('play', null);
+      navigator.mediaSession.setActionHandler('pause', null);
+      navigator.mediaSession.setActionHandler('previoustrack', null);
+      navigator.mediaSession.setActionHandler('nexttrack', null);
+    }
+    
     return () => {
       a.removeEventListener("timeupdate", onTime);
       a.removeEventListener("durationchange", onDur);
@@ -360,6 +369,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       // Load and play the track
       const a = audioRef.current;
       if (!a) return;
+
+      // Disable browser media session before playing to prevent title overlays
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = null;
+        navigator.mediaSession.setActionHandler('play', null);
+        navigator.mediaSession.setActionHandler('pause', null);
+        navigator.mediaSession.setActionHandler('previoustrack', null);
+        navigator.mediaSession.setActionHandler('nexttrack', null);
+      }
 
       // Verify we're still trying to play the same track (prevent race conditions)
       const currentState = state;

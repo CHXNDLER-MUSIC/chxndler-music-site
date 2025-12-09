@@ -25,7 +25,6 @@ export default function SongHUD({ title, coverSrc, element }: { title: string; c
                 style={{ background: 'repeating-linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.12) 1px, transparent 1px, transparent 3px)' }} />
         </span>
         <div style={{ lineHeight: 1.1 }}>
-          <div style={{ fontWeight: 800, letterSpacing: '.02em' }}>{title}</div>
           <div style={{ fontSize: 12, opacity: .8 }}>Element: {element}</div>
         </div>
         <button onClick={playing ? pause : play} className="ml-3 px-3 py-1 rounded bg-white/10 border border-white/20">

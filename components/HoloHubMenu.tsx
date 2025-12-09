@@ -271,20 +271,18 @@ export default function HoloHubMenu({
               setInlineTitle(it.label || 'Apple Music');
               setInlineUrl(embed);
               setInlineCompact(true);
-              // Tune Apple height to avoid black gap on single tracks, but keep albums reasonable
+              // Use same height calculation as Spotify for consistency
               try {
                 const natural = appleEmbedHeight(embed); // typical: track ~175, album/playlist ~450
-                if (natural <= 220) {
-                  // Likely a single track; match exact height + header so no bottom gap
-                  setInlineHeightPx(natural + 48);
-                } else {
-                  // Album/playlist/artist: cap total shell height to ~300px to stay compact
-                  setInlineHeightPx(300);
-                }
+                // Scale down slightly to reduce overall height without cropping
+                const scale = 0.9;
+                const bodyH = Math.max(120, Math.round(natural * scale));
+                setInlineHeightPx(Math.min(340, Math.max(170, bodyH + 48))); // include header
+                setInlineIframeHeightPx(natural); // unscaled iframe height (we scale via CSS)
               } catch {
                 setInlineHeightPx(240);
+                setInlineIframeHeightPx(undefined);
               }
-              setInlineIframeHeightPx(undefined);
             } else {
               window.open(it.href, '_blank', 'noopener,noreferrer');
             }

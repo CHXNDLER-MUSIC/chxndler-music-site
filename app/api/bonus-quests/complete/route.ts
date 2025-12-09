@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { completeBonusQuest, getBonusQuestsForUser } from '@/lib/bonusQuests';
+import { completeBonusQuestLegacy, getBonusQuestsForUser } from '@/lib/bonusQuests';
 import { supabaseClient } from '@/lib/supabaseClient';
 
 export async function POST(request: Request) {
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     }
 
     // Complete the quest using the bonus quest system
-    const result = await completeBonusQuest(userId, questToComplete);
+    const result = await completeBonusQuestLegacy(userId, questToComplete);
 
     if (!result.success) {
       return NextResponse.json(

@@ -240,10 +240,10 @@ export default function JoinAliens({ visible = true } = {}) {
         pointerEvents: visible ? 'auto' : 'none', 
         width: '100%',
         height: '100%',
-        minHeight: '480px',
+        minHeight: '420px',
         maxHeight: '100%',
         margin: '0',
-        padding: '25px 20px 30px 20px',
+        padding: '20px 20px 0px 20px',
         background: 'rgba(0, 0, 0, 0.6)',
         backdropFilter: 'blur(12px)',
         border: 'none',
@@ -307,7 +307,7 @@ export default function JoinAliens({ visible = true } = {}) {
               fontFamily: 'monospace',
               letterSpacing: '0.05em',
               lineHeight: '1.3',
-              marginBottom: '12px'
+              marginBottom: '0px'
             }}
           >
             Reconnecting in {scrambledTime}
@@ -320,11 +320,11 @@ export default function JoinAliens({ visible = true } = {}) {
         width: '100%', 
         height: '1px', 
         background: 'linear-gradient(90deg, transparent, rgba(252, 84, 175, 0.5), transparent)', 
-        margin: '24px 0 16px 0' 
+        margin: '2px 0 8px 0' 
       }} />
 
       {/* Stay Connected Section - Bottom */}
-      <div style={{ marginTop: '8px', flex: '1 1 auto', minHeight: 0, paddingBottom: '10px' }}>
+      <div style={{ marginTop: '8px', flex: '1 1 auto', minHeight: 0, paddingBottom: '8px' }}>
         {/* Header Text */}
         {showPhoneForm && (
         <div 
@@ -361,7 +361,7 @@ export default function JoinAliens({ visible = true } = {}) {
       {/* Phone Number Input */}
       {showPhoneForm && (
       <>
-      <div style={{ marginBottom: '20px' }}>
+      <div style={{ marginBottom: '8px' }}>
         <input
           id="signal-phone"
           type="tel"
@@ -374,7 +374,8 @@ export default function JoinAliens({ visible = true } = {}) {
             width: '100%',
             padding: '12px 16px',
             background: 'rgba(0, 0, 0, 0.6)',
-            border: '1px solid rgba(0, 255, 255, 0.4)',
+            border: '2px solid #00FFFF',
+            boxShadow: '0 0 8px rgba(0, 255, 255, 0.5), 0 0 15px rgba(0, 255, 255, 0.3)',
             borderRadius: '8px',
             color: '#ffffff',
             fontSize: '16px',

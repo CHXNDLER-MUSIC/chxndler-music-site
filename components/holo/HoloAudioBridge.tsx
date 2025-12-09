@@ -208,6 +208,16 @@ export default function HoloAudioBridge() {
           }
           
           console.log('🎵 HoloAudioBridge: Loading track:', trackSrc);
+          
+          // Disable browser media session before playing to prevent title overlays
+          if ('mediaSession' in navigator) {
+            navigator.mediaSession.metadata = null;
+            navigator.mediaSession.setActionHandler('play', null);
+            navigator.mediaSession.setActionHandler('pause', null);
+            navigator.mediaSession.setActionHandler('previoustrack', null);
+            navigator.mediaSession.setActionHandler('nexttrack', null);
+          }
+          
           a.src = trackSrc;
           a.load();
 

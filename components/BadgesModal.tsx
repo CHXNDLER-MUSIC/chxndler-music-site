@@ -435,13 +435,13 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           />
           
           {/* Content container */}
-          <div className="flex flex-col items-center justify-center space-y-4 pt-6 pb-2">
+          <div className="flex flex-col items-center justify-center space-y-2 pt-6 -mb-4">
               {/* Top row - first 3 categories */}
               <div className="grid grid-cols-3 gap-6">
                 {badgeCategories.slice(0, 3).map((category) => {
                   const displayInfo = getCategoryDisplayInfo(category);
                   return (
-                    <div key={category.id} className="flex flex-col items-center space-y-1">
+                    <div key={category.id} className="flex flex-col items-center space-y-0.5">
                       <button
                         onClick={() => handleCategoryClick(category.id)}
                         onMouseEnter={() => sfx.play('hover')}
@@ -470,7 +470,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                 {badgeCategories.slice(3, 6).map((category) => {
                   const displayInfo = getCategoryDisplayInfo(category);
                   return (
-                    <div key={category.id} className="flex flex-col items-center space-y-1">
+                    <div key={category.id} className="flex flex-col items-center space-y-0.5">
                       <button
                         onClick={() => handleCategoryClick(category.id)}
                         onMouseEnter={() => sfx.play('hover')}

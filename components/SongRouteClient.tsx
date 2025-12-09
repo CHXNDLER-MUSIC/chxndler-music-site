@@ -61,17 +61,6 @@ export default function SongRouteClient({ song, nextSlug }: { song: Song; nextSl
       </AnimatePresence>
 
       <SongHUD title={song.title} coverSrc={song.coverSrc} element={song.element} />
-
-      <div className="fixed left-1/2 top-6 -translate-x-1/2 z-20 flex items-center gap-3">
-        <div>
-          <div style={{ fontWeight: 800, letterSpacing: '.02em' }}>{song.title}</div>
-          <div style={{ fontSize: 12, opacity: .8 }}>Element: {song.element}</div>
-        </div>
-        <button className="ml-2 px-3 py-1 rounded bg-white/10 border border-white/20" onClick={play}>Play</button>
-        <Link prefetch href={`/songs/${nextSlug}`} onMouseEnter={onHoverPrefetch} className="ml-2 underline">
-          Next →
-        </Link>
-      </div>
     </div>
   );
 }

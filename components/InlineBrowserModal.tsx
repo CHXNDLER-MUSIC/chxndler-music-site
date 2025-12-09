@@ -57,6 +57,10 @@ export default function InlineBrowserModal({
     try { const u = new URL(url); return u.hostname.replace(/^www\./,'') === 'open.spotify.com' && u.pathname.startsWith('/embed'); } catch { return false; }
   })();
 
+  const isAppleEmbed = (() => {
+    try { const u = new URL(url); return u.hostname.replace(/^www\./,'') === 'embed.music.apple.com'; } catch { return false; }
+  })();
+
   const getLinkText = () => {
     try {
       const u = new URL(url);
@@ -78,19 +82,19 @@ export default function InlineBrowserModal({
         top: '10px',
         left: '0',
         right: '0',
-        bottom: '0',
+        bottom: compact ? 'auto' : '0',
         background: compact ? 'transparent' : 'rgba(0,0,0,.85)',
         backdropFilter: compact ? 'none' : 'blur(13px)'
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose?.(); }}
     >
       <div
-        className={`mx-4 w-full ${compact ? 'max-w-md' : 'max-w-4xl'}`}
+        className={`mx-4 w-full ${compact ? 'max-w-2xl' : 'max-w-4xl'}`}
         style={{
           position: 'absolute',
           top: compact ? '5px' : '5px',
           left: '50%',
-          transform: compact ? 'translateX(-50%) translateY(-220px)' : 'translateX(-50%)',
+          transform: compact ? 'translateX(-50%) translateY(-100px)' : 'translateX(-50%)',
           height: compact ? 'min(50vh, 420px)' : 'min(80vh, 760px)',
           zIndex: 10000
         }}
@@ -135,7 +139,7 @@ export default function InlineBrowserModal({
           </div>
           
           <div className="relative flex-1 overflow-hidden">
-            {compact && isSpotifyEmbed && iframeHeightPx ? (
+            {compact && (isSpotifyEmbed || isAppleEmbed) && iframeHeightPx ? (
               <div 
                 className="relative w-full overflow-hidden"
                 style={{ height: Math.max(80, Math.round(iframeHeightPx * 0.9)) }}
