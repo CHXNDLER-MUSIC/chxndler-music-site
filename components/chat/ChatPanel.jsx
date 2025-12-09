@@ -1516,7 +1516,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 alt="Heart Coins" 
                                 className="w-6 h-6"
                               />
-                              <span className="text-lg text-pink-400 font-bold">{profile?.heartcoin_balance || 4}</span>
+                              <span className="text-lg text-pink-400 font-bold">{profile?.heartcoin_balance || 0}</span>
                             </div>
                             
                             {/* SEND button on the right */}

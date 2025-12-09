@@ -939,7 +939,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               {/* Cast into the Stars Button - centered */}
               {(!user?.id || !profile?.element) ? (
                 <button
-                  onClick={showLoginPrompt ? () => {
+                  onClick={() => {
                     sfx.play('button', 0.8);
                     console.log('🔥 ALIEN profile button clicked!');
                     onClose();
@@ -949,33 +949,27 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     } else {
                       console.log('❌ openWelcomeHome not available');
                     }
-                  } : handleSaveEntry}
+                  }}
                   className="px-6 py-1 rounded-lg font-semibold transition-all duration-200"
                   style={{
-                    background: showLoginPrompt ? '#F9188010' : `${elementTheme.color}10`,
-                    border: showLoginPrompt ? '2px solid #F9188060' : `2px solid ${elementTheme.color}60`,
-                    color: showLoginPrompt ? '#F91880' : elementTheme.color,
-                    textShadow: showLoginPrompt ? '0 0 8px #F91880' : `0 0 4px ${elementTheme.glow}`,
-                    boxShadow: showLoginPrompt ? '0 0 15px #F91880, 0 0 25px #F91880' : 'none'
+                    background: '#F9188010',
+                    border: '2px solid #F9188060',
+                    color: '#F91880',
+                    textShadow: '0 0 8px #F91880',
+                    boxShadow: '0 0 15px #F91880, 0 0 25px #F91880'
                   }}
                 >
-                  {showLoginPrompt ? (
-                    <>
-                      Create an{' '}
-                      <span
-                        className="underline"
-                        style={{
-                          textDecoration: 'underline',
-                          textUnderlineOffset: '2px'
-                        }}
-                      >
-                        ALIEN profile
-                      </span>
-                      {' '}to submit a entry.
-                    </>
-                  ) : (
-                    'Cast into the Stars'
-                  )}
+                  Create an{' '}
+                  <span
+                    className="underline"
+                    style={{
+                      textDecoration: 'underline',
+                      textUnderlineOffset: '2px'
+                    }}
+                  >
+                    ALIEN profile
+                  </span>
+                  {' '}to submit an entry.
                 </button>
               ) : (
                 <button

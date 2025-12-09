@@ -574,51 +574,6 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                       {/* Only show badges if not elemental-streak OR if element filter is selected */}
                       {(category.id !== 'elemental-streak' || elementFilter) && (
                         <div className="space-y-4">
-                          {/* Navigation arrows */}
-                          <div className="flex justify-between items-center px-4">
-                            <button
-                              onClick={() => {
-                                try { sfx.play('click', 0.6); } catch {}
-                                setCurrentPage(Math.max(0, currentPage - 1));
-                              }}
-                              disabled={currentPage === 0}
-                              className="w-8 h-8 rounded-full border border-pink-400/60 hover:border-pink-400/80 transition-all duration-200 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
-                              style={{
-                                background: 'rgba(255,105,180,0.1)',
-                                color: '#FF69B4',
-                                textShadow: '0 0 4px rgba(255,105,180,0.8)',
-                                boxShadow: '0 0 8px rgba(255,105,180,0.3)',
-                              }}
-                            >
-                              ←
-                            </button>
-                            
-                            <div 
-                              className="text-xs"
-                              style={{ 
-                                color: '#FF69B4', 
-                                textShadow: '0 0 4px rgba(255,105,180,0.8)',
-                              }}
-                            >
-                              Page {currentPage + 1}
-                            </div>
-                            
-                            <button
-                              onClick={() => {
-                                try { sfx.play('click', 0.6); } catch {}
-                                setCurrentPage(currentPage + 1);
-                              }}
-                              className="w-8 h-8 rounded-full border border-pink-400/60 hover:border-pink-400/80 transition-all duration-200 flex items-center justify-center"
-                              style={{
-                                background: 'rgba(255,105,180,0.1)',
-                                color: '#FF69B4',
-                                textShadow: '0 0 4px rgba(255,105,180,0.8)',
-                                boxShadow: '0 0 8px rgba(255,105,180,0.3)',
-                              }}
-                            >
-                              →
-                            </button>
-                          </div>
 
                           {/* Current page badges - dynamically rendered grid */}
                           <div className="space-y-3">

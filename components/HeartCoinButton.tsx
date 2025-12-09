@@ -1748,7 +1748,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             SELECT AN ELEMENT TO VIEW CARDS
                           </div>
 
-                          <div className="grid grid-cols-4 gap-2 justify-center px-2" style={{ marginTop: '4px' }}>
+                          <div className="grid grid-cols-4 gap-2 justify-center" style={{ marginTop: '4px' }}>
                             {['lightning', 'darkness', 'water', 'heart'].map((element, index) => {
                               const elementCounts = getElementCardCounts();
                               const count = elementCounts[element] || 0;

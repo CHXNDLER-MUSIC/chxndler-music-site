@@ -77,7 +77,7 @@ export default function PopoutPanel({
         style={{
           pointerEvents: 'none',
           alignItems: 'flex-start',
-          paddingTop: '20vh'
+          paddingTop: '15vh'
         }}
       >
         <div
@@ -258,7 +258,7 @@ export default function PopoutPanel({
       {/* Main popup */}
       <div 
         className="fixed inset-0 z-[2147483647] flex justify-center p-4"
-        style={{ alignItems: 'flex-start', paddingTop: '20vh' }}
+        style={{ alignItems: 'flex-start', paddingTop: '15vh' }}
         onClick={handleBackdropClick}
       >
         <div

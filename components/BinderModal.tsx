@@ -1727,7 +1727,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     >
                       SELECT AN ELEMENT TO VIEW CARDS
                     </div>
-                    <div className="grid grid-cols-4 gap-2 justify-center px-2" style={{ marginTop: '-8px' }}>
+                    <div className="grid grid-cols-4 gap-2 justify-center" style={{ marginTop: '-8px' }}>
                       {elements.map((element) => (
                         <div
                           key={element}
