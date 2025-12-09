@@ -462,7 +462,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               textShadow: `0 0 4px ${elementTheme.glow}`
             }}
           >
-            {elementEmoji} ELEMENT: {dailyPrompt.element.toUpperCase()}
+            ELEMENT: {dailyPrompt.element.toUpperCase()}
           </button>
         )}
 

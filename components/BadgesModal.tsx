@@ -180,7 +180,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     const categoryInfo = originalCategory ? getCategoryDisplayInfo(originalCategory) : null;
     
     const categoryContent = (
-      <div className="relative space-y-4">
+      <div className="relative space-y-2">
         <button
           onClick={() => {
             sfx.play('click');
@@ -192,7 +192,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         </button>
         
         {/* Badge grid matching binder layout */}
-        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3 sm:gap-4 max-h-80 sm:max-h-96 overflow-y-auto p-2">
+        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3 sm:gap-4 max-h-80 sm:max-h-96 overflow-y-auto px-2 pt-2 pb-0">
           {categoryBadges.length > 0 ? categoryBadges.map((badge, index) => (
             <div key={index} className="flex flex-col items-center space-y-2">
               <div className="relative">
@@ -378,7 +378,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           />
           
           {/* Centered content container */}
-          <div className="flex flex-col items-center justify-center space-y-6 pt-6 pb-4">
+          <div className="flex flex-col items-center justify-center space-y-6 pt-6 pb-1">
               {/* Top row - first 3 categories */}
               <div className="grid grid-cols-3 gap-6">
                 {badgeCategories.slice(0, 3).map((category) => {

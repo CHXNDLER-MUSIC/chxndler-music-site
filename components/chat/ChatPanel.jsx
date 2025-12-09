@@ -1362,7 +1362,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                             </button>
 
                             {/* Cards Grid */}
-                            <div className="flex-1 grid grid-cols-5 gap-2">
+                            <div className="flex-1 grid grid-cols-5 gap-3">
                               {/* Display user's actual cards */}
                               {Array.from({ length: 5 }, (_, index) => {
                                 // Get user's actual cards if available
@@ -1392,7 +1392,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                     className="rounded-lg border border-white/10 backdrop-blur-sm transition-all duration-300 cursor-pointer hover:scale-105"
                                     style={{
                                       boxShadow: hasCard ? '0 0 5px rgba(255,105,180,0.3)' : '0 0 5px rgba(255,105,180,0.1)',
-                                      aspectRatio: '2/3',
+                                      aspectRatio: '2.2/3',
                                       background: 'rgba(0, 0, 0, 0.3)'
                                     }}
                                     onClick={() => {
@@ -1636,8 +1636,7 @@ export default function ChatPanel({ isOpen, onClose }) {
         <div
           className="absolute inset-0 z-[120] flex items-center justify-center p-4"
           style={{
-            background: 'rgba(0, 0, 0, 0.8)',
-            backdropFilter: 'blur(8px)'
+            background: 'rgba(0, 0, 0, 0.8)'
           }}
           onClick={() => setSelectedCardPopup(null)}
         >
@@ -1664,7 +1663,18 @@ export default function ChatPanel({ isOpen, onClose }) {
           >
             {/* Close button */}
             <button
-              onClick={() => setSelectedCardPopup(null)}
+              onClick={() => {
+                try {
+                  const audio = new Audio('/audio/click.mp3');
+                  audio.volume = 0.3;
+                  audio.play().catch(error => {
+                    console.log('Click audio play failed:', error);
+                  });
+                } catch (error) {
+                  console.log('Click audio creation failed:', error);
+                }
+                setSelectedCardPopup(null);
+              }}
               className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 z-10"
               style={{
                 background: 'rgba(242, 239, 29, 0.2)',
@@ -1712,43 +1722,6 @@ export default function ChatPanel({ isOpen, onClose }) {
               />
             </div>
 
-            {/* Card info overlay */}
-            <div 
-              className="absolute bottom-0 left-0 right-0 p-4 rounded-b-lg"
-              style={{
-                background: 'linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.4), transparent)',
-                backdropFilter: 'blur(4px)'
-              }}
-            >
-              <h3 
-                className="text-lg font-bold text-center mb-1"
-                style={{
-                  color: '#F2EF1D',
-                  textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
-                }}
-              >
-                {selectedCardPopup.name}
-              </h3>
-              <div className="flex justify-center items-center space-x-3 text-sm">
-                <span 
-                  className="font-semibold"
-                  style={{
-                    color: getElementDisplay(selectedCardPopup.element)?.color || '#FFB6C1',
-                    textShadow: `0 0 4px ${getElementDisplay(selectedCardPopup.element)?.color || '#FFB6C1'}60`
-                  }}
-                >
-                  {selectedCardPopup.element}
-                </span>
-                <span className="text-white/60">•</span>
-                <span className="text-white/80">{selectedCardPopup.rarity}</span>
-                {selectedCardPopup.isReleased && (
-                  <>
-                    <span className="text-white/60">•</span>
-                    <span className="text-green-400 font-semibold">Released</span>
-                  </>
-                )}
-              </div>
-            </div>
           </div>
         </div>
       )}

@@ -6,6 +6,7 @@ import { useProfile } from "@/contexts/ProfileContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 // import { useLiveStatus } from "@/hooks/useLiveStatus"; // Removed since chat is always available
 import ChatPanel from "@/components/chat/ChatPanel";
+import WelcomeHomeModal from "@/components/WelcomeHomeModal";
 
 export default function JoinAliens({ visible = true } = {}) {
   const { profile, savePhone, user } = useProfile();
@@ -15,6 +16,7 @@ export default function JoinAliens({ visible = true } = {}) {
   const [loading, setLoading] = useState(false);
   const [heartSignalSent, setHeartSignalSent] = useState(false);
   const [status, setStatus] = useState("idle");
+  const [showWelcomeHome, setShowWelcomeHome] = useState(false);
   
   // Chat state
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -201,6 +203,7 @@ export default function JoinAliens({ visible = true } = {}) {
       }
 
       setStatus("saved");
+      setHeartSignalSent(true); // Track that heart signal was sent
       setMessage(user && profile
         ? "Signal linked to your Alien profile."
         : "Signal received. When you create your Alien we will connect this number.");
@@ -403,10 +406,13 @@ export default function JoinAliens({ visible = true } = {}) {
         )}
       </div>
 
-      {/* Send Heart Signal Button */}
+      {/* Send Heart Signal Button / Create Profile Button */}
       <button
-        onClick={sendHeartSignal}
-        disabled={status === "saving" || !isValidPhone}
+        onClick={heartSignalSent && !user ? () => {
+          try { sfx.play('click', 0.4); } catch {}
+          setShowWelcomeHome(true);
+        } : sendHeartSignal}
+        disabled={status === "saving" || (!heartSignalSent && !isValidPhone)}
         style={{
           width: '100%',
           padding: '12px 24px',
@@ -472,6 +478,8 @@ export default function JoinAliens({ visible = true } = {}) {
             />
             Sending...
           </div>
+        ) : status === "saved" && heartSignalSent && !user ? (
+          "Create your ALIEN profile"
         ) : status === "saved" ? (
           "Heart signal sent"
         ) : (
@@ -1576,6 +1584,12 @@ export default function JoinAliens({ visible = true } = {}) {
       <ChatPanel 
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
+      />
+      
+      {/* Welcome Home Modal */}
+      <WelcomeHomeModal 
+        open={showWelcomeHome} 
+        onClose={() => setShowWelcomeHome(false)} 
       />
     </div>
   );

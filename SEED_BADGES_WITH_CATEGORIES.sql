@@ -5,17 +5,17 @@ begin;
 
 INSERT INTO public.badges (badge_name, icon_url, description, requirement, category) VALUES
 -- Soul Star badges
-('Soul Star', '/badges/soul star.webp', 'Your first reflection journal entry', 'Write your first soul journal reflection', 'soul-star'),
-('Soul Ember', '/badges/soul star.webp', 'Three reflections completed', 'Write 3 soul journal reflections', 'soul-star'),
-('Soul Flame', '/badges/soul star.webp', 'A week of reflections', 'Write 7 soul journal reflections', 'soul-star'),
-('Soul Bloom', '/badges/soul star.webp', 'Two weeks of reflection', 'Write 14 soul journal reflections', 'soul-star'),
-('Soul Rise', '/badges/soul star.webp', 'A month of reflection', 'Write 30 soul journal reflections', 'soul-star'),
+('Soul Star', '/badges/soul star.webp', 'Your first reflection journal entry', 'Write your first soul journal reflection', 'soul'),
+('Soul Ember', '/badges/soul star.webp', 'Three reflections completed', 'Write 3 soul journal reflections', 'soul'),
+('Soul Flame', '/badges/soul star.webp', 'A week of reflections', 'Write 7 soul journal reflections', 'soul'),
+('Soul Bloom', '/badges/soul star.webp', 'Two weeks of reflection', 'Write 14 soul journal reflections', 'soul'),
+('Soul Rise', '/badges/soul star.webp', 'A month of reflection', 'Write 30 soul journal reflections', 'soul'),
 
 -- Achievement badges
-('First Steps', '/badges/collector.webp', 'Welcome to the music journey', 'Complete your first login', 'achievements'),
-('Collector', '/badges/collector.webp', 'Badge collecting enthusiast', 'Earn 5 different badges', 'achievements'),
-('Witness', '/badges/collector.webp', 'Witnessed the experience', 'Stay active for 7 consecutive days', 'achievements'),
-('Supporter', '/badges/collector.webp', 'Supporting the community', 'Invite a friend to join', 'achievements'),
+('First Steps', '/badges/collector.webp', 'Welcome to the music journey', 'Complete your first login', 'collector'),
+('Collector', '/badges/collector.webp', 'Badge collecting enthusiast', 'Earn 5 different badges', 'collector'),
+('Witness', '/badges/collector.webp', 'Witnessed the experience', 'Stay active for 7 consecutive days', 'collector'),
+('Supporter', '/badges/collector.webp', 'Supporting the community', 'Invite a friend to join', 'collector'),
 
 -- Elemental Streak badges
 ('Heart Element', '/badges/elemental streak.webp', 'Connected with heart energy', 'Listen during heart element phase', 'elemental-streak'),
@@ -29,9 +29,9 @@ INSERT INTO public.badges (badge_name, icon_url, description, requirement, categ
 ('Melody Master', '/badges/listening.webp', 'Music enthusiast', 'Listen for 10 hours total', 'listening'),
 
 -- HeartCoin badges
-('First Coin', '/badges/currency.webp', 'Your first HeartCoin', 'Earn your first HeartCoin', 'heartcoin'),
-('Coin Collector', '/badges/currency.webp', 'Building your treasury', 'Earn 100 HeartCoins', 'heartcoin'),
-('Treasure Keeper', '/badges/currency.webp', 'Wealthy in hearts', 'Earn 1000 HeartCoins', 'heartcoin'),
+('First Coin', '/badges/currency.webp', 'Your first HeartCoin', 'Earn your first HeartCoin', 'currency'),
+('Coin Collector', '/badges/currency.webp', 'Building your treasury', 'Earn 100 HeartCoins', 'currency'),
+('Treasure Keeper', '/badges/currency.webp', 'Wealthy in hearts', 'Earn 1000 HeartCoins', 'currency'),
 
 -- Community badges
 ('Community Member', '/badges/community.webp', 'Part of the community', 'Join the community space', 'community'),
