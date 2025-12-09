@@ -7,6 +7,7 @@ import type { User } from "@supabase/supabase-js";
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
+  clearSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -14,6 +15,22 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const clearSession = async () => {
+    try {
+      await supabaseBrowser.auth.signOut();
+      // Clear cookies manually
+      document.cookie = 'sb-access-token=; path=/; max-age=0';
+      document.cookie = 'sb-refresh-token=; path=/; max-age=0';
+      // Clear local storage
+      localStorage.clear();
+      sessionStorage.clear();
+      setUser(null);
+      console.log('AuthProvider: Session cleared manually');
+    } catch (error) {
+      console.error('AuthProvider: Error clearing session:', error);
+    }
+  };
 
   useEffect(() => {
     const getInitialSession = async () => {
@@ -26,16 +43,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(session?.user ?? null);
           if (process.env.NODE_ENV === "development") {
             console.log('AuthProvider: Initial session loaded:', { 
+              browser: navigator.userAgent.includes('Chrome') ? 'Chrome' : navigator.userAgent.includes('Safari') ? 'Safari' : 'Other',
               hasUser: !!session?.user, 
-              userId: session?.user?.id 
+              userId: session?.user?.id,
+              hasAccessToken: !!session?.access_token,
+              hasRefreshToken: !!session?.refresh_token
             });
           }
           
           // Set initial cookies if session exists
           if (session?.access_token) {
-            document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=3600; SameSite=Strict; Secure=${window.location.protocol === 'https:'}`;
+            document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=3600; SameSite=Lax; Secure=${window.location.protocol === 'https:'}`;
             if (session.refresh_token) {
-              document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=604800; SameSite=Strict; Secure=${window.location.protocol === 'https:'}`;
+              document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=604800; SameSite=Lax; Secure=${window.location.protocol === 'https:'}`;
             }
           }
         }
@@ -61,9 +81,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // Sync session tokens to cookies for API routes
         if (session?.access_token) {
-          document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=3600; SameSite=Strict; Secure=${window.location.protocol === 'https:'}`;
+          document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=3600; SameSite=Lax; Secure=${window.location.protocol === 'https:'}`;
           if (session.refresh_token) {
-            document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=604800; SameSite=Strict; Secure=${window.location.protocol === 'https:'}`;
+            document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=604800; SameSite=Lax; Secure=${window.location.protocol === 'https:'}`;
           }
         } else {
           // Clear cookies when no session
@@ -82,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, clearSession }}>
       {children}
     </AuthContext.Provider>
   );

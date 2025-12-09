@@ -193,8 +193,20 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
 
       if (!data) {
-        // No profile row yet, wait for trigger to create it
+        // No profile row yet - this might indicate an invalid session
+        console.warn('ProfileContext: No profile data found for authenticated user - session may be invalid');
         setProfile(null);
+        
+        // If user has been authenticated for more than 10 seconds but still no profile, 
+        // the session might be stale - sign them out
+        setTimeout(async () => {
+          const { data: currentSession } = await supabaseBrowser.auth.getSession();
+          if (currentSession?.session?.user?.id === user.id && !profile) {
+            console.warn('ProfileContext: Clearing potentially stale session after timeout');
+            await supabaseBrowser.auth.signOut();
+          }
+        }, 10000);
+        
         return;
       }
 
