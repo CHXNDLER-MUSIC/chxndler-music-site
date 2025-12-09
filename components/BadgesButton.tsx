@@ -821,13 +821,13 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     </p>
                   )}
                   
-                  {selectedBadge.requirement && (
+                  {selectedBadge.requirement_text && (
                     <div className="space-y-1 px-2">
                       <div className="text-white/50 text-xs font-semibold uppercase tracking-wider">
                         Requirement
                       </div>
                       <p className="text-white/60 text-xs">
-                        {selectedBadge.requirement}
+                        {selectedBadge.requirement_text}
                       </p>
                     </div>
                   )}

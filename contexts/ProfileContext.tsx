@@ -73,6 +73,19 @@ interface Profile {
   last_streak_activity_date?: string | null; // last date streak was updated
   cards: OwnedCardRow[];
   badges: OwnedBadgeRow[];
+  // Badge progress counter fields
+  total_reflections?: number | null;
+  total_listening_minutes?: number | null;
+  total_heartcoins_earned?: number | null;
+  elemental_sessions_count?: number | null;
+  community_interactions?: number | null;
+  achievements_unlocked?: number | null;
+  streams_attended?: number | null;
+  concerts_attended?: number | null;
+  cards_owned?: number | null;
+  merch_items_owned?: number | null;
+  donations_made?: number | null;
+  heartcoins_sent?: number | null;
   // Legacy fields for compatibility
   journey_tag?: string | null;
   tierName?: string | null;
@@ -181,7 +194,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabaseBrowser
         .from("profiles")
         .select(
-          "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour"
+          "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour, total_reflections, total_listening_minutes, total_heartcoins_earned, elemental_sessions_count, community_interactions, achievements_unlocked, streams_attended, concerts_attended, cards_owned, merch_items_owned, donations_made, heartcoins_sent"
         )
         .eq("id", user.id)
         .maybeSingle();
@@ -273,6 +286,19 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         last_streak_activity_date: data.last_streak_activity_date ?? null,
         cards: cardRows ?? [],
         badges: badgeRows ?? [],
+        // Badge progress counter fields
+        total_reflections: data.total_reflections ?? 0,
+        total_listening_minutes: data.total_listening_minutes ?? 0,
+        total_heartcoins_earned: data.total_heartcoins_earned ?? 0,
+        elemental_sessions_count: data.elemental_sessions_count ?? 0,
+        community_interactions: data.community_interactions ?? 0,
+        achievements_unlocked: data.achievements_unlocked ?? 0,
+        streams_attended: data.streams_attended ?? 0,
+        concerts_attended: data.concerts_attended ?? 0,
+        cards_owned: data.cards_owned ?? 0,
+        merch_items_owned: data.merch_items_owned ?? 0,
+        donations_made: data.donations_made ?? 0,
+        heartcoins_sent: data.heartcoins_sent ?? 0,
       };
 
       // Debug log when profile is successfully loaded
@@ -338,7 +364,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         .from("profiles")
         .update(dbUpdates)
         .eq("id", user.id)
-        .select("id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour")
+        .select("id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour, total_reflections, total_listening_minutes, total_heartcoins_earned, elemental_sessions_count, community_interactions, achievements_unlocked, streams_attended, concerts_attended, cards_owned, merch_items_owned, donations_made, heartcoins_sent")
         .maybeSingle();
 
       if (error) {
@@ -367,6 +393,19 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           last_streak_activity_date: data.last_streak_activity_date ?? null,
           cards: profile?.cards ?? [],
           badges: profile?.badges ?? [],
+          // Badge progress counter fields
+          total_reflections: data.total_reflections ?? 0,
+          total_listening_minutes: data.total_listening_minutes ?? 0,
+          total_heartcoins_earned: data.total_heartcoins_earned ?? 0,
+          elemental_sessions_count: data.elemental_sessions_count ?? 0,
+          community_interactions: data.community_interactions ?? 0,
+          achievements_unlocked: data.achievements_unlocked ?? 0,
+          streams_attended: data.streams_attended ?? 0,
+          concerts_attended: data.concerts_attended ?? 0,
+          cards_owned: data.cards_owned ?? 0,
+          merch_items_owned: data.merch_items_owned ?? 0,
+          donations_made: data.donations_made ?? 0,
+          heartcoins_sent: data.heartcoins_sent ?? 0,
         };
         setProfile(mappedProfile);
       } else {

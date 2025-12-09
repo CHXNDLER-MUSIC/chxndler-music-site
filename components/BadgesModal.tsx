@@ -116,6 +116,14 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           </p>
         )}
         
+        {/* Requirement text */}
+        <div className="text-center">
+          <div className="text-white/50 text-xs uppercase tracking-wider mb-1">REQUIREMENT</div>
+          <div className="text-white text-sm font-medium">
+            {selectedBadge.requirement_text || `${selectedBadge.total} achievement${selectedBadge.total === 1 ? '' : 's'}`}
+          </div>
+        </div>
+        
         {/* Progress section */}
         {selectedBadge.progress !== undefined && (
           <div className="space-y-3">
@@ -378,13 +386,13 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           />
           
           {/* Centered content container */}
-          <div className="flex flex-col items-center justify-center space-y-6 pt-6 pb-1">
+          <div className="flex flex-col items-center justify-center space-y-2 pt-6 pb-1">
               {/* Top row - first 3 categories */}
               <div className="grid grid-cols-3 gap-6">
                 {badgeCategories.slice(0, 3).map((category) => {
                   const displayInfo = getCategoryDisplayInfo(category);
                   return (
-                    <div key={category.id} className="flex flex-col items-center space-y-2">
+                    <div key={category.id} className="flex flex-col items-center space-y-1">
                       <button
                         onClick={() => handleCategoryClick(category.id)}
                         onMouseEnter={() => sfx.play('hover')}
@@ -413,7 +421,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                 {badgeCategories.slice(3, 6).map((category) => {
                   const displayInfo = getCategoryDisplayInfo(category);
                   return (
-                    <div key={category.id} className="flex flex-col items-center space-y-2">
+                    <div key={category.id} className="flex flex-col items-center space-y-1">
                       <button
                         onClick={() => handleCategoryClick(category.id)}
                         onMouseEnter={() => sfx.play('hover')}
@@ -447,7 +455,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   }
 
   return (
-    <PopoutShell title="BADGES" onClose={onClose} pageIndicator="1 / 6">
+    <PopoutShell title="BADGES" onClose={onClose}>
       {badgesContent}
     </PopoutShell>
   );

@@ -774,15 +774,15 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
 
                 {/* Flippable Card */}
                 <div 
-                  className="rounded-3xl shadow-2xl cursor-pointer"
+                  className="rounded-2xl shadow-2xl cursor-pointer"
                   style={{
-                    width: 'min(400px, 45vw)',
-                    height: 'min(600px, 70vh)',
-                    maxHeight: '75vh',
+                    width: 'min(280px, 35vw)',
+                    height: 'min(420px, 50vh)',
+                    maxHeight: '60vh',
                     aspectRatio: '2/3',
                     boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
                     border: '2px solid rgba(255,255,255,0.1)',
-                    borderRadius: '24px',
+                    borderRadius: '16px',
                     perspective: '1000px',
                     animation: 'float 6s ease-in-out infinite',
                   }}
@@ -845,7 +845,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
               binderPage === 'first' ? (
                 // User's Binder - First Page - Show 5 initial slots
               <div className="relative pb-0">
-                <div className="grid gap-2 grid-cols-5 p-2 place-items-center">
+                <div className="flex flex-wrap gap-3 p-2 justify-center">
                   {Array.from({ length: 5 }, (_, index) => {
                     // Check if there's a collected card for this slot
                     const collectedCard = profile?.cards?.[index];
@@ -1009,7 +1009,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                 </div>
                 
                 {/* Second row of 5 locked slots */}
-                <div className="grid gap-2 grid-cols-5 mt-1 px-2 place-items-center">
+                <div className="flex flex-wrap gap-3 mt-1 px-2 justify-center">
                   {Array.from({ length: 5 }, (_, index) => {
                     const slotIndex = index + 5; // Slots 5-9
                     
@@ -1041,7 +1041,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                 
                 {/* Right arrow to go to second page - positioned within popup on the right side */}
                 <div 
-                  className="absolute right-0.5 top-1/2 transform -translate-y-1/2 z-10"
+                  className="absolute -right-1 top-1/2 transform -translate-y-1/2 z-10"
                   style={{
                     pointerEvents: 'auto'
                   }}
@@ -1171,7 +1171,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page - positioned within popup on the right side */}
                   <div 
-                    className="absolute right-0.5 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute -right-1 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -1302,7 +1302,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page */}
                   <div 
-                    className="absolute right-0.5 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute -right-1 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -1433,7 +1433,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page */}
                   <div 
-                    className="absolute right-0.5 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute -right-1 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -1564,7 +1564,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page */}
                   <div 
-                    className="absolute right-0.5 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute -right-1 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}

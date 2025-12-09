@@ -149,14 +149,8 @@ export class SupabaseBadgeService {
   }
 
   private static getBadgeRequirement(badge: Badge): number {
-    const requirement = badge.requirement?.toLowerCase() || '';
-    
-    const numberMatch = requirement.match(/(\d+)/);
-    if (numberMatch) {
-      return parseInt(numberMatch[1]);
-    }
-    
-    return 1;
+    // Use requirement_count from the new Badge interface
+    return badge.requirement_count || 1;
   }
 
   static async getBadgesByCategories(): Promise<{ [category: string]: BadgeWithProgress[] }> {
@@ -173,15 +167,15 @@ export class SupabaseBadgeService {
       };
 
       badges.forEach(badge => {
-        const requirement = badge.requirement?.toLowerCase() || '';
+        const requirementText = badge.requirement_text?.toLowerCase() || '';
         const badgeName = badge.badge_name.toLowerCase();
         const description = badge.description?.toLowerCase() || '';
 
-        if (badgeName.includes('soul') || requirement.includes('reflection')) {
+        if (badgeName.includes('soul') || requirementText.includes('reflection')) {
           categories['soul-star'].push(badge);
         } else if (badgeName.includes('listen') || badgeName.includes('track') || badgeName.includes('song')) {
           categories['listening'].push(badge);
-        } else if (badgeName.includes('streak') || requirement.includes('days')) {
+        } else if (badgeName.includes('streak') || requirementText.includes('days')) {
           categories['elemental-streak'].push(badge);
         } else if (badgeName.includes('heart') && badgeName.includes('coin')) {
           categories['heartcoin'].push(badge);
@@ -201,54 +195,9 @@ export class SupabaseBadgeService {
 
   static async initializeDefaultBadges(): Promise<void> {
     try {
-      const existingBadges = await this.getAllBadges();
-      if (existingBadges.length > 0) {
-        return;
-      }
-
-      const defaultBadges = [
-        {
-          badge_name: 'First Listen',
-          description: 'Listened to your first track in the Heartverse',
-          requirement: 'Listen to 1 track',
-          icon_url: '/badges/listening.webp'
-        },
-        {
-          badge_name: 'Soul Star',
-          description: 'First reflection',
-          requirement: '1 reflection',
-          icon_url: null
-        },
-        {
-          badge_name: 'Deep Listener',
-          description: 'Listened to 10 unique tracks',
-          requirement: '10 unique tracks',
-          icon_url: '/badges/listening.webp'
-        },
-        {
-          badge_name: 'Digital Collector',
-          description: 'Collected your first 5 digital cards',
-          requirement: 'Collect 5 cards',
-          icon_url: '/badges/collector.webp'
-        },
-        {
-          badge_name: 'First HeartCoin',
-          description: 'Earned your first HeartCoin',
-          requirement: 'Earn 1 HeartCoin',
-          icon_url: '/badges/currency.webp'
-        },
-        {
-          badge_name: 'Portal Opener',
-          description: 'Invited your first friend to the Heartverse',
-          requirement: 'Invite 1 friend',
-          icon_url: null
-        }
-      ];
-
-      for (const badge of defaultBadges) {
-        await this.createBadge(badge);
-      }
-
+      console.log('🚀 Badge initialization disabled - using public.badges table instead');
+      // This function is deprecated - badges are now managed through public.badges table
+      return;
     } catch (error) {
       console.error('Exception initializing default badges:', error);
     }

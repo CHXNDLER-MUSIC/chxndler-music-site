@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useProfile } from '@/contexts/ProfileContext';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Badge, UserBadge, BadgeWithProgress, BadgeCategoryData, BADGE_CATEGORIES } from '@/types/badges';
+import { getBadgeProgressForUser, formatRequirementText } from '@/lib/badgeProgress';
 
 export function useBadges() {
   const { user, profile } = useProfile();
@@ -12,19 +13,20 @@ export function useBadges() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch all badges
+  // Fetch badges from public.badges table
   const fetchBadges = async () => {
     try {
-      console.log('DEBUG useBadges: Attempting to fetch badges from Supabase');
+      console.log('DEBUG useBadges: Attempting to fetch badges from public.badges');
       
       const { data, error } = await supabaseBrowser
         .from('badges')
-        .select('id, badge_name, icon_url, description, requirement, category, sub_category, created_at')
-        .order('created_at', { ascending: true });
+        .select('*')
+        .order('category', { ascending: true })
+        .order('requirement_count', { ascending: true });
 
       if (error) {
         console.error('Error fetching badges:', error);
-        setError(`Badge fetch error: ${error.message}`);
+        setError(`Badges fetch error: ${error.message}`);
         return;
       }
 
@@ -65,52 +67,20 @@ export function useBadges() {
     }
   };
 
-  // Calculate badge progress (this would be enhanced with actual tracking data)
+  // Calculate badge progress using the new data-driven approach
   const calculateBadgeProgress = (badge: Badge): BadgeWithProgress => {
+    const badgeProgress = getBadgeProgressForUser(badge, profile);
+    
+    // Check if user has earned this badge
     const userBadge = userBadges.find(ub => ub.badge_id === badge.id);
     const unlocked = !!user && !!userBadge;
 
-    // For demo purposes, using some mock progress calculations
-    // In a real implementation, this would query actual user activity data
-    let progress = 0;
-    let current = 0;
-    let total = 1;
-
-    // No progress or unlocking for non-authenticated users
-    if (!user) {
-      progress = 0;
-      current = 0;
-    } else if (badge.badge_name.includes('First')) {
-      // First-time achievements
-      total = 1;
-      current = unlocked ? 1 : 0;
-      progress = unlocked ? 100 : 0;
-    } else if (badge.badge_name.includes('Soul')) {
-      // Soul/reflection badges
-      const reflectionCount = Math.floor(Math.random() * 15); // Mock data
-      if (badge.badge_name.includes('Star')) total = 1;
-      else if (badge.badge_name.includes('Ember')) total = 3;
-      else if (badge.badge_name.includes('Flame')) total = 7;
-      else if (badge.badge_name.includes('Bloom')) total = 14;
-      else if (badge.badge_name.includes('Rise')) total = 30;
-      else if (badge.badge_name.includes('Eclipse')) total = 50;
-      else if (badge.badge_name.includes('Eternal')) total = 100;
-      
-      current = Math.min(reflectionCount, total);
-      progress = unlocked ? 100 : Math.round((current / total) * 100);
-    } else {
-      // Other badges with mock progress
-      total = Math.floor(Math.random() * 20) + 1;
-      current = unlocked ? total : Math.floor(Math.random() * total);
-      progress = unlocked ? 100 : Math.round((current / total) * 100);
-    }
-
     return {
       ...badge,
-      progress,
-      current,
-      total,
-      unlocked,
+      progress: badgeProgress.percentage,
+      current: badgeProgress.current,
+      total: badgeProgress.target,
+      unlocked: unlocked || badgeProgress.isUnlocked,
     };
   };
 
@@ -248,9 +218,9 @@ export function useBadges() {
   }, [user?.id]); // Re-fetch when user changes
 
   return {
-    badges,
-    userBadges,
+    badges: badges.map(calculateBadgeProgress), // Legacy compatibility
     badgeCategories: getBadgeCategories(),
+    userBadges,
     loading,
     error,
     awardBadge,
