@@ -1485,7 +1485,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     style={{ 
                       color: '#FFFFFF', 
                       textShadow: '0 0 4px rgba(255,255,255,0.8)', 
-                      fontSize: '11px',
+                      fontSize: '12px',
                       lineHeight: 1,
                       width: '100%',
                       whiteSpace: 'nowrap'
@@ -1858,7 +1858,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             <select 
                               value={selectedSong}
                               onChange={(e) => {
-                                try { sfx.play('change', 0.6); } catch {}
+                                try { sfx.play('change-channel', 0.6); } catch {}
                                 setSelectedSong(e.target.value);
                               }}
                               className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-[1.5]"
@@ -1870,7 +1870,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             <select 
                               value={selectedRarity}
                               onChange={(e) => {
-                                try { sfx.play('change', 0.6); } catch {}
+                                try { sfx.play('change-channel', 0.6); } catch {}
                                 setSelectedRarity(e.target.value);
                               }}
                               className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-[1]"
@@ -2481,6 +2481,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             </div>
           )}
 
+
           
           {/* Enlarged Card Modal - positioned within heart coin modal */}
           {enlargedCard && (
@@ -2493,15 +2494,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 onClick={(e) => e.stopPropagation()}
               >
                 <div 
-                  className="relative w-full h-auto cursor-pointer"
+                  className="relative w-full cursor-pointer"
                   onClick={() => setIsEnlargedCardFlipped(!isEnlargedCardFlipped)}
                   style={{
                     perspective: '1000px',
-                    maxHeight: '320px'
+                    height: '320px'
                   }}
                 >
                   <div
-                    className="relative w-full h-full transition-transform duration-700 preserve-3d"
+                    className="relative w-full h-full transition-transform duration-700"
                     style={{
                       transformStyle: 'preserve-3d',
                       transform: isEnlargedCardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
@@ -2511,13 +2512,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     <img
                       src={enlargedCard.artwork_url || '/cards/CHXNDLER.webp'}
                       alt={enlargedCard.card_name}
-                      className="w-full h-auto rounded-lg border-4 border-yellow-500/80 shadow-2xl backface-hidden"
+                      className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
                       style={{
-                        maxHeight: '320px',
-                        objectFit: 'contain',
                         filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
                         animation: 'cardPulse 3s ease-in-out infinite',
-                        backfaceVisibility: 'hidden'
+                        backfaceVisibility: 'hidden',
+                        transform: 'rotateY(0deg)'
                       }}
                     />
                     
@@ -2525,10 +2525,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     <img
                       src="/cards/back.webp"
                       alt="Card back"
-                      className="absolute inset-0 w-full h-auto rounded-lg border-4 border-yellow-500/80 shadow-2xl backface-hidden"
+                      className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
                       style={{
-                        maxHeight: '320px',
-                        objectFit: 'contain',
                         filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
                         animation: 'cardPulse 3s ease-in-out infinite',
                         backfaceVisibility: 'hidden',
