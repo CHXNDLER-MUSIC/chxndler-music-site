@@ -13,9 +13,9 @@ interface PopoutShellProps {
 export default function PopoutShell({ title, onClose, children, pageIndicator }: PopoutShellProps) {
   return (
     <>
-      {/* Dark backdrop overlay */}
+      {/* Backdrop overlay - no dimming */}
       <div 
-        className="fixed inset-0 z-[2147483646] bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 z-[2147483646]"
         onClick={onClose}
       />
       

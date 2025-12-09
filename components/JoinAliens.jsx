@@ -479,7 +479,7 @@ export default function JoinAliens({ visible = true } = {}) {
             Sending...
           </div>
         ) : status === "saved" && heartSignalSent && !user ? (
-          "Create your ALIEN profile"
+          "Signal received. Create your ALIEN profile."
         ) : status === "saved" ? (
           "Heart signal sent"
         ) : (

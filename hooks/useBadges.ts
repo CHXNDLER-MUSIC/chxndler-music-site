@@ -19,7 +19,7 @@ export function useBadges() {
       
       const { data, error } = await supabaseBrowser
         .from('badges')
-        .select('id, badge_name, icon_url, description, requirement, category, created_at')
+        .select('id, badge_name, icon_url, description, requirement, category, sub_category, created_at')
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -68,7 +68,7 @@ export function useBadges() {
   // Calculate badge progress (this would be enhanced with actual tracking data)
   const calculateBadgeProgress = (badge: Badge): BadgeWithProgress => {
     const userBadge = userBadges.find(ub => ub.badge_id === badge.id);
-    const unlocked = !!userBadge;
+    const unlocked = !!user && !!userBadge;
 
     // For demo purposes, using some mock progress calculations
     // In a real implementation, this would query actual user activity data
@@ -76,7 +76,11 @@ export function useBadges() {
     let current = 0;
     let total = 1;
 
-    if (badge.badge_name.includes('First')) {
+    // No progress or unlocking for non-authenticated users
+    if (!user) {
+      progress = 0;
+      current = 0;
+    } else if (badge.badge_name.includes('First')) {
       // First-time achievements
       total = 1;
       current = unlocked ? 1 : 0;
