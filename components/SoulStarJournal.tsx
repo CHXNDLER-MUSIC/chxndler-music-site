@@ -454,7 +454,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         {/* Heart Element Button - Top Left under FULL LOG */}
         {!showHistory && (
           <button
-            className="absolute top-12 left-4 text-xs font-semibold transition-all duration-200 hover:opacity-100 px-2 py-1 rounded"
+            className="absolute top-16 left-4 text-xs font-semibold transition-all duration-200 hover:opacity-100 px-2 py-1 rounded"
             style={{
               background: `${elementTheme.color}20`,
               border: `1px solid ${elementTheme.color}60`,
@@ -462,7 +462,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               textShadow: `0 0 4px ${elementTheme.glow}`
             }}
           >
-            {elementEmoji} {dailyPrompt.element} ELEMENT
+            {elementEmoji} ELEMENT: {dailyPrompt.element.toUpperCase()}
           </button>
         )}
 
@@ -672,7 +672,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                               className="text-xs font-semibold mb-1 uppercase tracking-wider"
                               style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
                             >
-                              ✨ Today's Intention
+                              ✨ Intention
                             </div>
                             <div 
                               className="text-sm leading-relaxed"
@@ -841,7 +841,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     className="text-sm font-semibold mb-1 uppercase tracking-wider"
                     style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
                   >
-                    ✨ Today's Intention
+                    ✨ Intention
                   </div>
                   <div 
                     className="text-sm leading-relaxed mb-1"

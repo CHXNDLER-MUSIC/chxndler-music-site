@@ -5,8 +5,10 @@ import IconButtonShell from "@/components/IconButtonShell";
 import { toSpotifyEmbed, spotifyEmbedHeight } from "@/lib/spotify";
 import { toAppleEmbed, appleEmbedHeight } from "@/lib/apple";
 import { createPortal } from "react-dom";
+import { useAudio } from "@/app/providers/AudioProvider";
 
-export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh:number; sizePx:number; gapPx?:number; tilt?:string; vertical?: boolean; mobile?: {sizePx:number; gapPx?:number}; tablet?: {sizePx:number; gapPx?:number} }, links:{ spotify?:string; apple?:string } }){
+export default function StreamingButtons({ pos, links, showControls = true }:{ pos: { xVw:number; yVh:number; sizePx:number; gapPx?:number; tilt?:string; vertical?: boolean; mobile?: {sizePx:number; gapPx?:number}; tablet?: {sizePx:number; gapPx?:number} }, links:{ spotify?:string; apple?:string }, showControls?: boolean }){
+  const { playing, play, pause, volume, setVolume } = useAudio();
   // Get responsive size based on screen width
   const getResponsiveSize = () => {
     if (typeof window === 'undefined') return pos.sizePx;
@@ -85,10 +87,49 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
     />
   );
 
+  const PlayPauseIcon = (
+    <svg
+      width={iconSize}
+      height={iconSize}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+    >
+      {playing ? (
+        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+      ) : (
+        <path d="M8 5v14l11-7z" />
+      )}
+    </svg>
+  );
+
+  const VolumeIcon = (
+    <svg
+      width={iconSize}
+      height={iconSize}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+    >
+      <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+    </svg>
+  );
+
+  const LyricsIcon = (
+    <svg
+      width={iconSize}
+      height={iconSize}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+    >
+      <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+    </svg>
+  );
+
   const [showSpotifyPopover, setShowSpotifyPopover] = useState(false);
   const [spEmbedUrl, setSpEmbedUrl] = useState<string | null>(null);
   const [showApplePopover, setShowApplePopover] = useState(false);
   const [amEmbedUrl, setAmEmbedUrl] = useState<string | null>(null);
+  const [showLyrics, setShowLyrics] = useState(false);
+  const [showVolumeControl, setShowVolumeControl] = useState(false);
 
   // Close on Escape
   useEffect(() => {
@@ -103,9 +144,90 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [showApplePopover]);
+  
+  useEffect(() => {
+    if (!showLyrics) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowLyrics(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showLyrics]);
+  
+  useEffect(() => {
+    if (!showVolumeControl) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowVolumeControl(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showVolumeControl]);
 
   return (
     <>
+      {/* Play/Pause Button */}
+      {showControls && (
+        <div
+          className="wrap"
+          style={vertical
+            ? { left: `calc(${pos.xVw}vw - ${size/2}px)`, top: `calc(${pos.yVh}vh - ${size + gap}px)`, width: size, height: size, transform: tilt }
+            : { left: `calc(${pos.xVw}vw - ${(size + gap)}px)`, top: `calc(${pos.yVh}vh - ${size/2}px)`, width: size, height: size, transform: tilt }
+          }
+        >
+          <span className="socket" aria-hidden />
+          <IconButtonShell
+            title={playing ? "Pause" : "Play"}
+            color={playing ? "#FF6B6B" : "#4ECDC4"}
+            onClickFX={playClick}
+            onHoverFX={playHover}
+            onClick={playing ? pause : play}
+          >
+            {PlayPauseIcon}
+          </IconButtonShell>
+        </div>
+      )}
+
+      {/* Volume Button */}
+      {showControls && (
+        <div
+          className="wrap"
+          style={vertical
+            ? { left: `calc(${pos.xVw}vw - ${size/2}px)`, top: `calc(${pos.yVh}vh + ${gap/2}px)`, width: size, height: size, transform: tilt }
+            : { left: `calc(${pos.xVw}vw + ${gap/2}px)`, top: `calc(${pos.yVh}vh - ${size/2}px)`, width: size, height: size, transform: tilt }
+          }
+        >
+          <span className="socket" aria-hidden />
+          <IconButtonShell
+            title="Volume Control"
+            color="#9B59B6"
+            onClickFX={playClick}
+            onHoverFX={playHover}
+            onClick={() => setShowVolumeControl(!showVolumeControl)}
+          >
+            {VolumeIcon}
+          </IconButtonShell>
+        </div>
+      )}
+
+      {/* Lyrics Button */}
+      {showControls && (
+        <div
+          className="wrap"
+          style={vertical
+            ? { left: `calc(${pos.xVw}vw - ${size/2}px)`, top: `calc(${pos.yVh}vh + ${size + gap/2}px)`, width: size, height: size, transform: tilt }
+            : { left: `calc(${pos.xVw}vw + ${(size + gap)}px)`, top: `calc(${pos.yVh}vh - ${size/2}px)`, width: size, height: size, transform: tilt }
+          }
+        >
+          <span className="socket" aria-hidden />
+          <IconButtonShell
+            title="Show Lyrics"
+            color="#F39C12"
+            onClickFX={playClick}
+            onHoverFX={playHover}
+            onClick={() => setShowLyrics(!showLyrics)}
+          >
+            {LyricsIcon}
+          </IconButtonShell>
+        </div>
+      )}
+
+      {/* Spotify Button */}
       {links.spotify && (
         <div
           className="wrap"
@@ -262,9 +384,78 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
               allow="autoplay *; encrypted-media *; clipboard-write"
               loading="lazy"
               width="100%"
-              height="400"
+              height="600"
               style={{ border: 'none', display: 'block' }}
             />
+          </div>
+        </div>,
+        document.body
+      ) : null}
+
+      {/* Lyrics Modal */}
+      {typeof document !== 'undefined' && showLyrics ? createPortal(
+        <div
+          role="dialog"
+          aria-label="Lyrics"
+          className="lyrics-overlay"
+          onClick={() => setShowLyrics(false)}
+        >
+          <div className="lyrics-popover" onClick={(e) => e.stopPropagation()}>
+            <button
+              aria-label="Close"
+              title="Close"
+              className="lyrics-close"
+              onMouseEnter={() => { try { const el = hoverRef.current; if (el) { el.currentTime = 0; el.volume = 0.35; el.play().catch(()=>{}); } } catch {} }}
+              onClick={() => setShowLyrics(false)}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                <path fill="currentColor" d="M18.3 5.71L12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.7 2.88 18.29 9.17 12 2.88 5.71 4.29 4.3 10.59 10.59 16.89 4.3z" />
+              </svg>
+            </button>
+            <div className="lyrics-content">
+              <h3>Lyrics</h3>
+              <p>Lyrics will be displayed here when available...</p>
+            </div>
+          </div>
+        </div>,
+        document.body
+      ) : null}
+
+      {/* Volume Control Modal */}
+      {typeof document !== 'undefined' && showVolumeControl ? createPortal(
+        <div
+          role="dialog"
+          aria-label="Volume Control"
+          className="volume-overlay"
+          onClick={() => setShowVolumeControl(false)}
+        >
+          <div className="volume-popover" onClick={(e) => e.stopPropagation()}>
+            <button
+              aria-label="Close"
+              title="Close"
+              className="volume-close"
+              onMouseEnter={() => { try { const el = hoverRef.current; if (el) { el.currentTime = 0; el.volume = 0.35; el.play().catch(()=>{}); } } catch {} }}
+              onClick={() => setShowVolumeControl(false)}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                <path fill="currentColor" d="M18.3 5.71L12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.7 2.88 18.29 9.17 12 2.88 5.71 4.29 4.3 10.59 10.59 16.89 4.3z" />
+              </svg>
+            </button>
+            <div className="volume-content">
+              <h3>Volume</h3>
+              <div className="volume-slider-container">
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={volume}
+                  onChange={(e) => setVolume(parseFloat(e.target.value))}
+                  className="volume-slider"
+                />
+                <div className="volume-display">{Math.round(volume * 100)}%</div>
+              </div>
+            </div>
           </div>
         </div>,
         document.body
@@ -276,7 +467,7 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
           display: flex; align-items: center; justify-content: center; z-index: 2147483647;
         }
         .sp-popover {
-          position: relative; width: min(88vw, 600px);
+          position: relative; width: min(85vw, 600px);
           background: rgba(0,0,0,0.88);
           border: 1px solid rgba(29,185,84,0.6);
           border-radius: 14px; overflow: hidden;
@@ -296,7 +487,7 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
           display: flex; align-items: center; justify-content: center; z-index: 2147483647;
         }
         .am-popover {
-          position: relative; width: min(90vw, 600px); height: 400px;
+          position: relative; width: min(90vw, 500px); height: 600px;
           background: transparent; /* remove black fill */
           border: 1px solid rgba(255,59,48,0.6);
           border-radius: 14px; overflow: hidden;
@@ -309,9 +500,62 @@ export default function StreamingButtons({ pos, links }:{ pos: { xVw:number; yVh
           transition: transform .15s ease, background .15s ease, box-shadow .15s ease; }
         .am-close:hover { transform: scale(1.1); background: rgba(0,0,0,0.6); box-shadow: 0 0 24px rgba(255,255,255,0.55); }
         .am-close:active { transform: scale(0.95); }
+        .lyrics-overlay {
+          position: fixed; inset: 0; background: transparent; backdrop-filter: none;
+          display: flex; align-items: center; justify-content: center; z-index: 2147483647;
+        }
+        .lyrics-popover {
+          position: relative; width: min(90vw, 600px); max-height: 80vh; overflow-y: auto;
+          background: rgba(0,0,0,0.88);
+          border: 1px solid rgba(243,156,18,0.6);
+          border-radius: 14px; padding: 20px;
+          box-shadow: 0 18px 46px rgba(0,0,0,0.55), 0 0 32px rgba(243,156,18,0.35);
+          margin-top: -80px;
+        }
+        .lyrics-close { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%;
+          border: 1px solid rgba(255,255,255,0.4); background: rgba(0,0,0,0.45); color: #fff; display: inline-flex;
+          align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 0 16px rgba(255,255,255,0.25);
+          transition: transform .15s ease, background .15s ease, box-shadow .15s ease; }
+        .lyrics-close:hover { transform: scale(1.1); background: rgba(0,0,0,0.6); box-shadow: 0 0 24px rgba(255,255,255,0.55); }
+        .lyrics-close:active { transform: scale(0.95); }
+        .lyrics-content { color: #fff; padding-top: 10px; }
+        .lyrics-content h3 { color: #F39C12; margin: 0 0 15px 0; font-size: 18px; font-weight: 600; }
+        .lyrics-content p { margin: 0; line-height: 1.6; opacity: 0.9; }
+
+        .volume-overlay {
+          position: fixed; inset: 0; background: transparent; backdrop-filter: none;
+          display: flex; align-items: center; justify-content: center; z-index: 2147483647;
+        }
+        .volume-popover {
+          position: relative; width: min(90vw, 400px);
+          background: rgba(0,0,0,0.88);
+          border: 1px solid rgba(155,89,182,0.6);
+          border-radius: 14px; padding: 20px;
+          box-shadow: 0 18px 46px rgba(0,0,0,0.55), 0 0 32px rgba(155,89,182,0.35);
+          margin-top: -80px;
+        }
+        .volume-close { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%;
+          border: 1px solid rgba(255,255,255,0.4); background: rgba(0,0,0,0.45); color: #fff; display: inline-flex;
+          align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 0 16px rgba(255,255,255,0.25);
+          transition: transform .15s ease, background .15s ease, box-shadow .15s ease; }
+        .volume-close:hover { transform: scale(1.1); background: rgba(0,0,0,0.6); box-shadow: 0 0 24px rgba(255,255,255,0.55); }
+        .volume-close:active { transform: scale(0.95); }
+        .volume-content { color: #fff; padding-top: 10px; }
+        .volume-content h3 { color: #9B59B6; margin: 0 0 15px 0; font-size: 18px; font-weight: 600; }
+        .volume-slider-container { display: flex; align-items: center; gap: 15px; }
+        .volume-slider { flex: 1; height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; outline: none; cursor: pointer;
+          -webkit-appearance: none; appearance: none; }
+        .volume-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; 
+          border-radius: 50%; background: #9B59B6; cursor: pointer; box-shadow: 0 0 10px rgba(155,89,182,0.5); }
+        .volume-slider::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #9B59B6; cursor: pointer;
+          border: none; box-shadow: 0 0 10px rgba(155,89,182,0.5); }
+        .volume-display { min-width: 40px; font-weight: 600; color: #9B59B6; }
+
         @media (max-width: 768px) {
-          .sp-popover { margin-top: -60px; }
-          .am-popover { margin-top: -120px; width: min(95vw, 700px); }
+          .sp-popover { margin-top: -60px; width: min(90vw, 480px); }
+          .am-popover { margin-top: -120px; width: min(90vw, 420px); }
+          .lyrics-popover { margin-top: -60px; width: min(90vw, 480px); }
+          .volume-popover { margin-top: -60px; width: min(90vw, 320px); }
         }
       `}</style>
     </>
