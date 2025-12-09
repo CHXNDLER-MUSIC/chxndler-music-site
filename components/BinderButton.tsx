@@ -1044,8 +1044,8 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
             className="relative z-10"
             onClick={(e) => e.stopPropagation()}
             style={{
-              maxWidth: 'min(60vw, 180px)',
-              maxHeight: '35vh',
+              maxWidth: 'min(45vw, 120px)',
+              maxHeight: '25vh',
             }}
           >
             {/* Card image */}

@@ -518,6 +518,7 @@ export default function ProfileBar({
                   updateProfile({ heartcoin_balance: newAmount });
                 }}
                 onClose={() => setActivePanel(null)}
+                onBeamColorChange={onBeamColorChange}
               />
               
               {/* Heart Coin Count */}

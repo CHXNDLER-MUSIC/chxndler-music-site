@@ -185,9 +185,10 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onJournalCompleted?: () => void;
   // Modal close callback
   onClose?: () => void;
+  onBeamColorChange?: (color: string) => void;
 };
 
-export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, onOpenBinder, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, isActive = false, journalCompleted = false, onJournalCompleted, onClose, ...restProps }: Props) {
+export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, onOpenBinder, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, isActive = false, journalCompleted = false, onJournalCompleted, onClose, onBeamColorChange, ...restProps }: Props) {
   const { profile, refreshProfile, setIsJournalOpen } = useProfile();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'EARN' | 'USE'>('EARN');
@@ -248,6 +249,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // Check for initial tab preference from hamburger menu
   const [isFromHamburger, setIsFromHamburger] = useState(false);
   
+  // Track if modal was opened via collect card button to prevent automatic closing
+  const [isFromCollectCard, setIsFromCollectCard] = useState(false);
+  
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).heartCoinInitialTab) {
       setActiveTab((window as any).heartCoinInitialTab);
@@ -275,11 +279,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   useEffect(() => {
     if (isActive && !open) {
       setOpen(true);
-    } else if (!isActive && open) {
+    } else if (!isActive && open && !isFromCollectCard) {
+      // Only auto-close if not opened from collect card button
       setOpen(false);
       setIsFromHamburger(false);
+      setIsFromCollectCard(false);
     }
-  }, [isActive, open]);
+  }, [isActive, open, isFromCollectCard]);
 
   // Listen for openHeartCoinCards event from collect card button
   useEffect(() => {
@@ -301,7 +307,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           setSelectedSong(e.detail.cardTitle);
         }
         
-        // Open the modal
+        // Mark as opened from collect card and open the modal
+        setIsFromCollectCard(true);
         setOpen(true);
         
         // Track the event
@@ -707,6 +714,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       
       // Close heart coin display and open blue display
       setOpen(false);
+      setIsFromCollectCard(false);
       try { onOpenBlueDisplay?.(); } catch {}
     }
   };
@@ -717,6 +725,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       
       // Close heart coin display and open journal
       setOpen(false);
+      setIsFromCollectCard(false);
       try { 
         // Use the ProfileContext journal state to open the journal popup
         setIsJournalOpen(true);
@@ -736,6 +745,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     
     // Close heart coin display
     setOpen(false);
+    setIsFromCollectCard(false);
     
     // Open store popover with CARDS tab (where users can spend HeartCoins)
     window.dispatchEvent(new CustomEvent('openStoreCards', {
@@ -912,7 +922,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     try { onClick?.(e); } catch {}
     if (!e.defaultPrevented) {
       e.preventDefault();
-      try { sfx.play('click', 0.8); } catch {}
+      try { sfx.play('button', 0.8); } catch {}
+      try { onBeamColorChange?.('white'); } catch {}
       try { onCloseBlueDisplay?.(); } catch {}
       setOpen(true);
     }
@@ -1040,6 +1051,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               try { sfx.play('close', 0.8); } catch {}
               setOpen(false);
               setIsFromHamburger(false);
+              setIsFromCollectCard(false);
               try { onOpenBlueDisplay?.(); } catch {}
               try { onClose?.(); } catch {}
             }}
@@ -2027,107 +2039,99 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     </button>
                                   </div>
                                 ) : showPhysicalForm ? (
-                                  /* Shipping Form */
-                                  <div className="space-y-3">
-                                    <h2 
-                                      className="text-lg font-bold mb-4"
+                                  /* Physical Purchase Form */
+                                  <div className="text-center">
+                                    {/* User and Cost - Side by Side */}
+                                    <div className="flex justify-between items-start mb-3">
+                                      {/* User Section */}
+                                      <div className="flex flex-col items-center flex-1">
+                                        <div 
+                                          className="font-bold text-white text-lg mb-3"
+                                          style={{
+                                            textShadow: '0 0 4px rgba(255,255,255,0.6)'
+                                          }}
+                                        >
+                                          User
+                                        </div>
+                                        
+                                        {/* Current Heart Coins */}
+                                        <div className="flex flex-col items-center space-y-2">
+                                          <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
+                                          <div 
+                                            className="text-xl font-bold"
+                                            style={{ 
+                                              color: '#FFFFFF', 
+                                              textShadow: '0 0 6px rgba(255,255,255,0.8)' 
+                                            }}
+                                          >
+                                            {profile?.id ? heartCoins : 0}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      {/* Cost Section */}
+                                      <div className="flex flex-col items-center flex-1">
+                                        <div 
+                                          className="font-bold text-white text-lg mb-3"
+                                          style={{
+                                            textShadow: '0 0 4px rgba(255,255,255,0.6)'
+                                          }}
+                                        >
+                                          Cost
+                                        </div>
+                                        
+                                        <div className="flex flex-col items-center space-y-2">
+                                          <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
+                                          <div 
+                                            className="text-xl font-bold"
+                                            style={{ 
+                                              color: '#FFFFFF', 
+                                              textShadow: '0 0 6px rgba(255,255,255,0.8)' 
+                                            }}
+                                          >
+                                            {card.physicalCost}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Status Message */}
+                                    <div 
+                                      className="text-sm mb-4"
                                       style={{ 
-                                        color: '#FFFFFF', 
-                                        textShadow: '0 0 6px rgba(255,255,255,0.8)' 
+                                        color: heartCoins >= card.physicalCost ? '#90EE90' : '#FF6B6B', 
+                                        textShadow: heartCoins >= card.physicalCost 
+                                          ? '0 0 4px rgba(144,238,144,0.8)' 
+                                          : '0 0 4px rgba(255,107,107,0.8)'
                                       }}
                                     >
-                                      Shipping Information
-                                    </h2>
-
-                                    <div>
-                                      <input
-                                        type="text"
-                                        placeholder="FULL NAME"
-                                        value={shippingInfo.fullName}
-                                        onChange={(e) => setShippingInfo({...shippingInfo, fullName: e.target.value})}
-                                        className="w-full p-2 bg-black/60 border border-white/40 rounded text-white text-sm placeholder-white/60"
-                                        style={{
-                                          boxShadow: '0 0 10px rgba(255,255,255,0.2)'
-                                        }}
-                                      />
-                                    </div>
-
-                                    <div>
-                                      <input
-                                        type="text"
-                                        placeholder="STREET"
-                                        value={shippingInfo.street}
-                                        onChange={(e) => setShippingInfo({...shippingInfo, street: e.target.value})}
-                                        className="w-full p-2 bg-black/60 border border-white/40 rounded text-white text-sm placeholder-white/60"
-                                        style={{
-                                          boxShadow: '0 0 10px rgba(255,255,255,0.2)'
-                                        }}
-                                      />
-                                    </div>
-
-                                    <div>
-                                      <input
-                                        type="text"
-                                        placeholder="CITY"
-                                        value={shippingInfo.city}
-                                        onChange={(e) => setShippingInfo({...shippingInfo, city: e.target.value})}
-                                        className="w-full p-2 bg-black/60 border border-white/40 rounded text-white text-sm placeholder-white/60"
-                                        style={{
-                                          boxShadow: '0 0 10px rgba(255,255,255,0.2)'
-                                        }}
-                                      />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-3">
-                                      <input
-                                        type="text"
-                                        placeholder="STATE"
-                                        value={shippingInfo.state}
-                                        onChange={(e) => setShippingInfo({...shippingInfo, state: e.target.value})}
-                                        className="w-full p-2 bg-black/60 border border-white/40 rounded text-white text-sm placeholder-white/60"
-                                        style={{
-                                          boxShadow: '0 0 10px rgba(255,255,255,0.2)'
-                                        }}
-                                      />
-                                      <input
-                                        type="text"
-                                        placeholder="ZIP"
-                                        value={shippingInfo.zip}
-                                        onChange={(e) => setShippingInfo({...shippingInfo, zip: e.target.value})}
-                                        className="w-full p-2 bg-black/60 border border-white/40 rounded text-white text-sm placeholder-white/60"
-                                        style={{
-                                          boxShadow: '0 0 10px rgba(255,255,255,0.2)'
-                                        }}
-                                      />
-                                    </div>
-
-                                    <div>
-                                      <input
-                                        type="text"
-                                        placeholder="COUNTRY"
-                                        value={shippingInfo.country}
-                                        onChange={(e) => setShippingInfo({...shippingInfo, country: e.target.value})}
-                                        className="w-full p-2 bg-black/60 border border-white/40 rounded text-white text-sm placeholder-white/60"
-                                        style={{
-                                          boxShadow: '0 0 10px rgba(255,255,255,0.2)'
-                                        }}
-                                      />
+                                      {(profile?.id ? heartCoins : 0) >= card.physicalCost 
+                                        ? 'You can purchase this card!' 
+                                        : 'You need more heart coins'}
                                     </div>
 
                                     <button 
-                                      className="w-full mt-4 px-4 py-2 rounded border border-green-500/60 bg-green-500/20 hover:bg-green-500/30 transition-colors"
+                                      className="w-full px-4 py-2 rounded border transition-colors"
                                       style={{ 
-                                        color: '#90EE90', 
-                                        textShadow: '0 0 4px rgba(144,238,144,0.8)',
+                                        backgroundColor: (profile?.id ? heartCoins : 0) >= card.physicalCost 
+                                          ? 'rgba(0,255,0,0.2)' 
+                                          : 'rgba(255,0,0,0.2)',
+                                        borderColor: (profile?.id ? heartCoins : 0) >= card.physicalCost 
+                                          ? 'rgba(0,255,0,0.6)' 
+                                          : 'rgba(255,0,0,0.6)',
+                                        color: (profile?.id ? heartCoins : 0) >= card.physicalCost ? '#90EE90' : '#FF6B6B',
+                                        textShadow: (profile?.id ? heartCoins : 0) >= card.physicalCost 
+                                          ? '0 0 4px rgba(144,238,144,0.8)' 
+                                          : '0 0 4px rgba(255,107,107,0.8)',
                                         fontWeight: 'bold'
                                       }}
+                                      disabled={(profile?.id ? heartCoins : 0) < card.physicalCost}
                                       onClick={() => {
                                         try { sfx.play('click', 0.8); } catch {}
-                                        // Handle confirm order logic here
-                                        console.log('Order confirmed:', shippingInfo);
+                                        // Handle physical purchase logic here
+                                        console.log('Physical purchase confirmed');
                                       }}
                                     >
-                                      CONFIRM ORDER
+                                      CONFIRM
                                     </button>
                                   </div>
                                 ) : showDigitalForm ? (
@@ -2364,8 +2368,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     }}
                                     onClick={() => {
                                       try { sfx.play('click', 0.7); } catch {}
-                                      setShowPhysicalConfirm(!showPhysicalConfirm);
-                                      setShowPhysicalForm(false);
+                                      setShowPhysicalForm(!showPhysicalForm);
+                                      setShowPhysicalConfirm(false);
                                       setShowDigitalForm(false);
                                     }}
                                   >
