@@ -1942,6 +1942,17 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           // Disable warp to prevent additional warp sounds
           setAllowWarp(false);
           
+          // Automatically fade in blue display and light beam after warp effect completes
+          // This ensures the UI is always visible after any warp, regardless of the path
+          setTimeout(() => {
+            setBeamEnabled(true);
+            setShowHUD(true);
+            setWarpActive(false); // Ensure warp state is ended to allow UI visibility
+            if (process.env.NODE_ENV === "development") {
+              console.log("🌟 Auto fade-in: Blue display and light beam enabled after warp");
+            }
+          }, 300); // Short delay for smooth transition
+          
           // Welcome modal will be shown after UI reveal below
           
           // After a song is selected, reveal ONLY the selected planet post-warp
@@ -2462,12 +2473,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 key={safariRefreshKey} // Force re-render on Safari when needed
                 style={(() => {
                   const normalCondition = cockpitVisible && showHUD;
-                  // Blue display shows when cockpit is fully visible
-                  const shouldShow = normalCondition;
+                  // Blue display shows when cockpit is fully visible but hidden during warp
+                  const shouldShow = normalCondition && !isWarping;
                   // Debug visibility conditions (optional)
                   debugLog({
                     homeMode,
                     warpActive,
+                    isWarping,
                     uiUnlocked,
                     showOverlayUI,
                     showHUD,
@@ -2479,7 +2491,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   return {
                     // Allow planets to be visible even when UI is locked (before Start is pressed)
                     opacity: shouldShow ? 1 : 0,
-                    pointerEvents: normalCondition ? 'auto' : 'none', 
+                    pointerEvents: (normalCondition && !isWarping) ? 'auto' : 'none', 
                     visibility: shouldShow ? 'visible' : 'hidden',
                     transition: 'opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)',
                     willChange: 'opacity',

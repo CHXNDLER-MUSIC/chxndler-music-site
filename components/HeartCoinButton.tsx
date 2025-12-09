@@ -757,11 +757,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       // Close heart coin display and open journal
       setOpen(false);
       setIsFromCollectCard(false);
-      try { 
-        // Use the ProfileContext journal state to open the journal popup
-        setIsJournalOpen(true);
-        onOpenJournal?.(); 
-      } catch {}
+      
+      // Small delay to ensure popup closes before journal opens
+      setTimeout(() => {
+        try { 
+          // Use the ProfileContext journal state to open the journal popup
+          setIsJournalOpen(true);
+          onOpenJournal?.(); 
+        } catch {}
+      }, 100);
     }
   };
 
@@ -1893,6 +1897,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     if (!shouldBlurCard(card)) {
                                       try { sfx.play('click', 0.8); } catch {}
                                       setEnlargedCard(card);
+                                      setIsEnlargedCardFlipped(false);
                                     }
                                   }}
                                 />

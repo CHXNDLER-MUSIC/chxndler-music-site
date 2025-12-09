@@ -113,6 +113,15 @@ export function getBadgeProgressForUser(
       current = profile.heartcoins_sent || 0;
       break;
       
+    case 'heartcoin_transfers':
+      current = profile.heartcoins_sent || 0;
+      break;
+      
+    case 'heart coins':
+      // Handle space-separated variant of heartcoins
+      current = profile.heartcoin_total || 0;
+      break;
+      
     default:
       // TODO: Add support for new requirement types as they are added
       console.warn(`Unknown requirement type: ${badge.requirement_type} for badge: ${badge.slug || badge.id}`);

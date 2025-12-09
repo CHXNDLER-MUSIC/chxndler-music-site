@@ -21,6 +21,8 @@ const SONG_TRACK_MAP: Record<string, TrackKey> = {
   "paris": "PARIS",
   "pokemon": "POKEMON",
   "we're-just-friends": "WJF",
+  "welcome-to-the-heartverse": "WELCOME_TO_HEARTVERSE",
+  "welcome-back": "WELCOME_BACK",
 };
 
 // Element mapping for visual consistency
@@ -109,18 +111,20 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
 
   // Handle track change from dropdown
   const handleTrackChange = useCallback(async (newTrackId: string) => {
-    // Check if warp has completed - if not, set as pending track
-    if (!audioManager.warpCompleted) {
-      // Before warp: set as pending track for after warp completion
-      audioManager.setPendingTrack(newTrackId);
-      return;
-    }
-    
-    // After warp: play immediately through the unified audio system
     try {
+      // Always use the unified audio system to play the track
+      // The AudioProvider will handle warp sequences and proper loading
       await audioManager.playTrack(newTrackId);
     } catch (err) {
       console.error('Failed to play track:', err);
+      
+      // If playTrack fails, try to set it as the current track at least
+      // so the play button can work with it
+      const trackInfo = TRACK_INFO[newTrackId];
+      if (trackInfo) {
+        // Set the track as current even if playback failed
+        audioManager.loadTrack(getTrackUrlFromSongId(newTrackId));
+      }
     }
   }, [audioManager]);
 
@@ -130,16 +134,17 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
       audioManager.pause();
     } else {
       // If no track is currently loaded, try to play the first available song
-      if (!audioManager.src || !audioManager.currentTrack) {
+      if (!audioManager.currentTrack || !audioManager.src) {
         const firstSong = availableSongs[0];
         if (firstSong) {
           handleTrackChange(firstSong.id);
         }
       } else {
+        // Track is loaded, just resume playback
         audioManager.play();
       }
     }
-  }, [isPlaying, audioManager, availableSongs, handleTrackChange]);
+  }, [isPlaying, audioManager.currentTrack, audioManager.src, availableSongs, handleTrackChange]);
 
   // Handle progress bar click for seeking
   const handleProgressClick = useCallback((e: React.MouseEvent) => {

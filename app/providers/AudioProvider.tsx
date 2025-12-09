@@ -171,6 +171,7 @@ type AudioControls = {
   stopAllAudio: () => void;
   setPendingTrack: (trackId: string | null) => void;
   markWarpCompleted: () => void;
+  currentTrack: TrackInfo | null;
 };
 
 const AudioCtx = createContext<(AudioState & AudioControls) | null>(null);
@@ -416,11 +417,34 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         // Play warp effect
         await playAudioOnce(SFX.WARP);
         
+        // Play join-alien effect (this was missing - it plays after warp in HoloAudioBridge)
+        await playAudioOnce("/audio/join-alien.mp3");
+        
         // Play button beam effect  
         await playAudioOnce(SFX.BUTTON_BEAM);
         
-        // Do NOT auto-play space music here anymore
-        // The warp completion handler will take care of playing the pending track or space music
+        // Play appropriate welcome message + space music background
+        if (isLoggedIn) {
+          // Play welcome back + space music
+          const welcomeBackAudio = new Audio("/tracks/welcome-back.opus");
+          welcomeBackAudio.volume = 0.7;
+          welcomeBackAudio.play().catch(console.error);
+          
+          const spaceMusicAudio = new Audio("/tracks/space-music.opus");
+          spaceMusicAudio.volume = 0.5;
+          spaceMusicAudio.loop = true;
+          spaceMusicAudio.play().catch(console.error);
+        } else {
+          // Play welcome to heartverse + space music
+          const welcomeToHeartrverseAudio = new Audio("/tracks/welcome-to-the-heartverse.opus");
+          welcomeToHeartrverseAudio.volume = 0.7;
+          welcomeToHeartrverseAudio.play().catch(console.error);
+          
+          const spaceMusicAudio = new Audio("/tracks/space-music.opus");
+          spaceMusicAudio.volume = 0.5;
+          spaceMusicAudio.loop = true;
+          spaceMusicAudio.play().catch(console.error);
+        }
         
       } catch (err) {
         console.error('Failed to play start sequence:', err);
@@ -438,10 +462,17 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     },
     
     markWarpCompleted: () => {
-      setState(s => ({ ...s, warpCompleted: true }));
+      setState(s => ({ 
+        ...s, 
+        warpCompleted: true,
+        pendingTrack: s.pendingTrack || 'space-music' // Ensure space-music is set as default
+      }));
     },
     
-  }), [state.src]);
+    // Expose currentTrack for compatibility
+    currentTrack: state.currentTrack,
+    
+  }), [state.src, state.currentTrack]);
 
   // Auto-play track when warp completes
   useEffect(() => {
@@ -449,14 +480,57 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     const trackToPlay = state.pendingTrack || 'space-music';
     
+    console.log('🎵 Auto-playing after warp completion:', trackToPlay);
+    
     // Clear pending track 
     setState(s => ({ ...s, pendingTrack: null }));
     
-    // Use the API to play the track
+    // Use the API to play the track (playTrack already handles starting playback)
     const playTrack = api.playTrack;
     playTrack(trackToPlay).catch(console.error);
     
   }, [state.warpCompleted, state.pendingTrack, api.playTrack]);
+
+  // Listen for player store changes to sync with holo panel selections  
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    // Import playerStore dynamically to avoid SSR issues
+    const subscribeToPlayerStore = async () => {
+      try {
+        const { playerStore } = await import('@/store/usePlayerStore');
+        const { useProfile } = await import('@/contexts/ProfileContext');
+        
+        const unsubscribe = playerStore.subscribe((state: any) => {
+          const currentMainId = state?.mainId;
+          
+          // Only sync if a different song is selected
+          if (currentMainId && currentMainId !== state.currentTrack?.id) {
+            console.log('🎵 AudioProvider: Syncing with player store selection:', currentMainId);
+            
+            // Set this track as pending
+            setState(s => ({ ...s, pendingTrack: currentMainId, warpCompleted: false }));
+            
+            // Start the warp sequence (this includes all the sound effects)
+            api.playStartSequence(false).then(() => {
+              // Mark warp as completed to trigger song playback
+              setState(s => ({ ...s, warpCompleted: true }));
+            }).catch(err => {
+              console.error('Failed to play start sequence:', err);
+              // Still mark warp as completed even if effects fail
+              setState(s => ({ ...s, warpCompleted: true }));
+            });
+          }
+        });
+        
+        return unsubscribe;
+      } catch (err) {
+        console.warn('Failed to subscribe to player store:', err);
+      }
+    };
+    
+    subscribeToPlayerStore();
+  }, [state.currentTrack?.id, api.playStartSequence]);
 
   const value = useMemo(() => ({ ...state, ...api }), [state, api]);
   return <AudioCtx.Provider value={value}>{children}</AudioCtx.Provider>;

@@ -597,14 +597,22 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
       // Add fields from daily prompt (element, intention, prompt) 
       if (entry.prompt_id !== null && entry.prompt_id !== undefined) {
-        entryData.prompt_id = entry.prompt_id;
+        // Validate that prompt_id is a valid UUID before adding it
+        const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(entry.prompt_id);
+        if (isValidUUID) {
+          entryData.prompt_id = entry.prompt_id;
+        } else {
+          console.warn('Invalid UUID for prompt_id, skipping:', entry.prompt_id);
+          // Don't include prompt_id if it's not a valid UUID
+        }
       }
       if (entry.intention !== null && entry.intention !== undefined) {
         entryData.intention = entry.intention; // INTENTION from daily prompt
       }
-      if (entry.reflection !== null && entry.reflection !== undefined) {
-        entryData.reflection = entry.reflection; // PROMPT QUESTION text from daily prompt
-      }
+      // Temporarily commented out until database schema is confirmed to have reflection column
+      // if (entry.reflection !== null && entry.reflection !== undefined) {
+      //   entryData.reflection = entry.reflection; // PROMPT QUESTION text from daily prompt
+      // }
       if (entry.intention_response !== null && entry.intention_response !== undefined) {
         entryData.intention_response = entry.intention_response; // USER'S response to intention
       }

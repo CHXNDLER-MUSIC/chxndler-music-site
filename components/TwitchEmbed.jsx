@@ -203,39 +203,50 @@ export default function TwitchEmbed({ visible = true, channel = "chxndlerthealie
           {/* Neon "Signal Lost" message */}
           <div className="mb-6">
             <h2 
-              className="text-5xl md:text-7xl font-bold tracking-wider"
+              className="text-6xl md:text-8xl lg:text-9xl font-bold tracking-wider transform scale-110 hover:scale-125 transition-transform duration-300"
               style={{
                 color: '#FC54AF',
                 textShadow: `
-                  0 0 5px #FC54AF,
-                  0 0 10px #FC54AF,
+                  0 0 8px #FC54AF,
                   0 0 15px #FC54AF,
-                  0 0 20px #FC54AF,
+                  0 0 25px #FC54AF,
                   0 0 35px #FC54AF,
-                  0 0 40px #FC54AF
+                  0 0 50px #FC54AF,
+                  0 0 70px #FC54AF,
+                  0 0 90px #FC54AF
                 `,
-                animation: 'neonFlicker 2s infinite alternate'
+                animation: 'neonFlicker 2s infinite alternate, signalPop 3s ease-in-out infinite',
+                filter: 'drop-shadow(0 0 30px #FC54AF)',
+                fontFamily: 'monospace',
+                letterSpacing: '0.15em',
+                textTransform: 'uppercase'
               }}
             >
               SIGNAL LOST
             </h2>
             <div 
-              className="text-2xl md:text-3xl font-mono tracking-wide mt-8"
+              className="text-3xl md:text-4xl lg:text-5xl font-mono tracking-wide mt-8 transform scale-105"
               style={{
                 color: isScrambling ? '#FF00FF' : '#00FFFF',
                 textShadow: isScrambling ? `
-                  0 0 5px #FF00FF,
-                  0 0 10px #FF00FF,
+                  0 0 8px #FF00FF,
                   0 0 15px #FF00FF,
-                  0 0 20px #FF00FF
+                  0 0 25px #FF00FF,
+                  0 0 35px #FF00FF,
+                  0 0 45px #FF00FF
                 ` : `
-                  0 0 5px #00FFFF,
-                  0 0 10px #00FFFF,
+                  0 0 8px #00FFFF,
                   0 0 15px #00FFFF,
-                  0 0 20px #00FFFF
+                  0 0 25px #00FFFF,
+                  0 0 35px #00FFFF,
+                  0 0 45px #00FFFF
                 `,
-                animation: isScrambling ? 'neonScramble 0.1s infinite' : 'neonPulse 1.5s infinite',
-                transition: 'all 0.05s ease'
+                animation: isScrambling ? 'neonScramble 0.1s infinite, signalBounce 0.5s ease-in-out infinite' : 'neonPulse 1.5s infinite, signalBounce 2s ease-in-out infinite',
+                transition: 'all 0.05s ease',
+                filter: 'drop-shadow(0 0 20px currentColor)',
+                fontWeight: 'bold',
+                letterSpacing: '0.1em',
+                lineHeight: '1.3'
               }}
             >
               Reconnecting in {scrambledTime}
@@ -314,6 +325,30 @@ export default function TwitchEmbed({ visible = true, channel = "chxndlerthealie
                 0 0 7px #FF00FF,
                 0 0 12px #FF00FF,
                 0 0 17px #FF00FF;
+            }
+          }
+
+          @keyframes signalPop {
+            0%, 100% {
+              transform: scale(1.1) rotateX(0deg);
+            }
+            25% {
+              transform: scale(1.15) rotateX(2deg);
+            }
+            50% {
+              transform: scale(1.2) rotateX(0deg);
+            }
+            75% {
+              transform: scale(1.15) rotateX(-2deg);
+            }
+          }
+
+          @keyframes signalBounce {
+            0%, 100% {
+              transform: scale(1.05) translateY(0px);
+            }
+            50% {
+              transform: scale(1.1) translateY(-5px);
             }
           }
         `}</style>

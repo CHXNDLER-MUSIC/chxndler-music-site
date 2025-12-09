@@ -103,6 +103,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   });
 
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [hasClickedInitialButton, setHasClickedInitialButton] = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
   const todayFormatted = new Date().toLocaleDateString('en-US', {
@@ -116,6 +117,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
     if (isOpen) {
       loadDailyPrompt();
       setShowLoginPrompt(false);
+      setHasClickedInitialButton(false);
     }
   }, [isOpen]);
 
@@ -524,7 +526,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             letterSpacing: '1px'
           }}
         >
-          🌟 SOUL STAR JOURNAL 🌟
+          SOUL STAR JOURNAL
           {/* Yellow underline */}
           <div 
             className="mt-2"
@@ -678,7 +680,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                               className="text-xs font-semibold mb-1 uppercase tracking-wider"
                               style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
                             >
-                              ✨ Intention
+                              Intention
                             </div>
                             <div 
                               className="text-sm leading-relaxed"
@@ -702,7 +704,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                               className="text-xs font-semibold mb-1 uppercase tracking-wider"
                               style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
                             >
-                              💭 Today's Prompt
+                              Today's Prompt
                             </div>
                             <div 
                               className="text-sm leading-relaxed"
@@ -847,7 +849,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     className="text-sm font-semibold mb-1 uppercase tracking-wider"
                     style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
                   >
-                    ✨ Intention
+                    Intention
                   </div>
                   <div 
                     className="text-sm leading-relaxed mb-1"
@@ -870,7 +872,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     className="text-sm font-semibold mb-1 uppercase tracking-wider"
                     style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
                   >
-                    💭 Prompt
+                    Prompt
                   </div>
                   <div 
                     className="text-sm leading-relaxed"
@@ -943,35 +945,47 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 <button
                   onClick={() => {
                     sfx.play('button', 0.8);
-                    console.log('🔥 ALIEN profile button clicked!');
-                    onClose();
-                    if (openWelcomeHome) {
-                      console.log('🚀 Calling openWelcomeHome()');
-                      openWelcomeHome();
+                    if (!hasClickedInitialButton) {
+                      // First click - show login text
+                      setHasClickedInitialButton(true);
                     } else {
-                      console.log('❌ openWelcomeHome not available');
+                      // Second click - close journal and open welcome home
+                      console.log('🔥 ALIEN profile button clicked!');
+                      onClose();
+                      if (openWelcomeHome) {
+                        console.log('🚀 Calling openWelcomeHome()');
+                        openWelcomeHome();
+                      } else {
+                        console.log('❌ openWelcomeHome not available');
+                      }
                     }
                   }}
                   className="px-6 py-1 rounded-lg font-semibold transition-all duration-200"
                   style={{
-                    background: '#F2EF1D10',
-                    border: '2px solid #F2EF1D60',
-                    color: '#F2EF1D',
-                    textShadow: '0 0 8px #F2EF1D',
-                    boxShadow: '0 0 15px #F2EF1D, 0 0 25px #F2EF1D'
+                    background: hasClickedInitialButton ? '#F2EF1D10' : `${elementTheme.color}30`,
+                    border: hasClickedInitialButton ? '2px solid #F2EF1D60' : `2px solid ${elementTheme.color}60`,
+                    color: hasClickedInitialButton ? '#F2EF1D' : elementTheme.color,
+                    textShadow: hasClickedInitialButton ? '0 0 8px #F2EF1D' : `0 0 8px ${elementTheme.glow}`,
+                    boxShadow: hasClickedInitialButton ? '0 0 15px #F2EF1D, 0 0 25px #F2EF1D' : `0 0 15px ${elementTheme.glow}, 0 0 25px ${elementTheme.color}40`
                   }}
                 >
-                  Create an{' '}
-                  <span
-                    className="underline"
-                    style={{
-                      textDecoration: 'underline',
-                      textUnderlineOffset: '2px'
-                    }}
-                  >
-                    ALIEN profile
-                  </span>
-                  {' '}to submit an entry.
+                  {!hasClickedInitialButton ? (
+                    'CAST YOUR SOUL STAR'
+                  ) : (
+                    <>
+                      Create an{' '}
+                      <span
+                        className="underline"
+                        style={{
+                          textDecoration: 'underline',
+                          textUnderlineOffset: '2px'
+                        }}
+                      >
+                        ALIEN profile
+                      </span>
+                      {' '}to submit an entry
+                    </>
+                  )}
                 </button>
               ) : (
                 <button
