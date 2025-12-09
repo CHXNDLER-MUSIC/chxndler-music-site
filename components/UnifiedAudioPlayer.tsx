@@ -109,7 +109,14 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
 
   // Handle track change from dropdown
   const handleTrackChange = useCallback(async (newTrackId: string) => {
-    // Play the selected track through the unified audio system
+    // Check if warp has completed - if not, set as pending track
+    if (!audioManager.warpCompleted) {
+      // Before warp: set as pending track for after warp completion
+      audioManager.setPendingTrack(newTrackId);
+      return;
+    }
+    
+    // After warp: play immediately through the unified audio system
     try {
       await audioManager.playTrack(newTrackId);
     } catch (err) {

@@ -154,6 +154,8 @@ type AudioState = {
   volume: number;
   currentTrack: TrackInfo | null;
   isLoading: boolean;
+  pendingTrack: string | null;
+  warpCompleted: boolean;
 };
 
 type AudioControls = {
@@ -167,6 +169,8 @@ type AudioControls = {
   bestSourceFor: (t: { mp3?: string; opus?: string }) => string;
   getCurrentAudio: () => HTMLAudioElement | null;
   stopAllAudio: () => void;
+  setPendingTrack: (trackId: string | null) => void;
+  markWarpCompleted: () => void;
 };
 
 const AudioCtx = createContext<(AudioState & AudioControls) | null>(null);
@@ -180,7 +184,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     duration: 0, 
     volume: 1,
     currentTrack: null,
-    isLoading: false
+    isLoading: false,
+    pendingTrack: null,
+    warpCompleted: false
   });
 
   // Lazily create audio element once on client
@@ -231,6 +237,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     try { (window as any).__UNIFIED_AUDIO_ACTIVE = true; } catch {}
     return () => { try { delete (window as any).__UNIFIED_AUDIO_ACTIVE; } catch {} };
   }, []);
+
+  // This will be used for auto-playing after warp completion
+  const autoPlayAfterWarpRef = useRef<string | null>(null);
 
   // Prefer Opus when available. Fallback to MP3.
   const bestSourceFor = (t: { mp3?: string; opus?: string }): string => {
@@ -370,9 +379,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         // Play button beam effect  
         await playAudioOnce(SFX.BUTTON_BEAM);
         
-        // After warp completes, auto-play space music which is the default song for the homepage
-        // This matches the ambient space music that the play/pause button controls
-        await api.playTrack('space-music');
+        // Do NOT auto-play space music here anymore
+        // The warp completion handler will take care of playing the pending track or space music
         
       } catch (err) {
         console.error('Failed to play start sequence:', err);
@@ -385,7 +393,30 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     
     stopAllAudio: stopAllAudioInternal,
     
+    setPendingTrack: (trackId: string | null) => {
+      setState(s => ({ ...s, pendingTrack: trackId }));
+    },
+    
+    markWarpCompleted: () => {
+      setState(s => ({ ...s, warpCompleted: true }));
+    },
+    
   }), [state.src]);
+
+  // Auto-play track when warp completes
+  useEffect(() => {
+    if (!state.warpCompleted) return;
+
+    const trackToPlay = state.pendingTrack || 'space-music';
+    
+    // Clear pending track 
+    setState(s => ({ ...s, pendingTrack: null }));
+    
+    // Use the API to play the track
+    const playTrack = api.playTrack;
+    playTrack(trackToPlay).catch(console.error);
+    
+  }, [state.warpCompleted, state.pendingTrack, api.playTrack]);
 
   const value = useMemo(() => ({ ...state, ...api }), [state, api]);
   return <AudioCtx.Provider value={value}>{children}</AudioCtx.Provider>;

@@ -820,7 +820,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       style={{
                         position: 'absolute',
                         backfaceVisibility: 'hidden',
-                        WebkitBackfaceVisibility: 'hidden'
+                        WebkitBackfaceVisibility: 'hidden',
+                        transform: 'rotateY(0deg)'
                       }}
                       draggable={false}
                     />

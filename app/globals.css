@@ -34,6 +34,13 @@ html, body {
   cursor: none;
 }
 
+/* Force all elements to use no cursor on desktop */
+@media (min-width: 769px) {
+  * {
+    cursor: none !important;
+  }
+}
+
 @media (max-width: 768px) {
   html, body {
     cursor: auto;

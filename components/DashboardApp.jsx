@@ -34,6 +34,7 @@ import { debugLog } from "@/lib/debug";
 import { audioHeartverse } from "@/lib/audio-heartverse";
 import WelcomeHomeModal from "@/components/WelcomeHomeModal";
 import { useAudioManager } from "@/contexts/AudioManagerContext";
+import { useAudio } from "@/app/providers/AudioProvider";
 import ProfileBarWrapper from "@/components/ProfileBarWrapper";
 import HoloStarsButton from "@/components/HoloStarsButton";
 import SoulStareModal from "@/components/SoulStareModal";
@@ -50,6 +51,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   
   // Audio manager context for centralized track state
   const audioManager = useAudioManager();
+  
+  // Unified audio provider for single source of truth
+  const unifiedAudio = useAudio();
   
   // UI store for profile refresh trigger and name modal (must be before useEffect)
   const { profileRefreshTrigger, openNamePrompt, openNamePromptFromAuth } = useUIStore();
@@ -1251,6 +1255,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       setUiPhase("landed");
       startInFlightRef.current = false;
       
+      // Mark warp as completed for unified audio system
+      try { unifiedAudio?.markWarpCompleted(); } catch {}
+      
       // CRITICAL: Mark user has entered Heartverse to show profile bar
       try { 
         enterHeartverse(); 
@@ -1889,6 +1896,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             console.log("🛬 FALLBACK: Start button warp SFX ended, forcing landed state");
             setUiPhase("landed");
             startInFlightRef.current = false;
+            
+            // Mark warp as completed for unified audio system
+            try { unifiedAudio?.markWarpCompleted(); } catch {}
             
             // Ensure user entered Heartverse state
             try { 

@@ -274,7 +274,7 @@ export default function JoinAliens({ visible = true } = {}) {
                 0 0 40px #FC54AF
               `,
               animation: 'neonFlicker 2s infinite alternate',
-              fontSize: 'clamp(18px, 4vw, 28px)',
+              fontSize: 'clamp(22px, 5vw, 36px)',
               fontWeight: 'bold',
               letterSpacing: '0.1em',
               lineHeight: '1.2',

@@ -356,21 +356,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   if (!isOpen) return null;
 
   if (!dailyPrompt) {
-    return (
-      <div 
-        className="fixed z-[2147483647] flex items-center justify-center"
-        style={{ 
-          top: '80px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 'min(92vw, 600px)'
-        }}
-      >
-        <div className="relative p-8 text-center text-white bg-black/90 rounded-lg border border-white/20">
-          <div className="text-lg">Loading your Soul Star Journal...</div>
-        </div>
-      </div>
-    );
+    return null; // Don't show loading popup, just return null
   }
 
   const currentElement = dailyPrompt.element as keyof typeof ELEMENT_COLORS;
