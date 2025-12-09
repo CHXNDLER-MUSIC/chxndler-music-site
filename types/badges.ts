@@ -25,14 +25,13 @@ export interface Badge {
 export interface BadgeDefinition {
   id: string;
   slug: string;
-  title: string;
+  badge_name: string;
   description: string | null;
   requirement_type: string;
   requirement_count: number;
-  icon: string | null;
+  icon_url: string | null;
   category: string | null;
   created_at: string;
-  updated_at: string;
 }
 
 export interface UserBadge {

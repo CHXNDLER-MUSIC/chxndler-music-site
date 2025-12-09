@@ -1392,7 +1392,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                     className="rounded-lg border border-white/10 backdrop-blur-sm transition-all duration-300 cursor-pointer hover:scale-105"
                                     style={{
                                       boxShadow: hasCard ? '0 0 5px rgba(255,105,180,0.3)' : '0 0 5px rgba(255,105,180,0.1)',
-                                      aspectRatio: '2.2/3',
+                                      aspectRatio: '2.4/3',
                                       background: 'rgba(0, 0, 0, 0.3)'
                                     }}
                                     onClick={() => {

@@ -746,12 +746,13 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
          binderPage === 'sixth' ? '6' : '1'} / 6` : undefined}
       >
 
-          {/* Card popup - fills entire content area when open */}
+          {/* Card popup - positioned absolutely within binder bounds */}
           {cardOpen && (
-            <div className="flex flex-col items-center justify-center w-full h-full pl-8">
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm z-50">
               {/* Large card display */}
               <div 
-                className="relative flex items-center justify-start w-full h-full"
+                className="relative flex items-center justify-center"
+                style={{ maxHeight: '90%', maxWidth: '60%' }}
               >
                 {/* Back arrow - positioned at top left of card */}
                 <button
@@ -774,15 +775,16 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
 
                 {/* Flippable Card */}
                 <div 
-                  className="rounded-2xl shadow-2xl cursor-pointer"
+                  className="rounded-3xl shadow-2xl cursor-pointer"
                   style={{
-                    width: 'min(280px, 35vw)',
-                    height: 'min(420px, 50vh)',
-                    maxHeight: '60vh',
+                    width: '100%',
+                    height: '100%',
+                    maxWidth: '400px',
+                    maxHeight: '600px',
                     aspectRatio: '2/3',
                     boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
                     border: '2px solid rgba(255,255,255,0.1)',
-                    borderRadius: '16px',
+                    borderRadius: '24px',
                     perspective: '1000px',
                     animation: 'float 6s ease-in-out infinite',
                   }}

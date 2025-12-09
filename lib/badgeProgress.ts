@@ -30,6 +30,47 @@ export function getBadgeProgressForUser(
       current = profile.total_reflections || 0;
       break;
       
+    case 'livestreams_watched':
+      current = profile.streams_attended || 0;
+      break;
+      
+    case 'concerts_attended':
+      current = profile.concerts_attended || 0;
+      break;
+      
+    case 'digital_cards_owned':
+      current = profile.cards_owned || 0;
+      break;
+      
+    case 'merch_items_owned':
+      current = profile.merch_items_owned || 0;
+      break;
+      
+    case 'donations_made':
+      current = profile.donations_made || 0;
+      break;
+      
+    case 'heart_coins':
+      // Current HeartCoin total for badges requiring HeartCoin balance
+      current = profile.heartcoin_balance || 0;
+      break;
+      
+    case 'heart_transfers':
+      current = profile.heartcoins_sent || 0;
+      break;
+      
+    case 'listen':
+      // Use total listening minutes for listen-based badges 
+      current = profile.total_listening_minutes || 0;
+      break;
+      
+    case 'streak':
+      // For streak badges, we'll need to calculate current streak from daily activity
+      // For now, use elemental_sessions_count as a placeholder
+      current = profile.elemental_sessions_count || 0;
+      break;
+      
+    // Legacy compatibility cases
     case 'heartcoins':
     case 'heartcoins_earned':
       current = profile.total_heartcoins_earned || 0;
@@ -53,25 +94,17 @@ export function getBadgeProgressForUser(
       break;
       
     case 'streams_watched':
-    case 'livestreams_watched':
       current = profile.streams_attended || 0;
       break;
       
-    case 'concerts_attended':
-      current = profile.concerts_attended || 0;
-      break;
-      
-    case 'digital_cards_owned':
     case 'cards_owned':
       current = profile.cards_owned || 0;
       break;
       
-    case 'merch_items_owned':
     case 'merch_items':
       current = profile.merch_items_owned || 0;
       break;
       
-    case 'donations_made':
     case 'donations':
       current = profile.donations_made || 0;
       break;
@@ -82,7 +115,7 @@ export function getBadgeProgressForUser(
       
     default:
       // TODO: Add support for new requirement types as they are added
-      console.warn(`Unknown requirement type: ${badge.requirement_type} for badge: ${badge.slug}`);
+      console.warn(`Unknown requirement type: ${badge.requirement_type} for badge: ${badge.slug || badge.id}`);
       current = 0;
   }
 
@@ -109,10 +142,50 @@ export function formatRequirementText(badge: Badge): string {
   // Otherwise generate from requirement_type and requirement_count
   const { requirement_type, requirement_count } = badge;
   
+  // Safety check - if we don't have the required fields, return empty string
+  if (!requirement_type || !requirement_count) {
+    return '';
+  }
+  
   switch (requirement_type) {
     case 'reflections':
       return `${requirement_count} reflection${requirement_count === 1 ? '' : 's'}`;
       
+    case 'livestreams_watched':
+      return `${requirement_count} livestream${requirement_count === 1 ? '' : 's'} watched`;
+      
+    case 'concerts_attended':
+      return `${requirement_count} concert${requirement_count === 1 ? '' : 's'} attended`;
+      
+    case 'digital_cards_owned':
+      return `${requirement_count} digital card${requirement_count === 1 ? '' : 's'} owned`;
+      
+    case 'merch_items_owned':
+      return `${requirement_count} merch item${requirement_count === 1 ? '' : 's'} owned`;
+      
+    case 'donations_made':
+      return `${requirement_count} donation${requirement_count === 1 ? '' : 's'} made`;
+      
+    case 'heart_coins':
+      return `${requirement_count} HEART coin${requirement_count === 1 ? '' : 's'}`;
+      
+    case 'heart_transfers':
+      return `${requirement_count} HEART coin transfer${requirement_count === 1 ? '' : 's'}`;
+      
+    case 'listen':
+      if (requirement_count === 1) {
+        return `1 listening session`;
+      } else if (requirement_count < 60) {
+        return `${requirement_count} listening sessions`;
+      } else {
+        const hours = Math.floor(requirement_count / 60);
+        return `${hours} hour${hours === 1 ? '' : 's'} of listening`;
+      }
+      
+    case 'streak':
+      return `${requirement_count} day streak`;
+      
+    // Legacy compatibility cases
     case 'heartcoins':
     case 'heartcoins_earned':
       return `${requirement_count} HeartCoin${requirement_count === 1 ? '' : 's'}`;
@@ -136,21 +209,14 @@ export function formatRequirementText(badge: Badge): string {
       return `${requirement_count} achievement${requirement_count === 1 ? '' : 's'}`;
       
     case 'streams_watched':
-    case 'livestreams_watched':
       return `${requirement_count} livestream${requirement_count === 1 ? '' : 's'} watched`;
       
-    case 'concerts_attended':
-      return `${requirement_count} concert${requirement_count === 1 ? '' : 's'} attended`;
-      
-    case 'digital_cards_owned':
     case 'cards_owned':
       return `${requirement_count} card${requirement_count === 1 ? '' : 's'} owned`;
       
-    case 'merch_items_owned':
     case 'merch_items':
       return `${requirement_count} merch item${requirement_count === 1 ? '' : 's'} owned`;
       
-    case 'donations_made':
     case 'donations':
       return `${requirement_count} donation${requirement_count === 1 ? '' : 's'} made`;
       
@@ -158,6 +224,6 @@ export function formatRequirementText(badge: Badge): string {
       return `${requirement_count} HeartCoin${requirement_count === 1 ? '' : 's'} sent`;
       
     default:
-      return `${requirement_count} ${requirement_type}`;
+      return `${requirement_count} ${requirement_type.replace(/_/g, ' ')}`;
   }
 }

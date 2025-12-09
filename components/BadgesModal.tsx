@@ -6,6 +6,7 @@ import { useBadges } from "@/hooks/useBadges";
 import BadgeCategoryButton from "@/components/BadgeCategoryButton";
 import PopoutShell from "@/components/PopoutShell";
 import { BadgeWithProgress, BadgeCategoryData } from "@/types/badges";
+import { formatRequirementText } from "@/lib/badgeProgress";
 import { sfx } from "@/lib/sfx";
 
 type Props = {
@@ -62,7 +63,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   // Badge detail modal
   if (selectedBadge) {
     const badgeDetailContent = (
-      <div className="relative text-center space-y-4">
+      <div className="relative text-center space-y-6">
         <button
           onClick={() => {
             sfx.play('click');
@@ -116,11 +117,23 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           </p>
         )}
         
-        {/* Requirement text */}
-        <div className="text-center">
-          <div className="text-white/50 text-xs uppercase tracking-wider mb-1">REQUIREMENT</div>
+        {/* Requirement text - Always show */}
+        <div className="text-center space-y-1">
+          <div className="text-white/50 text-xs uppercase tracking-wider">REQUIREMENT</div>
           <div className="text-white text-sm font-medium">
-            {selectedBadge.requirement_text || `${selectedBadge.total} achievement${selectedBadge.total === 1 ? '' : 's'}`}
+            {(() => {
+              // Try formatRequirementText first
+              const formattedText = formatRequirementText(selectedBadge);
+              if (formattedText) return formattedText;
+              
+              // Try custom requirement_text
+              if (selectedBadge.requirement_text) return selectedBadge.requirement_text;
+              
+              // Build from available data
+              const count = selectedBadge.total || selectedBadge.requirement_count || 1;
+              const type = selectedBadge.requirement_type || 'achievement';
+              return `${count} ${type.replace(/_/g, ' ')}${count === 1 ? '' : 's'}`;
+            })()}
           </div>
         </div>
         
@@ -319,7 +332,32 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
 
     return (
       <PopoutShell title={categoryInfo?.displayName || "CATEGORY"} onClose={onClose}>
-        {categoryContent}
+        <div className="relative" style={{ overflow: 'hidden' }}>
+          {/* Hide all navigation elements in badges modal */}
+          <style jsx global>{`
+            /* Hide navigation arrows and pagination */
+            .binder-hologram-container .absolute.-right-1,
+            .binder-hologram-container .absolute.left-2,
+            .binder-hologram-container .absolute[class*="right-1"],
+            .binder-hologram-container .absolute[class*="left-2"],
+            [data-badges-modal] .absolute[class*="right"],
+            [data-badges-modal] .absolute[class*="left"] {
+              display: none !important;
+            }
+            /* Hide Page text and pagination */
+            .binder-hologram-container [class*="text-center"]:has(*:contains("Page")) {
+              display: none !important;
+            }
+            /* Hide navigation buttons specifically */
+            .binder-hologram-container button.absolute,
+            [data-badges-modal] button.absolute:not([class*="top-4"]) {
+              display: none !important;
+            }
+          `}</style>
+          <div data-badges-modal>
+            {categoryContent}
+          </div>
+        </div>
       </PopoutShell>
     );
   }
@@ -366,7 +404,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
 
       {!loading && !error && (
         <div 
-          className="relative backdrop-blur-sm flex items-center justify-center min-h-full"
+          className="relative backdrop-blur-sm"
           style={{
             background: 'rgba(0,0,0,0.4)',
             backdropFilter: 'blur(8px)',
@@ -385,8 +423,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             }}
           />
           
-          {/* Centered content container */}
-          <div className="flex flex-col items-center justify-center space-y-2 pt-6 pb-1">
+          {/* Content container */}
+          <div className="flex flex-col items-center justify-center space-y-4 py-6">
               {/* Top row - first 3 categories */}
               <div className="grid grid-cols-3 gap-6">
                 {badgeCategories.slice(0, 3).map((category) => {
@@ -456,7 +494,32 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
 
   return (
     <PopoutShell title="BADGES" onClose={onClose}>
-      {badgesContent}
+      <div className="relative" style={{ overflow: 'hidden' }}>
+        {/* Hide all navigation elements in badges modal */}
+        <style jsx global>{`
+          /* Hide navigation arrows and pagination */
+          .binder-hologram-container .absolute.-right-1,
+          .binder-hologram-container .absolute.left-2,
+          .binder-hologram-container .absolute[class*="right-1"],
+          .binder-hologram-container .absolute[class*="left-2"],
+          [data-badges-modal] .absolute[class*="right"],
+          [data-badges-modal] .absolute[class*="left"] {
+            display: none !important;
+          }
+          /* Hide Page text and pagination */
+          .binder-hologram-container [class*="text-center"]:has(*:contains("Page")) {
+            display: none !important;
+          }
+          /* Hide navigation buttons specifically */
+          .binder-hologram-container button.absolute,
+          [data-badges-modal] button.absolute:not([class*="top-4"]) {
+            display: none !important;
+          }
+        `}</style>
+        <div data-badges-modal>
+          {badgesContent}
+        </div>
+      </div>
     </PopoutShell>
   );
 }
