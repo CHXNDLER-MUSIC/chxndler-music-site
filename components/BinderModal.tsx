@@ -406,6 +406,13 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     
     if (!currentCard) return;
     
+    // Check balance upfront before making API call
+    if (!hasEnoughBalance(selectedPurchaseType)) {
+      try { sfx.play('error', 0.8); } catch {}
+      setPurchaseState('insufficient');
+      return;
+    }
+    
     try {
       // Use the proper API endpoint to purchase the card with heart coins
       const response = await fetch('/api/purchase-item-with-heartcoins', {
@@ -434,7 +441,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       }
       
       setPurchaseState('success');
-      try { sfx.play('success', 0.8); } catch {}
+      try { sfx.play('card-ding', 0.8); } catch {}
       
       // Reset after 2 seconds
       setTimeout(() => {
@@ -590,7 +597,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       });
       
       setPurchaseState('success');
-      try { sfx.play('success', 0.8); } catch {}
+      try { sfx.play('card-ding', 0.8); } catch {}
       
       // Reset after 3 seconds
       setTimeout(() => {
@@ -1179,7 +1186,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                 
                 {/* Right arrow to go to second page - positioned within popup on the right side */}
                 <div 
-                  className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10"
                   style={{
                     pointerEvents: 'auto'
                   }}
@@ -1309,7 +1316,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page - positioned within popup on the right side */}
                   <div 
-                    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -1440,7 +1447,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page */}
                   <div 
-                    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -1571,7 +1578,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page */}
                   <div 
-                    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -1702,7 +1709,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page */}
                   <div 
-                    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -2020,7 +2027,133 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                 </div>
               )}
 
-              {/* State E: Purchase successful */}
+              {/* State E: Shipping form for physical purchases */}
+              {purchaseState === 'physical-form' && selectedPurchaseType === 'physical' && (
+                <div className="mt-2">
+                  <div 
+                    className="text-center mb-3 text-xs p-2 rounded"
+                    style={{ 
+                      backgroundColor: 'rgba(34,197,94,0.1)',
+                      border: '1px solid rgba(34,197,94,0.3)',
+                      color: '#86EFAC'
+                    }}
+                  >
+                    <div className="mb-1">Shipping Information for {getFilteredCards()[currentCardIndex]?.name}</div>
+                    <div>Please provide your shipping address below.</div>
+                  </div>
+                  
+                  {/* Shipping form */}
+                  <div className="space-y-3 p-3 bg-black/20 rounded">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="Full Name"
+                          value={shippingForm.fullName}
+                          onChange={(e) => updateShippingField('fullName', e.target.value)}
+                          className="w-full px-2 py-1 text-xs bg-white/10 border border-white/20 rounded focus:border-green-400/60 focus:outline-none text-white placeholder-white/60"
+                        />
+                        {shippingErrors.fullName && (
+                          <div className="text-red-400 text-xs mt-1">{shippingErrors.fullName}</div>
+                        )}
+                      </div>
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="Country"
+                          value={shippingForm.country}
+                          onChange={(e) => updateShippingField('country', e.target.value)}
+                          className="w-full px-2 py-1 text-xs bg-white/10 border border-white/20 rounded focus:border-green-400/60 focus:outline-none text-white placeholder-white/60"
+                        />
+                        {shippingErrors.country && (
+                          <div className="text-red-400 text-xs mt-1">{shippingErrors.country}</div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <input
+                        type="text"
+                        placeholder="Street Address"
+                        value={shippingForm.streetAddress}
+                        onChange={(e) => updateShippingField('streetAddress', e.target.value)}
+                        className="w-full px-2 py-1 text-xs bg-white/10 border border-white/20 rounded focus:border-green-400/60 focus:outline-none text-white placeholder-white/60"
+                      />
+                      {shippingErrors.streetAddress && (
+                        <div className="text-red-400 text-xs mt-1">{shippingErrors.streetAddress}</div>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <input
+                        type="text"
+                        placeholder="Apartment, suite, unit (optional)"
+                        value={shippingForm.apartmentUnit}
+                        onChange={(e) => updateShippingField('apartmentUnit', e.target.value)}
+                        className="w-full px-2 py-1 text-xs bg-white/10 border border-white/20 rounded focus:border-green-400/60 focus:outline-none text-white placeholder-white/60"
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="City"
+                          value={shippingForm.city}
+                          onChange={(e) => updateShippingField('city', e.target.value)}
+                          className="w-full px-2 py-1 text-xs bg-white/10 border border-white/20 rounded focus:border-green-400/60 focus:outline-none text-white placeholder-white/60"
+                        />
+                        {shippingErrors.city && (
+                          <div className="text-red-400 text-xs mt-1">{shippingErrors.city}</div>
+                        )}
+                      </div>
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="State"
+                          value={shippingForm.state}
+                          onChange={(e) => updateShippingField('state', e.target.value)}
+                          className="w-full px-2 py-1 text-xs bg-white/10 border border-white/20 rounded focus:border-green-400/60 focus:outline-none text-white placeholder-white/60"
+                        />
+                        {shippingErrors.state && (
+                          <div className="text-red-400 text-xs mt-1">{shippingErrors.state}</div>
+                        )}
+                      </div>
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="ZIP Code"
+                          value={shippingForm.zipCode}
+                          onChange={(e) => updateShippingField('zipCode', e.target.value)}
+                          className="w-full px-2 py-1 text-xs bg-white/10 border border-white/20 rounded focus:border-green-400/60 focus:outline-none text-white placeholder-white/60"
+                        />
+                        {shippingErrors.zipCode && (
+                          <div className="text-red-400 text-xs mt-1">{shippingErrors.zipCode}</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-center gap-2 mt-3">
+                    <button
+                      onClick={handlePhysicalPurchase}
+                      className="px-3 py-1 rounded border border-green-400/60 bg-green-500/10 hover:bg-green-500/20 transition-all duration-200 text-xs text-green-300"
+                      style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)' }}
+                    >
+                      Complete Order
+                    </button>
+                    <button
+                      onClick={resetPurchaseState}
+                      className="px-3 py-1 rounded border border-pink-400/60 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 text-xs text-pink-300"
+                      style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* State F: Purchase successful */}
               {purchaseState === 'success' && selectedPurchaseType && (
                 <div className="mt-2">
                   <div 

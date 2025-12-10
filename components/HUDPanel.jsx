@@ -2369,7 +2369,7 @@ const HUDPanel = React.memo(function HUDPanel({
             />
             
             {/* Floating holographic dust particles - improvement #9 */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 1 }}>
+            <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: -10, clipPath: 'inset(0)' }}>
               <div className="holo-particle holo-particle-1"></div>
               <div className="holo-particle holo-particle-2"></div>
               <div className="holo-particle holo-particle-3"></div>

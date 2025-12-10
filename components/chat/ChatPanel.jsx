@@ -772,7 +772,7 @@ export default function ChatPanel({ isOpen, onClose }) {
             >
               {/* Header */}
               <div className="p-4 border-b border-yellow-400/30 flex items-center">
-                <div className="flex items-center space-x-3 flex-1 mr-4">
+                <div className="flex items-center space-x-3 flex-1 mr-4 ml-8">
                   <div 
                     className="w-3 h-3 rounded-full animate-pulse flex-shrink-0"
                     style={{
@@ -1281,58 +1281,144 @@ export default function ChatPanel({ isOpen, onClose }) {
                             User Badges
                           </h4>
                           
-                          {/* Always show 5 badge slots */}
-                          <div className="flex items-center space-x-2">
-                            {/* Left Arrow */}
-                            <button 
-                              onClick={() => {
-                                try {
-                                  const audio = new Audio('/audio/click.mp3');
-                                  audio.volume = 0.3;
-                                  audio.play().catch(error => {
-                                    console.log('Click audio play failed:', error);
-                                  });
-                                } catch (error) {
-                                  console.log('Click audio creation failed:', error);
-                                }
-                                setBadgeStartIndex(Math.max(0, badgeStartIndex - 5));
-                              }}
-                              disabled={!userBadges || userBadges.length === 0 || badgeStartIndex === 0}
-                              className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
-                              style={{
-                                textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
-                                fontSize: '14px',
-                                fontWeight: 'bold',
-                                textRendering: 'optimizeLegibility',
-                                WebkitFontSmoothing: 'antialiased',
-                                MozOsxFontSmoothing: 'grayscale',
-                                filter: 'none',
-                                backdropFilter: 'none'
-                              }}
-                            >
-                              ◀
-                            </button>
+                          {(() => {
+                            // Determine which badges to show
+                            const isViewingOwnProfile = selectedUser && user && selectedUser.id === user.id;
+                            const isViewingAnonymous = selectedUser && selectedUser.id === 'anonymous';
+                            const badgesToShow = isViewingOwnProfile ? userBadges : []; // Only show badges for own profile
+                            
+                            return (
+                              <>
+                                {/* Show message for anonymous users or other users */}
+                                {(isViewingAnonymous || (!isViewingOwnProfile && selectedUser?.id !== user?.id)) && (
+                                  <div className="text-center py-4">
+                                    <div className="text-sm text-white/60 mb-2">
+                                      {isViewingAnonymous ? 'Anonymous users don\'t have badges' : 'Can only view your own badges'}
+                                    </div>
+                                    <div className="flex justify-center space-x-2">
+                                      {Array.from({ length: 5 }, (_, index) => (
+                                        <div 
+                                          key={`placeholder-${index}`}
+                                          className="w-12 h-12 rounded-full flex items-center justify-center border-2 border-dashed"
+                                          style={{
+                                            background: 'rgba(128, 128, 128, 0.1)',
+                                            border: '2px dashed rgba(128, 128, 128, 0.3)',
+                                            boxShadow: 'inset 0 0 8px rgba(0, 0, 0, 0.2)'
+                                          }}
+                                        >
+                                          <span className="text-xs opacity-30">◯</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Show badge navigation for own profile */}
+                                {isViewingOwnProfile && (
+                                  <div className="flex items-center space-x-2">
+                                    {/* Left Arrow */}
+                                    <button 
+                                      onClick={() => {
+                                        try {
+                                          const audio = new Audio('/audio/click.mp3');
+                                          audio.volume = 0.3;
+                                          audio.play().catch(error => {
+                                            console.log('Click audio play failed:', error);
+                                          });
+                                        } catch (error) {
+                                          console.log('Click audio creation failed:', error);
+                                        }
+                                        setBadgeStartIndex(Math.max(0, badgeStartIndex - 5));
+                                      }}
+                                      disabled={!badgesToShow || badgesToShow.length === 0 || badgeStartIndex === 0}
+                                      className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
+                                      style={{
+                                        textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
+                                        fontSize: '14px',
+                                        fontWeight: 'bold',
+                                        textRendering: 'optimizeLegibility',
+                                        WebkitFontSmoothing: 'antialiased',
+                                        MozOsxFontSmoothing: 'grayscale',
+                                        filter: 'none',
+                                        backdropFilter: 'none'
+                                      }}
+                                    >
+                                      ◀
+                                    </button>
 
-                            {/* Badge Grid - always shows 5 slots */}
-                            <div className="flex-1 grid grid-cols-5 gap-2">
-                              {Array.from({ length: 5 }, (_, index) => {
-                                const badgeIndex = badgeStartIndex + index;
-                                const userBadge = userBadges?.[badgeIndex];
-                                const badge = userBadge?.badge;
+                                    {/* Badge Grid - shows 5 slots for own profile */}
+                                    <div className="flex-1 grid grid-cols-5 gap-2">
+                                      {Array.from({ length: 5 }, (_, index) => {
+                                        const badgeIndex = badgeStartIndex + index;
+                                        const userBadge = badgesToShow?.[badgeIndex];
+                                        const badge = userBadge?.badge;
                                 
                                 if (badge) {
+                                  // Get badge category color for display
+                                  const getCategoryColors = (category) => {
+                                    switch(category) {
+                                      case 'soul': return { bg: '#FFD700', border: '#FFA500' };
+                                      case 'collector': return { bg: '#38B6FF', border: '#0EA5E9' };
+                                      case 'community': return { bg: '#10B981', border: '#059669' };
+                                      case 'elemental-streak': return { bg: '#FC54AF', border: '#EC4899' };
+                                      case 'currency': return { bg: '#F59E0B', border: '#D97706' };
+                                      case 'listening': return { bg: '#9333EA', border: '#7C3AED' };
+                                      default: return { bg: '#FFD700', border: '#FFA500' };
+                                    }
+                                  };
+                                  
+                                  const colors = getCategoryColors(badge.category);
+                                  
+                                  // Try to get icon from icon_url or use a default based on category
+                                  const getDisplayIcon = (badge) => {
+                                    if (badge.icon_url) {
+                                      return badge.icon_url;
+                                    }
+                                    
+                                    // Fallback icons based on category
+                                    switch(badge.category) {
+                                      case 'soul': return '⭐';
+                                      case 'collector': return '🏆';
+                                      case 'community': return '🌐';
+                                      case 'elemental-streak': return '💠';
+                                      case 'currency': return '💰';
+                                      case 'listening': return '🎵';
+                                      default: return '🏆';
+                                    }
+                                  };
+                                  
+                                  const displayIcon = getDisplayIcon(badge);
+                                  
                                   return (
                                     <div key={`earned-badge-${badge.id}`} className="flex flex-col items-center" title={badge.badge_name}>
                                       <div 
                                         className="w-12 h-12 rounded-full mb-1 flex items-center justify-center border-2 transition-all duration-300 cursor-pointer hover:scale-110"
                                         style={{
-                                          background: `linear-gradient(135deg, ${badge.bg_color || '#FFD700'}, ${badge.bg_color || '#FFA500'})`,
-                                          border: `2px solid ${badge.border_color || '#FFD700'}`,
-                                          boxShadow: `0 0 15px ${badge.border_color || '#FFD700'}60, 0 0 25px ${badge.border_color || '#FFD700'}30`
+                                          background: `linear-gradient(135deg, ${colors.bg}, ${colors.border})`,
+                                          border: `2px solid ${colors.border}`,
+                                          boxShadow: `0 0 15px ${colors.border}60, 0 0 25px ${colors.border}30`
                                         }}
                                       >
-                                        <span className="text-lg" style={{ filter: 'drop-shadow(0 0 4px rgba(0,0,0,0.8))' }}>
-                                          {badge.icon || '🏆'}
+                                        {badge.icon_url ? (
+                                          <img 
+                                            src={badge.icon_url} 
+                                            alt={badge.badge_name}
+                                            className="w-6 h-6"
+                                            style={{ filter: 'drop-shadow(0 0 4px rgba(0,0,0,0.8))' }}
+                                            onError={(e) => {
+                                              e.target.style.display = 'none';
+                                              e.target.nextSibling.style.display = 'block';
+                                            }}
+                                          />
+                                        ) : null}
+                                        <span 
+                                          className="text-lg" 
+                                          style={{ 
+                                            filter: 'drop-shadow(0 0 4px rgba(0,0,0,0.8))',
+                                            display: badge.icon_url ? 'none' : 'block'
+                                          }}
+                                        >
+                                          {displayIcon}
                                         </span>
                                       </div>
                                     </div>
@@ -1357,36 +1443,40 @@ export default function ChatPanel({ isOpen, onClose }) {
                               })}
                             </div>
 
-                            {/* Right Arrow */}
-                            <button 
-                              onClick={() => {
-                                try {
-                                  const audio = new Audio('/audio/click.mp3');
-                                  audio.volume = 0.3;
-                                  audio.play().catch(error => {
-                                    console.log('Click audio play failed:', error);
-                                  });
-                                } catch (error) {
-                                  console.log('Click audio creation failed:', error);
-                                }
-                                setBadgeStartIndex(Math.min(Math.max(0, (userBadges?.length || 0) - 5), badgeStartIndex + 5));
-                              }}
-                              disabled={!userBadges || userBadges.length === 0 || badgeStartIndex + 5 >= userBadges.length}
-                              className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
-                              style={{
-                                textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
-                                fontSize: '14px',
-                                fontWeight: 'bold',
-                                textRendering: 'optimizeLegibility',
-                                WebkitFontSmoothing: 'antialiased',
-                                MozOsxFontSmoothing: 'grayscale',
-                                filter: 'none',
-                                backdropFilter: 'none'
-                              }}
-                            >
-                              ▶
-                            </button>
-                          </div>
+                                    {/* Right Arrow */}
+                                    <button 
+                                      onClick={() => {
+                                        try {
+                                          const audio = new Audio('/audio/click.mp3');
+                                          audio.volume = 0.3;
+                                          audio.play().catch(error => {
+                                            console.log('Click audio play failed:', error);
+                                          });
+                                        } catch (error) {
+                                          console.log('Click audio creation failed:', error);
+                                        }
+                                        setBadgeStartIndex(Math.min(Math.max(0, (badgesToShow?.length || 0) - 5), badgeStartIndex + 5));
+                                      }}
+                                      disabled={!badgesToShow || badgesToShow.length === 0 || badgeStartIndex + 5 >= badgesToShow.length}
+                                      className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
+                                      style={{
+                                        textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
+                                        fontSize: '14px',
+                                        fontWeight: 'bold',
+                                        textRendering: 'optimizeLegibility',
+                                        WebkitFontSmoothing: 'antialiased',
+                                        MozOsxFontSmoothing: 'grayscale',
+                                        filter: 'none',
+                                        backdropFilter: 'none'
+                                      }}
+                                    >
+                                      ▶
+                                    </button>
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
                         </div>
                       )}
 

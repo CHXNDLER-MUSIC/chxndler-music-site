@@ -620,7 +620,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
             }
 
             return (
-              <div className="flex items-start gap-4 mb-4 w-full max-w-full">
+              <div className="flex items-start mb-4 w-full max-w-full">
                 {/* Left navigation arrow */}
                 {cards.length > 1 && (
                   <button
@@ -689,7 +689,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                 )}
                 
                 {/* Card info positioned to the right of the right arrow */}
-                <div className="flex-1 min-w-0 overflow-hidden">
+                <div className="min-w-0 overflow-hidden">
                   {(() => {
                     const cards = getFilteredCards();
                     const currentCard = cards[currentCardIndex];

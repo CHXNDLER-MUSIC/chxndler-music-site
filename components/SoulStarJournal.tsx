@@ -78,7 +78,7 @@ const ELEMENT_EMOJIS = {
 };
 
 export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJournalCompleted }: SoulStarJournalProps) {
-  const { saveJournalEntry, journalEntries, profile, user, getDailyPrompts, deleteJournalEntry, updateJournalEntry } = useProfile();
+  const { saveJournalEntry, journalEntries, profile, user, getDailyPrompts, deleteJournalEntry, updateJournalEntry, refreshProfile } = useProfile();
   const { hasPendingReflection, markReflectionComplete } = useDailyReflectionStatus();
   const [showHistory, setShowHistory] = useState(false);
   const [dailyPrompt, setDailyPrompt] = useState<DailyPrompt | null>(null);
@@ -289,6 +289,9 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
       console.log('Successfully saved journal entry:', result);
 
+      // Refresh profile data to update journal entries and reflection status
+      await refreshProfile();
+      
       // Mark reflection as complete to hide notifications
       markReflectionComplete();
 

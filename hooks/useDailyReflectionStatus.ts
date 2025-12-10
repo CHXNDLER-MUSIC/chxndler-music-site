@@ -35,13 +35,37 @@ export function useDailyReflectionStatus() {
       const yesterdayStr = `${yesterdayEST.find(part => part.type === 'year')?.value}-${yesterdayEST.find(part => part.type === 'month')?.value}-${yesterdayEST.find(part => part.type === 'day')?.value}`;
 
       // Check if user has submitted a reflection for today or yesterday (accounting for timezone differences)
-      const todayReflection = journalEntries.find(entry => 
-        (entry.entry_date === today || entry.entry_date === yesterdayStr) && 
-        entry.element === profile.element &&
-        (entry.reflection_response || entry.soul_star) // Has written something substantial
-      );
+      const todayReflection = journalEntries.find(entry => {
+        const dateMatch = entry.entry_date === today || entry.entry_date === yesterdayStr;
+        const elementMatch = entry.element === profile.element;
+        const hasContent = (entry.reflection_response && entry.reflection_response.trim() !== '') || 
+                          (entry.soul_star && entry.soul_star.trim() !== '') ||
+                          (entry.intention_response && entry.intention_response.trim() !== '');
+        
+        // Debug logging to help track down the issue
+        console.log('useDailyReflectionStatus - checking entry:', {
+          entryDate: entry.entry_date,
+          today,
+          yesterdayStr,
+          dateMatch,
+          entryElement: entry.element,
+          profileElement: profile.element,
+          elementMatch,
+          reflection_response: entry.reflection_response,
+          soul_star: entry.soul_star,
+          intention_response: entry.intention_response,
+          hasContent,
+          shouldMatch: dateMatch && elementMatch && hasContent
+        });
+        
+        return dateMatch && elementMatch && hasContent;
+      });
 
       // If no reflection found for today, user has pending reflection
+      console.log('useDailyReflectionStatus - final result:', {
+        todayReflection: !!todayReflection,
+        hasPendingReflection: !todayReflection
+      });
       setHasPendingReflection(!todayReflection);
       setLoading(false);
     };

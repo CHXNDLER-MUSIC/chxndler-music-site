@@ -516,22 +516,11 @@ export default function JoinAliens({ visible = true } = {}) {
 
       {/* Text Button - positioned in bottom left */}
       <button
-        onClick={() => {
-          // Prevent chat from opening if component is not visible or if there are other modals
-          if (!visible) {
-            console.log('Text button clicked but JoinAliens not visible, ignoring');
-            return;
-          }
-          
-          // Check if any modal backdrops exist (indicating other modals are open)
-          const existingBackdrops = document.querySelectorAll('[class*="fixed"][class*="inset-0"][class*="z-"]');
-          if (existingBackdrops.length > 0) {
-            console.log('Text button clicked but other modals appear to be open, ignoring');
-            return;
-          }
-          
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('Chat button clicked! Current state:', isChatOpen);
           try { sfx.play('audio/click.mp3', 0.5); } catch {}
-          console.log('Text button clicked, current chat state:', isChatOpen);
           setIsChatOpen(!isChatOpen);
           console.log('Setting chat state to:', !isChatOpen);
         }}
@@ -553,8 +542,9 @@ export default function JoinAliens({ visible = true } = {}) {
           transition: 'all 300ms ease',
           outline: 'none',
           boxShadow: '0 0 15px rgba(242, 239, 29, 0.4)',
-          zIndex: 10,
-          overflow: 'hidden'
+          zIndex: 1000,
+          overflow: 'hidden',
+          pointerEvents: 'auto'
         }}
         onMouseEnter={(e) => {
           try { sfx.play('hover', 0.3); } catch {}
@@ -575,12 +565,13 @@ export default function JoinAliens({ visible = true } = {}) {
             width: '100%',
             height: '100%',
             objectFit: 'cover',
-            filter: 'brightness(1.2) saturate(1.2)'
+            filter: 'brightness(1.2) saturate(1.2)',
+            pointerEvents: 'none'
           }}
         />
       </button>
 
-      {/* Phone Button - positioned above text chat button */}
+      {/* Phone Button - positioned on same row as $ button */}
       <button
         onClick={() => {
           try { sfx.play('audio/click.mp3', 0.5); } catch {}
@@ -589,8 +580,8 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
         style={{
           position: 'absolute',
-          bottom: '68px',
-          left: '12px',
+          bottom: '12px',
+          left: '68px',
           width: '40px',
           height: '40px',
           background: 'rgba(0, 255, 255, 0.1)',

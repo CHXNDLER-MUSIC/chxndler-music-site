@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { sfx } from "@/lib/sfx";
 import Image from "next/image";
 import { useProfile } from '@/contexts/ProfileContext';
@@ -225,8 +225,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [showPhysicalConfirm, setShowPhysicalConfirm] = useState(false);
   const [showDigitalForm, setShowDigitalForm] = useState(false);
   const [currentMerchIndex, setCurrentMerchIndex] = useState(0);
-  const [flippedItems, setFlippedItems] = useState<Set<string>>(new Set());
+  const [expandedMerch, setExpandedMerch] = useState<StoreItem | null>(null);
   const [inviteFriendShared, setInviteFriendShared] = useState(false);
+  const [completedQuests, setCompletedQuests] = useState<Set<string>>(new Set());
   const [shippingInfo, setShippingInfo] = useState({
     fullName: '',
     street: '',
@@ -370,7 +371,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   }, []);
 
   // Fetch cards from Supabase
-  const fetchCards = async () => {
+  const fetchCards = useCallback(async () => {
     setIsLoadingCards(true);
     try {
       const { data, error } = await supabaseBrowser
@@ -395,7 +396,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     } finally {
       setIsLoadingCards(false);
     }
-  };
+  }, []);
 
   // Get unique rarities for filter dropdown
   const availableRarities = useMemo(() => {
@@ -501,7 +502,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     if (open && (activeTab === 'USE' && activeUseTab === 'CARDS') && cards.length === 0) {
       fetchCards();
     }
-  }, [open, activeTab, activeUseTab]);
+  }, [open, activeTab, activeUseTab, cards.length, fetchCards]);
 
   // Helper function to check if card should be blurred based on release status and user tier
   const shouldBlurCard = (card: Card): boolean => {
@@ -576,6 +577,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   
   // Bonus quests hook
   const { quests: bonusQuests, status: bonusQuestsStatus, errorMessage: bonusQuestsError, isLoggedIn, completeQuest } = useBonusQuests();
+  
+  // Helper function to check if quest is completed (either from DB or local state)
+  const isQuestCompleted = (quest: any) => {
+    return (quest.times_completed > 0 && quest.max_total_completions === 1) || completedQuests.has(quest.id);
+  };
 
   // Validate secret phrase
   const validateSecretPhrase = async (phrase: string): Promise<boolean> => {
@@ -584,16 +590,19 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     try {
       const { supabaseBrowser } = await import('@/lib/supabase-browser');
       const trimmedPhrase = phrase.trim();
-      const today = new Date().toISOString().split('T')[0];
+      const now = new Date().toISOString();
       
       const { data: secretPhrase, error } = await supabaseBrowser
         .from('secret_phrases')
         .select('*')
-        .ilike('secret_phrase', trimmedPhrase)
-        .lte('active_date', today)
+        .ilike('code', trimmedPhrase)
+        .lte('start_at', now)
+        .gte('end_at', now)
         .maybeSingle();
         
-      return !error && !!secretPhrase;
+      const isValid = !error && !!secretPhrase;
+      
+      return isValid;
     } catch (error) {
       console.error('Error validating phrase:', error);
       return false;
@@ -610,10 +619,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
   const todaysElement = getTodaysElement();
 
-  // Reset flip state when item changes
+  // Reset expanded merch when modal closes
   useEffect(() => {
-    setFlippedItems(new Set());
-  }, [currentMerchIndex]);
+    if (!open) {
+      setExpandedMerch(null);
+    }
+  }, [open]);
 
   // Inject card animation keyframes when enlarged card is shown
   useEffect(() => {
@@ -645,22 +656,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     }
   }, [enlargedCard]);
 
-  // Handle image flip for items with alternative images
-  const handleImageFlip = (itemId: string) => {
-    const currentItem = PHYSICAL_ITEMS[currentMerchIndex];
-    // Only allow flip if the item has an alternative image
-    if (currentItem.id === itemId && currentItem.image2) {
-      try { sfx.play('flip', 0.8); } catch {}
-      setFlippedItems(prev => {
-        const newSet = new Set(prev);
-        if (newSet.has(itemId)) {
-          newSet.delete(itemId);
-        } else {
-          newSet.add(itemId);
-        }
-        return newSet;
-      });
-    }
+  // Handle merch expansion
+  const handleMerchExpand = (item: StoreItem) => {
+    try { sfx.play('click', 0.8); } catch {}
+    setExpandedMerch(item);
   };
 
   // Handle bonus quest completion
@@ -718,6 +717,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         }
         
         // Mark as shared but don't complete the quest yet
+        try { sfx.play('change-channel', 0.6); } catch {}
         setInviteFriendShared(true);
         setCheckInMessage('Message sent! Click CONFIRM to complete the quest');
         setStatusType('success');
@@ -731,22 +731,26 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       const result = await completeQuest(quest);
 
       if (result.success) {
-        // Award heart coins using existing system
-        if (result.rewards?.heartcoins) {
-          await updateHeartCoins(heartCoins + result.rewards.heartcoins);
-        }
-
-        // Show success message
-        setCheckInMessage(result.message);
-        setStatusType('success');
-        setShowCheckInSuccess(true);
-
-        // Automatically open text box after success for ATTEND_LIVESTREAM quest
+        // For ATTEND_LIVESTREAM quest, skip heart coin award and just show the secret phrase input
         if (quest.quest_key === 'ATTEND_LIVESTREAM') {
+          // Don't award heart coins yet - that happens when the secret phrase is validated
           setShowAutoTextBox(true);
           setAutoTextValue("");
           setAttendLivestreamConfirming(true);
           setPhraseValidationResult(null);
+          // Still show success message but don't award coins
+          setCheckInMessage('Enter the secret phrase to complete the quest');
+          setStatusType('success');
+          setShowCheckInSuccess(true);
+        } else {
+          // Award heart coins for other quests using existing system
+          if (result.rewards?.heartcoins) {
+            await updateHeartCoins(heartCoins + result.rewards.heartcoins);
+          }
+          // Show success message
+          setCheckInMessage(result.message);
+          setStatusType('success');
+          setShowCheckInSuccess(true);
         }
 
         // Hide success message after 3 seconds
@@ -834,6 +838,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // Handle bonus quest confirm step for invite friend
   const handleBonusQuestConfirm = async (quest: BonusQuestWithCompletion) => {
     try {
+      try { sfx.play('card-ding', 0.8); } catch {}
       const result = await completeQuest(quest);
       
       if (result.success) {
@@ -849,6 +854,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           setStatusType('idle');
         }, 3000);
         setInviteFriendShared(false); // Reset the shared state
+        setCompletedQuests(prev => new Set(prev).add(quest.id)); // Mark as completed locally
       } else {
         setCheckInMessage(result.message || 'Failed to complete quest');
         setStatusType('error');
@@ -1262,25 +1268,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         />
       </button>
       
-      {/* Hologram base glow */}
-      {open && (
-        <div 
-          className="fixed inset-0 z-[2147483646] flex items-center justify-center"
-          style={{
-            pointerEvents: 'none',
-            paddingTop: '250px'
-          }}
-        >
-          <div
-            style={{
-              width: 'min(120vw, 700px)',
-              height: '200px',
-              background: 'radial-gradient(ellipse 80% 100% at 50% 0%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.6) 30%, rgba(255,255,255,0.2) 60%, transparent 100%)',
-              filter: 'blur(100px)'
-            }}
-          />
-        </div>
-      )}
       
       {/* Heart Coins Modal */}
       {open && (
@@ -1620,20 +1607,42 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     <div className="flex items-center space-x-2 flex-shrink-0">
                       <button
                         onClick={() => {
+                          // Play click sound for all button interactions
+                          try { sfx.play('click', 0.6); } catch {}
+                          
                           if (quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared) {
                             handleBonusQuestConfirm(quest);
-                          } else if (quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming) {
-                            // If text box is empty, go back to showing title/description
-                            if (!autoTextValue.trim()) {
-                              setShowAutoTextBox(false);
-                              setAutoTextValue("");
-                              setAttendLivestreamConfirming(false);
-                              setPhraseValidationResult(null);
+                          } else if (quest.quest_key === 'ATTEND_LIVESTREAM') {
+                            if (attendLivestreamConfirming) {
+                              // If text box is empty, go back to showing title/description
+                              if (!autoTextValue.trim()) {
+                                setShowAutoTextBox(false);
+                                setAutoTextValue("");
+                                setAttendLivestreamConfirming(false);
+                                setPhraseValidationResult(null);
+                              } else {
+                                // Validate the secret phrase
+                                validateSecretPhrase(autoTextValue).then(isValid => {
+                                  setPhraseValidationResult(isValid ? 'correct' : 'incorrect');
+                                  
+                                  if (!isValid) {
+                                    // Play incorrect sound
+                                    try { sfx.play('change-channel', 0.6); } catch {}
+                                    
+                                    // Return to text box after 2 seconds
+                                    setTimeout(() => {
+                                      setPhraseValidationResult(null);
+                                      setAutoTextValue(""); // Clear the text box
+                                    }, 2000);
+                                  }
+                                });
+                              }
                             } else {
-                              // Validate the secret phrase
-                              validateSecretPhrase(autoTextValue).then(isValid => {
-                                setPhraseValidationResult(isValid ? 'correct' : 'incorrect');
-                              });
+                              // First click - show the secret phrase input
+                              setShowAutoTextBox(true);
+                              setAutoTextValue("");
+                              setAttendLivestreamConfirming(true);
+                              setPhraseValidationResult(null);
                             }
                           } else if (quest.quest_key === 'SECRET_PHRASE') {
                             if (secretPhraseInputVisible === quest.id) {
@@ -1646,12 +1655,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             handleBonusQuestComplete(quest);
                           }
                         }}
-                        disabled={!isLoggedIn || (!quest.can_complete && !inviteFriendShared) || quest.times_completed >= (quest.max_total_completions || Infinity) || (quest.quest_key === 'SECRET_PHRASE' && secretPhraseLoading)}
+                        disabled={!isLoggedIn || (!quest.can_complete && !inviteFriendShared) || isQuestCompleted(quest) || (quest.quest_key === 'SECRET_PHRASE' && secretPhraseLoading)}
                         className="px-2 py-1 text-xs rounded border transition-colors font-bold"
                         style={{
                           background: !isLoggedIn
                             ? 'rgba(100,100,100,0.3)'
-                            : quest.times_completed > 0 && quest.max_total_completions === 1 
+                            : isQuestCompleted(quest)
                             ? 'rgba(0,255,0,0.2)' 
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? 'rgba(0,0,0,0.3)'
@@ -1662,59 +1671,67 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   : 'rgba(100,100,100,0.3)',
                           color: !isLoggedIn
                             ? '#666'
-                            : quest.times_completed > 0 && quest.max_total_completions === 1 
+                            : isQuestCompleted(quest)
                             ? '#00FF00' 
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? '#F2EF1D'
-                              : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
-                                ? '#F2EF1D'
-                                : quest.can_complete 
-                                  ? '#FFFFFF'
-                                  : '#666',
+                              : quest.quest_key === 'ATTEND_LIVESTREAM' && phraseValidationResult === 'correct'
+                                ? '#00FF00'
+                                : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
+                                  ? '#F2EF1D'
+                                  : quest.can_complete 
+                                    ? '#FFFFFF'
+                                    : '#666',
                           borderColor: !isLoggedIn
                             ? 'rgba(100,100,100,0.6)'
-                            : quest.times_completed > 0 && quest.max_total_completions === 1 
+                            : isQuestCompleted(quest)
                             ? '#00FF00' 
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? '#F2EF1D'
-                              : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
-                                ? '#F2EF1D'
-                                : quest.can_complete 
-                                  ? 'rgba(255,255,255,0.6)'
-                                  : 'rgba(100,100,100,0.6)',
-                          borderWidth: quest.times_completed > 0 && quest.max_total_completions === 1 
+                              : quest.quest_key === 'ATTEND_LIVESTREAM' && phraseValidationResult === 'correct'
+                                ? '#00FF00'
+                                : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
+                                  ? '#F2EF1D'
+                                  : quest.can_complete 
+                                    ? 'rgba(255,255,255,0.6)'
+                                    : 'rgba(100,100,100,0.6)',
+                          borderWidth: isQuestCompleted(quest)
                             ? '2px'
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? '2px'
-                              : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
+                              : quest.quest_key === 'ATTEND_LIVESTREAM' && (phraseValidationResult === 'correct' || attendLivestreamConfirming)
                                 ? '2px'
                                 : '1px',
                           textShadow: !isLoggedIn
                             ? 'none'
-                            : quest.times_completed > 0 && quest.max_total_completions === 1 
+                            : isQuestCompleted(quest)
                             ? '0 0 8px #00FF00, 0 0 16px #00FF00' 
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? '0 0 10px #F2EF1D'
-                              : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
-                                ? '0 0 10px #F2EF1D'
-                                : 'none',
+                              : quest.quest_key === 'ATTEND_LIVESTREAM' && phraseValidationResult === 'correct'
+                                ? '0 0 8px #00FF00, 0 0 16px #00FF00'
+                                : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
+                                  ? '0 0 10px #F2EF1D'
+                                  : 'none',
                           boxShadow: !isLoggedIn
                             ? 'none'
-                            : quest.times_completed > 0 && quest.max_total_completions === 1 
+                            : isQuestCompleted(quest)
                             ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)' 
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? '0 0 20px rgba(242,239,29,0.8), inset 0 0 10px rgba(242,239,29,0.2)'
-                              : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
-                                ? '0 0 20px rgba(242,239,29,0.8), inset 0 0 10px rgba(242,239,29,0.2)'
-                                : 'none'
+                              : quest.quest_key === 'ATTEND_LIVESTREAM' && phraseValidationResult === 'correct'
+                                ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)'
+                                : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
+                                  ? '0 0 20px rgba(242,239,29,0.8), inset 0 0 10px rgba(242,239,29,0.2)'
+                                  : 'none'
                         }}
                       >
                         {!isLoggedIn
                           ? 'Log in to complete'
-                          : (quest.times_completed > 0 && quest.max_total_completions === 1 
+                          : (isQuestCompleted(quest)
                             ? 'COMPLETED' 
                             : quest.quest_key === 'ATTEND_LIVESTREAM' 
-                              ? (attendLivestreamConfirming ? 'CONFIRM' : 'CHECK IN')
+                              ? (phraseValidationResult === 'correct' ? 'COMPLETED' : attendLivestreamConfirming ? 'CONFIRM' : 'CHECK IN')
                               : quest.quest_key === 'INVITE_FRIEND' 
                                 ? (inviteFriendShared ? 'CONFIRM' : 'INVITE FRIEND')
                                 : quest.quest_key === 'SECRET_PHRASE'
@@ -1724,8 +1741,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 : 'COMPLETE')}
                       </button>
                       <span className="text-sm flex items-center" style={{ 
-                        color: quest.times_completed > 0 && quest.max_total_completions === 1 ? '#666' : '#90EE90', 
-                        textShadow: quest.times_completed > 0 && quest.max_total_completions === 1 ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' 
+                        color: isQuestCompleted(quest) ? '#666' : '#90EE90', 
+                        textShadow: isQuestCompleted(quest) ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' 
                       }}>
                         {quest.reward_notes || `+${quest.reward_heartcoins}`}
                         <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
@@ -1864,23 +1881,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               <div className="flex flex-col items-center">
                                 <div 
                                   className="relative w-28 h-28 flex-shrink-0 cursor-pointer transition-transform duration-200 hover:scale-105"
-                                  onClick={() => handleImageFlip(PHYSICAL_ITEMS[currentMerchIndex].id)}
+                                  onClick={() => handleMerchExpand(PHYSICAL_ITEMS[currentMerchIndex])}
                                 >
                                   <img
-                                    src={
-                                      flippedItems.has(PHYSICAL_ITEMS[currentMerchIndex].id) && PHYSICAL_ITEMS[currentMerchIndex].image2
-                                        ? PHYSICAL_ITEMS[currentMerchIndex].image2
-                                        : PHYSICAL_ITEMS[currentMerchIndex].image
-                                    }
+                                    src={PHYSICAL_ITEMS[currentMerchIndex].image}
                                     alt={PHYSICAL_ITEMS[currentMerchIndex].title}
                                     className="w-full h-full object-cover rounded"
                                   />
-                                  {/* Flip indicator for items with alternative images */}
-                                  {PHYSICAL_ITEMS[currentMerchIndex].image2 && (
-                                    <div className="absolute bottom-1 right-1 w-4 h-4 bg-black/60 rounded-full flex items-center justify-center">
-                                      <span className="text-white text-xs">⟲</span>
-                                    </div>
-                                  )}
                                 </div>
                                 <div 
                                   className="text-xs text-white/80 mt-2 text-center"
@@ -3015,13 +3022,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     alt={PHYSICAL_ITEMS[currentMerchIndex].title}
                     className="w-full h-48 object-cover rounded-lg border-2 border-white/30"
                   />
-                  {PHYSICAL_ITEMS[currentMerchIndex].image2 && (
-                    <img
-                      src={PHYSICAL_ITEMS[currentMerchIndex].image2}
-                      alt={`${PHYSICAL_ITEMS[currentMerchIndex].title} (alternate)`}
-                      className="absolute inset-0 w-full h-48 object-cover rounded-lg border-2 border-white/30 opacity-0 hover:opacity-100 transition-opacity duration-300"
-                    />
-                  )}
                 </div>
                 
                 <div className="text-center mt-3">
@@ -3232,6 +3232,113 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         </div>
       )}
 
+      {/* Expanded Merch Modal */}
+      {expandedMerch && open && (
+        <div 
+          className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[2147483648]"
+          onClick={() => setExpandedMerch(null)}
+        >
+          <div 
+            className="relative max-w-lg w-full mx-4 bg-gradient-to-br from-gray-900/95 to-black/95 rounded-lg p-6 backdrop-blur-md"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              border: '2px solid rgba(255,255,255,0.2)',
+              boxShadow: '0 0 40px rgba(255,255,255,0.3), inset 0 0 30px rgba(255,255,255,0.1)'
+            }}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => {
+                try { sfx.play('close', 0.7); } catch {}
+                setExpandedMerch(null);
+              }}
+              className="absolute top-3 right-3 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white text-lg font-bold transition-all duration-200 z-10"
+            >
+              ×
+            </button>
+
+            {/* Expanded Item Content */}
+            <div className="flex flex-col items-center">
+              {/* Large Image */}
+              <div className="w-64 h-64 mb-6">
+                <img
+                  src={expandedMerch.image}
+                  alt={expandedMerch.title}
+                  className="w-full h-full object-cover rounded-lg border-2 border-white/20"
+                  style={{
+                    filter: 'drop-shadow(0 0 15px rgba(255,255,255,0.3))'
+                  }}
+                />
+              </div>
+
+              {/* Item Details */}
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold text-white mb-3">{expandedMerch.title}</h2>
+                <p className="text-white/80 text-sm mb-4 leading-relaxed max-w-sm">
+                  {expandedMerch.description}
+                </p>
+
+                {/* Price Display */}
+                <div className="flex items-center justify-center gap-3 mb-6">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl font-bold text-[#F2EF1D]">{expandedMerch.priceHeartCoins}</span>
+                    <img
+                      src="/elements/heart-coin.webp"
+                      alt="Heart Coin"
+                      className="w-6 h-6"
+                      style={{
+                        filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
+                      }}
+                    />
+                  </div>
+                  <div className="text-white/60 text-sm">
+                    or ${expandedMerch.priceUsd} USD
+                  </div>
+                </div>
+
+                {/* Purchase Buttons */}
+                <div className="flex flex-col gap-3">
+                  {/* Heart Coins Purchase */}
+                  <button
+                    onClick={() => {
+                      setExpandedMerch(null);
+                      handlePurchaseWithHeartCoins(expandedMerch);
+                    }}
+                    disabled={isProcessing || (profile?.id ? (profile?.heartcoin_balance || 0) : 0) < expandedMerch.priceHeartCoins}
+                    className={`w-full px-6 py-3 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                      isProcessing || (profile?.id ? (profile?.heartcoin_balance || 0) : 0) < expandedMerch.priceHeartCoins
+                        ? 'bg-gray-500 cursor-not-allowed text-gray-300'
+                        : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(242,239,29,0.8)]'
+                    }`}
+                    style={!isProcessing && (profile?.id ? (profile?.heartcoin_balance || 0) : 0) >= expandedMerch.priceHeartCoins ? {
+                      boxShadow: '0 0 20px rgba(242,239,29,0.6), inset 0 2px 0 rgba(255,255,255,0.6), inset 0 -8px 16px rgba(0,0,0,0.22)'
+                    } : {}}
+                  >
+                    {isProcessing ? 'Processing...' : 'Purchase with Heart Coins'}
+                  </button>
+
+                  {/* USD Purchase */}
+                  <button
+                    onClick={() => {
+                      setExpandedMerch(null);
+                      setSelectedItem(expandedMerch);
+                      setShowPhysicalForm(true);
+                    }}
+                    className="w-full px-6 py-3 text-sm font-semibold rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all duration-200 border border-white/30"
+                  >
+                    Purchase with USD (${expandedMerch.priceUsd})
+                  </button>
+                </div>
+
+                {/* Balance Info */}
+                <div className="text-xs text-white/60 mt-4">
+                  Your balance: {profile?.id ? (profile?.heartcoin_balance || 0) : 0} Heart Coins
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </>
   );
