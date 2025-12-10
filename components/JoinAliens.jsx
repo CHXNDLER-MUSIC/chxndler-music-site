@@ -539,7 +539,7 @@ export default function JoinAliens({ visible = true } = {}) {
         className="text-chat-button"
         style={{
           position: 'absolute',
-          bottom: '12px',
+          top: '12px',
           left: '12px',
           width: '48px',
           height: '48px',

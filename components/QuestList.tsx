@@ -718,12 +718,13 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <h4 className="text-white font-semibold mb-1">3. Attend a Livestream or Live Show</h4>
                 {!showCheckIn ? (
-                  <p className="text-white/80 text-sm">Check in at a CHXNDLER show or stream to receive bonus HEART coins.</p>
+                  <>
+                    <h4 className="text-white font-semibold mb-1">3. Attend a Livestream or Live Show</h4>
+                    <p className="text-white/80 text-sm">Check in at a CHXNDLER show or stream to receive bonus HEART coins.</p>
+                  </>
                 ) : (
-                  <div className="space-y-2" style={{ border: '2px solid red', padding: '10px' }}>
-                    <p className="text-white/80 text-sm" style={{ color: 'yellow' }}>ENTER SECRET PHRASE (DEBUG: showCheckIn={String(showCheckIn)})</p>
+                  <div className="space-y-2">
                     <input
                       type="text"
                       value={secretPhrase}
@@ -733,11 +734,13 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                         setCheckInError("");
                       }}
                       placeholder="ENTER SECRET PHRASE"
-                      className="w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-cyan-400 focus:outline-none"
+                      className="w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/60 shadow-sm focus:border-cyan-400 focus:outline-none"
                       style={{
-                        boxShadow: '0 0 8px rgba(0,255,255,0.2)',
-                        border: '3px solid lime'
+                        boxShadow: '0 0 8px rgba(0,255,255,0.2)'
                       }}
+                      autoComplete="off"
+                      autoCorrect="off"
+                      spellCheck="false"
                       autoFocus
                     />
                   </div>
@@ -759,7 +762,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                       : !isAuthenticated
                         ? 'bg-gray-600/30 border border-gray-500/50 text-gray-300 cursor-not-allowed'
                         : showCheckIn && secretPhrase.trim()
-                          ? 'bg-black/30 border-2 border-[#F2EF1D] text-[#F2EF1D] hover:bg-[#F2EF1D]/10'
+                          ? 'bg-yellow-500/20 border-2 border-yellow-400 text-yellow-300 hover:bg-yellow-500/30'
                           : showCheckIn
                             ? 'bg-gray-600/30 border border-gray-500/50 text-gray-300 cursor-not-allowed'
                             : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300'
@@ -770,7 +773,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                       : !isAuthenticated
                         ? '0 0 10px rgba(100,100,100,0.3)'
                         : showCheckIn && secretPhrase.trim()
-                          ? '0 0 20px rgba(242,239,29,0.8), inset 0 0 10px rgba(242,239,29,0.2)'
+                          ? '0 0 20px rgba(255,255,0,0.8), inset 0 0 10px rgba(255,255,0,0.2)'
                           : showCheckIn
                             ? '0 0 10px rgba(100,100,100,0.3)'
                             : '0 0 10px rgba(252,84,175,0.3)',
@@ -779,7 +782,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                       : !isAuthenticated
                         ? '0 0 4px rgba(100,100,100,0.6)'
                         : showCheckIn && secretPhrase.trim()
-                          ? '0 0 10px rgba(242,239,29,1)'
+                          ? '0 0 10px rgba(255,255,0,1)'
                           : showCheckIn
                             ? '0 0 4px rgba(100,100,100,0.6)'
                             : '0 0 4px rgba(252,84,175,0.6)'

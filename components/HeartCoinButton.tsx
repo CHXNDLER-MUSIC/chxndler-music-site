@@ -216,7 +216,7 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, onOpenBinder, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, isActive = false, journalCompleted = false, onJournalCompleted, onClose, onBeamColorChange, ...restProps }: Props) {
   const { profile, refreshProfile, setIsJournalOpen } = useProfile();
   const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'EARN' | 'USE'>('EARN');
+  const [activeTab, setActiveTab] = useState<'EARN' | 'USE' | 'MERCH' | 'CARDS'>('EARN');
   const [activeUseTab, setActiveUseTab] = useState<'MERCH' | 'CARDS'>('MERCH');
   const [activeEarnTab, setActiveEarnTab] = useState<'DAILY QUESTS' | 'BONUS QUESTS'>('DAILY QUESTS');
   const [selectedCardElement, setSelectedCardElement] = useState<string | null>(null);
@@ -498,7 +498,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
   // Load cards when the modal opens and CARDS tab is active
   useEffect(() => {
-    if (open && activeTab === 'USE' && activeUseTab === 'CARDS' && cards.length === 0) {
+    if (open && (activeTab === 'CARDS' || (activeTab === 'USE' && activeUseTab === 'CARDS')) && cards.length === 0) {
       fetchCards();
     }
   }, [open, activeTab, activeUseTab]);
@@ -924,7 +924,21 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     setIsProcessing(true);
     
     try {
-      // Call the RPC with correct parameters
+      // Check if this is a MERCH item (physical item) vs CARDS (digital item)
+      const isMerchItem = activeUseTab === 'MERCH' || PHYSICAL_ITEMS.some(physicalItem => physicalItem.slug === item.slug);
+      
+      if (isMerchItem) {
+        // For MERCH items, skip RPC call and go directly to shipping
+        // We'll handle the heart coin deduction in handleShippingSubmit
+        try { sfx.play('click', 0.7); } catch {}
+        
+        // Switch to shipping step without deducting coins yet
+        setStep('shipping');
+        setIsProcessing(false);
+        return;
+      }
+      
+      // For CARDS (digital items), use the RPC function
       const { data, error } = await supabaseBrowser.rpc('purchase_item_with_heartcoins', {
         p_user_id: profile.id,
         p_item_id: item.slug,
@@ -947,7 +961,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         }
       }
       
-      // Success! Deduct HeartCoins locally and advance to shipping
+      // Success for CARDS! Deduct HeartCoins locally and advance to shipping
       try { sfx.play('click', 0.7); } catch {}
       
       // Update local heartcoin balance
@@ -972,28 +986,68 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     setIsProcessing(true);
     
     try {
-      // Insert into orders table
-      const { error } = await supabaseBrowser
-        .from('orders')
-        .insert({
-          user_id: profile.id,
-          item_slug: selectedItem.slug,
-          heartcoin_cost: selectedItem.cost || selectedItem.priceHeartCoins,
-          full_name: shippingForm.full_name,
-          address_line1: shippingForm.address_line1,
-          address_line2: shippingForm.address_line2,
-          city: shippingForm.city,
-          state: shippingForm.state,
-          zip: shippingForm.zip,
-          county: shippingForm.county,
-          country: shippingForm.country,
-          status: 'pending'
-        });
+      // Check if this is a MERCH item that needs heart coin deduction
+      const isMerchItem = activeUseTab === 'MERCH' || PHYSICAL_ITEMS.some(physicalItem => physicalItem.slug === selectedItem.slug);
       
-      if (error) {
-        console.error('Order creation failed:', error);
-        setIsProcessing(false);
-        return;
+      if (isMerchItem) {
+        // For MERCH items, call the heart-coins purchase API
+        const response = await fetch('/api/heart-coins/purchase', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            cardTitle: selectedItem.title,
+            heartCoins: selectedItem.cost || selectedItem.priceHeartCoins,
+            shippingAddress: {
+              fullName: shippingForm.full_name,
+              streetAddress: shippingForm.address_line1,
+              apartment: shippingForm.address_line2,
+              city: shippingForm.city,
+              stateRegion: shippingForm.state,
+              zipPostal: shippingForm.zip,
+              country: shippingForm.country,
+            },
+            email: profile.email,
+            phone: null
+          }),
+        });
+
+        const result = await response.json();
+        
+        if (!response.ok) {
+          console.error('Heart coin purchase failed:', result.error);
+          setIsProcessing(false);
+          return;
+        }
+        
+        // Success! Refresh profile to get updated balance
+        await refreshProfile();
+        
+      } else {
+        // For non-MERCH items (CARDS), just insert into orders table
+        const { error } = await supabaseBrowser
+          .from('orders')
+          .insert({
+            user_id: profile.id,
+            item_slug: selectedItem.slug,
+            heartcoin_cost: selectedItem.cost || selectedItem.priceHeartCoins,
+            full_name: shippingForm.full_name,
+            address_line1: shippingForm.address_line1,
+            address_line2: shippingForm.address_line2,
+            city: shippingForm.city,
+            state: shippingForm.state,
+            zip: shippingForm.zip,
+            county: shippingForm.county,
+            country: shippingForm.country,
+            status: 'pending'
+          });
+        
+        if (error) {
+          console.error('Order creation failed:', error);
+          setIsProcessing(false);
+          return;
+        }
       }
       
       // Success! Switch to done step
@@ -1308,7 +1362,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             
             {/* Tabs */}
             <div className="flex justify-center mb-2 space-x-1">
-              {(['EARN', 'USE'] as const).map((tab) => (
+              {(['EARN', 'USE', 'MERCH', 'CARDS'] as const).map((tab) => (
                 <button
                   key={tab}
                   data-tour-id={`heartcoins-${tab.toLowerCase()}-tab`}

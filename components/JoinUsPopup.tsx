@@ -11,9 +11,10 @@ import { parsePhoneNumberFromString } from "libphonenumber-js";
 type Props = {
   isOpen: boolean;
   onClose: () => void;
+  onOpenChat?: () => void;
 };
 
-export default function JoinUsPopup({ isOpen, onClose }: Props) {
+export default function JoinUsPopup({ isOpen, onClose, onOpenChat }: Props) {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [signupMethod, setSignupMethod] = useState<"phone" | "email">("phone");
@@ -558,8 +559,8 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
           )}
         </div>
 
-        {/* Phone button in bottom left of popup */}
-        <div className="absolute bottom-4 left-4">
+        {/* Phone button in top left of popup */}
+        <div className="absolute top-4 left-4">
           <button
             type="button"
             className="w-12 h-12 rounded-full bg-gradient-to-r from-cyan-400 to-cyan-600 hover:from-cyan-300 hover:to-cyan-500 flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg hover:shadow-xl"
@@ -568,21 +569,36 @@ export default function JoinUsPopup({ isOpen, onClose }: Props) {
               border: '2px solid rgba(0, 255, 255, 0.8)'
             }}
             onClick={() => {
-              setShowPhonePopup(true);
+              if (onOpenChat) {
+                onOpenChat();
+                onClose(); // Close the join popup when opening chat
+              } else {
+                setShowPhonePopup(true);
+              }
               try {
                 sfx.play('click', 0.5);
               } catch {}
             }}
-            aria-label="Phone"
+            aria-label={onOpenChat ? "Open Chat" : "Phone"}
           >
-            <img 
-              src="/audio/phone.png" 
-              alt="Phone" 
-              className="w-8 h-8 object-contain filter brightness-0 invert"
-              style={{
-                filter: 'brightness(0) invert(1)',
-              }}
-            />
+            {onOpenChat ? (
+              // Chat icon using SVG
+              <svg viewBox="0 0 24 24" className="w-8 h-8" fill="currentColor" style={{ color: 'white' }}>
+                <path d="M12 3C6.48 3 2 6.58 2 11c0 2.5 1.33 4.74 3.41 6.4L4 22l4.92-1.5C10.22 20.84 11.1 21 12 21c5.52 0 10-3.58 10-8S17.52 3 12 3zm0 14c-.83 0-1.64-.14-2.39-.4L6 18l1.41-2.6C6.52 14.64 6 12.87 6 11c0-2.21 2.69-4 6-4s6 1.79 6 4-2.69 4-6 4z"/>
+                <circle cx="9" cy="11" r="1"/>
+                <circle cx="12" cy="11" r="1"/>
+                <circle cx="15" cy="11" r="1"/>
+              </svg>
+            ) : (
+              <img 
+                src="/audio/phone.png" 
+                alt="Phone" 
+                className="w-8 h-8 object-contain filter brightness-0 invert"
+                style={{
+                  filter: 'brightness(0) invert(1)',
+                }}
+              />
+            )}
           </button>
 
           {/* Phone popup - using signal lost styling */}

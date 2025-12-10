@@ -46,13 +46,16 @@ export default function FullSoulStarLog({ userId }: Props) {
     };
   }, [userId]);
 
-  const formatDate = (isoDate: string) => {
+  const formatDate = (dateString: string) => {
     try {
-      return new Date(isoDate).toLocaleDateString('en-US', {
+      // Parse YYYY-MM-DD as local date to avoid timezone shifting
+      const [year, month, day] = dateString.split('-').map(Number);
+      const localDate = new Date(year, month - 1, day);
+      return localDate.toLocaleDateString('en-US', {
         year: 'numeric', month: 'short', day: 'numeric', weekday: 'short'
       });
     } catch {
-      return isoDate;
+      return dateString;
     }
   };
 
