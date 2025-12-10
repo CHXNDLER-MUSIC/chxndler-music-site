@@ -9,7 +9,8 @@ import PopoutShell from "@/components/PopoutShell";
 type Props = {
   open: boolean;
   onClose: () => void;
-  initialTab?: 'use' | 'cards';
+  onOpenJournal?: () => void;
+  initialTab?: 'earn' | 'use';
 };
 
 type StoreItem = {
@@ -115,7 +116,7 @@ const storeItems: StoreItem[] = [
   }
 ];
 
-export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Props) {
+export default function HeartCoinModal({ open, onClose, onOpenJournal, initialTab = 'earn' }: Props) {
   const { profile, loading: profileLoading } = useProfile();
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -127,6 +128,7 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
   const [enlargedItem, setEnlargedItem] = useState<StoreItem | null>(null);
   const [enlargedImageIndex, setEnlargedImageIndex] = useState(0);
   const [enlargedCard, setEnlargedCard] = useState<any>(null);
+  const [isEnlargedCardFlipped, setIsEnlargedCardFlipped] = useState(false);
   const itemsPerPage = 6;
 
   useEffect(() => {
@@ -294,6 +296,23 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
         {/* Tabs */}
         <div className="flex border-b border-white/20 mb-6">
           <button
+            onClick={() => setActiveTab('earn')}
+            className={`px-6 py-3 font-bold text-sm transition-all duration-200 ${
+              activeTab === 'earn'
+                ? 'text-[#F2EF1D] border-b-2 border-[#F2EF1D]'
+                : 'text-white hover:text-white'
+            }`}
+            style={{
+              textShadow: activeTab === 'earn' 
+                ? '0 0 8px rgba(242,239,29,0.8), 0 0 15px rgba(242,239,29,0.6), 0 2px 4px rgba(0,0,0,0.8)' 
+                : '0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
+              backgroundColor: activeTab === 'earn' ? 'rgba(242,239,29,0.1)' : 'rgba(0,0,0,0.3)',
+              borderRadius: '8px 8px 0 0'
+            }}
+          >
+            EARN
+          </button>
+          <button
             onClick={() => setActiveTab('use')}
             className={`px-6 py-3 font-bold text-sm transition-all duration-200 ${
               activeTab === 'use'
@@ -310,26 +329,91 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
           >
             USE
           </button>
-          <button
-            onClick={() => setActiveTab('cards')}
-            className={`px-6 py-3 font-bold text-sm transition-all duration-200 ${
-              activeTab === 'cards'
-                ? 'text-[#F2EF1D] border-b-2 border-[#F2EF1D]'
-                : 'text-white hover:text-white'
-            }`}
-            style={{
-              textShadow: activeTab === 'cards' 
-                ? '0 0 8px rgba(242,239,29,0.8), 0 0 15px rgba(242,239,29,0.6), 0 2px 4px rgba(0,0,0,0.8)' 
-                : '0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
-              backgroundColor: activeTab === 'cards' ? 'rgba(242,239,29,0.1)' : 'rgba(0,0,0,0.3)',
-              borderRadius: '8px 8px 0 0'
-            }}
-          >
-            CARDS
-          </button>
         </div>
 
-        {activeTab === 'use' ? (
+        {activeTab === 'earn' ? (
+          <div>
+            <div className="text-center mb-6">
+              <p className="text-white/80 text-sm">
+                HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting and showing up.
+              </p>
+            </div>
+            
+            {/* Daily Quests and Bonus Quests Tabs */}
+            <div className="flex border-b border-white/10 mb-4">
+              <button className="px-4 py-2 font-bold text-xs text-[#4ECDC4] border-b-2 border-[#4ECDC4] bg-[#4ECDC4]/10 rounded-t">
+                DAILY QUESTS
+              </button>
+              <button className="px-4 py-2 font-bold text-xs text-white/60 hover:text-white/80 bg-black/20 rounded-t">
+                BONUS QUESTS
+              </button>
+            </div>
+
+            {/* Daily Quest Items */}
+            <div className="space-y-4">
+              {/* Element of the Day Quest */}
+              <div className="bg-black/20 rounded-lg p-4 border border-white/10">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
+                      <img src="/elements/earth.webp" alt="Element" className="w-8 h-8" />
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold text-sm">1. Tap the Element of the Day</h3>
+                      <p className="text-white/60 text-xs">Receive a random reward: HeartCoins, relics, or binder slot unlocks.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#4ECDC4] text-sm flex items-center">
+                      +1 <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-4 h-4 ml-1" />
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Journal Entry Quest */}
+              <div className="bg-black/20 rounded-lg p-4 border border-white/10">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-white/60" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold text-sm">2. Journal Entry of the Day</h3>
+                      <p className="text-white/60 text-xs">Answer today's journal prompt to earn one HEART coin.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => {
+                        if (onOpenJournal) {
+                          onClose(); // Close the HeartCoin modal first
+                          setTimeout(() => {
+                            onOpenJournal(); // Then open the journal
+                          }, 150);
+                        }
+                      }}
+                      className="px-3 py-1 text-xs rounded border transition-colors bg-rgba(255,255,255,0.1) text-white hover:bg-white/20"
+                      style={{
+                        background: 'rgba(255,255,255,0.1)',
+                        color: '#FFFFFF',
+                        borderColor: 'rgba(255,255,255,0.6)',
+                        textShadow: 'none',
+                      }}
+                    >
+                      OPEN JOURNAL
+                    </button>
+                    <span className="text-[#4ECDC4] text-sm flex items-center">
+                      +1 <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-4 h-4 ml-1" />
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : activeTab === 'use' ? (
           <div>
             {/* Error/Success Messages */}
             {error && (
@@ -375,10 +459,12 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
                 )}
               </div>
               
-              {/* Description */}
-              <div className="text-white/80 text-xs leading-relaxed px-2 break-words">
-                {item.description.toUpperCase()}
-              </div>
+              {/* Description - Hidden for cleaner look */}
+              {false && (
+                <div className="text-white/80 text-xs leading-relaxed px-2 break-words">
+                  {item.description.toUpperCase()}
+                </div>
+              )}
               
               {/* Price and Heart Coins */}
               <div className="flex items-center justify-between w-full px-2">
@@ -495,85 +581,7 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
           </div>
         )}
           </div>
-        ) : (
-          /* Cards Tab */
-          <div className="text-center text-white/60">
-            <div className="mb-8">
-              <h3 className="text-xl font-bold text-white mb-4">YOUR CARDS</h3>
-              <p className="text-sm">Your collected cards from the HEARTVERSE.</p>
-            </div>
-
-            {/* Cards Grid */}
-            {profileLoading || (!profileLoading && !profile) ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 mx-auto mb-4 bg-white/10 rounded-full flex items-center justify-center">
-                  <div className="w-8 h-8 border-2 border-[#F2EF1D] border-t-transparent rounded-full animate-spin"></div>
-                </div>
-                <h3 className="text-lg font-bold text-white mb-2">Loading cards...</h3>
-              </div>
-            ) : profile?.cards && profile.cards.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto pr-2">
-                {profile.cards.map((userCard) => (
-                  <div 
-                    key={userCard.id} 
-                    className="group relative bg-black/30 rounded-lg p-3 hover:bg-black/40 transition-all duration-300 hover:scale-[1.02] cursor-pointer"
-                    onClick={() => setEnlargedCard(userCard)}
-                  >
-                    {/* Card Image Placeholder */}
-                    <div className="aspect-[3/4] bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-lg mb-2 flex items-center justify-center border border-white/20">
-                      <div className="text-center">
-                        <div className="w-8 h-8 mx-auto mb-1 bg-white/20 rounded-full flex items-center justify-center">
-                          <svg className="w-4 h-4 text-white/60" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        <div className="text-xs text-white/40">CARD</div>
-                      </div>
-                    </div>
-                    
-                    {/* Card Info */}
-                    <div className="text-center">
-                      <h4 className="text-sm font-bold text-white truncate mb-1">
-                        {userCard.cards?.card_name || 'Unknown Card'}
-                      </h4>
-                      
-                      {/* Element & Rarity */}
-                      <div className="flex justify-between items-center text-xs">
-                        {userCard.cards?.element && (
-                          <span className="px-2 py-1 bg-white/10 rounded text-white/70 capitalize">
-                            {userCard.cards.element}
-                          </span>
-                        )}
-                        {userCard.cards?.rarity && (
-                          <span className="px-2 py-1 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded text-yellow-200 capitalize">
-                            {userCard.cards.rarity}
-                          </span>
-                        )}
-                      </div>
-                      
-                      {/* Acquired Date */}
-                      <div className="text-xs text-white/40 mt-1">
-                        Acquired {new Date(userCard.acquired_at).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 mx-auto mb-4 bg-white/10 rounded-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-white/40" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-bold text-white mb-2">No Cards Yet</h3>
-                <p className="text-sm text-white/60">
-                  Start your collection by exploring the HEARTVERSE and completing quests.
-                </p>
-              </div>
-            )}
-          </div>
-        )}
+        ) : null}
       </div>
 
       {/* Enlarged Item Modal */}
@@ -679,7 +687,10 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
       {enlargedCard && (
         <div 
           className="fixed inset-0 z-[2147483647] bg-black bg-opacity-90"
-          onClick={() => setEnlargedCard(null)}
+          onClick={() => {
+            setEnlargedCard(null);
+            setIsEnlargedCardFlipped(false);
+          }}
           style={{
             backdropFilter: 'blur(8px)',
           }}
@@ -698,7 +709,10 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
             >
               {/* Close Button */}
               <button
-                onClick={() => setEnlargedCard(null)}
+                onClick={() => {
+                  setEnlargedCard(null);
+                  setIsEnlargedCardFlipped(false);
+                }}
                 className="absolute top-2 right-2 w-8 h-8 bg-gray-700 hover:bg-gray-600 rounded-full flex items-center justify-center text-gray-300 hover:text-white transition-all duration-200 z-10"
               >
                 ×
@@ -707,14 +721,47 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
               {/* Card Image */}
               <div className="flex items-center justify-center w-full h-full">
                 <div className="relative max-w-full max-h-full">
-                  <img
-                    src="/elements/card/back.webp"
-                    alt={enlargedCard.cards?.card_name || 'Card'}
-                    className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                  <div 
+                    className="relative w-full cursor-pointer"
+                    onClick={() => setIsEnlargedCardFlipped(!isEnlargedCardFlipped)}
                     style={{
-                      animation: 'merchPulse 2.5s ease-in-out infinite',
+                      perspective: '1000px',
+                      height: '70vh',
+                      maxWidth: '400px'
                     }}
-                  />
+                  >
+                    <div
+                      className="relative w-full h-full transition-transform duration-700"
+                      style={{
+                        transformStyle: 'preserve-3d',
+                        transform: isEnlargedCardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                      }}
+                    >
+                      {/* Front of card */}
+                      <img
+                        src={enlargedCard.artwork_url || `/cards/${enlargedCard.card_name || enlargedCard.cards?.card_name}.webp`}
+                        alt={enlargedCard.card_name || enlargedCard.cards?.card_name || 'Card'}
+                        className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
+                        style={{
+                          animation: 'merchPulse 2.5s ease-in-out infinite',
+                          backfaceVisibility: 'hidden',
+                          transform: 'rotateY(0deg)'
+                        }}
+                      />
+                      
+                      {/* Back of card */}
+                      <img
+                        src="/cards/back.webp"
+                        alt="Card back"
+                        className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
+                        style={{
+                          animation: 'merchPulse 2.5s ease-in-out infinite',
+                          backfaceVisibility: 'hidden',
+                          transform: 'rotateY(180deg)'
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

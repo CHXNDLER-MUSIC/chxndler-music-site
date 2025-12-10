@@ -207,7 +207,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [showStarsModal, setShowStarsModal] = useState(false);
   const [showWelcomeHomeModal, setShowWelcomeHomeModal] = useState(false);
   const [showHeartCoinModal, setShowHeartCoinModal] = useState(false);
-  const [heartCoinModalTab, setHeartCoinModalTab] = useState('use');
+  const [heartCoinModalTab, setHeartCoinModalTab] = useState('earn');
   // Track if user actually clicked START button (vs just app loading)
   const [userClickedStart, setUserClickedStart] = useState(false);
   // Legacy state variables will be defined after UI phase variables below
@@ -1194,7 +1194,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose]);
 
   // Function to open HeartCoin modal with a specific tab
-  const openHeartCoinModal = React.useCallback((tab = 'use') => {
+  const openHeartCoinModal = React.useCallback((tab = 'earn') => {
     setHeartCoinModalTab(tab);
     setShowHeartCoinModal(true);
   }, []);
@@ -2680,6 +2680,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       <HeartCoinModal 
         open={showHeartCoinModal} 
         onClose={() => setShowHeartCoinModal(false)}
+        onOpenJournal={handleOpenJournal}
         initialTab={heartCoinModalTab}
       />
 

@@ -10,6 +10,181 @@ import { toAppleEmbed } from "@/lib/apple";
 import { toSpotifyEmbed, spotifyEmbedHeight } from "@/lib/spotify";
 import { toYouTubeEmbed, youTubeEmbedHeight } from "@/lib/youtube";
 
+// Anchored preview modal component that positions itself above a clicked button
+function AnchoredPreviewModal({
+  url,
+  title,
+  buttonPosition,
+  heightPx,
+  iframeHeightPx,
+  onClose
+}: {
+  url: string;
+  title: string;
+  buttonPosition: { x: number; y: number; buttonWidth: number; buttonHeight: number } | null;
+  heightPx?: number;
+  iframeHeightPx?: number;
+  onClose: () => void;
+}) {
+  if (!buttonPosition) return null;
+
+  // Calculate preview card positioning - center on page and reduce height
+  // Match the yellow display width: calc(var(--display-width) + 32px)
+  // Using CSS variable fallback values based on typical responsive breakpoints
+  const getYellowDisplayWidth = () => {
+    const vw = window.innerWidth;
+    // These values should match your CSS --display-width variable
+    if (vw <= 480) return Math.min(vw - 40, 320) + 32; // Mobile
+    if (vw <= 768) return Math.min(vw - 60, 400) + 32; // Tablet
+    return Math.min(vw - 80, 480) + 32; // Desktop
+  };
+  
+  const cardWidth = getYellowDisplayWidth();
+  const cardHeight = Math.min(heightPx || 240, 280); // Reduced from 280 to 240, max 280
+  
+  // Center the preview on the page
+  const left = (window.innerWidth - cardWidth) / 2;
+  const top = (window.innerHeight - cardHeight) / 2;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[2147483647] flex items-start justify-start"
+      style={{ background: 'transparent' }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        className="preview-card"
+        style={{
+          position: 'fixed',
+          left: `${left}px`,
+          top: `${top}px`,
+          width: `${cardWidth}px`,
+          height: `${cardHeight}px`,
+          zIndex: 2147483648
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="preview-header">
+          <h3 className="preview-title">{title}</h3>
+          <button
+            className="preview-close"
+            onClick={onClose}
+            onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+          >
+            ×
+          </button>
+        </div>
+        
+        {/* Iframe content */}
+        <div className="preview-content">
+          <iframe
+            src={url}
+            title={title}
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy"
+            width="100%"
+            height={iframeHeightPx || cardHeight - 60}
+            style={{
+              border: 'none',
+              display: 'block',
+              transform: iframeHeightPx ? 'scale(0.9)' : 'none',
+              transformOrigin: 'top center'
+            }}
+          />
+        </div>
+      </div>
+      
+      <style jsx>{`
+        .preview-card {
+          background: rgba(0, 0, 0, 0.88);
+          border: 1px solid rgba(242, 239, 29, 0.6);
+          border-radius: 14px;
+          overflow: hidden;
+          box-shadow: 
+            0 18px 46px rgba(0, 0, 0, 0.55),
+            0 0 32px rgba(242, 239, 29, 0.35),
+            0 0 60px rgba(242, 239, 29, 0.2);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          animation: slideInUp 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        
+        .preview-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px 16px;
+          border-bottom: 1px solid rgba(242, 239, 29, 0.3);
+          background: rgba(242, 239, 29, 0.1);
+        }
+        
+        .preview-title {
+          color: #F2EF1D;
+          font-size: 14px;
+          font-weight: 600;
+          margin: 0;
+          text-shadow: 0 0 8px rgba(242, 239, 29, 0.6);
+        }
+        
+        .preview-close {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          border: 1px solid rgba(255, 255, 255, 0.4);
+          background: rgba(0, 0, 0, 0.45);
+          color: #fff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          font-size: 16px;
+          font-weight: bold;
+          transition: all 0.15s ease;
+        }
+        
+        .preview-close:hover {
+          transform: scale(1.1);
+          background: rgba(0, 0, 0, 0.6);
+          box-shadow: 0 0 24px rgba(255, 255, 255, 0.55);
+        }
+        
+        .preview-content {
+          flex: 1;
+          overflow: hidden;
+          position: relative;
+        }
+        
+        @keyframes slideInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        
+        @media (max-width: 768px) {
+          .preview-card {
+            border-radius: 12px;
+          }
+          .preview-header {
+            padding: 10px 14px;
+          }
+          .preview-title {
+            font-size: 13px;
+          }
+        }
+      `}</style>
+    </div>,
+    document.body
+  );
+}
+
 type HubItem = {
   id: string;
   label: string;
@@ -162,6 +337,36 @@ export default function HoloHubMenu({
     }
   }, [open, onToggle, suspend]);
 
+  // Helper function to calculate button position for anchored preview
+  const getButtonPosition = useCallback((buttonId: string) => {
+    const buttonElement = buttonRefs.get(buttonId);
+    if (!buttonElement) return null;
+    
+    const rect = buttonElement.getBoundingClientRect();
+    return {
+      x: rect.left + rect.width / 2, // Center horizontally on button
+      y: rect.top, // Top of button
+      buttonWidth: rect.width,
+      buttonHeight: rect.height
+    };
+  }, [buttonRefs]);
+
+  // Add escape key handler for preview modal
+  useEffect(() => {
+    if (!inlineUrl) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setInlineUrl(null);
+        setInlineCompact(false);
+        setInlineHeightPx(undefined);
+        setInlineIframeHeightPx(undefined);
+        setClickedButtonId(null);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [inlineUrl]);
+
   const runItem = useCallback((it: HubItem, ev?: MouseEvent) => {
     // Explicitly track social/music platform clicks with a canonical label
     try {
@@ -241,6 +446,7 @@ export default function HoloHubMenu({
           try {
             const embed = toSpotifyEmbed(it.href);
             if (embed) {
+              setClickedButtonId(it.id); // Track which button was clicked
               setInlineTitle(it.label || 'Spotify');
               setInlineUrl(embed);
               setInlineCompact(true);
@@ -271,6 +477,7 @@ export default function HoloHubMenu({
           try {
             const embed = toAppleEmbed(it.href);
             if (embed) {
+              setClickedButtonId(it.id); // Track which button was clicked
               setInlineTitle(it.label || 'Apple Music');
               setInlineUrl(embed);
               setInlineCompact(true);
@@ -501,7 +708,24 @@ export default function HoloHubMenu({
                 return (
                   <button
                     key={it.id}
-                    ref={isFirst ? firstItemRef : isLast ? lastItemRef : undefined}
+                    ref={useCallback((el: HTMLButtonElement | null) => {
+                      // Store button refs for positioning music previews
+                      if (el) {
+                        setButtonRefs(prev => {
+                          if (prev.get(it.id) === el) return prev; // Avoid unnecessary updates
+                          const newRefs = new Map(prev);
+                          newRefs.set(it.id, el);
+                          return newRefs;
+                        });
+                      }
+                      // Handle first/last refs for keyboard navigation
+                      if (isFirst && firstItemRef) {
+                        (firstItemRef as React.MutableRefObject<HTMLButtonElement | null>).current = el;
+                      }
+                      if (isLast && lastItemRef) {
+                        (lastItemRef as React.MutableRefObject<HTMLButtonElement | null>).current = el;
+                      }
+                    }, [it.id, isFirst, isLast])}
                     type="button"
                     className="item"
                     role="menuitem"
@@ -542,14 +766,20 @@ export default function HoloHubMenu({
         document.body
       ) : null}
 
-      {inlineUrl ? (
-        <InlineBrowserModal
+      {inlineUrl && clickedButtonId ? (
+        <AnchoredPreviewModal
           url={inlineUrl}
-          title={inlineTitle || 'Instagram'}
-          compact={inlineCompact}
+          title={inlineTitle || 'Music Preview'}
+          buttonPosition={getButtonPosition(clickedButtonId)}
           heightPx={inlineHeightPx}
           iframeHeightPx={inlineIframeHeightPx}
-          onClose={()=> { setInlineUrl(null); setInlineCompact(false); setInlineHeightPx(undefined); setInlineIframeHeightPx(undefined); }}
+          onClose={() => {
+            setInlineUrl(null);
+            setInlineCompact(false);
+            setInlineHeightPx(undefined);
+            setInlineIframeHeightPx(undefined);
+            setClickedButtonId(null);
+          }}
         />
       ) : null}
 

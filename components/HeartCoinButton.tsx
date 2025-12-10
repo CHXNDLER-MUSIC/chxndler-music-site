@@ -1365,7 +1365,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             </div>
             
             {/* Tabs */}
-            <div className="flex justify-center mb-2 space-x-3 pl-1 pr-4">
+            <div className="flex justify-center space-x-1 pl-1 pr-4">
               {(['EARN', 'USE'] as const).map((tab) => (
                 <button
                   key={tab}
@@ -1406,7 +1406,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             
             {/* Thin pink neon line */}
             <div 
-              className="w-full h-px mb-1"
+              className="w-full h-px"
               style={{
                 background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8) 20%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.8) 80%, transparent)',
                 boxShadow: '0 0 4px rgba(255,255,255,0.6)'
@@ -1777,7 +1777,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               {!showItemDetail ? (
                 <>
                   {/* Sub-tabs for USE */}
-                  <div className="flex justify-center mb-1 space-x-3">
+                  <div className="flex justify-center space-x-1">
                     {(['MERCH', 'CARDS'] as const).map((tab) => (
                       <button
                         key={tab}

@@ -263,7 +263,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
     
     // Update the previous balance for next comparison
-    if (newProfile?.heartcoin_balance !== null) {
+    if (newProfile?.heartcoin_balance !== null && newProfile?.heartcoin_balance !== undefined) {
       setPreviousHeartcoinBalance(newProfile.heartcoin_balance ?? 0);
     }
     

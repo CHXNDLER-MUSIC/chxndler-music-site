@@ -9,6 +9,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { useProfile } from "@/contexts/ProfileContext";
 import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
 import { getBonusQuestsForUser } from "@/lib/bonusQuests";
+import LoginModal from "@/components/LoginModal";
 
 type Props = {
   onBack: () => void;
@@ -87,6 +88,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   const [authLoading, setAuthLoading] = useState(true);
   const [bonusQuests, setBonusQuests] = useState<any[]>([]);
   const [bonusQuestsLoading, setBonusQuestsLoading] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const { questStatus, setQuestStatus, todaysElement, todaysQuestion } = useQuestStatus();
   const { refreshProfile } = useProfile();
 
@@ -153,6 +155,11 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         const isAuth = !!session?.user;
         setIsAuthenticated(isAuth);
         
+        // Close login modal if user successfully logs in
+        if (isAuth && showLoginModal) {
+          setShowLoginModal(false);
+        }
+        
         // Load bonus quests when user logs in
         if (isAuth && session?.user?.id) {
           await loadBonusQuests(session.user.id);
@@ -164,7 +171,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
     );
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [showLoginModal]);
 
   // Helper functions to get quest data from server
   const getInviteFriendQuest = () => bonusQuests.find(q => q.quest_key === 'INVITE_FRIEND');
@@ -175,8 +182,19 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
     setTimeout(() => setCelebrationMessage(""), 3000);
   };
 
+  const handleLoginPrompt = () => {
+    try { sfx.play('click', 0.8); } catch {}
+    setShowLoginModal(true);
+  };
+
   const handleElementTap = async () => {
-    if (questStatus.elementOfDay || loading || !isAuthenticated) return;
+    if (questStatus.elementOfDay || loading) {
+      return;
+    }
+    if (!isAuthenticated) {
+      handleLoginPrompt();
+      return;
+    }
     
     try { sfx.play('click', 0.8); } catch {}
     setLoading(true);
@@ -211,7 +229,11 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   };
 
   const handleJournalOpen = () => {
-    if (questStatus.journalEntry || loading || !isAuthenticated) return;
+    if (questStatus.journalEntry || loading) return;
+    if (!isAuthenticated) {
+      handleLoginPrompt();
+      return;
+    }
     
     try { sfx.play('click', 0.8); } catch {}
     onCloseHeartCoinPopup?.();
@@ -240,7 +262,11 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   };
 
   const handleInviteFriend = async () => {
-    if (questStatus.inviteFriend || loading || !isAuthenticated) return;
+    if (questStatus.inviteFriend || loading) return;
+    if (!isAuthenticated) {
+      handleLoginPrompt();
+      return;
+    }
     
     try { sfx.play('click', 0.8); } catch {}
     const message = "I thought of you. I think this world could feel like home for you too. https://chxndler.world/";
@@ -275,7 +301,11 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   };
 
   const handleConfirmInvite = async () => {
-    if (questStatus.inviteFriendConfirm || loading || !isAuthenticated) return;
+    if (questStatus.inviteFriendConfirm || loading) return;
+    if (!isAuthenticated) {
+      handleLoginPrompt();
+      return;
+    }
     
     try { sfx.play('click', 0.8); } catch {}
     setLoading(true);
@@ -397,8 +427,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   const handleShowCheckInForm = () => {
     // Check authentication
     if (!isAuthenticated) {
-      setCheckInError("Please log in to check in at live shows.");
-      setTimeout(() => setCheckInError(""), 3000);
+      handleLoginPrompt();
       return;
     }
     
@@ -556,31 +585,25 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
               {/* Today's Element Icon */}
               <button
                 onClick={handleElementTap}
-                disabled={questStatus.elementOfDay || loading || !isAuthenticated}
+                disabled={questStatus.elementOfDay || loading}
                 className={`w-12 h-12 border-2 rounded-full overflow-hidden transition-all relative ${
                   questStatus.elementOfDay 
                     ? 'border-green-500/60 cursor-not-allowed opacity-60' 
-                    : !isAuthenticated
-                      ? 'border-gray-500/60 cursor-not-allowed opacity-60'
-                      : `border-pink-500/60 hover:border-pink-400`
+                    : `border-pink-500/60 hover:border-pink-400 cursor-pointer`
                 }`}
                 style={{
                   background: questStatus.elementOfDay 
                     ? 'rgba(0,255,0,0.1)'
-                    : !isAuthenticated
-                      ? 'rgba(100,100,100,0.1)'
-                      : 'rgba(252,84,175,0.1)',
+                    : 'rgba(252,84,175,0.1)',
                   boxShadow: questStatus.elementOfDay 
                     ? '0 0 15px rgba(0,255,0,0.3)'
-                    : !isAuthenticated
-                      ? '0 0 15px rgba(100,100,100,0.3)'
-                      : '0 0 15px rgba(252,84,175,0.3)'
+                    : '0 0 15px rgba(252,84,175,0.3)'
                 }}
               >
                 <img
                   src={`/elements/${todaysElement.name}.webp`}
                   alt="Today's Element"
-                  className={`w-full h-full object-cover ${!isAuthenticated && !questStatus.elementOfDay ? 'filter grayscale opacity-50' : ''}`}
+                  className="w-full h-full object-cover"
                   draggable={false}
                 />
                 {questStatus.elementOfDay && (
@@ -588,27 +611,23 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                     <span className="text-green-400 text-lg">✓</span>
                   </div>
                 )}
-                {!isAuthenticated && !questStatus.elementOfDay && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-                    <span className="text-gray-400 text-xs font-bold">LOGIN</span>
-                  </div>
-                )}
               </button>
               <div 
-                className={`font-bold text-sm ${
+                className={`font-bold text-sm cursor-pointer ${
                   questStatus.elementOfDay 
                     ? 'text-green-400' 
                     : !isAuthenticated 
-                      ? 'text-gray-400' 
+                      ? 'text-yellow-400 hover:text-yellow-300' 
                       : 'text-pink-400'
                 }`}
                 style={{ 
                   textShadow: questStatus.elementOfDay 
                     ? '0 0 4px rgba(0,255,0,0.6)' 
                     : !isAuthenticated
-                      ? '0 0 4px rgba(100,100,100,0.6)'
+                      ? '0 0 4px rgba(255,255,0,0.6)'
                       : '0 0 4px rgba(252,84,175,0.6)' 
                 }}
+                onClick={!questStatus.elementOfDay ? handleElementTap : undefined}
               >
                 {questStatus.elementOfDay 
                   ? '✓ Complete' 
@@ -637,44 +656,45 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
             <div className="flex items-center gap-2">
               <button
                 onClick={handleJournalOpen}
-                disabled={questStatus.journalEntry || loading || !isAuthenticated}
-                className={`w-20 h-20 rounded-full text-xs transition-all duration-200 flex items-center justify-center ${
+                disabled={questStatus.journalEntry || loading}
+                className={`w-20 h-20 rounded-full text-xs transition-all duration-200 flex items-center justify-center cursor-pointer ${
                   questStatus.journalEntry
                     ? 'bg-green-600/30 border border-green-500/50 text-green-300 cursor-not-allowed'
                     : !isAuthenticated
-                      ? 'bg-gray-600/30 border border-gray-500/50 text-gray-300 cursor-not-allowed'
+                      ? 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300'
                       : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300'
                 }`}
                 style={{
                   boxShadow: questStatus.journalEntry
                     ? '0 0 10px rgba(0,255,0,0.3)'
                     : !isAuthenticated
-                      ? '0 0 10px rgba(100,100,100,0.3)'
+                      ? '0 0 10px rgba(255,255,0,0.3)'
                       : '0 0 10px rgba(252,84,175,0.3)',
                   textShadow: questStatus.journalEntry
                     ? '0 0 4px rgba(0,255,0,0.6)'
                     : !isAuthenticated
-                      ? '0 0 4px rgba(100,100,100,0.6)'
+                      ? '0 0 4px rgba(255,255,0,0.6)'
                       : '0 0 4px rgba(252,84,175,0.6)'
                 }}
               >
                 {questStatus.journalEntry ? '✓ COMPLETE' : !isAuthenticated ? 'LOG IN TO COMPLETE' : 'OPEN JOURNAL'}
               </button>
               <div 
-                className={`font-bold text-sm ${
+                className={`font-bold text-sm cursor-pointer ${
                   questStatus.journalEntry 
                     ? 'text-green-400' 
                     : !isAuthenticated 
-                      ? 'text-gray-400' 
+                      ? 'text-yellow-400 hover:text-yellow-300' 
                       : 'text-pink-400'
                 }`}
                 style={{ 
                   textShadow: questStatus.journalEntry 
                     ? '0 0 4px rgba(0,255,0,0.6)' 
                     : !isAuthenticated
-                      ? '0 0 4px rgba(100,100,100,0.6)'
+                      ? '0 0 4px rgba(255,255,0,0.6)'
                       : '0 0 4px rgba(252,84,175,0.6)' 
                 }}
+                onClick={!questStatus.journalEntry ? handleJournalOpen : undefined}
               >
                 {questStatus.journalEntry 
                   ? '✓ Complete' 
@@ -723,12 +743,12 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                       ? handleConfirmInvite 
                       : handleInviteFriend
                 }
-                disabled={questStatus.inviteFriendConfirm || loading || !isAuthenticated || bonusQuestsLoading}
-                className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 ${
+                disabled={questStatus.inviteFriendConfirm || loading || bonusQuestsLoading}
+                className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 cursor-pointer ${
                   questStatus.inviteFriendConfirm
                     ? 'bg-green-500/30 border-2 border-green-400 text-green-200 cursor-not-allowed'
                     : !isAuthenticated
-                      ? 'bg-gray-600/30 border border-gray-500/50 text-gray-300 cursor-not-allowed'
+                      ? 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300'
                       : questStatus.inviteFriend
                         ? 'bg-black/30 border-2 border-[#F2EF1D] text-[#F2EF1D] hover:bg-[#F2EF1D]/10'
                         : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300'
@@ -737,14 +757,14 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                   boxShadow: questStatus.inviteFriendConfirm
                     ? '0 0 20px rgba(0,255,0,0.8), inset 0 0 15px rgba(0,255,0,0.3)'
                     : !isAuthenticated
-                      ? '0 0 10px rgba(100,100,100,0.3)'
+                      ? '0 0 10px rgba(255,255,0,0.3)'
                       : questStatus.inviteFriend
                         ? '0 0 20px rgba(242,239,29,0.8), inset 0 0 10px rgba(242,239,29,0.2)'
                         : '0 0 10px rgba(252,84,175,0.3)',
                   textShadow: questStatus.inviteFriendConfirm
                     ? '0 0 12px rgba(0,255,0,1)'
                     : !isAuthenticated
-                      ? '0 0 4px rgba(100,100,100,0.6)'
+                      ? '0 0 4px rgba(255,255,0,0.6)'
                       : questStatus.inviteFriend
                         ? '0 0 10px rgba(242,239,29,1)'
                         : '0 0 4px rgba(252,84,175,0.6)'
@@ -760,11 +780,11 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                 }
               </button>
               <div 
-                className={`font-bold text-sm ${
+                className={`font-bold text-sm cursor-pointer ${
                   questStatus.inviteFriendConfirm 
                     ? 'text-green-400' 
                     : !isAuthenticated
-                      ? 'text-gray-400'
+                      ? 'text-yellow-400 hover:text-yellow-300'
                       : questStatus.inviteFriend
                         ? 'text-yellow-200'
                         : 'text-pink-400'
@@ -773,11 +793,18 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                   textShadow: questStatus.inviteFriendConfirm 
                     ? '0 0 4px rgba(0,255,0,0.6)' 
                     : !isAuthenticated
-                      ? '0 0 4px rgba(100,100,100,0.6)'
+                      ? '0 0 4px rgba(255,255,0,0.6)'
                       : questStatus.inviteFriend
                         ? '0 0 4px rgba(255,193,7,0.8)'
                         : '0 0 4px rgba(252,84,175,0.6)' 
                 }}
+                onClick={
+                  questStatus.inviteFriendConfirm 
+                    ? undefined 
+                    : questStatus.inviteFriend 
+                      ? handleConfirmInvite 
+                      : handleInviteFriend
+                }
               >
                 {questStatus.inviteFriendConfirm 
                   ? '✓ Complete' 
@@ -840,12 +867,12 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                         ? handleCheckInSubmit 
                         : handleShowCheckInForm
                   }
-                  disabled={questStatus.liveShow || bonusQuestsLoading || (showCheckIn && loading) || !isAuthenticated}
-                  className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 ${
+                  disabled={questStatus.liveShow || bonusQuestsLoading || (showCheckIn && loading)}
+                  className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 cursor-pointer ${
                     questStatus.liveShow
                       ? 'bg-green-600/30 border border-green-500/50 text-green-300 cursor-not-allowed'
                       : !isAuthenticated
-                        ? 'bg-gray-600/30 border border-gray-500/50 text-gray-300 cursor-not-allowed'
+                        ? 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300'
                         : showCheckIn && secretPhrase.trim()
                           ? 'bg-yellow-500/20 border-2 border-yellow-400 text-yellow-300 hover:bg-yellow-500/30'
                           : showCheckIn
@@ -856,7 +883,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                     boxShadow: questStatus.liveShow
                       ? '0 0 10px rgba(0,255,0,0.3)'
                       : !isAuthenticated
-                        ? '0 0 10px rgba(100,100,100,0.3)'
+                        ? '0 0 10px rgba(255,255,0,0.3)'
                         : showCheckIn && secretPhrase.trim()
                           ? '0 0 20px rgba(255,255,0,0.8), inset 0 0 10px rgba(255,255,0,0.2)'
                           : showCheckIn
@@ -865,7 +892,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                     textShadow: questStatus.liveShow
                       ? '0 0 4px rgba(0,255,0,0.6)'
                       : !isAuthenticated
-                        ? '0 0 4px rgba(100,100,100,0.6)'
+                        ? '0 0 4px rgba(255,255,0,0.6)'
                         : showCheckIn && secretPhrase.trim()
                           ? '0 0 10px rgba(255,255,0,1)'
                           : showCheckIn
@@ -883,20 +910,27 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                   }
                 </button>
                 <div 
-                  className={`font-bold text-sm ${
+                  className={`font-bold text-sm cursor-pointer ${
                     questStatus.liveShow 
                       ? 'text-green-400' 
                       : !isAuthenticated 
-                        ? 'text-gray-400' 
+                        ? 'text-yellow-400 hover:text-yellow-300' 
                         : 'text-pink-400'
                   }`}
                   style={{ 
                     textShadow: questStatus.liveShow 
                       ? '0 0 4px rgba(0,255,0,0.6)' 
                       : !isAuthenticated
-                        ? '0 0 4px rgba(100,100,100,0.6)'
+                        ? '0 0 4px rgba(255,255,0,0.6)'
                         : '0 0 4px rgba(252,84,175,0.6)' 
                   }}
+                  onClick={
+                    questStatus.liveShow 
+                      ? undefined 
+                      : showCheckIn 
+                        ? handleCheckInSubmit 
+                        : handleShowCheckInForm
+                  }
                 >
                   {questStatus.liveShow 
                     ? '✓ Complete' 
@@ -938,6 +972,12 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         isOpen={showJournal}
         onClose={() => setShowJournal(false)}
         onJournalCompleted={handleJournalComplete}
+      />
+      
+      {/* Login Modal */}
+      <LoginModal
+        open={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
       />
     </div>
   );
