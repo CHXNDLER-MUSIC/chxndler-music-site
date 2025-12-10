@@ -2,19 +2,20 @@
 
 import React, { useState, useEffect } from "react";
 import { sfx } from "@/lib/sfx";
-import { useBadges } from "@/hooks/useBadges";
-import { BadgeWithProgress, BadgeCategory as BadgeCategoryType } from "@/types/badges";
+import { useProfile } from "@/contexts/ProfileContext";
 import { getBadgeIcon } from "@/config/assets";
-import { formatRequirementText } from "@/lib/badgeProgress";
 
-type Badge = {
-  name: string;
+type BadgeWithProgress = {
+  id: string;
+  badge_name: string;
   description?: string;
+  icon_url?: string;
+  category?: string;
+  requirement?: string;
   progress?: number;
   current?: number;
   total?: number;
   unlocked?: boolean;
-  icon_url?: string;
 };
 
 type BadgeCategory = {
@@ -22,7 +23,7 @@ type BadgeCategory = {
   name: string;
   emoji: string;
   color: string;
-  badges: Badge[];
+  badges: BadgeWithProgress[];
 };
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -42,8 +43,71 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
   const [elementFilter, setElementFilter] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   
-  // Use Supabase data
-  const { badgeCategories, loading, error, refetch } = useBadges();
+  // Use ProfileContext data
+  const { allBadges, userBadges, badgesLoading: loading, badgesError: error } = useProfile();
+
+  // Create badge display objects with unlocked status (same logic as BadgesModal)
+  const badgesWithUnlocked = allBadges.map(badge => {
+    const userBadgeIds = new Set(userBadges.map(ub => ub.badge_id));
+    return {
+      ...badge,
+      badge_name: badge.badge_name,
+      unlocked: userBadgeIds.has(badge.id),
+      progress: 100, // Set default progress as 100 for unlocked badges
+    };
+  });
+
+  // Create badge categories with all badges (same categories as BadgesModal)
+  const badgeCategories = [
+    {
+      id: 'soul',
+      name: 'SOUL STAR',
+      emoji: '⭐',
+      color: '#FFD700',
+      badges: badgesWithUnlocked.filter(badge => badge.category === 'soul')
+    },
+    {
+      id: 'collector',
+      name: 'COLLECTOR',
+      emoji: '🏆',
+      color: '#38B6FF',
+      badges: badgesWithUnlocked.filter(badge => badge.category === 'collector')
+    },
+    {
+      id: 'elemental-streak',
+      name: 'ELEMENTAL STREAK',
+      emoji: '💠',
+      color: '#FC54AF',
+      badges: badgesWithUnlocked.filter(badge => badge.category === 'elemental-streak')
+    },
+    {
+      id: 'listening',
+      name: 'LISTENING',
+      emoji: '🎵',
+      color: '#9333EA',
+      badges: badgesWithUnlocked.filter(badge => badge.category === 'listening')
+    },
+    {
+      id: 'currency',
+      name: 'HEARTCOIN',
+      emoji: '💰',
+      color: '#F59E0B',
+      badges: badgesWithUnlocked.filter(badge => badge.category === 'currency')
+    },
+    {
+      id: 'community',
+      name: 'COMMUNITY',
+      emoji: '🌐',
+      color: '#10B981',
+      badges: badgesWithUnlocked.filter(badge => badge.category === 'community')
+    }
+  ];
+
+  // Add refetch function for compatibility
+  const refetch = () => {
+    // ProfileContext will automatically refetch when needed
+    window.location.reload();
+  };
 
   // Define handleClick function early to avoid initialization errors
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
@@ -191,14 +255,11 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
   };
 
   const isUnlocked = (badge: BadgeWithProgress) => {
-    return badge.unlocked || (badge.progress !== undefined && badge.progress >= 100);
+    return badge.unlocked === true;
   };
 
   const getElementFromBadge = (badge: BadgeWithProgress) => {
-    // First check for sub_category field
-    if (badge.sub_category) {
-      return badge.sub_category.toUpperCase();
-    }
+    // Note: sub_category field not available in current schema
     
     // Fallback: parse from badge name for elemental streak badges
     if (badge.category === 'elemental-streak' && badge.badge_name) {
@@ -785,8 +846,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                       REQUIREMENT
                     </div>
                     <p className="text-white/60 text-xs">
-                      {formatRequirementText(selectedBadge) || selectedBadge.requirement_text || 
-                       `${selectedBadge.total || selectedBadge.requirement_count || 1} ${(selectedBadge.requirement_type || 'achievement').replace(/_/g, ' ')}${(selectedBadge.total || selectedBadge.requirement_count || 1) === 1 ? '' : 's'}`}
+                      {selectedBadge.requirement || selectedBadge.description || 'Complete the required action to earn this badge'}
                     </p>
                   </div>
                   

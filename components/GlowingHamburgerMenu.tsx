@@ -70,6 +70,10 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
     sfx.play('hover', 0.5);
   };
 
+  const handleMenuItemHover = () => {
+    sfx.play('change', 0.5);
+  };
+
   const handleItemClick = (label: string) => {
     sfx.play('click', 0.7);
     
@@ -144,7 +148,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
       {isOpen && (
         <div
           data-tour-id="nav-panel"
-          className="absolute top-20 left-0 w-48 rounded-lg border border-[#FC54AF]/40 backdrop-blur-md transition-all duration-300 overflow-hidden"
+          className="absolute top-20 left-0 w-60 rounded-lg border border-[#FC54AF]/40 backdrop-blur-md transition-all duration-300 overflow-hidden"
           style={{
             background: "rgba(0, 0, 0, 0.8)",
             boxShadow: `
@@ -172,7 +176,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
           />
           
           {/* Menu Items */}
-          <div className="relative z-10 py-2">
+          <div className="relative z-10 py-3">
             {menuItems.map((item, index) => (
               <React.Fragment key={item.label}>
                 <button
@@ -184,7 +188,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                     }
                     handleItemClick(item.label);
                   }}
-                  onMouseEnter={handleHover}
+                  onMouseEnter={handleMenuItemHover}
                   data-tour-id={
                     item.label === "ABOUT" ? "menu-about" :
                     (item.label === "JOURNEY" || item.label === "MY JOURNEY") ? "menu-journey" :
@@ -194,7 +198,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                     item.label === "STORE" ? "menu-store" :
                     `menu-${item.label.toLowerCase().replace(/ /g, '-')}`
                   }
-                  className={`w-full px-6 py-2 text-left text-white font-semibold tracking-wide transition-all duration-200 hover:bg-cyan-500/10 hover:text-cyan-300 relative group ${
+                  className={`w-full px-8 py-3 text-left text-white font-semibold tracking-wide transition-all duration-200 hover:bg-cyan-500/10 hover:text-cyan-300 relative group ${
                     item.label === "JOURNAL" && hasPendingReflection 
                       ? 'bg-gradient-to-r from-pink-500/10 via-transparent to-pink-500/10' 
                       : ''

@@ -449,7 +449,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           width: '100%',
           maxHeight: '88vh',
           overflowY: 'auto',
-          padding: '20px 24px 12px 24px',
+          padding: '20px 24px 0px 24px',
           borderRadius: 18,
           background: 'rgba(0, 0, 0, 0.9)',
           border: hasPendingReflection && !showHistory

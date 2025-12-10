@@ -5,6 +5,7 @@ import { useProfile } from "@/contexts/ProfileContext";
 import BadgeCategoryButton from "@/components/BadgeCategoryButton";
 import PopoutShell from "@/components/PopoutShell";
 import { sfx } from "@/lib/sfx";
+import { getBadgeProgressForUser, formatRequirementText } from "@/lib/badgeProgress";
 
 // Local types for badge display
 interface BadgeDisplay {
@@ -14,7 +15,14 @@ interface BadgeDisplay {
   icon_url: string | null;
   category: string | null;
   requirement: string | null;
+  requirement_type?: string;
+  requirement_count?: number;
   unlocked: boolean;
+  progress?: {
+    current: number;
+    target: number;
+    percentage: number;
+  };
 }
 
 interface BadgeCategoryData {
@@ -37,12 +45,37 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedBadge, setSelectedBadge] = useState<BadgeDisplay | null>(null);
 
-  // Create badge display objects with unlocked status
+  // Create badge display objects with unlocked status and progress
   const badgesWithUnlocked: BadgeDisplay[] = allBadges.map(badge => {
     const userBadgeIds = new Set(userBadges.map(ub => ub.badge_id));
+    const isUnlocked = userBadgeIds.has(badge.id);
+    
+    // Calculate progress for this badge
+    let progress;
+    if (badge.requirement_type && badge.requirement_count && profile) {
+      const badgeProgress = getBadgeProgressForUser({
+        requirement_type: badge.requirement_type,
+        requirement_count: badge.requirement_count
+      } as any, profile);
+      
+      progress = {
+        current: badgeProgress.current,
+        target: badgeProgress.target,
+        percentage: badgeProgress.percentage
+      };
+    }
+    
     return {
-      ...badge,
-      unlocked: userBadgeIds.has(badge.id)
+      id: badge.id,
+      badge_name: badge.badge_name,
+      description: badge.description,
+      icon_url: badge.icon_url,
+      category: badge.category,
+      requirement: badge.requirement,
+      requirement_type: (badge as any).requirement_type,
+      requirement_count: (badge as any).requirement_count,
+      unlocked: isUnlocked,
+      progress
     };
   });
 
@@ -169,12 +202,44 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           </p>
         )}
         
+        {/* Progress display - Always show for badges with progress tracking */}
+        {selectedBadge.progress && (
+          <div className="text-center space-y-3 py-2">
+            <div className="text-white/50 text-xs uppercase tracking-wider font-bold">PROGRESS</div>
+            
+            {/* Progress bar */}
+            <div className="mx-auto max-w-xs">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-white/60 text-xs">{selectedBadge.progress.current}</span>
+                <span className="text-white/60 text-xs">{selectedBadge.progress.target}</span>
+              </div>
+              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-pink-500 to-purple-500 rounded-full transition-all duration-500"
+                  style={{ width: `${selectedBadge.progress.percentage}%` }}
+                />
+              </div>
+              <div className="text-center mt-1">
+                <span className="text-white text-sm font-medium">
+                  {selectedBadge.progress.percentage}% Complete
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Requirement text - Always show */}
-        {selectedBadge.requirement && (
+        {(selectedBadge.requirement || selectedBadge.requirement_type) && (
           <div className="text-center space-y-2 py-2">
             <div className="text-white/50 text-xs uppercase tracking-wider font-bold">REQUIREMENT</div>
             <div className="text-white text-sm font-medium bg-white/5 rounded px-3 py-2">
-              {selectedBadge.requirement}
+              {selectedBadge.requirement || (selectedBadge.requirement_type && selectedBadge.requirement_count ? 
+                formatRequirementText({
+                  requirement_type: selectedBadge.requirement_type,
+                  requirement_count: selectedBadge.requirement_count,
+                  requirement_text: selectedBadge.requirement
+                } as any) : 'Complete this achievement'
+              )}
             </div>
           </div>
         )}
@@ -264,10 +329,14 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                   )}
                 </button>
                 
-                {/* Completed checkmark for unlocked badges */}
-                {badge.unlocked && (
+                {/* Progress indicator for unlocked badges or progress ring */}
+                {badge.unlocked ? (
                   <div className="absolute -bottom-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                     ✓
+                  </div>
+                ) : badge.progress && badge.progress.percentage > 0 && (
+                  <div className="absolute -bottom-1 -right-1 bg-pink-500/80 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold">
+                    {badge.progress.percentage}%
                   </div>
                 )}
               </div>

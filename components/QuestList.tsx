@@ -170,7 +170,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   };
 
   const handleElementTap = async () => {
-    if (questStatus.elementOfDay || loading || !isAuthenticatedForTesting) return;
+    if (questStatus.elementOfDay || loading || !isAuthenticated) return;
     
     try { sfx.play('click', 0.8); } catch {}
     setLoading(true);
@@ -205,7 +205,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   };
 
   const handleJournalOpen = () => {
-    if (questStatus.journalEntry || loading || !isAuthenticatedForTesting) return;
+    if (questStatus.journalEntry || loading || !isAuthenticated) return;
     
     try { sfx.play('click', 0.8); } catch {}
     onCloseHeartCoinPopup?.();
@@ -234,7 +234,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   };
 
   const handleInviteFriend = async () => {
-    if (questStatus.inviteFriend || loading || !isAuthenticatedForTesting) return;
+    if (questStatus.inviteFriend || loading || !isAuthenticated) return;
     
     try { sfx.play('click', 0.8); } catch {}
     const message = "I thought of you. I think this world could feel like home for you too. https://chxndler.world/";
@@ -269,7 +269,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   };
 
   const handleConfirmInvite = async () => {
-    if (questStatus.inviteFriendConfirm || loading || !isAuthenticatedForTesting) return;
+    if (questStatus.inviteFriendConfirm || loading || !isAuthenticated) return;
     
     try { sfx.play('click', 0.8); } catch {}
     setLoading(true);
@@ -333,7 +333,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
 
   const handleCheckInSubmit = async () => {
     // This function should ONLY be called when confirming a secret phrase
-    if (questStatus.liveShow || loading || !isAuthenticatedForTesting || !secretPhrase.trim()) return;
+    if (questStatus.liveShow || loading || !isAuthenticated || !secretPhrase.trim()) return;
     
     console.log('handleCheckInSubmit called - this should only happen on CONFIRM button click');
     
@@ -544,7 +544,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
               {/* Today's Element Icon */}
               <button
                 onClick={handleElementTap}
-                disabled={questStatus.elementOfDay || loading || !isAuthenticatedForTesting}
+                disabled={questStatus.elementOfDay || loading || !isAuthenticated}
                 className={`w-12 h-12 border-2 rounded-full overflow-hidden transition-all relative ${
                   questStatus.elementOfDay 
                     ? 'border-green-500/60 cursor-not-allowed opacity-60' 

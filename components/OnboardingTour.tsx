@@ -153,10 +153,26 @@ export default function OnboardingTour({
   const spotlightRef = useRef<{ cx: number; cy: number; r: number } | null>(null);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const menuOpenTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Current step with safety check
   const currentStep = TOUR_STEPS[currentStepIndex];
   const isLastStep = currentStepIndex === TOUR_STEPS.length - 1;
+
+  // Initialize audio
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      audioRef.current = new Audio('/audio/heart-coin.mp3');
+    }
+  }, []);
+
+  // Play heart coin sound
+  const playHeartCoinSound = () => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(console.error);
+    }
+  };
 
   // DEBUG: Log step changes with special signal step handling
   useEffect(() => {
@@ -415,6 +431,8 @@ export default function OnboardingTour({
       cleanupCurrentStep();
       setCurrentStepIndex(prev => prev + 1);
     } else {
+      // Play heart coin sound when completing the tour
+      playHeartCoinSound();
       handleFinish(true);
     }
   };
@@ -473,7 +491,7 @@ export default function OnboardingTour({
     if (active && currentStep) {
       setupStep(currentStep);
     }
-  }, [currentStepIndex, active, onMenuToggle]);
+  }, [currentStepIndex, active]);
 
   // Handle window resize
   useEffect(() => {

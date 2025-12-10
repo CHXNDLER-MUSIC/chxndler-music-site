@@ -204,8 +204,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     const onTime = () => setState(s => ({ ...s, currentTime: a.currentTime }));
     const onDur = () => setState(s => ({ ...s, duration: a.duration || 0 }));
-    const onPlay = () => setState(s => ({ ...s, playing: true, isLoading: false }));
-    const onPause = () => setState(s => ({ ...s, playing: false }));
+    const onPlay = () => {
+      console.log('🎵 AudioProvider: onPlay event fired');
+      setState(s => ({ ...s, playing: true, isLoading: false }));
+    };
+    const onPause = () => {
+      console.log('🎵 AudioProvider: onPause event fired');
+      setState(s => ({ ...s, playing: false }));
+    };
     const onVol = () => setState(s => ({ ...s, volume: a.volume }));
     const onLoadStart = () => setState(s => ({ ...s, isLoading: true }));
     const onLoadEnd = () => setState(s => ({ ...s, isLoading: false }));
@@ -218,6 +224,34 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     a.addEventListener("volumechange", onVol);
     a.addEventListener("loadstart", onLoadStart);
     a.addEventListener("canplaythrough", onLoadEnd);
+    
+    // Debug: Track unexpected pauses
+    const onPauseDebug = () => {
+      console.log('🎵 Audio paused at time:', a.currentTime, 'src:', a.src);
+      if (a.currentTime > 0 && a.currentTime < 10) {
+        console.log('🎵 ⚠️  Audio paused early! This might be the 4-second stop issue');
+        console.log('🎵 Checking if pause was user-initiated or system-caused...');
+        
+        // Check if this was an unexpected pause (not user-initiated)
+        // If audio was stopped very early, it might be a race condition
+        if (a.currentTime < 5 && !a.ended) {
+          console.log('🎵 🚨 DETECTED: Potential race condition causing early audio stop');
+          console.log('🎵 Current playing state:', state.playing);
+          console.log('🎵 Audio src:', a.src);
+          console.log('🎵 Audio readyState:', a.readyState);
+        }
+      }
+    };
+    a.addEventListener("pause", onPauseDebug);
+    
+    // Debug: Track when audio ends unexpectedly
+    const onEndedDebug = () => {
+      console.log('🎵 Audio ended at time:', a.currentTime, 'duration:', a.duration);
+      if (a.currentTime < (a.duration - 1)) {
+        console.log('🎵 ⚠️  Audio ended early! This might be the 5-second stop issue');
+      }
+    };
+    a.addEventListener("ended", onEndedDebug);
     
     // Disable browser media session to prevent title overlays
     if ('mediaSession' in navigator) {
@@ -237,6 +271,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       a.removeEventListener("volumechange", onVol);
       a.removeEventListener("loadstart", onLoadStart);
       a.removeEventListener("canplaythrough", onLoadEnd);
+      a.removeEventListener("pause", onPauseDebug);
+      a.removeEventListener("ended", onEndedDebug);
       try { a.pause(); } catch {}
       try { document.body.removeChild(a); } catch {}
       audioRef.current = null;
@@ -245,8 +281,30 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   // Mark that the unified AudioProvider is active; used to disable legacy bridges
   useEffect(() => {
-    try { (window as any).__UNIFIED_AUDIO_ACTIVE = true; } catch {}
-    return () => { try { delete (window as any).__UNIFIED_AUDIO_ACTIVE; } catch {} };
+    try { 
+      (window as any).__UNIFIED_AUDIO_ACTIVE = true; 
+      // Also set the audio manager flag to disable other audio systems
+      (window as any).__AUDIO_MANAGER_ACTIVE = true;
+      
+      // Aggressively stop any existing audio to prevent conflicts
+      const existingAudio = document.querySelectorAll('audio');
+      existingAudio.forEach(audio => {
+        if (!audio.getAttribute('data-global-audio')) {
+          try { 
+            audio.pause(); 
+            audio.currentTime = 0; 
+            console.log('🎵 Stopped existing conflicting audio element');
+          } catch {} 
+        }
+      });
+    } catch {}
+    
+    return () => { 
+      try { 
+        delete (window as any).__UNIFIED_AUDIO_ACTIVE; 
+        delete (window as any).__AUDIO_MANAGER_ACTIVE; 
+      } catch {} 
+    };
   }, []);
 
   // This will be used for auto-playing after warp completion
@@ -324,7 +382,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const a = audioRef.current;
       if (!a) return;
       
+      console.log('🎵 togglePlayPause called - current playing state:', state.playing);
+      
       if (state.playing) {
+        console.log('🎵 Pausing audio');
+        // Update state immediately to provide instant UI feedback
+        setState(s => ({ ...s, playing: false }));
         try { a.pause(); } catch {}
       } else {
         // If no track loaded, load space music as default
@@ -340,8 +403,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           }));
         }
         
+        console.log('🎵 Starting audio playback');
+        // Update state immediately to provide instant UI feedback
+        setState(s => ({ ...s, playing: true }));
         void a.play().catch((err) => {
           console.error('Failed to toggle play audio:', err);
+          // Revert playing state if play fails
+          setState(s => ({ ...s, playing: false }));
         });
       }
     },
@@ -387,11 +455,19 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       // Update current track info immediately
       setState(s => ({ ...s, currentTrack: trackInfo, isLoading: true }));
 
-      // Stop any existing audio and wait a bit to prevent race conditions
-      stopAllAudioInternal();
+      // Only stop audio if we're switching to a different track
+      const currentAudio = audioRef.current;
+      const isSameTrack = currentAudio && currentAudio.src && currentAudio.src.includes(trackId);
       
-      // Small delay to ensure audio has fully stopped before starting new track
-      await new Promise(resolve => setTimeout(resolve, 100));
+      if (!isSameTrack) {
+        // Stop any existing audio only when switching tracks
+        stopAllAudioInternal();
+        
+        // Small delay to ensure audio has fully stopped before starting new track
+        await new Promise(resolve => setTimeout(resolve, 50));
+      } else {
+        console.log('🎵 Same track detected, not stopping current audio to prevent interruption');
+      }
 
       // Load and play the track
       const a = audioRef.current;
@@ -406,7 +482,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         navigator.mediaSession.setActionHandler('nexttrack', null);
       }
 
-      // Note: Removed race condition check that was causing tracks to stop playing
+      // Ensure we're still working with the same track (prevent race conditions)
+      if (state.currentTrack?.id !== trackId) {
+        console.log('🎵 Track changed during loading, aborting:', trackId);
+        return;
+      }
 
       a.src = trackSource;
       try { 
@@ -414,20 +494,28 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         
         // Wait for audio to be ready before playing
         await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            cleanup();
+            reject(new Error('Audio load timeout'));
+          }, 10000); // 10 second timeout
+          
           const onCanPlay = () => {
             cleanup();
             resolve();
           };
-          const onError = () => {
+          const onError = (e: Event) => {
             cleanup();
+            console.error('Audio load error:', e);
             reject(new Error('Audio load failed'));
           };
           const cleanup = () => {
+            clearTimeout(timeout);
             a.removeEventListener('canplay', onCanPlay);
             a.removeEventListener('error', onError);
           };
           
           if (a.readyState >= 3) { // Already loaded
+            clearTimeout(timeout);
             resolve();
           } else {
             a.addEventListener('canplay', onCanPlay, { once: true });
@@ -443,10 +531,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       setState(s => ({ ...s, src: trackSource, currentTime: 0, duration: 0 }));
 
       try {
+        // Set playing state immediately for instant UI feedback
+        setState(s => ({ ...s, playing: true, isLoading: false }));
         await a.play();
+        console.log('🎵 Successfully started playing:', trackId);
       } catch (err) {
         console.error('Failed to play track:', err);
-        setState(s => ({ ...s, isLoading: false }));
+        setState(s => ({ ...s, isLoading: false, playing: false }));
       }
     },
 
@@ -541,11 +632,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         const { playerStore } = await import('@/store/usePlayerStore');
         const { useProfile } = await import('@/contexts/ProfileContext');
         
-        const unsubscribe = playerStore.subscribe((state: any) => {
-          const currentMainId = state?.mainId;
+        const unsubscribe = playerStore.subscribe((storeState: any) => {
+          const currentMainId = storeState?.mainId;
+          const currentTrackId = state.currentTrack?.id; // Use local AudioProvider state, not store state
           
-          // Only sync if a different song is selected
-          if (currentMainId && currentMainId !== state.currentTrack?.id) {
+          // Only sync if a different song is selected AND we're not already playing it
+          // This prevents race conditions that cause audio to restart after a few seconds
+          if (currentMainId && currentMainId !== currentTrackId && !state.playing) {
             console.log('🎵 AudioProvider: Syncing with player store selection:', currentMainId);
             
             // Set current track info immediately for UI updates
@@ -554,9 +647,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
               setState(s => ({ ...s, currentTrack: trackInfo }));
             }
             
-            // Skip sound effects and directly play the track to prevent conflicts
-            console.log('🎵 AudioProvider: Playing track directly without sound effects:', currentMainId);
-            api.playTrack(currentMainId).catch(console.error);
+            // Only start playback if nothing is currently playing to avoid interruptions
+            if (!state.playing) {
+              console.log('🎵 AudioProvider: Playing track directly without sound effects:', currentMainId);
+              api.playTrack(currentMainId).catch(console.error);
+            } else {
+              console.log('🎵 AudioProvider: Track already playing, skipping auto-play to prevent interruption');
+            }
           }
         });
         
@@ -567,7 +664,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     };
     
     subscribeToPlayerStore();
-  }, [state.currentTrack?.id, api.playTrack]);
+  }, [state.currentTrack?.id, state.playing, api.playTrack]);
 
   const value = useMemo(() => ({ ...state, ...api }), [state, api]);
   return <AudioCtx.Provider value={value}>{children}</AudioCtx.Provider>;

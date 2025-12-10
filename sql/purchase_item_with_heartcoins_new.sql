@@ -37,6 +37,14 @@ BEGIN
         updated_at = NOW()
     WHERE id = p_user_id;
     
+    -- Check if user already owns this item
+    IF EXISTS (
+        SELECT 1 FROM user_cards 
+        WHERE user_id = p_user_id AND card_id = p_item_slug
+    ) THEN
+        RAISE EXCEPTION 'Card already owned by user';
+    END IF;
+    
     -- Record the HeartCoin transaction
     INSERT INTO heartcoin_transactions (
         id,
@@ -50,7 +58,28 @@ BEGIN
         p_user_id,
         -p_cost, -- Negative amount for spending
         'purchase',
-        'Purchased item: ' || p_item_slug,
+        'Purchased card: ' || p_item_slug,
+        NOW()
+    );
+    
+    -- Add card to user's collection
+    INSERT INTO user_cards (
+        id,
+        user_id,
+        card_id,
+        format_type,
+        acquisition_method,
+        acquired_at,
+        created_at,
+        updated_at
+    ) VALUES (
+        gen_random_uuid(),
+        p_user_id,
+        p_item_slug,
+        'digital', -- Assuming digital format for HeartCoin purchases
+        'heartcoin_purchase',
+        NOW(),
+        NOW(),
         NOW()
     );
     
@@ -60,7 +89,8 @@ BEGIN
         'previous_balance', current_balance,
         'new_balance', new_balance,
         'amount_spent', p_cost,
-        'item_slug', p_item_slug
+        'item_slug', p_item_slug,
+        'message', 'Successfully purchased and added to collection!'
     );
     
     RETURN result;

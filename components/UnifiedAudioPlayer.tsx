@@ -70,6 +70,7 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
   const isPlaying = audioManager.playing;
   const currentTrackInfo = audioManager.currentTrack;
   
+  
   // Use current time and duration from the audio provider
   const currentTime = audioManager.currentTime;
   const duration = audioManager.duration;

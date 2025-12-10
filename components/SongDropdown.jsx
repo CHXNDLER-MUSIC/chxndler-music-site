@@ -297,7 +297,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                   e.stopPropagation();
                   setActiveElement(null);
                   setHighlight(0);
-                  try { sfx.play('hover', 0.35); } catch {}
+                  try { sfx.play('change', 0.35); } catch {}
                   track('element_filter_selected', { element: 'ALL', active: true });
                 }}
                 className={`filter-pill inline-flex items-center gap-2 px-2.5 py-1 rounded-md border text-xs font-semibold tracking-wide transition-all duration-200 ${
@@ -342,13 +342,16 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                   <button
                     key={el}
                     type="button"
+                    onMouseEnter={() => {
+                      try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {}
+                    }}
                     onClick={(e) => {
                       e.stopPropagation();
                       // Toggle: if clicking the active element, deselect it, otherwise select it
                       const newActiveElement = active ? null : el;
                       setActiveElement(newActiveElement);
                       setHighlight(0);
-                      try { sfx.play('hover', 0.35); } catch {}
+                      try { sfx.play('change', 0.35); } catch {}
                       track('element_filter_selected', { element: (el || '').toUpperCase(), active: !active });
                     }}
                     className={`filter-pill inline-flex items-center gap-2 px-2.5 py-1 rounded-md border text-xs font-semibold tracking-wide transition-all duration-200 ${
@@ -384,7 +387,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                 onMouseEnter={() => { 
                   setHighlight(i); 
                   try { setTimeout(() => playerStore.getState().setHover(s.id), 0); } catch{}; 
-                  try { sfx.play('hover', 0.35); } catch {}; 
+                  try { sfx.play('change', 0.35); } catch {}; 
                   try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {};
                   // Track hover event
                   track("song_hovered", {
@@ -442,7 +445,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
             );
           })}
           <audio ref={hoverRef} preload="auto">
-            <source src="/audio/hover.mp3" type="audio/mpeg" />
+            <source src="/audio/change-channel.mp3" type="audio/mpeg" />
             <source src="/audio/song-select.mp3" type="audio/mpeg" />
           </audio>
         </div>,

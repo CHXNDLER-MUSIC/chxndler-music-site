@@ -2476,9 +2476,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                                 audio.play(); 
                                               } catch {}
                                               
-                                              // Show shipping form
+                                              // Set selected item for shipping form
+                                              setSelectedItem(physicalItem);
+                                              
+                                              // Transition to shipping step
                                               setShowPhysicalConfirm(false);
-                                              setShowPhysicalForm(true);
+                                              setShowPhysicalForm(false);
+                                              setStep('shipping');
                                             } catch (error) {
                                               console.error('Purchase failed:', error);
                                               // Don't show form if purchase fails

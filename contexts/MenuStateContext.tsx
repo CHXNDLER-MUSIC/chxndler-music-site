@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 
 interface MenuStateContextType {
   isMenuOpen: boolean;
@@ -13,13 +13,13 @@ const MenuStateContext = createContext<MenuStateContextType | null>(null);
 export function MenuStateProvider({ children }: { children: React.ReactNode }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const setMenuOpen = (open: boolean) => {
+  const setMenuOpen = useCallback((open: boolean) => {
     setIsMenuOpen(open);
-  };
+  }, []);
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
+  const toggleMenu = useCallback(() => {
+    setIsMenuOpen(prev => !prev);
+  }, []);
 
   const value: MenuStateContextType = {
     isMenuOpen,

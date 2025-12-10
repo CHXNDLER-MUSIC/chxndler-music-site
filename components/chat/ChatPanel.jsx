@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { chatService } from '@/lib/supabase/chat';
 import { useProfile } from '@/contexts/ProfileContext';
-import { useBadges } from '@/hooks/useBadges';
 // import { useLiveStatus } from '@/hooks/useLiveStatus'; // Removed since chat is always available
 import UserList from './UserList';
 import MessageList from './MessageList';
@@ -225,7 +224,7 @@ export default function ChatPanel({ isOpen, onClose }) {
   const [selectedUser, setSelectedUser] = useState(null);
   const [hasJoined, setHasJoined] = useState(false);
   const [typingUsers, setTypingUsers] = useState([]);
-  const [isUserPanelCollapsed, setIsUserPanelCollapsed] = useState(true); // Start collapsed by default
+  const [isUserPanelCollapsed, setIsUserPanelCollapsed] = useState(false); // Start expanded by default
   
   // Auto-collapse user panel on small screens when profile is selected
   useEffect(() => {
@@ -249,7 +248,7 @@ export default function ChatPanel({ isOpen, onClose }) {
   const [selectedCardPopup, setSelectedCardPopup] = useState(null);
   const [cardFlipped, setCardFlipped] = useState(false);
   const [activeTab, setActiveTab] = useState('chat'); // 'chat', 'voting', 'badges', 'cards'
-  const [isVotingPanelCollapsed, setIsVotingPanelCollapsed] = useState(false); // Start expanded by default
+  const [isVotingPanelCollapsed, setIsVotingPanelCollapsed] = useState(true); // Start collapsed by default
   const channelRef = useRef(null);
 
   // Initialize chat users when chat opens - either authenticated user or anonymous

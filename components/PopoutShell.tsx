@@ -24,7 +24,7 @@ export default function PopoutShell({ title, onClose, children, pageIndicator, c
       <div 
         className="fixed inset-0 z-[2147483647] flex items-start justify-center"
         style={{
-          paddingTop: '2vh'
+          paddingTop: '1vh'
         }}
       >
         <div
@@ -32,7 +32,7 @@ export default function PopoutShell({ title, onClose, children, pageIndicator, c
           style={{
             width: 'min(90vw, 650px)',
             height: 'auto',
-            maxHeight: compact ? '350px' : '95vh',
+            maxHeight: compact ? '320px' : '85vh',
             minHeight: compact ? '200px' : '400px',
             display: 'flex',
             flexDirection: 'column',
@@ -102,7 +102,7 @@ export default function PopoutShell({ title, onClose, children, pageIndicator, c
           </button>
           
           {/* Header - exact copy from Binder */}
-          <div className="flex justify-center items-center mb-3 flex-shrink-0" style={{ padding: '10px 14px 0px 14px' }}>
+          <div className="flex justify-center items-center flex-shrink-0" style={{ padding: '10px 14px 0px 14px' }}>
             <div 
               style={{ 
                 color: '#FF69B4', 
@@ -132,8 +132,9 @@ export default function PopoutShell({ title, onClose, children, pageIndicator, c
           {/* Page Number Display - exact copy from Binder, only show if provided */}
           {pageIndicator && (
             <div 
-              className="absolute bottom-1 left-1/2 transform -translate-x-1/2"
+              className="absolute left-1/2 transform -translate-x-1/2"
               style={{
+                bottom: '-2px',
                 color: '#FF69B4',
                 fontSize: '12px',
                 fontWeight: 'bold',
