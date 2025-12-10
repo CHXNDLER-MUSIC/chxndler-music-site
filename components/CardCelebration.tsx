@@ -52,12 +52,12 @@ export default function CardCelebration() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none" style={{ padding: '8vh 2rem' }}>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none" style={{ padding: '4vh 2rem' }}>
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/20 backdrop-blur-sm heartcoin-backdrop-fade" />
       
       {/* Celebration content */}
-      <div className="relative flex flex-col items-center heartcoin-pop w-full h-full max-w-sm justify-center">
+      <div className="relative flex flex-col items-center heartcoin-pop w-full max-w-sm justify-center" style={{ minHeight: 'fit-content', maxHeight: '92vh' }}>
         {/* Glowing background circle */}
         <div className="absolute w-40 h-40 bg-purple-500/30 rounded-full blur-xl" />
         
@@ -65,10 +65,12 @@ export default function CardCelebration() {
         <img 
           src={cardImage} 
           alt={cardName} 
-          className="w-40 h-52 relative z-10 rounded-lg object-cover"
+          className="w-40 relative z-10 rounded-lg object-cover"
           style={{
             animation: 'cardPulse 2s ease-in-out infinite',
-            maxHeight: '70vh'
+            maxHeight: '60vh',
+            height: 'auto',
+            aspectRatio: '5/7'
           }}
         />
         
