@@ -730,6 +730,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                             try { sfx.play('click', 0.8); } catch {}
                             setShowCheckIn(true);
                             setCheckInError("");
+                            setSecretPhrase("");
                           }
                   }
                   disabled={questStatus.liveShow || !isAuthenticated || (showCheckIn && (!secretPhrase.trim() || loading))}
