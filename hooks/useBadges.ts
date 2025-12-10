@@ -84,7 +84,7 @@ export function useBadges() {
     };
   };
 
-  // Get badges organized by categories
+  // Get badges organized by categories - filter to show only unlocked badges
   const getBadgeCategories = (): BadgeCategoryData[] => {
     const badgesWithProgress = badges.map(calculateBadgeProgress);
 
@@ -94,42 +94,42 @@ export function useBadges() {
         name: "SOUL",
         emoji: "⭐️",
         color: "#FFD700",
-        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.SOUL)
+        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.SOUL && badge.unlocked)
       },
       {
         id: BADGE_CATEGORIES.COLLECTOR,
         name: "COLLECTOR",
         emoji: "🏆",
         color: "#38B6FF",
-        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.COLLECTOR)
+        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.COLLECTOR && badge.unlocked)
       },
       {
         id: BADGE_CATEGORIES.COMMUNITY,
         name: "COMMUNITY",
         emoji: "🌐",
         color: "#10B981",
-        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.COMMUNITY)
+        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.COMMUNITY && badge.unlocked)
       },
       {
         id: BADGE_CATEGORIES.ELEMENTAL_STREAK,
         name: "ELEMENTAL STREAK",
         emoji: "💠",
         color: "#FC54AF",
-        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.ELEMENTAL_STREAK)
+        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.ELEMENTAL_STREAK && badge.unlocked)
       },
       {
         id: BADGE_CATEGORIES.CURRENCY,
         name: "CURRENCY",
         emoji: "💰",
         color: "#F59E0B",
-        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.CURRENCY)
+        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.CURRENCY && badge.unlocked)
       },
       {
         id: BADGE_CATEGORIES.LISTENING,
         name: "LISTENING",
         emoji: "🎵",
         color: "#9333EA",
-        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.LISTENING)
+        badges: badgesWithProgress.filter(badge => badge.category === BADGE_CATEGORIES.LISTENING && badge.unlocked)
       }
     ].filter(category => category.badges.length > 0); // Only show categories with badges
   };

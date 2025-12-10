@@ -13,7 +13,7 @@ import ProfileModal from './ProfileModal';
 import VotingPanel from './VotingPanel';
 
 // Debug flag to control console logging
-const DEBUG = process.env.NODE_ENV === 'development' && false;
+const DEBUG = process.env.NODE_ENV === 'development' && true;
 
 // Global alien name storage - persists across component remounts
 let globalAlienName = null;
@@ -54,7 +54,15 @@ const getGlobalAlienName = () => {
  */
 export default function ChatPanel({ isOpen, onClose }) {
   const { profile, user } = useProfile();
-  const { userBadges } = useBadges();
+  const { userBadges, loading: badgesLoading, error: badgesError } = useBadges();
+  
+  // Debug logging for badges
+  DEBUG && console.log('🔥 ChatPanel badges debug:', { 
+    userBadges, 
+    badgesLoading, 
+    badgesError,
+    userBadgesLength: userBadges?.length 
+  });
   
   // Real song collection data from BinderModal - exact match
   const songCollection = [
@@ -1285,7 +1293,28 @@ export default function ChatPanel({ isOpen, onClose }) {
                             // Determine which badges to show
                             const isViewingOwnProfile = selectedUser && user && selectedUser.id === user.id;
                             const isViewingAnonymous = selectedUser && selectedUser.id === 'anonymous';
-                            const badgesToShow = isViewingOwnProfile ? userBadges : []; // Only show badges for own profile
+                            
+                            // For testing: Create some dummy badges if no real badges exist
+                            const dummyBadges = userBadges && userBadges.length > 0 ? userBadges : [
+                              { id: '1', badge: { id: '1', badge_name: 'First Steps', category: 'soul', icon_url: null } },
+                              { id: '2', badge: { id: '2', badge_name: 'Music Lover', category: 'listening', icon_url: null } },
+                              { id: '3', badge: { id: '3', badge_name: 'Community Member', category: 'community', icon_url: null } },
+                              { id: '4', badge: { id: '4', badge_name: 'Collector', category: 'collector', icon_url: null } },
+                              { id: '5', badge: { id: '5', badge_name: 'Heart Keeper', category: 'currency', icon_url: null } },
+                              { id: '6', badge: { id: '6', badge_name: 'Streak Master', category: 'elemental-streak', icon_url: null } },
+                              { id: '7', badge: { id: '7', badge_name: 'Dedicated Fan', category: 'listening', icon_url: null } }
+                            ];
+                            
+                            const badgesToShow = isViewingOwnProfile ? dummyBadges : []; // Only show badges for own profile
+                            
+                            DEBUG && console.log('🔥 Badge display debug:', {
+                              isViewingOwnProfile,
+                              isViewingAnonymous,
+                              userBadges,
+                              badgesToShow,
+                              badgeStartIndex,
+                              totalBadges: badgesToShow?.length
+                            });
                             
                             return (
                               <>
@@ -1313,8 +1342,30 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   </div>
                                 )}
                                 
+                                {/* Show loading state */}
+                                {badgesLoading && isViewingOwnProfile && (
+                                  <div className="text-center py-4">
+                                    <div className="text-sm text-white/60 mb-2">Loading badges...</div>
+                                    <div className="flex justify-center space-x-2">
+                                      {Array.from({ length: 5 }, (_, index) => (
+                                        <div 
+                                          key={`loading-${index}`}
+                                          className="w-12 h-12 rounded-full flex items-center justify-center border-2 animate-pulse"
+                                          style={{
+                                            background: 'rgba(242, 239, 29, 0.1)',
+                                            border: '2px solid rgba(242, 239, 29, 0.3)',
+                                            boxShadow: '0 0 8px rgba(242, 239, 29, 0.2)'
+                                          }}
+                                        >
+                                          <span className="text-xs opacity-50">...</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                
                                 {/* Show badge navigation for own profile */}
-                                {isViewingOwnProfile && (
+                                {isViewingOwnProfile && !badgesLoading && (
                                   <div className="flex items-center space-x-2">
                                     {/* Left Arrow */}
                                     <button 
@@ -1457,7 +1508,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                         }
                                         setBadgeStartIndex(Math.min(Math.max(0, (badgesToShow?.length || 0) - 5), badgeStartIndex + 5));
                                       }}
-                                      disabled={!badgesToShow || badgesToShow.length === 0 || badgeStartIndex + 5 >= badgesToShow.length}
+                                      disabled={!badgesToShow || badgesToShow.length <= 5 || badgeStartIndex + 5 >= badgesToShow.length}
                                       className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
                                       style={{
                                         textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',

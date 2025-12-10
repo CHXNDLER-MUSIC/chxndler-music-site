@@ -54,10 +54,11 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     setSelectedCategory(categoryId);
   };
 
-  // Get actual badges for a category from the hook
+  // Get actual badges for a category from the hook - filter to show only unlocked badges
   const getBadgesForCategory = (categoryId: string): BadgeWithProgress[] => {
     const category = badgeCategories.find(cat => cat.id === categoryId);
-    return category?.badges || [];
+    const badges = category?.badges || [];
+    return badges.filter(badge => badge.unlocked);
   };
 
   // Badge detail modal
