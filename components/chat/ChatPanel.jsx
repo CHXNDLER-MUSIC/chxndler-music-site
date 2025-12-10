@@ -53,15 +53,14 @@ const getGlobalAlienName = () => {
  * Slides in from the left side when live streaming is active
  */
 export default function ChatPanel({ isOpen, onClose }) {
-  const { profile, user } = useProfile();
-  const { userBadges, loading: badgesLoading, error: badgesError } = useBadges();
+  const { profile, user, unlockedBadges, badgesLoading, badgesError } = useProfile();
   
   // Debug logging for badges
   DEBUG && console.log('🔥 ChatPanel badges debug:', { 
-    userBadges, 
+    unlockedBadges, 
     badgesLoading, 
     badgesError,
-    userBadgesLength: userBadges?.length 
+    unlockedBadgesLength: unlockedBadges?.length 
   });
   
   // Real song collection data from BinderModal - exact match
@@ -1294,23 +1293,13 @@ export default function ChatPanel({ isOpen, onClose }) {
                             const isViewingOwnProfile = selectedUser && user && selectedUser.id === user.id;
                             const isViewingAnonymous = selectedUser && selectedUser.id === 'anonymous';
                             
-                            // For testing: Create some dummy badges if no real badges exist
-                            const dummyBadges = userBadges && userBadges.length > 0 ? userBadges : [
-                              { id: '1', badge: { id: '1', badge_name: 'First Steps', category: 'soul', icon_url: null } },
-                              { id: '2', badge: { id: '2', badge_name: 'Music Lover', category: 'listening', icon_url: null } },
-                              { id: '3', badge: { id: '3', badge_name: 'Community Member', category: 'community', icon_url: null } },
-                              { id: '4', badge: { id: '4', badge_name: 'Collector', category: 'collector', icon_url: null } },
-                              { id: '5', badge: { id: '5', badge_name: 'Heart Keeper', category: 'currency', icon_url: null } },
-                              { id: '6', badge: { id: '6', badge_name: 'Streak Master', category: 'elemental-streak', icon_url: null } },
-                              { id: '7', badge: { id: '7', badge_name: 'Dedicated Fan', category: 'listening', icon_url: null } }
-                            ];
-                            
-                            const badgesToShow = isViewingOwnProfile ? dummyBadges : []; // Only show badges for own profile
+                            // Use actual unlocked badges from ProfileContext
+                            const badgesToShow = isViewingOwnProfile ? unlockedBadges : []; // Only show badges for own profile
                             
                             DEBUG && console.log('🔥 Badge display debug:', {
                               isViewingOwnProfile,
                               isViewingAnonymous,
-                              userBadges,
+                              unlockedBadges,
                               badgesToShow,
                               badgeStartIndex,
                               totalBadges: badgesToShow?.length
@@ -1401,8 +1390,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                     <div className="flex-1 grid grid-cols-5 gap-2">
                                       {Array.from({ length: 5 }, (_, index) => {
                                         const badgeIndex = badgeStartIndex + index;
-                                        const userBadge = badgesToShow?.[badgeIndex];
-                                        const badge = userBadge?.badge;
+                                        const badge = badgesToShow?.[badgeIndex];
                                 
                                 if (badge) {
                                   // Get badge category color for display

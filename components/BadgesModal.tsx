@@ -2,12 +2,28 @@
 
 import { useState, useEffect } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
-import { useBadges } from "@/hooks/useBadges";
 import BadgeCategoryButton from "@/components/BadgeCategoryButton";
 import PopoutShell from "@/components/PopoutShell";
-import { BadgeWithProgress, BadgeCategoryData } from "@/types/badges";
-import { formatRequirementText } from "@/lib/badgeProgress";
 import { sfx } from "@/lib/sfx";
+
+// Local types for badge display
+interface BadgeDisplay {
+  id: string;
+  badge_name: string;
+  description: string | null;
+  icon_url: string | null;
+  category: string | null;
+  requirement: string | null;
+  unlocked: boolean;
+}
+
+interface BadgeCategoryData {
+  id: string;
+  name: string;
+  displayName: string;
+  badges: BadgeDisplay[];
+  image: string;
+}
 
 type Props = {
   open: boolean;
@@ -16,37 +32,68 @@ type Props = {
 };
 
 export default function BadgesModal({ open, onClose, embedded = false }: Props) {
-  const { profile } = useProfile();
-  const { badgeCategories, loading, error, badges } = useBadges();
+  const { profile, allBadges, userBadges, badgesLoading, badgesError } = useProfile();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedBadge, setSelectedBadge] = useState<BadgeWithProgress | null>(null);
+  const [selectedBadge, setSelectedBadge] = useState<BadgeDisplay | null>(null);
 
-  // Map badge categories to display info with images
-  const getCategoryDisplayInfo = (category: BadgeCategoryData) => {
-    const imageMap: { [key: string]: string } = {
-      'soul': '/badges/soul star.webp',
-      'collector': '/badges/collector.webp', 
-      'elemental-streak': '/badges/elemental streak.webp',
-      'listening': '/badges/listening.webp',
-      'currency': '/badges/currency.webp',
-      'community': '/badges/community.webp'
-    };
-
-    const nameMap: { [key: string]: string } = {
-      'soul': 'SOUL STAR',
-      'collector': 'COLLECTOR',
-      'elemental-streak': 'ELEMENTAL STREAK', 
-      'listening': 'LISTENING',
-      'currency': 'HEARTCOIN',
-      'community': 'COMMUNITY'
-    };
-
+  // Create badge display objects with unlocked status
+  const badgesWithUnlocked: BadgeDisplay[] = allBadges.map(badge => {
+    const userBadgeIds = new Set(userBadges.map(ub => ub.badge_id));
     return {
-      ...category,
-      image: imageMap[category.id] || '/badges/collector.webp',
-      displayName: nameMap[category.id] || category.name
+      ...badge,
+      unlocked: userBadgeIds.has(badge.id)
     };
+  });
+
+  // Get badge categories organized with all badges (locked and unlocked)
+  const getBadgeCategories = (): BadgeCategoryData[] => {
+    return [
+      {
+        id: 'soul',
+        name: 'SOUL STAR',
+        displayName: 'SOUL STAR',
+        badges: badgesWithUnlocked.filter(badge => badge.category === 'soul'),
+        image: '/badges/soul star.webp'
+      },
+      {
+        id: 'collector',
+        name: 'COLLECTOR',
+        displayName: 'COLLECTOR',
+        badges: badgesWithUnlocked.filter(badge => badge.category === 'collector'),
+        image: '/badges/collector.webp'
+      },
+      {
+        id: 'elemental-streak',
+        name: 'ELEMENTAL STREAK',
+        displayName: 'ELEMENTAL STREAK',
+        badges: badgesWithUnlocked.filter(badge => badge.category === 'elemental-streak'),
+        image: '/badges/elemental streak.webp'
+      },
+      {
+        id: 'listening',
+        name: 'LISTENING',
+        displayName: 'LISTENING',
+        badges: badgesWithUnlocked.filter(badge => badge.category === 'listening'),
+        image: '/badges/listening.webp'
+      },
+      {
+        id: 'currency',
+        name: 'HEARTCOIN',
+        displayName: 'HEARTCOIN',
+        badges: badgesWithUnlocked.filter(badge => badge.category === 'currency'),
+        image: '/badges/currency.webp'
+      },
+      {
+        id: 'community',
+        name: 'COMMUNITY',
+        displayName: 'COMMUNITY',
+        badges: badgesWithUnlocked.filter(badge => badge.category === 'community'),
+        image: '/badges/community.webp'
+      }
+    ].filter(category => category.badges.length > 0); // Only show categories with badges
   };
+
+  const badgeCategories = getBadgeCategories();
 
   // Handle category click with sound
   const handleCategoryClick = (categoryId: string) => {
@@ -54,11 +101,10 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     setSelectedCategory(categoryId);
   };
 
-  // Get actual badges for a category from the hook - show ALL badges (unlocked and locked)
-  const getBadgesForCategory = (categoryId: string): BadgeWithProgress[] => {
+  // Get actual badges for a category - show ALL badges (unlocked and locked)
+  const getBadgesForCategory = (categoryId: string): BadgeDisplay[] => {
     const category = badgeCategories.find(cat => cat.id === categoryId);
-    const badges = category?.badges || [];
-    return badges; // Show all badges, not just unlocked ones
+    return category?.badges || [];
   };
 
   // Badge detail modal
@@ -119,60 +165,11 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         )}
         
         {/* Requirement text - Always show */}
-        <div className="text-center space-y-2 py-2">
-          <div className="text-white/50 text-xs uppercase tracking-wider font-bold">REQUIREMENT</div>
-          <div className="text-white text-sm font-medium bg-white/5 rounded px-3 py-2">
-            {(() => {
-              console.log('Badge data:', selectedBadge); // Debug log
-              
-              // Try formatRequirementText first
-              try {
-                const formattedText = formatRequirementText(selectedBadge);
-                console.log('Formatted text:', formattedText); // Debug log
-                if (formattedText) return formattedText;
-              } catch (e) {
-                console.error('formatRequirementText error:', e);
-              }
-              
-              // Try custom requirement_text
-              if (selectedBadge.requirement_text) {
-                return selectedBadge.requirement_text;
-              }
-              
-              // Build from available data
-              const count = selectedBadge.total || selectedBadge.requirement_count || 3;
-              const type = selectedBadge.requirement_type || 'reflections';
-              const displayText = `${count} ${type.replace(/_/g, ' ')}${count === 1 ? '' : 's'}`;
-              console.log('Fallback text:', displayText); // Debug log
-              return displayText;
-            })()}
-          </div>
-        </div>
-        
-        {/* Progress section */}
-        {selectedBadge.progress !== undefined && (
-          <div className="space-y-3">
-            {/* Progress bar */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-white/70">Progress</span>
-                <span className="text-white/70">{selectedBadge.current || 0} / {selectedBadge.total || 0}</span>
-              </div>
-              <div className="w-full bg-white/20 rounded-full h-2">
-                <div 
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    selectedBadge.unlocked ? 'bg-green-500' : 'bg-blue-500'
-                  }`}
-                  style={{ width: `${selectedBadge.progress || 0}%` }}
-                />
-              </div>
-              <div className="text-center">
-                <span className={`text-sm font-bold ${
-                  selectedBadge.unlocked ? 'text-green-400' : 'text-blue-400'
-                }`}>
-                  {selectedBadge.progress || 0}% Complete
-                </span>
-              </div>
+        {selectedBadge.requirement && (
+          <div className="text-center space-y-2 py-2">
+            <div className="text-white/50 text-xs uppercase tracking-wider font-bold">REQUIREMENT</div>
+            <div className="text-white text-sm font-medium bg-white/5 rounded px-3 py-2">
+              {selectedBadge.requirement}
             </div>
           </div>
         )}
@@ -209,8 +206,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   // Category view
   if (selectedCategory) {
     const categoryBadges = getBadgesForCategory(selectedCategory);
-    const originalCategory = badgeCategories.find(cat => cat.id === selectedCategory);
-    const categoryInfo = originalCategory ? getCategoryDisplayInfo(originalCategory) : null;
+    const categoryInfo = badgeCategories.find(cat => cat.id === selectedCategory);
     
     const categoryContent = (
       <div className="relative space-y-2">
@@ -236,36 +232,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                   }}
                   onMouseEnter={() => sfx.play('hover')}
                   className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/60 border border-white/20 hover:border-white/40 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
-                  title={badge.description ? `${badge.badge_name}: ${badge.description} (${badge.current || 0}/${badge.total || 0})` : badge.badge_name}
+                  title={badge.description ? `${badge.badge_name}: ${badge.description}` : badge.badge_name}
                 >
-                  {/* Progress ring for badges with progress */}
-                  {badge.progress !== undefined && badge.progress < 100 && (
-                    <div className="absolute inset-0">
-                      <svg className="w-10 h-10 sm:w-12 sm:h-12 transform -rotate-90" viewBox="0 0 48 48">
-                        <circle
-                          cx="24"
-                          cy="24"
-                          r="22"
-                          fill="none"
-                          stroke="rgba(255,255,255,0.1)"
-                          strokeWidth="2"
-                        />
-                        <circle
-                          cx="24"
-                          cy="24"
-                          r="22"
-                          fill="none"
-                          stroke={badge.unlocked ? "#10B981" : "#3B82F6"}
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeDasharray={`${2 * Math.PI * 22}`}
-                          strokeDashoffset={`${2 * Math.PI * 22 * (1 - (badge.progress || 0) / 100)}`}
-                          className="transition-all duration-300"
-                        />
-                      </svg>
-                    </div>
-                  )}
-                  
                   {/* Dark circular background */}
                   <div className="absolute inset-1 bg-gradient-to-br from-gray-800/80 to-black/90 rounded-full" />
                   
@@ -291,14 +259,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                   )}
                 </button>
                 
-                {/* Progress percentage */}
-                {badge.progress !== undefined && badge.progress > 0 && badge.progress < 100 && (
-                  <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                    {badge.progress}%
-                  </div>
-                )}
-                
-                {/* Completed checkmark */}
+                {/* Completed checkmark for unlocked badges */}
                 {badge.unlocked && (
                   <div className="absolute -bottom-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                     ✓
@@ -399,16 +360,16 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         </div>
       )}
 
-      {loading && (
+      {badgesLoading && (
         <div className="text-center text-white/60">
           Loading badges...
         </div>
       )}
 
-      {error && !loading && (
+      {badgesError && !badgesLoading && (
         <div className="text-center text-red-400 text-sm p-4 bg-red-900/20 rounded border border-red-400/30">
           <div className="font-bold mb-2">Error loading badges:</div>
-          <div>{error}</div>
+          <div>{badgesError}</div>
           <button 
             onClick={() => window.location.reload()} 
             className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
@@ -418,7 +379,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         </div>
       )}
 
-      {!loading && !error && (
+      {!badgesLoading && !badgesError && (
         <div 
           className="relative backdrop-blur-sm"
           style={{
@@ -444,7 +405,6 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
               {/* Top row - first 3 categories */}
               <div className="grid grid-cols-3 gap-4">
                 {badgeCategories.slice(0, 3).map((category) => {
-                  const displayInfo = getCategoryDisplayInfo(category);
                   return (
                     <div key={category.id} className="flex flex-col items-center space-y-0.5">
                       <button
@@ -456,14 +416,14 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                         }}
                       >
                         <img
-                          src={displayInfo.image}
-                          alt={displayInfo.displayName}
+                          src={category.image}
+                          alt={category.displayName}
                           className="w-12 h-12 object-cover rounded-full group-hover:scale-110 transition-transform"
                           draggable={false}
                         />
                       </button>
                       <span className="text-white text-xs font-medium text-center max-w-20">
-                        {displayInfo.displayName}
+                        {category.displayName}
                       </span>
                     </div>
                   );
@@ -473,7 +433,6 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
               {/* Bottom row - last 3 categories */}
               <div className="grid grid-cols-3 gap-4">
                 {badgeCategories.slice(3, 6).map((category) => {
-                  const displayInfo = getCategoryDisplayInfo(category);
                   return (
                     <div key={category.id} className="flex flex-col items-center space-y-0.5">
                       <button
@@ -485,14 +444,14 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                         }}
                       >
                         <img
-                          src={displayInfo.image}
-                          alt={displayInfo.displayName}
+                          src={category.image}
+                          alt={category.displayName}
                           className="w-12 h-12 object-cover rounded-full group-hover:scale-110 transition-transform"
                           draggable={false}
                         />
                       </button>
                       <span className="text-white text-xs font-medium text-center max-w-20">
-                        {displayInfo.displayName}
+                        {category.displayName}
                       </span>
                     </div>
                   );

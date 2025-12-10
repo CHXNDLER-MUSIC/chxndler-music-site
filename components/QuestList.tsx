@@ -272,19 +272,33 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Bonus quest completion successful:', data);
-        setQuestStatus(prev => ({ ...prev, inviteFriendConfirm: true }));
-        // Save to localStorage to persist across sessions for today
-        const today = new Date().toDateString();
-        localStorage.setItem(`quest_invite_confirm_${today}`, 'true');
-        showCelebration("💕 Love shared! You've planted a seed of connection. +1 HeartCoin earned.");
-        // Trigger HeartCoin celebration animation
-        triggerHeartCoinCelebration(1);
+        console.log('🎯 Bonus quest completion result:', data);
         
-        // Refresh profile to update heartcoin balance if the response indicates we should
-        if (data.shouldRefreshProfile) {
-          console.debug('🔄 Refreshing profile to update heartcoin balance after bonus quest completion');
-          await refreshProfile();
+        // Handle both successful completion and already completed cases
+        if (data.status === 'completed_today' || data.status === 'already_completed_today') {
+          setQuestStatus(prev => ({ ...prev, inviteFriendConfirm: true }));
+          // Save to localStorage to persist across sessions for today
+          const today = new Date().toDateString();
+          localStorage.setItem(`quest_invite_confirm_${today}`, 'true');
+          
+          if (data.status === 'completed_today') {
+            showCelebration("💕 Love shared! You've planted a seed of connection. +1 HeartCoin earned.");
+            // Trigger HeartCoin celebration animation
+            triggerHeartCoinCelebration(1);
+          } else {
+            // Already completed today - soft success
+            showCelebration("✨ Quest already completed today! Check back tomorrow for new opportunities.");
+          }
+          
+          // Refresh profile to update heartcoin balance if needed
+          if (data.shouldRefreshProfile || data.status === 'completed_today') {
+            console.debug('🔄 Refreshing profile to update heartcoin balance after bonus quest completion');
+            await refreshProfile();
+          }
+        } else {
+          // Unexpected response format
+          console.error('Unexpected response format:', data);
+          showCelebration("❌ Unexpected response. Please try again.");
         }
       } else {
         const errorData = await response.json();

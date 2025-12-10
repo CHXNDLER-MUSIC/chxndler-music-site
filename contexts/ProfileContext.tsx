@@ -131,6 +131,22 @@ interface DailyPrompts {
   };
 }
 
+// Badge-related types
+interface BadgeDefinition {
+  id: string;
+  badge_name: string;
+  description: string | null;
+  icon_url: string | null;
+  category: string | null;
+  requirement: string | null;
+}
+
+interface UserBadgeRecord {
+  id: string;
+  badge_id: string;
+  earned_at: string;
+}
+
 interface ProfileContextType {
   profile: Profile | null;
   user: any | null;
@@ -149,6 +165,12 @@ interface ProfileContextType {
   getDailyPrompts: () => Promise<DailyPrompts | null>;
   isJournalOpen: boolean;
   setIsJournalOpen: (open: boolean) => void;
+  // Badge functionality
+  allBadges: BadgeDefinition[];
+  userBadges: UserBadgeRecord[];
+  unlockedBadges: BadgeDefinition[];
+  badgesLoading: boolean;
+  badgesError: string | null;
 }
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
@@ -160,8 +182,71 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [isJournalOpen, setIsJournalOpen] = useState(false);
   const [previousHeartcoinBalance, setPreviousHeartcoinBalance] = useState<number | null>(null);
+  // Badge state
+  const [allBadges, setAllBadges] = useState<BadgeDefinition[]>([]);
+  const [userBadges, setUserBadges] = useState<UserBadgeRecord[]>([]);
+  const [badgesLoading, setBadgesLoading] = useState(true);
+  const [badgesError, setBadgesError] = useState<string | null>(null);
 
   // Wrapper for setProfile that detects heartcoin balance increases
+  // Function to fetch all badges from the database
+  const fetchAllBadges = useCallback(async () => {
+    try {
+      setBadgesLoading(true);
+      setBadgesError(null);
+
+      const { data, error } = await supabaseBrowser
+        .from('badges')
+        .select('*')
+        .order('category', { ascending: true })
+        .order('badge_name', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching badges:', error);
+        setBadgesError(`Failed to load badges: ${error.message}`);
+        return;
+      }
+
+      setAllBadges(data || []);
+    } catch (err) {
+      console.error('Error in fetchAllBadges:', err);
+      setBadgesError(`Failed to fetch badges: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  }, []);
+
+  // Function to fetch user's earned badges
+  const fetchUserBadges = useCallback(async (userId: string) => {
+    try {
+      setBadgesError(null);
+
+      const { data, error } = await supabaseBrowser
+        .from('user_badges')
+        .select('id, badge_id, earned_at')
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Error fetching user badges:', error);
+        setBadgesError(`Failed to load user badges: ${error.message}`);
+        return;
+      }
+
+      setUserBadges(data || []);
+    } catch (err) {
+      console.error('Error in fetchUserBadges:', err);
+      setBadgesError(`Failed to fetch user badges: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  }, []);
+
+  // Calculate unlocked badges based on allBadges and userBadges
+  const unlockedBadges = useMemo(() => {
+    if (!allBadges.length || !userBadges.length) {
+      return [];
+    }
+
+    const userBadgeIds = new Set(userBadges.map(ub => ub.badge_id));
+    return allBadges.filter(badge => userBadgeIds.has(badge.id));
+  }, [allBadges, userBadges]);
+
   const setProfileWithCelebration = useCallback((newProfile: Profile | null) => {
     if (newProfile && previousHeartcoinBalance !== null && newProfile.heartcoin_balance !== null) {
       const currentBalance = newProfile.heartcoin_balance;
@@ -537,6 +622,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         }
         await fetchProfile();
         await loadJournalEntries(session.user.id);
+        await fetchAllBadges();
+        await fetchUserBadges(session.user.id);
+        setBadgesLoading(false);
       } else {
         if (typeof window !== 'undefined') {
           console.log("DEBUG ProfileContext no user session, clearing profile", {
@@ -547,6 +635,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         setProfile(null);
         setUser(null);
         setJournalEntries([]);
+        setAllBadges([]);
+        setUserBadges([]);
+        setBadgesLoading(false);
         setLoading(false);
       }
     });
@@ -564,6 +655,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
     // Initial fetch on mount
     fetchProfile();
+    // Always fetch badges since they're public data
+    fetchAllBadges();
 
     return () => {
       subscription.unsubscribe();
@@ -827,6 +920,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     getDailyPrompts,
     isJournalOpen,
     setIsJournalOpen,
+    // Badge data
+    allBadges,
+    userBadges,
+    unlockedBadges,
+    badgesLoading,
+    badgesError,
   }), [
     profile,
     user,
@@ -844,6 +943,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     getDailyPrompts,
     isJournalOpen,
     setIsJournalOpen,
+    allBadges,
+    userBadges,
+    unlockedBadges,
+    badgesLoading,
+    badgesError,
   ]);
 
   return (

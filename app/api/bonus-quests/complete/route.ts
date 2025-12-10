@@ -37,12 +37,8 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!questToComplete.can_complete) {
-      return NextResponse.json(
-        { error: 'Quest cannot be completed' },
-        { status: 400 }
-      );
-    }
+    // Allow the quest to be attempted even if can_complete is false
+    // The completeBonusQuest function will handle daily limits gracefully
 
     // Complete the quest using the bonus quest system
     const result = await completeBonusQuestLegacy(userId, questToComplete);
@@ -59,6 +55,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
+      status: result.message === 'Quest already completed today!' ? 'already_completed_today' : 'completed_today',
       message: result.message,
       rewards: result.rewards,
       shouldRefreshProfile: true

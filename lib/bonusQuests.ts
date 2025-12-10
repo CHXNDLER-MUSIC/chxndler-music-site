@@ -175,7 +175,7 @@ export async function completeBonusQuest(params: {
     if (insertError) {
       // Check if this is the "already completed today" error
       if (insertError.message && insertError.message.includes('Quest already completed today')) {
-        console.log('Quest already completed today:', { userId, bonusQuestId });
+        console.log(`📋 Quest ${quest.quest_key} already completed today for user ${userId}`);
         return { status: 'already_completed_today' };
       }
       
@@ -226,12 +226,7 @@ export async function completeBonusQuest(params: {
       );
     }
 
-    console.log('Successfully completed quest:', {
-      userId,
-      questId: quest.id,
-      questKey: quest.quest_key,
-      heartCoinsAwarded: quest.reward_heartcoins
-    });
+    console.log(`✅ Quest ${quest.quest_key} completed successfully! +${quest.reward_heartcoins} HeartCoins awarded to user ${userId}`);
 
     return { status: 'completed_today', data: insertData };
 

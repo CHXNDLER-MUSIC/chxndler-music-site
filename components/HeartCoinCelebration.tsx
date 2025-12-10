@@ -67,7 +67,7 @@ export default function HeartCoinCelebration() {
         />
         
         {/* Text */}
-        <p className="text-white font-bold uppercase text-xl mt-4 relative z-10">
+        <p className="text-white font-bold text-xl mt-4 relative z-10">
           +{amount} HeartCoin{amount !== 1 ? 's' : ''}
         </p>
       </div>
