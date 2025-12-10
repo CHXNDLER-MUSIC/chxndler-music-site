@@ -233,6 +233,7 @@ const HUDPanel = React.memo(function HUDPanel({
   const [elementPopoverPos, setElementPopoverPos] = useState(null);
   const elementScrollRef = useRef(null);
   const [selectedElementData, setSelectedElementData] = useState(null);
+  const [clickedElements, setClickedElements] = useState(new Set());
   
   // Saved profile state for HUD display
   const [savedProfileName, setSavedProfileName] = useState('');
@@ -6446,13 +6447,19 @@ const HUDPanel = React.memo(function HUDPanel({
                             emoji: '🩷',
                             description: 'Heart = love and connection'
                           }
-                        ].map((element) => (
+                        ].map((element) => {
+                          const isClicked = clickedElements.has(element.id);
+                          return (
                           <button
                             key={element.id}
                             onClick={() => {
                               setSelectedElement(element.id);
                               setSelectedElementData(element);
-                              try { sfx.play('hover', 0.4); } catch {}
+                              setClickedElements(prev => new Set(prev).add(element.id));
+                              try { sfx.play('flip', 0.4); } catch {}
+                            }}
+                            onMouseEnter={() => {
+                              try { sfx.play('change-channel', 0.3); } catch {}
                             }}
                             style={{
                               position: 'relative',
@@ -6493,50 +6500,44 @@ const HUDPanel = React.memo(function HUDPanel({
                               flexDirection: 'column',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              gap: 2,
                               color: selectedElement === element.id ? element.color : '#FFFFFF',
                               textShadow: selectedElement === element.id ? 
                                 `0 0 10px ${element.color}` : 
                                 `0 0 5px ${element.color}60`
                             }}>
-                              <img 
-                                src={element.icon} 
-                                alt={element.name}
-                                style={{ 
-                                  width: 28, 
-                                  height: 28, 
-                                  filter: selectedElement === element.id ? 
-                                    `drop-shadow(0 0 8px ${element.color}) brightness(1.2)` : 
-                                    `drop-shadow(0 0 4px ${element.color}60)`
-                                }}
-                                onError={(e) => {
-                                  // Fallback to emoji if PNG fails to load
-                                  e.target.style.display = 'none';
-                                  e.target.nextSibling.style.display = 'block';
-                                }}
-                              />
-                              <span 
-                                style={{ 
-                                  fontSize: 20, 
-                                  display: 'none',
-                                  filter: selectedElement === element.id ? 
-                                    `drop-shadow(0 0 8px ${element.color})` : 
-                                    `drop-shadow(0 0 4px ${element.color}60)`
-                                }}
-                              >
-                                {element.emoji}
-                              </span>
-                              <span style={{ 
-                                fontSize: '7px', 
-                                textAlign: 'center',
-                                fontWeight: '900',
-                                letterSpacing: '0.5px'
-                              }}>
-                                {element.name}
-                              </span>
+                              {!isClicked ? (
+                                // Show only icon initially
+                                <img 
+                                  src={element.icon} 
+                                  alt={element.name}
+                                  style={{ 
+                                    width: 32, 
+                                    height: 32, 
+                                    filter: selectedElement === element.id ? 
+                                      `drop-shadow(0 0 8px ${element.color}) brightness(1.2)` : 
+                                      `drop-shadow(0 0 4px ${element.color}60)`
+                                  }}
+                                  onError={(e) => {
+                                    // Fallback to emoji if PNG fails to load
+                                    e.target.outerHTML = `<span style="font-size: 24px; filter: ${selectedElement === element.id ? `drop-shadow(0 0 8px ${element.color})` : `drop-shadow(0 0 4px ${element.color}60)`}">${element.emoji}</span>`;
+                                  }}
+                                />
+                              ) : (
+                                // Show "ELEMENT awakens." text after click
+                                <div style={{
+                                  fontSize: '8px',
+                                  textAlign: 'center',
+                                  fontWeight: '900',
+                                  letterSpacing: '0.5px',
+                                  lineHeight: 1.2
+                                }}>
+                                  {element.name}<br/>awakens.
+                                </div>
+                              )}
                             </div>
                           </button>
-                        ))}
+                        );
+                        })}
                       </div>
 
                       {/* Element description display */}

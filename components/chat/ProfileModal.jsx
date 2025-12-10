@@ -475,49 +475,39 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
               }}
             >
               <div 
-                className="relative w-40 mx-4"
+                className="relative w-24 mx-4"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div
-                  className="relative w-full h-60 cursor-pointer"
+                  className="relative w-full h-36 cursor-pointer"
                   style={{
                     perspective: '1000px'
                   }}
                   onClick={() => setIsEnlargedCardFlipped(!isEnlargedCardFlipped)}
                 >
-                  <div
-                    className="relative w-full h-full transition-transform duration-700"
-                    style={{
-                      transformStyle: 'preserve-3d',
-                      transform: isEnlargedCardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
-                    }}
-                  >
-                    {/* Front of card */}
-                    <img
-                      src={enlargedCard.image_url || '/cards/CHXNDLER.webp'}
-                      alt={enlargedCard.card_name}
-                      className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
-                      style={{
-                        filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
-                        animation: 'cardPulse 3s ease-in-out infinite',
-                        backfaceVisibility: 'hidden',
-                        transform: 'rotateY(0deg)'
-                      }}
-                    />
-                    
-                    {/* Back of card */}
+                  {isEnlargedCardFlipped ? (
+                    /* Back of card - show only when flipped */
                     <img
                       src="/cards/BACK.webp"
                       alt="Card back"
-                      className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
+                      className="w-full h-full rounded-lg border-4 border-cyan-500/80 shadow-2xl object-cover"
                       style={{
-                        filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
-                        animation: 'cardPulse 3s ease-in-out infinite',
-                        backfaceVisibility: 'hidden',
-                        transform: 'rotateY(180deg)'
+                        filter: 'drop-shadow(0 0 15px rgba(0, 255, 255, 0.6))',
+                        animation: 'cardPulse 3s ease-in-out infinite'
                       }}
                     />
-                  </div>
+                  ) : (
+                    /* Front of card - show only when not flipped */
+                    <img
+                      src={enlargedCard.image_url || '/cards/CHXNDLER.webp'}
+                      alt={enlargedCard.card_name}
+                      className="w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
+                      style={{
+                        filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
+                        animation: 'cardPulse 3s ease-in-out infinite'
+                      }}
+                    />
+                  )}
                 </div>
                 
                 <button

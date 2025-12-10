@@ -353,8 +353,8 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
   }, [buttonsBottomPercent, yellowHubSize, powerSizePx]);
 
   // START button variant flag (legacy "boost" fully removed)
-  // Only show START icon before UI is unlocked, then show play/pause icons
-  const isStart = !uiUnlocked && Boolean(
+  // Always show START icon when configured as start button, regardless of UI unlock status
+  const isStart = Boolean(
     (POS?.wheel && ((POS.wheel as any).start || (POS.wheel as any).startButton)) ||
     process.env.NEXT_PUBLIC_START_BUTTON === '1' ||
     process.env.NEXT_PUBLIC_PLAY_BUTTON_STYLE === 'start'

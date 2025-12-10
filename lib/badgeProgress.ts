@@ -140,13 +140,6 @@ export function getBadgeProgressForUser(
     isUnlocked,
   };
   
-  // Debug logging for badges with 0 target
-  if (result.target === 0 || badge.badge_name === 'Eternal Soul') {
-    console.log('getBadgeProgressForUser - Result:', {
-      badge_name: badge.badge_name,
-      result: result
-    });
-  }
 
   return result;
 }

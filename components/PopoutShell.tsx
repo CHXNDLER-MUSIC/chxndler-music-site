@@ -113,7 +113,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
                   style={{ 
                     color: '#FF69B4', 
                     textShadow: '0 0 8px rgba(255,105,180,0.6)', 
-                    fontSize: '12px',
+                    fontSize: '14px',
                     fontWeight: 'bold'
                   }}
                 >

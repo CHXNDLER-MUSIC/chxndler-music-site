@@ -222,6 +222,44 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
     window.open(stripeUrl, '_blank');
   };
 
+  const handleHeartCoinPurchase = async (item: StoreItem) => {
+    if (!profile) {
+      setError("Please sign in to make purchases");
+      return;
+    }
+
+    if ((profile.heartcoin_balance || 0) < item.heartCoin) {
+      setError(`Insufficient HeartCoins! You need ${item.heartCoin} but only have ${profile.heartcoin_balance || 0}`);
+      return;
+    }
+
+    setModalLoading(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const { data, error } = await supabaseBrowser.rpc('purchase_item_with_heartcoins', {
+        p_user_id: profile.id,
+        p_item_id: item.name.toLowerCase().replace(/\s+/g, '_'),
+        p_item_name: item.name,
+        p_price_heartcoins: item.heartCoin
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setMessage(`Successfully purchased ${item.name}!`);
+      // Refresh profile to update balance
+      window.location.reload();
+    } catch (error: any) {
+      console.error('Purchase error:', error);
+      setError(error?.message || `Failed to purchase ${item.name}`);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
   const totalPages = Math.ceil(storeItems.length / itemsPerPage);
   const currentItems = storeItems.slice(
     currentPage * itemsPerPage,
@@ -250,8 +288,15 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
             className={`px-6 py-3 font-bold text-sm transition-all duration-200 ${
               activeTab === 'use'
                 ? 'text-[#F2EF1D] border-b-2 border-[#F2EF1D]'
-                : 'text-white/60 hover:text-white/80'
+                : 'text-white hover:text-white'
             }`}
+            style={{
+              textShadow: activeTab === 'use' 
+                ? '0 0 8px rgba(242,239,29,0.8), 0 0 15px rgba(242,239,29,0.6), 0 2px 4px rgba(0,0,0,0.8)' 
+                : '0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
+              backgroundColor: activeTab === 'use' ? 'rgba(242,239,29,0.1)' : 'rgba(0,0,0,0.3)',
+              borderRadius: '8px 8px 0 0'
+            }}
           >
             USE
           </button>
@@ -260,8 +305,15 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
             className={`px-6 py-3 font-bold text-sm transition-all duration-200 ${
               activeTab === 'cards'
                 ? 'text-[#F2EF1D] border-b-2 border-[#F2EF1D]'
-                : 'text-white/60 hover:text-white/80'
+                : 'text-white hover:text-white'
             }`}
+            style={{
+              textShadow: activeTab === 'cards' 
+                ? '0 0 8px rgba(242,239,29,0.8), 0 0 15px rgba(242,239,29,0.6), 0 2px 4px rgba(0,0,0,0.8)' 
+                : '0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
+              backgroundColor: activeTab === 'cards' ? 'rgba(242,239,29,0.1)' : 'rgba(0,0,0,0.3)',
+              borderRadius: '8px 8px 0 0'
+            }}
           >
             CARDS
           </button>
@@ -269,6 +321,18 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
 
         {activeTab === 'use' ? (
           <div>
+            {/* Error/Success Messages */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm">
+                {error}
+              </div>
+            )}
+            {message && (
+              <div className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg text-green-200 text-sm">
+                {message}
+              </div>
+            )}
+            
             {/* Store Items Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[60vh] overflow-y-auto pr-2">
           {currentItems.map((item, index) => (
@@ -353,13 +417,22 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
               
               {/* Add to Collection Button */}
               <button
-                onClick={() => handlePurchase(item.stripeUrl)}
-                className="w-full py-2 px-4 rounded-lg font-bold text-xs bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,239,29,0.6)] transition-all duration-200"
-                style={{
-                  boxShadow: '0 0 15px rgba(242,239,29,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
-                }}
+                onClick={() => handleHeartCoinPurchase(item)}
+                disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < item.heartCoin}
+                className={`w-full py-2 px-4 rounded-lg font-bold text-xs transition-all duration-200 ${
+                  modalLoading || !profile || (profile.heartcoin_balance || 0) < item.heartCoin
+                    ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
+                    : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,239,29,0.6)]'
+                }`}
+                style={
+                  modalLoading || !profile || (profile.heartcoin_balance || 0) < item.heartCoin
+                    ? undefined
+                    : {
+                        boxShadow: '0 0 15px rgba(242,239,29,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
+                      }
+                }
               >
-                Add to Collection
+                {modalLoading ? 'Purchasing...' : 'Add to Collection'}
               </button>
             </div>
           ))}

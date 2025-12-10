@@ -64,6 +64,9 @@ export default function HeartCoinCelebration() {
           src="/elements/heart-coin.webp" 
           alt="HeartCoin" 
           className="w-48 h-48 relative z-10"
+          style={{
+            animation: 'cardPulse 2s ease-in-out infinite'
+          }}
         />
         
         {/* Text */}

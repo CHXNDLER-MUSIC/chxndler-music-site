@@ -91,7 +91,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
   const [selectedCard, setSelectedCard] = useState<{name: string, image: string, rarity: string, element: string} | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
-  const [binderPage, setBinderPage] = useState<'first' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth'>('first');
+  const [binderPage, setBinderPage] = useState<'first' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth' | 'seventh' | 'eighth' | 'ninth' | 'tenth' | 'eleventh' | 'twelfth' | 'thirteenth'>('first');
   // Purchase flow state machine
   const [selectedPurchaseType, setSelectedPurchaseType] = useState<'digital' | 'physical' | null>(null);
   const [purchaseState, setPurchaseState] = useState<'idle' | 'insufficient' | 'digital-preview' | 'confirm-digital' | 'confirm-physical' | 'physical-form' | 'success'>('idle');
@@ -775,7 +775,14 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
          binderPage === 'third' ? '3' : 
          binderPage === 'fourth' ? '4' : 
          binderPage === 'fifth' ? '5' : 
-         binderPage === 'sixth' ? '6' : '1'} / 6` : undefined}
+         binderPage === 'sixth' ? '6' : 
+         binderPage === 'seventh' ? '7' : 
+         binderPage === 'eighth' ? '8' : 
+         binderPage === 'ninth' ? '9' : 
+         binderPage === 'tenth' ? '10' : 
+         binderPage === 'eleventh' ? '11' : 
+         binderPage === 'twelfth' ? '12' : 
+         binderPage === 'thirteenth' ? '13' : '1'} / 13` : undefined}
       >
 
           {/* Card popup - positioned absolutely within binder bounds */}
@@ -888,8 +895,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
               binderPage === 'first' ? (
                 // User's Binder - First Page - Show 5 initial slots
               <div className="relative pb-0">
-                <div className="grid gap-2 grid-cols-5 px-2 pt-0 pb-2 place-items-center">
-                  {Array.from({ length: 5 }, (_, index) => {
+                <div className="grid gap-2 grid-cols-4 px-2 pt-0 pb-2 place-items-center">
+                  {Array.from({ length: 4 }, (_, index) => {
                     // Check if there's a collected card for this slot
                     const collectedCard = profile?.cards?.[index];
                     const hasCard = !!collectedCard?.cards;
@@ -1010,7 +1017,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                               })()}
                             </>
                           ) : isLockedSlot ? (
-                            <div className="w-full h-full bg-gradient-to-br from-pink-500/5 to-purple-500/5 rounded border-2 border-dashed border-pink-400/20 flex items-center justify-center">
+                            <div className="w-full h-full bg-gradient-to-br from-pink-500/5 to-purple-500/5 rounded flex items-center justify-center">
                               <div 
                                 className="text-xs font-bold text-center"
                                 style={{ 
@@ -1059,10 +1066,10 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   })}
                 </div>
                 
-                {/* Second row of 5 slots */}
-                <div className="grid gap-2 grid-cols-5 mt-1 px-2 pt-2 pb-0 place-items-center">
-                  {Array.from({ length: 5 }, (_, index) => {
-                    const slotIndex = index + 5; // Slots 5-9
+                {/* Second row of 4 slots */}
+                <div className="grid gap-2 grid-cols-4 mt-1 px-2 pt-2 pb-0 place-items-center">
+                  {Array.from({ length: 4 }, (_, index) => {
+                    const slotIndex = index + 4; // Slots 4-7
                     const cardSlots = profile?.card_slots ?? 0;
                     const isLockedSlot = slotIndex >= cardSlots;
                     const collectedCard = profile?.cards?.[slotIndex];
@@ -1130,7 +1137,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                               </div>
                             </>
                           ) : isLockedSlot ? (
-                            <div className="w-full h-full bg-gradient-to-br from-pink-500/5 to-purple-500/5 rounded border-2 border-dashed border-pink-400/20 flex items-center justify-center">
+                            <div className="w-full h-full bg-gradient-to-br from-pink-500/5 to-purple-500/5 rounded flex items-center justify-center">
                               <div 
                                 className="text-xs font-bold text-center"
                                 style={{ 
@@ -1167,7 +1174,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                 
                 {/* Right arrow to go to second page - positioned within popup on the right side */}
                 <div 
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
                   style={{
                     pointerEvents: 'auto'
                   }}
@@ -1176,7 +1183,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
                     onClick={() => {
                       try { sfx.play('click', 0.7); } catch {}
-                      const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
+                      const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
                       const currentIndex = pages.indexOf(binderPage);
                       if (currentIndex < pages.length - 1) {
                         setBinderPage(pages[currentIndex + 1] as any);
@@ -1212,7 +1219,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
                       onClick={() => {
                         try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
                         const currentIndex = pages.indexOf(binderPage);
                         if (currentIndex > 0) {
                           setBinderPage(pages[currentIndex - 1] as any);
@@ -1233,10 +1240,10 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       </svg>
                     </div>
                   </div>
-                  {/* Two rows of 5 locked containers each */}
-                  <div className="grid gap-2 grid-cols-5 p-2 place-items-center">
-                    {Array.from({ length: 5 }, (_, index) => {
-                      const slotIndex = index + 10; // Slots 10-14
+                  {/* Two rows of 4 locked containers each */}
+                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 8; // Slots 8-11
                       
                       return (
                         <div
@@ -1264,10 +1271,10 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     })}
                   </div>
 
-                  {/* Second row of 5 locked slots */}
-                  <div className="grid gap-2 grid-cols-5 mt-1 p-2 place-items-center">
-                    {Array.from({ length: 5 }, (_, index) => {
-                      const slotIndex = index + 15; // Slots 15-19
+                  {/* Second row of 4 locked slots */}
+                  <div className="grid gap-2 grid-cols-4 mt-1 p-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 12; // Slots 12-15
                       
                       return (
                         <div
@@ -1297,7 +1304,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page - positioned within popup on the right side */}
                   <div 
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -1306,7 +1313,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
                       onClick={() => {
                         try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
                         const currentIndex = pages.indexOf(binderPage);
                         if (currentIndex < pages.length - 1) {
                           setBinderPage(pages[currentIndex + 1] as any);
@@ -1342,7 +1349,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
                       onClick={() => {
                         try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
                         const currentIndex = pages.indexOf(binderPage);
                         if (currentIndex > 0) {
                           setBinderPage(pages[currentIndex - 1] as any);
@@ -1364,10 +1371,10 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     </div>
                   </div>
                   
-                  {/* Two rows of 5 locked containers each */}
-                  <div className="grid gap-2 grid-cols-5 p-2 place-items-center">
-                    {Array.from({ length: 5 }, (_, index) => {
-                      const slotIndex = index + 20; // Slots 20-24
+                  {/* Two rows of 4 locked containers each */}
+                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 16; // Slots 16-19
                       
                       return (
                         <div
@@ -1395,10 +1402,10 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     })}
                   </div>
 
-                  {/* Second row of 5 locked slots */}
-                  <div className="grid gap-2 grid-cols-5 mt-1 p-2 place-items-center">
-                    {Array.from({ length: 5 }, (_, index) => {
-                      const slotIndex = index + 25; // Slots 25-29
+                  {/* Second row of 4 locked slots */}
+                  <div className="grid gap-2 grid-cols-4 mt-1 p-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 20; // Slots 20-23
                       
                       return (
                         <div
@@ -1428,7 +1435,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page */}
                   <div 
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -1437,7 +1444,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
                       onClick={() => {
                         try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
                         const currentIndex = pages.indexOf(binderPage);
                         if (currentIndex < pages.length - 1) {
                           setBinderPage(pages[currentIndex + 1] as any);
@@ -1473,7 +1480,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
                       onClick={() => {
                         try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
                         const currentIndex = pages.indexOf(binderPage);
                         if (currentIndex > 0) {
                           setBinderPage(pages[currentIndex - 1] as any);
@@ -1495,10 +1502,10 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     </div>
                   </div>
                   
-                  {/* Two rows of 5 locked containers each */}
-                  <div className="grid gap-2 grid-cols-5 p-2 place-items-center">
-                    {Array.from({ length: 5 }, (_, index) => {
-                      const slotIndex = index + 30; // Slots 30-34
+                  {/* Two rows of 4 locked containers each */}
+                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 24; // Slots 24-27
                       
                       return (
                         <div
@@ -1526,10 +1533,10 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     })}
                   </div>
 
-                  {/* Second row of 5 locked slots */}
-                  <div className="grid gap-2 grid-cols-5 mt-1 p-2 place-items-center">
-                    {Array.from({ length: 5 }, (_, index) => {
-                      const slotIndex = index + 35; // Slots 35-39
+                  {/* Second row of 4 locked slots */}
+                  <div className="grid gap-2 grid-cols-4 mt-1 p-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 28; // Slots 28-31
                       
                       return (
                         <div
@@ -1559,7 +1566,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page */}
                   <div 
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -1568,7 +1575,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
                       onClick={() => {
                         try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
                         const currentIndex = pages.indexOf(binderPage);
                         if (currentIndex < pages.length - 1) {
                           setBinderPage(pages[currentIndex + 1] as any);
@@ -1604,7 +1611,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
                       onClick={() => {
                         try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
                         const currentIndex = pages.indexOf(binderPage);
                         if (currentIndex > 0) {
                           setBinderPage(pages[currentIndex - 1] as any);
@@ -1626,10 +1633,10 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     </div>
                   </div>
                   
-                  {/* Two rows of 5 locked containers each */}
-                  <div className="grid gap-2 grid-cols-5 p-2 place-items-center">
-                    {Array.from({ length: 5 }, (_, index) => {
-                      const slotIndex = index + 40; // Slots 40-44
+                  {/* Two rows of 4 locked containers each */}
+                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 32; // Slots 32-35
                       
                       return (
                         <div
@@ -1657,10 +1664,10 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     })}
                   </div>
 
-                  {/* Second row of 5 locked slots */}
-                  <div className="grid gap-2 grid-cols-5 mt-1 p-2 place-items-center">
-                    {Array.from({ length: 5 }, (_, index) => {
-                      const slotIndex = index + 45; // Slots 45-49
+                  {/* Second row of 4 locked slots */}
+                  <div className="grid gap-2 grid-cols-4 mt-1 p-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 36; // Slots 36-39
                       
                       return (
                         <div
@@ -1690,7 +1697,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page */}
                   <div 
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -1699,7 +1706,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
                       onClick={() => {
                         try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
                         const currentIndex = pages.indexOf(binderPage);
                         if (currentIndex < pages.length - 1) {
                           setBinderPage(pages[currentIndex + 1] as any);
@@ -1735,7 +1742,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
                       onClick={() => {
                         try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
                         const currentIndex = pages.indexOf(binderPage);
                         if (currentIndex > 0) {
                           setBinderPage(pages[currentIndex - 1] as any);
@@ -1757,10 +1764,10 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     </div>
                   </div>
                   
-                  {/* Two rows of 5 locked containers each */}
-                  <div className="grid gap-2 grid-cols-5 p-2 place-items-center">
-                    {Array.from({ length: 5 }, (_, index) => {
-                      const slotIndex = index + 50; // Slots 50-54
+                  {/* Two rows of 4 locked containers each */}
+                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 40; // Slots 40-43
                       
                       return (
                         <div
@@ -1788,10 +1795,10 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     })}
                   </div>
 
-                  {/* Second row of 5 locked slots */}
-                  <div className="grid gap-2 grid-cols-5 mt-1 px-2 place-items-center">
-                    {Array.from({ length: 5 }, (_, index) => {
-                      const slotIndex = index + 55; // Slots 55-59
+                  {/* Second row of 4 locked slots */}
+                  <div className="grid gap-2 grid-cols-4 mt-1 px-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 44; // Slots 44-47
                       
                       return (
                         <div
@@ -1819,7 +1826,924 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     })}
                   </div>
                   
-                  {/* NO RIGHT ARROW ON SIXTH PAGE */}
+                  {/* Right arrow to go to next page */}
+                  <div 
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
+                    style={{
+                      pointerEvents: 'auto'
+                    }}
+                  >
+                    <div 
+                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
+                      onClick={() => {
+                        try { sfx.play('click', 0.7); } catch {}
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
+                        const currentIndex = pages.indexOf(binderPage);
+                        if (currentIndex < pages.length - 1) {
+                          setBinderPage(pages[currentIndex + 1] as any);
+                        }
+                      }}
+                      style={{
+                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
+                        backdropFilter: 'blur(10px)',
+                      }}
+                    >
+                      <svg 
+                        viewBox="0 0 24 24" 
+                        width="16" 
+                        height="16" 
+                        fill="currentColor"
+                      >
+                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              ) : binderPage === 'seventh' ? (
+                // User's Binder - Seventh Page - Show 10 locked slots
+                <div className="relative">
+                  {/* Left arrow to go to previous page */}
+                  <div 
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 z-10"
+                    style={{
+                      pointerEvents: 'auto'
+                    }}
+                  >
+                    <div 
+                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
+                      onClick={() => {
+                        try { sfx.play('click', 0.7); } catch {}
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
+                        const currentIndex = pages.indexOf(binderPage);
+                        if (currentIndex > 0) {
+                          setBinderPage(pages[currentIndex - 1] as any);
+                        }
+                      }}
+                      style={{
+                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
+                        backdropFilter: 'blur(10px)',
+                      }}
+                    >
+                      <svg 
+                        viewBox="0 0 24 24" 
+                        width="16" 
+                        height="16" 
+                        fill="currentColor"
+                      >
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  {/* Two rows of 4 locked containers each */}
+                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 48; // Slots 48-51
+                      
+                      return (
+                        <div
+                          key={`locked-slot-${slotIndex}`}
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-20 h-28"
+                          style={{
+                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
+                          }}
+                        >
+                          <div className="relative h-full w-full flex items-center justify-center">
+                            <div 
+                              className="text-center"
+                              style={{
+                                color: 'rgba(255,105,180,0.4)',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                letterSpacing: '0.5px'
+                              }}
+                            >
+                              LOCKED
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Second row of 4 locked slots */}
+                  <div className="grid gap-2 grid-cols-4 mt-1 px-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 52; // Slots 52-55
+                      
+                      return (
+                        <div
+                          key={`locked-slot-${slotIndex}`}
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-20 h-28"
+                          style={{
+                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
+                          }}
+                        >
+                          <div className="relative h-full w-full flex items-center justify-center">
+                            <div 
+                              className="text-center"
+                              style={{
+                                color: 'rgba(255,105,180,0.4)',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                letterSpacing: '0.5px'
+                              }}
+                            >
+                              LOCKED
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Right arrow to go to next page */}
+                  <div 
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
+                    style={{
+                      pointerEvents: 'auto'
+                    }}
+                  >
+                    <div 
+                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
+                      onClick={() => {
+                        try { sfx.play('click', 0.7); } catch {}
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
+                        const currentIndex = pages.indexOf(binderPage);
+                        if (currentIndex < pages.length - 1) {
+                          setBinderPage(pages[currentIndex + 1] as any);
+                        }
+                      }}
+                      style={{
+                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
+                        backdropFilter: 'blur(10px)',
+                      }}
+                    >
+                      <svg 
+                        viewBox="0 0 24 24" 
+                        width="16" 
+                        height="16" 
+                        fill="currentColor"
+                      >
+                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              ) : binderPage === 'eighth' ? (
+                // User's Binder - Eighth Page - Show 10 locked slots
+                <div className="relative">
+                  {/* Left arrow to go to previous page */}
+                  <div 
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 z-10"
+                    style={{
+                      pointerEvents: 'auto'
+                    }}
+                  >
+                    <div 
+                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
+                      onClick={() => {
+                        try { sfx.play('click', 0.7); } catch {}
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
+                        const currentIndex = pages.indexOf(binderPage);
+                        if (currentIndex > 0) {
+                          setBinderPage(pages[currentIndex - 1] as any);
+                        }
+                      }}
+                      style={{
+                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
+                        backdropFilter: 'blur(10px)',
+                      }}
+                    >
+                      <svg 
+                        viewBox="0 0 24 24" 
+                        width="16" 
+                        height="16" 
+                        fill="currentColor"
+                      >
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  {/* Two rows of 4 locked containers each */}
+                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 56; // Slots 56-59
+                      
+                      return (
+                        <div
+                          key={`locked-slot-${slotIndex}`}
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-20 h-28"
+                          style={{
+                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
+                          }}
+                        >
+                          <div className="relative h-full w-full flex items-center justify-center">
+                            <div 
+                              className="text-center"
+                              style={{
+                                color: 'rgba(255,105,180,0.4)',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                letterSpacing: '0.5px'
+                              }}
+                            >
+                              LOCKED
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Second row of 4 locked slots */}
+                  <div className="grid gap-2 grid-cols-4 mt-1 px-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 60; // Slots 60-63
+                      
+                      return (
+                        <div
+                          key={`locked-slot-${slotIndex}`}
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-20 h-28"
+                          style={{
+                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
+                          }}
+                        >
+                          <div className="relative h-full w-full flex items-center justify-center">
+                            <div 
+                              className="text-center"
+                              style={{
+                                color: 'rgba(255,105,180,0.4)',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                letterSpacing: '0.5px'
+                              }}
+                            >
+                              LOCKED
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Right arrow to go to next page */}
+                  <div 
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
+                    style={{
+                      pointerEvents: 'auto'
+                    }}
+                  >
+                    <div 
+                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
+                      onClick={() => {
+                        try { sfx.play('click', 0.7); } catch {}
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
+                        const currentIndex = pages.indexOf(binderPage);
+                        if (currentIndex < pages.length - 1) {
+                          setBinderPage(pages[currentIndex + 1] as any);
+                        }
+                      }}
+                      style={{
+                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
+                        backdropFilter: 'blur(10px)',
+                      }}
+                    >
+                      <svg 
+                        viewBox="0 0 24 24" 
+                        width="16" 
+                        height="16" 
+                        fill="currentColor"
+                      >
+                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              ) : binderPage === 'ninth' ? (
+                // User's Binder - Ninth Page - Show 10 locked slots
+                <div className="relative">
+                  {/* Left arrow to go to previous page */}
+                  <div 
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 z-10"
+                    style={{
+                      pointerEvents: 'auto'
+                    }}
+                  >
+                    <div 
+                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
+                      onClick={() => {
+                        try { sfx.play('click', 0.7); } catch {}
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
+                        const currentIndex = pages.indexOf(binderPage);
+                        if (currentIndex > 0) {
+                          setBinderPage(pages[currentIndex - 1] as any);
+                        }
+                      }}
+                      style={{
+                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
+                        backdropFilter: 'blur(10px)',
+                      }}
+                    >
+                      <svg 
+                        viewBox="0 0 24 24" 
+                        width="16" 
+                        height="16" 
+                        fill="currentColor"
+                      >
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  {/* Two rows of 4 locked containers each */}
+                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 64; // Slots 64-67
+                      
+                      return (
+                        <div
+                          key={`locked-slot-${slotIndex}`}
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-20 h-28"
+                          style={{
+                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
+                          }}
+                        >
+                          <div className="relative h-full w-full flex items-center justify-center">
+                            <div 
+                              className="text-center"
+                              style={{
+                                color: 'rgba(255,105,180,0.4)',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                letterSpacing: '0.5px'
+                              }}
+                            >
+                              LOCKED
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Second row of 4 locked slots */}
+                  <div className="grid gap-2 grid-cols-4 mt-1 px-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 68; // Slots 68-71
+                      
+                      return (
+                        <div
+                          key={`locked-slot-${slotIndex}`}
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-20 h-28"
+                          style={{
+                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
+                          }}
+                        >
+                          <div className="relative h-full w-full flex items-center justify-center">
+                            <div 
+                              className="text-center"
+                              style={{
+                                color: 'rgba(255,105,180,0.4)',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                letterSpacing: '0.5px'
+                              }}
+                            >
+                              LOCKED
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Right arrow to go to next page */}
+                  <div 
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
+                    style={{
+                      pointerEvents: 'auto'
+                    }}
+                  >
+                    <div 
+                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
+                      onClick={() => {
+                        try { sfx.play('click', 0.7); } catch {}
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
+                        const currentIndex = pages.indexOf(binderPage);
+                        if (currentIndex < pages.length - 1) {
+                          setBinderPage(pages[currentIndex + 1] as any);
+                        }
+                      }}
+                      style={{
+                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
+                        backdropFilter: 'blur(10px)',
+                      }}
+                    >
+                      <svg 
+                        viewBox="0 0 24 24" 
+                        width="16" 
+                        height="16" 
+                        fill="currentColor"
+                      >
+                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              ) : binderPage === 'tenth' ? (
+                // User's Binder - Tenth Page - Show 10 locked slots
+                <div className="relative">
+                  {/* Left arrow to go to previous page */}
+                  <div 
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 z-10"
+                    style={{
+                      pointerEvents: 'auto'
+                    }}
+                  >
+                    <div 
+                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
+                      onClick={() => {
+                        try { sfx.play('click', 0.7); } catch {}
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
+                        const currentIndex = pages.indexOf(binderPage);
+                        if (currentIndex > 0) {
+                          setBinderPage(pages[currentIndex - 1] as any);
+                        }
+                      }}
+                      style={{
+                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
+                        backdropFilter: 'blur(10px)',
+                      }}
+                    >
+                      <svg 
+                        viewBox="0 0 24 24" 
+                        width="16" 
+                        height="16" 
+                        fill="currentColor"
+                      >
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  {/* Two rows of 4 locked containers each */}
+                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 72; // Slots 72-75
+                      
+                      return (
+                        <div
+                          key={`locked-slot-${slotIndex}`}
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-20 h-28"
+                          style={{
+                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
+                          }}
+                        >
+                          <div className="relative h-full w-full flex items-center justify-center">
+                            <div 
+                              className="text-center"
+                              style={{
+                                color: 'rgba(255,105,180,0.4)',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                letterSpacing: '0.5px'
+                              }}
+                            >
+                              LOCKED
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Second row of 4 locked slots */}
+                  <div className="grid gap-2 grid-cols-4 mt-1 px-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 76; // Slots 76-79
+                      
+                      return (
+                        <div
+                          key={`locked-slot-${slotIndex}`}
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-20 h-28"
+                          style={{
+                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
+                          }}
+                        >
+                          <div className="relative h-full w-full flex items-center justify-center">
+                            <div 
+                              className="text-center"
+                              style={{
+                                color: 'rgba(255,105,180,0.4)',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                letterSpacing: '0.5px'
+                              }}
+                            >
+                              LOCKED
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Right arrow to go to next page */}
+                  <div 
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
+                    style={{
+                      pointerEvents: 'auto'
+                    }}
+                  >
+                    <div 
+                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
+                      onClick={() => {
+                        try { sfx.play('click', 0.7); } catch {}
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
+                        const currentIndex = pages.indexOf(binderPage);
+                        if (currentIndex < pages.length - 1) {
+                          setBinderPage(pages[currentIndex + 1] as any);
+                        }
+                      }}
+                      style={{
+                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
+                        backdropFilter: 'blur(10px)',
+                      }}
+                    >
+                      <svg 
+                        viewBox="0 0 24 24" 
+                        width="16" 
+                        height="16" 
+                        fill="currentColor"
+                      >
+                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              ) : binderPage === 'eleventh' ? (
+                // User's Binder - Eleventh Page - Show 10 locked slots
+                <div className="relative">
+                  {/* Left arrow to go to previous page */}
+                  <div 
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 z-10"
+                    style={{
+                      pointerEvents: 'auto'
+                    }}
+                  >
+                    <div 
+                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
+                      onClick={() => {
+                        try { sfx.play('click', 0.7); } catch {}
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
+                        const currentIndex = pages.indexOf(binderPage);
+                        if (currentIndex > 0) {
+                          setBinderPage(pages[currentIndex - 1] as any);
+                        }
+                      }}
+                      style={{
+                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
+                        backdropFilter: 'blur(10px)',
+                      }}
+                    >
+                      <svg 
+                        viewBox="0 0 24 24" 
+                        width="16" 
+                        height="16" 
+                        fill="currentColor"
+                      >
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  {/* Two rows of 4 locked containers each */}
+                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 80; // Slots 80-83
+                      
+                      return (
+                        <div
+                          key={`locked-slot-${slotIndex}`}
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-20 h-28"
+                          style={{
+                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
+                          }}
+                        >
+                          <div className="relative h-full w-full flex items-center justify-center">
+                            <div 
+                              className="text-center"
+                              style={{
+                                color: 'rgba(255,105,180,0.4)',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                letterSpacing: '0.5px'
+                              }}
+                            >
+                              LOCKED
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Second row of 4 locked slots */}
+                  <div className="grid gap-2 grid-cols-4 mt-1 px-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 84; // Slots 84-87
+                      
+                      return (
+                        <div
+                          key={`locked-slot-${slotIndex}`}
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-20 h-28"
+                          style={{
+                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
+                          }}
+                        >
+                          <div className="relative h-full w-full flex items-center justify-center">
+                            <div 
+                              className="text-center"
+                              style={{
+                                color: 'rgba(255,105,180,0.4)',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                letterSpacing: '0.5px'
+                              }}
+                            >
+                              LOCKED
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Right arrow to go to next page */}
+                  <div 
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
+                    style={{
+                      pointerEvents: 'auto'
+                    }}
+                  >
+                    <div 
+                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
+                      onClick={() => {
+                        try { sfx.play('click', 0.7); } catch {}
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
+                        const currentIndex = pages.indexOf(binderPage);
+                        if (currentIndex < pages.length - 1) {
+                          setBinderPage(pages[currentIndex + 1] as any);
+                        }
+                      }}
+                      style={{
+                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
+                        backdropFilter: 'blur(10px)',
+                      }}
+                    >
+                      <svg 
+                        viewBox="0 0 24 24" 
+                        width="16" 
+                        height="16" 
+                        fill="currentColor"
+                      >
+                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              ) : binderPage === 'twelfth' ? (
+                // User's Binder - Twelfth Page - Show 10 locked slots
+                <div className="relative">
+                  {/* Left arrow to go to previous page */}
+                  <div 
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 z-10"
+                    style={{
+                      pointerEvents: 'auto'
+                    }}
+                  >
+                    <div 
+                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
+                      onClick={() => {
+                        try { sfx.play('click', 0.7); } catch {}
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
+                        const currentIndex = pages.indexOf(binderPage);
+                        if (currentIndex > 0) {
+                          setBinderPage(pages[currentIndex - 1] as any);
+                        }
+                      }}
+                      style={{
+                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
+                        backdropFilter: 'blur(10px)',
+                      }}
+                    >
+                      <svg 
+                        viewBox="0 0 24 24" 
+                        width="16" 
+                        height="16" 
+                        fill="currentColor"
+                      >
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  {/* Two rows of 4 locked containers each */}
+                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 88; // Slots 88-91
+                      
+                      return (
+                        <div
+                          key={`locked-slot-${slotIndex}`}
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-20 h-28"
+                          style={{
+                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
+                          }}
+                        >
+                          <div className="relative h-full w-full flex items-center justify-center">
+                            <div 
+                              className="text-center"
+                              style={{
+                                color: 'rgba(255,105,180,0.4)',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                letterSpacing: '0.5px'
+                              }}
+                            >
+                              LOCKED
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Second row of 4 locked slots */}
+                  <div className="grid gap-2 grid-cols-4 mt-1 px-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 92; // Slots 92-95
+                      
+                      return (
+                        <div
+                          key={`locked-slot-${slotIndex}`}
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-20 h-28"
+                          style={{
+                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
+                          }}
+                        >
+                          <div className="relative h-full w-full flex items-center justify-center">
+                            <div 
+                              className="text-center"
+                              style={{
+                                color: 'rgba(255,105,180,0.4)',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                letterSpacing: '0.5px'
+                              }}
+                            >
+                              LOCKED
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Right arrow to go to next page */}
+                  <div 
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
+                    style={{
+                      pointerEvents: 'auto'
+                    }}
+                  >
+                    <div 
+                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
+                      onClick={() => {
+                        try { sfx.play('click', 0.7); } catch {}
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
+                        const currentIndex = pages.indexOf(binderPage);
+                        if (currentIndex < pages.length - 1) {
+                          setBinderPage(pages[currentIndex + 1] as any);
+                        }
+                      }}
+                      style={{
+                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
+                        backdropFilter: 'blur(10px)',
+                      }}
+                    >
+                      <svg 
+                        viewBox="0 0 24 24" 
+                        width="16" 
+                        height="16" 
+                        fill="currentColor"
+                      >
+                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              ) : binderPage === 'thirteenth' ? (
+                // User's Binder - Thirteenth Page - Show 10 locked slots (NO RIGHT ARROW)
+                <div className="relative">
+                  {/* Left arrow to go to previous page */}
+                  <div 
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 z-10"
+                    style={{
+                      pointerEvents: 'auto'
+                    }}
+                  >
+                    <div 
+                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
+                      onClick={() => {
+                        try { sfx.play('click', 0.7); } catch {}
+                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
+                        const currentIndex = pages.indexOf(binderPage);
+                        if (currentIndex > 0) {
+                          setBinderPage(pages[currentIndex - 1] as any);
+                        }
+                      }}
+                      style={{
+                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
+                        backdropFilter: 'blur(10px)',
+                      }}
+                    >
+                      <svg 
+                        viewBox="0 0 24 24" 
+                        width="16" 
+                        height="16" 
+                        fill="currentColor"
+                      >
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  {/* Two rows of 4 locked containers each */}
+                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 96; // Slots 96-99
+                      
+                      return (
+                        <div
+                          key={`locked-slot-${slotIndex}`}
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-20 h-28"
+                          style={{
+                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
+                          }}
+                        >
+                          <div className="relative h-full w-full flex items-center justify-center">
+                            <div 
+                              className="text-center"
+                              style={{
+                                color: 'rgba(255,105,180,0.4)',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                letterSpacing: '0.5px'
+                              }}
+                            >
+                              LOCKED
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Second row of 4 locked slots */}
+                  <div className="grid gap-2 grid-cols-4 mt-1 px-2 place-items-center">
+                    {Array.from({ length: 4 }, (_, index) => {
+                      const slotIndex = index + 100; // Slots 100-103
+                      
+                      return (
+                        <div
+                          key={`locked-slot-${slotIndex}`}
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-20 h-28"
+                          style={{
+                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
+                          }}
+                        >
+                          <div className="relative h-full w-full flex items-center justify-center">
+                            <div 
+                              className="text-center"
+                              style={{
+                                color: 'rgba(255,105,180,0.4)',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                letterSpacing: '0.5px'
+                              }}
+                            >
+                              LOCKED
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* NO RIGHT ARROW ON THIRTEENTH PAGE */}
                 </div>
               ) : null
             ) : (

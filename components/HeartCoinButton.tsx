@@ -1352,8 +1352,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               className="text-lg font-bold mb-2"
               style={{ 
                 color: '#FFFFFF', 
-                textShadow: '0 0 8px rgba(255,255,255,0.6)', 
-                fontSize: '16px'
+                textShadow: '0 0 12px rgba(255,255,255,0.9), 0 0 24px rgba(255,255,255,0.6), 0 0 36px rgba(255,255,255,0.3)', 
+                fontSize: '20px'
               }}
             >
               HeartCoins
@@ -1373,10 +1373,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   style={{
                     background: activeTab === tab 
                       ? (tab === 'EARN' ? 'linear-gradient(135deg, rgba(0,255,255,0.4) 0%, rgba(0,255,255,0.6) 100%)' : 'linear-gradient(135deg, rgba(255,105,180,0.6) 0%, rgba(255,182,193,0.8) 100%)')
-                      : 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 100%)',
-                    color: activeTab === tab ? (tab === 'EARN' ? '#00FFFF' : '#FF69B4') : 'rgba(255,255,255,0.7)',
-                    borderColor: activeTab === tab ? (tab === 'EARN' ? '#00FFFF' : '#FF69B4') : 'rgba(255,255,255,0.4)',
-                    textShadow: activeTab === tab ? (tab === 'EARN' ? '0 0 8px rgba(0,255,255,1), 0 0 16px rgba(0,255,255,0.8)' : '0 0 8px rgba(255,105,180,1), 0 0 16px rgba(255,105,180,0.8)') : 'none',
+                      : 'linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.6) 100%)',
+                    color: activeTab === tab ? (tab === 'EARN' ? '#00FFFF' : '#FF69B4') : '#FFFFFF',
+                    borderColor: activeTab === tab ? (tab === 'EARN' ? '#00FFFF' : '#FF69B4') : 'rgba(255,255,255,0.6)',
+                    textShadow: activeTab === tab ? (tab === 'EARN' ? '0 0 8px rgba(0,255,255,1), 0 0 16px rgba(0,255,255,0.8)' : '0 0 8px rgba(255,105,180,1), 0 0 16px rgba(255,105,180,0.8)') : '0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
                     boxShadow: activeTab === tab ? (tab === 'EARN' ? '0 0 15px rgba(0,255,255,0.8), 0 0 30px rgba(0,255,255,0.6)' : '0 0 15px rgba(255,105,180,0.8), 0 0 30px rgba(255,105,180,0.6)') : 'none',
                     fontWeight: 700,
                     fontSize: '14px'
@@ -1785,10 +1785,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         style={{
                           background: activeUseTab === tab 
                             ? 'linear-gradient(135deg, rgba(255,105,180,0.6) 0%, rgba(255,182,193,0.8) 100%)'
-                            : 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 100%)',
-                          color: activeUseTab === tab ? '#FF69B4' : 'rgba(255,255,255,0.7)',
-                          borderColor: activeUseTab === tab ? '#FF69B4' : 'rgba(255,255,255,0.4)',
-                          textShadow: activeUseTab === tab ? '0 0 8px rgba(255,105,180,1), 0 0 16px rgba(255,105,180,0.8)' : 'none',
+                            : 'linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.6) 100%)',
+                          color: activeUseTab === tab ? '#FF69B4' : '#FFFFFF',
+                          borderColor: activeUseTab === tab ? '#FF69B4' : 'rgba(255,255,255,0.6)',
+                          textShadow: activeUseTab === tab ? '0 0 8px rgba(255,105,180,1), 0 0 16px rgba(255,105,180,0.8)' : '0 0 4px rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
                           boxShadow: activeUseTab === tab ? '0 0 15px rgba(255,105,180,0.8), 0 0 30px rgba(255,105,180,0.6)' : 'none',
                           fontWeight: 700,
                           fontSize: '14px'
@@ -1796,13 +1796,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         onMouseEnter={(e) => {
                           if (activeUseTab !== tab) {
                             e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.35) 100%)';
-                            e.currentTarget.style.color = 'rgba(255,255,255,0.9)';
+                            e.currentTarget.style.color = '#FFFFFF';
+                            e.currentTarget.style.textShadow = '0 0 6px rgba(255,255,255,0.9), 0 2px 4px rgba(0,0,0,0.9)';
                           }
                         }}
                         onMouseLeave={(e) => {
                           if (activeUseTab !== tab) {
-                            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 100%)';
-                            e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.6) 100%)';
+                            e.currentTarget.style.color = '#FFFFFF';
+                            e.currentTarget.style.textShadow = '0 0 4px rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)';
                           }
                         }}
                       >

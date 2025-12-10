@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { sfx } from "@/lib/sfx";
+import { useProfile } from "@/contexts/ProfileContext";
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   // External control for the chxndler popout
@@ -12,11 +13,23 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpenWelcomeHome, ...restProps }: Props) {
+  const { user, profile } = useProfile();
   const [internalOpen, setInternalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"WE BELIEVE" | "CHXNDLER" | "ELEMENTS">("WE BELIEVE");
+  const [flippedElements, setFlippedElements] = useState<Record<string, boolean>>({});
   
   // Use external open state if provided, otherwise use internal state
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
+
+  const handleElementClick = (elementKey: string) => {
+    try { 
+      sfx.play('flip', 0.8); 
+    } catch {}
+    setFlippedElements(prev => ({
+      ...prev,
+      [elementKey]: !prev[elementKey]
+    }));
+  };
 
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
     if (!e.defaultPrevented) {
@@ -168,21 +181,21 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
             </div>
             
             {/* Tabs */}
-            <div className="flex justify-center mb-1">
-              <div className="flex bg-black/30 rounded-lg p-1">
+            <div className="flex justify-center mb-1" style={{ marginTop: '-4px' }}>
+              <div className="flex rounded-lg p-1 gap-2">
                 <button
                   onClick={() => {
                     sfx.play('click', 0.7);
                     setActiveTab("WE BELIEVE");
                   }}
-                  className={`px-3 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
+                  className={`px-4 py-2 rounded-md text-base font-semibold transition-all duration-200 border ${
                     activeTab === "WE BELIEVE"
-                      ? "bg-pink-500/20 text-pink-300 border border-pink-400/50"
-                      : "text-white/70 hover:text-white"
+                      ? "bg-pink-500/30 text-pink-200 border-pink-400/70"
+                      : "bg-black/20 text-white/70 hover:text-white border-white/30 hover:border-white/50"
                   }`}
                   style={{
-                    textShadow: 'none',
-                    boxShadow: activeTab === "WE BELIEVE" ? '0 0 15px rgba(252,84,175,0.3)' : 'none',
+                    textShadow: activeTab === "WE BELIEVE" ? '0 0 8px rgba(252,84,175,0.8)' : 'none',
+                    boxShadow: activeTab === "WE BELIEVE" ? '0 0 20px rgba(252,84,175,0.4), inset 0 0 20px rgba(252,84,175,0.1)' : 'none',
                     cursor: 'none'
                   }}
                 >
@@ -193,14 +206,14 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                     sfx.play('click', 0.7);
                     setActiveTab("CHXNDLER");
                   }}
-                  className={`px-3 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
+                  className={`px-4 py-2 rounded-md text-base font-semibold transition-all duration-200 border ${
                     activeTab === "CHXNDLER"
-                      ? "bg-pink-500/20 text-pink-300 border border-pink-400/50"
-                      : "text-white/70 hover:text-white"
+                      ? "bg-pink-500/30 text-pink-200 border-pink-400/70"
+                      : "bg-black/20 text-white/70 hover:text-white border-white/30 hover:border-white/50"
                   }`}
                   style={{
-                    textShadow: 'none',
-                    boxShadow: activeTab === "CHXNDLER" ? '0 0 15px rgba(252,84,175,0.3)' : 'none',
+                    textShadow: activeTab === "CHXNDLER" ? '0 0 8px rgba(252,84,175,0.8)' : 'none',
+                    boxShadow: activeTab === "CHXNDLER" ? '0 0 20px rgba(252,84,175,0.4), inset 0 0 20px rgba(252,84,175,0.1)' : 'none',
                     cursor: 'none'
                   }}
                 >
@@ -211,14 +224,14 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                     sfx.play('click', 0.7);
                     setActiveTab("ELEMENTS");
                   }}
-                  className={`px-3 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
+                  className={`px-4 py-2 rounded-md text-base font-semibold transition-all duration-200 border ${
                     activeTab === "ELEMENTS"
-                      ? "bg-pink-500/20 text-pink-300 border border-pink-400/50"
-                      : "text-white/70 hover:text-white"
+                      ? "bg-pink-500/30 text-pink-200 border-pink-400/70"
+                      : "bg-black/20 text-white/70 hover:text-white border-white/30 hover:border-white/50"
                   }`}
                   style={{
-                    textShadow: 'none',
-                    boxShadow: activeTab === "ELEMENTS" ? '0 0 15px rgba(252,84,175,0.3)' : 'none',
+                    textShadow: activeTab === "ELEMENTS" ? '0 0 8px rgba(252,84,175,0.8)' : 'none',
+                    boxShadow: activeTab === "ELEMENTS" ? '0 0 20px rgba(252,84,175,0.4), inset 0 0 20px rgba(252,84,175,0.1)' : 'none',
                     cursor: 'none'
                   }}
                 >
@@ -286,7 +299,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
               <>
                 {/* Elements Content */}
                 <div 
-                  className="text-center mt-4"
+                  className="text-center mt-2"
                   style={{ 
                     fontSize: '16px', 
                     color: '#FFFFFF !important', 
@@ -297,7 +310,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                   The Elements shape the Heartverse. Each one carries its own energy, guiding souls on their journey.
                 </div>
                 <div 
-                  className="flex justify-center mt-3"
+                  className="flex justify-center mt-1"
                   style={{ 
                     fontSize: '16px', 
                     color: '#FFFFFF !important', 
@@ -306,54 +319,102 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                   }}
                 >
                   <div className="grid grid-cols-2 gap-0">
-                    <div 
-                      className="p-3 border-2 transition-all duration-200 hover:scale-105" 
+                    <button 
+                      onClick={() => handleElementClick('lightning')}
+                      className="border-2 transition-all duration-200 hover:scale-105 flex items-center justify-center" 
                       style={{ 
                         borderColor: '#FFFF00', 
                         backgroundColor: 'rgba(255, 255, 0, 0.1)', 
                         boxShadow: '0 0 15px rgba(255, 255, 0, 0.3)',
-                        borderRadius: '8px 0 0 0'
+                        borderRadius: '8px 0 0 0',
+                        cursor: 'none',
+                        width: '120px',
+                        height: '60px',
+                        padding: '8px',
+                        fontSize: '14px'
                       }}
                     >
-                      <img src="/elements/lightning.webp" alt="Lightning" className="inline w-5 h-5 mr-1" /> <span style={{ color: '#FFFF00 !important', fontWeight: 'bold !important', textShadow: '0 0 10px #FFFF00, 0 0 20px #FFFF00' }}>LIGHTNING</span> awakens.
-                    </div>
-                    <div 
-                      className="p-3 border-2 transition-all duration-200 hover:scale-105" 
+                      {flippedElements.lightning ? (
+                        <span style={{ color: '#FFFF00 !important', fontWeight: 'bold !important', textShadow: '0 0 10px #FFFF00, 0 0 20px #FFFF00', textAlign: 'center', lineHeight: '1.2' }}>
+                          LIGHTNING awakens.
+                        </span>
+                      ) : (
+                        <img src="/elements/lightning.webp" alt="Lightning" className="w-10 h-10" />
+                      )}
+                    </button>
+                    <button 
+                      onClick={() => handleElementClick('heart')}
+                      className="border-2 transition-all duration-200 hover:scale-105 flex items-center justify-center" 
                       style={{ 
                         borderColor: '#FF1493', 
                         backgroundColor: 'rgba(255, 20, 147, 0.1)', 
                         boxShadow: '0 0 15px rgba(255, 20, 147, 0.3)',
-                        borderRadius: '0 8px 0 0'
+                        borderRadius: '0 8px 0 0',
+                        cursor: 'none',
+                        width: '120px',
+                        height: '60px',
+                        padding: '8px',
+                        fontSize: '14px'
                       }}
                     >
-                      <img src="/elements/heart.webp" alt="Heart" className="inline w-5 h-5 mr-1" /> <span style={{ color: '#FF1493 !important', fontWeight: 'bold !important', textShadow: '0 0 10px #FF1493, 0 0 20px #FF1493' }}>HEART</span> connects.
-                    </div>
-                    <div 
-                      className="p-3 border-2 transition-all duration-200 hover:scale-105" 
+                      {flippedElements.heart ? (
+                        <span style={{ color: '#FF1493 !important', fontWeight: 'bold !important', textShadow: '0 0 10px #FF1493, 0 0 20px #FF1493', textAlign: 'center', lineHeight: '1.2' }}>
+                          HEART connects.
+                        </span>
+                      ) : (
+                        <img src="/elements/heart.webp" alt="Heart" className="w-10 h-10" />
+                      )}
+                    </button>
+                    <button 
+                      onClick={() => handleElementClick('darkness')}
+                      className="border-2 transition-all duration-200 hover:scale-105 flex items-center justify-center" 
                       style={{ 
                         borderColor: '#9A00FF', 
                         backgroundColor: 'rgba(154, 0, 255, 0.1)', 
                         boxShadow: '0 0 15px rgba(154, 0, 255, 0.3)',
-                        borderRadius: '0 0 0 8px'
+                        borderRadius: '0 0 0 8px',
+                        cursor: 'none',
+                        width: '120px',
+                        height: '60px',
+                        padding: '8px',
+                        fontSize: '14px'
                       }}
                     >
-                      <img src="/elements/darkness.webp" alt="Darkness" className="inline w-5 h-5 mr-1" /> <span style={{ color: '#9A00FF !important', fontWeight: 'bold !important', textShadow: '0 0 10px #9A00FF, 0 0 20px #9A00FF' }}>DARKNESS</span> transforms.
-                    </div>
-                    <div 
-                      className="p-3 border-2 transition-all duration-200 hover:scale-105" 
+                      {flippedElements.darkness ? (
+                        <span style={{ color: '#9A00FF !important', fontWeight: 'bold !important', textShadow: '0 0 10px #9A00FF, 0 0 20px #9A00FF', textAlign: 'center', lineHeight: '1.2' }}>
+                          DARKNESS transforms.
+                        </span>
+                      ) : (
+                        <img src="/elements/darkness.webp" alt="Darkness" className="w-10 h-10" />
+                      )}
+                    </button>
+                    <button 
+                      onClick={() => handleElementClick('water')}
+                      className="border-2 transition-all duration-200 hover:scale-105 flex items-center justify-center" 
                       style={{ 
                         borderColor: '#00E5FF', 
                         backgroundColor: 'rgba(0, 229, 255, 0.1)', 
                         boxShadow: '0 0 15px rgba(0, 229, 255, 0.3)',
-                        borderRadius: '0 0 8px 0'
+                        borderRadius: '0 0 8px 0',
+                        cursor: 'none',
+                        width: '120px',
+                        height: '60px',
+                        padding: '8px',
+                        fontSize: '14px'
                       }}
                     >
-                      <img src="/elements/water.webp" alt="Water" className="inline w-5 h-5 mr-1" /> <span style={{ color: '#00E5FF !important', fontWeight: 'bold !important', textShadow: '0 0 10px #00E5FF, 0 0 20px #00E5FF' }}>WATER</span> heals.
-                    </div>
+                      {flippedElements.water ? (
+                        <span style={{ color: '#00E5FF !important', fontWeight: 'bold !important', textShadow: '0 0 10px #00E5FF, 0 0 20px #00E5FF', textAlign: 'center', lineHeight: '1.2' }}>
+                          WATER heals.
+                        </span>
+                      ) : (
+                        <img src="/elements/water.webp" alt="Water" className="w-10 h-10" />
+                      )}
+                    </button>
                   </div>
                 </div>
                 <div 
-                  className="text-center mt-4"
+                  className="text-center mt-1"
                   style={{ 
                     fontSize: '16px', 
                     color: '#FFFFFF !important', 
@@ -363,36 +424,47 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                 >
                   Together, they create the emotional ecosystem of the Heartverse — the foundation of every story and song.
                 </div>
-                <div 
-                  className="text-center mt-4"
-                  style={{ 
-                    fontSize: '14px', 
-                    color: '#FFFFFF !important', 
-                    textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
-                    lineHeight: '1.6'
-                  }}
-                >
-                  You align with your Element when you{' '}
-                  <button
-                    onClick={() => {
-                      try { sfx.play('click', 0.8); } catch {}
-                      onOpenWelcomeHome?.();
-                    }}
-                    className="underline hover:text-pink-300 transition-colors duration-200"
-                    style={{
-                      color: '#00E5FF !important',
-                      textShadow: '0 0 10px #00E5FF, 0 0 20px #00E5FF',
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      cursor: 'none',
-                      textDecoration: 'underline'
+                {!user && !profile && (
+                  <div 
+                    className="text-center mt-2"
+                    style={{ 
+                      fontSize: '14px', 
+                      color: '#FFFFFF !important', 
+                      textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
+                      lineHeight: '1.6'
                     }}
                   >
-                    create your profile
-                  </button>
-                  .
-                </div>
+                    You align with your Element when you{' '}
+                    <button
+                      onClick={() => {
+                        try { sfx.play('click', 0.8); } catch {}
+                        // Close the ABOUT popout first
+                        if (onOpenChange) {
+                          onOpenChange(false);
+                        } else {
+                          setInternalOpen(false);
+                        }
+                        // Open welcome home modal after a brief delay
+                        setTimeout(() => {
+                          onOpenWelcomeHome?.();
+                        }, 100);
+                      }}
+                      className="underline hover:text-pink-300 transition-colors duration-200"
+                      style={{
+                        color: '#00E5FF !important',
+                        textShadow: '0 0 10px #00E5FF, 0 0 20px #00E5FF',
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'none',
+                        textDecoration: 'underline'
+                      }}
+                    >
+                      create your profile
+                    </button>
+                    .
+                  </div>
+                )}
               </>
             )}
           </div>

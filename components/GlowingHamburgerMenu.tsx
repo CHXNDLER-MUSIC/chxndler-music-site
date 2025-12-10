@@ -28,7 +28,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
   
   const journeyTitle = getJourneyTitle(!!user);
   
-  const journalLabel = !hasPendingReflection ? "COMPLETED" : "JOURNAL";
+  const journalLabel = "JOURNAL";
   
   const menuItems = [
     { label: "ABOUT", href: undefined },

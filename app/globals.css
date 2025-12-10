@@ -2164,6 +2164,17 @@ button:hover > .heart-coin-glow,
   }
 }
 
+@keyframes cardPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
 .heartcoin-pop {
   animation: heartcoinPop 3s ease-out;
 }

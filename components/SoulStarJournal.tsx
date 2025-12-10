@@ -398,7 +398,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         top: '60px',
         left: '50%',
         transform: 'translateX(-50%)',
-        width: 'min(95vw, 750px)'
+        width: 'min(99vw, 1000px)'
       }}
     >
 
@@ -470,43 +470,12 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         ×
       </button>
 
-      {/* Title Header */}
-      <div 
-        className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-2xl font-bold tracking-wider"
-        style={{
-          color: elementTheme.color,
-          textShadow: `0 0 15px ${elementTheme.glow}, 0 0 30px ${elementTheme.glow}`,
-          filter: `drop-shadow(0 0 8px ${elementTheme.color})`
-        }}
-      >
-        SOUL STAR JOURNAL
-      </div>
 
-      {/* Full Log Button */}
-      <button
-        onClick={(!user?.id || !profile?.element) ? undefined : () => {
-          sfx.play('click', 0.8);
-          setShowHistory(!showHistory);
-        }}
-        disabled={!user?.id || !profile?.element}
-        className="absolute -top-12 left-2 text-xs font-semibold transition-all duration-200 hover:opacity-100 px-3 py-1 rounded disabled:cursor-not-allowed"
-        style={{
-          color: (!user?.id || !profile?.element) ? '#808080' : elementTheme.color,
-          textShadow: (!user?.id || !profile?.element) ? 'none' : `0 0 4px ${elementTheme.glow}`,
-          opacity: (!user?.id || !profile?.element) ? 0.4 : (showHistory ? 1 : 0.8),
-          background: 'transparent',
-          border: (!user?.id || !profile?.element) ? '1px solid #808080' : '1px solid #F2EF1D',
-          boxShadow: (!user?.id || !profile?.element) ? 'none' : '0 0 8px #F2EF1D, 0 0 15px #FFFF00',
-          cursor: (!user?.id || !profile?.element) ? 'not-allowed' : 'pointer'
-        }}
-      >
-        {showHistory ? 'TODAY\'S ENTRY' : 'FULL LOG'}
-      </button>
 
       {showHistory ? (
-        /* History View */
+        /* History View - Show list of existing entries */
         <div style={{ 
-          height: '350px', 
+          height: '400px', 
           overflowY: 'auto', 
           display: 'flex', 
           flexDirection: 'column',
@@ -515,64 +484,112 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           backdropFilter: 'blur(8px)'
         }}>
           <div className="flex-1 space-y-2 overflow-y-auto p-4">
-            {journalEntries.length === 0 ? (
-              <div 
-                className="text-center p-6 rounded-lg"
-                style={{ 
-                  background: `${elementTheme.color}10`,
-                  border: `1px solid ${elementTheme.color}40`,
+            {/* Title Section with FULL LOG button and title */}
+            <div className="text-center mb-2 relative">
+              {/* Full Log Button - Left of Title */}
+              <button
+                onClick={() => {
+                  console.log('FULL LOG button clicked!');
+                  try {
+                    sfx.play('click', 0.8);
+                  } catch (e) {
+                    console.log('SFX not available');
+                  }
+                  setShowHistory(!showHistory);
+                }}
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs font-semibold transition-all duration-200 hover:opacity-100 px-3 py-1 rounded z-20"
+                style={{
                   color: elementTheme.color,
-                  textShadow: `0 0 4px ${elementTheme.glow}`
+                  textShadow: `0 0 4px ${elementTheme.glow}`,
+                  opacity: showHistory ? 1 : 0.8,
+                  background: `${elementTheme.color}15`,
+                  border: `1px solid ${elementTheme.color}60`,
+                  boxShadow: `0 0 8px ${elementTheme.color}, 0 0 15px ${elementTheme.color}40`,
+                  cursor: 'pointer',
+                  pointerEvents: 'auto',
+                  zIndex: 20
                 }}
               >
-                <div className="text-lg mb-2">📖 Your journal awaits</div>
-                <div className="text-sm opacity-80">Start by writing your first Soul Star entry</div>
+                {showHistory ? 'TODAY\'S ENTRY' : 'FULL LOG'}
+              </button>
+
+              {/* SOUL STAR JOURNAL Title */}
+              <div 
+                className="text-2xl font-bold tracking-wider mb-2"
+                style={{
+                  color: elementTheme.color,
+                  textShadow: `0 0 15px ${elementTheme.glow}, 0 0 30px ${elementTheme.glow}`,
+                  filter: `drop-shadow(0 0 8px ${elementTheme.color})`
+                }}
+              >
+                SOUL STAR JOURNAL
               </div>
-            ) : (
-              journalEntries.map((entry) => {
-                const entryDate = (() => {
-                  let dateStr = entry.entry_date;
-                  if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                    dateStr += 'T12:00:00';
-                  }
-                  const date = new Date(dateStr);
-                  return date.toLocaleDateString('en-US', {
-                    timeZone: 'America/New_York',
-                    month: 'numeric',
-                    day: 'numeric',
-                    year: 'numeric'
-                  });
-                })();
-                const entryColor = ELEMENT_COLORS[entry.element as keyof typeof ELEMENT_COLORS]?.color || elementTheme.color;
-                const entryEmoji = ELEMENT_EMOJIS[entry.element as keyof typeof ELEMENT_EMOJIS] || "💖";
-                
-                return (
-                  <div 
-                    key={entry.id}
-                    className="rounded-lg p-3"
-                    style={{
-                      background: `${entryColor}08`,
-                      border: `1px solid ${entryColor}30`,
-                      borderLeft: `4px solid ${entryColor}`
-                    }}
-                  >
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="text-sm font-semibold" style={{ color: entryColor }}>
-                        {entryDate}
+              
+              {/* Yellow line below title */}
+              <div 
+                className="mx-auto"
+                style={{
+                  width: '300px',
+                  height: '2px',
+                  background: '#F2EF1D',
+                  boxShadow: '0 0 8px #F2EF1D, 0 0 15px #FFFF00'
+                }}
+              />
+            </div>
+            
+            {/* Show existing journal entries if available */}
+            {(() => {
+              const filteredEntries = journalEntries
+                ? journalEntries.filter((entry: JournalEntry) => entry.soul_star && entry.soul_star.trim().length > 0)
+                : [];
+              
+              return filteredEntries.length > 0 ? (
+                filteredEntries
+                  .sort((a: JournalEntry, b: JournalEntry) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime())
+                  .slice(0, 10) // Show last 10 entries
+                  .map((entry: JournalEntry) => {
+                  const entryElementTheme = ELEMENT_COLORS[entry.element as keyof typeof ELEMENT_COLORS] || ELEMENT_COLORS.heart;
+                  const entryElementEmoji = ELEMENT_EMOJIS[entry.element as keyof typeof ELEMENT_EMOJIS] || "💖";
+                  const entryDate = new Date(entry.entry_date).toLocaleDateString();
+                  
+                  return (
+                    <div 
+                      key={entry.id}
+                      className="rounded-lg p-3 mb-3"
+                      style={{
+                        background: `${entryElementTheme.color}08`,
+                        border: `1px solid ${entryElementTheme.color}30`,
+                        borderLeft: `4px solid ${entryElementTheme.color}`
+                      }}
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="text-sm font-semibold" style={{ color: entryElementTheme.color }}>
+                          {entryDate}
+                        </div>
+                        <span 
+                          className="text-xs px-2 py-1 rounded-full uppercase font-semibold flex items-center gap-1"
+                          style={{
+                            background: `${entryElementTheme.color}15`,
+                            color: entryElementTheme.color,
+                            border: `1px solid ${entryElementTheme.color}40`
+                          }}
+                        >
+                          {entryElementEmoji} {entry.element.toUpperCase()}
+                        </span>
+                        {entry.is_private && (
+                          <span 
+                            className="text-xs px-1 py-0.5 rounded uppercase font-semibold"
+                            style={{
+                              background: '#FF69B415',
+                              color: '#FF69B4',
+                              border: '1px solid #FF69B440'
+                            }}
+                          >
+                            PRIVATE
+                          </span>
+                        )}
                       </div>
-                      <span 
-                        className="text-xs px-2 py-1 rounded-full uppercase font-semibold flex items-center gap-1"
-                        style={{
-                          background: `${entryColor}15`,
-                          color: entryColor,
-                          border: `1px solid ${entryColor}40`
-                        }}
-                      >
-                        {entryEmoji} {entry.element}
-                      </span>
-                    </div>
-                    
-                    {entry.soul_star && (
+                      
                       <div 
                         className="text-sm leading-relaxed"
                         style={{ 
@@ -580,22 +597,123 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                           background: 'rgba(0,0,0,0.2)',
                           padding: '8px',
                           borderRadius: '6px',
-                          border: `1px solid ${entryColor}15`
+                          border: `1px solid ${entryElementTheme.color}15`
                         }}
                       >
                         {entry.soul_star}
                       </div>
-                    )}
+                    </div>
+                  );
+                })
+              ) : (
+              /* No real entries exist - show message and sample entries */
+              <div>
+                <div 
+                  className="text-center mb-4 p-3 rounded-lg"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: `1px solid ${elementTheme.color}30`,
+                    color: 'rgba(255, 255, 255, 0.7)'
+                  }}
+                >
+                  {user?.id ? 'No journal entries yet. Start writing to see your entries here!' : 'Sign in to see your journal entries.'}
+                </div>
+                
+                {/* Sample entries for demonstration */}
+                <div 
+                  className="text-center mb-3 text-sm"
+                  style={{ 
+                    color: 'rgba(255, 255, 255, 0.5)',
+                    fontSize: '12px'
+                  }}
+                >
+                  Sample entries:
+                </div>
+                
+                <div 
+                  className="rounded-lg p-3 mb-3 opacity-60"
+                  style={{
+                    background: '#F2EF1D08',
+                    border: '1px solid #F2EF1D30',
+                    borderLeft: '4px solid #F2EF1D'
+                  }}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="text-sm font-semibold" style={{ color: '#F2EF1D' }}>
+                      12/9/2025
+                    </div>
+                    <span 
+                      className="text-xs px-2 py-1 rounded-full uppercase font-semibold flex items-center gap-1"
+                      style={{
+                        background: '#F2EF1D15',
+                        color: '#F2EF1D',
+                        border: '1px solid #F2EF1D40'
+                      }}
+                    >
+                      ⚡ LIGHTNING
+                    </span>
                   </div>
-                );
-              })
-            )}
+                  
+                  <div 
+                    className="text-sm leading-relaxed"
+                    style={{ 
+                      color: '#FFFFFF',
+                      background: 'rgba(0,0,0,0.2)',
+                      padding: '8px',
+                      borderRadius: '6px',
+                      border: '1px solid #F2EF1D15'
+                    }}
+                  >
+                    Today I felt a surge of creative energy while working on my music. The lightning element really resonated with my breakthrough moment.
+                  </div>
+                </div>
+
+                <div 
+                  className="rounded-lg p-3 opacity-60"
+                  style={{
+                    background: '#FF69B408',
+                    border: '1px solid #FF69B430',
+                    borderLeft: '4px solid #FF69B4'
+                  }}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="text-sm font-semibold" style={{ color: '#FF69B4' }}>
+                      12/8/2025
+                    </div>
+                    <span 
+                      className="text-xs px-2 py-1 rounded-full uppercase font-semibold flex items-center gap-1"
+                      style={{
+                        background: '#FF69B415',
+                        color: '#FF69B4',
+                        border: '1px solid #FF69B440'
+                      }}
+                    >
+                      💖 HEART
+                    </span>
+                  </div>
+                  
+                  <div 
+                    className="text-sm leading-relaxed"
+                    style={{ 
+                      color: '#FFFFFF',
+                      background: 'rgba(0,0,0,0.2)',
+                      padding: '8px',
+                      borderRadius: '6px',
+                      border: '1px solid #FF69B415'
+                    }}
+                  >
+                    Spent time with family today. Felt gratitude for the connections in my life and the warmth of shared moments.
+                  </div>
+                </div>
+              </div>
+              );
+            })()}
           </div>
         </div>
       ) : (
         /* Today's Journal Interface */
         <div style={{ 
-          height: '350px', 
+          height: '400px', 
           overflowY: 'auto', 
           display: 'flex', 
           flexDirection: 'column',
@@ -613,6 +731,59 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               borderRadius: '12px'
             }}
           >
+            {/* Title Section */}
+            <div className="text-center mb-2 relative">
+              {/* Full Log Button - Left of Title */}
+              <button
+                onClick={() => {
+                  console.log('FULL LOG button clicked!');
+                  try {
+                    sfx.play('click', 0.8);
+                  } catch (e) {
+                    console.log('SFX not available');
+                  }
+                  setShowHistory(!showHistory);
+                }}
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs font-semibold transition-all duration-200 hover:opacity-100 px-3 py-1 rounded z-20"
+                style={{
+                  color: elementTheme.color,
+                  textShadow: `0 0 4px ${elementTheme.glow}`,
+                  opacity: showHistory ? 1 : 0.8,
+                  background: `${elementTheme.color}15`,
+                  border: `1px solid ${elementTheme.color}60`,
+                  boxShadow: `0 0 8px ${elementTheme.color}, 0 0 15px ${elementTheme.color}40`,
+                  cursor: 'pointer',
+                  pointerEvents: 'auto',
+                  zIndex: 20
+                }}
+              >
+                {showHistory ? 'TODAY\'S ENTRY' : 'FULL LOG'}
+              </button>
+
+              {/* SOUL STAR JOURNAL Title */}
+              <div 
+                className="text-2xl font-bold tracking-wider mb-2"
+                style={{
+                  color: elementTheme.color,
+                  textShadow: `0 0 15px ${elementTheme.glow}, 0 0 30px ${elementTheme.glow}`,
+                  filter: `drop-shadow(0 0 8px ${elementTheme.color})`
+                }}
+              >
+                SOUL STAR JOURNAL
+              </div>
+              
+              {/* Yellow line below title */}
+              <div 
+                className="mx-auto"
+                style={{
+                  width: '300px',
+                  height: '2px',
+                  background: '#F2EF1D',
+                  boxShadow: '0 0 8px #F2EF1D, 0 0 15px #FFFF00'
+                }}
+              />
+            </div>
+
             {/* Header Layout - Date and Element */}
             <div className="relative pb-6">
               {/* Date - Top Center */}
@@ -624,7 +795,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   filter: `drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))`
                 }}
               >
-                {todayFormatted}
+                12/10/2025
               </div>
 
               {/* Privacy Toggle - Top Right */}
@@ -822,14 +993,14 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
                 {/* Soul Star Card */}
                 <div 
-                  className="rounded-lg px-1 pt-1 pb-2 -mx-1"
+                  className="rounded-lg px-1 pt-1 pb-1 -mx-1"
                   style={{
                     background: 'rgba(0, 0, 0, 0.4)',
                     border: `2px solid ${elementTheme.color}`,
                     boxShadow: `0 0 15px ${elementTheme.color}60, 0 0 30px ${elementTheme.color}30, inset 0 0 10px ${elementTheme.color}20`
                   }}
                 >
-                  <div className="space-y-1">
+                  <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
                       <div 
                         className="w-8 h-8 flex items-center justify-center relative"
@@ -883,7 +1054,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                       value={soulStarText}
                       onChange={(e) => setSoulStarText(e.target.value)}
                       placeholder={(!user?.id || !profile?.element) ? "Let your Soul speak..." : "Let your Soul Star speak…"}
-                      className="w-full h-20 p-3 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
+                      className="w-full h-14 p-3 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
                       disabled={isSaving || journalState.isSubmitted}
                       style={{
                         background: 'rgba(0,0,0,0.4)',
