@@ -30,7 +30,8 @@ export default function PopoutPanel({
   borderColor = 'rgba(255,105,180,0.55)',
   className = '',
   style = {},
-  onOpenHeartCoin
+  onOpenHeartCoin,
+  enableChat = true
 }: PopoutPanelProps) {
   const [showTextChat, setShowTextChat] = useState(false);
   const [showProfilePopup, setShowProfilePopup] = useState(false);
@@ -92,13 +93,15 @@ export default function PopoutPanel({
       </div>
       
       {/* Text Chat - Full ChatPanel integration */}
-      <ChatPanel
-        isOpen={showTextChat}
-        onClose={() => {
-          try { sfx.play('close', 0.4); } catch {}
-          setShowTextChat(false);
-        }}
-      />
+      {enableChat && (
+        <ChatPanel
+          isOpen={showTextChat}
+          onClose={() => {
+            try { sfx.play('close', 0.4); } catch {}
+            setShowTextChat(false);
+          }}
+        />
+      )}
 
       {/* User Profile Popup - appears when clicking user name in chat */}
       {showProfilePopup && (
@@ -313,30 +316,32 @@ export default function PopoutPanel({
           />
           
           {/* Text button */}
-          <button
-            onClick={() => {
-              try { sfx.play('click', 0.4); } catch {}
-              setShowTextChat(!showTextChat);
-            }}
-            className="absolute top-2 left-4 hover:opacity-80 cursor-pointer w-12 h-12 rounded-full border flex items-center justify-center overflow-hidden"
-            style={{ 
-              borderColor: '#F2EF1D80',
-              boxShadow: '0 0 15px #F2EF1D80, 0 0 25px #F2EF1D50, 0 0 35px #F2EF1D30',
-              background: '#F2EF1D10',
-              backdropFilter: 'blur(2px)',
-              padding: 0
-            }}
-          >
-            <img 
-              src="/elements/text.webp" 
-              alt="Text" 
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover'
+          {enableChat && (
+            <button
+              onClick={() => {
+                try { sfx.play('click', 0.4); } catch {}
+                setShowTextChat(!showTextChat);
               }}
-            />
-          </button>
+              className="absolute top-2 left-4 hover:opacity-80 cursor-pointer w-12 h-12 rounded-full border flex items-center justify-center overflow-hidden"
+              style={{ 
+                borderColor: '#F2EF1D80',
+                boxShadow: '0 0 15px #F2EF1D80, 0 0 25px #F2EF1D50, 0 0 35px #F2EF1D30',
+                background: '#F2EF1D10',
+                backdropFilter: 'blur(2px)',
+                padding: 0
+              }}
+            >
+              <img 
+                src="/elements/text.webp" 
+                alt="Text" 
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+              />
+            </button>
+          )}
 
           {/* Close button */}
           <button

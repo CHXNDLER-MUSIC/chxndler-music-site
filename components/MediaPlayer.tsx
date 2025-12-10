@@ -1161,7 +1161,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         <div className="flex items-start justify-between gap-3 flex-1">
           <div className="flex-1 min-w-0">
             <div className="text-left">
-              <div className="text-sm md:text-base opacity-90 leading-tight truncate">{cur.title}</div>
+              <div className="text-sm md:text-base opacity-90 leading-tight truncate">{cur.title === 'BE MY BEE' ? '' : cur.title}</div>
               <div className="text-xs md:text-sm opacity-60 leading-tight line-clamp-2">{cur.subtitle}</div>
             </div>
           </div>

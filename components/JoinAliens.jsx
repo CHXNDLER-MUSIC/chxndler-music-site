@@ -515,6 +515,19 @@ export default function JoinAliens({ visible = true } = {}) {
       {/* Text Button - positioned in top left corner */}
       <button
         onClick={() => {
+          // Prevent chat from opening if component is not visible or if there are other modals
+          if (!visible) {
+            console.log('TEXT button clicked but JoinAliens not visible, ignoring');
+            return;
+          }
+          
+          // Check if any modal backdrops exist (indicating other modals are open)
+          const existingBackdrops = document.querySelectorAll('[class*="fixed"][class*="inset-0"][class*="z-"]');
+          if (existingBackdrops.length > 0) {
+            console.log('TEXT button clicked but other modals appear to be open, ignoring');
+            return;
+          }
+          
           try { sfx.play('audio/click.mp3', 0.5); } catch {}
           console.log('TEXT button clicked, current chat state:', isChatOpen);
           setIsChatOpen(!isChatOpen);

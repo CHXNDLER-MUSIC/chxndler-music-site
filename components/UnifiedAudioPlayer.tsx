@@ -222,7 +222,7 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
             {/* Track Info */}
             <div className="flex-1 min-w-0">
               <div className="text-[#CFF7FF] font-semibold text-base truncate">
-                {currentTrackInfo?.title || "Select a Song"}
+                {currentTrackInfo?.title === 'BE MY BEE' ? '' : (currentTrackInfo?.title || "Select a Song")}
               </div>
               <div className="text-[#9EEBFF]/80 text-sm truncate">
                 {currentTrackInfo?.oneLiner || "Choose from the dropdown above"}
