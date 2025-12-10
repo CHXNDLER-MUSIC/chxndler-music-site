@@ -49,8 +49,7 @@ const ELEMENT_ROWS = [
   { name: 'HEART', color: '#FF69B4', image: '/elements/heart.webp' },
   { name: 'WATER', color: '#00BFFF', image: '/elements/water.webp' },
   { name: 'LIGHTNING', color: '#FFD700', image: '/elements/lightning.webp' },
-  { name: 'DARKNESS', color: '#9400D3', image: '/elements/darkness.webp' },
-  { name: 'ALL ELEMENTS', color: '#FFFFFF', image: '/elements/elementals.webp' }
+  { name: 'DARKNESS', color: '#9400D3', image: '/elements/darkness.webp' }
 ];
 
 function VotingCard({ 
@@ -174,8 +173,22 @@ function VotingCard({
 export default function VotingPanel() {
   const { activePoll, isLoading, error, castVote, isVoting } = useSongVoting();
   const { profile } = useProfile();
+  const [selectedElements, setSelectedElements] = useState(new Set());
   
   const userBalance = profile?.heartcoin_balance || 0;
+
+  // Handle element row click
+  const handleElementClick = (elementName) => {
+    setSelectedElements(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(elementName)) {
+        newSet.delete(elementName);
+      } else {
+        newSet.add(elementName);
+      }
+      return newSet;
+    });
+  };
 
   // Find the winning option (highest total_heartcoins)
   const winningOption = activePoll?.options?.reduce((prev, current) => 
@@ -233,46 +246,45 @@ export default function VotingPanel() {
 
   if (!activePoll) {
     return (
-      <div className="p-4 space-y-4">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <h3 
-            className="text-lg font-bold mb-2"
-            style={{
-              color: '#F2EF1D',
-              textShadow: '0 0 10px #F2EF1D, 0 0 20px #F2EF1D'
-            }}
-          >
-            🗳️ SONG VOTING
-          </h3>
-          <p className="text-white/60 text-sm">
-            Check back soon for the next song voting session!
-          </p>
-        </div>
-
+      <div className="space-y-4">
         {/* Element rows */}
-        <div className="space-y-3">
-          {ELEMENT_ROWS.map((element, index) => (
-            <div
-              key={element.name}
-              className="flex items-center p-4 rounded-lg border border-white/20 bg-gradient-to-r from-black/40 to-black/20 backdrop-blur-sm transition-all duration-300 hover:border-white/40"
-              style={{
-                borderColor: `${element.color}40`,
-                boxShadow: `0 0 15px ${element.color}20`
-              }}
-            >
+        <div className="space-y-0">
+          {ELEMENT_ROWS.map((element, index) => {
+            const isSelected = selectedElements.has(element.name);
+            return (
+              <div
+                key={element.name}
+                className="flex items-center py-1 rounded-lg border border-white/20 bg-gradient-to-r from-black/40 to-black/20 backdrop-blur-sm transition-all duration-300 hover:border-white/40 cursor-pointer"
+                style={{
+                  borderColor: isSelected ? `${element.color}` : `${element.color}40`,
+                  boxShadow: isSelected 
+                    ? `0 0 25px ${element.color}80, 0 0 50px ${element.color}40` 
+                    : `0 0 15px ${element.color}20`,
+                  background: isSelected 
+                    ? `linear-gradient(90deg, ${element.color}20, ${element.color}10)` 
+                    : 'linear-gradient(90deg, rgba(0,0,0,0.4), rgba(0,0,0,0.2))'
+                }}
+                onClick={() => handleElementClick(element.name)}
+                onMouseEnter={() => {
+                  try {
+                    const audio = new Audio('/audio/hover.mp3');
+                    audio.volume = 0.3;
+                    audio.play().catch(error => {
+                      console.log('Hover audio play failed:', error);
+                    });
+                  } catch (error) {
+                    console.log('Hover audio creation failed:', error);
+                  }
+                }}
+              >
               {/* Element image on left */}
               <div 
-                className="w-12 h-12 rounded-lg flex items-center justify-center mr-4 flex-shrink-0"
-                style={{
-                  background: `${element.color}20`,
-                  border: `1px solid ${element.color}60`
-                }}
+                className="w-8 h-8 rounded-lg flex items-center justify-center mr-3 flex-shrink-0"
               >
                 <img
                   src={element.image}
                   alt={element.name}
-                  className="w-8 h-8 object-cover"
+                  className="w-6 h-6 object-cover"
                   draggable={false}
                 />
               </div>
@@ -280,23 +292,21 @@ export default function VotingPanel() {
               {/* Element name */}
               <div className="flex-1">
                 <h4 
-                  className="text-lg font-bold"
+                  className="text-sm font-bold"
                   style={{
-                    color: element.color,
-                    textShadow: `0 0 10px ${element.color}80`
+                    color: isSelected ? '#FFFFFF' : element.color,
+                    textShadow: isSelected 
+                      ? `0 0 15px ${element.color}, 0 0 30px ${element.color}` 
+                      : `0 0 10px ${element.color}80`
                   }}
                 >
                   {element.name}
                 </h4>
-                <p className="text-xs text-white/60 mt-1">
-                  Ready for voting
-                </p>
               </div>
 
               {/* Right indicator */}
               <div className="flex items-center space-x-2 text-white/40">
                 <span className="text-sm">⏱️</span>
-                <span className="text-xs">Awaiting vote</span>
               </div>
             </div>
           ))}

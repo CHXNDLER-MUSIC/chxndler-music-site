@@ -252,7 +252,10 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   };
 
   const handleCheckInSubmit = async () => {
+    // This function should ONLY be called when confirming a secret phrase
     if (questStatus.liveShow || loading || !isAuthenticated || !secretPhrase.trim()) return;
+    
+    console.log('handleCheckInSubmit called - this should only happen on CONFIRM button click');
     
     try { sfx.play('click', 0.8); } catch {}
     setLoading(true);
@@ -299,6 +302,14 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
     }
     
     setLoading(false);
+  };
+
+  const handleShowCheckInForm = () => {
+    console.log('handleShowCheckInForm called - showing text input form');
+    try { sfx.play('click', 0.8); } catch {}
+    setShowCheckIn(true);
+    setCheckInError("");
+    setSecretPhrase("");
   };
 
   // Calculate quest progress
@@ -700,12 +711,13 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                 {!showCheckIn ? (
                   <p className="text-white/80 text-sm">Check in at a CHXNDLER show or stream to receive bonus HEART coins.</p>
                 ) : (
-                  <div className="space-y-2">
-                    <p className="text-white/80 text-sm">ENTER SECRET PHRASE</p>
+                  <div className="space-y-2" style={{ border: '2px solid red', padding: '10px' }}>
+                    <p className="text-white/80 text-sm" style={{ color: 'yellow' }}>ENTER SECRET PHRASE (DEBUG: showCheckIn={String(showCheckIn)})</p>
                     <input
                       type="text"
                       value={secretPhrase}
                       onChange={(e) => {
+                        console.log('Input changed:', e.target.value);
                         setSecretPhrase(e.target.value);
                         setCheckInError("");
                       }}
@@ -713,6 +725,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                       className="w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-cyan-400 focus:outline-none"
                       style={{
                         boxShadow: '0 0 8px rgba(0,255,255,0.2)',
+                        border: '3px solid lime'
                       }}
                       autoFocus
                     />
@@ -726,12 +739,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                       ? undefined 
                       : showCheckIn 
                         ? handleCheckInSubmit 
-                        : () => {
-                            try { sfx.play('click', 0.8); } catch {}
-                            setShowCheckIn(true);
-                            setCheckInError("");
-                            setSecretPhrase("");
-                          }
+                        : handleShowCheckInForm
                   }
                   disabled={questStatus.liveShow || !isAuthenticated || (showCheckIn && (!secretPhrase.trim() || loading))}
                   className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 ${
@@ -772,7 +780,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                       ? 'LOG IN TO COMPLETE' 
                       : showCheckIn
                         ? (loading ? 'CONFIRMING...' : secretPhrase.trim() ? 'CONFIRM' : 'ENTER PHRASE')
-                        : 'CHECK IN'
+                        : `CHECK IN (DEBUG: show=${showCheckIn})`
                   }
                 </button>
                 <div 

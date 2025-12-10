@@ -61,11 +61,14 @@ export default function CustomCursor() {
           backgroundColor: "#FF0080",
           borderRadius: "50%",
           pointerEvents: "none",
-          zIndex: 2147483649,
+          zIndex: 2147483650,
           transform: "translate3d(0, 0, 0)",
           boxShadow: "0 0 10px #FF0080, 0 0 20px #FF0080",
           opacity: 1,
           visibility: "visible",
+          isolation: "isolate",
+          mixBlendMode: "normal",
+          willChange: "transform",
         }}
       />
       {/* Custom image cursor */}
@@ -81,12 +84,14 @@ export default function CustomCursor() {
           backgroundSize: "contain",
           backgroundRepeat: "no-repeat",
           pointerEvents: "none",
-          zIndex: 2147483649,
+          zIndex: 2147483650,
           transform: "translate3d(0, 0, 0)",
           isolation: "isolate",
           contain: "layout style paint",
           opacity: imageLoaded ? 1 : 0,
           visibility: "visible",
+          mixBlendMode: "normal",
+          willChange: "transform",
         }}
       />
     </>

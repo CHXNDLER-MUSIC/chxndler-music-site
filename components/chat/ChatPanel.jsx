@@ -984,7 +984,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                               textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
                             }}
                           >
-                            🗳️ SONG VOTING
+                            VOTING
                           </p>
                         )}
                         

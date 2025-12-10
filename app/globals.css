@@ -44,7 +44,7 @@
 
 /* Ensure custom cursor is always on top of everything */
 .custom-cursor-always-top {
-  z-index: 2147483647 !important;
+  z-index: 2147483650 !important;
   position: fixed !important;
   pointer-events: none !important;
   isolation: isolate !important;
