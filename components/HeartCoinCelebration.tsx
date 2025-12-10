@@ -11,7 +11,7 @@ export default function HeartCoinCelebration() {
   useEffect(() => {
     // Create audio instance once
     if (typeof window !== 'undefined') {
-      audioRef.current = new Audio('/sounds/card-ding.mp3');
+      audioRef.current = new Audio('/audio/heart-coin.mp3');
     }
 
     const handleCelebration = (event: CustomEvent<HeartCoinCelebrationDetail>) => {
@@ -32,10 +32,10 @@ export default function HeartCoinCelebration() {
       // Show celebration
       setIsVisible(true);
 
-      // Hide after 1.5 seconds
+      // Hide after 3 seconds
       setTimeout(() => {
         setIsVisible(false);
-      }, 1500);
+      }, 3000);
     };
 
     // Add event listener
@@ -50,7 +50,7 @@ export default function HeartCoinCelebration() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none" style={{ alignItems: 'center', paddingBottom: '10vh' }}>
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/20 backdrop-blur-sm heartcoin-backdrop-fade" />
       
@@ -61,7 +61,7 @@ export default function HeartCoinCelebration() {
         
         {/* Heart coin image */}
         <img 
-          src="/heart-coin.webp" 
+          src="/elements/heart-coin.webp" 
           alt="HeartCoin" 
           className="w-48 h-48 relative z-10"
         />

@@ -8,6 +8,7 @@ import { hasAnsweredToday, getTodaysQuestion } from "@/lib/dailyQuestions";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useProfile } from "@/contexts/ProfileContext";
 import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
+import { getBonusQuestsForUser } from "@/lib/bonusQuests";
 
 type Props = {
   onBack: () => void;
@@ -87,12 +88,44 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   const { questStatus, setQuestStatus, todaysElement, todaysQuestion } = useQuestStatus();
   const { refreshProfile } = useProfile();
 
+  // Sync quest status with server
+  const syncQuestStatus = async (userId: string) => {
+    try {
+      const bonusQuests = await getBonusQuestsForUser(userId);
+      const inviteFriendQuest = bonusQuests.find(q => q.quest_key === 'INVITE_FRIEND');
+      
+      if (inviteFriendQuest) {
+        const today = new Date().toDateString();
+        const isCompletedToday = inviteFriendQuest.completed_today > 0;
+        
+        // Update localStorage to match server state
+        localStorage.setItem(`quest_invite_confirm_${today}`, isCompletedToday.toString());
+        
+        // Update state
+        setQuestStatus(prev => ({ 
+          ...prev, 
+          inviteFriendConfirm: isCompletedToday,
+          // If confirmed today, also set inviteFriend to true
+          inviteFriend: isCompletedToday ? true : prev.inviteFriend
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to sync quest status:', error);
+    }
+  };
+
   // Check authentication status
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const { data: { session } } = await supabaseClient.auth.getSession();
-        setIsAuthenticated(!!session?.user);
+        const isAuth = !!session?.user;
+        setIsAuthenticated(isAuth);
+        
+        // Sync quest status if authenticated
+        if (isAuth && session?.user?.id) {
+          await syncQuestStatus(session.user.id);
+        }
       } catch (error) {
         console.error('Auth check failed:', error);
         setIsAuthenticated(false);
@@ -105,8 +138,14 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
 
     // Listen for auth state changes
     const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
-      (event, session) => {
-        setIsAuthenticated(!!session?.user);
+      async (event, session) => {
+        const isAuth = !!session?.user;
+        setIsAuthenticated(isAuth);
+        
+        // Sync quest status when user logs in
+        if (isAuth && session?.user?.id) {
+          await syncQuestStatus(session.user.id);
+        }
       }
     );
 
@@ -270,42 +309,44 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
     setLoading(true);
     setCheckInError("");
     
-    // Simple secret phrase validation - you can modify this list
-    const validPhrases = ['heartverse', 'chxndler', 'liveshow', 'secret', 'music'];
-    const isValidPhrase = validPhrases.includes(secretPhrase.toLowerCase().trim());
-    
-    if (isValidPhrase) {
-      try {
-        const response = await fetch('/api/heart-coins/update', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ heartCoinsToAdd: 5 })
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Heart coin update successful:', data);
-          setQuestStatus(prev => ({ ...prev, liveShow: true }));
-          // Save to localStorage to persist across sessions for today
-          const today = new Date().toDateString();
-          localStorage.setItem(`quest_liveshow_${today}`, 'true');
-          showCelebration("🎵 Live show magic! You're part of something special tonight. +5 HeartCoins earned!");
-          setSecretPhrase("");
-          setShowCheckIn(false);
-          // Trigger HeartCoin celebration animation (5 coins)
-          triggerHeartCoinCelebration(5);
-        } else {
-          const errorData = await response.json();
-          console.error('Heart coin update failed:', errorData);
-          setCheckInError("Error awarding heart coins. Please try again.");
+    // Use the proper secret phrase redemption API
+    try {
+      const response = await fetch('/api/redeem-secret-phrase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          context: 'live_show', 
+          phrase: secretPhrase.trim() 
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        console.log('Secret phrase redemption successful:', data);
+        setQuestStatus(prev => ({ ...prev, liveShow: true }));
+        // Save to localStorage to persist across sessions for today
+        const today = new Date().toDateString();
+        localStorage.setItem(`quest_liveshow_${today}`, 'true');
+        showCelebration(data.message || "🎵 Live show magic! Secret phrase accepted!");
+        setSecretPhrase("");
+        setShowCheckIn(false);
+        // Trigger HeartCoin celebration animation
+        if (data.rewardHeartCoins > 0) {
+          triggerHeartCoinCelebration(data.rewardHeartCoins);
         }
-      } catch (error) {
-        console.error('Failed to award heart coins:', error);
-        setCheckInError("Error awarding heart coins. Please try again.");
+      } else {
+        console.error('Secret phrase redemption failed:', data);
+        setCheckInError(data.message || "That signal is not active right now.");
+        setTimeout(() => {
+          setCheckInError("");
+          setSecretPhrase("");
+        }, 3000);
       }
-    } else {
-      setCheckInError("INCORRECT SECRET PHRASE. TRY AGAIN");
+    } catch (error) {
+      console.error('Failed to redeem secret phrase:', error);
+      setCheckInError("Connection error. Please try again.");
       setTimeout(() => {
         setCheckInError("");
         setSecretPhrase("");

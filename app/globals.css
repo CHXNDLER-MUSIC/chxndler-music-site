@@ -2120,15 +2120,23 @@ button:hover > .heart-coin-glow,
 @keyframes heartcoinPop {
   0% {
     opacity: 0;
-    transform: scale(0.5);
+    transform: scale(0.8);
   }
-  40% {
+  15% {
     opacity: 1;
-    transform: scale(1.1);
+    transform: scale(1.05);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  85% {
+    opacity: 1;
+    transform: scale(1);
   }
   100% {
     opacity: 0;
-    transform: scale(1);
+    transform: scale(0.95);
   }
 }
 
@@ -2136,7 +2144,10 @@ button:hover > .heart-coin-glow,
   0% {
     opacity: 0;
   }
-  20% {
+  10% {
+    opacity: 1;
+  }
+  90% {
     opacity: 1;
   }
   100% {
@@ -2145,9 +2156,9 @@ button:hover > .heart-coin-glow,
 }
 
 .heartcoin-pop {
-  animation: heartcoinPop 1.5s ease-out;
+  animation: heartcoinPop 3s ease-out;
 }
 
 .heartcoin-backdrop-fade {
-  animation: heartcoinBackdropFade 1.5s ease-out;
+  animation: heartcoinBackdropFade 3s ease-out;
 }

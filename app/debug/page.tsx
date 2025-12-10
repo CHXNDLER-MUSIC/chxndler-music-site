@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { playerStore } from '@/store/usePlayerStore';
+import { triggerHeartCoinCelebration } from '@/utils/heartcoinCelebration';
 
 export default function DebugPage() {
   const [storeState, setStoreState] = useState(null);
@@ -34,6 +35,17 @@ export default function DebugPage() {
         setStoreState(playerStore.getState());
       }}>
         Force Show All Planets
+      </button>
+      
+      <h2>HeartCoin Celebration Test</h2>
+      <button onClick={() => triggerHeartCoinCelebration(1)} style={{ margin: '5px', padding: '10px' }}>
+        Test +1 HeartCoin
+      </button>
+      <button onClick={() => triggerHeartCoinCelebration(5)} style={{ margin: '5px', padding: '10px' }}>
+        Test +5 HeartCoins
+      </button>
+      <button onClick={() => triggerHeartCoinCelebration(10)} style={{ margin: '5px', padding: '10px' }}>
+        Test +10 HeartCoins
       </button>
     </div>
   );

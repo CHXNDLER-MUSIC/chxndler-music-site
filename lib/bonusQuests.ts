@@ -29,7 +29,10 @@ export async function getBonusQuestsForUser(userId?: string | null): Promise<Bon
 
     // Fetch user's completion stats (only if a userId is present)
     let completions: Pick<UserBonusQuestRow, 'bonus_quest_id' | 'times_completed' | 'last_completed_at'>[] = [];
+    let todayCompletions: { bonus_quest_id: string }[] = [];
+    
     if (userId) {
+      // Fetch total completion counts
       const { data, error: completionsError } = await supabaseClient
         .from('user_bonus_quests')
         .select('bonus_quest_id, times_completed, last_completed_at')
@@ -41,6 +44,19 @@ export async function getBonusQuestsForUser(userId?: string | null): Promise<Bon
       } else {
         completions = data || [];
       }
+      
+      // Fetch today's completions using completed_at
+      const today = new Date().toISOString().split('T')[0]; // Get YYYY-MM-DD format
+      const { data: todayData, error: todayError } = await supabaseClient
+        .from('user_bonus_quest_completions')
+        .select('bonus_quest_id')
+        .eq('user_id', userId)
+        .gte('completed_at', `${today}T00:00:00Z`)
+        .lt('completed_at', `${today}T23:59:59.999Z`);
+      
+      if (!todayError && todayData) {
+        todayCompletions = todayData;
+      }
     }
 
     // Build completion map
@@ -50,6 +66,12 @@ export async function getBonusQuestsForUser(userId?: string | null): Promise<Bon
         times_completed: completion.times_completed,
         last_completed_at: completion.last_completed_at
       });
+    });
+    
+    // Build today's completion map
+    const todayCompletionMap = new Set<string>();
+    todayCompletions.forEach(completion => {
+      todayCompletionMap.add(completion.bonus_quest_id);
     });
 
     // Filter out quests that user has reached max_total_completions
@@ -87,14 +109,19 @@ export async function getBonusQuestsForUser(userId?: string | null): Promise<Bon
       const completion = completionMap.get(quest.id);
       const timesCompleted = completion?.times_completed || 0;
       
-      // Check if user can complete today (simplified - just check total completions for now)
-      const canComplete = quest.max_total_completions === null || timesCompleted < quest.max_total_completions;
+      // Check if completed today using the new completions table
+      const completedToday = todayCompletionMap.has(quest.id) ? 1 : 0;
+      
+      // Check if user can complete today
+      const hasReachedDailyLimit = completedToday >= quest.max_times_per_day;
+      const hasReachedTotalLimit = quest.max_total_completions !== null && timesCompleted >= quest.max_total_completions;
+      const canComplete = !hasReachedDailyLimit && !hasReachedTotalLimit;
       
       return {
         ...quest,
         times_completed: timesCompleted,
         can_complete: canComplete,
-        completed_today: 0 // TODO: Implement daily tracking if needed
+        completed_today: completedToday
       };
     });
 
@@ -106,13 +133,13 @@ export async function getBonusQuestsForUser(userId?: string | null): Promise<Bon
 
 /**
  * Completes a bonus quest for the user with proper tracking and rewards
- * New signature to match requirements
+ * Now uses user_bonus_quest_completions table for daily tracking
  */
 export async function completeBonusQuest(params: {
   supabase: SupabaseClient;
   userId: string;
   bonusQuestId: string;
-}): Promise<void> {
+}): Promise<{ status: 'completed_today' | 'already_completed_today'; data?: any }> {
   const { supabase, userId, bonusQuestId } = params;
 
   if (!bonusQuestId) {
@@ -133,35 +160,59 @@ export async function completeBonusQuest(params: {
       throw new Error('Quest not found');
     }
 
-    // Check if already completed (prevent duplicate completion)
-    const { data: existingCompletion } = await supabase
+    // Insert completion record into user_bonus_quest_completions
+    // The database trigger will prevent duplicates for the same day
+    const { data: insertData, error: insertError } = await supabase
       .from('user_bonus_quest_completions')
-      .select('id')
+      .insert({
+        user_id: userId,
+        bonus_quest_id: bonusQuestId
+        // completed_at will be set automatically by the trigger
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      // Check if this is the "already completed today" error
+      if (insertError.message && insertError.message.includes('Quest already completed today')) {
+        console.log('Quest already completed today:', { userId, bonusQuestId });
+        return { status: 'already_completed_today' };
+      }
+      
+      // Handle other errors
+      console.error('Failed to insert quest completion:', insertError);
+      throw new Error(`Failed to complete quest: ${insertError.message}`);
+    }
+
+    // Update the user_bonus_quests table for tracking total completions
+    const { data: existingRecord } = await supabase
+      .from('user_bonus_quests')
+      .select('times_completed')
       .eq('user_id', userId)
       .eq('bonus_quest_id', bonusQuestId)
       .maybeSingle();
 
-    if (existingCompletion) {
-      console.log('Quest already completed, skipping duplicate');
-      return;
-    }
-
-    // Insert completion record
-    const { error: completionError } = await supabase
-      .from('user_bonus_quest_completions')
-      .insert({
-        user_id: userId,
-        bonus_quest_id: bonusQuestId,
-        completed_at: new Date().toISOString()
-      });
-
-    if (completionError) {
-      console.error('Failed to insert quest completion:', {
-        userId,
-        bonusQuestId,
-        error: completionError
-      });
-      throw new Error(`Failed to complete quest: ${completionError.message}`);
+    if (existingRecord) {
+      // Update existing record
+      await supabase
+        .from('user_bonus_quests')
+        .update({
+          times_completed: existingRecord.times_completed + 1,
+          last_completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId)
+        .eq('bonus_quest_id', bonusQuestId);
+    } else {
+      // Create new record
+      await supabase
+        .from('user_bonus_quests')
+        .insert({
+          user_id: userId,
+          bonus_quest_id: bonusQuestId,
+          times_completed: 1,
+          last_completed_at: new Date().toISOString()
+        });
     }
 
     // Award HeartCoins if quest has reward
@@ -181,6 +232,8 @@ export async function completeBonusQuest(params: {
       questKey: quest.quest_key,
       heartCoinsAwarded: quest.reward_heartcoins
     });
+
+    return { status: 'completed_today', data: insertData };
 
   } catch (error) {
     console.error('Error in completeBonusQuest:', {
@@ -302,13 +355,20 @@ export async function completeBonusQuestLegacy(
 ): Promise<QuestCompletionResult> {
   try {
     // Use the new completeBonusQuest function
-    await completeBonusQuest({
+    const result = await completeBonusQuest({
       supabase: supabaseClient,
       userId,
       bonusQuestId: quest.id
     });
 
-    // Call optional callbacks
+    if (result.status === 'already_completed_today') {
+      return {
+        success: true,
+        message: 'Quest already completed today!'
+      };
+    }
+
+    // Call optional callbacks only for new completions
     if (quest.reward_heartcoins > 0) {
       onHeartCoinsAwarded?.(quest.reward_heartcoins);
     }

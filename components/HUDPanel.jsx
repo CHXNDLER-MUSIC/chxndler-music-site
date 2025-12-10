@@ -5862,7 +5862,7 @@ const HUDPanel = React.memo(function HUDPanel({
                             }}
                           >
                             {canAfford ? 
-                              '✓ You can purchase this item!' : 
+                              '✓' : 
                               `✗ You need ${item.heartcoins - heartCoinsCount} more Heart Coins`
                             }
                           </div>

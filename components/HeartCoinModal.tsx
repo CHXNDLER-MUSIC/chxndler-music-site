@@ -115,7 +115,7 @@ const storeItems: StoreItem[] = [
 ];
 
 export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Props) {
-  const { profile } = useProfile();
+  const { profile, loading: profileLoading } = useProfile();
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -380,7 +380,14 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
             </div>
 
             {/* Cards Grid */}
-            {profile?.cards && profile.cards.length > 0 ? (
+            {profileLoading ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto mb-4 bg-white/10 rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 border-2 border-[#F2EF1D] border-t-transparent rounded-full animate-spin"></div>
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2">Loading cards...</h3>
+              </div>
+            ) : profile?.cards && profile.cards.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto pr-2">
                 {profile.cards.map((userCard) => (
                   <div 

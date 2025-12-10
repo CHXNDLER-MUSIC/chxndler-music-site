@@ -9,6 +9,7 @@ import { LINKS } from "@/config/cockpit";
 import { useAudio } from "@/app/providers/AudioProvider";
 import { useProfile } from "@/hooks/useProfile";
 import { sfx } from "@/lib/sfx";
+import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
 
 // Helper to detect Safari browser
 const isSafariUA =
@@ -929,6 +930,46 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
             )
           )}
         </span>
+      </button>}
+
+      {/* Temporary HeartCoin Celebration Test Button */}
+      {!hideStartButton && <button
+        onClick={() => triggerHeartCoinCelebration(1)}
+        data-no-track
+        className="pointer-events-auto"
+        style={{
+          position: "absolute",
+          bottom: `calc(-2vh + ${vs * 0.35}px - 150px)`, // Position above START button
+          left: '50%',
+          width: 60,
+          height: 60,
+          borderRadius: 9999,
+          transform: `translate(-50%, 0)`,
+          zIndex: 9998,
+          pointerEvents: 'auto',
+          background: 'rgba(255, 20, 147, 0.8)',
+          border: '2px solid #ff1493',
+          color: 'white',
+          fontSize: '24px',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translate(-50%, 0) scale(1.1)';
+          e.currentTarget.style.background = 'rgba(255, 20, 147, 1)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translate(-50%, 0) scale(1)';
+          e.currentTarget.style.background = 'rgba(255, 20, 147, 0.8)';
+        }}
+        aria-label="Test HeartCoin Celebration"
+        title="Test HeartCoin Celebration (+1)"
+      >
+        ❤️
       </button>}
 
       <style jsx>{`
