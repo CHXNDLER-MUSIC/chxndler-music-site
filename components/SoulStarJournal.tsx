@@ -5,7 +5,7 @@ import { useProfile } from "@/contexts/ProfileContext";
 import { sfx } from "@/lib/sfx";
 import { useDailyReflectionStatus } from "@/hooks/useDailyReflectionStatus";
 import { supabaseBrowser } from "@/lib/supabase-browser";
-import { getLocalDateString } from "@/utils/dateHelpers";
+import { getLocalDateString, getDisplayDateString } from "@/utils/dateHelpers";
 
 interface DailyPrompt {
   id: string;
@@ -107,11 +107,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const [hasClickedInitialButton, setHasClickedInitialButton] = useState(false);
 
   const today = getLocalDateString();
-  const todayFormatted = new Date().toLocaleDateString('en-US', {
-    month: 'numeric',
-    day: 'numeric',
-    year: 'numeric'
-  });
+  const todayFormatted = getDisplayDateString();
 
   // Load daily prompt when opened
   useEffect(() => {
@@ -260,6 +256,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         return;
       }
 
+      // Only set loading state after all validations pass
       setIsSaving(true);
       setError("");
       setSuccessMessage("");
@@ -295,23 +292,15 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       // Mark reflection as complete to hide notifications
       markReflectionComplete();
 
-      // Clear soulStarText and set success message
+      // Clear soulStarText and mark as submitted
       setSoulStarText("");
-      setSuccessMessage("Your signal was cast into the stars.");
       setJournalState(prev => ({
         ...prev,
-        isSubmitted: true,
-        saveMessage: "Signal cast into the stars"
+        isSubmitted: true
       }));
       
       // Notify parent that journal was completed
       onJournalCompleted?.();
-      
-      setTimeout(() => {
-        setSuccessMessage("");
-        setJournalState(prev => ({ ...prev, saveMessage: "" }));
-        onClose();
-      }, 2000);
 
     } catch (error) {
       console.error('Failed to save journal entry:', error);
@@ -606,7 +595,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             ) : (
               journalEntries.map((entry) => {
                 const entryDate = new Date(entry.entry_date).toLocaleDateString('en-US', {
-                  month: 'short',
+                  timeZone: 'America/New_York',
+                  month: 'numeric',
                   day: 'numeric',
                   year: 'numeric'
                 });
@@ -746,28 +736,26 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                         )}
                         
                         {/* Prompt */}
-                        {entry.reflection && (
-                          <div>
-                            <div 
-                              className="text-xs font-semibold mb-1 uppercase tracking-wider"
-                              style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
-                            >
-                              Prompt
-                            </div>
-                            <div 
-                              className="text-sm leading-relaxed"
-                              style={{ 
-                                color: '#FFFFFF',
-                                background: 'rgba(0,0,0,0.2)',
-                                padding: '8px',
-                                borderRadius: '6px',
-                                border: `1px solid ${entryColor}15`
-                              }}
-                            >
-                              {entry.reflection}
-                            </div>
+                        <div>
+                          <div 
+                            className="text-xs font-semibold mb-1 uppercase tracking-wider"
+                            style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
+                          >
+                            Prompt
                           </div>
-                        )}
+                          <div 
+                            className="text-sm leading-relaxed"
+                            style={{ 
+                              color: '#FFFFFF',
+                              background: 'rgba(0,0,0,0.2)',
+                              padding: '8px',
+                              borderRadius: '6px',
+                              border: `1px solid ${entryColor}15`
+                            }}
+                          >
+                            {entry.reflection || 'Prompt text not available'}
+                          </div>
+                        </div>
                         
                         {/* Soul Star */}
                         {entry.soul_star && (
@@ -778,19 +766,29 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                   className="text-xs font-semibold uppercase tracking-wider"
                                   style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
                                 >
-                                  🌟 Soul Star
+                                  Soul Star
                                 </div>
-                                {/* Privacy status in expanded view */}
-                                <span 
-                                  className="text-xs px-2 py-1 rounded-full uppercase font-semibold"
+                                {/* Privacy status in expanded view - clickable to toggle */}
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    sfx.play('click', 0.6);
+                                    try {
+                                      await updateJournalEntry(entry.id, { is_private: !entry.is_private });
+                                    } catch (error) {
+                                      console.error('Failed to update privacy:', error);
+                                    }
+                                  }}
+                                  className="text-xs px-2 py-1 rounded-full uppercase font-semibold transition-all hover:opacity-80 cursor-pointer"
                                   style={{
                                     background: entry.is_private ? `${entryColor}15` : 'rgba(34, 197, 94, 0.15)',
                                     color: entry.is_private ? entryColor : '#22C55E',
                                     border: entry.is_private ? `1px solid ${entryColor}40` : '1px solid rgba(34, 197, 94, 0.4)'
                                   }}
+                                  title={entry.is_private ? "Make public" : "Make private"}
                                 >
                                   {entry.is_private ? 'PRIVATE' : 'PUBLIC'}
-                                </span>
+                                </button>
                               </div>
                               {!isEditing && (
                                 <button

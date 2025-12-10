@@ -20,12 +20,23 @@ export function useDailyReflectionStatus() {
         return;
       }
 
-      // Get today's date in local timezone YYYY-MM-DD format
+      // Get today's date in EST timezone YYYY-MM-DD format
       const today = getLocalDateString();
+      
+      // Also check for yesterday's date in case of timezone issues with existing entries
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayEST = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/New_York',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).formatToParts(yesterday);
+      const yesterdayStr = `${yesterdayEST.find(part => part.type === 'year')?.value}-${yesterdayEST.find(part => part.type === 'month')?.value}-${yesterdayEST.find(part => part.type === 'day')?.value}`;
 
-      // Check if user has submitted a reflection for today
+      // Check if user has submitted a reflection for today or yesterday (accounting for timezone differences)
       const todayReflection = journalEntries.find(entry => 
-        entry.entry_date === today && 
+        (entry.entry_date === today || entry.entry_date === yesterdayStr) && 
         entry.element === profile.element &&
         (entry.reflection_response || entry.soul_star) // Has written something substantial
       );

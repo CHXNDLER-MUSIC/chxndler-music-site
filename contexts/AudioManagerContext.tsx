@@ -248,11 +248,14 @@ export function AudioManagerProvider({ children }: { children: React.ReactNode }
     stopAllAudioInternal();
     // warp
     try { sfxRef.current = await playAudioOnce(SFX.WARP); } catch {}
+    // Stop any ambient space music after warp completes
+    if (ambientRef.current) {
+      try { ambientRef.current.pause(); } catch {}
+      try { ambientRef.current.currentTime = 0; } catch {}
+      ambientRef.current = null;
+    }
     // button
     try { sfx2Ref.current = await playAudioOnce(SFX.BUTTON_BEAM); } catch {}
-    // ambient loop
-    const ambientSrc = bestSourceForInternal(TRACKS.SPACE_MUSIC);
-    ambientRef.current = playLoopingAudio(ambientSrc);
     // welcome VO (one-shot)
     const welcome = isLoggedIn ? TRACKS.WELCOME_BACK : TRACKS.WELCOME_TO_HEARTVERSE;
     const welcomeSrc = bestSourceForInternal(welcome);

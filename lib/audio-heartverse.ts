@@ -66,9 +66,9 @@ class AudioHeartverseController {
       this.welcomeHomeAudio.currentTime = 0;
       this.welcomeHomeAudio.play().catch(console.error);
       
-      // Start space music (loops)
-      this.spaceMusicAudio.currentTime = 0;
-      this.spaceMusicAudio.play().catch(console.error);
+      // Removed: automatic space music playback
+      // this.spaceMusicAudio.currentTime = 0;
+      // this.spaceMusicAudio.play().catch(console.error);
     }
   }
 

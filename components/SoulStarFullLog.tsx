@@ -131,7 +131,8 @@ export default function SoulStarFullLog({ userId }: SoulStarFullLogProps) {
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short',
+      timeZone: 'America/New_York',
+      month: 'numeric',
       day: 'numeric',
       year: 'numeric'
     });
@@ -280,7 +281,7 @@ export default function SoulStarFullLog({ userId }: SoulStarFullLogProps) {
                       className="text-xs font-semibold mb-1 uppercase tracking-wider"
                       style={{ color: entryColor, textShadow: `0 0 2px ${entryGlow}` }}
                     >
-                      ✨ INTENTION
+                      INTENTION
                     </div>
                     <div 
                       className="text-sm leading-relaxed"
@@ -303,7 +304,7 @@ export default function SoulStarFullLog({ userId }: SoulStarFullLogProps) {
                     className="text-xs font-semibold mb-1 uppercase tracking-wider"
                     style={{ color: entryColor, textShadow: `0 0 2px ${entryGlow}` }}
                   >
-                    ✨ PROMPT
+                    PROMPT
                   </div>
                   <div 
                     className="text-sm leading-relaxed"
@@ -315,7 +316,7 @@ export default function SoulStarFullLog({ userId }: SoulStarFullLogProps) {
                       border: `1px solid ${entryColor}15`
                     }}
                   >
-                    {entry.prompt}
+                    {entry.prompt || 'No prompt text available'}
                   </div>
                 </div>
                 
@@ -326,7 +327,7 @@ export default function SoulStarFullLog({ userId }: SoulStarFullLogProps) {
                       className="text-xs font-semibold uppercase tracking-wider"
                       style={{ color: entryColor, textShadow: `0 0 2px ${entryGlow}` }}
                     >
-                      ⭐ YOUR SOUL STAR
+                      YOUR SOUL STAR
                     </div>
                     {!isEditing && (
                       <button

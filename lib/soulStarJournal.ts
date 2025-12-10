@@ -9,6 +9,7 @@ export type SoulStarLogEntry = {
   promptDate: string;
   prompt: string;
   intention: string | null;
+  promptId?: string | null;
 };
 
 export type CurrentPrompt = {
@@ -66,7 +67,11 @@ export async function loadSoulStarFullLog(userId: string): Promise<SoulStarLogEn
       soul_star,
       is_private,
       created_at,
+      prompt_id,
+      intention,
+      reflection,
       soul_daily_prompts (
+        id,
         prompt_date,
         element,
         prompt,
@@ -88,11 +93,14 @@ export async function loadSoulStarFullLog(userId: string): Promise<SoulStarLogEn
     id: entry.id,
     entryDate: entry.entry_date,
     element: entry.element,
-    soulStar: entry.soul_star,
+    soulStar: entry.soul_star || '',
     isPrivate: entry.is_private,
     promptDate: entry.soul_daily_prompts?.prompt_date || entry.entry_date,
-    prompt: entry.soul_daily_prompts?.prompt || '', // Keep this for backward compatibility with existing type
-    intention: entry.soul_daily_prompts?.intention || null,
+    // Use the reflection column (which stores the prompt text) or fallback to the relationship
+    prompt: entry.reflection || entry.soul_daily_prompts?.prompt || '', 
+    // Use the intention column (which stores the intention text) or fallback to the relationship
+    intention: entry.intention || entry.soul_daily_prompts?.intention || null,
+    promptId: entry.prompt_id || entry.soul_daily_prompts?.id || null,
   }));
 }
 

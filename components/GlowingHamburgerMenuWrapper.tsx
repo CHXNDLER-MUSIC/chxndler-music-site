@@ -56,6 +56,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
         setBinderOpen(true);
         break;
       case "JOURNAL":
+      case "COMPLETED":
         setJournalOpen(true);
         break;
       case "BADGES":

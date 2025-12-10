@@ -375,7 +375,7 @@ export default function PopoutPanel({
                   fontWeight: 'bold'
                 }}
               >
-                {title}
+{title === 'BE MY BEE' ? '' : title}
               </div>
               
               {/* Thin neon line */}

@@ -568,6 +568,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [secretPhraseValue, setSecretPhraseValue] = useState("");
   const [secretPhraseLoading, setSecretPhraseLoading] = useState(false);
   
+  // State for automatic text box after check-in
+  const [showAutoTextBox, setShowAutoTextBox] = useState(false);
+  const [autoTextValue, setAutoTextValue] = useState("");
+  
   // Bonus quests hook
   const { quests: bonusQuests, status: bonusQuestsStatus, errorMessage: bonusQuestsError, isLoggedIn, completeQuest } = useBonusQuests();
 
@@ -711,6 +715,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         setCheckInMessage(result.message);
         setStatusType('success');
         setShowCheckInSuccess(true);
+
+        // Automatically open text box after success
+        setShowAutoTextBox(true);
+        setAutoTextValue("");
 
         // Hide success message after 3 seconds
         setTimeout(() => {
@@ -2839,6 +2847,52 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         </div>
       )}
 
+      {/* Automatic Text Box After Check-in Success */}
+      {showAutoTextBox && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-black/90 border border-white/30 rounded-lg p-6 m-4 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-white text-lg font-bold">Write something...</h3>
+              <button
+                onClick={() => {
+                  setShowAutoTextBox(false);
+                  setAutoTextValue("");
+                }}
+                className="text-white/60 hover:text-white text-xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+            <textarea
+              value={autoTextValue}
+              onChange={(e) => setAutoTextValue(e.target.value)}
+              placeholder="What's on your mind?"
+              className="w-full h-24 p-3 rounded text-white placeholder-white/50 bg-white/10 border border-white/30 resize-none focus:outline-none focus:border-white/60"
+              autoFocus
+            />
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={() => {
+                  setShowAutoTextBox(false);
+                  setAutoTextValue("");
+                }}
+                className="px-4 py-2 rounded bg-white/10 border border-white/30 text-white hover:bg-white/20 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowAutoTextBox(false);
+                  setAutoTextValue("");
+                }}
+                className="px-4 py-2 rounded bg-white/20 border border-white/60 text-white hover:bg-white/30 transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </>
   );

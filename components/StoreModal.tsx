@@ -219,10 +219,12 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
     setCheckoutError(null);
     
     try {
-      // Call the new RPC directly
+      // Call the RPC with correct parameters
       const { data, error } = await supabaseBrowser.rpc('purchase_item_with_heartcoins', {
-        p_item_type: 'card',
+        p_user_id: profile.id,
         p_item_id: item.id,
+        p_item_name: item.title,
+        p_price_heartcoins: item.priceHeartCoins
       });
       
       if (error) {

@@ -148,8 +148,8 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
     // Trigger toggle action first so downstream can open streaming links within a user gesture
     try { onLaunch(); } catch {}
 
-    // Start button audio sequence: warp -> button -> welcome (based on login) through unified audio
-    try { audioManager?.playStartSequence(!!user); } catch {}
+    // Removed: Start button audio sequence that auto-plays space music
+    // try { audioManager?.playStartSequence(!!user); } catch {}
     // After first click, stop pulsing the Start button until refresh
     if (startPulseOn) setStartPulseOn(false);
     // After first click, permanently disable the start spotlight

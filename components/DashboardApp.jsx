@@ -1912,21 +1912,22 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             
             // Enable ambient space music after START button warp completes
             setAmbientSuspended(false);
-            try { 
-              window.dispatchEvent(new CustomEvent('ambient:play')); 
-            } catch {}
+            // Removed: automatic space music trigger - user can manually start music
+            // try { 
+            //   window.dispatchEvent(new CustomEvent('ambient:play')); 
+            // } catch {}
             
-            // Auto-trigger play button to start space music and sync button state
-            setTimeout(() => {
-              try {
-                const ambient = document.querySelector('audio[data-ambient="1"]');
-                if (ambient && ambient.paused) {
-                  ambient.play().catch(() => {});
-                  // Trigger ambient state update for play button sync
-                  window.dispatchEvent(new CustomEvent('ambient:userPlay'));
-                }
-              } catch {}
-            }, 500); // Small delay to ensure audio is ready
+            // Removed: Auto-trigger play button to start space music and sync button state
+            // setTimeout(() => {
+            //   try {
+            //     const ambient = document.querySelector('audio[data-ambient="1"]');
+            //     if (ambient && ambient.paused) {
+            //       ambient.play().catch(() => {});
+            //       // Trigger ambient state update for play button sync
+            //       window.dispatchEvent(new CustomEvent('ambient:userPlay'));
+            //     }
+            //   } catch {}
+            // }, 500); // Small delay to ensure audio is ready
           }
           
           // Keep main player audio blocked on home warp (until a song is selected)
@@ -2109,21 +2110,22 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               
               // Enable ambient space music after homepage reveal
               setAmbientSuspended(false);
-              try { 
-                window.dispatchEvent(new CustomEvent('ambient:play')); 
-              } catch {}
+              // Removed: automatic space music trigger - user can manually start music
+              // try { 
+              //   window.dispatchEvent(new CustomEvent('ambient:play')); 
+              // } catch {}
               
-              // Auto-trigger play button to start space music and sync button state
-              setTimeout(() => {
-                try {
-                  const ambient = document.querySelector('audio[data-ambient="1"]');
-                  if (ambient && ambient.paused) {
-                    ambient.play().catch(() => {});
-                    // Trigger ambient state update for play button sync
-                    window.dispatchEvent(new CustomEvent('ambient:userPlay'));
-                  }
-                } catch {}
-              }, 500); // Small delay to ensure audio is ready
+              // Removed: Auto-trigger play button to start space music and sync button state
+              // setTimeout(() => {
+              //   try {
+              //     const ambient = document.querySelector('audio[data-ambient="1"]');
+              //     if (ambient && ambient.paused) {
+              //       ambient.play().catch(() => {});
+              //       // Trigger ambient state update for play button sync
+              //       window.dispatchEvent(new CustomEvent('ambient:userPlay'));
+              //     }
+              //   } catch {}
+              // }, 500); // Small delay to ensure audio is ready
               if (process.env.NODE_ENV === "development") {
                 console.log("🚀 WARP END: Synchronized cockpit reveal - all UI elements visible");
                 console.log("🛸 POST-WARP STATES:", { 

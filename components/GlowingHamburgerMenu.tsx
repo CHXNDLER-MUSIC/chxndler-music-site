@@ -28,12 +28,14 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
   
   const journeyTitle = getJourneyTitle(!!user);
   
+  const journalLabel = !hasPendingReflection ? "COMPLETED" : "JOURNAL";
+  
   const menuItems = [
     { label: "ABOUT", href: undefined },
     { label: journeyTitle, href: undefined },
     { label: "BINDER", href: undefined },
     { label: "BADGES", href: undefined },
-    { label: "JOURNAL", href: undefined },
+    { label: journalLabel, href: undefined },
     { label: "STORE", href: undefined },
   ];
 
@@ -186,24 +188,30 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                   data-tour-id={
                     item.label === "ABOUT" ? "menu-about" :
                     (item.label === "JOURNEY" || item.label === "MY JOURNEY") ? "menu-journey" :
-                    item.label === "JOURNAL" ? "menu-journal" :
+                    (item.label === "JOURNAL" || item.label === "COMPLETED") ? "menu-journal" :
                     item.label === "BINDER" ? "menu-binder" :
                     item.label === "BADGES" ? "menu-badges" :
                     item.label === "STORE" ? "menu-store" :
                     `menu-${item.label.toLowerCase().replace(/ /g, '-')}`
                   }
                   className={`w-full px-6 py-2 text-left text-white font-semibold tracking-wide transition-all duration-200 hover:bg-cyan-500/10 hover:text-cyan-300 relative group ${
-                    item.label === "JOURNAL" && hasPendingReflection 
+                    (item.label === "JOURNAL" || item.label === "COMPLETED") && hasPendingReflection 
                       ? 'bg-gradient-to-r from-pink-500/10 via-transparent to-pink-500/10' 
                       : ''
                   } ${
                     item.label === "BADGES" && badgesPoppedOut 
                       ? 'scale-110 shadow-lg shadow-yellow-500/50' 
                       : ''
+                  } ${
+                    item.label === "COMPLETED" 
+                      ? 'bg-gradient-to-r from-green-500/10 via-transparent to-green-500/10' 
+                      : ''
                   }`}
                   style={{
-                    textShadow: item.label === "JOURNAL" && hasPendingReflection
+                    textShadow: (item.label === "JOURNAL" || item.label === "COMPLETED") && hasPendingReflection
                       ? "0 0 10px rgba(255, 20, 147, 0.8), 0 0 20px rgba(255, 105, 180, 0.6)"
+                      : item.label === "COMPLETED" && !hasPendingReflection
+                      ? "0 0 10px rgba(34, 197, 94, 0.8), 0 0 20px rgba(34, 197, 94, 0.6)"
                       : "0 0 10px rgba(252, 84, 175, 0.3)",
                   }}
                 >
@@ -229,20 +237,24 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                         className="transition-all duration-200"
                       />
                     )}
-                    {item.label === "JOURNAL" && (
+                    {(item.label === "JOURNAL" || item.label === "COMPLETED") && (
                       <Image
                         src="/elements/journal.webp"
-                        alt="Journal"
+                        alt={item.label === "COMPLETED" ? "Journal Completed" : "Journal"}
                         width={32}
                         height={32}
                         className={`transition-all duration-200 ${
                           hasPendingReflection 
                             ? 'drop-shadow-[0_0_8px_rgba(255,105,180,0.8)]' 
+                            : item.label === "COMPLETED"
+                            ? 'drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]'
                             : ''
                         }`}
                         style={{
                           filter: hasPendingReflection 
                             ? 'brightness(1.3) drop-shadow(0 0 12px rgba(255,105,180,0.9))'
+                            : item.label === "COMPLETED"
+                            ? 'brightness(1.3) drop-shadow(0 0 12px rgba(34,197,94,0.9))'
                             : undefined
                         }}
                       />
@@ -279,7 +291,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                     )}
                     <div className="relative flex items-center">
                       {item.label}
-                      {item.label === "JOURNAL" && hasPendingReflection && (
+                      {(item.label === "JOURNAL" || item.label === "COMPLETED") && hasPendingReflection && (
                         <div 
                           className="ml-2 w-2.5 h-2.5 rounded-full"
                           style={{

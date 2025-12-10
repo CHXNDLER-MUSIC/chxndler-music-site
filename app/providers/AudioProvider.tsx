@@ -448,20 +448,22 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           welcomeBackAudio.volume = 0.7;
           welcomeBackAudio.play().catch(console.error);
           
-          const spaceMusicAudio = new Audio("/tracks/space-music.opus");
-          spaceMusicAudio.volume = 0.5;
-          spaceMusicAudio.loop = true;
-          spaceMusicAudio.play().catch(console.error);
+          // Removed: automatic space music playback
+          // const spaceMusicAudio = new Audio("/tracks/space-music.opus");
+          // spaceMusicAudio.volume = 0.5;
+          // spaceMusicAudio.loop = true;
+          // spaceMusicAudio.play().catch(console.error);
         } else {
           // Play welcome to heartverse + space music
           const welcomeToHeartrverseAudio = new Audio("/tracks/welcome-to-the-heartverse.opus");
           welcomeToHeartrverseAudio.volume = 0.7;
           welcomeToHeartrverseAudio.play().catch(console.error);
           
-          const spaceMusicAudio = new Audio("/tracks/space-music.opus");
-          spaceMusicAudio.volume = 0.5;
-          spaceMusicAudio.loop = true;
-          spaceMusicAudio.play().catch(console.error);
+          // Removed: automatic space music playback
+          // const spaceMusicAudio = new Audio("/tracks/space-music.opus");
+          // spaceMusicAudio.volume = 0.5;
+          // spaceMusicAudio.loop = true;
+          // spaceMusicAudio.play().catch(console.error);
         }
         
       } catch (err) {

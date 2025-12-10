@@ -5487,10 +5487,18 @@ const HUDPanel = React.memo(function HUDPanel({
                                         setStoreConfirmProcessing(true);
                                         setStoreConfirmError('');
                                         try {
-                                          // Call the new RPC directly
+                                          // Get current session for user ID
+                                          const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+                                          if (sessionError || !session?.user) {
+                                            throw new Error('Authentication required');
+                                          }
+                                          
+                                          // Call the RPC with correct parameters
                                           const { data, error } = await supabaseClient.rpc('purchase_item_with_heartcoins', {
-                                            p_item_type: 'card',
+                                            p_user_id: session.user.id,
                                             p_item_id: item.id,
+                                            p_item_name: item.title,
+                                            p_price_heartcoins: item.heartcoins
                                           });
                                           
                                           if (error) {
