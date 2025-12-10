@@ -969,25 +969,30 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         current_balance: profile.heartcoin_balance
       });
 
-      // Call the RPC exactly once per Confirm click
-      // Cost should not be multiplied - if item cost is 12, RPC receives 12 and user loses 12 HeartCoins
-      const { data, error } = await supabaseBrowser.rpc(
-        "purchase_item_with_heartcoins",
-        {
-          p_user_id: profile.id,
-          p_item_slug: item.slug,
-          p_cost: costInHeartCoins,
-        }
-      );
+      // Use the API route for HeartCoin purchases
+      const response = await fetch('/api/purchase-item-with-heartcoins', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          itemId: item.slug,
+          itemTitle: item.title,
+          priceHeartCoins: costInHeartCoins,
+          isPhysical: true
+        }),
+      });
 
-      if (error) {
-        console.error('Error purchasing item with HeartCoins', error);
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('Error purchasing item with HeartCoins', result.error);
         setIsProcessing(false);
-        throw new Error(error.message);
+        throw new Error(result.error || 'Purchase failed');
       }
 
       // Capture the new order and shift to the shipping step
-      const newOrder = data as { id: string };
+      const newOrder = result.data as { id: string };
       console.log("Purchase successful, order created:", newOrder);
 
       setCurrentOrderId(newOrder.id);
@@ -1374,9 +1379,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     background: activeTab === tab 
                       ? (tab === 'EARN' ? 'linear-gradient(135deg, rgba(0,255,255,0.4) 0%, rgba(0,255,255,0.6) 100%)' : 'linear-gradient(135deg, rgba(255,105,180,0.6) 0%, rgba(255,182,193,0.8) 100%)')
                       : 'linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.6) 100%)',
-                    color: activeTab === tab ? (tab === 'EARN' ? '#00FFFF' : '#FF69B4') : '#FFFFFF',
+                    color: activeTab === tab ? (tab === 'EARN' ? '#00FFFF' : '#FFFFFF') : '#FFFFFF',
                     borderColor: activeTab === tab ? (tab === 'EARN' ? '#00FFFF' : '#FF69B4') : 'rgba(255,255,255,0.6)',
-                    textShadow: activeTab === tab ? (tab === 'EARN' ? '0 0 8px rgba(0,255,255,1), 0 0 16px rgba(0,255,255,0.8)' : '0 0 8px rgba(255,105,180,1), 0 0 16px rgba(255,105,180,0.8)') : '0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
+                    textShadow: activeTab === tab ? (tab === 'EARN' ? '0 0 8px rgba(0,255,255,1), 0 0 16px rgba(0,255,255,0.8)' : '0 0 8px rgba(255,255,255,1), 0 0 16px rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.9)') : '0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
                     boxShadow: activeTab === tab ? (tab === 'EARN' ? '0 0 15px rgba(0,255,255,0.8), 0 0 30px rgba(0,255,255,0.6)' : '0 0 15px rgba(255,105,180,0.8), 0 0 30px rgba(255,105,180,0.6)') : 'none',
                     fontWeight: 700,
                     fontSize: '14px'
@@ -1786,9 +1791,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           background: activeUseTab === tab 
                             ? 'linear-gradient(135deg, rgba(255,105,180,0.6) 0%, rgba(255,182,193,0.8) 100%)'
                             : 'linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.6) 100%)',
-                          color: activeUseTab === tab ? '#FF69B4' : '#FFFFFF',
+                          color: activeUseTab === tab ? '#FFFFFF' : '#FFFFFF',
                           borderColor: activeUseTab === tab ? '#FF69B4' : 'rgba(255,255,255,0.6)',
-                          textShadow: activeUseTab === tab ? '0 0 8px rgba(255,105,180,1), 0 0 16px rgba(255,105,180,0.8)' : '0 0 4px rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
+                          textShadow: activeUseTab === tab ? '0 0 8px rgba(255,255,255,1), 0 0 16px rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.9)' : '0 0 4px rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
                           boxShadow: activeUseTab === tab ? '0 0 15px rgba(255,105,180,0.8), 0 0 30px rgba(255,105,180,0.6)' : 'none',
                           fontWeight: 700,
                           fontSize: '14px'
@@ -1814,7 +1819,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   </div>
 
                   <div 
-                    className="text-base text-center mb-2 mt-3"
+                    className="text-base text-center mb-2 mt-1"
                     style={{ 
                       color: '#FFFFFF', 
                       textShadow: '0 0 4px rgba(255,255,255,0.8)', 

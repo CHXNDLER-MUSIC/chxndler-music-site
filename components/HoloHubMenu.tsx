@@ -58,6 +58,9 @@ export default function HoloHubMenu({
   const [inlineHeightPx, setInlineHeightPx] = useState<number | undefined>(undefined);
   const [inlineIframeHeightPx, setInlineIframeHeightPx] = useState<number | undefined>(undefined);
   const [linkOut, setLinkOut] = useState<{ href: string; title: string; accent?: string; iconSrc?: string; message?: string } | null>(null);
+  // New state for tracking clicked button position for anchored previews
+  const [clickedButtonId, setClickedButtonId] = useState<string | null>(null);
+  const [buttonRefs, setButtonRefs] = useState<Map<string, HTMLButtonElement>>(new Map());
   const rootRef = useRef<HTMLDivElement | null>(null);
   const hubRef = useRef<HTMLButtonElement | null>(null);
   const firstItemRef = useRef<HTMLButtonElement | null>(null);

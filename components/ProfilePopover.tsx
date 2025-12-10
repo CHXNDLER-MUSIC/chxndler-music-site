@@ -809,7 +809,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   </span>
                 </div>
                 <div className="flex items-center">
-                  <span className="text-white/80 text-xs mr-1">TOTAL HEART COINS:</span>
+                  <span className="text-white/80 text-xs mr-1">TOTAL HEARTCOINS:</span>
                   <span 
                     className="font-bold text-xs"
                     style={{ 

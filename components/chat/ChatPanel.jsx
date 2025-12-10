@@ -1934,9 +1934,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                   transform: 'rotateY(180deg)',
                   background: `
                     linear-gradient(135deg, 
-                      rgba(30, 30, 60, 0.9) 0%,
-                      rgba(20, 20, 40, 0.95) 50%,
-                      rgba(10, 10, 30, 0.9) 100%
+                      rgba(0, 0, 0, 0.05) 0%,
+                      rgba(0, 20, 40, 0.03) 50%,
+                      rgba(0, 0, 0, 0.05) 100%
                     )
                   `,
                   boxShadow: `
@@ -1948,47 +1948,16 @@ export default function ChatPanel({ isOpen, onClose }) {
                   border: '2px solid rgba(255, 105, 180, 0.4)'
                 }}
               >
-                <div className="w-full h-full rounded-lg overflow-hidden relative flex flex-col items-center justify-center p-6">
-                  {/* CHXNDLER logo/branding */}
-                  <div className="text-center space-y-4">
-                    <div 
-                      className="text-2xl font-bold"
-                      style={{
-                        color: '#F2EF1D',
-                        textShadow: '0 0 10px #F2EF1D, 0 0 20px #F2EF1D',
-                        letterSpacing: '0.1em'
-                      }}
-                    >
-                      CHXNDLER
-                    </div>
-                    <div 
-                      className="text-sm font-medium opacity-80"
-                      style={{
-                        color: '#FF69B4',
-                        textShadow: '0 0 8px rgba(255, 105, 180, 0.6)'
-                      }}
-                    >
-                      MUSIC COLLECTION
-                    </div>
-                    
-                    {/* Decorative pattern */}
-                    <div className="flex justify-center space-x-2 py-4">
-                      <div className="w-2 h-2 rounded-full" style={{ background: '#F2EF1D', boxShadow: '0 0 8px #F2EF1D' }}></div>
-                      <div className="w-2 h-2 rounded-full" style={{ background: '#FF69B4', boxShadow: '0 0 8px #FF69B4' }}></div>
-                      <div className="w-2 h-2 rounded-full" style={{ background: '#00FFFF', boxShadow: '0 0 8px #00FFFF' }}></div>
-                    </div>
-                    
-                    {/* Card info */}
-                    <div className="text-xs text-white/60 space-y-1">
-                      <div>{selectedCardPopup.element} Element</div>
-                      <div>{selectedCardPopup.rarity} Rarity</div>
-                      {selectedCardPopup.isReleased ? (
-                        <div className="text-green-400">Released</div>
-                      ) : (
-                        <div className="text-yellow-400">Unreleased</div>
-                      )}
-                    </div>
-                  </div>
+                {/* Card back image */}
+                <div className="w-full h-full rounded-lg overflow-hidden relative">
+                  <img
+                    src="/cards/BACK.webp"
+                    alt="Card Back"
+                    className="w-full h-full object-cover"
+                    style={{
+                      boxShadow: '0 0 30px rgba(255,105,180,0.6)',
+                    }}
+                  />
                 </div>
               </div>
             </div>

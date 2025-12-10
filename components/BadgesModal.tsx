@@ -7,6 +7,7 @@ import BadgeCategoryButton from "@/components/BadgeCategoryButton";
 import PopoutShell from "@/components/PopoutShell";
 import { sfx } from "@/lib/sfx";
 import { getBadgeProgressForUser, formatRequirementText } from "@/lib/badgeProgress";
+import { updateBadgeProgressCounters, calculateRealtimeBadgeProgress } from "@/lib/updateBadgeProgress";
 
 // Local types for badge display
 interface BadgeDisplay {
@@ -41,7 +42,7 @@ type Props = {
 };
 
 export default function BadgesModal({ open, onClose, embedded = false }: Props) {
-  const { profile, allBadges, userBadges, badgesLoading, badgesError } = useProfile();
+  const { profile, allBadges, userBadges, badgesLoading, badgesError, user } = useProfile();
   
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedBadge, setSelectedBadge] = useState<BadgeDisplay | null>(null);
@@ -73,6 +74,17 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         target: badgeProgress.target,
         percentage: badgeProgress.percentage
       };
+      
+      // Debug log for progress calculation
+      console.log(`Badge ${badge.badge_name}: progress=${badgeProgress.current}/${badgeProgress.target} (${badgeProgress.percentage}%)`);
+    } else {
+      // Fallback for badges without proper requirement data
+      progress = {
+        current: 0,
+        target: badge.requirement_count || 1,
+        percentage: 0
+      };
+      console.warn(`Badge ${badge.badge_name} missing requirement data: type=${badge.requirement_type}, count=${badge.requirement_count}`);
     }
     
     return {

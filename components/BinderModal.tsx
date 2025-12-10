@@ -890,12 +890,12 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
 
 
           {/* Dynamic Content - Binder Cards or Full Collection */}
-          <div className="relative overflow-y-auto flex-shrink-0 pb-2" style={{ maxHeight: '100%' }}>
+          <div className="relative overflow-y-auto flex-shrink-0" style={{ maxHeight: '100%' }}>
             {!showFullCollection ? (
               binderPage === 'first' ? (
                 // User's Binder - First Page - Show 5 initial slots
-              <div className="relative pb-0">
-                <div className="grid gap-2 grid-cols-4 px-2 pt-0 pb-2 place-items-center">
+              <div className="relative">
+                <div className="grid grid-cols-4 place-items-center">
                   {Array.from({ length: 4 }, (_, index) => {
                     // Check if there's a collected card for this slot
                     const collectedCard = profile?.cards?.[index];
@@ -1067,7 +1067,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                 </div>
                 
                 {/* Second row of 4 slots */}
-                <div className="grid gap-2 grid-cols-4 mt-1 px-2 pt-2 pb-0 place-items-center">
+                <div className="grid grid-cols-4 place-items-center">
                   {Array.from({ length: 4 }, (_, index) => {
                     const slotIndex = index + 4; // Slots 4-7
                     const cardSlots = profile?.card_slots ?? 0;
@@ -1174,7 +1174,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                 
                 {/* Right arrow to go to second page - positioned within popup on the right side */}
                 <div 
-                  className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
+                  className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
                   style={{
                     pointerEvents: 'auto'
                   }}
@@ -1241,7 +1241,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     </div>
                   </div>
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 8; // Slots 8-11
                       
@@ -1272,7 +1272,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
 
                   {/* Second row of 4 locked slots */}
-                  <div className="grid gap-2 grid-cols-4 mt-1 p-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 12; // Slots 12-15
                       
@@ -1304,7 +1304,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page - positioned within popup on the right side */}
                   <div 
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -1372,7 +1372,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 16; // Slots 16-19
                       
@@ -1403,7 +1403,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
 
                   {/* Second row of 4 locked slots */}
-                  <div className="grid gap-2 grid-cols-4 mt-1 p-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 20; // Slots 20-23
                       
@@ -1435,7 +1435,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page */}
                   <div 
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -1503,7 +1503,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 24; // Slots 24-27
                       
@@ -1534,7 +1534,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
 
                   {/* Second row of 4 locked slots */}
-                  <div className="grid gap-2 grid-cols-4 mt-1 p-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 28; // Slots 28-31
                       
@@ -1566,7 +1566,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page */}
                   <div 
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -1634,7 +1634,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 32; // Slots 32-35
                       
@@ -1665,7 +1665,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
 
                   {/* Second row of 4 locked slots */}
-                  <div className="grid gap-2 grid-cols-4 mt-1 p-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 36; // Slots 36-39
                       
@@ -1697,7 +1697,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page */}
                   <div 
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -1765,7 +1765,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 40; // Slots 40-43
                       
@@ -1796,7 +1796,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
 
                   {/* Second row of 4 locked slots */}
-                  <div className="grid gap-2 grid-cols-4 mt-1 px-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 44; // Slots 44-47
                       
@@ -1828,7 +1828,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page */}
                   <div 
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -1896,7 +1896,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 48; // Slots 48-51
                       
@@ -1927,7 +1927,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
 
                   {/* Second row of 4 locked slots */}
-                  <div className="grid gap-2 grid-cols-4 mt-1 px-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 52; // Slots 52-55
                       
@@ -1959,7 +1959,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page */}
                   <div 
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -2027,7 +2027,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 56; // Slots 56-59
                       
@@ -2058,7 +2058,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
 
                   {/* Second row of 4 locked slots */}
-                  <div className="grid gap-2 grid-cols-4 mt-1 px-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 60; // Slots 60-63
                       
@@ -2090,7 +2090,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page */}
                   <div 
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -2158,7 +2158,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 64; // Slots 64-67
                       
@@ -2189,7 +2189,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
 
                   {/* Second row of 4 locked slots */}
-                  <div className="grid gap-2 grid-cols-4 mt-1 px-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 68; // Slots 68-71
                       
@@ -2221,7 +2221,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page */}
                   <div 
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -2289,7 +2289,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 72; // Slots 72-75
                       
@@ -2320,7 +2320,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
 
                   {/* Second row of 4 locked slots */}
-                  <div className="grid gap-2 grid-cols-4 mt-1 px-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 76; // Slots 76-79
                       
@@ -2352,7 +2352,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page */}
                   <div 
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -2420,7 +2420,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 80; // Slots 80-83
                       
@@ -2451,7 +2451,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
 
                   {/* Second row of 4 locked slots */}
-                  <div className="grid gap-2 grid-cols-4 mt-1 px-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 84; // Slots 84-87
                       
@@ -2483,7 +2483,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page */}
                   <div 
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -2551,7 +2551,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 88; // Slots 88-91
                       
@@ -2582,7 +2582,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
 
                   {/* Second row of 4 locked slots */}
-                  <div className="grid gap-2 grid-cols-4 mt-1 px-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 92; // Slots 92-95
                       
@@ -2614,7 +2614,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page */}
                   <div 
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -2682,7 +2682,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid gap-2 grid-cols-4 p-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 96; // Slots 96-99
                       
@@ -2713,7 +2713,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
 
                   {/* Second row of 4 locked slots */}
-                  <div className="grid gap-2 grid-cols-4 mt-1 px-2 place-items-center">
+                  <div className="grid grid-cols-4 place-items-center">
                     {Array.from({ length: 4 }, (_, index) => {
                       const slotIndex = index + 100; // Slots 100-103
                       

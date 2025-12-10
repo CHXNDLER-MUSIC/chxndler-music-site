@@ -41,6 +41,21 @@
   html, body, * {
     cursor: none !important;
   }
+  
+  /* Allow cursor visibility in modal overlays with high z-index */
+  .fixed[style*="z-[2147483645]"],
+  .fixed[style*="z-[2147483646]"],
+  .fixed[style*="z-[2147483647]"],
+  .fixed[style*="z-[2147483648]"] {
+    cursor: auto !important;
+  }
+  
+  .fixed[style*="z-[2147483645]"] *,
+  .fixed[style*="z-[2147483646]"] *,
+  .fixed[style*="z-[2147483647]"] *,
+  .fixed[style*="z-[2147483648]"] * {
+    cursor: auto !important;
+  }
 }
 
 @media (max-width: 500px) {

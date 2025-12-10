@@ -185,7 +185,7 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
             />
           </div>
 
-          {/* Player Controls */}
+          {/* Player Controls with Integrated Progress Bar */}
           <div className="flex items-center gap-4 mt-2">
             
             {/* Play/Pause Button */}
@@ -207,13 +207,47 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
               )}
             </button>
 
-            {/* Track Info */}
-            <div className="flex-1 min-w-0">
-              <div className="text-[#CFF7FF] font-semibold text-base truncate">
-                {currentTrackInfo?.title === 'BE MY BEE' ? '' : (currentTrackInfo?.title || "Select a Song")}
-              </div>
-              <div className="text-[#9EEBFF]/80 text-sm truncate">
-                {currentTrackInfo?.oneLiner || "Choose from the dropdown above"}
+            {/* Progress Bar - Connected to Play Button */}
+            <div className="flex-1 relative">
+              <div
+                ref={progressBarRef}
+                onClick={handleProgressClick}
+                className="relative w-full h-3 bg-black/40 rounded-full cursor-pointer overflow-hidden border border-[#19E3FF]/20 hover:border-[#19E3FF]/60 transition-all duration-200"
+                title="Click to seek"
+              >
+                {/* Background glow */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#19E3FF]/10 to-transparent"></div>
+                
+                {/* Progress Fill with Gradient */}
+                <div
+                  className="absolute top-0 left-0 h-full rounded-full transition-all duration-75 ease-out"
+                  style={{
+                    width: `${progress * 100}%`,
+                    background: `linear-gradient(90deg, ${BRAND_COLORS.pink} 0%, ${BRAND_COLORS.blue} 50%, ${BRAND_COLORS.yellow} 100%)`,
+                    boxShadow: `
+                      0 0 12px ${BRAND_COLORS.blue}60,
+                      0 0 20px ${BRAND_COLORS.pink}40,
+                      0 0 30px ${BRAND_COLORS.yellow}30,
+                      inset 0 1px 0 rgba(255,255,255,0.2)
+                    `
+                  }}
+                />
+                
+                {/* Circular Handle */}
+                <div
+                  className="absolute top-1/2 w-5 h-5 rounded-full border-2 border-white transition-all duration-75 ease-out shadow-lg"
+                  style={{
+                    left: `${progress * 100}%`,
+                    transform: 'translateX(-50%) translateY(-50%)',
+                    background: `radial-gradient(circle, ${BRAND_COLORS.blue}, ${BRAND_COLORS.pink})`,
+                    boxShadow: `
+                      0 0 12px ${BRAND_COLORS.blue}80,
+                      0 0 20px ${BRAND_COLORS.pink}60,
+                      0 2px 8px rgba(0,0,0,0.3),
+                      inset 0 1px 2px rgba(255,255,255,0.3)
+                    `
+                  }}
+                />
               </div>
             </div>
 
@@ -223,46 +257,13 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
             </div>
           </div>
 
-          {/* Custom Glowing Progress Bar */}
-          <div className="w-full">
-            <div
-              ref={progressBarRef}
-              onClick={handleProgressClick}
-              className="relative w-full h-3 bg-black/40 rounded-full cursor-pointer overflow-hidden border border-[#19E3FF]/20 hover:border-[#19E3FF]/60 transition-all duration-200"
-            >
-              {/* Background glow */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#19E3FF]/10 to-transparent"></div>
-              
-              {/* Progress Fill with Gradient */}
-              <div
-                className="absolute top-0 left-0 h-full rounded-full transition-all duration-75 ease-out"
-                style={{
-                  width: `${progress * 100}%`,
-                  background: `linear-gradient(90deg, ${BRAND_COLORS.pink} 0%, ${BRAND_COLORS.blue} 50%, ${BRAND_COLORS.yellow} 100%)`,
-                  boxShadow: `
-                    0 0 12px ${BRAND_COLORS.blue}60,
-                    0 0 20px ${BRAND_COLORS.pink}40,
-                    0 0 30px ${BRAND_COLORS.yellow}30,
-                    inset 0 1px 0 rgba(255,255,255,0.2)
-                  `
-                }}
-              />
-              
-              {/* Circular Handle */}
-              <div
-                className="absolute top-1/2 w-5 h-5 rounded-full border-2 border-white transition-all duration-75 ease-out shadow-lg"
-                style={{
-                  left: `${progress * 100}%`,
-                  transform: 'translateX(-50%) translateY(-50%)',
-                  background: `radial-gradient(circle, ${BRAND_COLORS.blue}, ${BRAND_COLORS.pink})`,
-                  boxShadow: `
-                    0 0 12px ${BRAND_COLORS.blue}80,
-                    0 0 20px ${BRAND_COLORS.pink}60,
-                    0 2px 8px rgba(0,0,0,0.3),
-                    inset 0 1px 2px rgba(255,255,255,0.3)
-                  `
-                }}
-              />
+          {/* Track Info - Moved below controls for better visual hierarchy */}
+          <div className="flex-1 min-w-0 text-center mt-2">
+            <div className="text-[#CFF7FF] font-semibold text-base truncate">
+              {currentTrackInfo?.title === 'BE MY BEE' ? '' : (currentTrackInfo?.title || "Select a Song")}
+            </div>
+            <div className="text-[#9EEBFF]/80 text-sm truncate">
+              {currentTrackInfo?.oneLiner || "Choose from the dropdown above"}
             </div>
           </div>
         </div>

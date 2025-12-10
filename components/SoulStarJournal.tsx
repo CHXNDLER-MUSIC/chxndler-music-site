@@ -456,19 +456,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         ))}
       </div>
 
-      {/* Close Button */}
-      <button 
-        onClick={handleClose}
-        className="absolute -top-2 -right-2 w-8 h-8 flex items-center justify-center rounded-full text-white hover:bg-red-600/20 transition-all duration-200 z-10"
-        style={{
-          background: 'rgba(0, 0, 0, 0.7)',
-          border: `1px solid ${elementTheme.color}60`,
-          boxShadow: `0 0 15px ${elementTheme.color}20`
-        }}
-        aria-label="Close journal"
-      >
-        ×
-      </button>
 
 
 
@@ -499,12 +486,12 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 }}
                 className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs font-semibold transition-all duration-200 hover:opacity-100 px-3 py-1 rounded z-20"
                 style={{
-                  color: elementTheme.color,
-                  textShadow: `0 0 4px ${elementTheme.glow}`,
+                  color: '#FFD700',
+                  textShadow: `0 0 8px #FFD700, 0 0 15px #FFFF00`,
                   opacity: showHistory ? 1 : 0.8,
-                  background: `${elementTheme.color}15`,
-                  border: `1px solid ${elementTheme.color}60`,
-                  boxShadow: `0 0 8px ${elementTheme.color}, 0 0 15px ${elementTheme.color}40`,
+                  background: '#FFD70020',
+                  border: `2px solid #FFD700`,
+                  boxShadow: `0 0 12px #FFD700, 0 0 20px #FFD70060`,
                   cursor: 'pointer',
                   pointerEvents: 'auto',
                   zIndex: 20
@@ -513,9 +500,24 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 {showHistory ? 'TODAY\'S ENTRY' : 'FULL LOG'}
               </button>
 
+              {/* Close Button - Right of Title */}
+              <button 
+                onClick={handleClose}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-white hover:bg-red-600/20 transition-all duration-200 z-20"
+                style={{
+                  background: 'rgba(0, 0, 0, 0.7)',
+                  border: `1px solid ${elementTheme.color}60`,
+                  boxShadow: `0 0 15px ${elementTheme.color}20`,
+                  fontSize: '16px'
+                }}
+                aria-label="Close journal"
+              >
+                ×
+              </button>
+
               {/* SOUL STAR JOURNAL Title */}
               <div 
-                className="text-2xl font-bold tracking-wider mb-2"
+                className="text-lg font-bold tracking-wider mb-2"
                 style={{
                   color: elementTheme.color,
                   textShadow: `0 0 15px ${elementTheme.glow}, 0 0 30px ${elementTheme.glow}`,
@@ -620,15 +622,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 </div>
                 
                 {/* Sample entries for demonstration */}
-                <div 
-                  className="text-center mb-3 text-sm"
-                  style={{ 
-                    color: 'rgba(255, 255, 255, 0.5)',
-                    fontSize: '12px'
-                  }}
-                >
-                  Sample entries:
-                </div>
                 
                 <div 
                   className="rounded-lg p-3 mb-3 opacity-60"
@@ -746,12 +739,12 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 }}
                 className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs font-semibold transition-all duration-200 hover:opacity-100 px-3 py-1 rounded z-20"
                 style={{
-                  color: elementTheme.color,
-                  textShadow: `0 0 4px ${elementTheme.glow}`,
+                  color: '#FFD700',
+                  textShadow: `0 0 8px #FFD700, 0 0 15px #FFFF00`,
                   opacity: showHistory ? 1 : 0.8,
-                  background: `${elementTheme.color}15`,
-                  border: `1px solid ${elementTheme.color}60`,
-                  boxShadow: `0 0 8px ${elementTheme.color}, 0 0 15px ${elementTheme.color}40`,
+                  background: '#FFD70020',
+                  border: `2px solid #FFD700`,
+                  boxShadow: `0 0 12px #FFD700, 0 0 20px #FFD70060`,
                   cursor: 'pointer',
                   pointerEvents: 'auto',
                   zIndex: 20
@@ -760,9 +753,24 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 {showHistory ? 'TODAY\'S ENTRY' : 'FULL LOG'}
               </button>
 
+              {/* Close Button - Right of Title */}
+              <button 
+                onClick={handleClose}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-white hover:bg-red-600/20 transition-all duration-200 z-20"
+                style={{
+                  background: 'rgba(0, 0, 0, 0.7)',
+                  border: `1px solid ${elementTheme.color}60`,
+                  boxShadow: `0 0 15px ${elementTheme.color}20`,
+                  fontSize: '16px'
+                }}
+                aria-label="Close journal"
+              >
+                ×
+              </button>
+
               {/* SOUL STAR JOURNAL Title */}
               <div 
-                className="text-2xl font-bold tracking-wider mb-2"
+                className="text-lg font-bold tracking-wider mb-2"
                 style={{
                   color: elementTheme.color,
                   textShadow: `0 0 15px ${elementTheme.glow}, 0 0 30px ${elementTheme.glow}`,
@@ -841,10 +849,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
             {/* Section Cards */}
             {dailyPrompt && (
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {/* Intention Card */}
                 <div 
-                  className="rounded-lg px-1 pt-1 pb-2 -mx-1"
+                  className="rounded-lg px-1 pt-0.5 pb-1 -mx-1"
                   style={{
                     background: 'rgba(0, 0, 0, 0.4)',
                     border: `2px solid ${elementTheme.color}`,
@@ -917,7 +925,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
                 {/* Prompt Card */}
                 <div 
-                  className="rounded-lg px-1 pt-1 pb-2 -mx-1"
+                  className="rounded-lg px-1 pt-0.5 pb-1 -mx-1"
                   style={{
                     background: 'rgba(0, 0, 0, 0.4)',
                     border: `2px solid ${elementTheme.color}`,
@@ -993,7 +1001,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
                 {/* Soul Star Card */}
                 <div 
-                  className="rounded-lg px-1 pt-1 pb-1 -mx-1"
+                  className="rounded-lg px-1 pt-0.5 pb-0.5 -mx-1"
                   style={{
                     background: 'rgba(0, 0, 0, 0.4)',
                     border: `2px solid ${elementTheme.color}`,
@@ -1086,10 +1094,13 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                         if (!hasClickedInitialButton) {
                           setHasClickedInitialButton(true);
                         } else {
+                          // Close journal and open welcome home immediately
                           onClose();
-                          if (openWelcomeHome) {
-                            openWelcomeHome();
-                          }
+                          setTimeout(() => {
+                            if (openWelcomeHome) {
+                              openWelcomeHome();
+                            }
+                          }, 100);
                         }
                       }}
                       className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 hover:opacity-90"

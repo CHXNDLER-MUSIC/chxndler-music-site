@@ -475,11 +475,11 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
               }}
             >
               <div 
-                className="relative w-24 mx-4"
+                className="relative w-20 mx-4"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div
-                  className="relative w-full h-36 cursor-pointer"
+                  className="relative w-full h-30 cursor-pointer"
                   style={{
                     perspective: '1000px'
                   }}

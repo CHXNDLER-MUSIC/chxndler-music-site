@@ -21,6 +21,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
       {/* Backdrop overlay - no dimming */}
       <div 
         className="fixed inset-0 z-[2147483645]"
+        style={{ cursor: 'pointer' }}
         onClick={onClose}
       />
       
@@ -34,7 +35,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
         <div
           className="binder-hologram-container"
           style={{
-            width: 'min(90vw, 650px)',
+            width: 'min(85vw, 580px)',
             height: 'auto',
             maxHeight: compact ? '320px' : '85vh',
             minHeight: compact ? '200px' : '400px',
@@ -90,7 +91,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
               try { sfx.play('close', 0.8); } catch {}
               onClose();
             }}
-            className="absolute top-4 right-4 text-pink-400 hover:text-pink-200 cursor-pointer w-8 h-8 rounded-full border border-pink-400/80 flex items-center justify-center"
+            className="absolute top-4 right-3 text-pink-400 hover:text-pink-200 cursor-pointer w-8 h-8 rounded-full border border-pink-400/80 flex items-center justify-center"
             style={{ 
               fontSize: '16px',
               boxShadow: '0 0 15px rgba(255,105,180,0.8), 0 0 25px rgba(255,105,180,0.5), 0 0 35px rgba(255,105,180,0.3)',
@@ -134,7 +135,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
 
           {/* Background content area */}
           {backgroundContent && (
-            <div className="absolute inset-0 z-0" style={{ padding: '60px 20px 20px 20px' }}>
+            <div className="absolute inset-0 z-0" style={{ padding: '60px 12px 20px 12px' }}>
               {backgroundContent}
             </div>
           )}

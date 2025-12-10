@@ -4,7 +4,7 @@ import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
 
 export async function POST(request: NextRequest) {
   try {
-    const { itemId, itemTitle, priceHeartCoins } = await request.json();
+    const { itemId, itemTitle, priceHeartCoins, isPhysical } = await request.json();
 
     if (!itemId || !itemTitle || !priceHeartCoins) {
       return NextResponse.json(
@@ -31,13 +31,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Call the Supabase RPC function to handle the purchase
+    // Call the appropriate Supabase RPC function based on item type
+    const functionName = isPhysical 
+      ? 'purchase_physical_item_with_heartcoins' 
+      : 'purchase_item_with_heartcoins';
+    
+    const params = isPhysical
+      ? {
+          p_user_id: user.id,
+          p_item_slug: itemId,
+          p_item_name: itemTitle,
+          p_price_heartcoins: priceHeartCoins
+        }
+      : {
+          p_user_id: user.id,
+          p_item_id: itemId,
+          p_item_name: itemTitle,
+          p_price_heartcoins: priceHeartCoins
+        };
+
     const { data: result, error: rpcError } = await supabase
-      .rpc('purchase_item_with_heartcoins', {
-        p_user_id: user.id,
-        p_item_slug: itemId,
-        p_cost: priceHeartCoins
-      });
+      .rpc(functionName, params);
 
     if (rpcError) {
       console.error('RPC Error:', rpcError);

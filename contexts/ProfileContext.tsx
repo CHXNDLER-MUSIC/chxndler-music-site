@@ -13,6 +13,7 @@ import { supabaseBrowser } from "@/lib/supabase-browser";
 import { ProfileTier } from "@/types/card";
 import { getLocalDateString } from "@/utils/dateHelpers";
 import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
+import { updateBadgeProgressCounters } from "@/lib/updateBadgeProgress";
 
 // Types for user owned cards and badges
 type OwnedCardRow = {
@@ -433,9 +434,15 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           profileComplete: mappedProfile.profile_complete,
           cardsCount: mappedProfile.cards.length,
           badgesCount: mappedProfile.badges.length,
+          totalReflections: mappedProfile.total_reflections,
           timestamp: new Date().toISOString()
         });
       }
+
+      // Update badge progress counters when profile loads
+      updateBadgeProgressCounters(user.id).catch(err => {
+        console.warn('Failed to update badge progress counters:', err);
+      });
 
       setProfileWithCelebration(mappedProfile);
     } catch (error) {
@@ -795,6 +802,13 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime()
         );
       });
+
+      // Update badge progress counters after saving a journal entry
+      if (user?.id) {
+        updateBadgeProgressCounters(user.id).catch(err => {
+          console.warn('Failed to update badge progress after journal save:', err);
+        });
+      }
 
       return data;
     } catch (error) {

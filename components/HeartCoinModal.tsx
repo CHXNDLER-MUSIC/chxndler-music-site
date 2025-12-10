@@ -126,6 +126,7 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
   const [activeTab, setActiveTab] = useState(initialTab);
   const [enlargedItem, setEnlargedItem] = useState<StoreItem | null>(null);
   const [enlargedImageIndex, setEnlargedImageIndex] = useState(0);
+  const [enlargedCard, setEnlargedCard] = useState<any>(null);
   const itemsPerPage = 6;
 
   useEffect(() => {
@@ -238,15 +239,24 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
     setMessage(null);
 
     try {
-      const { data, error } = await supabaseBrowser.rpc('purchase_item_with_heartcoins', {
-        p_user_id: profile.id,
-        p_item_id: item.name.toLowerCase().replace(/\s+/g, '_'),
-        p_item_name: item.name,
-        p_price_heartcoins: item.heartCoin
+      // Use the API route instead of direct RPC call
+      const response = await fetch('/api/purchase-item-with-heartcoins', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          itemId: item.name.toLowerCase().replace(/\s+/g, '_'),
+          itemTitle: item.name,
+          priceHeartCoins: item.heartCoin,
+          isPhysical: false
+        }),
       });
 
-      if (error) {
-        throw error;
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Purchase failed');
       }
 
       setMessage(`Successfully purchased ${item.name}!`);
@@ -506,7 +516,8 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
                 {profile.cards.map((userCard) => (
                   <div 
                     key={userCard.id} 
-                    className="group relative bg-black/30 rounded-lg p-3 hover:bg-black/40 transition-all duration-300 hover:scale-[1.02]"
+                    className="group relative bg-black/30 rounded-lg p-3 hover:bg-black/40 transition-all duration-300 hover:scale-[1.02] cursor-pointer"
+                    onClick={() => setEnlargedCard(userCard)}
                   >
                     {/* Card Image Placeholder */}
                     <div className="aspect-[3/4] bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-lg mb-2 flex items-center justify-center border border-white/20">
@@ -657,6 +668,53 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
                       </>
                     );
                   })()}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Enlarged Card Modal */}
+      {enlargedCard && (
+        <div 
+          className="fixed inset-0 z-[2147483647] bg-black bg-opacity-90"
+          onClick={() => setEnlargedCard(null)}
+          style={{
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          <div 
+            className="absolute inset-0 flex items-center justify-center p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="relative bg-gray-900 border border-gray-600 rounded-lg p-6 max-w-2xl max-h-[90vh] overflow-hidden"
+              style={{
+                background: 'rgba(17, 24, 39, 0.95)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(75, 85, 99, 0.5)',
+              }}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setEnlargedCard(null)}
+                className="absolute top-2 right-2 w-8 h-8 bg-gray-700 hover:bg-gray-600 rounded-full flex items-center justify-center text-gray-300 hover:text-white transition-all duration-200 z-10"
+              >
+                ×
+              </button>
+              
+              {/* Card Image */}
+              <div className="flex items-center justify-center w-full h-full">
+                <div className="relative max-w-full max-h-full">
+                  <img
+                    src="/elements/card/back.webp"
+                    alt={enlargedCard.cards?.card_name || 'Card'}
+                    className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                    style={{
+                      animation: 'merchPulse 2.5s ease-in-out infinite',
+                    }}
+                  />
                 </div>
               </div>
             </div>
