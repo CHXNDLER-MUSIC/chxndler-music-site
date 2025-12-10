@@ -571,7 +571,7 @@ export default function JoinAliens({ visible = true } = {}) {
         />
       </button>
 
-      {/* Phone Button - positioned on same row as $ button */}
+      {/* Phone Button - positioned in bottom left corner */}
       <button
         onClick={() => {
           try { sfx.play('audio/click.mp3', 0.5); } catch {}
@@ -581,7 +581,7 @@ export default function JoinAliens({ visible = true } = {}) {
         style={{
           position: 'absolute',
           bottom: '12px',
-          left: '68px',
+          left: '12px',
           width: '40px',
           height: '40px',
           background: 'rgba(0, 255, 255, 0.1)',

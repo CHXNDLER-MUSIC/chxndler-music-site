@@ -225,7 +225,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [showPhysicalConfirm, setShowPhysicalConfirm] = useState(false);
   const [showDigitalForm, setShowDigitalForm] = useState(false);
   const [currentMerchIndex, setCurrentMerchIndex] = useState(0);
-  const [expandedMerch, setExpandedMerch] = useState<StoreItem | null>(null);
   const [inviteFriendShared, setInviteFriendShared] = useState(false);
   const [completedQuests, setCompletedQuests] = useState<Set<string>>(new Set());
   const [shippingInfo, setShippingInfo] = useState({
@@ -620,11 +619,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const todaysElement = getTodaysElement();
 
   // Reset expanded merch when modal closes
-  useEffect(() => {
-    if (!open) {
-      setExpandedMerch(null);
-    }
-  }, [open]);
 
   // Inject card animation keyframes when enlarged card is shown
   useEffect(() => {
@@ -656,11 +650,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     }
   }, [enlargedCard]);
 
-  // Handle merch expansion
-  const handleMerchExpand = (item: StoreItem) => {
-    try { sfx.play('click', 0.8); } catch {}
-    setExpandedMerch(item);
-  };
 
   // Handle bonus quest completion
   const handleBonusQuestComplete = async (quest: BonusQuestWithCompletion) => {
@@ -973,7 +962,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         // For MERCH items, skip RPC call and go directly to shipping
         // We'll handle the heart coin deduction in handleShippingSubmit
         console.log('This is a MERCH item, going to shipping');
-        try { sfx.play('click', 0.7); } catch {}
+        try { sfx.play('card-ding', 0.8); } catch {}
         
         // Switch to shipping step without deducting coins yet
         setStep('shipping');
@@ -1006,7 +995,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       }
       
       // Success for CARDS! Deduct HeartCoins locally and advance to shipping
-      try { sfx.play('click', 0.7); } catch {}
+      try { sfx.play('card-ding', 0.8); } catch {}
       
       // Update local heartcoin balance
       const newBalance = (profile.heartcoin_balance || 0) - (item.cost || item.priceHeartCoins);
@@ -1095,7 +1084,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       }
       
       // Success! Switch to done step
-      try { sfx.play('click', 0.7); } catch {}
+      try { sfx.play('card-ding', 0.8); } catch {}
       setStep('done');
       setIsProcessing(false);
       
@@ -1333,7 +1322,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               setOpen(false);
               setIsFromHamburger(false);
               setIsFromCollectCard(false);
-              try { onOpenBlueDisplay?.(); } catch {}
               try { onClose?.(); } catch {}
             }}
             className="absolute top-2 right-4 text-white hover:text-gray-200 cursor-pointer w-8 h-8 rounded-full border border-white/80 flex items-center justify-center"
@@ -1880,8 +1868,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               {/* Item Image */}
                               <div className="flex flex-col items-center">
                                 <div 
-                                  className="relative w-28 h-28 flex-shrink-0 cursor-pointer transition-transform duration-200 hover:scale-105"
-                                  onClick={() => handleMerchExpand(PHYSICAL_ITEMS[currentMerchIndex])}
+                                  className="relative w-28 h-28 flex-shrink-0"
                                 >
                                   <img
                                     src={PHYSICAL_ITEMS[currentMerchIndex].image}
@@ -3232,113 +3219,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         </div>
       )}
 
-      {/* Expanded Merch Modal */}
-      {expandedMerch && open && (
-        <div 
-          className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[2147483648]"
-          onClick={() => setExpandedMerch(null)}
-        >
-          <div 
-            className="relative max-w-lg w-full mx-4 bg-gradient-to-br from-gray-900/95 to-black/95 rounded-lg p-6 backdrop-blur-md"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              border: '2px solid rgba(255,255,255,0.2)',
-              boxShadow: '0 0 40px rgba(255,255,255,0.3), inset 0 0 30px rgba(255,255,255,0.1)'
-            }}
-          >
-            {/* Close button */}
-            <button
-              onClick={() => {
-                try { sfx.play('close', 0.7); } catch {}
-                setExpandedMerch(null);
-              }}
-              className="absolute top-3 right-3 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white text-lg font-bold transition-all duration-200 z-10"
-            >
-              ×
-            </button>
-
-            {/* Expanded Item Content */}
-            <div className="flex flex-col items-center">
-              {/* Large Image */}
-              <div className="w-64 h-64 mb-6">
-                <img
-                  src={expandedMerch.image}
-                  alt={expandedMerch.title}
-                  className="w-full h-full object-cover rounded-lg border-2 border-white/20"
-                  style={{
-                    filter: 'drop-shadow(0 0 15px rgba(255,255,255,0.3))'
-                  }}
-                />
-              </div>
-
-              {/* Item Details */}
-              <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-white mb-3">{expandedMerch.title}</h2>
-                <p className="text-white/80 text-sm mb-4 leading-relaxed max-w-sm">
-                  {expandedMerch.description}
-                </p>
-
-                {/* Price Display */}
-                <div className="flex items-center justify-center gap-3 mb-6">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl font-bold text-[#F2EF1D]">{expandedMerch.priceHeartCoins}</span>
-                    <img
-                      src="/elements/heart-coin.webp"
-                      alt="Heart Coin"
-                      className="w-6 h-6"
-                      style={{
-                        filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
-                      }}
-                    />
-                  </div>
-                  <div className="text-white/60 text-sm">
-                    or ${expandedMerch.priceUsd} USD
-                  </div>
-                </div>
-
-                {/* Purchase Buttons */}
-                <div className="flex flex-col gap-3">
-                  {/* Heart Coins Purchase */}
-                  <button
-                    onClick={() => {
-                      setExpandedMerch(null);
-                      handlePurchaseWithHeartCoins(expandedMerch);
-                    }}
-                    disabled={isProcessing || (profile?.id ? (profile?.heartcoin_balance || 0) : 0) < expandedMerch.priceHeartCoins}
-                    className={`w-full px-6 py-3 text-sm font-semibold rounded-lg transition-all duration-200 ${
-                      isProcessing || (profile?.id ? (profile?.heartcoin_balance || 0) : 0) < expandedMerch.priceHeartCoins
-                        ? 'bg-gray-500 cursor-not-allowed text-gray-300'
-                        : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(242,239,29,0.8)]'
-                    }`}
-                    style={!isProcessing && (profile?.id ? (profile?.heartcoin_balance || 0) : 0) >= expandedMerch.priceHeartCoins ? {
-                      boxShadow: '0 0 20px rgba(242,239,29,0.6), inset 0 2px 0 rgba(255,255,255,0.6), inset 0 -8px 16px rgba(0,0,0,0.22)'
-                    } : {}}
-                  >
-                    {isProcessing ? 'Processing...' : 'Purchase with Heart Coins'}
-                  </button>
-
-                  {/* USD Purchase */}
-                  <button
-                    onClick={() => {
-                      setExpandedMerch(null);
-                      setSelectedItem(expandedMerch);
-                      setShowPhysicalForm(true);
-                    }}
-                    className="w-full px-6 py-3 text-sm font-semibold rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all duration-200 border border-white/30"
-                  >
-                    Purchase with USD (${expandedMerch.priceUsd})
-                  </button>
-                </div>
-
-                {/* Balance Info */}
-                <div className="text-xs text-white/60 mt-4">
-                  Your balance: {profile?.id ? (profile?.heartcoin_balance || 0) : 0} Heart Coins
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
     </>
   );

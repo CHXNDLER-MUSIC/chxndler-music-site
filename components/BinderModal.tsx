@@ -737,18 +737,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     return nextIndex;
   };
 
-  // Auto-flip card when it opens and play flip sound
+  // Reset flip state when card closes
   useEffect(() => {
-    if (cardOpen) {
-      // Small delay to allow card open animation to start
-      const flipTimer = setTimeout(() => {
-        try { sfx.play('flip', 0.45); } catch {}
-        setIsCardFlipped(true);
-      }, 200);
-      
-      return () => clearTimeout(flipTimer);
-    } else {
-      // Reset flip state when card closes
+    if (!cardOpen) {
       setIsCardFlipped(false);
     }
   }, [cardOpen]);
