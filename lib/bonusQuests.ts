@@ -54,8 +54,10 @@ export async function getBonusQuestsForUser(userId?: string | null): Promise<Bon
         .gte('completed_at', `${today}T00:00:00Z`)
         .lt('completed_at', `${today}T23:59:59.999Z`);
       
-      if (!todayError && todayData) {
-        todayCompletions = todayData;
+      if (todayError) {
+        console.error('Error fetching today\'s completions:', todayError);
+      } else {
+        todayCompletions = todayData || [];
       }
     }
 
@@ -112,10 +114,12 @@ export async function getBonusQuestsForUser(userId?: string | null): Promise<Bon
       // Check if completed today using the new completions table
       const completedToday = todayCompletionMap.has(quest.id) ? 1 : 0;
       
+      
       // Check if user can complete today
       const hasReachedDailyLimit = completedToday >= quest.max_times_per_day;
       const hasReachedTotalLimit = quest.max_total_completions !== null && timesCompleted >= quest.max_total_completions;
       const canComplete = !hasReachedDailyLimit && !hasReachedTotalLimit;
+      
       
       return {
         ...quest,

@@ -35,16 +35,15 @@ export async function POST(request: NextRequest) {
     const { data: result, error: rpcError } = await supabase
       .rpc('purchase_item_with_heartcoins', {
         p_user_id: user.id,
-        p_item_id: itemId,
-        p_item_name: itemTitle,
-        p_price_heartcoins: priceHeartCoins
+        p_item_slug: itemId,
+        p_cost: priceHeartCoins
       });
 
     if (rpcError) {
       console.error('RPC Error:', rpcError);
       
       // Check if it's an insufficient funds error
-      if (rpcError.message?.includes('Insufficient HeartCoins')) {
+      if (rpcError.message?.includes('Insufficient HeartCoins') || rpcError.message?.includes('Not enough HeartCoins')) {
         return NextResponse.json(
           { error: 'Insufficient HeartCoins. Please earn more coins and try again.' },
           { status: 400 }

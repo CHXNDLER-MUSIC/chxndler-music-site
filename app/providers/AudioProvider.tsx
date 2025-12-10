@@ -406,12 +406,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         navigator.mediaSession.setActionHandler('nexttrack', null);
       }
 
-      // Verify we're still trying to play the same track (prevent race conditions)
-      const currentState = state;
-      if (currentState.currentTrack?.id !== trackId) {
-        console.warn('Track changed during loading, aborting playback');
-        return;
-      }
+      // Note: Removed race condition check that was causing tracks to stop playing
 
       a.src = trackSource;
       try { 
@@ -477,10 +472,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           await playAudioOnce(bestSourceFor(TRACKS.WELCOME_TO_HEARTVERSE));
         }
         
-        // After all SFX complete, start space music on the global player
+        // After all SFX complete, load space music but don't auto-play
         console.log('🎵 Start sequence complete, loading space music...');
         
-        // Load space music track into the global player
+        // Load space music track into the global player for user to play manually
         const spaceMusicSource = bestSourceFor(TRACKS.SPACE_MUSIC);
         api.loadTrack(spaceMusicSource);
         
@@ -489,12 +484,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         if (spaceMusicInfo) {
           setState(s => ({ ...s, currentTrack: spaceMusicInfo }));
         }
-        
-        // Auto-play space music after a brief delay
-        setTimeout(() => {
-          console.log('🎵 Auto-playing space music after warp completion');
-          api.play();
-        }, 200);
         
       } catch (err) {
         console.error('Failed to play start sequence:', err);
@@ -565,18 +554,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
               setState(s => ({ ...s, currentTrack: trackInfo }));
             }
             
-            // Set this track as pending
-            setState(s => ({ ...s, pendingTrack: currentMainId, warpCompleted: false }));
-            
-            // Start the warp sequence (this includes all the sound effects)
-            api.playStartSequence(false).then(() => {
-              // Mark warp as completed to trigger song playback
-              setState(s => ({ ...s, warpCompleted: true }));
-            }).catch(err => {
-              console.error('Failed to play start sequence:', err);
-              // Still mark warp as completed even if effects fail
-              setState(s => ({ ...s, warpCompleted: true }));
-            });
+            // Skip sound effects and directly play the track to prevent conflicts
+            console.log('🎵 AudioProvider: Playing track directly without sound effects:', currentMainId);
+            api.playTrack(currentMainId).catch(console.error);
           }
         });
         
@@ -587,7 +567,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     };
     
     subscribeToPlayerStore();
-  }, [state.currentTrack?.id, api.playStartSequence]);
+  }, [state.currentTrack?.id, api.playTrack]);
 
   const value = useMemo(() => ({ ...state, ...api }), [state, api]);
   return <AudioCtx.Provider value={value}>{children}</AudioCtx.Provider>;

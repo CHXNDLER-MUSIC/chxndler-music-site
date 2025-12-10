@@ -29,10 +29,10 @@
   }
 }
 
-/* Hide default cursor on desktop for custom cursor component */
+/* Custom cursor using cursor.png image */
 @media (min-width: 769px) {
   html, body, * {
-    cursor: none !important;
+    cursor: url('/elements/cursor.png') 12 12, auto !important;
   }
 }
 

@@ -52,7 +52,6 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
         setJourneyOpen(true);
         break;
       case "BINDER":
-        onBeamColorChange?.('pink');
         setBinderOpen(true);
         break;
       case "JOURNAL":
@@ -66,15 +65,15 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
         // Clear any existing tab preferences and set initial tab preference to USE tab and MERCH sub-tab for heart coin modal
         if (typeof window !== 'undefined') {
           // Clear any existing preferences first
-          delete (window as any).heartCoinInitialTab;
-          delete (window as any).heartCoinInitialUseTab;
-          delete (window as any).heartCoinSelectedCard;
+          delete (window as any).priceHeartCoinsInitialTab;
+          delete (window as any).priceHeartCoinsInitialUseTab;
+          delete (window as any).priceHeartCoinsSelectedCard;
           
           // Set our preferences
-          (window as any).heartCoinInitialTab = 'USE';
-          (window as any).heartCoinInitialUseTab = 'MERCH';
+          (window as any).priceHeartCoinsInitialTab = 'USE';
+          (window as any).priceHeartCoinsInitialUseTab = 'MERCH';
           // Set a flag to indicate this is from the STORE menu
-          (window as any).heartCoinFromStore = true;
+          (window as any).priceHeartCoinsFromStore = true;
         }
         setHeartCoinOpen(true);
         break;

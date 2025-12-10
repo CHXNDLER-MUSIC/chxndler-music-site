@@ -52,6 +52,7 @@ const PHYSICAL_ITEMS: StoreItem[] = [
     priceUsd: 18,
     priceHeartCoins: 12,
     cost: 12,
+    physicalCost: 12,
     stripeUrl: 'https://buy.stripe.com/bJe3cw99f28R5x7epp4gg0K',
     is_released: true,
     min_tier: 'wanderer'
@@ -65,6 +66,7 @@ const PHYSICAL_ITEMS: StoreItem[] = [
     priceUsd: 4.5,
     priceHeartCoins: 3,
     cost: 3,
+    physicalCost: 3,
     stripeUrl: 'https://buy.stripe.com/cNi00kfxDeVD3oZ5ST4gg0B',
     is_released: true,
     min_tier: 'wanderer'
@@ -79,6 +81,7 @@ const PHYSICAL_ITEMS: StoreItem[] = [
     priceUsd: 6,
     priceHeartCoins: 4,
     cost: 4,
+    physicalCost: 4,
     stripeUrl: 'https://buy.stripe.com/00w5kEgBHdRz1gRgxx4gg0C',
     is_released: true,
     min_tier: 'wanderer'
@@ -92,6 +95,7 @@ const PHYSICAL_ITEMS: StoreItem[] = [
     priceUsd: 3,
     priceHeartCoins: 2,
     cost: 2,
+    physicalCost: 2,
     stripeUrl: 'https://buy.stripe.com/8x24gA99f9Bj1gR6WX4gg0F',
     is_released: true,
     min_tier: 'wanderer'
@@ -105,6 +109,7 @@ const PHYSICAL_ITEMS: StoreItem[] = [
     priceUsd: 30,
     priceHeartCoins: 20,
     cost: 20,
+    physicalCost: 20,
     stripeUrl: 'https://buy.stripe.com/6oU28s717aFn1gR1CD4gg0I',
     is_released: true,
     min_tier: 'wanderer'
@@ -118,6 +123,7 @@ const PHYSICAL_ITEMS: StoreItem[] = [
     priceUsd: 6,
     priceHeartCoins: 4,
     cost: 4,
+    physicalCost: 4,
     stripeUrl: 'https://buy.stripe.com/8x214o99faFn0cN5ST4gg0H',
     is_released: true,
     min_tier: 'wanderer'
@@ -131,6 +137,7 @@ const PHYSICAL_ITEMS: StoreItem[] = [
     priceUsd: 30,
     priceHeartCoins: 20,
     cost: 20,
+    physicalCost: 20,
     stripeUrl: 'https://buy.stripe.com/dRm8wQetz14N5x71CD4gg0L',
     is_released: true,
     min_tier: 'wanderer'
@@ -145,6 +152,7 @@ const PHYSICAL_ITEMS: StoreItem[] = [
     priceUsd: 30,
     priceHeartCoins: 20,
     cost: 20,
+    physicalCost: 20,
     stripeUrl: 'https://buy.stripe.com/dRm8wQetz14N5x71CD4gg0L',
     is_released: true,
     min_tier: 'wanderer'
@@ -158,6 +166,7 @@ const PHYSICAL_ITEMS: StoreItem[] = [
     priceUsd: 6,
     priceHeartCoins: 4,
     cost: 4,
+    physicalCost: 4,
     stripeUrl: 'https://buy.stripe.com/6oU14oclr8xfbdd4gg0J',
     is_released: true,
     min_tier: 'wanderer'
@@ -171,6 +180,7 @@ const PHYSICAL_ITEMS: StoreItem[] = [
     priceUsd: 24,
     priceHeartCoins: 16,
     cost: 16,
+    physicalCost: 16,
     stripeUrl: 'https://buy.stripe.com/aFa8wQ2KR8xf6Bbftt4gg0N',
     is_released: true,
     min_tier: 'wanderer'
@@ -184,6 +194,7 @@ const PHYSICAL_ITEMS: StoreItem[] = [
     priceUsd: 6,
     priceHeartCoins: 4,
     cost: 4,
+    physicalCost: 4,
     stripeUrl: 'https://buy.stripe.com/4gM9AUadj9Bj2kVgxx4gg0O',
     is_released: true,
     min_tier: 'wanderer'
@@ -946,55 +957,103 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
     const costInHeartCoins = item.priceHeartCoins;
 
-    if ((profile.heartcoin_balance || 0) < costInHeartCoins) {
-      setCheckInMessage("Not enough HeartCoins");
-      setStatusType('error');
-      setTimeout(() => {
-        setCheckInMessage("");
-        setStatusType('idle');
-      }, 3000);
-      return;
-    }
-
     setIsProcessing(true);
 
     try {
-      const { error: purchaseError } = await supabaseBrowser.rpc(
-        "purchase_item_with_heartcoins",
-        {
-          p_user_id: profile.id,
-          p_item_slug: item.slug,
-          p_cost: costInHeartCoins,
-        }
-      );
+      console.log("Attempting HeartCoin purchase:", {
+        user_id: profile.id,
+        item_slug: item.slug,
+        cost: costInHeartCoins,
+        current_balance: profile.heartcoin_balance
+      });
 
+      // First try the RPC approach
+      let purchaseError = null;
+      let purchaseData = null;
+
+      try {
+        const rpcResponse = await supabaseBrowser.rpc(
+          "purchase_item_with_heartcoins",
+          {
+            p_user_id: profile.id,
+            p_item_slug: item.slug,
+            p_cost: costInHeartCoins,
+          }
+        );
+        
+        purchaseData = rpcResponse.data;
+        purchaseError = rpcResponse.error;
+        console.log("RPC response:", { purchaseData, purchaseError });
+      } catch (rpcErr) {
+        console.log("RPC function not available, falling back to direct operations");
+        purchaseError = rpcErr;
+      }
+
+      // If RPC failed due to insufficient funds, don't fallback
       if (purchaseError) {
-        console.error("HeartCoin purchase failed:", purchaseError);
-        throw purchaseError;
+        if (purchaseError.message?.includes('Insufficient HeartCoins') || purchaseError.message?.includes('Not enough HeartCoins')) {
+          throw new Error(purchaseError.message);
+        }
+        console.log("Using fallback approach - direct database operations");
+        
+        // Check current balance
+        const { data: currentProfile, error: profileError } = await supabaseBrowser
+          .from('profiles')
+          .select('heartcoin_balance')
+          .eq('id', profile.id)
+          .single();
+
+        if (profileError || !currentProfile) {
+          throw new Error("Could not fetch current balance");
+        }
+
+        const currentBalance = currentProfile.heartcoin_balance || 0;
+        if (currentBalance < costInHeartCoins) {
+          throw new Error(`Insufficient HeartCoins: have ${currentBalance}, need ${costInHeartCoins}`);
+        }
+
+        // Deduct heartcoins
+        const newBalance = currentBalance - costInHeartCoins;
+        const { error: updateError } = await supabaseBrowser
+          .from('profiles')
+          .update({ 
+            heartcoin_balance: newBalance,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', profile.id);
+
+        if (updateError) {
+          console.error("Failed to update balance:", updateError);
+          throw new Error("Failed to update HeartCoin balance");
+        }
+
+        // Try to record transaction (optional, won't fail purchase if this fails)
+        try {
+          await supabaseBrowser
+            .from('heartcoin_transactions')
+            .insert({
+              user_id: profile.id,
+              amount: -costInHeartCoins,
+              transaction_type: 'purchase',
+              description: `Purchased item: ${item.slug}`
+            });
+        } catch (transactionError) {
+          console.warn("Transaction recording failed (non-critical):", transactionError);
+        }
+
+        console.log("Fallback purchase successful");
       }
 
-      // Insert into orders table
-      const { data: order, error: orderError } = await supabaseBrowser
-        .from("orders")
-        .insert({
-          user_id: profile.id,
-          item_id: item.slug,
-          item_name: item.title,
-          price_heartcoins: costInHeartCoins,
-          status: "paid",
-          full_name: profile.full_name ?? null,
-        })
-        .select()
-        .single();
-
-      if (orderError) {
-        console.error("Order insert failed:", orderError);
-        throw orderError;
-      }
-
-      console.log("Order created:", order);
+      // Success - RPC handled everything (balance deduction and order creation)
 
       await refreshProfile(); // refresh HeartCoins
+      
+      // Play success sound
+      try { 
+        const audio = new Audio('/audio/card-ding.mp3');
+        audio.volume = 0.6;
+        audio.play(); 
+      } catch {}
       
       setCheckInMessage("Item purchased!");
       setStatusType('success');
@@ -1087,7 +1146,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       }
       
       // Success! Switch to done step
-      try { sfx.play('card-ding', 0.8); } catch {}
+      try { 
+        const audio = new Audio('/audio/card-ding.mp3');
+        audio.volume = 0.6;
+        audio.play(); 
+      } catch {}
       setStep('done');
       setIsProcessing(false);
       
@@ -1252,13 +1315,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         <img
           src="/elements/heart-coin.webp"
           alt="Heart Coins"
-          className="w-10 h-10 object-cover rounded"
+          className="w-12 h-12 object-cover rounded"
           style={{
             objectFit: 'cover'
           }}
           draggable={false}
         />
-        <span className="text-white text-sm font-semibold">
+        <span className="text-white text-lg font-semibold">
           {profile?.id ? heartCoins : 0}
         </span>
       </button>
@@ -1378,7 +1441,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 fontSize: '16px'
               }}
             >
-              HeartCoin
+              HeartCoins
             </div>
             
             {/* Tabs */}
@@ -1484,7 +1547,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   lineHeight: 1.3
                 }}
               >
-                Heart coins are the energy of the Heartverse. You earn them by exploring, connecting and showing up.
+                HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting and showing up.
               </div>
 
           {/* Daily Quests Tab Content */}
@@ -2047,35 +2110,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                         {PHYSICAL_ITEMS[currentMerchIndex].description}
                                       </div>
                                       
-                                      {/* PAY WITH heart coin button - below description */}
-                                      <div className="flex justify-center mt-3">
-                                        <button
-                                          onClick={() => {
-                                            try { sfx.play('click', 0.6); } catch {}
-                                            setSelectedItem(PHYSICAL_ITEMS[currentMerchIndex]);
-                                            setShowHeartCoinPurchase(!showHeartCoinPurchase);
-                                          }}
-                                          className={`px-8 py-3 rounded border cursor-pointer transition-all duration-200 text-white font-semibold flex items-center justify-center gap-1 text-xs whitespace-nowrap ${
-                                            showHeartCoinPurchase && selectedItem?.slug === PHYSICAL_ITEMS[currentMerchIndex].slug
-                                              ? 'border-yellow-400 bg-yellow-500/40 shadow-[0_0_20px_rgba(255,215,0,0.6)]'
-                                              : 'border-yellow-500/60 bg-yellow-500/20 hover:bg-yellow-500/30'
-                                          }`}
-                                          style={{
-                                            textShadow: '0 0 4px rgba(255,255,255,0.6)',
-                                            boxShadow: showHeartCoinPurchase && selectedItem?.slug === PHYSICAL_ITEMS[currentMerchIndex].slug 
-                                              ? '0 0 20px rgba(255,215,0,0.6)' 
-                                              : '0 0 8px rgba(255,215,0,0.2)'
-                                          }}
-                                        >
-                                          PAY WITH
-                                          <img
-                                            src="/elements/heart-coin.webp"
-                                            alt="Heart Coin"
-                                            className="w-4 h-4"
-                                          />
-                                          {PHYSICAL_ITEMS[currentMerchIndex].priceHeartCoins}
-                                        </button>
-                                      </div>
                                       
                                       {/* Right Arrow */}
                                       <button
@@ -2095,6 +2129,36 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     {/* Buy Buttons - removed, now located below counter */}
                                   </>
                                 )}
+                                
+                                {/* PAY WITH heart coin button - always visible */}
+                                <div className="flex justify-center mt-3">
+                                  <button
+                                    onClick={() => {
+                                      try { sfx.play('click', 0.6); } catch {}
+                                      setSelectedItem(PHYSICAL_ITEMS[currentMerchIndex]);
+                                      setShowHeartCoinPurchase(!showHeartCoinPurchase);
+                                    }}
+                                    className={`px-8 py-3 rounded border cursor-pointer transition-all duration-200 text-white font-semibold flex items-center justify-center gap-1 text-xs whitespace-nowrap ${
+                                      showHeartCoinPurchase && selectedItem?.slug === PHYSICAL_ITEMS[currentMerchIndex].slug
+                                        ? 'border-yellow-400 bg-yellow-500/40 shadow-[0_0_20px_rgba(255,215,0,0.6)]'
+                                        : 'border-yellow-500/60 bg-yellow-500/20 hover:bg-yellow-500/30'
+                                    }`}
+                                    style={{
+                                      textShadow: '0 0 4px rgba(255,255,255,0.6)',
+                                      boxShadow: showHeartCoinPurchase && selectedItem?.slug === PHYSICAL_ITEMS[currentMerchIndex].slug 
+                                        ? '0 0 20px rgba(255,215,0,0.6)' 
+                                        : '0 0 8px rgba(255,215,0,0.2)'
+                                    }}
+                                  >
+                                    PAY WITH
+                                    <img
+                                      src="/elements/heart-coin.webp"
+                                      alt="Heart Coin"
+                                      className="w-4 h-4"
+                                    />
+                                    {PHYSICAL_ITEMS[currentMerchIndex].priceHeartCoins}
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -2391,11 +2455,39 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                         fontWeight: 'bold'
                                       }}
                                       disabled={(profile?.id ? heartCoins : 0) < card.physicalCost}
-                                      onClick={() => {
+                                      onClick={async () => {
                                         try { sfx.play('click', 0.8); } catch {}
                                         if ((profile?.id ? heartCoins : 0) >= card.physicalCost) {
-                                          setShowPhysicalConfirm(false);
-                                          setShowPhysicalForm(true);
+                                          // Find the matching PHYSICAL_ITEM
+                                          const physicalItem = PHYSICAL_ITEMS.find(item => 
+                                            item.title.toLowerCase() === card.card_name.toLowerCase() ||
+                                            item.slug.toLowerCase() === card.card_name.toLowerCase().replace(/\s+/g, '-')
+                                          );
+                                          
+                                          if (physicalItem) {
+                                            try {
+                                              // Purchase the item first
+                                              await handlePurchaseWithHeartCoins(physicalItem);
+                                              
+                                              // Play success sound
+                                              try { 
+                                                const audio = new Audio('/audio/card-ding.mp3');
+                                                audio.volume = 0.6;
+                                                audio.play(); 
+                                              } catch {}
+                                              
+                                              // Show shipping form
+                                              setShowPhysicalConfirm(false);
+                                              setShowPhysicalForm(true);
+                                            } catch (error) {
+                                              console.error('Purchase failed:', error);
+                                              // Don't show form if purchase fails
+                                            }
+                                          } else {
+                                            // Fallback to old behavior if no physical item found
+                                            setShowPhysicalConfirm(false);
+                                            setShowPhysicalForm(true);
+                                          }
                                         }
                                       }}
                                     >
@@ -3157,107 +3249,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         </div>
       )}
 
-      {/* CARDS Tab Content */}
-      {activeTab === 'USE' && activeUseTab === 'CARDS' && (
-        <div className="pl-1 pr-4 pb-2 pt-0">
-          <div 
-            className="text-base text-center mb-3"
-            style={{ 
-              color: '#FFFFFF', 
-              textShadow: '0 0 4px rgba(255,255,255,0.8)', 
-              fontSize: '12px',
-              lineHeight: 1.2,
-              paddingTop: '8px'
-            }}
-          >
-            Trade your HEART coins for collectibles and cards that reflect your journey.
-          </div>
-
-
-          {/* Card display */}
-          {isLoadingCards ? (
-            <div className="text-center text-white py-4">Loading cards...</div>
-          ) : filteredCards.length === 0 ? (
-            <div className="text-center text-white py-4">No cards found for this selection.</div>
-          ) : (
-            <div className="max-h-80 overflow-y-auto space-y-3">
-              {filteredCards.map(card => (
-                <div key={card.id} className="flex gap-2 max-w-full overflow-hidden">
-                  {/* Card image */}
-                  <div className="w-20 h-28 rounded-lg border-2 border-yellow-500/80 overflow-hidden flex-shrink-0 relative cursor-pointer hover:border-yellow-400/90 transition-all duration-200 hover:scale-105">
-                    <img
-                      src={card.artwork_url || `/cards/${card.card_name}.webp`}
-                      alt={card.card_name}
-                      className={`w-full h-full object-cover ${shouldBlurCard(card) ? 'filter blur-sm opacity-60' : ''}`}
-                      onClick={() => {
-                        if (!shouldBlurCard(card)) {
-                          try { sfx.play('click', 0.8); } catch {}
-                          setEnlargedCard(card);
-                          setIsEnlargedCardFlipped(false);
-                        }
-                      }}
-                    />
-                    {shouldBlurCard(card) && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-white text-xs font-bold text-center bg-black/70 rounded px-1 py-0.5">
-                          {!card.is_released ? 'UNRELEASED' : 'LOCKED'}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Card details */}
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-white text-sm truncate mb-1">
-                      {card.card_name?.toUpperCase() || 'UNKNOWN CARD'}
-                    </h4>
-                    
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {card.element && (
-                        <span className="px-2 py-0.5 bg-white/10 rounded text-white/70 text-xs capitalize">
-                          {card.element}
-                        </span>
-                      )}
-                      {card.rarity && (
-                        <span className="px-2 py-0.5 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded text-yellow-200 text-xs capitalize">
-                          {card.rarity}
-                        </span>
-                      )}
-                    </div>
-
-                    {card.description && (
-                      <p className="text-white/60 text-xs mb-2 line-clamp-2">
-                        {card.description}
-                      </p>
-                    )}
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1">
-                        <img
-                          src="/elements/heart-coin.webp"
-                          alt="Heart Coin"
-                          className="w-3 h-3"
-                        />
-                        <span className="text-[#F2EF1D] font-bold text-sm">
-                          {card.digitalCost || 5}
-                        </span>
-                      </div>
-                      
-                      <button
-                        onClick={() => handlePurchaseWithHeartCoins(card)}
-                        disabled={isProcessing || shouldBlurCard(card) || (profile?.id ? heartCoins : 0) < (card.digitalCost || 5)}
-                        className="px-3 py-1 rounded text-xs font-bold bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isProcessing ? 'Processing...' : 'Add to Collection'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
 
     </>

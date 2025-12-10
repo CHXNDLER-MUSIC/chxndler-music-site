@@ -222,16 +222,15 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
       // Call the RPC with correct parameters
       const { data, error } = await supabaseBrowser.rpc('purchase_item_with_heartcoins', {
         p_user_id: profile.id,
-        p_item_id: item.id,
-        p_item_name: item.title,
-        p_price_heartcoins: item.priceHeartCoins
+        p_item_slug: item.id,
+        p_cost: item.priceHeartCoins
       });
       
       if (error) {
         console.error('RPC Error:', error);
         
         // Check if it's an insufficient funds error
-        if (error.message?.includes('Not enough HeartCoins')) {
+        if (error.message?.includes('Not enough HeartCoins') || error.message?.includes('Insufficient HeartCoins')) {
           setCheckoutError('Not enough HeartCoins for this purchase.');
         } else {
           setCheckoutError('Purchase failed. Please try again.');
@@ -380,30 +379,46 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
         {showHeartCoinCheckout && (
           <div className="px-6 pb-4">
             <div className="rounded-xl border border-pink-500/40 bg-pink-900/20 px-4 py-3 space-y-3">
-              {/* User tier and balance */}
-              <div className="text-center space-y-2">
-                <div className="text-sm text-pink-200">
-                  {profile?.tierName ?? "Wanderer"}
+              {/* User and Cost layout */}
+              <div className="space-y-3">
+                {/* Headers */}
+                <div className="flex justify-between items-center text-white text-lg font-bold">
+                  <span>User</span>
+                  <span>Cost</span>
                 </div>
-                <div className="flex items-center justify-center gap-2 text-lg font-semibold text-white">
-                  <span>{profile?.heartcoin_balance ?? 0}</span>
-                  <img
-                    src="/elements/heart-coin.webp"
-                    alt="Heart Coin"
-                    className="w-5 h-5 object-contain"
-                    style={{
-                      filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
-                    }}
-                  />
+                
+                {/* Balance and price row */}
+                <div className="flex justify-between items-center">
+                  {/* User balance */}
+                  <div className="flex items-center gap-2">
+                    <img
+                      src="/elements/heart-coin.webp"
+                      alt="Heart Coin"
+                      className="w-8 h-8 object-contain"
+                      style={{
+                        filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
+                      }}
+                    />
+                    <span className="text-3xl font-bold text-white">{profile?.heartcoin_balance ?? 0}</span>
+                  </div>
+                  
+                  {/* Item cost */}
+                  <div className="flex items-center gap-2">
+                    <img
+                      src="/elements/heart-coin.webp"
+                      alt="Heart Coin"
+                      className="w-8 h-8 object-contain"
+                      style={{
+                        filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
+                      }}
+                    />
+                    <span className="text-3xl font-bold text-white">{item.priceHeartCoins}</span>
+                  </div>
                 </div>
-                <div className="text-sm text-pink-200">
-                  Current Item Price: <span className="font-bold text-pink-300">
-                    {item.priceHeartCoins} Heart Coins
-                  </span>
-                </div>
+                
                 {!hasEnoughHeartCoins && (
                   <div className="text-center text-red-400 font-semibold mt-2">
-                    Not enough Heart Coins
+                    You do not have enough heart coins
                   </div>
                 )}
               </div>

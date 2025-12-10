@@ -413,7 +413,7 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
             </div>
 
             {/* Cards Grid */}
-            {profileLoading ? (
+            {profileLoading || (!profileLoading && !profile) ? (
               <div className="text-center py-12">
                 <div className="w-16 h-16 mx-auto mb-4 bg-white/10 rounded-full flex items-center justify-center">
                   <div className="w-8 h-8 border-2 border-[#F2EF1D] border-t-transparent rounded-full animate-spin"></div>

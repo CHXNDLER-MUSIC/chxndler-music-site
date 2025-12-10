@@ -729,11 +729,11 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                           
                           // Set HeartCoin modal to open with USE tab and CARDS sub-tab
                           try {
-                            (window as any).heartCoinInitialTab = 'cards';
+                            (window as any).priceHeartCoinsInitialTab = 'cards';
                             // Store the currently playing song name for filtering
-                            (window as any).heartCoinSelectedCard = currentTrack?.title || title;
+                            (window as any).priceHeartCoinsSelectedCard = currentTrack?.title || title;
                             // Clear store flag to ensure proper tab navigation
-                            delete (window as any).heartCoinFromStore;
+                            delete (window as any).priceHeartCoinsFromStore;
                           } catch {}
                           
                           // Emit custom event to open HeartCoin modal with card filter

@@ -12,6 +12,7 @@ import HeartverseButton from "@/components/HeartverseButton";
 import SoulStarJournal from "@/components/SoulStarJournal";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { awardHeartCoins } from "@/utils/heartcoins";
+import { useAudio } from "@/app/providers/AudioProvider";
 // 2D fallback hologram
 // 2D HUD removed per request; 3D only
 // 3D planet system (requires three/r3f/drei installed)
@@ -138,6 +139,9 @@ const HUDPanel = React.memo(function HUDPanel({
   onBeamColorChange, // callback to change beam color
   todaysPrompt, // today's soul prompt (server-fetched)
 }) {
+  // Use unified audio system for play/pause controls
+  const audioManager = useAudio();
+  
   // Temporary kill-switch to disable 3D planets for performance testing
   // Set to true to disable. You can also override at runtime by setting
   // localStorage.DISABLE_3D_PLANETS = '0' and refreshing.
@@ -5428,25 +5432,30 @@ const HUDPanel = React.memo(function HUDPanel({
                                           // Call the RPC with correct parameters
                                           const { data, error } = await supabaseClient.rpc('purchase_item_with_heartcoins', {
                                             p_user_id: session.user.id,
-                                            p_item_id: item.id,
-                                            p_item_name: item.title,
-                                            p_price_heartcoins: item.heartcoins
+                                            p_item_slug: item.id,
+                                            p_cost: item.heartcoins
                                           });
                                           
                                           if (error) {
                                             console.error('RPC Error:', error);
                                             
                                             // Check if it's an insufficient funds error
-                                            if (error.message?.includes('Not enough HeartCoins')) {
+                                            if (error.message?.includes('Not enough HeartCoins') || error.message?.includes('Insufficient HeartCoins')) {
                                               setStoreConfirmError('Not enough HeartCoins for this purchase.');
                                             } else {
                                               setStoreConfirmError('Purchase failed. Please try again.');
                                             }
                                           } else {
                                             try { sfx.play('success', 0.7); } catch {}
-                                            // The RPC should handle updating the balance, but we can optimistically update for UI responsiveness
-                                            // Note: This uses the hardcoded price which should ideally come from the database
-                                            setHeartCoinsCount((c) => Math.max(0, (c || 0) - (item.heartcoins || 0)));
+                                            // Refresh heartcoin balance after successful purchase
+                                            const { data: updatedProfile } = await supabaseClient
+                                              .from('profiles')
+                                              .select('heartcoin_balance')
+                                              .eq('id', session.user.id)
+                                              .single();
+                                            if (updatedProfile) {
+                                              setHeartCoinsCount(updatedProfile.heartcoin_balance || 0);
+                                            }
                                             // Brief success flash then close confirmation
                                             setTimeout(() => {
                                               setStoreConfirming(false);

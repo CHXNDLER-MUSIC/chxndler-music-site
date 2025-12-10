@@ -85,14 +85,20 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   const [celebrationMessage, setCelebrationMessage] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
+  const [bonusQuests, setBonusQuests] = useState<any[]>([]);
+  const [bonusQuestsLoading, setBonusQuestsLoading] = useState(false);
   const { questStatus, setQuestStatus, todaysElement, todaysQuestion } = useQuestStatus();
   const { refreshProfile } = useProfile();
 
-  // Sync quest status with server
-  const syncQuestStatus = async (userId: string) => {
+  // Load bonus quests from server
+  const loadBonusQuests = async (userId: string) => {
     try {
-      const bonusQuests = await getBonusQuestsForUser(userId);
-      const inviteFriendQuest = bonusQuests.find(q => q.quest_key === 'INVITE_FRIEND');
+      setBonusQuestsLoading(true);
+      const serverQuests = await getBonusQuestsForUser(userId);
+      setBonusQuests(serverQuests);
+      
+      // Also sync the localStorage state for backwards compatibility
+      const inviteFriendQuest = serverQuests.find(q => q.quest_key === 'INVITE_FRIEND');
       
       if (inviteFriendQuest) {
         const today = new Date().toDateString();
@@ -110,7 +116,9 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         }));
       }
     } catch (error) {
-      console.error('Failed to sync quest status:', error);
+      console.error('Failed to load bonus quests:', error);
+    } finally {
+      setBonusQuestsLoading(false);
     }
   };
 
@@ -122,9 +130,9 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         const isAuth = !!session?.user;
         setIsAuthenticated(isAuth);
         
-        // Sync quest status if authenticated
+        // Load bonus quests if authenticated
         if (isAuth && session?.user?.id) {
-          await syncQuestStatus(session.user.id);
+          await loadBonusQuests(session.user.id);
         }
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -142,9 +150,9 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         const isAuth = !!session?.user;
         setIsAuthenticated(isAuth);
         
-        // Sync quest status when user logs in
+        // Load bonus quests when user logs in
         if (isAuth && session?.user?.id) {
-          await syncQuestStatus(session.user.id);
+          await loadBonusQuests(session.user.id);
         }
       }
     );
@@ -152,13 +160,17 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
     return () => subscription.unsubscribe();
   }, []);
 
+  // Helper functions to get quest data from server
+  const getInviteFriendQuest = () => bonusQuests.find(q => q.quest_key === 'INVITE_FRIEND');
+  const getLiveShowQuest = () => bonusQuests.find(q => q.quest_key === 'ATTEND_LIVESTREAM');
+
   const showCelebration = (message: string) => {
     setCelebrationMessage(message);
     setTimeout(() => setCelebrationMessage(""), 3000);
   };
 
   const handleElementTap = async () => {
-    if (questStatus.elementOfDay || loading || !isAuthenticated) return;
+    if (questStatus.elementOfDay || loading || !isAuthenticatedForTesting) return;
     
     try { sfx.play('click', 0.8); } catch {}
     setLoading(true);
@@ -193,7 +205,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   };
 
   const handleJournalOpen = () => {
-    if (questStatus.journalEntry || loading || !isAuthenticated) return;
+    if (questStatus.journalEntry || loading || !isAuthenticatedForTesting) return;
     
     try { sfx.play('click', 0.8); } catch {}
     onCloseHeartCoinPopup?.();
@@ -222,7 +234,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   };
 
   const handleInviteFriend = async () => {
-    if (questStatus.inviteFriend || loading || !isAuthenticated) return;
+    if (questStatus.inviteFriend || loading || !isAuthenticatedForTesting) return;
     
     try { sfx.play('click', 0.8); } catch {}
     const message = "I thought of you. I think this world could feel like home for you too. https://chxndler.world/";
@@ -257,7 +269,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   };
 
   const handleConfirmInvite = async () => {
-    if (questStatus.inviteFriendConfirm || loading || !isAuthenticated) return;
+    if (questStatus.inviteFriendConfirm || loading || !isAuthenticatedForTesting) return;
     
     try { sfx.play('click', 0.8); } catch {}
     setLoading(true);
@@ -295,6 +307,12 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
             console.debug('🔄 Refreshing profile to update heartcoin balance after bonus quest completion');
             await refreshProfile();
           }
+          
+          // Reload bonus quests to update button states
+          const { data: { session } } = await supabaseClient.auth.getSession();
+          if (session?.user?.id) {
+            await loadBonusQuests(session.user.id);
+          }
         } else {
           // Unexpected response format
           console.error('Unexpected response format:', data);
@@ -315,7 +333,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
 
   const handleCheckInSubmit = async () => {
     // This function should ONLY be called when confirming a secret phrase
-    if (questStatus.liveShow || loading || !isAuthenticated || !secretPhrase.trim()) return;
+    if (questStatus.liveShow || loading || !isAuthenticatedForTesting || !secretPhrase.trim()) return;
     
     console.log('handleCheckInSubmit called - this should only happen on CONFIRM button click');
     
@@ -526,7 +544,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
               {/* Today's Element Icon */}
               <button
                 onClick={handleElementTap}
-                disabled={questStatus.elementOfDay || loading || !isAuthenticated}
+                disabled={questStatus.elementOfDay || loading || !isAuthenticatedForTesting}
                 className={`w-12 h-12 border-2 rounded-full overflow-hidden transition-all relative ${
                   questStatus.elementOfDay 
                     ? 'border-green-500/60 cursor-not-allowed opacity-60' 
@@ -693,11 +711,11 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                       ? handleConfirmInvite 
                       : handleInviteFriend
                 }
-                disabled={questStatus.inviteFriendConfirm || loading || !isAuthenticated}
+                disabled={questStatus.inviteFriendConfirm || loading || !isAuthenticated || bonusQuestsLoading || !getInviteFriendQuest()?.can_complete}
                 className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 ${
                   questStatus.inviteFriendConfirm
                     ? 'bg-green-500/30 border-2 border-green-400 text-green-200 cursor-not-allowed'
-                    : !isAuthenticated
+                    : !isAuthenticated || !getInviteFriendQuest()?.can_complete
                       ? 'bg-gray-600/30 border border-gray-500/50 text-gray-300 cursor-not-allowed'
                       : questStatus.inviteFriend
                         ? 'bg-black/30 border-2 border-[#F2EF1D] text-[#F2EF1D] hover:bg-[#F2EF1D]/10'
@@ -706,14 +724,14 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                 style={{
                   boxShadow: questStatus.inviteFriendConfirm
                     ? '0 0 20px rgba(0,255,0,0.8), inset 0 0 15px rgba(0,255,0,0.3)'
-                    : !isAuthenticated
+                    : !isAuthenticated || !getInviteFriendQuest()?.can_complete
                       ? '0 0 10px rgba(100,100,100,0.3)'
                       : questStatus.inviteFriend
                         ? '0 0 20px rgba(242,239,29,0.8), inset 0 0 10px rgba(242,239,29,0.2)'
                         : '0 0 10px rgba(252,84,175,0.3)',
                   textShadow: questStatus.inviteFriendConfirm
                     ? '0 0 12px rgba(0,255,0,1)'
-                    : !isAuthenticated
+                    : !isAuthenticated || !getInviteFriendQuest()?.can_complete
                       ? '0 0 4px rgba(100,100,100,0.6)'
                       : questStatus.inviteFriend
                         ? '0 0 10px rgba(242,239,29,1)'
@@ -724,9 +742,11 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                   ? 'COMPLETED' 
                   : !isAuthenticated
                     ? 'LOG IN TO COMPLETE'
-                    : questStatus.inviteFriend 
-                      ? 'CONFIRM' 
-                      : 'INVITE A FRIEND'
+                    : !getInviteFriendQuest()?.can_complete
+                      ? getInviteFriendQuest()?.completed_today > 0 ? 'COMPLETED TODAY' : 'UNAVAILABLE'
+                      : questStatus.inviteFriend 
+                        ? 'CONFIRM' 
+                        : 'INVITE FRIEND'
                 }
               </button>
               <div 
@@ -810,11 +830,11 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                         ? handleCheckInSubmit 
                         : handleShowCheckInForm
                   }
-                  disabled={questStatus.liveShow || !isAuthenticated || (showCheckIn && (!secretPhrase.trim() || loading))}
+                  disabled={questStatus.liveShow || !isAuthenticated || bonusQuestsLoading || !getLiveShowQuest()?.can_complete || (showCheckIn && (!secretPhrase.trim() || loading))}
                   className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 ${
                     questStatus.liveShow
                       ? 'bg-green-600/30 border border-green-500/50 text-green-300 cursor-not-allowed'
-                      : !isAuthenticated
+                      : !isAuthenticated || !getLiveShowQuest()?.can_complete
                         ? 'bg-gray-600/30 border border-gray-500/50 text-gray-300 cursor-not-allowed'
                         : showCheckIn && secretPhrase.trim()
                           ? 'bg-yellow-500/20 border-2 border-yellow-400 text-yellow-300 hover:bg-yellow-500/30'
@@ -825,7 +845,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                   style={{
                     boxShadow: questStatus.liveShow
                       ? '0 0 10px rgba(0,255,0,0.3)'
-                      : !isAuthenticated
+                      : !isAuthenticated || !getLiveShowQuest()?.can_complete
                         ? '0 0 10px rgba(100,100,100,0.3)'
                         : showCheckIn && secretPhrase.trim()
                           ? '0 0 20px rgba(255,255,0,0.8), inset 0 0 10px rgba(255,255,0,0.2)'
@@ -834,7 +854,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                             : '0 0 10px rgba(252,84,175,0.3)',
                     textShadow: questStatus.liveShow
                       ? '0 0 4px rgba(0,255,0,0.6)'
-                      : !isAuthenticated
+                      : !isAuthenticated || !getLiveShowQuest()?.can_complete
                         ? '0 0 4px rgba(100,100,100,0.6)'
                         : showCheckIn && secretPhrase.trim()
                           ? '0 0 10px rgba(255,255,0,1)'
@@ -847,9 +867,11 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                     ? 'COMPLETED' 
                     : !isAuthenticated 
                       ? 'LOG IN TO COMPLETE' 
-                      : showCheckIn
-                        ? (loading ? 'CONFIRMING...' : secretPhrase.trim() ? 'CONFIRM' : 'ENTER PHRASE')
-                        : `CHECK IN (DEBUG: show=${showCheckIn})`
+                      : !getLiveShowQuest()?.can_complete
+                        ? getLiveShowQuest()?.completed_today > 0 ? 'COMPLETED TODAY' : 'UNAVAILABLE'
+                        : showCheckIn
+                          ? (loading ? 'CONFIRMING...' : secretPhrase.trim() ? 'CONFIRM' : 'ENTER PHRASE')
+                          : 'CHECK IN'
                   }
                 </button>
                 <div 

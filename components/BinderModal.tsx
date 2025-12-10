@@ -381,10 +381,6 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     return type === 'digital' ? digitalCost : physicalCost;
   };
 
-  const hasEnoughBalance = (type: 'digital' | 'physical') => {
-    const cost = getCost(type);
-    return (profile?.heartcoin_balance || 0) >= cost;
-  };
 
   const handlePurchaseClick = (type: 'digital' | 'physical') => {
     setSelectedPurchaseType(type);
@@ -406,12 +402,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     
     if (!currentCard) return;
     
-    // Check balance upfront before making API call
-    if (!hasEnoughBalance(selectedPurchaseType)) {
-      try { sfx.play('error', 0.8); } catch {}
-      setPurchaseState('insufficient');
-      return;
-    }
+    // The RPC will handle balance validation
     
     try {
       // Use the proper API endpoint to purchase the card with heart coins
@@ -553,12 +544,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     
     if (!currentCard) return;
     
-    // Verify balance again
-    if ((profile.heartcoin_balance || 0) < cost) {
-      try { sfx.play('error', 0.8); } catch {}
-      setPurchaseState('insufficient');
-      return;
-    }
+    // The RPC will handle balance verification
     
     try {
       // Create physical order
@@ -1870,7 +1856,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                             }}
                           >
                             <img
-                              src={`https://ik.imagekit.io/CHXNDLER/card/${element.toUpperCase()}.png`}
+                              src={getCardImage(element.toUpperCase(), element)}
                               alt={`${element} Card`}
                               className="w-full h-full object-cover rounded-lg"
                               draggable={false}

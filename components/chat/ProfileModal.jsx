@@ -475,11 +475,11 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
               }}
             >
               <div 
-                className="relative w-56 mx-4"
+                className="relative w-40 mx-4"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div
-                  className="relative w-full h-80 cursor-pointer"
+                  className="relative w-full h-60 cursor-pointer"
                   style={{
                     perspective: '1000px'
                   }}
@@ -507,7 +507,7 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
                     
                     {/* Back of card */}
                     <img
-                      src="/cards/back.webp"
+                      src="/cards/BACK.webp"
                       alt="Card back"
                       className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
                       style={{
