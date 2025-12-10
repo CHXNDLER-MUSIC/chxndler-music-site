@@ -12,6 +12,7 @@ import React, {
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { ProfileTier } from "@/types/card";
 import { getLocalDateString } from "@/utils/dateHelpers";
+import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
 
 // Types for user owned cards and badges
 type OwnedCardRow = {
@@ -158,6 +159,27 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [isJournalOpen, setIsJournalOpen] = useState(false);
+  const [previousHeartcoinBalance, setPreviousHeartcoinBalance] = useState<number | null>(null);
+
+  // Wrapper for setProfile that detects heartcoin balance increases
+  const setProfileWithCelebration = useCallback((newProfile: Profile | null) => {
+    if (newProfile && previousHeartcoinBalance !== null && newProfile.heartcoin_balance !== null) {
+      const currentBalance = newProfile.heartcoin_balance;
+      const balanceIncrease = currentBalance - previousHeartcoinBalance;
+      
+      if (balanceIncrease > 0) {
+        // Trigger celebration for balance increase
+        triggerHeartCoinCelebration(balanceIncrease);
+      }
+    }
+    
+    // Update the previous balance for next comparison
+    if (newProfile?.heartcoin_balance !== null) {
+      setPreviousHeartcoinBalance(newProfile.heartcoin_balance ?? 0);
+    }
+    
+    setProfile(newProfile);
+  }, [previousHeartcoinBalance]);
 
   const fetchProfile = async () => {
     try {
@@ -190,7 +212,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       
       setUser(user);
       if (!user) {
-        setProfile(null);
+        setProfileWithCelebration(null);
         return;
       }
 
@@ -327,10 +349,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         });
       }
 
-      setProfile(mappedProfile);
+      setProfileWithCelebration(mappedProfile);
     } catch (error) {
       console.error("Error in fetchProfile:", error);
-      setProfile(null);
+      setProfileWithCelebration(null);
     } finally {
       setLoading(false);
     }
@@ -414,7 +436,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           heartcoins_sent: data.heartcoins_sent ?? 0,
           card_slots: data.card_slots ?? 0,
         };
-        setProfile(mappedProfile);
+        setProfileWithCelebration(mappedProfile);
       } else {
         console.warn("Profile update returned no data. Profile may not exist yet - waiting for trigger to create it.");
       }

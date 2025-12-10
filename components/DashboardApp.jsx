@@ -712,6 +712,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // Update player store so HoloAudioBridge plays the correct song
     try { playerStore.getState().setMain(selectedTrack.slug || ''); } catch {}
     
+    // Set the selected track as pending for post-warp playback
+    try { audioManager.setPendingTrack(selectedTrack.slug); } catch {}
+    
     // Set flags for selection sequencing: keep planets visible during warp on homepage
     setPendingTrackPlay(true);
     setHidePlanetsForSelection(false);
@@ -874,6 +877,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     try { playerStore.getState().setPlanetsVisible(false); } catch {}
     // Ensure focused planet is this route's song
     try { playerStore.getState().setMain(t.slug || ''); } catch {}
+    
+    // Set the selected track as pending for post-warp playback
+    try { audioManager.setPendingTrack(t.slug); } catch {}
+    
     // Deep link unlocks overlay UI so buttons can show after warp
     setUiUnlocked(true);
     // Enable SFX when unlocking UI for deep links
@@ -1205,6 +1212,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // Mark that user actually clicked START
     setUserClickedStart(true);
 
+    // Enable SFX immediately so warp sound can play
+    try { sfx.setEnabled(true); } catch {}
+
     // Enter warp phase immediately
     setUiPhase("warping");
     
@@ -1217,7 +1227,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
     
     // Play warp sound if available
-    try { sfx.play('join', 0.9); } catch {}
+    try { sfx.play('warp', 0.9); } catch {}
     
     // BACKUP TIMER: Ensure warp completes even if audio callback fails (Chrome compatibility)
     setTimeout(() => {
@@ -1324,13 +1334,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               try { sfx.play('click', 0.6); } catch {}
               return;
             }
-            // Ambient auto-play disabled - user must manually interact with audio controls
-            // if (ambient) {
-            //   try { window.dispatchEvent(new CustomEvent('ambient:userPlay')); } catch {}
-            //   ambient.play().catch(()=>{});
-            //   try { sfx.play('click', 0.6); } catch {}
-            //   return;
-            // }
+            if (ambient) {
+              try { window.dispatchEvent(new CustomEvent('ambient:userPlay')); } catch {}
+              ambient.play().catch(()=>{});
+              try { sfx.play('click', 0.6); } catch {}
+              return;
+            }
           }
 
           // 3) Off homepage: control the main player when available

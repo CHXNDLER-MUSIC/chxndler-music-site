@@ -512,77 +512,75 @@ export default function JoinAliens({ visible = true } = {}) {
       )}
       </div> {/* Close Stay Connected Section */}
 
-      {/* Text Button - positioned in top left corner */}
+
+
+      {/* Text Button - positioned in bottom left */}
       <button
         onClick={() => {
           // Prevent chat from opening if component is not visible or if there are other modals
           if (!visible) {
-            console.log('TEXT button clicked but JoinAliens not visible, ignoring');
+            console.log('Text button clicked but JoinAliens not visible, ignoring');
             return;
           }
           
           // Check if any modal backdrops exist (indicating other modals are open)
           const existingBackdrops = document.querySelectorAll('[class*="fixed"][class*="inset-0"][class*="z-"]');
           if (existingBackdrops.length > 0) {
-            console.log('TEXT button clicked but other modals appear to be open, ignoring');
+            console.log('Text button clicked but other modals appear to be open, ignoring');
             return;
           }
           
           try { sfx.play('audio/click.mp3', 0.5); } catch {}
-          console.log('TEXT button clicked, current chat state:', isChatOpen);
+          console.log('Text button clicked, current chat state:', isChatOpen);
           setIsChatOpen(!isChatOpen);
           console.log('Setting chat state to:', !isChatOpen);
         }}
-        title="Open live chat"
+        title="Open text chat"
+        className="text-chat-button"
         style={{
           position: 'absolute',
-          top: '12px',
+          bottom: '12px',
           left: '12px',
-          width: '56px',
-          height: '56px',
-          background: 'rgba(242, 239, 29, 0.2)',
+          width: '48px',
+          height: '48px',
+          background: 'rgba(242, 239, 29, 0.1)',
           border: '2px solid #F2EF1D',
-          borderRadius: '8px',
-          color: '#F2EF1D',
-          fontSize: '14px',
-          fontWeight: 'bold',
+          borderRadius: '50%',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           transition: 'all 300ms ease',
           outline: 'none',
-          textShadow: '0 0 8px #F2EF1D',
-          boxShadow: '0 0 15px rgba(242, 239, 29, 0.3)',
+          boxShadow: '0 0 15px rgba(242, 239, 29, 0.4)',
           zIndex: 10,
-          opacity: 1
+          overflow: 'hidden'
         }}
         onMouseEnter={(e) => {
           try { sfx.play('hover', 0.3); } catch {}
-          e.target.style.transform = 'scale(1.05)';
-          e.target.style.background = 'rgba(242, 239, 29, 0.3)';
+          e.target.style.transform = 'scale(1.1)';
+          e.target.style.background = 'rgba(242, 239, 29, 0.2)';
           e.target.style.boxShadow = '0 0 25px rgba(242, 239, 29, 0.6)';
-          e.target.style.textShadow = '0 0 15px #F2EF1D, 0 0 25px #F2EF1D';
         }}
         onMouseLeave={(e) => {
           e.target.style.transform = 'scale(1)';
-          e.target.style.background = 'rgba(242, 239, 29, 0.2)';
-          e.target.style.boxShadow = '0 0 15px rgba(242, 239, 29, 0.3)';
-          e.target.style.textShadow = '0 0 8px #F2EF1D';
+          e.target.style.background = 'rgba(242, 239, 29, 0.1)';
+          e.target.style.boxShadow = '0 0 15px rgba(242, 239, 29, 0.4)';
         }}
       >
         <img 
           src="/elements/text.webp" 
-          alt="Text" 
+          alt="Text Chat" 
           style={{
             width: '100%',
             height: '100%',
-            objectFit: 'contain'
+            objectFit: 'cover',
+            filter: 'brightness(1.2) saturate(1.2)'
           }}
         />
       </button>
 
-      {/* Phone Button - positioned above $ button */}
+      {/* Phone Button - positioned above text chat button */}
       <button
         onClick={() => {
           try { sfx.play('audio/click.mp3', 0.5); } catch {}
@@ -591,7 +589,7 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
         style={{
           position: 'absolute',
-          bottom: '12px',
+          bottom: '68px',
           left: '12px',
           width: '40px',
           height: '40px',

@@ -484,8 +484,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     markWarpCompleted: () => {
       setState(s => ({ 
         ...s, 
-        warpCompleted: true,
-        pendingTrack: s.pendingTrack || 'space-music' // Ensure space-music is set as default
+        warpCompleted: true
+        // Keep existing pendingTrack - don't override with space-music
       }));
     },
     
@@ -497,8 +497,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   // Auto-play track when warp completes
   useEffect(() => {
     if (!state.warpCompleted) return;
+    if (!state.pendingTrack) return; // Only auto-play if a track was specifically selected
 
-    const trackToPlay = state.pendingTrack || 'space-music';
+    const trackToPlay = state.pendingTrack;
     
     console.log('🎵 Auto-playing after warp completion:', trackToPlay);
     
@@ -527,6 +528,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           // Only sync if a different song is selected
           if (currentMainId && currentMainId !== state.currentTrack?.id) {
             console.log('🎵 AudioProvider: Syncing with player store selection:', currentMainId);
+            
+            // Set current track info immediately for UI updates
+            const trackInfo = TRACK_INFO[currentMainId];
+            if (trackInfo) {
+              setState(s => ({ ...s, currentTrack: trackInfo }));
+            }
             
             // Set this track as pending
             setState(s => ({ ...s, pendingTrack: currentMainId, warpCompleted: false }));

@@ -732,7 +732,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                         setSecretPhrase(e.target.value);
                         setCheckInError("");
                       }}
-                      placeholder="Secret phrase..."
+                      placeholder="ENTER SECRET PHRASE"
                       className="w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-cyan-400 focus:outline-none"
                       style={{
                         boxShadow: '0 0 8px rgba(0,255,255,0.2)',

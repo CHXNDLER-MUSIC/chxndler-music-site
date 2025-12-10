@@ -716,9 +716,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         setStatusType('success');
         setShowCheckInSuccess(true);
 
-        // Automatically open text box after success
-        setShowAutoTextBox(true);
-        setAutoTextValue("");
+        // Automatically open text box after success for ATTEND_LIVESTREAM quest
+        if (quest.quest_key === 'ATTEND_LIVESTREAM') {
+          setShowAutoTextBox(true);
+          setAutoTextValue("");
+        }
 
         // Hide success message after 3 seconds
         setTimeout(() => {
@@ -1492,16 +1494,17 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 <div className="text-center text-white/60 py-4">No bonus quests available</div>
               ) : (
                 bonusQuests.map((quest, index) => (
-                  <div key={quest.id} className="flex items-center justify-between mb-2 p-2 rounded border border-white/30 bg-white/10">
-                    <div>
-                      <div className="text-xs font-bold" style={{ color: '#FFFFFF' }}>
-                        {index + 1}. {quest.title}
+                  <div key={quest.id} className={`mb-2 p-2 rounded border border-white/30 bg-white/10 ${showAutoTextBox && quest.quest_key === 'ATTEND_LIVESTREAM' ? 'block' : 'flex items-center justify-between'}`}>
+                    <div className={showAutoTextBox && quest.quest_key === 'ATTEND_LIVESTREAM' ? 'block' : 'flex items-center justify-between w-full'}>
+                      <div>
+                        <div className="text-xs font-bold" style={{ color: '#FFFFFF' }}>
+                          {index + 1}. {quest.title}
+                        </div>
+                        <div className="text-[10px]" style={{ color: '#FFFFFF', opacity: 0.8 }}>
+                          {quest.description}
+                        </div>
                       </div>
-                      <div className="text-[10px]" style={{ color: '#FFFFFF', opacity: 0.8 }}>
-                        {quest.description}
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2">
                       <button
                         onClick={() => {
                           if (quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared) {
@@ -1589,7 +1592,40 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         {quest.reward_notes || `+${quest.reward_heartcoins}`}
                         <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
                       </span>
+                      </div>
                     </div>
+                    {/* Auto text box for ATTEND_LIVESTREAM quest */}
+                    {quest.quest_key === 'ATTEND_LIVESTREAM' && showAutoTextBox && (
+                      <div className="mt-2 border-t border-white/20 pt-2">
+                        <textarea
+                          value={autoTextValue}
+                          onChange={(e) => setAutoTextValue(e.target.value)}
+                          placeholder="What's on your mind?"
+                          className="w-full h-16 px-2 py-1 text-xs rounded border bg-black/20 text-white placeholder-white/60 border-white/30 focus:border-white/60 focus:outline-none resize-none"
+                          autoFocus
+                        />
+                        <div className="flex gap-1 mt-2">
+                          <button
+                            onClick={() => {
+                              setShowAutoTextBox(false);
+                              setAutoTextValue("");
+                            }}
+                            className="px-2 py-1 text-xs rounded bg-white/10 border border-white/30 text-white hover:bg-white/20 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowAutoTextBox(false);
+                              setAutoTextValue("");
+                            }}
+                            className="px-2 py-1 text-xs rounded bg-white/20 border border-white/60 text-white hover:bg-white/30 transition-colors"
+                          >
+                            Done
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     {/* Secret phrase input field */}
                     {quest.quest_key === 'SECRET_PHRASE' && secretPhraseInputVisible === quest.id && (
                       <div className="mt-2 border-t border-white/20 pt-2">
@@ -2847,52 +2883,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         </div>
       )}
 
-      {/* Automatic Text Box After Check-in Success */}
-      {showAutoTextBox && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-black/90 border border-white/30 rounded-lg p-6 m-4 max-w-md w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-white text-lg font-bold">Write something...</h3>
-              <button
-                onClick={() => {
-                  setShowAutoTextBox(false);
-                  setAutoTextValue("");
-                }}
-                className="text-white/60 hover:text-white text-xl font-bold"
-              >
-                ×
-              </button>
-            </div>
-            <textarea
-              value={autoTextValue}
-              onChange={(e) => setAutoTextValue(e.target.value)}
-              placeholder="What's on your mind?"
-              className="w-full h-24 p-3 rounded text-white placeholder-white/50 bg-white/10 border border-white/30 resize-none focus:outline-none focus:border-white/60"
-              autoFocus
-            />
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={() => {
-                  setShowAutoTextBox(false);
-                  setAutoTextValue("");
-                }}
-                className="px-4 py-2 rounded bg-white/10 border border-white/30 text-white hover:bg-white/20 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  setShowAutoTextBox(false);
-                  setAutoTextValue("");
-                }}
-                className="px-4 py-2 rounded bg-white/20 border border-white/60 text-white hover:bg-white/30 transition-colors"
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
     </>
   );

@@ -188,7 +188,7 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
                   boxShadow: "0 0 15px 3px rgba(61,245,255,0.6)",
                 }}
               />
-              <span className="font-semibold break-words text-lg">{s.title}</span>
+              <span className="font-semibold break-words text-lg">{s.title === 'BE MY BEE' ? '' : s.title}</span>
               {locked ? <span className="ml-2" aria-hidden>🔒</span> : null}
             </div>
             <div className="text-cyan-200/80 text-sm break-words mt-1">{s.oneLiner}</div>
