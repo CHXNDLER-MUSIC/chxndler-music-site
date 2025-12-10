@@ -53,8 +53,8 @@ export async function awardHeartCoins(
 
   console.debug('✅ Successfully awarded HeartCoins:', { transactionId: data.id, userId, amount, reason });
 
-  // Trigger celebration event for exactly 1 HeartCoin in browser only
-  if (amount === 1) {
+  // Trigger celebration event for positive amounts in browser only
+  if (amount > 0) {
     triggerHeartCoinCelebration(amount);
   }
 }

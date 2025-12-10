@@ -44,14 +44,15 @@
 
 /* Ensure custom cursor is always on top of everything */
 .custom-cursor-always-top {
-  z-index: 2147483650 !important;
+  z-index: 2147483647 !important;
   position: fixed !important;
   pointer-events: none !important;
   isolation: isolate !important;
-  will-change: transform;
+  mix-blend-mode: normal !important;
   contain: layout style paint !important;
-  opacity: 1 !important;
+  will-change: transform !important;
   visibility: visible !important;
+  opacity: 1 !important;
   display: block !important;
   transform-style: preserve-3d !important;
   mix-blend-mode: normal !important;

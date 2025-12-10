@@ -35,7 +35,7 @@ interface SoulStarJournalProps {
 interface JournalEntry {
   id: string;
   entry_date: string;
-  created_date: string;
+  created_at: string;
   element: string;
   intention?: string;
   reflection?: string; // prompt question text (was 'prompt')

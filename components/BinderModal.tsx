@@ -97,6 +97,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
 
   // Full song collection data structure
   const songCollection = [
+    { name: 'CHXNDLER', element: 'ALL', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
     { name: 'MR. BRIGHTSIDE', element: 'DARKNESS', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
     { name: 'CHEERLEADER (ACOUSTIC)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
     { name: 'I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
@@ -146,7 +147,6 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     { name: 'HEART', element: 'HEART', rarity: 'Rare', is_released: true, min_tier: 'lover' as CardTier },
     { name: 'LIGHTNING', element: 'LIGHTNING', rarity: 'Rare', is_released: true, min_tier: 'lover' as CardTier },
     { name: 'DARKNESS', element: 'DARKNESS', rarity: 'Rare', is_released: true, min_tier: 'lover' as CardTier },
-    { name: 'CHXNDLER', element: 'ALL', rarity: 'Common', is_released: true, min_tier: 'wanderer' as CardTier },
   ];
   
   const elements = ['LIGHTNING', 'DARKNESS', 'WATER', 'HEART'];
@@ -214,6 +214,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
 
   const getCardOneLiner = (songName: string) => {
     const oneLiners: { [key: string]: string } = {
+      'CHXNDLER': 'The artist behind every heartbeat, every moment, every song.',
       'MR. BRIGHTSIDE': 'When love turns to doubt and every glance feels like betrayal.',
       'CHEERLEADER (ACOUSTIC)': 'Wanting the person you love most to be cheering in the crowd.',
       'I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)': 'Falling into warm sweaters, slow mornings, and a love that feels like home.',
@@ -728,6 +729,22 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     
     return nextIndex;
   };
+
+  // Auto-flip card when it opens and play flip sound
+  useEffect(() => {
+    if (cardOpen) {
+      // Small delay to allow card open animation to start
+      const flipTimer = setTimeout(() => {
+        try { sfx.play('flip', 0.45); } catch {}
+        setIsCardFlipped(true);
+      }, 200);
+      
+      return () => clearTimeout(flipTimer);
+    } else {
+      // Reset flip state when card closes
+      setIsCardFlipped(false);
+    }
+  }, [cardOpen]);
 
   // Arrow key navigation
   useEffect(() => {

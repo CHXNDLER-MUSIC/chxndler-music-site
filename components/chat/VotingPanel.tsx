@@ -173,21 +173,25 @@ function VotingCard({
 export default function VotingPanel() {
   const { activePoll, isLoading, error, castVote, isVoting } = useSongVoting();
   const { profile } = useProfile();
-  const [selectedElements, setSelectedElements] = useState(new Set());
+  const [selectedElement, setSelectedElement] = useState(null);
   
   const userBalance = profile?.heartcoin_balance || 0;
 
   // Handle element row click
   const handleElementClick = (elementName) => {
-    setSelectedElements(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(elementName)) {
-        newSet.delete(elementName);
-      } else {
-        newSet.add(elementName);
-      }
-      return newSet;
-    });
+    // Play click sound
+    try {
+      const audio = new Audio('/audio/click.mp3');
+      audio.volume = 0.3;
+      audio.play().catch(error => {
+        console.log('Click audio play failed:', error);
+      });
+    } catch (error) {
+      console.log('Click audio creation failed:', error);
+    }
+    
+    // Toggle selection - if clicking the same element, deselect it
+    setSelectedElement(prev => prev === elementName ? null : elementName);
   };
 
   // Find the winning option (highest total_heartcoins)
@@ -250,7 +254,7 @@ export default function VotingPanel() {
         {/* Element rows */}
         <div className="space-y-0">
           {ELEMENT_ROWS.map((element, index) => {
-            const isSelected = selectedElements.has(element.name);
+            const isSelected = selectedElement === element.name;
             return (
               <div
                 key={element.name}
@@ -306,10 +310,10 @@ export default function VotingPanel() {
 
               {/* Right indicator */}
               <div className="flex items-center space-x-2 text-white/40">
-                <span className="text-sm">⏱️</span>
               </div>
             </div>
-          ))}
+          )
+        })}
         </div>
 
         {/* Footer message */}

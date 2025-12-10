@@ -18,6 +18,7 @@ interface PopoutPanelProps {
   className?: string;
   style?: React.CSSProperties;
   onOpenHeartCoin?: () => void;
+  enableChat?: boolean;
 }
 
 export default function PopoutPanel({

@@ -992,10 +992,10 @@ export default function ChatPanel({ isOpen, onClose }) {
                         <div 
                           className="transition-transform duration-200"
                           style={{
-                            transform: isVotingPanelCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)'
+                            transform: isVotingPanelCollapsed ? 'rotate(0deg)' : 'rotate(90deg)'
                           }}
                         >
-                          ▼
+                          ◀
                         </div>
                       </button>
                       

@@ -5,6 +5,7 @@ import { HEARTCOIN_CELEBRATION_EVENT, type HeartCoinCelebrationDetail } from '@/
 
 export default function HeartCoinCelebration() {
   const [isVisible, setIsVisible] = useState(false);
+  const [amount, setAmount] = useState(1);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -14,10 +15,13 @@ export default function HeartCoinCelebration() {
     }
 
     const handleCelebration = (event: CustomEvent<HeartCoinCelebrationDetail>) => {
-      const { amount } = event.detail;
+      const { amount: celebrationAmount } = event.detail;
       
-      // Only celebrate for exactly 1 HeartCoin
-      if (amount !== 1) return;
+      // Only celebrate for positive amounts
+      if (celebrationAmount <= 0) return;
+
+      // Set the amount to display
+      setAmount(celebrationAmount);
 
       // Play sound
       if (audioRef.current) {
@@ -64,7 +68,7 @@ export default function HeartCoinCelebration() {
         
         {/* Text */}
         <p className="text-white font-bold uppercase text-xl mt-4 relative z-10">
-          +1 HeartCoin
+          +{amount} HeartCoin{amount !== 1 ? 's' : ''}
         </p>
       </div>
     </div>

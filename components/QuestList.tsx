@@ -7,6 +7,7 @@ import SoulStarJournal from "./SoulStarJournal";
 import { hasAnsweredToday, getTodaysQuestion } from "@/lib/dailyQuestions";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useProfile } from "@/contexts/ProfileContext";
+import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
 
 type Props = {
   onBack: () => void;
@@ -139,6 +140,8 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         const today = new Date().toDateString();
         localStorage.setItem(`quest_element_${today}`, 'true');
         showCelebration(`✨ Element touched! Your ${todaysElement.name} energy is awakened! +1 HeartCoin earned.`);
+        // Trigger HeartCoin celebration animation
+        triggerHeartCoinCelebration(1);
       } else {
         const errorData = await response.json();
         console.error('Heart coin update failed:', errorData);
@@ -164,6 +167,8 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
     const today = new Date().toDateString();
     localStorage.setItem(`quest_journal_${today}`, 'true');
     showCelebration("🌟 Soul reflection complete! Your inner wisdom has been honored. +1 HeartCoin earned.");
+    // Trigger HeartCoin celebration animation
+    triggerHeartCoinCelebration(1);
   };
 
   const handleJournalComplete = () => {
@@ -173,6 +178,8 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
     localStorage.setItem(`quest_journal_${today}`, 'true');
     showCelebration("🌟 Soul reflection complete! Your inner wisdom has been honored. +1 HeartCoin earned.");
     setShowJournal(false);
+    // Trigger HeartCoin celebration animation
+    triggerHeartCoinCelebration(1);
   };
 
   const handleInviteFriend = async () => {
@@ -232,6 +239,8 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         const today = new Date().toDateString();
         localStorage.setItem(`quest_invite_confirm_${today}`, 'true');
         showCelebration("💕 Love shared! You've planted a seed of connection. +1 HeartCoin earned.");
+        // Trigger HeartCoin celebration animation
+        triggerHeartCoinCelebration(1);
         
         // Refresh profile to update heartcoin balance if the response indicates we should
         if (data.shouldRefreshProfile) {
@@ -284,6 +293,8 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
           showCelebration("🎵 Live show magic! You're part of something special tonight. +5 HeartCoins earned!");
           setSecretPhrase("");
           setShowCheckIn(false);
+          // Trigger HeartCoin celebration animation (5 coins)
+          triggerHeartCoinCelebration(5);
         } else {
           const errorData = await response.json();
           console.error('Heart coin update failed:', errorData);

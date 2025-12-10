@@ -107,9 +107,8 @@ interface JournalEntry {
   intention_response: string | null;
   reflection_response: string | null; 
   soul_star: string | null; // user's written reflection text
-  is_private: boolean;
+  is_private?: boolean; // Make optional since column might not exist
   created_at: string;
-  created_date: string;
   updated_at: string;
 }
 
@@ -143,7 +142,7 @@ interface ProfileContextType {
   // Journal functionality
   journalEntries: JournalEntry[];
   loadJournalEntries: (userId: string) => Promise<void>;
-  saveJournalEntry: (entry: Omit<JournalEntry, 'id' | 'user_id' | 'created_at' | 'created_date' | 'updated_at'>) => Promise<JournalEntry | null>;
+  saveJournalEntry: (entry: Omit<JournalEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<JournalEntry | null>;
   updateJournalEntry: (entryId: string, updates: Partial<Pick<JournalEntry, 'soul_star' | 'intention' | 'reflection' | 'is_private'>>) => Promise<void>;
   deleteJournalEntry: (entryId: string) => Promise<void>;
   getDailyPrompts: () => Promise<DailyPrompts | null>;
@@ -639,13 +638,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         entryData.reflection_response = entry.reflection_response; // USER'S response to reflection prompt
       }
 
-      // Try to add optional columns that may not exist yet in all databases
-      try {
-        if (entry.is_private !== null && entry.is_private !== undefined) {
-          entryData.is_private = entry.is_private;
-        }
-      } catch (error) {
-        console.warn('is_private column may not exist in database schema');
+      // Only include is_private if explicitly set (since column may not exist in all database schemas)
+      if (entry.is_private !== null && entry.is_private !== undefined) {
+        entryData.is_private = entry.is_private;
       }
 
       console.log('Saving journal entry with data:', entryData);
