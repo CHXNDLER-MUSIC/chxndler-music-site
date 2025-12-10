@@ -594,12 +594,23 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               </div>
             ) : (
               journalEntries.map((entry) => {
-                const entryDate = new Date(entry.entry_date).toLocaleDateString('en-US', {
-                  timeZone: 'America/New_York',
-                  month: 'numeric',
-                  day: 'numeric',
-                  year: 'numeric'
-                });
+                // Parse date in EST timezone to avoid timezone shift issues
+                const entryDate = (() => {
+                  // Force parsing in EST timezone by appending 'T12:00:00' (noon EST) to avoid UTC midnight issues
+                  let dateStr = entry.entry_date;
+                  if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    // If it's YYYY-MM-DD format, add noon time to prevent timezone shifting
+                    dateStr += 'T12:00:00';
+                  }
+                  
+                  const date = new Date(dateStr);
+                  return date.toLocaleDateString('en-US', {
+                    timeZone: 'America/New_York',
+                    month: 'numeric',
+                    day: 'numeric',
+                    year: 'numeric'
+                  });
+                })();
                 const entryColor = ELEMENT_COLORS[entry.element as keyof typeof ELEMENT_COLORS]?.color || elementTheme.color;
                 const entryEmoji = ELEMENT_EMOJIS[entry.element as keyof typeof ELEMENT_EMOJIS] || "💖";
                 const isExpanded = expandedEntry === entry.id;
