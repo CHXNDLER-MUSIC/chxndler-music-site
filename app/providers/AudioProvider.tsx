@@ -636,10 +636,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           const currentMainId = storeState?.mainId;
           const currentTrackId = state.currentTrack?.id; // Use local AudioProvider state, not store state
           
-          // Only sync if a different song is selected AND we're not already playing it
-          // This prevents race conditions that cause audio to restart after a few seconds
-          if (currentMainId && currentMainId !== currentTrackId && !state.playing) {
-            console.log('🎵 AudioProvider: Syncing with player store selection:', currentMainId);
+          // Only sync if a different song is selected AND we're not already playing that specific track
+          if (currentMainId && currentMainId !== currentTrackId) {
+            console.log('🎵 AudioProvider: Syncing with player store selection:', currentMainId, 'was playing:', currentTrackId);
             
             // Set current track info immediately for UI updates
             const trackInfo = TRACK_INFO[currentMainId];
@@ -647,13 +646,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
               setState(s => ({ ...s, currentTrack: trackInfo }));
             }
             
-            // Only start playback if nothing is currently playing to avoid interruptions
-            if (!state.playing) {
-              console.log('🎵 AudioProvider: Playing track directly without sound effects:', currentMainId);
-              api.playTrack(currentMainId).catch(console.error);
-            } else {
-              console.log('🎵 AudioProvider: Track already playing, skipping auto-play to prevent interruption');
-            }
+            // Always switch to the new track, even if something else is playing
+            console.log('🎵 AudioProvider: Switching to new track:', currentMainId);
+            api.playTrack(currentMainId).catch(console.error);
           }
         });
         

@@ -956,6 +956,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const handlePurchaseWithHeartCoins = async (item: StoreItem) => {
     if (!profile || !item) return;
 
+    // Use the selected item's heartcoin cost, not a hardcoded value
     const costInHeartCoins = item.priceHeartCoins;
 
     setIsProcessing(true);
@@ -968,100 +969,34 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         current_balance: profile.heartcoin_balance
       });
 
-      // First try the RPC approach
-      let purchaseError = null;
-      let purchaseData = null;
+      // Call the RPC exactly once per Confirm click
+      // Cost should not be multiplied - if item cost is 12, RPC receives 12 and user loses 12 HeartCoins
+      const { data, error } = await supabaseBrowser.rpc(
+        "purchase_item_with_heartcoins",
+        {
+          p_user_id: profile.id,
+          p_item_slug: item.slug,
+          p_cost: costInHeartCoins,
+        }
+      );
 
-      try {
-        const rpcResponse = await supabaseBrowser.rpc(
-          "purchase_item_with_heartcoins",
-          {
-            p_user_id: profile.id,
-            p_item_slug: item.slug,
-            p_cost: costInHeartCoins,
-          }
-        );
-        
-        purchaseData = rpcResponse.data;
-        purchaseError = rpcResponse.error;
-        console.log("RPC response:", { purchaseData, purchaseError });
-      } catch (rpcErr) {
-        console.log("RPC function not available, falling back to direct operations");
-        purchaseError = rpcErr;
+      if (error) {
+        console.error('Error purchasing item with HeartCoins', error);
+        setIsProcessing(false);
+        throw new Error(error.message);
       }
 
-      // If RPC failed due to insufficient funds, don't fallback
-      if (purchaseError) {
-        if (purchaseError.message?.includes('Insufficient HeartCoins') || purchaseError.message?.includes('Not enough HeartCoins')) {
-          throw new Error(purchaseError.message);
-        }
-        console.log("Using fallback approach - direct database operations");
-        
-        // Check current balance
-        const { data: currentProfile, error: profileError } = await supabaseBrowser
-          .from('profiles')
-          .select('heartcoin_balance')
-          .eq('id', profile.id)
-          .single();
+      // Capture the new order and shift to the shipping step
+      const newOrder = data as { id: string };
+      console.log("Purchase successful, order created:", newOrder);
 
-        if (profileError || !currentProfile) {
-          throw new Error("Could not fetch current balance");
-        }
-
-        const currentBalance = currentProfile.heartcoin_balance || 0;
-        if (currentBalance < costInHeartCoins) {
-          throw new Error(`Insufficient HeartCoins: have ${currentBalance}, need ${costInHeartCoins}`);
-        }
-
-        // Deduct heartcoins
-        const newBalance = currentBalance - costInHeartCoins;
-        const { error: updateError } = await supabaseBrowser
-          .from('profiles')
-          .update({ 
-            heartcoin_balance: newBalance,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', profile.id);
-
-        if (updateError) {
-          console.error("Failed to update balance:", updateError);
-          throw new Error("Failed to update HeartCoin balance");
-        }
-
-        // Try to record transaction (optional, won't fail purchase if this fails)
-        try {
-          await supabaseBrowser
-            .from('heartcoin_transactions')
-            .insert({
-              user_id: profile.id,
-              amount: -costInHeartCoins,
-              transaction_type: 'purchase',
-              description: `Purchased item: ${item.slug}`
-            });
-        } catch (transactionError) {
-          console.warn("Transaction recording failed (non-critical):", transactionError);
-        }
-
-        console.log("Fallback purchase successful");
-      }
-
-      // Success - RPC handled everything (balance deduction and order creation)
-
-      await refreshProfile(); // refresh HeartCoins
+      setCurrentOrderId(newOrder.id);
+      setStep('shipping');
       
-      // Play success sound
-      try { 
-        const audio = new Audio('/audio/card-ding.mp3');
-        audio.volume = 0.6;
-        audio.play(); 
-      } catch {}
-      
-      setCheckInMessage("Item purchased!");
-      setStatusType('success');
-      setTimeout(() => {
-        setCheckInMessage("");
-        setStatusType('idle');
-      }, 3000);
+      // Refresh profile to update HeartCoin balance
+      await refreshProfile();
+
+      setIsProcessing(false);
 
     } catch (err: any) {
       console.error("Error completing HeartCoin purchase:", err);
@@ -1071,98 +1006,77 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         setCheckInMessage("");
         setStatusType('idle');
       }, 3000);
-    } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleShippingSubmit = async () => {
-    if (!profile || !selectedItem) return;
-    
-    setIsProcessing(true);
-    
-    try {
-      // Check if this is a MERCH item that needs heart coin deduction
-      const isMerchItem = activeUseTab === 'MERCH' || PHYSICAL_ITEMS.some(physicalItem => physicalItem.slug === selectedItem.slug);
-      
-      if (isMerchItem) {
-        // For MERCH items, call the heart-coins purchase API
-        const response = await fetch('/api/heart-coins/purchase', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            cardTitle: selectedItem.title,
-            heartCoins: selectedItem.cost || selectedItem.priceHeartCoins,
-            shippingAddress: {
-              fullName: shippingForm.full_name,
-              streetAddress: shippingForm.address_line1,
-              apartment: shippingForm.address_line2,
-              city: shippingForm.city,
-              stateRegion: shippingForm.state,
-              zipPostal: shippingForm.zip,
-              country: shippingForm.country,
-            },
-            email: profile.email,
-            phone: null
-          }),
-        });
+  const handleConfirmShipping = async () => {
+    if (!currentOrderId || !profile?.id) return;
 
-        const result = await response.json();
-        
-        if (!response.ok) {
-          console.error('Heart coin purchase failed:', result.error);
-          setIsProcessing(false);
-          return;
-        }
-        
-        // Success! Refresh profile to get updated balance
-        await refreshProfile();
-        
-      } else {
-        // For non-MERCH items (CARDS), just insert into orders table
-        const { error } = await supabaseBrowser
-          .from('orders')
-          .insert({
-            user_id: profile.id,
-            item_slug: selectedItem.slug,
-            heartcoin_cost: selectedItem.cost || selectedItem.priceHeartCoins,
-            full_name: shippingForm.full_name,
-            address_line1: shippingForm.address_line1,
-            address_line2: shippingForm.address_line2,
-            city: shippingForm.city,
-            state: shippingForm.state,
-            zip: shippingForm.zip,
-            county: shippingForm.county,
-            country: shippingForm.country,
-            status: 'pending'
-          });
-        
-        if (error) {
-          console.error('Order creation failed:', error);
-          setIsProcessing(false);
-          return;
-        }
+    setIsProcessing(true);
+
+    try {
+      const { error } = await supabaseBrowser
+        .from('orders')
+        .update({
+          shipping_name: shippingForm.full_name,
+          shipping_address_line1: shippingForm.address_line1,
+          shipping_address_line2: shippingForm.address_line2,
+          shipping_city: shippingForm.city,
+          shipping_state: shippingForm.state,
+          shipping_zip: shippingForm.zip,
+          shipping_country: shippingForm.country,
+          status: 'ready_to_fulfill'
+        })
+        .eq('id', currentOrderId)
+        .eq('user_id', profile.id);
+
+      if (error) {
+        console.error('Error updating shipping info', error);
+        setIsProcessing(false);
+        return;
       }
-      
-      // Success! Switch to done step
+
+      // Success behaviour
+      setStep('confirm');
+      setCurrentOrderId(null);
+      setShippingForm({
+        full_name: '',
+        address_line1: '',
+        address_line2: '',
+        city: '',
+        state: '',
+        zip: '',
+        county: '',
+        country: ''
+      });
+
+      // Play success sound
       try { 
         const audio = new Audio('/audio/card-ding.mp3');
         audio.volume = 0.6;
         audio.play(); 
       } catch {}
-      setStep('done');
+
+      // Close the modal and show success message
+      setOpen(false);
+      setCheckInMessage("Order placed with HeartCoins!");
+      setStatusType('success');
+      setTimeout(() => {
+        setCheckInMessage("");
+        setStatusType('idle');
+      }, 3000);
       setIsProcessing(false);
-      
+
     } catch (error) {
-      console.error('Shipping submit error:', error);
+      console.error('Error updating shipping information:', error);
       setIsProcessing(false);
     }
   };
 
   const resetPurchaseFlow = () => {
     setStep('confirm');
+    setCurrentOrderId(null);
     setShippingForm({
       full_name: '',
       address_line1: '',
@@ -1458,14 +1372,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   className="flex-1 py-1.5 text-lg rounded border transition-all duration-200"
                   style={{
                     background: activeTab === tab 
-                      ? 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.6) 100%)'
+                      ? (tab === 'EARN' ? 'linear-gradient(135deg, rgba(0,255,255,0.4) 0%, rgba(0,255,255,0.6) 100%)' : 'linear-gradient(135deg, rgba(255,0,128,0.6) 0%, rgba(255,20,147,0.8) 100%)')
                       : 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 100%)',
-                    color: activeTab === tab ? '#FFFFFF' : 'rgba(255,255,255,0.7)',
-                    borderColor: activeTab === tab ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.4)',
-                    textShadow: activeTab === tab ? '0 0 6px rgba(255,255,255,0.8)' : 'none',
-                    boxShadow: activeTab === tab ? '0 0 10px rgba(255,255,255,0.5), 0 0 20px rgba(255,255,255,0.3)' : 'none',
+                    color: activeTab === tab ? (tab === 'EARN' ? '#00FFFF' : '#FF0080') : 'rgba(255,255,255,0.7)',
+                    borderColor: activeTab === tab ? (tab === 'EARN' ? '#00FFFF' : '#FF0080') : 'rgba(255,255,255,0.4)',
+                    textShadow: activeTab === tab ? (tab === 'EARN' ? '0 0 8px rgba(0,255,255,1), 0 0 16px rgba(0,255,255,0.8)' : '0 0 8px rgba(255,0,128,1), 0 0 16px rgba(255,0,128,0.8)') : 'none',
+                    boxShadow: activeTab === tab ? (tab === 'EARN' ? '0 0 15px rgba(0,255,255,0.8), 0 0 30px rgba(0,255,255,0.6)' : '0 0 15px rgba(255,0,128,0.8), 0 0 30px rgba(255,0,128,0.6)') : 'none',
                     fontWeight: 700,
-                    fontSize: '11px'
+                    fontSize: '14px'
                   }}
                   onMouseEnter={(e) => {
                     if (activeTab !== tab) {
@@ -1511,12 +1425,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     className="flex-1 py-1.5 text-sm rounded border transition-all duration-200 whitespace-nowrap"
                     style={{
                       background: activeEarnTab === tab 
-                        ? 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.6) 100%)'
+                        ? 'linear-gradient(135deg, rgba(0,255,255,0.4) 0%, rgba(0,255,255,0.6) 100%)'
                         : 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 100%)',
-                      color: activeEarnTab === tab ? '#FFFFFF' : 'rgba(255,255,255,0.7)',
-                      borderColor: activeEarnTab === tab ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.4)',
-                      textShadow: activeEarnTab === tab ? '0 0 6px rgba(255,255,255,0.8)' : 'none',
-                      boxShadow: activeEarnTab === tab ? '0 0 10px rgba(255,255,255,0.5), 0 0 20px rgba(255,255,255,0.3)' : 'none',
+                      color: activeEarnTab === tab ? '#00FFFF' : 'rgba(255,255,255,0.7)',
+                      borderColor: activeEarnTab === tab ? 'rgba(0,255,255,0.8)' : 'rgba(255,255,255,0.4)',
+                      textShadow: activeEarnTab === tab ? '0 0 6px rgba(0,255,255,0.8)' : 'none',
+                      boxShadow: activeEarnTab === tab ? '0 0 10px rgba(0,255,255,0.5), 0 0 20px rgba(0,255,255,0.3)' : 'none',
                       fontWeight: 700,
                       fontSize: '12px'
                     }}
@@ -1870,12 +1784,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         className="flex-1 py-1.5 text-base rounded border transition-all duration-200"
                         style={{
                           background: activeUseTab === tab 
-                            ? 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.6) 100%)'
+                            ? 'linear-gradient(135deg, rgba(255,105,180,0.4) 0%, rgba(255,105,180,0.6) 100%)'
                             : 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 100%)',
-                          color: activeUseTab === tab ? '#FFFFFF' : 'rgba(255,255,255,0.7)',
-                          borderColor: activeUseTab === tab ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.4)',
-                          textShadow: activeUseTab === tab ? '0 0 6px rgba(255,255,255,0.8)' : 'none',
-                          boxShadow: activeUseTab === tab ? '0 0 10px rgba(255,255,255,0.5), 0 0 20px rgba(255,255,255,0.3)' : 'none',
+                          color: activeUseTab === tab ? '#FF69B4' : 'rgba(255,255,255,0.7)',
+                          borderColor: activeUseTab === tab ? '#FF69B4' : 'rgba(255,255,255,0.4)',
+                          textShadow: activeUseTab === tab ? '0 0 8px rgba(255,105,180,1), 0 0 16px rgba(255,105,180,0.8)' : 'none',
+                          boxShadow: activeUseTab === tab ? '0 0 15px rgba(255,105,180,0.8), 0 0 30px rgba(255,105,180,0.6)' : 'none',
                           fontWeight: 700,
                           fontSize: '14px'
                         }}
@@ -2851,7 +2765,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           className="object-contain rounded-lg"
                         />
                       </div>
-                      <p className="text-sm text-white mb-4">{selectedItem.description}</p>
                       
                       <div className="flex items-center justify-center gap-2 mb-4">
                         <span className="text-lg font-bold text-[#F2EF1D]">{selectedItem.priceHeartCoins}</span>
@@ -2962,7 +2875,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       </div>
                       
                       <button
-                        onClick={handleShippingSubmit}
+                        onClick={handleConfirmShipping}
                         disabled={isProcessing || !shippingForm.full_name || !shippingForm.address_line1 || !shippingForm.city || !shippingForm.state || !shippingForm.zip || !shippingForm.country}
                         className={`w-full mt-4 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
                           isProcessing || !shippingForm.full_name || !shippingForm.address_line1 || !shippingForm.city || !shippingForm.state || !shippingForm.zip || !shippingForm.country

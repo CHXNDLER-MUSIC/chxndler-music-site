@@ -67,6 +67,7 @@ export interface Profile {
   merch_items_owned: number;
   donations_made: number;
   heartcoins_sent: number;
+  unique_songs_count: number;
   created_at: string;
   updated_at: string;
 }

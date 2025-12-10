@@ -1,18 +1,22 @@
--- Sync existing badges from public.badges to public.badge_definitions
--- This script maps badge requirements to structured data
--- Safe to run multiple times (uses ON CONFLICT)
+-- Add structured fields to existing badges table
+-- Safe to run multiple times
 
 begin;
 
--- Insert badges from the badges table into badge_definitions with parsed requirements
-INSERT INTO public.badge_definitions (slug, title, description, requirement_type, requirement_count, icon, category)
-SELECT 
-  -- Create slug from badge_name (lowercase, replace spaces with underscores, remove special chars)
-  lower(regexp_replace(regexp_replace(badge_name, '[^a-zA-Z0-9\s]', '', 'g'), '\s+', '_', 'g')) as slug,
-  badge_name as title,
-  description,
-  -- Parse requirement_type from badge characteristics
-  CASE 
+-- Add new columns to badges table if they don't exist
+ALTER TABLE public.badges 
+  ADD COLUMN IF NOT EXISTS requirement_type text,
+  ADD COLUMN IF NOT EXISTS requirement_count integer DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS category text,
+  ADD COLUMN IF NOT EXISTS slug text;
+
+-- Create unique index on slug if it doesn't exist
+CREATE UNIQUE INDEX IF NOT EXISTS badges_slug_idx ON public.badges(slug);
+
+-- Update existing badges with structured data
+UPDATE public.badges SET
+  slug = lower(regexp_replace(regexp_replace(badge_name, '[^a-zA-Z0-9\s]', '', 'g'), '\s+', '_', 'g')),
+  requirement_type = CASE 
     -- Soul/reflection badges
     WHEN badge_name ILIKE '%soul%' THEN 'reflections'
     -- HeartCoin badges  
@@ -29,9 +33,8 @@ SELECT
     WHEN badge_name ILIKE '%collector%' OR badge_name ILIKE '%archivist%' OR badge_name ILIKE '%memory%' OR badge_name ILIKE '%witness%' OR badge_name ILIKE '%supporter%' THEN 'digital_cards_owned'
     -- Default fallback
     ELSE 'achievements'
-  END as requirement_type,
-  -- Parse requirement_count from badge name and description
-  CASE 
+  END,
+  requirement_count = CASE 
     -- Soul badges with specific counts
     WHEN badge_name = 'Soul Star' THEN 1
     WHEN badge_name = 'Soul Ember' THEN 3  
@@ -61,10 +64,8 @@ SELECT
     WHEN badge_name = 'Community Leader' THEN 3
     -- All other badges default to 1
     ELSE 1
-  END as requirement_count,
-  icon_url as icon,
-  -- Assign category based on badge type
-  CASE 
+  END,
+  category = CASE 
     -- Soul/reflection badges
     WHEN badge_name ILIKE '%soul%' THEN 'soul'
     -- HeartCoin badges  
@@ -79,15 +80,7 @@ SELECT
     WHEN badge_name ILIKE '%collector%' OR badge_name ILIKE '%archivist%' OR badge_name ILIKE '%memory%' OR badge_name ILIKE '%witness%' OR badge_name ILIKE '%supporter%' THEN 'collector'
     -- Default fallback
     ELSE 'collector'
-  END as category
-FROM public.badges
-ON CONFLICT (slug) DO UPDATE SET
-  title = EXCLUDED.title,
-  description = EXCLUDED.description,
-  requirement_type = EXCLUDED.requirement_type,
-  requirement_count = EXCLUDED.requirement_count,
-  icon = EXCLUDED.icon,
-  category = EXCLUDED.category,
-  updated_at = now();
+  END
+WHERE requirement_type IS NULL OR category IS NULL OR slug IS NULL;
 
 commit;

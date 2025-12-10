@@ -133,7 +133,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
       {/* Direct Code Popup for ABOUT functionality */}
       {codeOpen && (
         <div 
-          className="fixed inset-0 z-[2147483647] flex items-center justify-center"
+          className="fixed inset-0 z-[2147483646] flex items-center justify-center"
           style={{
             paddingTop: '120px'
           }}

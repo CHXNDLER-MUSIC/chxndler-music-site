@@ -15,9 +15,9 @@ export default function CustomCursor() {
     };
 
     const handleResize = () => {
-      const shouldEnable = window.innerWidth > 768;
+      const shouldEnable = true; // Force enable for testing
       setEnabled(shouldEnable);
-      console.log('Cursor enabled:', shouldEnable, 'Window width:', window.innerWidth);
+      console.log('Cursor FORCE enabled:', shouldEnable, 'Window width:', window.innerWidth);
     };
 
     handleResize();
@@ -45,32 +45,10 @@ export default function CustomCursor() {
 
   if (!enabled) return null;
 
-  const size = 32;
+  const size = 48; // Made larger for better visibility
 
   return (
     <>
-      {/* Bright fallback cursor that's always visible */}
-      <div
-        className="custom-cursor-always-top"
-        style={{
-          position: "fixed",
-          left: pos.x - 3,
-          top: pos.y - 3,
-          width: 6,
-          height: 6,
-          backgroundColor: "#FF0080",
-          borderRadius: "50%",
-          pointerEvents: "none",
-          zIndex: 2147483647,
-          transform: "translate3d(0, 0, 0)",
-          boxShadow: "0 0 10px #FF0080, 0 0 20px #FF0080",
-          opacity: 1,
-          visibility: "visible",
-          isolation: "isolate",
-          mixBlendMode: "normal",
-          willChange: "transform",
-        }}
-      />
       {/* Custom image cursor */}
       <div
         className="custom-cursor-always-top"

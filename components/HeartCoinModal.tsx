@@ -125,6 +125,7 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
   const [currentPage, setCurrentPage] = useState(0);
   const [activeTab, setActiveTab] = useState(initialTab);
   const [enlargedItem, setEnlargedItem] = useState<StoreItem | null>(null);
+  const [enlargedImageIndex, setEnlargedImageIndex] = useState(0);
   const itemsPerPage = 6;
 
   useEffect(() => {
@@ -282,14 +283,20 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
                   src={item.image}
                   alt={item.name}
                   className="max-h-full max-w-full object-contain rounded-lg cursor-pointer hover:scale-105 transition-transform duration-300"
-                  onClick={() => setEnlargedItem(item)}
+                  onClick={() => {
+                    setEnlargedItem(item);
+                    setEnlargedImageIndex(0);
+                  }}
                 />
                 {item.image2 && (
                   <img
                     src={item.image2}
                     alt={`${item.name} alternative view`}
                     className="max-h-full max-w-full object-contain rounded-lg absolute top-0 left-0 opacity-0 hover:opacity-100 transition-opacity duration-300 cursor-pointer"
-                    onClick={() => setEnlargedItem(item)}
+                    onClick={() => {
+                    setEnlargedItem(item);
+                    setEnlargedImageIndex(0);
+                  }}
                   />
                 )}
               </div>
@@ -487,36 +494,101 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
 
       {/* Enlarged Item Modal */}
       {enlargedItem && (
-        <PopoutShell
-          title=""
-          onClose={() => setEnlargedItem(null)}
-          compact={true}
+        <div 
+          className="fixed inset-0 z-[2147483647] bg-black bg-opacity-90"
+          onClick={() => {
+            setEnlargedItem(null);
+            setEnlargedImageIndex(0);
+          }}
+          style={{
+            backdropFilter: 'blur(8px)',
+          }}
         >
-          <div className="w-full h-full flex items-center justify-center p-4">
-            <div className="relative max-w-full max-h-full">
-              <img
-                src={enlargedItem.image}
-                alt=""
-                className="max-w-full max-h-full object-contain rounded-lg"
-                style={{
-                  animation: 'merchPulse 2.5s ease-in-out infinite',
+          <div 
+            className="absolute inset-0 flex items-center justify-center p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="relative bg-gray-900 border border-gray-600 rounded-lg p-6 max-w-2xl max-h-[90vh] overflow-hidden"
+              style={{
+                background: 'rgba(17, 24, 39, 0.95)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(75, 85, 99, 0.5)',
+              }}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => {
+                  setEnlargedItem(null);
+                  setEnlargedImageIndex(0);
                 }}
-              />
+                className="absolute top-2 right-2 w-8 h-8 bg-gray-700 hover:bg-gray-600 rounded-full flex items-center justify-center text-gray-300 hover:text-white transition-all duration-200 z-10"
+              >
+                ×
+              </button>
               
-              {/* Secondary Image Overlay */}
-              {enlargedItem.image2 && (
-                <img
-                  src={enlargedItem.image2}
-                  alt=""
-                  className="absolute inset-0 max-w-full max-h-full object-contain rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-300"
-                  style={{
-                    animation: 'merchPulse 2.5s ease-in-out infinite',
-                  }}
-                />
-              )}
+              {/* Image Content */}
+              <div className="flex items-center justify-center w-full h-full">
+                <div className="relative max-w-full max-h-full">
+                  {(() => {
+                    const images = [enlargedItem.image, enlargedItem.image2].filter(Boolean);
+                    const currentImage = images[enlargedImageIndex] || enlargedItem.image;
+                    
+                    return (
+                      <>
+                        <img
+                          src={currentImage}
+                          alt=""
+                          className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                          style={{
+                            animation: 'merchPulse 2.5s ease-in-out infinite',
+                          }}
+                        />
+                        
+                        {/* Navigation arrows - only show if multiple images */}
+                        {images.length > 1 && (
+                          <>
+                            <button
+                              onClick={() => setEnlargedImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))}
+                              className="absolute left-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-all duration-200"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                              </svg>
+                            </button>
+                            
+                            <button
+                              onClick={() => setEnlargedImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0))}
+                              className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-all duration-200"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                            
+                            {/* Image indicators */}
+                            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
+                              {images.map((_, index) => (
+                                <div
+                                  key={index}
+                                  className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                                    index === enlargedImageIndex
+                                      ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]'
+                                      : 'bg-white/30'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
             </div>
           </div>
-        </PopoutShell>
+        </div>
       )}
     </HeartversePopup>
   );

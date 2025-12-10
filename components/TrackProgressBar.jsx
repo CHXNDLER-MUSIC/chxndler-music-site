@@ -1,21 +1,24 @@
 "use client";
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { useAudio } from "@/app/providers/AudioProvider";
 
 const TrackProgressBar = ({ 
-  audioRef, 
-  selectedSong, 
-  currentTime, 
-  duration 
+  selectedSong 
 }) => {
+  // Use unified audio provider instead of separate audioRef
+  const audioManager = useAudio();
+  
   const [isDragging, setIsDragging] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [hoverPosition, setHoverPosition] = useState(0);
   const [hoverTime, setHoverTime] = useState(0);
-  const [localCurrentTime, setLocalCurrentTime] = useState(0);
-  const [localDuration, setLocalDuration] = useState(0);
   const progressBarRef = useRef(null);
   const dragStartX = useRef(0);
   const dragStartProgress = useRef(0);
+  
+  // Get values from unified audio provider
+  const currentTime = audioManager.currentTime || 0;
+  const duration = audioManager.duration || 0;
 
   // Element colors matching your spec
   const elementColors = {
@@ -31,42 +34,8 @@ const TrackProgressBar = ({
     return elementColors[selectedSong.element] || elementColors.HEART;
   };
 
-  // Sync with audio element
-  useEffect(() => {
-    const audio = audioRef?.current;
-    if (!audio) return;
-
-    const updateTime = () => {
-      if (!isDragging) {
-        setLocalCurrentTime(audio.currentTime || 0);
-      }
-    };
-
-    const updateDuration = () => {
-      if (audio.duration && isFinite(audio.duration)) {
-        setLocalDuration(audio.duration);
-      }
-    };
-
-    audio.addEventListener('timeupdate', updateTime);
-    audio.addEventListener('loadedmetadata', updateDuration);
-    audio.addEventListener('durationchange', updateDuration);
-
-    // Initial sync
-    updateTime();
-    updateDuration();
-
-    return () => {
-      audio.removeEventListener('timeupdate', updateTime);
-      audio.removeEventListener('loadedmetadata', updateDuration);
-      audio.removeEventListener('durationchange', updateDuration);
-    };
-  }, [audioRef, isDragging]);
-
-  // Use props as fallback if local state isn't available
-  const effectiveCurrentTime = localCurrentTime || currentTime || 0;
-  const effectiveDuration = localDuration || duration || 0;
-  const progressPercentage = effectiveDuration > 0 ? (effectiveCurrentTime / effectiveDuration) * 100 : 0;
+  // Calculate progress using unified audio provider values
+  const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -80,8 +49,8 @@ const TrackProgressBar = ({
     const rect = progressBarRef.current.getBoundingClientRect();
     const x = clientX - rect.left;
     const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
-    return (percentage / 100) * effectiveDuration;
-  }, [effectiveDuration]);
+    return (percentage / 100) * duration;
+  }, [duration]);
 
   const handleMouseMove = useCallback((e) => {
     if (!progressBarRef.current) return;
@@ -89,23 +58,22 @@ const TrackProgressBar = ({
     const rect = progressBarRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
-    const time = (percentage / 100) * effectiveDuration;
+    const time = (percentage / 100) * duration;
     
     setHoverPosition(percentage);
     setHoverTime(time);
-  }, [effectiveDuration]);
+  }, [duration]);
 
   const handleClick = useCallback((e) => {
     if (isDragging) return;
     
     const newTime = getTimeFromPosition(e.clientX);
-    const audio = audioRef?.current;
     
-    if (audio && effectiveDuration > 0) {
-      audio.currentTime = newTime;
-      setLocalCurrentTime(newTime);
+    if (duration > 0) {
+      // Use unified audio provider's seek method
+      audioManager.seek(newTime);
     }
-  }, [audioRef, effectiveDuration, getTimeFromPosition, isDragging]);
+  }, [duration, getTimeFromPosition, isDragging, audioManager]);
 
   const handleMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -113,9 +81,11 @@ const TrackProgressBar = ({
     dragStartX.current = e.clientX;
     dragStartProgress.current = progressPercentage;
     
+    let pendingSeekTime = currentTime;
+    
     const handleMouseMove = (moveEvent) => {
       const newTime = getTimeFromPosition(moveEvent.clientX);
-      setLocalCurrentTime(newTime);
+      pendingSeekTime = newTime;
       
       // Update hover position for visual feedback
       if (progressBarRef.current) {
@@ -129,10 +99,8 @@ const TrackProgressBar = ({
     
     const handleMouseUp = () => {
       setIsDragging(false);
-      const audio = audioRef?.current;
-      if (audio) {
-        audio.currentTime = localCurrentTime;
-      }
+      // Use unified audio provider's seek method when dragging ends
+      audioManager.seek(pendingSeekTime);
       
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
@@ -140,7 +108,7 @@ const TrackProgressBar = ({
     
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  }, [audioRef, getTimeFromPosition, progressPercentage, localCurrentTime]);
+  }, [getTimeFromPosition, progressPercentage, currentTime, audioManager]);
 
   const currentColor = getCurrentColor();
   

@@ -29,33 +29,42 @@
   }
 }
 
-/* Custom cursor using cursor.png image */
-@media (min-width: 769px) {
+/* CSS Variables for consistent z-index layering */
+:root {
+  --z-modal: 2147483645;
+  --z-modal-overlay: 2147483644;
+  --z-cursor: 2147483647;
+}
+
+/* Hide default cursor on desktop and use custom JS cursor */
+@media (min-width: 501px) {
   html, body, * {
-    cursor: url('/elements/cursor.png') 12 12, auto !important;
+    cursor: none !important;
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 500px) {
   html, body {
     cursor: auto;
   }
 }
 
-/* Ensure custom cursor is always on top of everything */
-.custom-cursor-always-top {
-  z-index: 2147483647 !important;
-  position: fixed !important;
-  pointer-events: none !important;
-  isolation: isolate !important;
-  mix-blend-mode: normal !important;
-  contain: layout style paint !important;
-  will-change: transform !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  display: block !important;
-  transform-style: preserve-3d !important;
-  mix-blend-mode: normal !important;
+/* Custom cursor element - guaranteed to be on top */
+.custom-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 24px;
+  height: 24px;
+  background-image: url('/elements/cursor.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  pointer-events: none;
+  z-index: var(--z-cursor);
+  transform: translate(-12px, -12px);
+  mix-blend-mode: screen;
+  will-change: transform;
 }
 
 /* Removed global position: relative rule that was causing click blocking issues */

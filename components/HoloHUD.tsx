@@ -2,6 +2,7 @@
 import React from "react";
 import type { Track } from "@/lib/songs-consolidated";
 import { POS } from "@/config/cockpit";
+import { useAudio } from "@/app/providers/AudioProvider";
 
 export default function HoloHUD({
   track,
@@ -16,6 +17,8 @@ export default function HoloHUD({
   onSelect?: (slug: string) => void;
   hidePlayButton?: boolean;
 }) {
+  // Use unified audio provider for play/pause functionality
+  const audioManager = useAudio();
   // If no track (home mode), don't render the HoloHUD
   if (!track) {
     return null;
@@ -38,19 +41,14 @@ export default function HoloHUD({
       {!hidePlayButton && (
         <button
           type="button"
-          className={`play-btn ${playing ? "on" : ""}`}
+          className={`play-btn ${audioManager.playing ? "on" : ""}`}
           onClick={() => {
-            // Prefer direct toggle to keep play() inside the same user gesture
-            try {
-              const fn = (window as any).mainPlayerToggle;
-              if (typeof fn === 'function') { fn(); return; }
-            } catch {}
-            // Fallback: delegate to parent controller
-            try { onToggle(); } catch {}
+            // Use unified audio provider for play/pause
+            audioManager.togglePlayPause();
           }}
-          aria-label={playing ? "Pause" : "Play"}
+          aria-label={audioManager.playing ? "Pause" : "Play"}
         >
-          {playing ? 
+          {audioManager.playing ? 
             (<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>)
             :
             (<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden><path d="M6 4l14 8-14 8z"/></svg>)}

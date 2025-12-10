@@ -213,12 +213,34 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
 
   // Execute HeartCoin spending
   const handleSpendHeartCoins = async () => {
-    if (!item || !profile) return;
+    if (!item || !profile || isSpending) return;
     
+    console.log('handleSpendHeartCoins called');
     setIsSpending(true);
     setCheckoutError(null);
     
     try {
+      console.log('Attempting purchase with parameters:', {
+        p_user_id: profile.id,
+        p_item_slug: item.id,
+        p_cost: item.priceHeartCoins,
+        currentBalance: profile.heartcoin_balance
+      });
+      
+      // First check if the function exists by trying to call it with a simple query
+      const { data: functionCheck, error: functionError } = await supabaseBrowser
+        .from('information_schema.routines')
+        .select('routine_name')
+        .eq('routine_name', 'purchase_item_with_heartcoins')
+        .eq('routine_schema', 'public')
+        .single();
+        
+      if (functionError) {
+        console.warn('Could not verify function existence:', functionError);
+      } else {
+        console.log('Function exists:', functionCheck);
+      }
+      
       // Call the RPC with correct parameters
       const { data, error } = await supabaseBrowser.rpc('purchase_item_with_heartcoins', {
         p_user_id: profile.id,
@@ -226,14 +248,25 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
         p_cost: item.priceHeartCoins
       });
       
+      console.log('RPC Response:', { data, error });
+      
       if (error) {
-        console.error('RPC Error:', error);
+        console.error('RPC Error Details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         
         // Check if it's an insufficient funds error
         if (error.message?.includes('Not enough HeartCoins') || error.message?.includes('Insufficient HeartCoins')) {
           setCheckoutError('Not enough HeartCoins for this purchase.');
+        } else if (error.message?.includes('already owned')) {
+          setCheckoutError('You already own this item.');
+        } else if (error.message?.includes('not found')) {
+          setCheckoutError('Function not found. Database may need updating.');
         } else {
-          setCheckoutError('Purchase failed. Please try again.');
+          setCheckoutError(`Purchase failed: ${error.message || 'Please try again.'}`);
         }
         return;
       }
@@ -299,70 +332,13 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
 
         {/* Item image */}
         <div className="p-6 pb-4">
-          <div className="relative w-full aspect-square max-w-[200px] mx-auto mb-4">
+          <div className="relative w-full aspect-square max-w-[300px] mx-auto mb-4">
             <Image
               src={item.image}
               alt={item.title}
               fill
               className="object-contain rounded-lg"
             />
-          </div>
-        </div>
-
-        {/* Title and description */}
-        <div className="px-6 pb-4">
-          <h2 className="text-xl font-bold text-pink-300 mb-2 text-center">{item.title}</h2>
-          <p className="text-sm text-pink-200 text-center">{item.description}</p>
-        </div>
-
-        {/* Price row */}
-        <div className="px-6 pb-4">
-          <div className="flex items-center justify-center gap-6 text-center">
-            <button
-              type="button"
-              onClick={handleStripeCheckout}
-              disabled={isStripeLoading || (() => {
-                const gateState = getItemGateState(item);
-                return gateState === 'comingSoon' || gateState === 'lockedTier';
-              })()}
-              onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg font-bold transition-all duration-200 ${
-                (() => {
-                  const gateState = getItemGateState(item);
-                  if (isStripeLoading) return 'bg-gray-500/50 cursor-not-allowed text-gray-400';
-                  if (gateState === 'comingSoon' || gateState === 'lockedTier') return 'bg-gray-600/50 cursor-not-allowed text-gray-400';
-                  return 'text-green-400 hover:bg-green-500/20 hover:scale-105';
-                })()
-              }`}
-            >
-              <span className="text-lg font-bold">${item.priceUsd}</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleHeartCoinCheckout}
-              disabled={!profile || (() => {
-                const gateState = getItemGateState(item);
-                return gateState === 'comingSoon' || gateState === 'lockedTier';
-              })()}
-              onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg font-bold transition-all duration-200 ${
-                (() => {
-                  const gateState = getItemGateState(item);
-                  if (!profile || gateState === 'comingSoon' || gateState === 'lockedTier') return 'bg-gray-600/50 cursor-not-allowed text-gray-400';
-                  return 'text-green-400 hover:bg-green-400/20 hover:scale-105';
-                })()
-              }`}
-            >
-              <span className="text-lg font-bold">{item.priceHeartCoins}</span>
-              <img
-                src="/elements/heart-coin.webp"
-                alt="Heart Coin"
-                className="w-6 h-6 object-contain"
-                style={{
-                  filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
-                }}
-              />
-            </button>
           </div>
         </div>
 

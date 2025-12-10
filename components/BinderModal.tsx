@@ -7,6 +7,7 @@ import { useProfile } from "@/contexts/ProfileContext";
 import { Card, CardTier, ProfileTier, isCardLocked, getCardGateState, getTierDisplayName } from "@/types/card";
 import type { CardGateState } from "@/utils/cardGating";
 import PopoutShell from "@/components/PopoutShell";
+import { triggerCardCelebration } from "@/utils/cardCelebration";
 
 // Add keyframes for pulsing animation
 const pulseKeyframes = `
@@ -433,6 +434,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       
       setPurchaseState('success');
       try { sfx.play('card-ding', 0.8); } catch {}
+      
+      // Trigger card celebration with the purchased card
+      triggerCardCelebration(currentCard.artwork_url, currentCard.card_name);
       
       // Reset after 2 seconds
       setTimeout(() => {

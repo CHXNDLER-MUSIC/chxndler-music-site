@@ -60,8 +60,8 @@ export function getBadgeProgressForUser(
       break;
       
     case 'listen':
-      // Use total listening minutes for listen-based badges 
-      current = profile.total_listening_minutes || 0;
+      // Use unique songs count for listen-based badges (e.g. Deep Listener)
+      current = profile.unique_songs_count || 0;
       break;
       
     case 'streak':
@@ -182,14 +182,7 @@ export function formatRequirementText(badge: Badge): string {
       return `${requirement_count} HEART coin transfer${requirement_count === 1 ? '' : 's'}`;
       
     case 'listen':
-      if (requirement_count === 1) {
-        return `1 listening session`;
-      } else if (requirement_count < 60) {
-        return `${requirement_count} listening sessions`;
-      } else {
-        const hours = Math.floor(requirement_count / 60);
-        return `${hours} hour${hours === 1 ? '' : 's'} of listening`;
-      }
+      return `Listen to ${requirement_count} unique ${requirement_count === 1 ? 'song' : 'songs'}`;
       
     case 'streak':
       return `${requirement_count} day streak`;

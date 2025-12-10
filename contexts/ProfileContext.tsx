@@ -134,11 +134,14 @@ interface DailyPrompts {
 // Badge-related types
 interface BadgeDefinition {
   id: string;
+  slug: string;
   badge_name: string;
   description: string | null;
+  requirement_type: string;
+  requirement_count: number;
   icon_url: string | null;
   category: string | null;
-  requirement: string | null;
+  created_at: string;
 }
 
 interface UserBadgeRecord {

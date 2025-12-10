@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useProfile } from "@/contexts/ProfileContext";
 import BadgeCategoryButton from "@/components/BadgeCategoryButton";
 import PopoutShell from "@/components/PopoutShell";
@@ -15,8 +16,8 @@ interface BadgeDisplay {
   icon_url: string | null;
   category: string | null;
   requirement: string | null;
-  requirement_type?: string;
-  requirement_count?: number;
+  requirement_type: string;
+  requirement_count: number;
   unlocked: boolean;
   progress?: {
     current: number;
@@ -44,6 +45,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedBadge, setSelectedBadge] = useState<BadgeDisplay | null>(null);
+  const [enlargedBadge, setEnlargedBadge] = useState<BadgeDisplay | null>(null);
 
   // Create badge display objects with unlocked status and progress
   const badgesWithUnlocked: BadgeDisplay[] = allBadges.map(badge => {
@@ -55,8 +57,16 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     if (badge.requirement_type && badge.requirement_count && profile) {
       const badgeProgress = getBadgeProgressForUser({
         requirement_type: badge.requirement_type,
-        requirement_count: badge.requirement_count
-      } as any, profile);
+        requirement_count: badge.requirement_count,
+        id: badge.id,
+        slug: badge.slug || '',
+        badge_name: badge.badge_name,
+        icon_url: badge.icon_url,
+        description: badge.description,
+        requirement_text: null,
+        category: badge.category as any,
+        created_at: badge.created_at
+      }, profile);
       
       progress = {
         current: badgeProgress.current,
@@ -71,9 +81,9 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       description: badge.description,
       icon_url: badge.icon_url,
       category: badge.category,
-      requirement: badge.requirement,
-      requirement_type: (badge as any).requirement_type,
-      requirement_count: (badge as any).requirement_count,
+      requirement: null, // This field doesn't exist in BadgeDefinition
+      requirement_type: badge.requirement_type,
+      requirement_count: badge.requirement_count,
       unlocked: isUnlocked,
       progress
     };
@@ -229,17 +239,22 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         )}
 
         {/* Requirement text - Always show */}
-        {(selectedBadge.requirement || selectedBadge.requirement_type) && (
+        {selectedBadge.requirement_type && selectedBadge.requirement_count && (
           <div className="text-center space-y-2 py-2">
             <div className="text-white/50 text-xs uppercase tracking-wider font-bold">REQUIREMENT</div>
             <div className="text-white text-sm font-medium bg-white/5 rounded px-3 py-2">
-              {selectedBadge.requirement || (selectedBadge.requirement_type && selectedBadge.requirement_count ? 
-                formatRequirementText({
-                  requirement_type: selectedBadge.requirement_type,
-                  requirement_count: selectedBadge.requirement_count,
-                  requirement_text: selectedBadge.requirement
-                } as any) : 'Complete this achievement'
-              )}
+              {formatRequirementText({
+                requirement_type: selectedBadge.requirement_type,
+                requirement_count: selectedBadge.requirement_count,
+                requirement_text: null,
+                id: selectedBadge.id,
+                slug: '',
+                badge_name: selectedBadge.badge_name,
+                icon_url: selectedBadge.icon_url,
+                description: selectedBadge.description,
+                category: selectedBadge.category as any,
+                created_at: ''
+              })}
             </div>
           </div>
         )}
@@ -298,7 +313,12 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                 <button
                   onClick={() => {
                     sfx.play('click');
-                    setSelectedBadge(badge);
+                    setEnlargedBadge(badge);
+                    // After a short delay, show the detail view
+                    setTimeout(() => {
+                      setEnlargedBadge(null);
+                      setSelectedBadge(badge);
+                    }, 800);
                   }}
                   onMouseEnter={() => sfx.play('hover')}
                   className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/60 border border-white/20 hover:border-white/40 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
@@ -537,8 +557,77 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     </>
   );
 
+  const enlargedBadgeModal = (
+    <AnimatePresence>
+      {enlargedBadge && (
+        <motion.div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          {/* Backdrop */}
+          <motion.div
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          />
+          
+          {/* Enlarged Badge */}
+          <motion.div
+            className="relative z-10 rounded-3xl overflow-hidden"
+            style={{
+              width: '200px',
+              height: '200px',
+              boxShadow: '0 0 60px rgba(252,84,175,0.4), 0 0 120px rgba(56,182,255,0.3)'
+            }}
+            initial={{ scale: 0.5, opacity: 0, y: -20 }}
+            animate={{ scale: 1, opacity: 1, y: -20 }}
+            exit={{ scale: 0.5, opacity: 0, y: -20 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 400 }}
+          >
+            <div className="w-full h-full bg-gradient-to-br from-gray-800/80 to-black/90 border-4 border-white/30 rounded-3xl flex items-center justify-center">
+              {/* Badge content */}
+              <div className={`transition-opacity ${enlargedBadge.unlocked ? 'opacity-100' : 'opacity-40'}`}>
+                {enlargedBadge.icon_url ? (
+                  <img
+                    src={enlargedBadge.icon_url}
+                    alt={enlargedBadge.badge_name}
+                    className="w-32 h-32 object-cover rounded-full"
+                    draggable={false}
+                  />
+                ) : (
+                  <div className="text-6xl">🏅</div>
+                )}
+              </div>
+              
+              {/* Locked overlay */}
+              {!enlargedBadge.unlocked && (
+                <div className="absolute inset-4 bg-black/40 rounded-3xl flex items-center justify-center">
+                  <div className="w-8 h-8 bg-white/20 rounded-full" />
+                </div>
+              )}
+            </div>
+            
+            {/* Badge name overlay */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+              <h3 className="text-white font-bold text-lg text-center">{enlargedBadge.badge_name}</h3>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
   if (embedded) {
-    return <div className="relative">{badgesContent}</div>;
+    return (
+      <div className="relative">
+        {badgesContent}
+        {enlargedBadgeModal}
+      </div>
+    );
   }
 
   return (
@@ -573,6 +662,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           {badgesContent}
         </div>
       </div>
+      {enlargedBadgeModal}
     </PopoutShell>
   );
 }

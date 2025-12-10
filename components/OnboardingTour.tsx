@@ -281,9 +281,16 @@ export default function OnboardingTour({
           dropdownRect.top + (dropdownRect.height / 2) - (bubbleHeight / 2),
           viewportHeight - bubbleHeight - 20
         ));
+        
+        // Always position on the right side of the screen for menu items
+        // Use a larger gap and ensure it's always on the right side
+        const rightSidePosition = Math.max(
+          dropdownRect.right + 40,  // Larger 40px gap from menu edge
+          viewportWidth * 0.55      // Ensure it's at least 55% from left edge (right side)
+        );
         const left = Math.min(
-          dropdownRect.right + 20,  // 20px gap from menu edge
-          viewportWidth - bubbleWidth - 20
+          rightSidePosition,
+          viewportWidth - bubbleWidth - 20  // Still respect viewport bounds
         );
         setBubblePosition({ top, left });
         

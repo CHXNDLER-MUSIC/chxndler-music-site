@@ -74,7 +74,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
       {/* CHXNDLER Modal - holographic popup with image */}
       {open && (
         <div 
-          className="fixed inset-0 z-[2147483647] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[2147483646] flex items-center justify-center p-4"
           style={{ 
             alignItems: 'center', 
             transform: 'translateY(-130px)',

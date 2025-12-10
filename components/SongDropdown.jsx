@@ -326,7 +326,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                   }
                 };
                 const getElementTextColor = (element, isActive) => {
-                  if (!isActive) return 'text-[#CFF7FF]';
+                  if (!isActive) return 'text-white';
                   return element === 'darkness' ? 'text-black' : 'text-white';
                 };
                 const getElementGlowColor = (element) => {
@@ -342,6 +342,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                   <button
                     key={el}
                     type="button"
+                    data-element={el}
                     onMouseEnter={() => {
                       try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {}
                     }}
@@ -588,6 +589,19 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
         .filter-pill:hover {
           outline: none;
           box-shadow: 0 0 18px rgba(25,227,255,0.35);
+        }
+        /* Element-specific hover glows */
+        .filter-pill[data-element="heart"]:hover {
+          box-shadow: 0 0 20px rgba(252, 84, 175, 0.6), 0 0 40px rgba(252, 84, 175, 0.3);
+        }
+        .filter-pill[data-element="water"]:hover {
+          box-shadow: 0 0 20px rgba(56, 182, 255, 0.6), 0 0 40px rgba(56, 182, 255, 0.3);
+        }
+        .filter-pill[data-element="lightning"]:hover {
+          box-shadow: 0 0 20px rgba(255, 199, 0, 0.6), 0 0 40px rgba(255, 199, 0, 0.3);
+        }
+        .filter-pill[data-element="darkness"]:hover {
+          box-shadow: 0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.3);
         }
       `}</style>
     </div>

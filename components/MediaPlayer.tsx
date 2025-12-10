@@ -1396,10 +1396,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         {/* Track Progress Bar - moved below lyrics */}
         <div className="relative w-full" style={{ marginBottom: '8px', marginTop: '6px' }}>
           <TrackProgressBar 
-            audioRef={audioRef}
             selectedSong={cur}
-            currentTime={currentTime}
-            duration={liveDuration}
           />
         </div>
 

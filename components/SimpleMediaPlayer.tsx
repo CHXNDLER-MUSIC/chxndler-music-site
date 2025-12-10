@@ -150,7 +150,16 @@ export default function MediaPlayer({
             }
             title={!gateResult.allowed ? gateResult.reason : undefined}
           >
-            {!gateResult.allowed ? "🔒" : isPlaying ? "⏸" : "▶️"}
+            {!gateResult.allowed ? (
+              "🔒"
+            ) : isPlaying ? (
+              <div className="w-4 h-4 flex gap-1">
+                <div className="w-1.5 h-full bg-white rounded-sm"></div>
+                <div className="w-1.5 h-full bg-white rounded-sm"></div>
+              </div>
+            ) : (
+              <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[12px] border-l-white border-b-[8px] border-b-transparent ml-1"></div>
+            )}
           </button>
           <div className="flex-1">
             <div className="text-white/90 text-sm truncate">

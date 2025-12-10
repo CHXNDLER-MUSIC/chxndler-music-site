@@ -15,7 +15,11 @@ export class SupabaseBadgeService {
         return [];
       }
 
-      return data || [];
+      // Map the database response to match the Badge interface
+      return (data || []).map(badge => ({
+        ...badge,
+        requirement_text: badge.description, // Map description to requirement_text
+      }));
     } catch (error) {
       console.error('Exception fetching badges:', error);
       return [];
@@ -27,7 +31,7 @@ export class SupabaseBadgeService {
       const { data, error } = await supabase
         .from('badges')
         .select('*')
-        .ilike('requirement', `%${category}%`)
+        .eq('category', category)
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -35,7 +39,11 @@ export class SupabaseBadgeService {
         return [];
       }
 
-      return data || [];
+      // Map the database response to match the Badge interface
+      return (data || []).map(badge => ({
+        ...badge,
+        requirement_text: badge.description, // Map description to requirement_text
+      }));
     } catch (error) {
       console.error('Exception fetching badges by category:', error);
       return [];

@@ -87,7 +87,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
   };
 
   return (
-    <div ref={menuRef} className="fixed top-1/2 -translate-y-1/2 left-4 z-[2147483647]" style={{ top: '32px' }}>
+    <div ref={menuRef} className="fixed top-1/2 -translate-y-1/2 left-4 z-[2147483646]" style={{ top: '32px' }}>
       {/* Hamburger Button */}
       <button
         onClick={toggleMenu}
@@ -198,7 +198,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                     item.label === "STORE" ? "menu-store" :
                     `menu-${item.label.toLowerCase().replace(/ /g, '-')}`
                   }
-                  className={`w-full px-8 py-3 text-left text-white font-semibold tracking-wide transition-all duration-200 hover:bg-cyan-500/10 hover:text-cyan-300 relative group ${
+                  className={`w-full px-8 py-3 text-left text-white text-lg font-semibold tracking-wide transition-all duration-200 hover:bg-cyan-500/10 hover:text-cyan-300 relative group ${
                     item.label === "JOURNAL" && hasPendingReflection 
                       ? 'bg-gradient-to-r from-pink-500/10 via-transparent to-pink-500/10' 
                       : ''
@@ -222,13 +222,13 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                   {/* Hover glow effect */}
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-200 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
                   
-                  <span className="relative z-10 flex items-center gap-1 -ml-2">
+                  <span className="relative z-10 flex items-center gap-2 -ml-2">
                     {item.label === "ABOUT" && (
                       <Image
                         src="/elements/about.webp"
                         alt="About"
-                        width={32}
-                        height={32}
+                        width={36}
+                        height={36}
                         className="transition-all duration-200"
                       />
                     )}
@@ -236,8 +236,8 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                       <Image
                         src="/elements/journey.webp"
                         alt="Journey"
-                        width={32}
-                        height={32}
+                        width={36}
+                        height={36}
                         className="transition-all duration-200"
                       />
                     )}
@@ -245,8 +245,8 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                       <Image
                         src="/elements/journal.webp"
                         alt={item.label === "COMPLETED" ? "Journal Completed" : "Journal"}
-                        width={32}
-                        height={32}
+                        width={36}
+                        height={36}
                         className={`transition-all duration-200 ${
                           item.label === "JOURNAL" && hasPendingReflection 
                             ? 'drop-shadow-[0_0_8px_rgba(255,105,180,0.8)]' 
@@ -267,8 +267,8 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                       <Image
                         src="/elements/binder.webp"
                         alt="Binder"
-                        width={32}
-                        height={32}
+                        width={36}
+                        height={36}
                         className="transition-all duration-200"
                       />
                     )}
@@ -276,8 +276,8 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                       <Image
                         src="/elements/badges.webp"
                         alt="Badges"
-                        width={32}
-                        height={32}
+                        width={36}
+                        height={36}
                         className="transition-all duration-200 group-hover:scale-110 group-hover:drop-shadow-lg"
                         style={{
                           filter: 'drop-shadow(0 0 6px rgba(255, 215, 0, 0.6))'
@@ -288,8 +288,8 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                       <Image
                         src="/elements/store.webp"
                         alt="Store"
-                        width={32}
-                        height={32}
+                        width={36}
+                        height={36}
                         className="transition-all duration-200"
                       />
                     )}

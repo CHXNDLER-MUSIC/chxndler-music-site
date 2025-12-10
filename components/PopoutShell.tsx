@@ -6,23 +6,27 @@ import { sfx } from "@/lib/sfx";
 interface PopoutShellProps {
   title: string;
   onClose: () => void;
-  children: ReactNode;
+  children?: ReactNode;
+  overlayContent?: ReactNode;
+  backgroundContent?: ReactNode;
   pageIndicator?: string; // Optional, for binder's "1 / 6" display
   compact?: boolean; // Optional, for compact height like badges
+  isOpen?: boolean;
 }
 
-export default function PopoutShell({ title, onClose, children, pageIndicator, compact = false }: PopoutShellProps) {
+export default function PopoutShell({ title, onClose, children, overlayContent, backgroundContent, pageIndicator, compact = false, isOpen = true }: PopoutShellProps) {
+  if (!isOpen) return null;
   return (
     <>
       {/* Backdrop overlay - no dimming */}
       <div 
-        className="fixed inset-0 z-[2147483646]"
+        className="fixed inset-0 z-[2147483645]"
         onClick={onClose}
       />
       
       {/* Main modal container - exact copy from Binder */}
       <div 
-        className="fixed inset-0 z-[2147483647] flex items-start justify-center"
+        className="fixed inset-0 z-[2147483646] flex items-start justify-center"
         style={{
           paddingTop: '1vh'
         }}
@@ -101,32 +105,43 @@ export default function PopoutShell({ title, onClose, children, pageIndicator, c
             </svg>
           </button>
           
-          {/* Header - exact copy from Binder */}
-          <div className="flex justify-center items-center flex-shrink-0" style={{ padding: '10px 14px 0px 14px' }}>
-            <div 
-              style={{ 
-                color: '#FF69B4', 
-                textShadow: '0 0 8px rgba(255,105,180,0.6)', 
-                fontSize: '12px',
-                fontWeight: 'bold'
-              }}
-            >
-              {title}
+          {/* Header - only show if title exists */}
+          {title && (
+            <>
+              <div className="flex justify-center items-center flex-shrink-0" style={{ padding: '10px 14px 0px 14px' }}>
+                <div 
+                  style={{ 
+                    color: '#FF69B4', 
+                    textShadow: '0 0 8px rgba(255,105,180,0.6)', 
+                    fontSize: '12px',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  {title}
+                </div>
+              </div>
+              
+              {/* Thin pink neon line - exact copy from Binder */}
+              <div 
+                className="w-full h-px flex-shrink-0"
+                style={{
+                  background: 'linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)',
+                  boxShadow: '0 0 4px rgba(255,105,180,0.6)'
+                }}
+              />
+            </>
+          )}
+
+          {/* Background content area */}
+          {backgroundContent && (
+            <div className="absolute inset-0 z-0" style={{ padding: '60px 20px 20px 20px' }}>
+              {backgroundContent}
             </div>
-          </div>
-          
-          {/* Thin pink neon line - exact copy from Binder */}
-          <div 
-            className="w-full h-px flex-shrink-0"
-            style={{
-              background: 'linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)',
-              boxShadow: '0 0 4px rgba(255,105,180,0.6)'
-            }}
-          />
+          )}
 
           {/* Content container - exact copy from Binder */}
-          <div className="flex-1 relative overflow-hidden" style={{ maxHeight: 'calc(100% - 80px)', display: 'flex', alignItems: compact ? 'flex-start' : 'center' }}>
-            {children}
+          <div className="flex-1 relative overflow-hidden z-10" style={{ maxHeight: 'calc(100% - 80px)', display: 'flex', alignItems: compact ? 'flex-start' : 'center' }}>
+            {overlayContent || children}
           </div>
 
           {/* Page Number Display - exact copy from Binder, only show if provided */}
@@ -134,7 +149,7 @@ export default function PopoutShell({ title, onClose, children, pageIndicator, c
             <div 
               className="absolute left-1/2 transform -translate-x-1/2"
               style={{
-                bottom: '-2px',
+                bottom: '-8px',
                 color: '#FF69B4',
                 fontSize: '12px',
                 fontWeight: 'bold',
