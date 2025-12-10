@@ -162,7 +162,16 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
 
   // Helper functions to get quest data from server
   const getInviteFriendQuest = () => bonusQuests.find(q => q.quest_key === 'INVITE_FRIEND');
-  const getLiveShowQuest = () => bonusQuests.find(q => q.quest_key === 'ATTEND_LIVESTREAM');
+  const getLiveShowQuest = () => {
+    const quest = bonusQuests.find(q => q.quest_key === 'ATTEND_LIVESTREAM');
+    console.log('🔍 getLiveShowQuest debug:', {
+      bonusQuests,
+      quest,
+      canComplete: quest?.can_complete,
+      completedToday: quest?.completed_today
+    });
+    return quest;
+  };
 
   const showCelebration = (message: string) => {
     setCelebrationMessage(message);
@@ -830,7 +839,22 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                         ? handleCheckInSubmit 
                         : handleShowCheckInForm
                   }
-                  disabled={questStatus.liveShow || !isAuthenticated || bonusQuestsLoading || !getLiveShowQuest()?.can_complete || (showCheckIn && (!secretPhrase.trim() || loading))}
+                  disabled={(() => {
+                    const liveShowQuest = getLiveShowQuest();
+                    const isDisabled = questStatus.liveShow || !isAuthenticated || bonusQuestsLoading || !liveShowQuest?.can_complete || (showCheckIn && (!secretPhrase.trim() || loading));
+                    console.log('🎯 CHECK IN button disabled check:', {
+                      questStatus_liveShow: questStatus.liveShow,
+                      isAuthenticated,
+                      bonusQuestsLoading,
+                      liveShowQuest_exists: !!liveShowQuest,
+                      liveShowQuest_can_complete: liveShowQuest?.can_complete,
+                      showCheckIn,
+                      secretPhrase_length: secretPhrase.trim().length,
+                      loading,
+                      finalDisabled: isDisabled
+                    });
+                    return isDisabled;
+                  })()}
                   className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 ${
                     questStatus.liveShow
                       ? 'bg-green-600/30 border border-green-500/50 text-green-300 cursor-not-allowed'

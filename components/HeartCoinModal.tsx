@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useProfile } from '@/contexts/ProfileContext';
 import HeartversePopup from "@/components/HeartversePopup";
+import PopoutShell from "@/components/PopoutShell";
 
 type Props = {
   open: boolean;
@@ -486,28 +487,17 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
 
       {/* Enlarged Item Modal */}
       {enlargedItem && (
-        <div 
-          className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] backdrop-blur-sm"
-          onClick={() => setEnlargedItem(null)}
+        <PopoutShell
+          title=""
+          onClose={() => setEnlargedItem(null)}
+          compact={true}
         >
-          <div 
-            className="relative max-w-md max-h-[80vh] p-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close Button */}
-            <button
-              onClick={() => setEnlargedItem(null)}
-              className="absolute -top-2 -right-2 w-8 h-8 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white/70 hover:text-white z-10 transition-all duration-200"
-            >
-              ×
-            </button>
-            
-            {/* Enlarged Image */}
-            <div className="relative">
+          <div className="w-full h-full flex items-center justify-center p-4">
+            <div className="relative max-w-full max-h-full">
               <img
                 src={enlargedItem.image}
-                alt={enlargedItem.name}
-                className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+                alt=""
+                className="max-w-full max-h-full object-contain rounded-lg"
                 style={{
                   animation: 'merchPulse 2.5s ease-in-out infinite',
                 }}
@@ -517,8 +507,8 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
               {enlargedItem.image2 && (
                 <img
                   src={enlargedItem.image2}
-                  alt={`${enlargedItem.name} alternative view`}
-                  className="absolute inset-0 w-full h-auto max-h-[70vh] object-contain rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-300"
+                  alt=""
+                  className="absolute inset-0 max-w-full max-h-full object-contain rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-300"
                   style={{
                     animation: 'merchPulse 2.5s ease-in-out infinite',
                   }}
@@ -526,7 +516,7 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
               )}
             </div>
           </div>
-        </div>
+        </PopoutShell>
       )}
     </HeartversePopup>
   );
