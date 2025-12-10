@@ -534,25 +534,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           </svg>
         </button>
 
-        {/* Privacy Toggle - positioned under close button */}
-        <button
-          onClick={(!user?.id || !profile?.element) ? undefined : () => {
-            sfx.play('click', 0.8);
-            setJournalState(prev => ({ ...prev, isPrivate: !prev.isPrivate }));
-          }}
-          disabled={!user?.id || !profile?.element || journalState.isSubmitted}
-          className="absolute top-16 right-4 px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-200 disabled:cursor-not-allowed"
-          style={{
-            background: (!user?.id || !profile?.element) ? 'rgba(128, 128, 128, 0.1)' : (journalState.isPrivate ? `${elementTheme.color}20` : 'rgba(128, 128, 128, 0.1)'),
-            border: (!user?.id || !profile?.element) ? '1px solid #50505060' : `1px solid ${journalState.isPrivate ? elementTheme.color : '#808080'}60`,
-            color: (!user?.id || !profile?.element) ? '#505050' : (journalState.isPrivate ? elementTheme.color : '#808080'),
-            textShadow: (!user?.id || !profile?.element) ? 'none' : (journalState.isPrivate ? `0 0 4px ${elementTheme.glow}` : 'none'),
-            opacity: (!user?.id || !profile?.element || journalState.isSubmitted) ? 0.4 : (journalState.isPrivate ? 1 : 0.5),
-            cursor: (!user?.id || !profile?.element || journalState.isSubmitted) ? 'not-allowed' : 'pointer'
-          }}
-        >
-          PRIVATE
-        </button>
         
         {/* Header */}
         <div 
@@ -767,7 +748,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                               border: `1px solid ${entryColor}15`
                             }}
                           >
-                            {entry.reflection || 'Prompt text not available'}
+                            {entry.reflection || 'No prompt was generated for this day.'}
                           </div>
                         </div>
                         
@@ -880,101 +861,219 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           </div>
         ) : (
           /* Today's Journal Interface */
-          <div style={{ height: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-            {/* Date and Element with pending notification */}
-            <div className="text-center mb-2">
-              <div 
-                className="text-base font-semibold mb-1"
-                style={{ color: '#FFFFFF' }}
-              >
-                {todayFormatted}
-              </div>
-              
-              
-            </div>
-
-            {/* Intention & Prompt Section */}
-            {dailyPrompt && (
-              <div className="mb-1 space-y-0.5 -mt-1">
-                {/* Intention */}
-                <div 
-                  className="px-2 py-1 rounded-lg"
-                  style={{
-                    background: `${elementTheme.color}08`,
-                    border: `1px solid ${elementTheme.color}30`,
-                    borderLeft: `4px solid ${elementTheme.color}`
-                  }}
-                >
+          <div style={{ 
+            height: '350px', 
+            overflowY: 'auto', 
+            display: 'flex', 
+            flexDirection: 'column',
+            background: 'rgba(0, 0, 0, 0.2)',
+            borderRadius: '8px',
+            backdropFilter: 'blur(8px)'
+          }}>
+            {/* Main Entry Card Container */}
+            <div 
+              className="rounded-lg p-4 sm:p-5 space-y-4 sm:space-y-5"
+              style={{
+                background: 'rgba(0, 0, 0, 0.7)',
+                border: `1px solid ${elementTheme.color}40`,
+                boxShadow: `0 0 20px ${elementTheme.color}20, 0 0 40px ${elementTheme.color}10`,
+                borderRadius: '12px'
+              }}
+            >
+              {/* Header Layout - Two Rows */}
+              <div className="space-y-3">
+                {/* First Row: Date and Element Badge */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
                   <div 
-                    className="text-sm font-semibold mb-1 uppercase tracking-wider"
-                    style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
-                  >
-                    Intention
-                  </div>
-                  <div 
-                    className="text-sm leading-relaxed mb-1"
+                    className="text-lg font-semibold"
                     style={{ color: '#FFFFFF' }}
                   >
-                    {dailyPrompt.intention.text}
+                    {todayFormatted}
+                  </div>
+                  <div 
+                    className="px-3 py-1 rounded-full text-xs font-semibold uppercase flex items-center gap-2"
+                    style={{
+                      background: `${elementTheme.color}20`,
+                      color: elementTheme.color,
+                      border: `1px solid ${elementTheme.color}60`,
+                      textShadow: `0 0 4px ${elementTheme.glow}`
+                    }}
+                  >
+                    {elementEmoji} {dailyPrompt?.element?.toUpperCase()}
                   </div>
                 </div>
-
-                {/* Prompt */}
+                
+                {/* Second Row: Entry Title/Summary */}
                 <div 
-                  className="p-2 rounded-lg"
-                  style={{
-                    background: `${elementTheme.color}08`,
-                    border: `1px solid ${elementTheme.color}30`,
-                    borderLeft: `4px solid ${elementTheme.color}`
-                  }}
+                  className="text-sm opacity-80"
+                  style={{ color: '#FFFFFF' }}
                 >
-                  <div 
-                    className="text-sm font-semibold mb-1 uppercase tracking-wider"
-                    style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
-                  >
-                    Prompt
-                  </div>
-                  <div 
-                    className="text-sm leading-relaxed"
-                    style={{ color: '#FFFFFF' }}
-                  >
-                    {dailyPrompt.soul_star.text}
-                  </div>
+                  Soul reflection for today
                 </div>
               </div>
-            )}
 
-            {/* Soul Star - Main Journal Entry */}
-            <div className="mb-1">
-              <textarea
-                value={soulStarText}
-                onChange={(e) => setSoulStarText(e.target.value)}
-                placeholder={(!user?.id || !profile?.element) ? "Let your Soul speak..." : "Let your Soul Star speak…"}
-                className="w-full h-16 p-2 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
-                disabled={isSaving || journalState.isSubmitted}
-                style={{
-                  background: 'rgba(0,0,0,0.6)',
-                  border: `1px solid ${elementTheme.color}40`,
-                  boxShadow: `0 0 10px ${elementTheme.color}20`,
-                  opacity: (isSaving || journalState.isSubmitted) ? 0.7 : 1,
-                  pointerEvents: (isSaving || journalState.isSubmitted) ? 'none' as any : 'auto'
-                }}
-                onFocus={(e) => {
-                  if (journalState.isSubmitted) return;
-                  e.target.style.borderColor = `${elementTheme.color}80`;
-                  e.target.style.boxShadow = `0 0 15px ${elementTheme.glow}`;
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = `${elementTheme.color}40`;
-                  e.target.style.boxShadow = `0 0 10px ${elementTheme.color}20`;
-                }}
-              />
+              {/* Section Cards */}
+              {dailyPrompt && (
+                <div className="space-y-4">
+                  {/* Intention Card */}
+                  <div 
+                    className="rounded-lg p-3"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: `1px solid ${elementTheme.color}20`,
+                      boxShadow: `0 0 10px ${elementTheme.color}10`
+                    }}
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">✨</span>
+                        <div 
+                          className="text-xs font-semibold uppercase tracking-wider"
+                          style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
+                        >
+                          Intention
+                        </div>
+                        {/* Accent underline */}
+                        <div 
+                          className="flex-1 h-0.5"
+                          style={{
+                            background: '#F2EF1D',
+                            boxShadow: '0 0 4px #F2EF1D'
+                          }}
+                        />
+                      </div>
+                      <div 
+                        className="text-sm leading-relaxed"
+                        style={{ color: '#FFFFFF', lineHeight: '1.5' }}
+                      >
+                        {dailyPrompt.intention.text}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Prompt Card */}
+                  <div 
+                    className="rounded-lg p-3"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: `1px solid ${elementTheme.color}20`,
+                      boxShadow: `0 0 10px ${elementTheme.color}10`
+                    }}
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">📝</span>
+                        <div 
+                          className="text-xs font-semibold uppercase tracking-wider"
+                          style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
+                        >
+                          Prompt
+                        </div>
+                        {/* Accent underline */}
+                        <div 
+                          className="flex-1 h-0.5"
+                          style={{
+                            background: '#F2EF1D',
+                            boxShadow: '0 0 4px #F2EF1D'
+                          }}
+                        />
+                      </div>
+                      <div 
+                        className="text-sm leading-relaxed"
+                        style={{ 
+                          color: dailyPrompt.soul_star?.text ? '#FFFFFF' : 'rgba(255, 255, 255, 0.6)', 
+                          lineHeight: '1.5' 
+                        }}
+                      >
+                        {dailyPrompt.soul_star?.text || 'No prompt was generated for this day.'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Soul Star Card */}
+                  <div 
+                    className="rounded-lg p-3"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: `1px solid ${elementTheme.color}20`,
+                      boxShadow: `0 0 10px ${elementTheme.color}10`
+                    }}
+                  >
+                    <div className="space-y-2">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                        <div className="flex items-center gap-2 flex-1">
+                          <span className="text-sm">💖</span>
+                          <div 
+                            className="text-xs font-semibold uppercase tracking-wider"
+                            style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
+                          >
+                            Soul Star
+                          </div>
+                          {/* Accent underline */}
+                          <div 
+                            className="flex-1 h-0.5 hidden sm:block"
+                            style={{
+                              background: '#F2EF1D',
+                              boxShadow: '0 0 4px #F2EF1D'
+                            }}
+                          />
+                        </div>
+                        
+                        {/* Privacy Toggle in Soul Star Card Header */}
+                        <button
+                          onClick={(!user?.id || !profile?.element) ? undefined : () => {
+                            sfx.play('click', 0.8);
+                            setJournalState(prev => ({ ...prev, isPrivate: !prev.isPrivate }));
+                          }}
+                          disabled={!user?.id || !profile?.element || journalState.isSubmitted}
+                          className="px-2 py-1 rounded text-xs font-semibold transition-all duration-200 disabled:cursor-not-allowed"
+                          style={{
+                            background: (!user?.id || !profile?.element) ? 'rgba(128, 128, 128, 0.1)' : (journalState.isPrivate ? `${elementTheme.color}20` : 'rgba(128, 128, 128, 0.1)'),
+                            border: (!user?.id || !profile?.element) ? '1px solid #50505060' : `1px solid ${journalState.isPrivate ? elementTheme.color : '#808080'}60`,
+                            color: (!user?.id || !profile?.element) ? '#505050' : (journalState.isPrivate ? elementTheme.color : '#808080'),
+                            textShadow: (!user?.id || !profile?.element) ? 'none' : (journalState.isPrivate ? `0 0 4px ${elementTheme.glow}` : 'none'),
+                            opacity: (!user?.id || !profile?.element || journalState.isSubmitted) ? 0.4 : 1,
+                            cursor: (!user?.id || !profile?.element || journalState.isSubmitted) ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          {journalState.isPrivate ? 'PRIVATE' : 'PUBLIC'}
+                        </button>
+                      </div>
+                      
+                      <textarea
+                        value={soulStarText}
+                        onChange={(e) => setSoulStarText(e.target.value)}
+                        placeholder={(!user?.id || !profile?.element) ? "Let your Soul speak..." : "Let your Soul Star speak…"}
+                        className="w-full h-20 p-3 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
+                        disabled={isSaving || journalState.isSubmitted}
+                        style={{
+                          background: 'rgba(0,0,0,0.4)',
+                          border: `1px solid ${elementTheme.color}30`,
+                          boxShadow: `0 0 8px ${elementTheme.color}15`,
+                          opacity: (isSaving || journalState.isSubmitted) ? 0.7 : 1,
+                          pointerEvents: (isSaving || journalState.isSubmitted) ? 'none' as any : 'auto',
+                          lineHeight: '1.5'
+                        }}
+                        onFocus={(e) => {
+                          if (journalState.isSubmitted) return;
+                          e.target.style.borderColor = `${elementTheme.color}60`;
+                          e.target.style.boxShadow = `0 0 15px ${elementTheme.glow}`;
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = `${elementTheme.color}30`;
+                          e.target.style.boxShadow = `0 0 8px ${elementTheme.color}15`;
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Messages */}
             {(error || journalState.errorMessage) && (
               <div 
-                className="mb-1 p-3 rounded-lg text-center text-red-400"
+                className="mt-4 p-3 rounded-lg text-center text-red-400"
                 style={{ 
                   background: 'rgba(239, 68, 68, 0.1)',
                   border: '1px solid rgba(239, 68, 68, 0.3)'
@@ -986,7 +1085,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
             {(successMessage || journalState.saveMessage) && (
               <div 
-                className="mb-1 p-3 rounded-lg text-center"
+                className="mt-4 p-3 rounded-lg text-center"
                 style={{ 
                   background: 'rgba(34, 197, 94, 0.1)',
                   border: '1px solid rgba(34, 197, 94, 0.3)',
@@ -999,7 +1098,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             )}
 
             {/* Bottom Section */}
-            <div className="flex justify-center mt-0 mb-0">
+            <div className="flex justify-center mt-6">
               {/* Cast into the Stars Button - centered */}
               {(!user?.id || !profile?.element) ? (
                 <button

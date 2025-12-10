@@ -91,7 +91,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   const { refreshProfile } = useProfile();
 
   // Load bonus quests from server
-  const loadBonusQuests = async (userId: string) => {
+  const loadBonusQuests = async (userId: string | null) => {
     try {
       setBonusQuestsLoading(true);
       const serverQuests = await getBonusQuestsForUser(userId);
@@ -128,11 +128,16 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
       try {
         const { data: { session } } = await supabaseClient.auth.getSession();
         const isAuth = !!session?.user;
+        console.log('🔐 Auth check:', { isAuth, userId: session?.user?.id });
         setIsAuthenticated(isAuth);
         
         // Load bonus quests if authenticated
         if (isAuth && session?.user?.id) {
           await loadBonusQuests(session.user.id);
+        } else {
+          console.log('🔐 Not authenticated, loading public quests...');
+          // Still load quests for display, but user won't be able to complete them
+          await loadBonusQuests(null);
         }
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -148,11 +153,15 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
     const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
       async (event, session) => {
         const isAuth = !!session?.user;
+        console.log('🔐 Auth state change:', { event, isAuth, userId: session?.user?.id });
         setIsAuthenticated(isAuth);
         
         // Load bonus quests when user logs in
         if (isAuth && session?.user?.id) {
           await loadBonusQuests(session.user.id);
+        } else {
+          // Load public quests when user logs out
+          await loadBonusQuests(null);
         }
       }
     );
@@ -162,16 +171,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
 
   // Helper functions to get quest data from server
   const getInviteFriendQuest = () => bonusQuests.find(q => q.quest_key === 'INVITE_FRIEND');
-  const getLiveShowQuest = () => {
-    const quest = bonusQuests.find(q => q.quest_key === 'ATTEND_LIVESTREAM');
-    console.log('🔍 getLiveShowQuest debug:', {
-      bonusQuests,
-      quest,
-      canComplete: quest?.can_complete,
-      completedToday: quest?.completed_today
-    });
-    return quest;
-  };
+  const getLiveShowQuest = () => bonusQuests.find(q => q.quest_key === 'ATTEND_LIVESTREAM');
 
   const showCelebration = (message: string) => {
     setCelebrationMessage(message);
@@ -399,6 +399,14 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
 
   const handleShowCheckInForm = () => {
     console.log('handleShowCheckInForm called - showing text input form');
+    
+    // Check authentication
+    if (!isAuthenticated) {
+      setCheckInError("Please log in to check in at live shows.");
+      setTimeout(() => setCheckInError(""), 3000);
+      return;
+    }
+    
     try { sfx.play('click', 0.8); } catch {}
     setShowCheckIn(true);
     setCheckInError("");
@@ -839,63 +847,40 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                         ? handleCheckInSubmit 
                         : handleShowCheckInForm
                   }
-                  disabled={(() => {
-                    const liveShowQuest = getLiveShowQuest();
-                    const isDisabled = questStatus.liveShow || !isAuthenticated || bonusQuestsLoading || !liveShowQuest?.can_complete || (showCheckIn && (!secretPhrase.trim() || loading));
-                    console.log('🎯 CHECK IN button disabled check:', {
-                      questStatus_liveShow: questStatus.liveShow,
-                      isAuthenticated,
-                      bonusQuestsLoading,
-                      liveShowQuest_exists: !!liveShowQuest,
-                      liveShowQuest_can_complete: liveShowQuest?.can_complete,
-                      showCheckIn,
-                      secretPhrase_length: secretPhrase.trim().length,
-                      loading,
-                      finalDisabled: isDisabled
-                    });
-                    return isDisabled;
-                  })()}
+                  disabled={questStatus.liveShow || bonusQuestsLoading || (showCheckIn && (!secretPhrase.trim() || loading))}
                   className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 ${
                     questStatus.liveShow
                       ? 'bg-green-600/30 border border-green-500/50 text-green-300 cursor-not-allowed'
-                      : !isAuthenticated || !getLiveShowQuest()?.can_complete
-                        ? 'bg-gray-600/30 border border-gray-500/50 text-gray-300 cursor-not-allowed'
-                        : showCheckIn && secretPhrase.trim()
-                          ? 'bg-yellow-500/20 border-2 border-yellow-400 text-yellow-300 hover:bg-yellow-500/30'
-                          : showCheckIn
-                            ? 'bg-gray-600/30 border border-gray-500/50 text-gray-300 cursor-not-allowed'
-                            : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300'
+                      : showCheckIn && secretPhrase.trim()
+                        ? 'bg-yellow-500/20 border-2 border-yellow-400 text-yellow-300 hover:bg-yellow-500/30'
+                        : showCheckIn
+                          ? 'bg-gray-600/30 border border-gray-500/50 text-gray-300 cursor-not-allowed'
+                          : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300'
                   }`}
                   style={{
                     boxShadow: questStatus.liveShow
                       ? '0 0 10px rgba(0,255,0,0.3)'
-                      : !isAuthenticated || !getLiveShowQuest()?.can_complete
-                        ? '0 0 10px rgba(100,100,100,0.3)'
-                        : showCheckIn && secretPhrase.trim()
-                          ? '0 0 20px rgba(255,255,0,0.8), inset 0 0 10px rgba(255,255,0,0.2)'
-                          : showCheckIn
-                            ? '0 0 10px rgba(100,100,100,0.3)'
-                            : '0 0 10px rgba(252,84,175,0.3)',
+                      : showCheckIn && secretPhrase.trim()
+                        ? '0 0 20px rgba(255,255,0,0.8), inset 0 0 10px rgba(255,255,0,0.2)'
+                        : showCheckIn
+                          ? '0 0 10px rgba(100,100,100,0.3)'
+                          : '0 0 10px rgba(252,84,175,0.3)',
                     textShadow: questStatus.liveShow
                       ? '0 0 4px rgba(0,255,0,0.6)'
-                      : !isAuthenticated || !getLiveShowQuest()?.can_complete
-                        ? '0 0 4px rgba(100,100,100,0.6)'
-                        : showCheckIn && secretPhrase.trim()
-                          ? '0 0 10px rgba(255,255,0,1)'
-                          : showCheckIn
-                            ? '0 0 4px rgba(100,100,100,0.6)'
-                            : '0 0 4px rgba(252,84,175,0.6)'
+                      : showCheckIn && secretPhrase.trim()
+                        ? '0 0 10px rgba(255,255,0,1)'
+                        : showCheckIn
+                          ? '0 0 4px rgba(100,100,100,0.6)'
+                          : '0 0 4px rgba(252,84,175,0.6)'
                   }}
                 >
                   {questStatus.liveShow 
                     ? 'COMPLETED' 
                     : !isAuthenticated 
                       ? 'LOG IN TO COMPLETE' 
-                      : !getLiveShowQuest()?.can_complete
-                        ? getLiveShowQuest()?.completed_today > 0 ? 'COMPLETED TODAY' : 'UNAVAILABLE'
-                        : showCheckIn
-                          ? (loading ? 'CONFIRMING...' : secretPhrase.trim() ? 'CONFIRM' : 'ENTER PHRASE')
-                          : 'CHECK IN'
+                      : showCheckIn
+                        ? (loading ? 'CONFIRMING...' : secretPhrase.trim() ? 'CONFIRM' : 'ENTER PHRASE')
+                        : 'CHECK IN'
                   }
                 </button>
                 <div 

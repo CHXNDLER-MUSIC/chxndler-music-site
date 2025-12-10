@@ -249,6 +249,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   
   // Purchase flow states
   const [step, setStep] = useState<'confirm' | 'shipping' | 'done'>('confirm');
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
   const [shippingForm, setShippingForm] = useState({
     full_name: '',
     address_line1: '',
