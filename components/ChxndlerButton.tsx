@@ -75,7 +75,11 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
       {open && (
         <div 
           className="fixed inset-0 z-[2147483647] flex items-center justify-center p-4"
-          style={{ alignItems: 'center', transform: 'translateY(-130px)' }}
+          style={{ 
+            alignItems: 'center', 
+            transform: 'translateY(-130px)',
+            cursor: 'none'
+          }}
         >
           <div
             className="chxndler-hologram-container relative"
@@ -88,6 +92,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
               border: '1px solid rgba(252,84,175,0.6)',
               boxShadow: '0 -8px 25px rgba(252,84,175,0.4), 0 -4px 15px rgba(252,84,175,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(252,84,175,0.45)',
               backdropFilter: 'blur(12px) saturate(140%)',
+              cursor: 'none'
             }}
           >
             {/* Soft bottom glow */}
@@ -132,13 +137,14 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                   setInternalOpen(false);
                 }
               }}
-              className="absolute top-2 right-4 text-pink-400 hover:text-pink-200 cursor-pointer w-8 h-8 rounded-full border border-pink-400/80 flex items-center justify-center"
+              className="absolute top-2 right-4 text-pink-400 hover:text-pink-200 w-8 h-8 rounded-full border border-pink-400/80 flex items-center justify-center"
               style={{ 
                 fontSize: '16px',
                 boxShadow: '0 0 15px rgba(252,84,175,0.8), 0 0 25px rgba(252,84,175,0.5), 0 0 35px rgba(252,84,175,0.3)',
                 textShadow: '0 0 8px rgba(252,84,175,0.8), 0 0 15px rgba(252,84,175,0.6)',
                 background: 'rgba(252,84,175,0.1)',
-                backdropFilter: 'blur(2px)'
+                backdropFilter: 'blur(2px)',
+                cursor: 'none'
               }}
             >
               <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
@@ -176,7 +182,8 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                   }`}
                   style={{
                     textShadow: 'none',
-                    boxShadow: activeTab === "WE BELIEVE" ? '0 0 15px rgba(252,84,175,0.3)' : 'none'
+                    boxShadow: activeTab === "WE BELIEVE" ? '0 0 15px rgba(252,84,175,0.3)' : 'none',
+                    cursor: 'none'
                   }}
                 >
                   WE BELIEVE
@@ -193,7 +200,8 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                   }`}
                   style={{
                     textShadow: 'none',
-                    boxShadow: activeTab === "CHXNDLER" ? '0 0 15px rgba(252,84,175,0.3)' : 'none'
+                    boxShadow: activeTab === "CHXNDLER" ? '0 0 15px rgba(252,84,175,0.3)' : 'none',
+                    cursor: 'none'
                   }}
                 >
                   CHXNDLER
@@ -210,7 +218,8 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                   }`}
                   style={{
                     textShadow: 'none',
-                    boxShadow: activeTab === "ELEMENTS" ? '0 0 15px rgba(252,84,175,0.3)' : 'none'
+                    boxShadow: activeTab === "ELEMENTS" ? '0 0 15px rgba(252,84,175,0.3)' : 'none',
+                    cursor: 'none'
                   }}
                 >
                   ELEMENTS
@@ -296,19 +305,49 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                     lineHeight: '1.6'
                   }}
                 >
-                  <div className="flex flex-col mr-8">
-                    <div className="mb-2">
+                  <div className="grid grid-cols-2 gap-0">
+                    <div 
+                      className="p-3 border-2 transition-all duration-200 hover:scale-105" 
+                      style={{ 
+                        borderColor: '#FFFF00', 
+                        backgroundColor: 'rgba(255, 255, 0, 0.1)', 
+                        boxShadow: '0 0 15px rgba(255, 255, 0, 0.3)',
+                        borderRadius: '8px 0 0 0'
+                      }}
+                    >
                       <img src="/elements/lightning.webp" alt="Lightning" className="inline w-5 h-5 mr-1" /> <span style={{ color: '#FFFF00 !important', fontWeight: 'bold !important', textShadow: '0 0 10px #FFFF00, 0 0 20px #FFFF00' }}>LIGHTNING</span> awakens.
                     </div>
-                    <div>
-                      <img src="/elements/darkness.webp" alt="Darkness" className="inline w-5 h-5 mr-1" /> <span style={{ color: '#9A00FF !important', fontWeight: 'bold !important', textShadow: '0 0 10px #9A00FF, 0 0 20px #9A00FF' }}>DARKNESS</span> transforms.
-                    </div>
-                  </div>
-                  <div className="flex flex-col">
-                    <div className="mb-2">
+                    <div 
+                      className="p-3 border-2 transition-all duration-200 hover:scale-105" 
+                      style={{ 
+                        borderColor: '#FF1493', 
+                        backgroundColor: 'rgba(255, 20, 147, 0.1)', 
+                        boxShadow: '0 0 15px rgba(255, 20, 147, 0.3)',
+                        borderRadius: '0 8px 0 0'
+                      }}
+                    >
                       <img src="/elements/heart.webp" alt="Heart" className="inline w-5 h-5 mr-1" /> <span style={{ color: '#FF1493 !important', fontWeight: 'bold !important', textShadow: '0 0 10px #FF1493, 0 0 20px #FF1493' }}>HEART</span> connects.
                     </div>
-                    <div>
+                    <div 
+                      className="p-3 border-2 transition-all duration-200 hover:scale-105" 
+                      style={{ 
+                        borderColor: '#9A00FF', 
+                        backgroundColor: 'rgba(154, 0, 255, 0.1)', 
+                        boxShadow: '0 0 15px rgba(154, 0, 255, 0.3)',
+                        borderRadius: '0 0 0 8px'
+                      }}
+                    >
+                      <img src="/elements/darkness.webp" alt="Darkness" className="inline w-5 h-5 mr-1" /> <span style={{ color: '#9A00FF !important', fontWeight: 'bold !important', textShadow: '0 0 10px #9A00FF, 0 0 20px #9A00FF' }}>DARKNESS</span> transforms.
+                    </div>
+                    <div 
+                      className="p-3 border-2 transition-all duration-200 hover:scale-105" 
+                      style={{ 
+                        borderColor: '#00E5FF', 
+                        backgroundColor: 'rgba(0, 229, 255, 0.1)', 
+                        boxShadow: '0 0 15px rgba(0, 229, 255, 0.3)',
+                        borderRadius: '0 0 8px 0'
+                      }}
+                    >
                       <img src="/elements/water.webp" alt="Water" className="inline w-5 h-5 mr-1" /> <span style={{ color: '#00E5FF !important', fontWeight: 'bold !important', textShadow: '0 0 10px #00E5FF, 0 0 20px #00E5FF' }}>WATER</span> heals.
                     </div>
                   </div>
@@ -346,7 +385,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                       background: 'none',
                       border: 'none',
                       padding: 0,
-                      cursor: 'pointer',
+                      cursor: 'none',
                       textDecoration: 'underline'
                     }}
                   >

@@ -333,6 +333,11 @@ THE ELEMENTS OF THE HEARTVERSE
                 <button
                   onClick={() => {
                     try { sfx.play('click', 0.8); } catch {}
+                    // Play star.mp3 when ALIGN button is clicked
+                    try {
+                      const audio = new Audio('/audio/star.mp3');
+                      audio.play().catch(e => console.log('Star audio play failed:', e));
+                    } catch {}
                     if (selectedElement) {
                       setCommittedElement(selectedElement);
                       // Notify parent component to save to profile

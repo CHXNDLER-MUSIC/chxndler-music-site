@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { getLocalDateString } from '@/utils/dateHelpers';
 
 // Server-side Supabase client with service role
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -74,8 +75,8 @@ async function getOrderedPrompt(promptType: 'intention' | 'reflection', element:
 
 export async function GET(request: NextRequest) {
   try {
-    // Get today's date in YYYY-MM-DD format
-    const today = new Date().toISOString().split('T')[0];
+    // Get today's date in local timezone YYYY-MM-DD format
+    const today = getLocalDateString();
 
     // ALWAYS check Supabase first - the table is the source of truth
     let { data: dailyPrompt, error: dailyError } = await supabase
@@ -103,6 +104,18 @@ export async function GET(request: NextRequest) {
       if (!dailyPrompt?.intention || !dailyPrompt?.prompt) {
         console.error('Invalid daily prompt data in database:', dailyPrompt);
         throw new Error('Invalid daily prompt structure in database');
+      }
+
+      // Validate that the daily prompt ID is a proper UUID
+      const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(dailyPrompt.id);
+      const isProblematicValue = dailyPrompt.id === 'relic-id-here' || 
+                                dailyPrompt.id.includes('relic') ||
+                                dailyPrompt.id.includes('placeholder') ||
+                                dailyPrompt.id.includes('example');
+
+      if (!isValidUUID || isProblematicValue) {
+        console.error('Invalid or problematic daily prompt ID in database:', dailyPrompt.id);
+        throw new Error('Daily prompt data is corrupted in the database. Please contact support.');
       }
 
       return NextResponse.json({
@@ -144,7 +157,7 @@ export async function GET(request: NextRequest) {
       { 
         error: 'Database connection failed',
         message: 'Could not connect to soul prompts database. Please try again later.',
-        date: new Date().toISOString().split('T')[0]
+        date: getLocalDateString()
       },
       { status: 500 }
     );

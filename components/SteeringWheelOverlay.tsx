@@ -795,7 +795,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
               position: "fixed",
               // Bottom of pink display should touch the light beam top
               // Use global CSS var so we can tune per-device
-              bottom: 'calc(var(--display-touch-top) - var(--pink-bottom-nudge))',
+              bottom: 'calc(var(--display-touch-top) - var(--pink-bottom-nudge) + 90px)',
               // Center horizontally in the viewport (always centered)
               left: '50%',
               transform: 'translateX(-50%)',

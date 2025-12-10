@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useProfile } from '@/contexts/ProfileContext';
+import { getLocalDateString } from '@/utils/dateHelpers';
 
 export function useDailyReflectionStatus() {
   const { user, journalEntries, profile } = useProfile();
@@ -19,8 +20,8 @@ export function useDailyReflectionStatus() {
         return;
       }
 
-      // Get today's date in YYYY-MM-DD format
-      const today = new Date().toISOString().split('T')[0];
+      // Get today's date in local timezone YYYY-MM-DD format
+      const today = getLocalDateString();
 
       // Check if user has submitted a reflection for today
       const todayReflection = journalEntries.find(entry => 

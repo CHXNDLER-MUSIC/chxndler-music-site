@@ -240,10 +240,10 @@ export default function JoinAliens({ visible = true } = {}) {
         pointerEvents: visible ? 'auto' : 'none', 
         width: '100%',
         height: '100%',
-        minHeight: '420px',
+        minHeight: 'fit-content',
         maxHeight: '100%',
         margin: '0',
-        padding: '20px 20px 0px 20px',
+        padding: '0px 20px 0px 20px',
         background: 'rgba(0, 0, 0, 0.6)',
         backdropFilter: 'blur(12px)',
         border: 'none',
@@ -254,12 +254,11 @@ export default function JoinAliens({ visible = true } = {}) {
         transition: 'all 300ms ease',
         overflow: 'auto',
         boxSizing: 'border-box',
-        display: 'flex',
-        flexDirection: 'column'
+        display: 'block'
       }}
     >
       {/* Countdown Section - Top */}
-      <div style={{ textAlign: 'center', marginBottom: '25px', marginTop: '10px', paddingTop: '10px', flex: '0 0 auto' }}>
+      <div style={{ textAlign: 'center', marginBottom: '25px', marginTop: '0px', paddingTop: '12px' }}>
         {/* Neon "Signal Lost" message */}
         <div style={{ marginBottom: '0px' }}>
           <h2 
@@ -320,17 +319,17 @@ export default function JoinAliens({ visible = true } = {}) {
         width: '100%', 
         height: '1px', 
         background: 'linear-gradient(90deg, transparent, rgba(252, 84, 175, 0.5), transparent)', 
-        margin: '2px 0 8px 0' 
+        margin: '2px 0 4px 0' 
       }} />
 
       {/* Stay Connected Section - Bottom */}
-      <div style={{ marginTop: '8px', flex: '1 1 auto', minHeight: 0, paddingBottom: '8px' }}>
+      <div style={{ marginTop: '2px', paddingBottom: '80px' }}>
         {/* Header Text */}
         {showPhoneForm && (
         <div 
           style={{ 
             textAlign: 'center', 
-            marginBottom: '12px',
+            marginBottom: '8px',
             color: '#00FFFF',
             fontSize: '16px',
             fontWeight: '600',
@@ -361,7 +360,7 @@ export default function JoinAliens({ visible = true } = {}) {
       {/* Phone Number Input */}
       {showPhoneForm && (
       <>
-      <div style={{ marginBottom: '8px' }}>
+      <div style={{ marginBottom: '12px', width: '80%', margin: '0 auto 12px auto' }}>
         <input
           id="signal-phone"
           type="tel"
@@ -402,6 +401,7 @@ export default function JoinAliens({ visible = true } = {}) {
       </div>
 
       {/* Send Heart Signal Button / Create Profile Button */}
+      <div style={{ display: 'flex', justifyContent: 'center' }}>
       <button
         onClick={heartSignalSent && !user ? () => {
           try { sfx.play('click', 0.4); } catch {}
@@ -409,7 +409,8 @@ export default function JoinAliens({ visible = true } = {}) {
         } : sendHeartSignal}
         disabled={status === "saving" || (!heartSignalSent && !isValidPhone)}
         style={{
-          width: '100%',
+          width: '80%',
+          margin: '0 auto',
           padding: '12px 24px',
           background: 'transparent',
           border: status === "saved" && heartSignalSent && !user
@@ -506,6 +507,7 @@ export default function JoinAliens({ visible = true } = {}) {
           "Send Heart Signal"
         )}
       </button>
+      </div>
       </> 
       )}
       </div> {/* Close Stay Connected Section */}
@@ -1172,7 +1174,10 @@ export default function JoinAliens({ visible = true } = {}) {
 
       <style jsx>{`
         .signal-lost-container {
-          padding-top: 5px !important;
+          padding-top: 0px !important;
+          padding-bottom: 0px !important;
+          margin-bottom: 0px !important;
+          margin-top: 0px !important;
         }
         
         .signal-lost-text {

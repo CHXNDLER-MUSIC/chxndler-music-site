@@ -1185,6 +1185,7 @@ export default function ProfileBar({
                 console.log("Open store popup from quest list");
               }}
               onOpenBlueDisplay={onOpenBlueDisplay}
+              onCloseHeartCoinPopup={() => setShowQuests(false)}
             />
           </div>
         </div>,

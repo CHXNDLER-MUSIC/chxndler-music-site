@@ -12,6 +12,7 @@ type Props = {
   onBack: () => void;
   onOpenStore: () => void;
   onOpenBlueDisplay?: () => void;
+  onCloseHeartCoinPopup?: () => void;
 };
 
 type QuestStatus = {
@@ -70,7 +71,7 @@ function useQuestStatus() {
   return { questStatus, setQuestStatus, todaysElement, todaysQuestion };
 }
 
-export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Props) {
+export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCloseHeartCoinPopup }: Props) {
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [secretPhrase, setSecretPhrase] = useState("");
   const [checkInMessage, setCheckInMessage] = useState("");
@@ -152,6 +153,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay }: Pr
     if (questStatus.journalEntry || loading || !isAuthenticated) return;
     
     try { sfx.play('click', 0.8); } catch {}
+    onCloseHeartCoinPopup?.();
     setShowJournal(true);
   };
 

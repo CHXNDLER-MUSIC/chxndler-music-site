@@ -83,9 +83,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
   const { profile, updateProfile } = useProfile();
   const [cardOpen, setCardOpen] = useState(false);
   const [showFullCollection, setShowFullCollection] = useState(false);
-  const [selectedElement, setSelectedElement] = useState<string | null>('DARKNESS');
+  const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [selectedRarity, setSelectedRarity] = useState<string>('All');
-  const [selectedCardName, setSelectedCardName] = useState<string>('DARKNESS');
+  const [selectedCardName, setSelectedCardName] = useState<string>('All');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [selectedCard, setSelectedCard] = useState<{name: string, image: string, rarity: string, element: string} | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -406,11 +406,32 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     if (!currentCard) return;
     
     try {
-      // TODO: Add card to user_cards table via API
-      // For now just update the profile balance
-      await updateProfile({ 
-        heartcoin_balance: (profile.heartcoin_balance || 0) - cost 
+      // Use the proper API endpoint to purchase the card with heart coins
+      const response = await fetch('/api/purchase-item-with-heartcoins', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          itemId: `${currentCard.name.toLowerCase().replace(/\s+/g, '_')}_${selectedPurchaseType}`,
+          itemTitle: `${currentCard.name} (${selectedPurchaseType.toUpperCase()})`,
+          priceHeartCoins: cost
+        }),
       });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Purchase failed');
+      }
+
+      // Update the profile with the new balance from the API response
+      if (result.data && result.data.new_balance !== undefined) {
+        await updateProfile({ 
+          heartcoin_balance: result.data.new_balance 
+        });
+      }
+      
       setPurchaseState('success');
       try { sfx.play('success', 0.8); } catch {}
       
@@ -421,7 +442,13 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     } catch (error) {
       try { sfx.play('error', 0.8); } catch {}
       console.error('Purchase failed:', error);
-      resetPurchaseState();
+      
+      // Check if it's an insufficient funds error
+      if (error instanceof Error && error.message.includes('Insufficient HeartCoins')) {
+        setPurchaseState('insufficient');
+      } else {
+        resetPurchaseState();
+      }
     }
   };
 
@@ -2010,7 +2037,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       </PopoutShell>
 
       {/* Element Name Display - positioned on right side */}
-      {selectedElement && getFilteredCards()[currentCardIndex] && (
+      {showFullCollection && selectedElement && getFilteredCards().length > 0 && getFilteredCards()[currentCardIndex] && (
         <div 
           className="fixed z-[2147483645]"
           style={{

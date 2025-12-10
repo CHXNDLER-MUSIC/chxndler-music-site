@@ -852,9 +852,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     if (!dailyQuests.journalEntry) {
       try { sfx.play('click', 0.8); } catch {}
       
-      // Close heart coin display and open journal
+      // Close heart coin display and reset all popup states
       setOpen(false);
       setIsFromCollectCard(false);
+      setShowQRCode(false);
+      setShowBlueDisplay(false);
       
       // Small delay to ensure popup closes before journal opens
       setTimeout(() => {
@@ -863,7 +865,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           setIsJournalOpen(true);
           onOpenJournal?.(); 
         } catch {}
-      }, 100);
+      }, 150);
     }
   };
 
@@ -1690,7 +1692,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       <div className="mb-2">
                         {PHYSICAL_ITEMS[currentMerchIndex] && (
                           <div 
-                            className="rounded-lg px-4 pt-2 pb-4 transition-all duration-200"
+                            className="rounded-lg pl-4 pr-1 pt-2 pb-4 transition-all duration-200"
                           >
                             {/* Image and Title with Navigation */}
                             <div className="flex items-start gap-1 mb-3">
@@ -1700,7 +1702,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   try { sfx.play('click', 0.6); } catch {}
                                   setCurrentMerchIndex(prev => prev > 0 ? prev - 1 : PHYSICAL_ITEMS.length - 1);
                                 }}
-                                className="flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 transition-all duration-200 flex-shrink-0 mt-8 -ml-3"
+                                className="flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 transition-all duration-200 flex-shrink-0 mt-8 -ml-6"
                                 style={{
                                   boxShadow: '0 0 8px rgba(255,255,255,0.3)'
                                 }}
@@ -1740,22 +1742,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 </div>
                               </div>
                               
-                              {/* Right Arrow */}
-                              <button
-                                onClick={() => {
-                                  try { sfx.play('click', 0.6); } catch {}
-                                  setCurrentMerchIndex(prev => prev < PHYSICAL_ITEMS.length - 1 ? prev + 1 : 0);
-                                }}
-                                className="flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 transition-all duration-200 flex-shrink-0 mt-8"
-                                style={{
-                                  boxShadow: '0 0 8px rgba(255,255,255,0.3)'
-                                }}
-                              >
-                                <span className="text-white text-sm font-bold">→</span>
-                              </button>
-                              
                               {/* Item Details */}
-                              <div className="flex-1 ml-0 -mr-3">
+                              <div className="flex-1 ml-0">
                                 {showHeartCoinPurchase ? (
                                   /* HeartCoin Purchase Confirmation */
                                   <div className="text-center">
@@ -1896,14 +1884,30 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     >
                                       {PHYSICAL_ITEMS[currentMerchIndex].title}
                                     </div>
-                                    <div 
-                                      className="text-xs text-white/90 mb-1"
-                                      style={{
-                                        textShadow: '0 0 2px rgba(255,255,255,0.4)',
-                                        lineHeight: '1.3'
-                                      }}
-                                    >
-                                      {PHYSICAL_ITEMS[currentMerchIndex].description}
+                                    <div className="relative mb-1">
+                                      <div 
+                                        className="text-xs text-white/90 pr-12"
+                                        style={{
+                                          textShadow: '0 0 2px rgba(255,255,255,0.4)',
+                                          lineHeight: '1.3'
+                                        }}
+                                      >
+                                        {PHYSICAL_ITEMS[currentMerchIndex].description}
+                                      </div>
+                                      
+                                      {/* Right Arrow */}
+                                      <button
+                                        onClick={() => {
+                                          try { sfx.play('click', 0.6); } catch {}
+                                          setCurrentMerchIndex(prev => prev < PHYSICAL_ITEMS.length - 1 ? prev + 1 : 0);
+                                        }}
+                                        className="absolute right-0 top-0 flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 transition-all duration-200"
+                                        style={{
+                                          boxShadow: '0 0 8px rgba(255,255,255,0.3)'
+                                        }}
+                                      >
+                                        <span className="text-white text-sm font-bold">→</span>
+                                      </button>
                                     </div>
                                     
                                     {/* Buy Buttons */}
@@ -2081,7 +2085,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               {/* Card image */}
                               <div className="w-20 h-28 rounded-lg border-2 border-yellow-500/80 overflow-hidden flex-shrink-0 relative cursor-pointer hover:border-yellow-400/90 transition-all duration-200 hover:scale-105">
                                 <img
-                                  src={card.artwork_url || '/cards/CHXNDLER.webp'}
+                                  src={card.artwork_url || `/cards/${card.card_name}.webp`}
                                   alt={card.card_name}
                                   className={`w-full h-full object-cover ${shouldBlurCard(card) ? 'filter blur-sm opacity-60' : ''}`}
                                   onClick={() => {
@@ -2789,7 +2793,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   >
                     {/* Front of card */}
                     <img
-                      src={enlargedCard.artwork_url || '/cards/CHXNDLER.webp'}
+                      src={enlargedCard.artwork_url || `/cards/${enlargedCard.card_name}.webp`}
                       alt={enlargedCard.card_name}
                       className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
                       style={{

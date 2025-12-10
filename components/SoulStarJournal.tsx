@@ -5,6 +5,7 @@ import { useProfile } from "@/contexts/ProfileContext";
 import { sfx } from "@/lib/sfx";
 import { useDailyReflectionStatus } from "@/hooks/useDailyReflectionStatus";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import { getLocalDateString } from "@/utils/dateHelpers";
 
 interface DailyPrompt {
   id: string;
@@ -105,7 +106,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [hasClickedInitialButton, setHasClickedInitialButton] = useState(false);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getLocalDateString();
   const todayFormatted = new Date().toLocaleDateString('en-US', {
     month: 'numeric',
     day: 'numeric',
@@ -156,12 +157,41 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const loadDailyPrompt = async () => {
     try {
       const prompt = await getDailyPrompts();
+      
+      // Validate the prompt data before setting it
+      if (prompt && prompt.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(prompt.id)) {
+        console.error('Invalid prompt ID received:', prompt.id);
+        throw new Error('Received corrupted prompt data from server');
+      }
+      
+      // Additional validation for problematic values
+      if (prompt && prompt.id && (
+        prompt.id === 'relic-id-here' || 
+        prompt.id.includes('relic') ||
+        prompt.id.includes('placeholder') ||
+        prompt.id.includes('example')
+      )) {
+        console.error('Problematic prompt ID received:', prompt.id);
+        throw new Error('Daily prompt contains placeholder data. Please refresh the page and try again.');
+      }
+      
       setDailyPrompt(prompt);
     } catch (error) {
       console.error('Failed to load daily prompt:', error);
+      
+      let errorMessage = "Unable to load today's soul prompt from database. Please contact support.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('corrupted') || error.message.includes('placeholder')) {
+          errorMessage = error.message;
+        } else if (error.message.includes('Daily prompt data is corrupted')) {
+          errorMessage = "The daily prompt data is corrupted. Please refresh the page and contact support if the issue persists.";
+        }
+      }
+      
       setJournalState(prev => ({
         ...prev,
-        errorMessage: "Unable to load today's soul prompt from database. Please contact support."
+        errorMessage: errorMessage
       }));
     }
   };
@@ -213,10 +243,17 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         return;
       }
 
-      // Validate dailyPrompt is available
+      // Validate dailyPrompt is available and has valid data
       if (!dailyPrompt) {
         setError("Unable to save entry - daily prompt not loaded.");
         setTimeout(() => setError(""), 3000);
+        return;
+      }
+
+      // Validate that the daily prompt has a proper UUID
+      if (dailyPrompt.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(dailyPrompt.id)) {
+        setError("Daily prompt data is corrupted. Please refresh the page and try again.");
+        setTimeout(() => setError(""), 5000);
         return;
       }
 
@@ -226,12 +263,16 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       sfx.play('star', 0.8);
 
       // Debug logging to help identify the source of invalid UUIDs
-      console.log('Daily prompt data:', dailyPrompt);
-      console.log('Daily prompt ID:', dailyPrompt?.id);
+      console.log('Saving journal entry - Daily prompt data:', {
+        dailyPrompt,
+        promptId: dailyPrompt?.id,
+        isValidUUID: dailyPrompt?.id ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(dailyPrompt.id) : false
+      });
       
       // Use ProfileContext's saveJournalEntry which handles upsert properly
+      const entryDate = getLocalDateString();
       const result = await saveJournalEntry({
-        entry_date: today,
+        entry_date: entryDate,
         element: dailyPrompt.element,
         prompt_id: dailyPrompt?.id || null,
         intention: dailyPrompt?.intention?.text || null,

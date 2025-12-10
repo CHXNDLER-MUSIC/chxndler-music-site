@@ -11,6 +11,7 @@ import React, {
 } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { ProfileTier } from "@/types/card";
+import { getLocalDateString } from "@/utils/dateHelpers";
 
 // Types for user owned cards and badges
 type OwnedCardRow = {
@@ -245,7 +246,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
                 min_tier
               )
             `)
-            .eq("user_id", user.id),
+            .eq("user_id", user.id)
+            .order("acquired_at", { ascending: true }),
           supabaseBrowser
             .from("user_badges")
             .select(`
@@ -609,10 +611,19 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         if (isValidUUID && !isProblematicValue) {
           entryData.prompt_id = entry.prompt_id;
         } else {
-          console.warn('Invalid or problematic UUID for prompt_id, skipping:', entry.prompt_id);
+          console.warn('Invalid or problematic UUID for prompt_id, skipping:', {
+            prompt_id: entry.prompt_id,
+            isValidUUID,
+            isProblematicValue
+          });
           // Don't include prompt_id if it's not a valid UUID or contains placeholder text
           // If the prompt_id is invalid, we should still be able to save the journal entry
           // The prompt_id column allows NULL values in the database
+          
+          // If this is a problematic value, throw a specific error to help user understand
+          if (isProblematicValue) {
+            throw new Error(`Invalid UUID format detected for value "${entry.prompt_id}". Please refresh the page and try again.`);
+          }
         }
       }
       if (entry.intention !== null && entry.intention !== undefined) {
