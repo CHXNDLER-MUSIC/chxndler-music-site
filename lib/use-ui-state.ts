@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 type UIState = {
   hasEnteredHeartverse: boolean;
@@ -12,46 +13,46 @@ type UIState = {
   setWarpFullyComplete: (value: boolean) => void;
 };
 
-// Clear any old persisted state from localStorage (one-time cleanup)
-if (typeof window !== "undefined") {
-  try {
-    localStorage.removeItem("heartverse_entered");
-  } catch (e) {
-    // Ignore localStorage errors
-  }
-}
-
-// No persistence - ProfileBar should always start hidden on each page load
-export const useUIState = create<UIState>()((set) => ({
-  hasEnteredHeartverse: false,
-  setHasEnteredHeartverse: (value) => {
-    if (typeof window !== 'undefined') {
-      console.log("DEBUG useUIState setHasEnteredHeartverse", {
-        browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",
-        newValue: value,
-        timestamp: new Date().toISOString()
-      });
+// Enhanced Heartverse state with persistence and clear debugging
+export const useUIState = create<UIState>()(
+  persist(
+    (set, get) => ({
+      hasEnteredHeartverse: false,
+      setHasEnteredHeartverse: (value) => {
+        if (typeof window !== 'undefined') {
+          console.log("🚀 HeartverseState: setHasEnteredHeartverse", {
+            previousValue: get().hasEnteredHeartverse,
+            newValue: value,
+            timestamp: new Date().toISOString()
+          });
+        }
+        set({ hasEnteredHeartverse: value });
+      },
+      enterHeartverse: () => {
+        if (typeof window !== 'undefined') {
+          console.log("🚀 HeartverseState: enterHeartverse called", {
+            previousValue: get().hasEnteredHeartverse,
+            newValue: true,
+            timestamp: new Date().toISOString()
+          });
+        }
+        set({ hasEnteredHeartverse: true });
+      },
+      warpFullyComplete: false,
+      setWarpFullyComplete: (value) => {
+        if (typeof window !== 'undefined') {
+          console.log("🚀 HeartverseState: setWarpFullyComplete", {
+            previousValue: get().warpFullyComplete,
+            newValue: value,
+            timestamp: new Date().toISOString()
+          });
+        }
+        set({ warpFullyComplete: value });
+      },
+    }),
+    {
+      name: 'heartverse-state',
+      partialize: (state) => ({ hasEnteredHeartverse: state.hasEnteredHeartverse }),
     }
-    set({ hasEnteredHeartverse: value });
-  },
-  enterHeartverse: () => {
-    if (typeof window !== 'undefined') {
-      console.log("DEBUG useUIState enterHeartverse", {
-        browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",
-        timestamp: new Date().toISOString()
-      });
-    }
-    set({ hasEnteredHeartverse: true });
-  },
-  warpFullyComplete: false,
-  setWarpFullyComplete: (value) => {
-    if (typeof window !== 'undefined') {
-      console.log("DEBUG useUIState setWarpFullyComplete", {
-        browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",
-        newValue: value,
-        timestamp: new Date().toISOString()
-      });
-    }
-    set({ warpFullyComplete: value });
-  },
-}));
+  )
+);

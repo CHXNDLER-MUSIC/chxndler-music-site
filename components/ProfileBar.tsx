@@ -395,10 +395,8 @@ export default function ProfileBar({
   }, []);
 
 
-  // Only hide the bar if user hasn't entered Heartverse yet
-  if (!hasEnteredHeartverse) {
-    return null;
-  }
+  // ProfileBarWrapper already handles hasEnteredHeartverse check
+  // This component should always render when called (never dim/hide based on other conditions)
 
   // Calculate variables for render - single source of truth from shared contexts
   const isLoggedIn = !!user;

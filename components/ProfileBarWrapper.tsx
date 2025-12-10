@@ -9,8 +9,7 @@ type Props = React.ComponentProps<typeof ProfileBar> & {
   onOpenHeartCoin?: () => void;
 };
 
-// Wrapper that prevents any render until client hydration, then
-// conditionally shows the ProfileBar only after the user has entered.
+// Simplified wrapper that only depends on hasEnteredHeartverse
 export default function ProfileBarWrapper(props: Props) {
   // All hooks must be called before any early returns
   const hasEnteredHeartverse = useUIState((s) => s.hasEnteredHeartverse);
@@ -20,6 +19,15 @@ export default function ProfileBarWrapper(props: Props) {
     // Wait until client mount to avoid SSR/CSR mismatch and flashes
     setHydrated(true);
   }, []);
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log("🔧 ProfileBarWrapper state:", {
+      hydrated,
+      hasEnteredHeartverse,
+      willRender: hydrated && hasEnteredHeartverse
+    });
+  }, [hydrated, hasEnteredHeartverse]);
 
   // Early returns only after all hooks are called
   if (!hydrated) return null;

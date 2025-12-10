@@ -8,9 +8,10 @@ interface PopoutShellProps {
   onClose: () => void;
   children: ReactNode;
   pageIndicator?: string; // Optional, for binder's "1 / 6" display
+  compact?: boolean; // Optional, for compact height like badges
 }
 
-export default function PopoutShell({ title, onClose, children, pageIndicator }: PopoutShellProps) {
+export default function PopoutShell({ title, onClose, children, pageIndicator, compact = false }: PopoutShellProps) {
   return (
     <>
       {/* Backdrop overlay - no dimming */}
@@ -31,8 +32,8 @@ export default function PopoutShell({ title, onClose, children, pageIndicator }:
           style={{
             width: 'min(90vw, 650px)',
             height: 'auto',
-            maxHeight: '95vh',
-            minHeight: '400px',
+            maxHeight: compact ? '350px' : '95vh',
+            minHeight: compact ? '200px' : '400px',
             display: 'flex',
             flexDirection: 'column',
             padding: '0px',
@@ -124,7 +125,7 @@ export default function PopoutShell({ title, onClose, children, pageIndicator }:
           />
 
           {/* Content container - exact copy from Binder */}
-          <div className="flex-1 relative overflow-hidden" style={{ maxHeight: 'calc(100% - 80px)', display: 'flex', alignItems: 'center' }}>
+          <div className="flex-1 relative overflow-hidden" style={{ maxHeight: 'calc(100% - 80px)', display: 'flex', alignItems: compact ? 'flex-start' : 'center' }}>
             {children}
           </div>
 

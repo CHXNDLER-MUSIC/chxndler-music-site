@@ -19,6 +19,7 @@ import { ProfileProvider } from "@/contexts/ProfileContext";
 import { TourProvider } from "@/contexts/TourContext";
 import { MenuStateProvider } from "@/contexts/MenuStateContext";
 import CustomCursor from "@/components/CustomCursor";
+import HeartCoinCelebration from "@/components/HeartCoinCelebration";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://chxndler.world"),
@@ -149,6 +150,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <WhatShouldWeCallYouModal />
             <WhatElementAreYouModal />
             {children}
+            <HeartCoinCelebration />
                 </TourProvider>
               </MenuStateProvider>
             </AudioProvider>

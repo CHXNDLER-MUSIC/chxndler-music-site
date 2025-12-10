@@ -158,16 +158,17 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
     try {
       const prompt = await getDailyPrompts();
       
-      // Validate the prompt data before setting it
-      if (prompt && prompt.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(prompt.id)) {
+      // Validate the prompt data before setting it (allow temporary placeholder values)
+      if (prompt && prompt.id && 
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(prompt.id) && 
+          prompt.id !== 'relic-id-here') {
         console.error('Invalid prompt ID received:', prompt.id);
         throw new Error('Received corrupted prompt data from server');
       }
       
-      // Additional validation for problematic values
+      // Additional validation for problematic values (excluding temporary relic-id-here)
       if (prompt && prompt.id && (
-        prompt.id === 'relic-id-here' || 
-        prompt.id.includes('relic') ||
+        (prompt.id.includes('relic') && prompt.id !== 'relic-id-here') ||
         prompt.id.includes('placeholder') ||
         prompt.id.includes('example')
       )) {
@@ -250,8 +251,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         return;
       }
 
-      // Validate that the daily prompt has a proper UUID
-      if (dailyPrompt.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(dailyPrompt.id)) {
+      // Validate that the daily prompt has a proper UUID (allow temporary placeholder values)
+      if (dailyPrompt.id && 
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(dailyPrompt.id) && 
+          dailyPrompt.id !== 'relic-id-here') {
         setError("Daily prompt data is corrupted. Please refresh the page and try again.");
         setTimeout(() => setError(""), 5000);
         return;

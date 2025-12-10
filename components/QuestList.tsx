@@ -75,6 +75,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [secretPhrase, setSecretPhrase] = useState("");
   const [checkInMessage, setCheckInMessage] = useState("");
+  const [checkInError, setCheckInError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showSoulStare, setShowSoulStare] = useState(false);
   const [showJournal, setShowJournal] = useState(false);
@@ -251,12 +252,17 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   };
 
   const handleCheckInSubmit = async () => {
-    if (questStatus.liveShow || loading || !isAuthenticated) return;
+    if (questStatus.liveShow || loading || !isAuthenticated || !secretPhrase.trim()) return;
     
     try { sfx.play('click', 0.8); } catch {}
+    setLoading(true);
+    setCheckInError("");
     
-    if (secretPhrase.toLowerCase().trim()) {
-      setLoading(true);
+    // Simple secret phrase validation - you can modify this list
+    const validPhrases = ['heartverse', 'chxndler', 'liveshow', 'secret', 'music'];
+    const isValidPhrase = validPhrases.includes(secretPhrase.toLowerCase().trim());
+    
+    if (isValidPhrase) {
       try {
         const response = await fetch('/api/heart-coins/update', {
           method: 'POST',
@@ -268,25 +274,31 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         if (response.ok) {
           const data = await response.json();
           console.log('Heart coin update successful:', data);
-          setCheckInMessage("Welcome to the show. You've checked in! You received +5 HEART COINS.");
-          setSecretPhrase("");
           setQuestStatus(prev => ({ ...prev, liveShow: true }));
           // Save to localStorage to persist across sessions for today
           const today = new Date().toDateString();
           localStorage.setItem(`quest_liveshow_${today}`, 'true');
           showCelebration("🎵 Live show magic! You're part of something special tonight. +5 HeartCoins earned!");
+          setSecretPhrase("");
+          setShowCheckIn(false);
         } else {
           const errorData = await response.json();
           console.error('Heart coin update failed:', errorData);
-          setCheckInMessage("Error awarding heart coins. Please try again.");
+          setCheckInError("Error awarding heart coins. Please try again.");
         }
       } catch (error) {
         console.error('Failed to award heart coins:', error);
-        setCheckInMessage("Error awarding heart coins. Please try again.");
-      } finally {
-        setLoading(false);
+        setCheckInError("Error awarding heart coins. Please try again.");
       }
+    } else {
+      setCheckInError("INCORRECT SECRET PHRASE. TRY AGAIN");
+      setTimeout(() => {
+        setCheckInError("");
+        setSecretPhrase("");
+      }, 3000);
     }
+    
+    setLoading(false);
   };
 
   // Calculate quest progress
@@ -689,11 +701,15 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                   <p className="text-white/80 text-sm">Check in at a CHXNDLER show or stream to receive bonus HEART coins.</p>
                 ) : (
                   <div className="space-y-2">
+                    <p className="text-white/80 text-sm">ENTER SECRET PHRASE</p>
                     <input
                       type="text"
                       value={secretPhrase}
-                      onChange={(e) => setSecretPhrase(e.target.value)}
-                      placeholder="ENTER SECRET PHRASE"
+                      onChange={(e) => {
+                        setSecretPhrase(e.target.value);
+                        setCheckInError("");
+                      }}
+                      placeholder="Secret phrase..."
                       className="w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/40 shadow-sm focus:border-cyan-400 focus:outline-none"
                       style={{
                         boxShadow: '0 0 8px rgba(0,255,255,0.2)',
@@ -713,41 +729,48 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                         : () => {
                             try { sfx.play('click', 0.8); } catch {}
                             setShowCheckIn(true);
+                            setCheckInError("");
                           }
                   }
-                  disabled={questStatus.liveShow || !isAuthenticated || (showCheckIn && loading)}
-                  className={`px-4 py-2 rounded text-sm transition-all duration-200 ${
+                  disabled={questStatus.liveShow || !isAuthenticated || (showCheckIn && (!secretPhrase.trim() || loading))}
+                  className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 ${
                     questStatus.liveShow
                       ? 'bg-green-600/30 border border-green-500/50 text-green-300 cursor-not-allowed'
                       : !isAuthenticated
                         ? 'bg-gray-600/30 border border-gray-500/50 text-gray-300 cursor-not-allowed'
-                        : showCheckIn
-                          ? 'bg-cyan-600/30 hover:bg-cyan-600/40 border border-cyan-500/50 text-cyan-300'
-                          : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300'
+                        : showCheckIn && secretPhrase.trim()
+                          ? 'bg-black/30 border-2 border-[#F2EF1D] text-[#F2EF1D] hover:bg-[#F2EF1D]/10'
+                          : showCheckIn
+                            ? 'bg-gray-600/30 border border-gray-500/50 text-gray-300 cursor-not-allowed'
+                            : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300'
                   }`}
                   style={{
                     boxShadow: questStatus.liveShow
                       ? '0 0 10px rgba(0,255,0,0.3)'
                       : !isAuthenticated
                         ? '0 0 10px rgba(100,100,100,0.3)'
-                        : showCheckIn
-                          ? '0 0 10px rgba(0,255,255,0.3)'
-                          : '0 0 10px rgba(252,84,175,0.3)',
+                        : showCheckIn && secretPhrase.trim()
+                          ? '0 0 20px rgba(242,239,29,0.8), inset 0 0 10px rgba(242,239,29,0.2)'
+                          : showCheckIn
+                            ? '0 0 10px rgba(100,100,100,0.3)'
+                            : '0 0 10px rgba(252,84,175,0.3)',
                     textShadow: questStatus.liveShow
                       ? '0 0 4px rgba(0,255,0,0.6)'
                       : !isAuthenticated
                         ? '0 0 4px rgba(100,100,100,0.6)'
-                        : showCheckIn
-                          ? '0 0 4px rgba(0,255,255,0.6)'
-                          : '0 0 4px rgba(252,84,175,0.6)'
+                        : showCheckIn && secretPhrase.trim()
+                          ? '0 0 10px rgba(242,239,29,1)'
+                          : showCheckIn
+                            ? '0 0 4px rgba(100,100,100,0.6)'
+                            : '0 0 4px rgba(252,84,175,0.6)'
                   }}
                 >
                   {questStatus.liveShow 
-                    ? '✓ CHECKED IN' 
+                    ? 'COMPLETED' 
                     : !isAuthenticated 
                       ? 'LOG IN TO COMPLETE' 
                       : showCheckIn
-                        ? (loading ? 'SUBMITTING...' : 'SUBMIT')
+                        ? (loading ? 'CONFIRMING...' : secretPhrase.trim() ? 'CONFIRM' : 'ENTER PHRASE')
                         : 'CHECK IN'
                   }
                 </button>
@@ -771,23 +794,23 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                     ? '✓ Complete' 
                     : !isAuthenticated 
                       ? 'Log in to complete' 
-                      : '+1-5'
+                      : '+5'
                   }
                 </div>
               </div>
             </div>
 
-            {checkInMessage && (
+            {checkInError && (
               <div 
                 className="text-center p-3 rounded-lg"
                 style={{ 
-                  background: 'rgba(0,255,0,0.1)',
-                  border: '1px solid rgba(0,255,0,0.3)',
-                  color: '#00FF00',
-                  textShadow: '0 0 4px rgba(0,255,0,0.6)'
+                  background: 'rgba(255,0,150,0.1)',
+                  border: '1px solid rgba(255,0,150,0.4)',
+                  color: '#FF0096',
+                  textShadow: '0 0 4px rgba(255,0,150,0.6)'
                 }}
               >
-                {checkInMessage}
+                {checkInError}
               </div>
             )}
           </div>

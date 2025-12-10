@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import { triggerHeartCoinCelebration } from './heartcoinCelebration';
 
 /**
  * Award HeartCoins to a user by creating a transaction record.
@@ -51,6 +52,11 @@ export async function awardHeartCoins(
   }
 
   console.debug('✅ Successfully awarded HeartCoins:', { transactionId: data.id, userId, amount, reason });
+
+  // Trigger celebration event for exactly 1 HeartCoin in browser only
+  if (amount === 1) {
+    triggerHeartCoinCelebration(amount);
+  }
 }
 
 /**

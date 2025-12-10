@@ -2114,3 +2114,39 @@ button:hover > .heart-coin-glow,
 .animate-heartverse-word {
   animation: hvWordPing 0.4s ease-out;
 }
+
+/* HeartCoin Celebration Animations */
+@keyframes heartcoinPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+@keyframes heartcoinBackdropFade {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.heartcoin-pop {
+  animation: heartcoinPop 1.5s ease-out;
+}
+
+.heartcoin-backdrop-fade {
+  animation: heartcoinBackdropFade 1.5s ease-out;
+}

@@ -917,15 +917,16 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       // Call the RPC with correct parameters
       const { data, error } = await supabaseBrowser.rpc('purchase_item_with_heartcoins', {
         p_user_id: profile.id,
-        p_item_slug: item.slug,
-        p_cost: item.cost || item.priceHeartCoins
+        p_item_id: item.slug,
+        p_item_name: item.title,
+        p_price_heartcoins: item.cost || item.priceHeartCoins
       });
       
       if (error) {
         console.error('RPC Error:', error);
         
         // Check if it's an insufficient funds error
-        if (error.message?.includes('Not enough HeartCoins')) {
+        if (error.message?.includes('Insufficient HeartCoins')) {
           // Insufficient HeartCoins - UI will show this state
           setIsProcessing(false);
           return;

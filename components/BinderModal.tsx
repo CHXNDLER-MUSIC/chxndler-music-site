@@ -1162,7 +1162,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                 
                 {/* Right arrow to go to second page - positioned within popup on the right side */}
                 <div 
-                  className="absolute -right-1 top-1/2 transform -translate-y-1/2 z-10"
+                  className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
                   style={{
                     pointerEvents: 'auto'
                   }}
@@ -1292,7 +1292,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page - positioned within popup on the right side */}
                   <div 
-                    className="absolute -right-1 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -1423,7 +1423,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page */}
                   <div 
-                    className="absolute -right-1 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -1554,7 +1554,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page */}
                   <div 
-                    className="absolute -right-1 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}
@@ -1685,7 +1685,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   
                   {/* Right arrow to go to next page */}
                   <div 
-                    className="absolute -right-1 top-1/2 transform -translate-y-1/2 z-10"
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
                     style={{
                       pointerEvents: 'auto'
                     }}

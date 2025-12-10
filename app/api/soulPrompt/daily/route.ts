@@ -106,16 +106,20 @@ export async function GET(request: NextRequest) {
         throw new Error('Invalid daily prompt structure in database');
       }
 
-      // Validate that the daily prompt ID is a proper UUID
+      // Validate that the daily prompt ID is a proper UUID (allow temporary relic-id-here)
       const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(dailyPrompt.id);
-      const isProblematicValue = dailyPrompt.id === 'relic-id-here' || 
-                                dailyPrompt.id.includes('relic') ||
+      const isProblematicValue = (dailyPrompt.id.includes('relic') && dailyPrompt.id !== 'relic-id-here') ||
                                 dailyPrompt.id.includes('placeholder') ||
                                 dailyPrompt.id.includes('example');
 
-      if (!isValidUUID || isProblematicValue) {
-        console.error('Invalid or problematic daily prompt ID in database:', dailyPrompt.id);
+      if (!isValidUUID && dailyPrompt.id !== 'relic-id-here') {
+        console.error('Invalid daily prompt ID in database:', dailyPrompt.id);
         throw new Error('Daily prompt data is corrupted in the database. Please contact support.');
+      }
+
+      if (isProblematicValue) {
+        console.error('Problematic daily prompt ID in database:', dailyPrompt.id);
+        throw new Error('Daily prompt data contains placeholder values in the database. Please contact support.');
       }
 
       return NextResponse.json({

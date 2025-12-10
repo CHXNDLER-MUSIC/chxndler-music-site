@@ -182,6 +182,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                     }
                     handleItemClick(item.label);
                   }}
+                  onMouseEnter={handleHover}
                   data-tour-id={
                     item.label === "ABOUT" ? "menu-about" :
                     (item.label === "JOURNEY" || item.label === "MY JOURNEY") ? "menu-journey" :

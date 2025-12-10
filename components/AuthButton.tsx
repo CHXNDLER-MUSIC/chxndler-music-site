@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useProfile } from '@/contexts/ProfileContext';
+import { useUIState } from '@/lib/use-ui-state';
 import { sfx } from '@/lib/sfx';
 import WelcomeHomeModal from '@/components/WelcomeHomeModal';
 import ProfilePopover from '@/components/ProfilePopover';
@@ -12,6 +13,7 @@ import { ElementIcon } from '@/lib/elementIcons';
 export default function AuthButton() {
   const { user, loading: authLoading, clearSession } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
+  const hasEnteredHeartverse = useUIState((state) => state.hasEnteredHeartverse);
   const [showWelcomeHome, setShowWelcomeHome] = useState(false);
   const [showProfilePopover, setShowProfilePopover] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -19,7 +21,7 @@ export default function AuthButton() {
 
   // Debug log auth and profile states
   useEffect(() => {
-    console.log('DEBUG AuthButton state:', {
+    console.log('🔧 AuthButton state:', {
       browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",
       hasUser: !!user,
       userId: user?.id,
@@ -29,9 +31,12 @@ export default function AuthButton() {
       profileComplete: profile?.profile_complete,
       authLoading,
       profileLoading,
+      hasEnteredHeartverse,
+      isDimmed: !hasEnteredHeartverse,
+      isDisabled: !hasEnteredHeartverse && (authLoading || profileLoading),
       timestamp: new Date().toISOString()
     });
-  }, [user, profile, authLoading, profileLoading]);
+  }, [user, profile, authLoading, profileLoading, hasEnteredHeartverse]);
 
   // Debug keyboard shortcut to clear session (Ctrl+Alt+C)
   useEffect(() => {
@@ -100,11 +105,12 @@ export default function AuthButton() {
 
   // Handle button click
   const handleButtonClick = () => {
-    console.log('AuthButton: Click handler called', { buttonMode, authLoading, profileLoading });
+    console.log('AuthButton: Click handler called', { buttonMode, authLoading, profileLoading, hasEnteredHeartverse });
     try { sfx.play('click', 0.4); } catch {}
 
-    if (authLoading || profileLoading) {
-      console.log('AuthButton: Click blocked due to loading state');
+    // Only disable clicks before entering Heartverse
+    if (!hasEnteredHeartverse && (authLoading || profileLoading)) {
+      console.log('AuthButton: Click blocked due to loading state before Heartverse entry');
       return;
     }
 
@@ -137,6 +143,10 @@ export default function AuthButton() {
 
   const { text: displayName, mode: buttonMode } = getButtonDisplayInfo();
   const currentElement = profile?.element || null;
+  
+  // Single source of truth for dimming: ONLY before entering Heartverse
+  const isDimmed = !hasEnteredHeartverse;
+  const isDisabled = !hasEnteredHeartverse && (authLoading || profileLoading);
 
   return (
     <>
@@ -145,13 +155,15 @@ export default function AuthButton() {
         ref={buttonRef}
         onClick={handleButtonClick}
         onKeyDown={(e) => {
-          if ((e.key === 'Enter' || e.key === ' ') && !authLoading && !profileLoading) {
+          if ((e.key === 'Enter' || e.key === ' ') && !isDisabled) {
             e.preventDefault();
             handleButtonClick();
           }
         }}
-        disabled={authLoading || profileLoading}
-        className="flex items-center font-medium text-lg relative flex-shrink-0 transition-all duration-200 cursor-pointer bg-transparent border-none focus:outline-none disabled:opacity-50 rounded pointer-events-auto"
+        disabled={isDisabled}
+        className={`flex items-center font-medium text-lg relative flex-shrink-0 transition-all duration-200 cursor-pointer bg-transparent border-none focus:outline-none rounded pointer-events-auto ${
+          isDimmed ? 'opacity-50 pointer-events-none' : 'opacity-100 pointer-events-auto'
+        }`}
         style={{ 
           color: getUsernameColor(currentElement),
           filter: 'brightness(1.2)',
@@ -167,13 +179,13 @@ export default function AuthButton() {
             : "Click to view your profile"
         }
         onMouseEnter={(e) => {
-          if (!authLoading && !profileLoading) {
+          if (!isDisabled && hasEnteredHeartverse) {
             try { sfx.play('hover', 0.8); } catch {}
             e.currentTarget.style.transform = 'scale(1.05)';
           }
         }}
         onMouseLeave={(e) => {
-          if (!authLoading && !profileLoading) {
+          if (!isDisabled && hasEnteredHeartverse) {
             e.currentTarget.style.transform = 'scale(1)';
           }
         }}

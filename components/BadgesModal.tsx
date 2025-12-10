@@ -342,8 +342,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     }
 
     return (
-      <PopoutShell title={categoryInfo?.displayName || "CATEGORY"} onClose={onClose}>
-        <div className="relative" style={{ overflow: 'hidden' }}>
+      <PopoutShell title={categoryInfo?.displayName || "CATEGORY"} onClose={onClose} compact={true}>
+        <div className="relative badges-modal-container" style={{ overflow: 'hidden' }}>
           {/* Hide all navigation elements in badges modal */}
           <style jsx global>{`
             /* Hide navigation arrows and pagination */
@@ -363,6 +363,10 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             .binder-hologram-container button.absolute,
             [data-badges-modal] button.absolute:not([class*="top-4"]) {
               display: none !important;
+            }
+            /* Clean up compact badges modal */
+            .badges-modal-container .binder-hologram-container {
+              height: fit-content !important;
             }
           `}</style>
           <div data-badges-modal>
@@ -435,9 +439,9 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           />
           
           {/* Content container */}
-          <div className="flex flex-col items-center justify-center space-y-2 pt-6 -mb-4">
+          <div className="flex flex-col items-center justify-start space-y-1 pt-2 pb-0">
               {/* Top row - first 3 categories */}
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-3 gap-4">
                 {badgeCategories.slice(0, 3).map((category) => {
                   const displayInfo = getCategoryDisplayInfo(category);
                   return (
@@ -466,7 +470,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
               </div>
               
               {/* Bottom row - last 3 categories */}
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-3 gap-4">
                 {badgeCategories.slice(3, 6).map((category) => {
                   const displayInfo = getCategoryDisplayInfo(category);
                   return (
@@ -504,8 +508,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   }
 
   return (
-    <PopoutShell title="BADGES" onClose={onClose}>
-      <div className="relative" style={{ overflow: 'hidden' }}>
+    <PopoutShell title="BADGES" onClose={onClose} compact={true}>
+      <div className="relative badges-modal-container" style={{ overflow: 'hidden' }}>
         {/* Hide all navigation elements in badges modal */}
         <style jsx global>{`
           /* Hide navigation arrows and pagination */
@@ -525,6 +529,10 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           .binder-hologram-container button.absolute,
           [data-badges-modal] button.absolute:not([class*="top-4"]) {
             display: none !important;
+          }
+          /* Clean up compact badges modal */
+          .badges-modal-container .binder-hologram-container {
+            height: fit-content !important;
           }
         `}</style>
         <div data-badges-modal>
