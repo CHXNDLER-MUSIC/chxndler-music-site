@@ -162,6 +162,7 @@ type AudioControls = {
   loadTrack: (src: string) => void;
   play: () => void;
   pause: () => void;
+  togglePlayPause: () => void;
   seek: (t: number) => void;
   setVolume: (v: number) => void;
   playTrack: (trackId: string) => Promise<void>;
@@ -319,6 +320,32 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       try { a.pause(); } catch {} 
     },
     
+    togglePlayPause: () => {
+      const a = audioRef.current;
+      if (!a) return;
+      
+      if (state.playing) {
+        try { a.pause(); } catch {}
+      } else {
+        // If no track loaded, load space music as default
+        if (!a.src || a.src === 'null' || a.src === '') {
+          console.log('🎵 No track loaded, loading space music as default');
+          const spaceMusicSource = bestSourceFor(TRACKS.SPACE_MUSIC);
+          a.src = spaceMusicSource;
+          try { a.load(); } catch {}
+          setState(s => ({ 
+            ...s, 
+            src: spaceMusicSource, 
+            currentTrack: TRACK_INFO['space-music'] || null 
+          }));
+        }
+        
+        void a.play().catch((err) => {
+          console.error('Failed to toggle play audio:', err);
+        });
+      }
+    },
+    
     seek: (t: number) => { 
       const a = audioRef.current; 
       if (!a) return; 
@@ -441,30 +468,33 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         // Play button beam effect  
         await playAudioOnce(SFX.BUTTON_BEAM);
         
-        // Play appropriate welcome message + space music background
+        // Play appropriate welcome message
         if (isLoggedIn) {
-          // Play welcome back + space music
-          const welcomeBackAudio = new Audio("/tracks/welcome-back.opus");
-          welcomeBackAudio.volume = 0.7;
-          welcomeBackAudio.play().catch(console.error);
-          
-          // Removed: automatic space music playback
-          // const spaceMusicAudio = new Audio("/tracks/space-music.opus");
-          // spaceMusicAudio.volume = 0.5;
-          // spaceMusicAudio.loop = true;
-          // spaceMusicAudio.play().catch(console.error);
+          // Play welcome back message
+          await playAudioOnce(bestSourceFor(TRACKS.WELCOME_BACK));
         } else {
-          // Play welcome to heartverse + space music
-          const welcomeToHeartrverseAudio = new Audio("/tracks/welcome-to-the-heartverse.opus");
-          welcomeToHeartrverseAudio.volume = 0.7;
-          welcomeToHeartrverseAudio.play().catch(console.error);
-          
-          // Removed: automatic space music playback
-          // const spaceMusicAudio = new Audio("/tracks/space-music.opus");
-          // spaceMusicAudio.volume = 0.5;
-          // spaceMusicAudio.loop = true;
-          // spaceMusicAudio.play().catch(console.error);
+          // Play welcome to heartverse message
+          await playAudioOnce(bestSourceFor(TRACKS.WELCOME_TO_HEARTVERSE));
         }
+        
+        // After all SFX complete, start space music on the global player
+        console.log('🎵 Start sequence complete, loading space music...');
+        
+        // Load space music track into the global player
+        const spaceMusicSource = bestSourceFor(TRACKS.SPACE_MUSIC);
+        api.loadTrack(spaceMusicSource);
+        
+        // Set space music as current track
+        const spaceMusicInfo = TRACK_INFO['space-music'];
+        if (spaceMusicInfo) {
+          setState(s => ({ ...s, currentTrack: spaceMusicInfo }));
+        }
+        
+        // Auto-play space music after a brief delay
+        setTimeout(() => {
+          console.log('🎵 Auto-playing space music after warp completion');
+          api.play();
+        }, 200);
         
       } catch (err) {
         console.error('Failed to play start sequence:', err);
@@ -492,7 +522,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     // Expose currentTrack for compatibility
     currentTrack: state.currentTrack,
     
-  }), [state.src, state.currentTrack]);
+  }), [state.src, state.currentTrack, state.playing]);
 
   // Auto-play track when warp completes
   useEffect(() => {

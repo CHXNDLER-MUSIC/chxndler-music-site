@@ -2127,55 +2127,30 @@ const HUDPanel = React.memo(function HUDPanel({
     try { sfx.play('click', 0.3); } catch {}
   };
 
-  // Toggle play/pause
+  // Toggle play/pause using unified audio system
   const handlePlayPause = () => {
     try { sfx.play('click', 0.6); } catch {}
     
-    // Track ambient audio on homepage, main player when song selected
-    const audioSelector = !currentId ? 'audio[data-ambient="1"]' : 'audio[data-audio-player="1"]';
-    const a = document.querySelector(audioSelector);
-    
-    if (!a) {
-      if (DEBUG_MEDIA) dlog('HUDPanel: no audio element found for play/pause', { selector: audioSelector, currentId });
-      return;
-    }
-    
-    if (!currentId) {
-      // Homepage: directly toggle ambient (space-music.mp3)
-      try {
-        if (a.paused) {
-          // Clear user-paused flag and try to resume ambient
-          try { window.dispatchEvent(new CustomEvent('ambient:userPlay')); } catch {}
-          try { a.muted = false; } catch {}
-          a.play().catch(() => {});
-        } else {
-          // Pause ambient and mark as user-paused to prevent auto-resume
-          a.pause();
-          try { window.dispatchEvent(new CustomEvent('ambient:userPause')); } catch {}
-        }
-      } catch {}
-      return;
-    } else {
-      // When a song is selected, prefer the MediaPlayer's toggle API to keep
-      // internal state machine, timers, and audio coordinator in sync.
-      try {
-        const api = (window || {});
-        if (api && typeof api.mainPlayerToggle === 'function') {
-          api.mainPlayerToggle();
-          return;
-        }
-      } catch {}
-
-      // Fallback: directly toggle the audio element
-      try {
-        if (a.paused) {
-          // Ensure unmuted before attempting play
-          try { a.muted = false; } catch {}
-          a.play().catch(() => {});
-        } else {
-          a.pause();
-        }
-      } catch {}
+    // Use the unified audio system for all play/pause operations
+    try {
+      audioManager.togglePlayPause();
+    } catch (err) {
+      console.error('Failed to toggle play/pause via unified audio system:', err);
+      
+      // Fallback to legacy DOM-based approach if unified system fails
+      const audioSelector = !currentId ? 'audio[data-ambient="1"]' : 'audio[data-audio-player="1"]';
+      const a = document.querySelector(audioSelector);
+      
+      if (a) {
+        try {
+          if (a.paused) {
+            try { a.muted = false; } catch {}
+            a.play().catch(() => {});
+          } else {
+            a.pause();
+          }
+        } catch {}
+      }
     }
   };
 

@@ -581,7 +581,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
         {showHistory ? (
           /* History View */
-          <div className="space-y-2 overflow-y-auto" style={{ height: '400px' }}>
+          <div className="space-y-2 overflow-y-auto" style={{ height: '350px' }}>
             {journalEntries.length === 0 ? (
               <div 
                 className="text-center p-6 rounded-lg"
@@ -880,7 +880,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           </div>
         ) : (
           /* Today's Journal Interface */
-          <div style={{ height: 'auto', maxHeight: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ height: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
             {/* Date and Element with pending notification */}
             <div className="text-center mb-2">
               <div 

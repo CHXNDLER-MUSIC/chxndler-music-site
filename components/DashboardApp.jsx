@@ -19,7 +19,8 @@ const HUDPanel = dynamic(() => import("@/components/HUDPanel"), { ssr: false });
 const HoloHUD = dynamic(() => import("@/components/HoloHUD"), { ssr: false });
 import { skyFor, introSky } from "@/lib/sky";
 import { youtubeSkyFor, HOME_YOUTUBE_SKY } from "@/lib/sky-youtube";
-const MediaPlayer = dynamic(() => import("@/components/MediaPlayer"), { ssr: false });
+// MediaPlayer disabled - using unified audio system instead
+// const MediaPlayer = dynamic(() => import("@/components/MediaPlayer"), { ssr: false });
 import { sfx } from "@/lib/sfx";
 import { LINKS, POS } from "@/config/cockpit";
 import { tracks } from "@/lib/songs-consolidated";
@@ -754,8 +755,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       }, 300);
     }
     
-    // MediaPlayer channel change will be handled after warp and join-alien SFX complete
-    // This is done in the onWarpSfxEnd handler to ensure proper timing
+    // Audio channel change is now handled by the unified audio system
+    // Track switching is handled after warp completion
   }
 
   // Trigger a fly transition only when the channel index actually changes (not on initial mount)
@@ -1239,18 +1240,20 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       }
     }, WARP_DURATION_MS + 500); // Add 500ms buffer beyond the expected warp duration
     
-    // Stop any existing audio
+    // Stop any existing audio using the unified audio system
     try {
-      const audioEl = document.querySelector('audio[data-audio-player="1"]');
-      if (audioEl) {
-        audioEl.pause();
-        audioEl.currentTime = 0;
-        audioEl.muted = true;
-      }
+      audioManager.stopAllAudio();
       setIsPlaying(false);
       playerStore.setState({ mainId: null });
     } catch (e) {
       console.error("Error stopping audio (non-critical):", e);
+    }
+
+    // Trigger the unified audio start sequence (warp + welcome + space music)
+    try {
+      audioManager.playStartSequence(false).catch(console.error);
+    } catch (e) {
+      console.error("Error starting audio sequence (non-critical):", e);
     }
 
     // When warp finishes, move to landed phase
@@ -1260,9 +1263,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       }
       setUiPhase("landed");
       startInFlightRef.current = false;
-      
-      // Mark warp as completed for unified audio system
-      try { unifiedAudio?.markWarpCompleted(); } catch {}
       
       // CRITICAL: Mark user has entered Heartverse to show profile bar
       try { 
@@ -1286,7 +1286,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       
     }, WARP_DURATION_MS);
     
-  }, []);
+  }, [audioManager]);
 
   // Handle opening journal: opens journal view in Soul Sky popover
   const handleOpenJournal = React.useCallback(() => {
@@ -1903,7 +1903,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             startInFlightRef.current = false;
             
             // Mark warp as completed for unified audio system
-            try { unifiedAudio?.markWarpCompleted(); } catch {}
+            try { audioManager?.markWarpCompleted(); } catch {}
             
             // Ensure user entered Heartverse state
             try { 
@@ -2184,8 +2184,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             try { playerStore.getState().setPlanetsVisible(false); } catch {}
             try { setHomeMode(false); } catch {}
           }
-          // MediaPlayer will handle its own pause/resume logic for song changes
-          // Don't interfere with audio here - let MediaPlayer manage it
+          // Unified audio system will handle its own pause/resume logic for song changes
+          // Don't interfere with audio here - let the unified system manage it
         }}
         onFlyEnd={() => {
           // Clear Start in-flight lock once warp fully ends
@@ -2360,7 +2360,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             const startSong = () => { 
               
               clearTimeout(failsafeTimer); // Clear the failsafe timer
-              // Small delay to ensure MediaPlayer has set up the audio element properly
+              // Small delay to ensure unified audio system has set up the audio element properly
               setTimeout(() => {
                 console.log('🎵 PLAY SIGNAL TRIGGERED - initialSlug autoplay');
                 try {
@@ -2373,7 +2373,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 setPendingTrackPlay(false); 
                 buttonSfxWaitRef.current = null;
                 
-              }, 100); // 100ms delay to allow MediaPlayer to set up
+              }, 100); // 100ms delay to allow unified audio system to set up
             };
             // Always wait for join-alien SFX to complete (with a safety cap) before starting
             try {

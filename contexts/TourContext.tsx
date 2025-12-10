@@ -29,7 +29,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const [welcomeVisible, setWelcomeVisible] = useState(false);
   const autostartGuard = useRef(false);
 
-  // Helpers for localStorage fallback
+  // Helpers for localStorage fallback (stable functions that don't change)
   const isCompleted = useCallback(() => {
     try { return localStorage.getItem(LS_KEYS.completed) === "1"; } catch { return false; }
   }, []);
@@ -47,11 +47,11 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const start = useCallback(() => {
-    clearDisabled();
+    try { localStorage.removeItem(LS_KEYS.disabled); } catch {}
     setEndModalVisible(false);
     setWelcomeVisible(false);
     setActive(true);
-  }, [clearDisabled]);
+  }, []);
 
   const finish = useCallback(async () => {
     setActive(false);
@@ -114,7 +114,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       // show welcome a tick later so UI settles after the last modal
       setTimeout(() => setWelcomeVisible(true), 250);
     }
-  }, [profile, start, isCompleted, isDisabled]);
+  }, [profile]);
 
   // Listen to a global event for explicit start (emitted on ENTER THE HEARTVERSE if needed)
   useEffect(() => {

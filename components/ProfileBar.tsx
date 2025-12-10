@@ -470,25 +470,6 @@ export default function ProfileBar({
                 onBeamColorChange={onBeamColorChange}
               />
               
-              {/* Heart Coin Count */}
-              <span 
-                className="font-bold text-lg"
-                style={{ 
-                  color: '#FFFFFF',
-                  textShadow: `
-                    0 0 5px #FFFFFF,
-                    0 0 10px #FFFFFF,
-                    0 0 15px #FFFFFF,
-                    0 0 20px #FFFFFF,
-                    0 0 25px #FFFFFF,
-                    0 0 30px #FFFFFF
-                  `,
-                  filter: 'brightness(1.5)',
-                  letterSpacing: '0.05em'
-                }}
-              >
-                {heartCoinBalance}
-              </span>
             </div>
           </div>
         </div>

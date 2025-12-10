@@ -247,6 +247,7 @@ export default function ChatPanel({ isOpen, onClose }) {
   const [badgeStartIndex, setBadgeStartIndex] = useState(0);
   const [binderStartIndex, setBinderStartIndex] = useState(0);
   const [selectedCardPopup, setSelectedCardPopup] = useState(null);
+  const [cardFlipped, setCardFlipped] = useState(false);
   const [activeTab, setActiveTab] = useState('chat'); // 'chat', 'voting', 'badges', 'cards'
   const [isVotingPanelCollapsed, setIsVotingPanelCollapsed] = useState(false); // Start expanded by default
   const channelRef = useRef(null);
@@ -1611,6 +1612,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                           rarity: cardSong.rarity,
                                           isReleased: cardSong.is_released
                                         });
+                                        setCardFlipped(false); // Reset flip state when opening new card
                                       }
                                     }}
                                   >
@@ -1833,35 +1835,29 @@ export default function ChatPanel({ isOpen, onClose }) {
       {/* Card Popup Modal */}
       {selectedCardPopup && (
         <div
-          className="absolute inset-0 z-[120] flex items-center justify-center p-4"
+          className="absolute inset-0 z-[120] flex items-center justify-center p-8"
           style={{
             background: 'rgba(0, 0, 0, 0.8)'
           }}
-          onClick={() => setSelectedCardPopup(null)}
+          onClick={() => {
+            setSelectedCardPopup(null);
+            setCardFlipped(false);
+          }}
         >
           <div
-            className="relative w-48 aspect-[2/3] max-h-[50vh]"
+            className="relative w-60 aspect-[2/3] max-h-[70vh]"
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: `
-                linear-gradient(135deg, 
-                  rgba(0, 0, 0, 0.05) 0%,
-                  rgba(0, 20, 40, 0.03) 50%,
-                  rgba(0, 0, 0, 0.05) 100%
-                )
-              `,
-              boxShadow: `
-                0 0 50px rgba(242, 239, 29, 0.08),
-                inset 0 0 100px rgba(242, 239, 29, 0.01),
-                0 0 30px rgba(255, 105, 180, 0.3)
-              `,
-              backdropFilter: 'blur(2px)',
-              borderRadius: '12px',
-              border: '2px solid rgba(255, 105, 180, 0.4)'
+              perspective: '1000px',
+              animation: 'cardPulse 2s ease-in-out infinite'
             }}
           >
-            {/* Close button */}
-            <button
+            <div
+              className="w-full h-full transition-transform duration-700 preserve-3d cursor-pointer"
+              style={{
+                transformStyle: 'preserve-3d',
+                transform: cardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+              }}
               onClick={() => {
                 try {
                   const audio = new Audio('/audio/click.mp3');
@@ -1872,9 +1868,149 @@ export default function ChatPanel({ isOpen, onClose }) {
                 } catch (error) {
                   console.log('Click audio creation failed:', error);
                 }
-                setSelectedCardPopup(null);
+                setCardFlipped(!cardFlipped);
               }}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 z-10"
+            >
+              {/* Front of card */}
+              <div
+                className="absolute inset-0 rounded-lg backface-hidden"
+                style={{
+                  backfaceVisibility: 'hidden',
+                  background: `
+                    linear-gradient(135deg, 
+                      rgba(0, 0, 0, 0.05) 0%,
+                      rgba(0, 20, 40, 0.03) 50%,
+                      rgba(0, 0, 0, 0.05) 100%
+                    )
+                  `,
+                  boxShadow: `
+                    0 0 50px rgba(242, 239, 29, 0.08),
+                    inset 0 0 100px rgba(242, 239, 29, 0.01),
+                    0 0 30px rgba(255, 105, 180, 0.3)
+                  `,
+                  backdropFilter: 'blur(2px)',
+                  border: '2px solid rgba(255, 105, 180, 0.4)'
+                }}
+              >
+                {/* Card front image */}
+                <div className="w-full h-full rounded-lg overflow-hidden relative">
+                  <img
+                    src={selectedCardPopup.image}
+                    alt={selectedCardPopup.name}
+                    className="w-full h-full object-cover"
+                    style={{
+                      boxShadow: '0 0 30px rgba(255,105,180,0.6)',
+                    }}
+                    onError={(e) => {
+                      // Fallback display if image fails to load
+                      const target = e.target;
+                      target.style.display = 'none';
+                      const parent = target.parentElement;
+                      if (parent) {
+                        const elementDisplay = getElementDisplay(selectedCardPopup.element);
+                        parent.innerHTML = `
+                          <div class="w-full h-full rounded-lg bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-400/50 flex flex-col items-center justify-center p-4">
+                            <div class="text-6xl mb-4" style="color: ${elementDisplay?.color || '#FFB6C1'}; filter: drop-shadow(0 0 8px rgba(255,182,193,0.8))">
+                              ${elementDisplay?.icon || '🎵'}
+                            </div>
+                            <div class="text-xl font-bold text-center leading-tight" style="color: #FFB6C1; text-shadow: 0 0 8px rgba(255,182,193,0.6)">
+                              ${selectedCardPopup.name}
+                            </div>
+                            <div class="text-sm mt-2" style="color: #FFB6C1; opacity: 0.8">
+                              ${selectedCardPopup.element} • ${selectedCardPopup.rarity}
+                            </div>
+                          </div>
+                        `;
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Back of card */}
+              <div
+                className="absolute inset-0 rounded-lg backface-hidden"
+                style={{
+                  backfaceVisibility: 'hidden',
+                  transform: 'rotateY(180deg)',
+                  background: `
+                    linear-gradient(135deg, 
+                      rgba(30, 30, 60, 0.9) 0%,
+                      rgba(20, 20, 40, 0.95) 50%,
+                      rgba(10, 10, 30, 0.9) 100%
+                    )
+                  `,
+                  boxShadow: `
+                    0 0 50px rgba(242, 239, 29, 0.08),
+                    inset 0 0 100px rgba(242, 239, 29, 0.01),
+                    0 0 30px rgba(255, 105, 180, 0.3)
+                  `,
+                  backdropFilter: 'blur(2px)',
+                  border: '2px solid rgba(255, 105, 180, 0.4)'
+                }}
+              >
+                <div className="w-full h-full rounded-lg overflow-hidden relative flex flex-col items-center justify-center p-6">
+                  {/* CHXNDLER logo/branding */}
+                  <div className="text-center space-y-4">
+                    <div 
+                      className="text-2xl font-bold"
+                      style={{
+                        color: '#F2EF1D',
+                        textShadow: '0 0 10px #F2EF1D, 0 0 20px #F2EF1D',
+                        letterSpacing: '0.1em'
+                      }}
+                    >
+                      CHXNDLER
+                    </div>
+                    <div 
+                      className="text-sm font-medium opacity-80"
+                      style={{
+                        color: '#FF69B4',
+                        textShadow: '0 0 8px rgba(255, 105, 180, 0.6)'
+                      }}
+                    >
+                      MUSIC COLLECTION
+                    </div>
+                    
+                    {/* Decorative pattern */}
+                    <div className="flex justify-center space-x-2 py-4">
+                      <div className="w-2 h-2 rounded-full" style={{ background: '#F2EF1D', boxShadow: '0 0 8px #F2EF1D' }}></div>
+                      <div className="w-2 h-2 rounded-full" style={{ background: '#FF69B4', boxShadow: '0 0 8px #FF69B4' }}></div>
+                      <div className="w-2 h-2 rounded-full" style={{ background: '#00FFFF', boxShadow: '0 0 8px #00FFFF' }}></div>
+                    </div>
+                    
+                    {/* Card info */}
+                    <div className="text-xs text-white/60 space-y-1">
+                      <div>{selectedCardPopup.element} Element</div>
+                      <div>{selectedCardPopup.rarity} Rarity</div>
+                      {selectedCardPopup.isReleased ? (
+                        <div className="text-green-400">Released</div>
+                      ) : (
+                        <div className="text-yellow-400">Unreleased</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Close button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                try {
+                  const audio = new Audio('/audio/click.mp3');
+                  audio.volume = 0.3;
+                  audio.play().catch(error => {
+                    console.log('Click audio play failed:', error);
+                  });
+                } catch (error) {
+                  console.log('Click audio creation failed:', error);
+                }
+                setSelectedCardPopup(null);
+                setCardFlipped(false);
+              }}
+              className="absolute -top-4 -right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 z-10"
               style={{
                 background: 'rgba(242, 239, 29, 0.2)',
                 border: '1px solid rgba(242, 239, 29, 0.6)',
@@ -1886,41 +2022,6 @@ export default function ChatPanel({ isOpen, onClose }) {
             >
               ×
             </button>
-
-            {/* Card image */}
-            <div className="w-full h-full rounded-lg overflow-hidden relative">
-              <img
-                src={selectedCardPopup.image}
-                alt={selectedCardPopup.name}
-                className="w-full h-full object-cover"
-                style={{
-                  boxShadow: '0 0 30px rgba(255,105,180,0.6)',
-                }}
-                onError={(e) => {
-                  // Fallback display if image fails to load
-                  const target = e.target;
-                  target.style.display = 'none';
-                  const parent = target.parentElement;
-                  if (parent) {
-                    const elementDisplay = getElementDisplay(selectedCardPopup.element);
-                    parent.innerHTML = `
-                      <div class="w-full h-full rounded-lg bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-400/50 flex flex-col items-center justify-center p-4">
-                        <div class="text-6xl mb-4" style="color: ${elementDisplay?.color || '#FFB6C1'}; filter: drop-shadow(0 0 8px rgba(255,182,193,0.8))">
-                          ${elementDisplay?.icon || '🎵'}
-                        </div>
-                        <div class="text-xl font-bold text-center leading-tight" style="color: #FFB6C1; text-shadow: 0 0 8px rgba(255,182,193,0.6)">
-                          ${selectedCardPopup.name}
-                        </div>
-                        <div class="text-sm mt-2" style="color: #FFB6C1; opacity: 0.8">
-                          ${selectedCardPopup.element} • ${selectedCardPopup.rarity}
-                        </div>
-                      </div>
-                    `;
-                  }
-                }}
-              />
-            </div>
-
           </div>
         </div>
       )}
@@ -1951,6 +2052,26 @@ export default function ChatPanel({ isOpen, onClose }) {
                 opacity: 0.3;
                 box-shadow: 0 0 5px rgba(242, 239, 29, 0.4);
               }
+            }
+            @keyframes cardPulse {
+              0% { 
+                transform: scale(1);
+                filter: brightness(1) drop-shadow(0 0 20px rgba(255, 105, 180, 0.3));
+              }
+              50% { 
+                transform: scale(1.02);
+                filter: brightness(1.1) drop-shadow(0 0 30px rgba(255, 105, 180, 0.5));
+              }
+              100% { 
+                transform: scale(1);
+                filter: brightness(1) drop-shadow(0 0 20px rgba(255, 105, 180, 0.3));
+              }
+            }
+            .preserve-3d {
+              transform-style: preserve-3d;
+            }
+            .backface-hidden {
+              backface-visibility: hidden;
             }
           `}</style>
         </>

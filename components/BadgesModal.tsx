@@ -33,6 +33,7 @@ type Props = {
 
 export default function BadgesModal({ open, onClose, embedded = false }: Props) {
   const { profile, allBadges, userBadges, badgesLoading, badgesError } = useProfile();
+  
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedBadge, setSelectedBadge] = useState<BadgeDisplay | null>(null);
 
@@ -47,50 +48,54 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
 
   // Get badge categories organized with all badges (locked and unlocked)
   const getBadgeCategories = (): BadgeCategoryData[] => {
-    return [
+    // Always show all 6 categories regardless of badge loading state
+    const categories = [
       {
         id: 'soul',
-        name: 'SOUL STAR',
+        name: 'SOUL STAR', 
         displayName: 'SOUL STAR',
-        badges: badgesWithUnlocked.filter(badge => badge.category === 'soul'),
+        badges: allBadges.length > 0 ? badgesWithUnlocked.filter(badge => badge.category === 'soul') : [],
         image: '/badges/soul star.webp'
       },
       {
         id: 'collector',
         name: 'COLLECTOR',
-        displayName: 'COLLECTOR',
-        badges: badgesWithUnlocked.filter(badge => badge.category === 'collector'),
+        displayName: 'COLLECTOR', 
+        badges: allBadges.length > 0 ? badgesWithUnlocked.filter(badge => badge.category === 'collector') : [],
         image: '/badges/collector.webp'
       },
       {
         id: 'elemental-streak',
         name: 'ELEMENTAL STREAK',
         displayName: 'ELEMENTAL STREAK',
-        badges: badgesWithUnlocked.filter(badge => badge.category === 'elemental-streak'),
+        badges: allBadges.length > 0 ? badgesWithUnlocked.filter(badge => badge.category === 'elemental-streak') : [],
         image: '/badges/elemental streak.webp'
       },
       {
         id: 'listening',
         name: 'LISTENING',
         displayName: 'LISTENING',
-        badges: badgesWithUnlocked.filter(badge => badge.category === 'listening'),
+        badges: allBadges.length > 0 ? badgesWithUnlocked.filter(badge => badge.category === 'listening') : [],
         image: '/badges/listening.webp'
       },
       {
         id: 'currency',
         name: 'HEARTCOIN',
         displayName: 'HEARTCOIN',
-        badges: badgesWithUnlocked.filter(badge => badge.category === 'currency'),
+        badges: allBadges.length > 0 ? badgesWithUnlocked.filter(badge => badge.category === 'currency') : [],
         image: '/badges/currency.webp'
       },
       {
         id: 'community',
         name: 'COMMUNITY',
         displayName: 'COMMUNITY',
-        badges: badgesWithUnlocked.filter(badge => badge.category === 'community'),
+        badges: allBadges.length > 0 ? badgesWithUnlocked.filter(badge => badge.category === 'community') : [],
         image: '/badges/community.webp'
       }
-    ].filter(category => category.badges.length > 0); // Only show categories with badges
+    ];
+
+    // Always show all 6 categories so user can see them even if badges haven't loaded yet
+    return categories;
   };
 
   const badgeCategories = getBadgeCategories();
@@ -275,7 +280,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           )) : (
             <div className="col-span-full text-center py-8">
               <div className="text-white/60 text-sm">
-                No badges found in this category
+                No badges available in this category yet
               </div>
             </div>
           )}

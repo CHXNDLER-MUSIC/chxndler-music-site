@@ -120,9 +120,10 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [enlargedItem, setEnlargedItem] = useState<StoreItem | null>(null);
   const itemsPerPage = 6;
 
   useEffect(() => {
@@ -131,10 +132,40 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
     }
   }, [open, initialTab]);
 
+  // Inject pulsing animation keyframes when enlarged item is shown
+  useEffect(() => {
+    if (enlargedItem && typeof document !== 'undefined') {
+      const existingStyle = document.querySelector('#merch-pulse-keyframes');
+      if (!existingStyle) {
+        const style = document.createElement('style');
+        style.id = 'merch-pulse-keyframes';
+        style.innerHTML = `
+          @keyframes merchPulse {
+            0%, 100% { 
+              transform: scale(1);
+              filter: saturate(1.06) contrast(1.06) brightness(1.04) drop-shadow(0 0 15px rgba(255, 215, 0, 0.6));
+            }
+            50% { 
+              transform: scale(1.02);
+              filter: saturate(1.1) brightness(1.08) contrast(1.08) drop-shadow(0 0 25px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 50px rgba(255, 215, 0, 0.6));
+            }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+      return () => {
+        const styleElement = document.querySelector('#merch-pulse-keyframes');
+        if (styleElement) {
+          styleElement.remove();
+        }
+      };
+    }
+  }, [enlargedItem]);
+
   async function signInWithGoogle() {
     setError(null);
     setMessage(null);
-    setLoading(true);
+    setModalLoading(true);
     try {
       const { error } = await supabaseBrowser.auth.signInWithOAuth({
         provider: "google",
@@ -144,7 +175,7 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
     } catch (e: any) {
       setError(e?.message || "Failed to start sign-in");
     } finally {
-      setLoading(false);
+      setModalLoading(false);
     }
   }
 
@@ -152,7 +183,7 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
     e.preventDefault();
     setError(null);
     setMessage(null);
-    setLoading(true);
+    setModalLoading(true);
     try {
       const { error } = await supabaseBrowser.auth.signInWithOtp({
         email,
@@ -163,7 +194,7 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
     } catch (e: any) {
       setError(e?.message || "Failed to send magic link");
     } finally {
-      setLoading(false);
+      setModalLoading(false);
     }
   }
 
@@ -171,7 +202,7 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
     e.preventDefault();
     setError(null);
     setMessage(null);
-    setLoading(true);
+    setModalLoading(true);
     try {
       const { error } = await supabaseBrowser.auth.signInWithOtp({
         phone,
@@ -181,7 +212,7 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
     } catch (e: any) {
       setError(e?.message || "Failed to send SMS");
     } finally {
-      setLoading(false);
+      setModalLoading(false);
     }
   }
 
@@ -249,13 +280,15 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
                 <img
                   src={item.image}
                   alt={item.name}
-                  className="max-h-full max-w-full object-contain rounded-lg"
+                  className="max-h-full max-w-full object-contain rounded-lg cursor-pointer hover:scale-105 transition-transform duration-300"
+                  onClick={() => setEnlargedItem(item)}
                 />
                 {item.image2 && (
                   <img
                     src={item.image2}
                     alt={`${item.name} alternative view`}
-                    className="max-h-full max-w-full object-contain rounded-lg absolute top-0 left-0 opacity-0 hover:opacity-100 transition-opacity duration-300"
+                    className="max-h-full max-w-full object-contain rounded-lg absolute top-0 left-0 opacity-0 hover:opacity-100 transition-opacity duration-300 cursor-pointer"
+                    onClick={() => setEnlargedItem(item)}
                   />
                 )}
               </div>
@@ -450,6 +483,51 @@ export default function HeartCoinModal({ open, onClose, initialTab = 'use' }: Pr
           </div>
         )}
       </div>
+
+      {/* Enlarged Item Modal */}
+      {enlargedItem && (
+        <div 
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] backdrop-blur-sm"
+          onClick={() => setEnlargedItem(null)}
+        >
+          <div 
+            className="relative max-w-md max-h-[80vh] p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setEnlargedItem(null)}
+              className="absolute -top-2 -right-2 w-8 h-8 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white/70 hover:text-white z-10 transition-all duration-200"
+            >
+              ×
+            </button>
+            
+            {/* Enlarged Image */}
+            <div className="relative">
+              <img
+                src={enlargedItem.image}
+                alt={enlargedItem.name}
+                className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+                style={{
+                  animation: 'merchPulse 2.5s ease-in-out infinite',
+                }}
+              />
+              
+              {/* Secondary Image Overlay */}
+              {enlargedItem.image2 && (
+                <img
+                  src={enlargedItem.image2}
+                  alt={`${enlargedItem.name} alternative view`}
+                  className="absolute inset-0 w-full h-auto max-h-[70vh] object-contain rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-300"
+                  style={{
+                    animation: 'merchPulse 2.5s ease-in-out infinite',
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </HeartversePopup>
   );
 }

@@ -130,22 +130,9 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
 
   // Handle play/pause button
   const handleTogglePlay = useCallback(() => {
-    if (isPlaying) {
-      audioManager.pause();
-    } else {
-      // If no track is currently loaded, play "space-music" by default
-      if (!audioManager.currentTrack || !audioManager.src) {
-        const spaceMusicSong = availableSongs.find(song => song.id === 'space-music');
-        const defaultSong = spaceMusicSong || availableSongs[0];
-        if (defaultSong) {
-          handleTrackChange(defaultSong.id);
-        }
-      } else {
-        // Track is loaded, just resume playback
-        audioManager.play();
-      }
-    }
-  }, [isPlaying, audioManager.currentTrack, audioManager.src, availableSongs, handleTrackChange]);
+    // Use the unified audio system's togglePlayPause which handles default track loading
+    audioManager.togglePlayPause();
+  }, [audioManager]);
 
   // Handle progress bar click for seeking
   const handleProgressClick = useCallback((e: React.MouseEvent) => {

@@ -1227,7 +1227,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         data-tour-id="heartcoin-button"
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="p-1 rounded-lg transition-all duration-200 w-14 h-12"
+        className="flex items-center gap-2 p-1 rounded-lg transition-all duration-200 h-12"
         style={{
           transition: 'all 0.3s ease',
           ...restProps.style
@@ -1252,12 +1252,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         <img
           src="/elements/heart-coin.webp"
           alt="Heart Coins"
-          className="w-full h-full object-cover rounded"
+          className="w-10 h-10 object-cover rounded"
           style={{
             objectFit: 'cover'
           }}
           draggable={false}
         />
+        <span className="text-white text-sm font-semibold">
+          {profile?.id ? heartCoins : 0}
+        </span>
       </button>
       
       
@@ -1894,8 +1897,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   {currentMerchIndex + 1} of {PHYSICAL_ITEMS.length}
                                 </div>
                                 
-                                {/* PAY WITH buttons - side by side */}
-                                <div className="flex gap-2 mt-3">
+                                {/* PAY WITH $ button only */}
+                                <div className="flex justify-start mt-3">
                                   <button
                                     onClick={() => {
                                       window.open(PHYSICAL_ITEMS[currentMerchIndex].stripeUrl, '_blank');
@@ -1908,32 +1911,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   >
                                     PAY WITH ${PHYSICAL_ITEMS[currentMerchIndex].priceUsd % 1 === 0 ? PHYSICAL_ITEMS[currentMerchIndex].priceUsd.toFixed(0) : PHYSICAL_ITEMS[currentMerchIndex].priceUsd.toFixed(1)}
                                   </button>
-                                  <button
-                                    onClick={() => {
-                                      try { sfx.play('click', 0.6); } catch {}
-                                      setSelectedItem(PHYSICAL_ITEMS[currentMerchIndex]);
-                                      setShowHeartCoinPurchase(true);
-                                    }}
-                                    className="px-8 py-3 rounded border border-yellow-500/60 bg-yellow-500/20 hover:bg-yellow-500/30 cursor-pointer transition-all duration-200 text-white font-semibold flex items-center justify-center gap-1 text-xs whitespace-nowrap"
-                                    style={{
-                                      textShadow: '0 0 4px rgba(255,255,255,0.6)',
-                                      boxShadow: '0 0 8px rgba(255,215,0,0.2)'
-                                    }}
-                                  >
-                                    PAY WITH
-                                    <img
-                                      src="/elements/heart-coin.webp"
-                                      alt="Heart Coin"
-                                      className="w-4 h-4"
-                                    />
-                                    {PHYSICAL_ITEMS[currentMerchIndex].priceHeartCoins}
-                                  </button>
                                 </div>
                               </div>
                               
                               {/* Item Details */}
                               <div className="flex-1 ml-0">
-                                {false ? (
+                                {showHeartCoinPurchase ? (
                                   /* HeartCoin Purchase Confirmation */
                                   <div className="text-center">
                                     {/* User and Cost - Side by Side */}
@@ -2064,6 +2047,35 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                         {PHYSICAL_ITEMS[currentMerchIndex].description}
                                       </div>
                                       
+                                      {/* PAY WITH heart coin button - below description */}
+                                      <div className="flex justify-center mt-3">
+                                        <button
+                                          onClick={() => {
+                                            try { sfx.play('click', 0.6); } catch {}
+                                            setSelectedItem(PHYSICAL_ITEMS[currentMerchIndex]);
+                                            setShowHeartCoinPurchase(!showHeartCoinPurchase);
+                                          }}
+                                          className={`px-8 py-3 rounded border cursor-pointer transition-all duration-200 text-white font-semibold flex items-center justify-center gap-1 text-xs whitespace-nowrap ${
+                                            showHeartCoinPurchase && selectedItem?.slug === PHYSICAL_ITEMS[currentMerchIndex].slug
+                                              ? 'border-yellow-400 bg-yellow-500/40 shadow-[0_0_20px_rgba(255,215,0,0.6)]'
+                                              : 'border-yellow-500/60 bg-yellow-500/20 hover:bg-yellow-500/30'
+                                          }`}
+                                          style={{
+                                            textShadow: '0 0 4px rgba(255,255,255,0.6)',
+                                            boxShadow: showHeartCoinPurchase && selectedItem?.slug === PHYSICAL_ITEMS[currentMerchIndex].slug 
+                                              ? '0 0 20px rgba(255,215,0,0.6)' 
+                                              : '0 0 8px rgba(255,215,0,0.2)'
+                                          }}
+                                        >
+                                          PAY WITH
+                                          <img
+                                            src="/elements/heart-coin.webp"
+                                            alt="Heart Coin"
+                                            className="w-4 h-4"
+                                          />
+                                          {PHYSICAL_ITEMS[currentMerchIndex].priceHeartCoins}
+                                        </button>
+                                      </div>
                                       
                                       {/* Right Arrow */}
                                       <button
