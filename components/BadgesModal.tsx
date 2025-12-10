@@ -221,7 +221,9 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             <div className="mx-auto max-w-xs">
               <div className="flex justify-between items-center mb-1">
                 <span className="text-white/60 text-xs">{selectedBadge.progress.current}</span>
-                <span className="text-white/60 text-xs">{selectedBadge.progress.target}</span>
+                <span className="text-white/60 text-xs">
+                  {selectedBadge.progress.target || selectedBadge.requirement_count}
+                </span>
               </div>
               <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                 <div 

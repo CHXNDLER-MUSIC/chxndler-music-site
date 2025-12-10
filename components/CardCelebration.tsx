@@ -65,12 +65,12 @@ export default function CardCelebration() {
         <img 
           src={cardImage} 
           alt={cardName} 
-          className="w-48 h-48 relative z-10 rounded-lg object-cover"
+          className="w-64 h-80 relative z-10 rounded-lg object-cover"
         />
         
         {/* Text */}
         <p className="text-white font-bold text-xl mt-4 relative z-10">
-          {cardName} Purchased!
+          {cardName}
         </p>
       </div>
     </div>

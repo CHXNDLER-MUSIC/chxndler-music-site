@@ -353,7 +353,8 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
   }, [buttonsBottomPercent, yellowHubSize, powerSizePx]);
 
   // START button variant flag (legacy "boost" fully removed)
-  const isStart = Boolean(
+  // Only show START icon before UI is unlocked, then show play/pause icons
+  const isStart = !uiUnlocked && Boolean(
     (POS?.wheel && ((POS.wheel as any).start || (POS.wheel as any).startButton)) ||
     process.env.NEXT_PUBLIC_START_BUTTON === '1' ||
     process.env.NEXT_PUBLIC_PLAY_BUTTON_STYLE === 'start'
@@ -975,13 +976,13 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
 
       {/* Card Purchase Celebration Test Button */}
       {!hideStartButton && <button
-        onClick={() => triggerCardCelebration('https://ik.imagekit.io/CHXNDLER/cards/air.png', 'Air Card')}
+        onClick={() => triggerCardCelebration('/cards/CHXNDLER.webp', 'CHXNDLER')}
         data-no-track
         className="pointer-events-auto"
         style={{
           position: "absolute",
-          bottom: `calc(-2vh + ${vs * 0.35}px - 220px)`, // Position above HeartCoin button
-          left: '50%',
+          bottom: `calc(-2vh + ${vs * 0.35}px - 150px)`, // Position at same level as HeartCoin button
+          left: 'calc(50% - 80px)', // Position to the left of HeartCoin button
           width: 60,
           height: 60,
           borderRadius: 9999,

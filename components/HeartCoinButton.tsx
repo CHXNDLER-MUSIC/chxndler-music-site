@@ -1372,12 +1372,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   className="flex-1 py-1.5 text-lg rounded border transition-all duration-200"
                   style={{
                     background: activeTab === tab 
-                      ? (tab === 'EARN' ? 'linear-gradient(135deg, rgba(0,255,255,0.4) 0%, rgba(0,255,255,0.6) 100%)' : 'linear-gradient(135deg, rgba(255,0,128,0.6) 0%, rgba(255,20,147,0.8) 100%)')
+                      ? (tab === 'EARN' ? 'linear-gradient(135deg, rgba(0,255,255,0.4) 0%, rgba(0,255,255,0.6) 100%)' : 'linear-gradient(135deg, rgba(255,105,180,0.6) 0%, rgba(255,182,193,0.8) 100%)')
                       : 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 100%)',
-                    color: activeTab === tab ? (tab === 'EARN' ? '#00FFFF' : '#FF0080') : 'rgba(255,255,255,0.7)',
-                    borderColor: activeTab === tab ? (tab === 'EARN' ? '#00FFFF' : '#FF0080') : 'rgba(255,255,255,0.4)',
-                    textShadow: activeTab === tab ? (tab === 'EARN' ? '0 0 8px rgba(0,255,255,1), 0 0 16px rgba(0,255,255,0.8)' : '0 0 8px rgba(255,0,128,1), 0 0 16px rgba(255,0,128,0.8)') : 'none',
-                    boxShadow: activeTab === tab ? (tab === 'EARN' ? '0 0 15px rgba(0,255,255,0.8), 0 0 30px rgba(0,255,255,0.6)' : '0 0 15px rgba(255,0,128,0.8), 0 0 30px rgba(255,0,128,0.6)') : 'none',
+                    color: activeTab === tab ? (tab === 'EARN' ? '#00FFFF' : '#FF69B4') : 'rgba(255,255,255,0.7)',
+                    borderColor: activeTab === tab ? (tab === 'EARN' ? '#00FFFF' : '#FF69B4') : 'rgba(255,255,255,0.4)',
+                    textShadow: activeTab === tab ? (tab === 'EARN' ? '0 0 8px rgba(0,255,255,1), 0 0 16px rgba(0,255,255,0.8)' : '0 0 8px rgba(255,105,180,1), 0 0 16px rgba(255,105,180,0.8)') : 'none',
+                    boxShadow: activeTab === tab ? (tab === 'EARN' ? '0 0 15px rgba(0,255,255,0.8), 0 0 30px rgba(0,255,255,0.6)' : '0 0 15px rgba(255,105,180,0.8), 0 0 30px rgba(255,105,180,0.6)') : 'none',
                     fontWeight: 700,
                     fontSize: '14px'
                   }}
@@ -1784,7 +1784,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         className="flex-1 py-1.5 text-base rounded border transition-all duration-200"
                         style={{
                           background: activeUseTab === tab 
-                            ? 'linear-gradient(135deg, rgba(255,105,180,0.4) 0%, rgba(255,105,180,0.6) 100%)'
+                            ? 'linear-gradient(135deg, rgba(255,105,180,0.6) 0%, rgba(255,182,193,0.8) 100%)'
                             : 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 100%)',
                           color: activeUseTab === tab ? '#FF69B4' : 'rgba(255,255,255,0.7)',
                           borderColor: activeUseTab === tab ? '#FF69B4' : 'rgba(255,255,255,0.4)',
@@ -1812,11 +1812,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   </div>
 
                   <div 
-                    className="text-base text-center mb-1"
+                    className="text-base text-center mb-2 mt-3"
                     style={{ 
                       color: '#FFFFFF', 
                       textShadow: '0 0 4px rgba(255,255,255,0.8)', 
-                      fontSize: '12px',
+                      fontSize: '14px',
                       lineHeight: 1,
                       width: '100%',
                       whiteSpace: 'nowrap'

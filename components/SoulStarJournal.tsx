@@ -6,6 +6,7 @@ import { sfx } from "@/lib/sfx";
 import { useDailyReflectionStatus } from "@/hooks/useDailyReflectionStatus";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { getLocalDateString, getDisplayDateString } from "@/utils/dateHelpers";
+import PopoutShell from "./PopoutShell";
 
 interface DailyPrompt {
   id: string;
@@ -132,23 +133,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       setCurrentPromptText(dailyPrompt.soul_star?.text || "");
     }
   }, [dailyPrompt]);
-
-  // Handle click outside to close
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (journalRef.current && !journalRef.current.contains(event.target as Node)) {
-        onClose();
-      }
-    }
-
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isOpen, onClose]);
 
   const loadDailyPrompt = async () => {
     try {
@@ -292,8 +276,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       // Refresh profile data to update journal entries and reflection status
       await refreshProfile();
       
-      // Mark reflection as complete to hide notifications
-      markReflectionComplete();
+      // Mark reflection as complete to hide notifications (after a short delay to ensure profile refresh completes)
+      setTimeout(() => {
+        markReflectionComplete();
+      }, 100);
 
       // Clear soulStarText and mark as submitted
       setSoulStarText("");
@@ -407,12 +393,12 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
   return (
     <div 
-      className="fixed z-[2147483647] flex items-center justify-center"
+      className="fixed z-[2147483649] flex items-center justify-center"
       style={{ 
         top: '60px',
         left: '50%',
         transform: 'translateX(-50%)',
-        width: 'min(92vw, 600px)'
+        width: 'min(95vw, 750px)'
       }}
     >
 
@@ -422,147 +408,113 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         style={{
           width: 'min(120vw, 800px)',
           height: '250px',
-          background: `radial-gradient(ellipse 90% 100% at 50% 0%, ${elementTheme.glow} 0%, ${elementTheme.color}50 25%, ${elementTheme.color}20 50%, transparent 100%)`,
-          filter: 'blur(120px)',
-          transform: 'translateY(40px)'
-        }}
-      />
-      
-      {/* Additional ambient glow layer */}
-      <div 
-        className="absolute"
-        style={{
-          width: 'min(100vw, 700px)',
-          height: '400px',
-          background: `radial-gradient(ellipse 70% 80% at 50% 20%, ${elementTheme.glow}30 0%, ${elementTheme.color}20 40%, transparent 70%)`,
-          filter: 'blur(80px)',
-          transform: 'translateY(-20px)',
+          top: '50%',
+          left: '50%',
+          transform: 'translateX(-50%) translateY(-50%)',
+          background: `radial-gradient(ellipse, ${elementTheme.color}15, transparent 70%)`,
+          borderRadius: '50%',
+          filter: 'blur(30px)',
           zIndex: -2
         }}
       />
-      
-      {/* Modal Container */}
-      <div
-        ref={journalRef}
-        className="relative soul-journal-container"
+
+      {/* Secondary glow layer */}
+      <div 
+        className="absolute"
         style={{
-          width: '100%',
-          maxHeight: '88vh',
-          overflowY: 'auto',
-          padding: '20px 24px 0px 24px',
-          borderRadius: 18,
-          background: 'rgba(0, 0, 0, 0.9)',
-          border: hasPendingReflection && !showHistory
-            ? `2px solid ${elementTheme.color}`
-            : `2px solid ${elementTheme.color}`,
-          boxShadow: hasPendingReflection && !showHistory
-            ? `0 -12px 40px ${elementTheme.glow}, 0 -6px 25px ${elementTheme.color}80, 0 16px 50px rgba(0,0,0,0.6), 0 0 40px ${elementTheme.glow}, 0 0 80px ${elementTheme.color}60, 0 0 120px ${elementTheme.color}30`
-            : `0 -10px 35px ${elementTheme.glow}, 0 -5px 20px ${elementTheme.color}60, 0 14px 40px rgba(0,0,0,0.5), 0 0 35px ${elementTheme.glow}, 0 0 60px ${elementTheme.color}40, 0 0 100px ${elementTheme.color}20`,
-          backdropFilter: 'blur(16px) saturate(140%)',
-          color: '#FFFFFF'
+          width: 'min(100vw, 600px)',
+          height: '200px',
+          top: '50%',
+          left: '50%',
+          transform: 'translateX(-50%) translateY(-50%)',
+          background: `radial-gradient(ellipse, ${elementTheme.color}08, transparent 60%)`,
+          borderRadius: '50%',
+          filter: 'blur(20px)',
+          zIndex: -1
         }}
+      />
+
+      {/* Animated particles/sparks */}
+      <div 
+        className="absolute inset-0 overflow-hidden pointer-events-none"
+        style={{ zIndex: -1 }}
       >
-        {/* Top glow */}
-        <div 
-          className="absolute"
-          style={{
-            top: '-15px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: '90%',
-            height: '30px',
-            background: `radial-gradient(ellipse 80% 100% at 50% 100%, ${elementTheme.glow} 0%, ${elementTheme.color}50 40%, ${elementTheme.color}20 70%, transparent 100%)`,
-            filter: 'blur(35px)',
-            pointerEvents: 'none',
-            zIndex: -1
-          }}
-        />
-
-        {/* Full Log Button - Top Left */}
-        <button
-          onClick={(!user?.id || !profile?.element) ? undefined : () => {
-            sfx.play('click', 0.8);
-            setShowHistory(!showHistory);
-          }}
-          disabled={!user?.id || !profile?.element}
-          className="absolute top-3 left-4 text-xs font-semibold transition-all duration-200 hover:opacity-100 px-2 py-1 rounded disabled:cursor-not-allowed"
-          style={{
-            color: (!user?.id || !profile?.element) ? '#808080' : elementTheme.color,
-            textShadow: (!user?.id || !profile?.element) ? 'none' : `0 0 4px ${elementTheme.glow}`,
-            opacity: (!user?.id || !profile?.element) ? 0.4 : (showHistory ? 1 : 0.8),
-            background: 'transparent',
-            border: (!user?.id || !profile?.element) ? '1px solid #808080' : '1px solid #F2EF1D',
-            boxShadow: (!user?.id || !profile?.element) ? 'none' : '0 0 8px #F2EF1D, 0 0 15px #FFFF00',
-            cursor: (!user?.id || !profile?.element) ? 'not-allowed' : 'pointer'
-          }}
-        >
-          FULL LOG
-        </button>
-
-        {/* Heart Element Button - Top Left under FULL LOG */}
-        {!showHistory && (
-          <button
-            className="absolute top-16 left-4 text-xs font-semibold transition-all duration-200 hover:opacity-100 px-2 py-1 rounded"
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 rounded-full animate-pulse"
             style={{
-              background: `${elementTheme.color}20`,
-              border: `1px solid ${elementTheme.color}60`,
-              color: elementTheme.color,
-              textShadow: `0 0 4px ${elementTheme.glow}`
-            }}
-          >
-            ELEMENT: {dailyPrompt.element.toUpperCase()}
-          </button>
-        )}
-
-        {/* Close button */}
-        <button
-          onClick={handleClose}
-          className="absolute top-3 right-4 w-8 h-8 rounded-full border flex items-center justify-center transition-all"
-          style={{ 
-            fontSize: '16px',
-            borderColor: `${elementTheme.color}cc`,
-            color: elementTheme.color,
-            boxShadow: `0 0 15px ${elementTheme.glow}, 0 0 25px ${elementTheme.color}50`,
-            textShadow: `0 0 8px ${elementTheme.glow}`,
-            background: `${elementTheme.color}10`,
-            backdropFilter: 'blur(2px)'
-          }}
-        >
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
-            <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-            <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-          </svg>
-        </button>
-
-        
-        {/* Header */}
-        <div 
-          className="text-center mb-1"
-          style={{ 
-            color: elementTheme.color,
-            textShadow: `0 0 8px ${elementTheme.glow}`,
-            fontSize: '18px',
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-            letterSpacing: '1px'
-          }}
-        >
-          SOUL STAR JOURNAL
-          {/* Yellow underline */}
-          <div 
-            className="mt-2"
-            style={{
-              width: '100%',
-              height: '1px',
-              background: '#F2EF1D',
-              boxShadow: '0 0 4px #F2EF1D, 0 0 8px #FFFF00'
+              background: elementTheme.color,
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 2}s`,
+              animationDuration: `${2 + Math.random() * 2}s`,
+              boxShadow: `0 0 6px ${elementTheme.color}, 0 0 12px ${elementTheme.color}40`,
+              opacity: 0.6
             }}
           />
-        </div>
+        ))}
+      </div>
 
-        {showHistory ? (
-          /* History View */
-          <div className="space-y-2 overflow-y-auto" style={{ height: '350px' }}>
+      {/* Close Button */}
+      <button 
+        onClick={handleClose}
+        className="absolute -top-2 -right-2 w-8 h-8 flex items-center justify-center rounded-full text-white hover:bg-red-600/20 transition-all duration-200 z-10"
+        style={{
+          background: 'rgba(0, 0, 0, 0.7)',
+          border: `1px solid ${elementTheme.color}60`,
+          boxShadow: `0 0 15px ${elementTheme.color}20`
+        }}
+        aria-label="Close journal"
+      >
+        ×
+      </button>
+
+      {/* Title Header */}
+      <div 
+        className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-2xl font-bold tracking-wider"
+        style={{
+          color: elementTheme.color,
+          textShadow: `0 0 15px ${elementTheme.glow}, 0 0 30px ${elementTheme.glow}`,
+          filter: `drop-shadow(0 0 8px ${elementTheme.color})`
+        }}
+      >
+        SOUL STAR JOURNAL
+      </div>
+
+      {/* Full Log Button */}
+      <button
+        onClick={(!user?.id || !profile?.element) ? undefined : () => {
+          sfx.play('click', 0.8);
+          setShowHistory(!showHistory);
+        }}
+        disabled={!user?.id || !profile?.element}
+        className="absolute -top-12 left-2 text-xs font-semibold transition-all duration-200 hover:opacity-100 px-3 py-1 rounded disabled:cursor-not-allowed"
+        style={{
+          color: (!user?.id || !profile?.element) ? '#808080' : elementTheme.color,
+          textShadow: (!user?.id || !profile?.element) ? 'none' : `0 0 4px ${elementTheme.glow}`,
+          opacity: (!user?.id || !profile?.element) ? 0.4 : (showHistory ? 1 : 0.8),
+          background: 'transparent',
+          border: (!user?.id || !profile?.element) ? '1px solid #808080' : '1px solid #F2EF1D',
+          boxShadow: (!user?.id || !profile?.element) ? 'none' : '0 0 8px #F2EF1D, 0 0 15px #FFFF00',
+          cursor: (!user?.id || !profile?.element) ? 'not-allowed' : 'pointer'
+        }}
+      >
+        {showHistory ? 'TODAY\'S ENTRY' : 'FULL LOG'}
+      </button>
+
+      {showHistory ? (
+        /* History View */
+        <div style={{ 
+          height: '350px', 
+          overflowY: 'auto', 
+          display: 'flex', 
+          flexDirection: 'column',
+          background: 'rgba(0, 0, 0, 0.2)',
+          borderRadius: '8px',
+          backdropFilter: 'blur(8px)'
+        }}>
+          <div className="flex-1 space-y-2 overflow-y-auto p-4">
             {journalEntries.length === 0 ? (
               <div 
                 className="text-center p-6 rounded-lg"
@@ -578,15 +530,11 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               </div>
             ) : (
               journalEntries.map((entry) => {
-                // Parse date in EST timezone to avoid timezone shift issues
                 const entryDate = (() => {
-                  // Force parsing in EST timezone by appending 'T12:00:00' (noon EST) to avoid UTC midnight issues
                   let dateStr = entry.entry_date;
                   if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                    // If it's YYYY-MM-DD format, add noon time to prevent timezone shifting
                     dateStr += 'T12:00:00';
                   }
-                  
                   const date = new Date(dateStr);
                   return date.toLocaleDateString('en-US', {
                     timeZone: 'America/New_York',
@@ -597,261 +545,45 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 })();
                 const entryColor = ELEMENT_COLORS[entry.element as keyof typeof ELEMENT_COLORS]?.color || elementTheme.color;
                 const entryEmoji = ELEMENT_EMOJIS[entry.element as keyof typeof ELEMENT_EMOJIS] || "💖";
-                const isExpanded = expandedEntry === entry.id;
-                const isEditing = editingEntry === entry.id;
                 
                 return (
                   <div 
                     key={entry.id}
-                    className="rounded-lg overflow-hidden"
+                    className="rounded-lg p-3"
                     style={{
                       background: `${entryColor}08`,
                       border: `1px solid ${entryColor}30`,
                       borderLeft: `4px solid ${entryColor}`
                     }}
                   >
-                    {/* Single line view */}
-                    <div 
-                      className="p-3 cursor-pointer hover:bg-black/20 flex items-center justify-between"
-                      onClick={() => handleEntryClick(entry.id)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="text-sm font-semibold" style={{ color: entryColor }}>
-                          {entryDate}
-                        </div>
-                        <span 
-                          className="text-xs px-2 py-1 rounded-full uppercase font-semibold flex items-center gap-1"
-                          style={{
-                            background: `${entryColor}15`,
-                            color: entryColor,
-                            border: `1px solid ${entryColor}40`
-                          }}
-                        >
-                          {entryEmoji} {entry.element}
-                        </span>
-                        {/* Privacy indicator */}
-                        {entry.is_private && (
-                          <span 
-                            className="text-xs px-2 py-1 rounded-full uppercase font-semibold"
-                            style={{
-                              background: 'rgba(255, 255, 255, 0.1)',
-                              color: '#FFFFFF',
-                              border: '1px solid rgba(255, 255, 255, 0.3)'
-                            }}
-                          >
-                            PRIVATE
-                          </span>
-                        )}
-                        {/* Preview of first few words */}
-                        <div 
-                          className="text-xs opacity-70 truncate flex-1"
-                          style={{ color: '#FFFFFF', maxWidth: '200px' }}
-                        >
-                          {entry.soul_star ? entry.soul_star.substring(0, 50) + (entry.soul_star.length > 50 ? '...' : '') : 'No entry'}
-                        </div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="text-sm font-semibold" style={{ color: entryColor }}>
+                        {entryDate}
                       </div>
-                      
-                      <div className="flex items-center gap-2">
-                        {/* Privacy toggle button */}
-                        <button
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            sfx.play('click', 0.6);
-                            try {
-                              await updateJournalEntry(entry.id, { is_private: !entry.is_private });
-                            } catch (error) {
-                              console.error('Failed to update privacy:', error);
-                            }
-                          }}
-                          className="px-2 py-1 rounded text-xs transition-all opacity-60 hover:opacity-100"
-                          style={{
-                            color: entry.is_private ? entryColor : '#808080',
-                            background: entry.is_private ? `${entryColor}10` : 'rgba(128, 128, 128, 0.1)',
-                            border: `1px solid ${entry.is_private ? entryColor : '#808080'}40`
-                          }}
-                          title={entry.is_private ? "Make public" : "Make private"}
-                        >
-                          {entry.is_private ? 'PVT' : 'PUB'}
-                        </button>
-                        
-                        {/* Delete button */}
-                        <button
-                          onClick={(e) => handleDeleteClick(entry.id, e)}
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-xs transition-all opacity-60 hover:opacity-100"
-                          style={{
-                            color: '#ff4444',
-                            background: 'rgba(255, 68, 68, 0.1)',
-                            border: '1px solid rgba(255, 68, 68, 0.3)'
-                          }}
-                          title="Delete entry"
-                        >
-                          ×
-                        </button>
-                        
-                        {/* Expand indicator */}
-                        <div 
-                          className="text-xs opacity-50"
-                          style={{ color: entryColor }}
-                        >
-                          {isExpanded ? '▼' : '▶'}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Expanded view */}
-                    {isExpanded && (
-                      <div 
-                        className="px-4 pb-4 space-y-3"
+                      <span 
+                        className="text-xs px-2 py-1 rounded-full uppercase font-semibold flex items-center gap-1"
                         style={{
-                          borderTop: `1px solid ${entryColor}20`
+                          background: `${entryColor}15`,
+                          color: entryColor,
+                          border: `1px solid ${entryColor}40`
                         }}
                       >
-                        {/* Today's Intention */}
-                        {entry.intention && (
-                          <div>
-                            <div 
-                              className="text-xs font-semibold mb-1 uppercase tracking-wider"
-                              style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
-                            >
-                              Intention
-                            </div>
-                            <div 
-                              className="text-sm leading-relaxed"
-                              style={{ 
-                                color: '#FFFFFF',
-                                background: 'rgba(0,0,0,0.2)',
-                                padding: '8px',
-                                borderRadius: '6px',
-                                border: `1px solid ${entryColor}15`
-                              }}
-                            >
-                              {entry.intention}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Prompt */}
-                        <div>
-                          <div 
-                            className="text-xs font-semibold mb-1 uppercase tracking-wider"
-                            style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
-                          >
-                            Prompt
-                          </div>
-                          <div 
-                            className="text-sm leading-relaxed"
-                            style={{ 
-                              color: '#FFFFFF',
-                              background: 'rgba(0,0,0,0.2)',
-                              padding: '8px',
-                              borderRadius: '6px',
-                              border: `1px solid ${entryColor}15`
-                            }}
-                          >
-                            {entry.reflection || 'No prompt was generated for this day.'}
-                          </div>
-                        </div>
-                        
-                        {/* Soul Star */}
-                        {entry.soul_star && (
-                          <div>
-                            <div className="flex items-center justify-between mb-1">
-                              <div className="flex items-center gap-2">
-                                <div 
-                                  className="text-xs font-semibold uppercase tracking-wider"
-                                  style={{ color: entryColor, textShadow: `0 0 2px ${entryColor}50` }}
-                                >
-                                  Soul Star
-                                </div>
-                                {/* Privacy status in expanded view - clickable to toggle */}
-                                <button
-                                  onClick={async (e) => {
-                                    e.stopPropagation();
-                                    sfx.play('click', 0.6);
-                                    try {
-                                      await updateJournalEntry(entry.id, { is_private: !entry.is_private });
-                                    } catch (error) {
-                                      console.error('Failed to update privacy:', error);
-                                    }
-                                  }}
-                                  className="text-xs px-2 py-1 rounded-full uppercase font-semibold transition-all hover:opacity-80 cursor-pointer"
-                                  style={{
-                                    background: entry.is_private ? `${entryColor}15` : 'rgba(34, 197, 94, 0.15)',
-                                    color: entry.is_private ? entryColor : '#22C55E',
-                                    border: entry.is_private ? `1px solid ${entryColor}40` : '1px solid rgba(34, 197, 94, 0.4)'
-                                  }}
-                                  title={entry.is_private ? "Make public" : "Make private"}
-                                >
-                                  {entry.is_private ? 'PRIVATE' : 'PUBLIC'}
-                                </button>
-                              </div>
-                              {!isEditing && (
-                                <button
-                                  onClick={(e) => handleEditClick(entry, e)}
-                                  className="text-xs px-2 py-1 rounded transition-all"
-                                  style={{
-                                    color: entryColor,
-                                    background: `${entryColor}10`,
-                                    border: `1px solid ${entryColor}30`
-                                  }}
-                                >
-                                  Edit
-                                </button>
-                              )}
-                            </div>
-                            
-                            {isEditing ? (
-                              <div className="space-y-2">
-                                <textarea
-                                  value={editResponse}
-                                  onChange={(e) => setEditResponse(e.target.value)}
-                                  className="w-full h-20 p-2 rounded text-white placeholder-white/50 resize-none focus:outline-none"
-                                  style={{
-                                    background: 'rgba(0,0,0,0.4)',
-                                    border: `1px solid ${entryColor}40`,
-                                  }}
-                                />
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => handleSaveEdit(entry.id)}
-                                    className="px-3 py-1 text-xs rounded transition-all"
-                                    style={{
-                                      background: `${entryColor}20`,
-                                      color: entryColor,
-                                      border: `1px solid ${entryColor}40`
-                                    }}
-                                  >
-                                    Save
-                                  </button>
-                                  <button
-                                    onClick={handleCancelEdit}
-                                    className="px-3 py-1 text-xs rounded transition-all"
-                                    style={{
-                                      background: 'rgba(255, 255, 255, 0.1)',
-                                      color: '#FFFFFF',
-                                      border: '1px solid rgba(255, 255, 255, 0.3)'
-                                    }}
-                                  >
-                                    Cancel
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div 
-                                className="text-sm leading-relaxed"
-                                style={{ 
-                                  color: '#FFFFFF',
-                                  background: 'rgba(0,0,0,0.3)',
-                                  padding: '12px',
-                                  borderRadius: '8px',
-                                  border: `1px solid ${entryColor}20`
-                                }}
-                              >
-                                {entry.soul_star}
-                              </div>
-                            )}
-                          </div>
-                        )}
+                        {entryEmoji} {entry.element}
+                      </span>
+                    </div>
+                    
+                    {entry.soul_star && (
+                      <div 
+                        className="text-sm leading-relaxed"
+                        style={{ 
+                          color: '#FFFFFF',
+                          background: 'rgba(0,0,0,0.2)',
+                          padding: '8px',
+                          borderRadius: '6px',
+                          border: `1px solid ${entryColor}15`
+                        }}
+                      >
+                        {entry.soul_star}
                       </div>
                     )}
                   </div>
@@ -859,323 +591,407 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               })
             )}
           </div>
-        ) : (
-          /* Today's Journal Interface */
-          <div style={{ 
-            height: '350px', 
-            overflowY: 'auto', 
-            display: 'flex', 
-            flexDirection: 'column',
-            background: 'rgba(0, 0, 0, 0.2)',
-            borderRadius: '8px',
-            backdropFilter: 'blur(8px)'
-          }}>
-            {/* Main Entry Card Container */}
-            <div 
-              className="rounded-lg p-4 sm:p-5 space-y-4 sm:space-y-5"
-              style={{
-                background: 'rgba(0, 0, 0, 0.7)',
-                border: `1px solid ${elementTheme.color}40`,
-                boxShadow: `0 0 20px ${elementTheme.color}20, 0 0 40px ${elementTheme.color}10`,
-                borderRadius: '12px'
-              }}
-            >
-              {/* Header Layout - Two Rows */}
-              <div className="space-y-3">
-                {/* First Row: Date and Element Badge */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
-                  <div 
-                    className="text-lg font-semibold"
-                    style={{ color: '#FFFFFF' }}
-                  >
-                    {todayFormatted}
-                  </div>
-                  <div 
-                    className="px-3 py-1 rounded-full text-xs font-semibold uppercase flex items-center gap-2"
-                    style={{
-                      background: `${elementTheme.color}20`,
-                      color: elementTheme.color,
-                      border: `1px solid ${elementTheme.color}60`,
-                      textShadow: `0 0 4px ${elementTheme.glow}`
-                    }}
-                  >
-                    {elementEmoji} {dailyPrompt?.element?.toUpperCase()}
-                  </div>
-                </div>
-                
-                {/* Second Row: Entry Title/Summary */}
+        </div>
+      ) : (
+        /* Today's Journal Interface */
+        <div style={{ 
+          height: '350px', 
+          overflowY: 'auto', 
+          display: 'flex', 
+          flexDirection: 'column',
+          background: 'rgba(0, 0, 0, 0.2)',
+          borderRadius: '8px',
+          backdropFilter: 'blur(8px)'
+        }}>
+          {/* Main Entry Card Container */}
+          <div 
+            className="rounded-lg px-1 py-2 space-y-4 sm:space-y-5"
+            style={{
+              background: 'rgba(0, 0, 0, 0.7)',
+              border: `1px solid ${elementTheme.color}40`,
+              boxShadow: `0 0 20px ${elementTheme.color}20, 0 0 40px ${elementTheme.color}10`,
+              borderRadius: '12px'
+            }}
+          >
+            {/* Header Layout - Date and Element */}
+            <div className="relative pb-6">
+              {/* Date - Top Center */}
+              <div 
+                className="absolute top-0 left-1/2 transform -translate-x-1/2 text-lg font-semibold"
+                style={{ 
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  textShadow: `1px 1px 3px rgba(0, 0, 0, 0.7), 0 0 10px rgba(0, 0, 0, 0.5)`,
+                  filter: `drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))`
+                }}
+              >
+                {todayFormatted}
+              </div>
+
+              {/* Privacy Toggle - Top Right */}
+              <button
+                onClick={() => {
+                  console.log('Privacy button clicked!', journalState.isPrivate);
+                  try {
+                    sfx.play('click', 0.8);
+                  } catch (e) {
+                    console.log('SFX not available');
+                  }
+                  setJournalState(prev => ({ ...prev, isPrivate: !prev.isPrivate }));
+                }}
+                disabled={journalState.isSubmitted}
+                className="absolute top-0 right-0 px-2 py-1 rounded text-xs font-semibold transition-all duration-200 disabled:cursor-not-allowed z-10"
+                style={{
+                  background: journalState.isPrivate ? '#FF69B420' : `${elementTheme.color}20`,
+                  border: `1px solid ${journalState.isPrivate ? '#FF69B4' : elementTheme.color}60`,
+                  color: journalState.isPrivate ? '#FF69B4' : elementTheme.color,
+                  textShadow: journalState.isPrivate ? '0 0 4px #FF69B4' : `0 0 4px ${elementTheme.glow}`,
+                  opacity: journalState.isSubmitted ? 0.4 : 1,
+                  cursor: journalState.isSubmitted ? 'not-allowed' : 'pointer',
+                  pointerEvents: 'auto',
+                  zIndex: 10
+                }}
+              >
+                {journalState.isPrivate ? 'PRIVATE' : 'PUBLIC'}
+              </button>
+              
+              {/* LIGHTNING Element - Top Left */}
+              <div 
+                className="absolute top-0 left-0 px-3 py-1 rounded-full text-xs font-semibold uppercase flex items-center gap-2"
+                style={{
+                  background: `${elementTheme.color}20`,
+                  color: elementTheme.color,
+                  border: `1px solid ${elementTheme.color}60`,
+                  textShadow: `0 0 4px ${elementTheme.glow}`
+                }}
+              >
+                {elementEmoji} {dailyPrompt?.element?.toUpperCase()}
+              </div>
+            </div>
+
+            {/* Section Cards */}
+            {dailyPrompt && (
+              <div className="space-y-1">
+                {/* Intention Card */}
                 <div 
-                  className="text-sm opacity-80"
-                  style={{ color: '#FFFFFF' }}
+                  className="rounded-lg px-1 pt-1 pb-2 -mx-1"
+                  style={{
+                    background: 'rgba(0, 0, 0, 0.4)',
+                    border: `2px solid ${elementTheme.color}`,
+                    boxShadow: `0 0 15px ${elementTheme.color}60, 0 0 30px ${elementTheme.color}30, inset 0 0 10px ${elementTheme.color}20`
+                  }}
                 >
-                  Soul reflection for today
-                </div>
-              </div>
-
-              {/* Section Cards */}
-              {dailyPrompt && (
-                <div className="space-y-4">
-                  {/* Intention Card */}
-                  <div 
-                    className="rounded-lg p-3"
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      border: `1px solid ${elementTheme.color}20`,
-                      boxShadow: `0 0 10px ${elementTheme.color}10`
-                    }}
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">✨</span>
-                        <div 
-                          className="text-xs font-semibold uppercase tracking-wider"
-                          style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
-                        >
-                          Intention
-                        </div>
-                        {/* Accent underline */}
-                        <div 
-                          className="flex-1 h-0.5"
-                          style={{
-                            background: '#F2EF1D',
-                            boxShadow: '0 0 4px #F2EF1D'
-                          }}
-                        />
-                      </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
                       <div 
-                        className="text-sm leading-relaxed"
-                        style={{ color: '#FFFFFF', lineHeight: '1.5' }}
-                      >
-                        {dailyPrompt.intention.text}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Prompt Card */}
-                  <div 
-                    className="rounded-lg p-3"
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      border: `1px solid ${elementTheme.color}20`,
-                      boxShadow: `0 0 10px ${elementTheme.color}10`
-                    }}
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">📝</span>
-                        <div 
-                          className="text-xs font-semibold uppercase tracking-wider"
-                          style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
-                        >
-                          Prompt
-                        </div>
-                        {/* Accent underline */}
-                        <div 
-                          className="flex-1 h-0.5"
-                          style={{
-                            background: '#F2EF1D',
-                            boxShadow: '0 0 4px #F2EF1D'
-                          }}
-                        />
-                      </div>
-                      <div 
-                        className="text-sm leading-relaxed"
-                        style={{ 
-                          color: dailyPrompt.soul_star?.text ? '#FFFFFF' : 'rgba(255, 255, 255, 0.6)', 
-                          lineHeight: '1.5' 
+                        className="w-7 h-7 flex items-center justify-center relative"
+                        style={{
+                          background: `radial-gradient(circle, ${elementTheme.color}30, transparent 70%)`,
+                          filter: `drop-shadow(0 0 4px ${elementTheme.color})`
                         }}
                       >
-                        {dailyPrompt.soul_star?.text || 'No prompt was generated for this day.'}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Soul Star Card */}
-                  <div 
-                    className="rounded-lg p-3"
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      border: `1px solid ${elementTheme.color}20`,
-                      boxShadow: `0 0 10px ${elementTheme.color}10`
-                    }}
-                  >
-                    <div className="space-y-2">
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
-                        <div className="flex items-center gap-2 flex-1">
-                          <span className="text-sm">💖</span>
-                          <div 
-                            className="text-xs font-semibold uppercase tracking-wider"
-                            style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
-                          >
-                            Soul Star
-                          </div>
-                          {/* Accent underline */}
-                          <div 
-                            className="flex-1 h-0.5 hidden sm:block"
-                            style={{
-                              background: '#F2EF1D',
-                              boxShadow: '0 0 4px #F2EF1D'
-                            }}
+                        <svg 
+                          width="18" 
+                          height="18" 
+                          viewBox="0 0 24 24" 
+                          fill="none"
+                          style={{
+                            filter: `drop-shadow(0 0 6px ${elementTheme.color}) drop-shadow(0 0 12px ${elementTheme.color}40)`
+                          }}
+                        >
+                          <circle 
+                            cx="12" 
+                            cy="12" 
+                            r="9" 
+                            fill="none"
+                            stroke={elementTheme.color}
+                            strokeWidth="2"
+                            strokeDasharray="3 3"
                           />
-                        </div>
-                        
-                        {/* Privacy Toggle in Soul Star Card Header */}
-                        <button
-                          onClick={(!user?.id || !profile?.element) ? undefined : () => {
-                            sfx.play('click', 0.8);
-                            setJournalState(prev => ({ ...prev, isPrivate: !prev.isPrivate }));
-                          }}
-                          disabled={!user?.id || !profile?.element || journalState.isSubmitted}
-                          className="px-2 py-1 rounded text-xs font-semibold transition-all duration-200 disabled:cursor-not-allowed"
+                          <circle 
+                            cx="12" 
+                            cy="12" 
+                            r="3" 
+                            fill={elementTheme.color}
+                          />
+                          <path 
+                            d="M12 3v6m0 6v6m-9-9h6m6 0h6" 
+                            stroke={elementTheme.color}
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <div 
+                          className="absolute inset-0 rounded-full animate-pulse"
                           style={{
-                            background: (!user?.id || !profile?.element) ? 'rgba(128, 128, 128, 0.1)' : (journalState.isPrivate ? `${elementTheme.color}20` : 'rgba(128, 128, 128, 0.1)'),
-                            border: (!user?.id || !profile?.element) ? '1px solid #50505060' : `1px solid ${journalState.isPrivate ? elementTheme.color : '#808080'}60`,
-                            color: (!user?.id || !profile?.element) ? '#505050' : (journalState.isPrivate ? elementTheme.color : '#808080'),
-                            textShadow: (!user?.id || !profile?.element) ? 'none' : (journalState.isPrivate ? `0 0 4px ${elementTheme.glow}` : 'none'),
-                            opacity: (!user?.id || !profile?.element || journalState.isSubmitted) ? 0.4 : 1,
-                            cursor: (!user?.id || !profile?.element || journalState.isSubmitted) ? 'not-allowed' : 'pointer'
+                            background: `radial-gradient(circle, ${elementTheme.color}20, transparent 60%)`,
+                            animation: 'pulse 2s infinite'
                           }}
-                        >
-                          {journalState.isPrivate ? 'PRIVATE' : 'PUBLIC'}
-                        </button>
+                        />
                       </div>
-                      
-                      <textarea
-                        value={soulStarText}
-                        onChange={(e) => setSoulStarText(e.target.value)}
-                        placeholder={(!user?.id || !profile?.element) ? "Let your Soul speak..." : "Let your Soul Star speak…"}
-                        className="w-full h-20 p-3 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
-                        disabled={isSaving || journalState.isSubmitted}
-                        style={{
-                          background: 'rgba(0,0,0,0.4)',
-                          border: `1px solid ${elementTheme.color}30`,
-                          boxShadow: `0 0 8px ${elementTheme.color}15`,
-                          opacity: (isSaving || journalState.isSubmitted) ? 0.7 : 1,
-                          pointerEvents: (isSaving || journalState.isSubmitted) ? 'none' as any : 'auto',
-                          lineHeight: '1.5'
-                        }}
-                        onFocus={(e) => {
-                          if (journalState.isSubmitted) return;
-                          e.target.style.borderColor = `${elementTheme.color}60`;
-                          e.target.style.boxShadow = `0 0 15px ${elementTheme.glow}`;
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.borderColor = `${elementTheme.color}30`;
-                          e.target.style.boxShadow = `0 0 8px ${elementTheme.color}15`;
-                        }}
-                      />
+                      <div 
+                        className="text-sm font-semibold uppercase tracking-wider"
+                        style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
+                      >
+                        Intention
+                      </div>
+                    </div>
+                    <div 
+                      className="text-sm leading-relaxed"
+                      style={{ color: '#FFFFFF', lineHeight: '1.5' }}
+                    >
+                      {dailyPrompt.intention.text}
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
 
-            {/* Messages */}
-            {(error || journalState.errorMessage) && (
-              <div 
-                className="mt-4 p-3 rounded-lg text-center text-red-400"
-                style={{ 
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)'
-                }}
-              >
-                {error || journalState.errorMessage}
-              </div>
-            )}
-
-            {(successMessage || journalState.saveMessage) && (
-              <div 
-                className="mt-4 p-3 rounded-lg text-center"
-                style={{ 
-                  background: 'rgba(34, 197, 94, 0.1)',
-                  border: '1px solid rgba(34, 197, 94, 0.3)',
-                  color: '#22C55E',
-                  textShadow: '0 0 8px #22C55E'
-                }}
-              >
-                ✨ {successMessage || journalState.saveMessage} ✨
-              </div>
-            )}
-
-            {/* Bottom Section */}
-            <div className="flex justify-center mt-6">
-              {/* Cast into the Stars Button - centered */}
-              {(!user?.id || !profile?.element) ? (
-                <button
-                  onClick={() => {
-                    sfx.play('button', 0.8);
-                    if (!hasClickedInitialButton) {
-                      // First click - show login text
-                      setHasClickedInitialButton(true);
-                    } else {
-                      // Second click - close journal and open welcome home
-                      console.log('🔥 ALIEN profile button clicked!');
-                      onClose();
-                      if (openWelcomeHome) {
-                        console.log('🚀 Calling openWelcomeHome()');
-                        openWelcomeHome();
-                      } else {
-                        console.log('❌ openWelcomeHome not available');
-                      }
-                    }
-                  }}
-                  className="px-6 py-1 rounded-lg font-semibold transition-all duration-200"
+                {/* Prompt Card */}
+                <div 
+                  className="rounded-lg px-1 pt-1 pb-2 -mx-1"
                   style={{
-                    background: hasClickedInitialButton ? '#F2EF1D10' : `${elementTheme.color}30`,
-                    border: hasClickedInitialButton ? '2px solid #F2EF1D60' : `2px solid ${elementTheme.color}60`,
-                    color: hasClickedInitialButton ? '#F2EF1D' : elementTheme.color,
-                    textShadow: hasClickedInitialButton ? '0 0 8px #F2EF1D' : `0 0 8px ${elementTheme.glow}`,
-                    boxShadow: hasClickedInitialButton ? '0 0 15px #F2EF1D, 0 0 25px #F2EF1D' : `0 0 15px ${elementTheme.glow}, 0 0 25px ${elementTheme.color}40`
+                    background: 'rgba(0, 0, 0, 0.4)',
+                    border: `2px solid ${elementTheme.color}`,
+                    boxShadow: `0 0 15px ${elementTheme.color}60, 0 0 30px ${elementTheme.color}30, inset 0 0 10px ${elementTheme.color}20`
                   }}
                 >
-                  {!hasClickedInitialButton ? (
-                    'CAST YOUR SOUL STAR'
-                  ) : (
-                    <>
-                      Create an{' '}
-                      <span
-                        className="underline"
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-7 h-7 flex items-center justify-center relative"
                         style={{
-                          textDecoration: 'underline',
-                          textUnderlineOffset: '2px'
+                          background: `radial-gradient(circle, ${elementTheme.color}30, transparent 70%)`,
+                          filter: `drop-shadow(0 0 4px ${elementTheme.color})`
                         }}
                       >
-                        ALIEN profile
-                      </span>
-                      {' '}to submit an entry
-                    </>
-                  )}
-                </button>
-              ) : (
-                <button
-                  onClick={journalState.isSubmitted ? undefined : handleSaveEntry}
-                  disabled={!journalState.isSubmitted && (!soulStarText.trim() || isSaving)}
-                  className="px-6 py-1 rounded-lg font-semibold transition-all duration-200"
+                        <svg 
+                          width="18" 
+                          height="18" 
+                          viewBox="0 0 24 24" 
+                          fill="none"
+                          style={{
+                            filter: `drop-shadow(0 0 6px ${elementTheme.color}) drop-shadow(0 0 12px ${elementTheme.color}40)`
+                          }}
+                        >
+                          <path 
+                            d="M8 9h8M8 12h8M8 15h6" 
+                            stroke={elementTheme.color}
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          />
+                          <path 
+                            d="M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" 
+                            stroke={elementTheme.color}
+                            strokeWidth="1.5"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <circle 
+                            cx="19" 
+                            cy="8" 
+                            r="2" 
+                            fill={elementTheme.color}
+                            opacity="0.8"
+                          />
+                        </svg>
+                        <div 
+                          className="absolute inset-0 rounded-full animate-pulse"
+                          style={{
+                            background: `radial-gradient(circle, ${elementTheme.color}20, transparent 60%)`,
+                            animation: 'pulse 2s infinite'
+                          }}
+                        />
+                      </div>
+                      <div 
+                        className="text-sm font-semibold uppercase tracking-wider"
+                        style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
+                      >
+                        Prompt
+                      </div>
+                    </div>
+                    <div 
+                      className="text-sm leading-relaxed"
+                      style={{ 
+                        color: dailyPrompt.soul_star?.text ? '#FFFFFF' : 'rgba(255, 255, 255, 0.6)', 
+                        lineHeight: '1.5' 
+                      }}
+                    >
+                      {dailyPrompt.soul_star?.text || 'No prompt was generated for this day.'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Soul Star Card */}
+                <div 
+                  className="rounded-lg px-1 pt-1 pb-2 -mx-1"
                   style={{
-                    background: (!journalState.isSubmitted && soulStarText.trim() && !isSaving) ? `${elementTheme.color}30` : `${elementTheme.color}10`,
-                    border: journalState.isSubmitted ? `2px solid #00FF00` : `2px solid ${elementTheme.color}60`,
-                    color: journalState.isSubmitted ? '#00FF00' : elementTheme.color,
-                    boxShadow: journalState.isSubmitted
-                      ? `0 0 20px #00FF00, 0 0 40px #00FF0040, inset 0 0 10px #00FF0020`
-                      : (!journalState.isSubmitted && soulStarText.trim() && !isSaving)
-                        ? `0 0 20px ${elementTheme.glow}, 0 0 40px ${elementTheme.color}40, inset 0 0 10px ${elementTheme.color}20`
-                        : 'none',
-                    textShadow: journalState.isSubmitted ? `0 0 8px #00FF00` : `0 0 4px ${elementTheme.glow}`,
-                    pointerEvents: journalState.isSubmitted ? 'none' : 'auto',
-                    cursor: journalState.isSubmitted
-                      ? 'default'
-                      : ((!journalState.isSubmitted && soulStarText.trim() && !isSaving) ? 'pointer' : 'not-allowed')
+                    background: 'rgba(0, 0, 0, 0.4)',
+                    border: `2px solid ${elementTheme.color}`,
+                    boxShadow: `0 0 15px ${elementTheme.color}60, 0 0 30px ${elementTheme.color}30, inset 0 0 10px ${elementTheme.color}20`
                   }}
                 >
-                  {journalState.isSubmitted
-                    ? 'Your soul star shines above'
-                    : (isSaving ? 'CASTING...' : 'CAST INTO THE STARS')}
-                </button>
-              )}
-            </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-8 h-8 flex items-center justify-center relative"
+                        style={{
+                          background: `radial-gradient(circle, ${elementTheme.color}30, transparent 70%)`,
+                          filter: `drop-shadow(0 0 4px ${elementTheme.color})`
+                        }}
+                      >
+                        <svg 
+                          width="20" 
+                          height="20" 
+                          viewBox="0 0 24 24" 
+                          fill="none"
+                          style={{
+                            filter: `drop-shadow(0 0 6px ${elementTheme.color}) drop-shadow(0 0 12px ${elementTheme.color}40)`
+                          }}
+                        >
+                          <path 
+                            d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z" 
+                            fill={elementTheme.color}
+                            stroke={elementTheme.color}
+                            strokeWidth="0.5"
+                          />
+                          <circle 
+                            cx="12" 
+                            cy="12" 
+                            r="8" 
+                            fill="none"
+                            stroke={elementTheme.color}
+                            strokeWidth="1"
+                            opacity="0.6"
+                          />
+                        </svg>
+                        <div 
+                          className="absolute inset-0 rounded-full animate-pulse"
+                          style={{
+                            background: `radial-gradient(circle, ${elementTheme.color}20, transparent 60%)`,
+                            animation: 'pulse 2s infinite'
+                          }}
+                        />
+                      </div>
+                      <div 
+                        className="text-base font-semibold uppercase tracking-wider"
+                        style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
+                      >
+                        Soul Star
+                      </div>
+                    </div>
+                    
+                    <textarea
+                      value={soulStarText}
+                      onChange={(e) => setSoulStarText(e.target.value)}
+                      placeholder={(!user?.id || !profile?.element) ? "Let your Soul speak..." : "Let your Soul Star speak…"}
+                      className="w-full h-20 p-3 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
+                      disabled={isSaving || journalState.isSubmitted}
+                      style={{
+                        background: 'rgba(0,0,0,0.4)',
+                        border: `1px solid ${elementTheme.color}30`,
+                        boxShadow: `0 0 8px ${elementTheme.color}15`,
+                        opacity: (isSaving || journalState.isSubmitted) ? 0.7 : 1,
+                        pointerEvents: (isSaving || journalState.isSubmitted) ? 'none' as any : 'auto',
+                        lineHeight: '1.5'
+                      }}
+                      onFocus={(e) => {
+                        if (journalState.isSubmitted) return;
+                        e.target.style.borderColor = `${elementTheme.color}60`;
+                        e.target.style.boxShadow = `0 0 15px ${elementTheme.glow}`;
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = `${elementTheme.color}30`;
+                        e.target.style.boxShadow = `0 0 8px ${elementTheme.color}15`;
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-2">
+                  {(!user?.id || !profile?.element) ? (
+                    <button
+                      onClick={() => {
+                        sfx.play('button', 0.8);
+                        if (!hasClickedInitialButton) {
+                          setHasClickedInitialButton(true);
+                        } else {
+                          onClose();
+                          if (openWelcomeHome) {
+                            openWelcomeHome();
+                          }
+                        }
+                      }}
+                      className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 hover:opacity-90"
+                      style={{
+                        background: `linear-gradient(135deg, ${elementTheme.color}60, ${elementTheme.color}80)`,
+                        color: '#000000',
+                        border: `1px solid ${elementTheme.color}`,
+                        boxShadow: `0 0 20px ${elementTheme.color}40, inset 0 0 10px ${elementTheme.color}20`,
+                        textShadow: 'none'
+                      }}
+                    >
+                      {!hasClickedInitialButton ? 'CAST YOUR SOUL STAR' : 'Create ALIEN profile to submit'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={journalState.isSubmitted ? undefined : handleSaveEntry}
+                      disabled={!journalState.isSubmitted && (!soulStarText.trim() || isSaving)}
+                      className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 disabled:opacity-40"
+                      style={{
+                        background: journalState.isSubmitted 
+                          ? 'rgba(34, 197, 94, 0.2)' 
+                          : `linear-gradient(135deg, ${elementTheme.color}60, ${elementTheme.color}80)`,
+                        color: journalState.isSubmitted ? '#22C55E' : '#000000',
+                        border: journalState.isSubmitted 
+                          ? '1px solid #22C55E60' 
+                          : `1px solid ${elementTheme.color}`,
+                        boxShadow: journalState.isSubmitted 
+                          ? '0 0 20px #22C55E20' 
+                          : `0 0 20px ${elementTheme.color}40, inset 0 0 10px ${elementTheme.color}20`,
+                        textShadow: journalState.isSubmitted 
+                          ? '0 0 8px #22C55E' 
+                          : 'none',
+                        cursor: (journalState.isSubmitted || !soulStarText.trim() || isSaving) ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      {journalState.isSubmitted
+                        ? 'Your soul star shines above'
+                        : (isSaving ? 'CASTING...' : 'CAST INTO THE STARS')}
+                    </button>
+                  )}
+                </div>
+
+                {/* Messages */}
+                {(error || journalState.errorMessage) && (
+                  <div 
+                    className="p-3 rounded-lg text-center text-red-400 text-sm"
+                    style={{ 
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)'
+                    }}
+                  >
+                    {error || journalState.errorMessage}
+                  </div>
+                )}
+
+                {(successMessage || journalState.saveMessage) && (
+                  <div 
+                    className="p-3 rounded-lg text-center text-sm"
+                    style={{ 
+                      background: 'rgba(34, 197, 94, 0.1)',
+                      border: '1px solid rgba(34, 197, 94, 0.3)',
+                      color: '#22C55E',
+                      textShadow: '0 0 8px #22C55E'
+                    }}
+                  >
+                    ✨ {successMessage || journalState.saveMessage} ✨
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

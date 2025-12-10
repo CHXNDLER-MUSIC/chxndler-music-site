@@ -2425,7 +2425,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       <SteeringWheelOverlay
         POS={POS}
         playing={isPlaying}
-        showUI={isLanded}
+        showUI={cockpitVisible}
         uiUnlocked={isLanded}
         joinAlienOpen={joinAlienOpen}
         blueActive={beamColor === 'blue' && !!(beamEnabled || showHUD)}

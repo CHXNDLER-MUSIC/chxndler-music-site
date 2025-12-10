@@ -12,6 +12,7 @@ export function getBadgeProgressForUser(
   badge: Badge,
   profile: AnyProfile | null
 ): BadgeProgress {
+  
   if (!profile) {
     return {
       current: 0,
@@ -22,7 +23,8 @@ export function getBadgeProgressForUser(
   }
 
   let current = 0;
-  const target = badge.requirement_count;
+  const target = badge.requirement_count || 0;
+  
 
   // Switch on badge requirement type and map to profile counter
   switch (badge.requirement_type) {
@@ -131,12 +133,22 @@ export function getBadgeProgressForUser(
   const percentage = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
   const isUnlocked = current >= target;
 
-  return {
+  const result = {
     current,
     target,
     percentage,
     isUnlocked,
   };
+  
+  // Debug logging for badges with 0 target
+  if (result.target === 0 || badge.badge_name === 'Eternal Soul') {
+    console.log('getBadgeProgressForUser - Result:', {
+      badge_name: badge.badge_name,
+      result: result
+    });
+  }
+
+  return result;
 }
 
 /**
