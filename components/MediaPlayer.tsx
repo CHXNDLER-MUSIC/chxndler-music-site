@@ -3035,9 +3035,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           box-shadow: 0 0 30px rgba(255,59,48,0.25); /* remove heavy dark drop shadow */
           overflow: hidden;
           /* Lower on the screen */
-          margin-top: 380px;
+          margin-top: 480px;
         }
-        @media (max-width: 768px) { .am-popover { margin-top: 220px; } }
+        @media (max-width: 768px) { .am-popover { margin-top: 320px; } }
         .am-close {
           position: absolute;
           top: 8px;

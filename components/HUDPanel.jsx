@@ -4936,7 +4936,7 @@ const HUDPanel = React.memo(function HUDPanel({
                         borderRadius: 14,
                         overflow: 'hidden',
                         // Slightly higher on the screen
-                        marginTop: -210
+                        marginTop: -150
                       }}
                     >
                       <button

@@ -655,6 +655,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
     // STEP 2: Stop all music immediately when song is selected
     
+    // Stop all audio via unified AudioProvider before warp effect
+    try {
+      audioManager.stopAllAudio();
+      console.log('🎵 AudioProvider: Stopped all audio immediately on song selection');
+    } catch (e) {
+      console.warn('DashboardApp: Error stopping unified audio:', e);
+    }
     
     // Stop main music player audio
     try {

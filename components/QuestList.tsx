@@ -371,7 +371,8 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
     // This function should ONLY be called when confirming a secret phrase
     if (questStatus.liveShow || loading || !isAuthenticated || !secretPhrase.trim()) return;
     
-    console.log('handleCheckInSubmit called - this should only happen on CONFIRM button click');
+    console.log('handleCheckInSubmit called with phrase:', secretPhrase.trim());
+    console.log('this should only happen on CONFIRM button click');
     
     try { sfx.play('click', 0.8); } catch {}
     setLoading(true);
@@ -969,24 +970,46 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                   </>
                 ) : (
                   <div className="space-y-2">
-                    <input
-                      type="text"
-                      value={secretPhrase}
-                      onChange={(e) => {
-                        console.log('Input changed:', e.target.value);
-                        setSecretPhrase(e.target.value);
-                        setCheckInError("");
-                      }}
-                      placeholder="ENTER SECRET PHRASE"
-                      className="w-full rounded-md border border-white/20 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/60 shadow-sm focus:border-cyan-400 focus:outline-none"
-                      style={{
-                        boxShadow: '0 0 8px rgba(0,255,255,0.2)'
-                      }}
-                      autoComplete="off"
-                      autoCorrect="off"
-                      spellCheck="false"
-                      autoFocus
-                    />
+                    <form onSubmit={(e) => {
+                      e.preventDefault();
+                      if (secretPhrase.trim() && !loading) {
+                        handleCheckInSubmit();
+                      }
+                    }}>
+                      <input
+                        type="text"
+                        value={secretPhrase}
+                        onChange={(e) => {
+                          const newValue = e.target.value;
+                          console.log('Input changed:', newValue);
+                          console.log('Input length:', newValue.length);
+                          console.log('Trimmed value:', newValue.trim());
+                          setSecretPhrase(newValue);
+                          setCheckInError("");
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && secretPhrase.trim() && !loading) {
+                            e.preventDefault();
+                            handleCheckInSubmit();
+                          }
+                        }}
+                        placeholder="ENTER SECRET PHRASE"
+                        className={`w-full rounded-md border px-3 py-2 text-sm text-white placeholder-white/60 shadow-sm focus:outline-none transition-all ${
+                          secretPhrase.trim() 
+                            ? 'border-yellow-400/60 bg-yellow-600/10 focus:border-yellow-400' 
+                            : 'border-white/20 bg-black/30 focus:border-cyan-400'
+                        }`}
+                        style={{
+                          boxShadow: secretPhrase.trim() 
+                            ? '0 0 12px rgba(255,255,0,0.4)' 
+                            : '0 0 8px rgba(0,255,255,0.2)'
+                        }}
+                        autoComplete="off"
+                        autoCorrect="off"
+                        spellCheck="false"
+                        autoFocus
+                      />
+                    </form>
                   </div>
                 )}
               </div>
@@ -999,17 +1022,17 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                         ? handleCheckInSubmit 
                         : handleShowCheckInForm
                   }
-                  disabled={questStatus.liveShow || bonusQuestsLoading || (showCheckIn && loading)}
-                  className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 cursor-pointer ${
+                  disabled={questStatus.liveShow || bonusQuestsLoading || (showCheckIn && (loading || !secretPhrase.trim()))}
+                  className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 ${
                     questStatus.liveShow
                       ? 'bg-green-600/40 border border-green-500/50 text-green-300 cursor-not-allowed'
                       : !isAuthenticated
-                        ? 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300'
+                        ? 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300 cursor-pointer'
                         : showCheckIn && secretPhrase.trim()
-                          ? 'bg-yellow-500/20 border-2 border-yellow-400 text-yellow-300 hover:bg-yellow-500/30'
+                          ? 'bg-yellow-500/20 border-2 border-yellow-400 text-yellow-300 hover:bg-yellow-500/30 cursor-pointer'
                           : showCheckIn
-                            ? 'bg-cyan-600/30 border border-cyan-500/50 text-cyan-300'
-                            : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300'
+                            ? 'bg-gray-600/30 border border-gray-500/50 text-gray-400 cursor-not-allowed'
+                            : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300 cursor-pointer'
                   }`}
                   style={{
                     boxShadow: questStatus.liveShow
@@ -1019,7 +1042,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                         : showCheckIn && secretPhrase.trim()
                           ? '0 0 20px rgba(255,255,0,0.8), inset 0 0 10px rgba(255,255,0,0.2)'
                           : showCheckIn
-                            ? '0 0 10px rgba(0,255,255,0.3)'
+                            ? '0 0 5px rgba(128,128,128,0.2)'
                             : '0 0 10px rgba(252,84,175,0.3)',
                     textShadow: questStatus.liveShow
                       ? '0 0 4px rgba(0,255,0,0.6)'
@@ -1028,7 +1051,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                         : showCheckIn && secretPhrase.trim()
                           ? '0 0 10px rgba(255,255,0,1)'
                           : showCheckIn
-                            ? '0 0 4px rgba(0,255,255,0.6)'
+                            ? '0 0 2px rgba(128,128,128,0.4)'
                             : '0 0 4px rgba(252,84,175,0.6)'
                   }}
                 >

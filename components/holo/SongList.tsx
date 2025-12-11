@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import { playerStore } from "@/store/usePlayerStore";
 import { useCycleList } from "@/lib/useCycleList";
+import { useAudio } from "@/app/providers/AudioProvider";
 
 export default function SongList({ onSongChange }: { onSongChange?: (id: string) => void }) {
   const [storeSnap, setStoreSnap] = React.useState(() => playerStore.getState());
@@ -10,6 +11,7 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
   const { songs, mainId, hoverId } = storeSnap as any;
   const setHover = (id: string | null) => playerStore.getState().setHover(id);
   const setMain = (id: string) => playerStore.getState().setMain(id);
+  const audioManager = useAudio();
   
   const main = songs.find((s) => s.id === mainId);
   const { activeId, setActiveId, handleKeyDown, next, prev } = useCycleList(songs, mainId || undefined, (id) => setMain(id));
@@ -66,8 +68,13 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
       e.preventDefault();
       const id = activeId || mainId || undefined;
       if (id) {
-        // Delegate selection to parent to run the global warp sequence
-        if (onSongChange) onSongChange(id);
+        // If the active/focused song is the currently playing song, toggle play/pause
+        if (id === mainId) {
+          audioManager?.togglePlayPause();
+        } else {
+          // Delegate selection to parent to run the global warp sequence
+          if (onSongChange) onSongChange(id);
+        }
       }
       return;
     }
@@ -171,8 +178,15 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
             onBlur={() => setHover(null)}
             onClick={(e) => {
               if (locked) return;
-              // Delegate selection to parent to run the global warp + playback flow
-              if (onSongChange) onSongChange(s.id);
+              
+              // If clicking on the currently selected song, toggle play/pause
+              if (s.id === mainId) {
+                // Toggle play/pause for currently selected song
+                audioManager?.togglePlayPause();
+              } else {
+                // Delegate selection to parent to run the global warp + playback flow
+                if (onSongChange) onSongChange(s.id);
+              }
             }}
             style={{ 
               cursor: locked ? 'not-allowed' : 'pointer',
