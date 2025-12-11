@@ -71,8 +71,14 @@ function AnchoredPreviewModal({
           <h3 className="preview-title">{title}</h3>
           <button
             className="preview-close"
-            onClick={onClose}
+            onClick={(e) => {
+              console.log('Close button clicked');
+              e.stopPropagation();
+              onClose();
+            }}
             onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+            title="Close"
+            aria-label="Close music preview"
           >
             ×
           </button>
@@ -130,25 +136,35 @@ function AnchoredPreviewModal({
         }
         
         .preview-close {
-          width: 28px;
-          height: 28px;
+          width: 32px;
+          height: 32px;
           border-radius: 50%;
-          border: 1px solid rgba(255, 255, 255, 0.4);
-          background: rgba(0, 0, 0, 0.45);
+          border: 2px solid rgba(255, 255, 255, 0.6);
+          background: rgba(0, 0, 0, 0.75);
           color: #fff;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          font-size: 16px;
+          font-size: 18px;
           font-weight: bold;
           transition: all 0.15s ease;
+          box-shadow: 0 0 16px rgba(255, 255, 255, 0.3);
+          position: relative;
+          z-index: 10;
         }
         
         .preview-close:hover {
-          transform: scale(1.1);
-          background: rgba(0, 0, 0, 0.6);
-          box-shadow: 0 0 24px rgba(255, 255, 255, 0.55);
+          transform: scale(1.15);
+          background: rgba(255, 255, 255, 0.15);
+          border-color: rgba(255, 255, 255, 0.8);
+          box-shadow: 0 0 32px rgba(255, 255, 255, 0.8);
+          color: #fff;
+        }
+        
+        .preview-close:active {
+          transform: scale(1.05);
+          box-shadow: 0 0 24px rgba(255, 255, 255, 0.6);
         }
         
         .preview-content {
@@ -774,6 +790,8 @@ export default function HoloHubMenu({
           heightPx={inlineHeightPx}
           iframeHeightPx={inlineIframeHeightPx}
           onClose={() => {
+            console.log('Modal onClose called');
+            try { sfx.play('close', 0.35); } catch {}
             setInlineUrl(null);
             setInlineCompact(false);
             setInlineHeightPx(undefined);
@@ -797,8 +815,9 @@ export default function HoloHubMenu({
       <style jsx>{`
         .holo-hub-wrap{ position: relative; }
         .beam{ position:absolute; left:-70px; top:-18px; width:140px; height:36px; pointer-events:none; mix-blend-mode:screen;
-          background: radial-gradient(closest-side, ${hubColor}66, transparent 70%);
+          background: radial-gradient(closest-side, ${open ? hubColor + '66' : 'transparent'}, transparent 70%);
           filter: blur(8px);
+          transition: background 200ms ease;
         }
         
         /* panel-wrap positioning now handled via inline style for responsiveness */
@@ -867,26 +886,23 @@ export default function HoloHubMenu({
             linear-gradient(45deg, #F2EF1D44, transparent 30%),
             repeating-linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.12) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px);
         }
-        .hub:hover{ transform: scale(1.06); box-shadow:
-            0 16px 30px rgba(0,0,0,.68),
-            0 0 34px #F2EF1DEE,
-            0 0 90px #F2EF1DBB,
-            0 0 150px #F2EF1D55,
+        .hub:hover{ transform: scale(1.05); box-shadow:
+            0 22px 44px rgba(0,0,0,.7),
+            0 0 40px #F2EF1D88,
+            0 0 90px #F2EF1D55,
             inset 0 2px 0 rgba(255,255,255,.35), 
-            inset 0 -8px 18px rgba(0,0,0,.65),
-            inset 0 0 30px #F2EF1D33;
-          filter: brightness(1.06) saturate(1.15);
+            inset 0 -8px 18px rgba(0,0,0,.65);
+          filter: brightness(1.06) saturate(1.12);
         }
         /* Selected/open state: calmer than hover */
         .hub.on{
           transform: none;
           box-shadow:
-            0 12px 26px rgba(0,0,0,.6),
+            0 18px 36px rgba(0,0,0,.65),
             0 0 20px #F2EF1DBB,
             0 0 40px #F2EF1D66,
-            inset 0 2px 0 rgba(255,255,255,.25),
-            inset 0 -6px 14px rgba(0,0,0,.6),
-            inset 0 0 20px #F2EF1D22;
+            inset 0 2px 0 rgba(255,255,255,.22),
+            inset 0 -6px 14px rgba(0,0,0,.8);
           filter: brightness(1.0) saturate(1.06);
         }
         @keyframes holoHalo { 

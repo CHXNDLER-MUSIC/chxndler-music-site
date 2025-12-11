@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS public.soul_journal_entries (
   intention_response text,
   reflection_response text,
   soul_star text,
+  is_public boolean DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -22,6 +23,7 @@ CREATE TABLE IF NOT EXISTS public.soul_journal_entries (
 -- Add missing columns if they don't exist
 ALTER TABLE public.soul_journal_entries 
 ADD COLUMN IF NOT EXISTS soul_star text,
+ADD COLUMN IF NOT EXISTS is_public boolean DEFAULT false,
 ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
 
 -- Drop old constraint if it exists with wrong name
@@ -45,6 +47,13 @@ CREATE INDEX IF NOT EXISTS soul_journal_entries_user_idx
 
 CREATE INDEX IF NOT EXISTS soul_journal_entries_date_idx 
   ON public.soul_journal_entries (entry_date);
+
+CREATE INDEX IF NOT EXISTS soul_journal_entries_is_public_idx 
+  ON public.soul_journal_entries (is_public);
+
+CREATE INDEX IF NOT EXISTS soul_journal_entries_public_entries_idx 
+  ON public.soul_journal_entries (user_id, entry_date) 
+  WHERE is_public = true;
 
 -- Enable RLS
 ALTER TABLE public.soul_journal_entries ENABLE ROW LEVEL SECURITY;

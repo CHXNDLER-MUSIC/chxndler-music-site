@@ -9,6 +9,26 @@ import { track } from "@/lib/analytics";
 import { useBonusQuests } from '@/hooks/useBonusQuests';
 import { BonusQuestWithCompletion } from '@/types/bonusQuests';
 import { completeSecretPhraseQuest } from '@/lib/bonusQuests';
+import { useMerchItems } from '@/hooks/useMerchItems';
+import { useMerchPurchase } from '@/hooks/useMerchPurchase';
+import { MerchItem } from '@/types/merch';
+
+// Helper function to convert MerchItem to StoreItem for backward compatibility
+const merchItemToStoreItem = (merchItem: MerchItem): StoreItem => ({
+  id: merchItem.slug,
+  slug: merchItem.slug,
+  title: merchItem.name,
+  description: merchItem.description || '',
+  image: merchItem.image_url || '',
+  image2: merchItem.image_url_2 || undefined,
+  priceUsd: merchItem.cost_usd || 0,
+  priceHeartCoins: merchItem.price_heartcoins,
+  cost: merchItem.price_heartcoins,
+  physicalCost: merchItem.price_heartcoins,
+  stripeUrl: merchItem.stripe_url || '',
+  is_released: merchItem.is_active,
+  min_tier: merchItem.min_tier || 'wanderer'
+});
 
 // Store item interface
 interface StoreItem {

@@ -10,6 +10,8 @@ import { getLocalDateString, getDisplayDateString } from "@/utils/dateHelpers";
 import PopoutShell from "./PopoutShell";
 import BinderModal from "./BinderModal";
 import BadgesModal from "./BadgesModal";
+import UserBadges from "./UserBadges";
+import UserCards from "./UserCards";
 
 interface DailyPrompt {
   id: string;
@@ -655,6 +657,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
+                                try { sfx.play('change-channel', 0.8); } catch {}
                                 const currentIsPrivate = !(entry.is_public ?? false);
                                 updateJournalEntry(entry.id, { is_public: currentIsPrivate });
                               }}
@@ -666,7 +669,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                 textShadow: !(entry.is_public ?? false) ? '0 0 4px #FF69B4' : `0 0 4px ${entryTheme.glow}`
                               }}
                             >
-                              {!(entry.is_public ?? false) ? '🔒 PRIVATE' : 'PUBLIC'}
+                              {!(entry.is_public ?? false) ? 'PRIVATE' : 'PUBLIC'}
                             </button>
                           </div>
                         </div>
@@ -912,6 +915,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
+                                try { sfx.play('change-channel', 0.8); } catch {}
                                 const currentIsPrivate = !(entry.is_public ?? false);
                                 updateJournalEntry(entry.id, { is_public: currentIsPrivate });
                               }}
@@ -923,7 +927,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                 textShadow: !(entry.is_public ?? false) ? '0 0 4px #FF69B4' : `0 0 4px ${entryTheme.glow}`
                               }}
                             >
-                              {!(entry.is_public ?? false) ? '🔒 PRIVATE' : 'PUBLIC'}
+                              {!(entry.is_public ?? false) ? 'PRIVATE' : 'PUBLIC'}
                             </button>
                           </div>
                         </div>
@@ -1068,122 +1072,15 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                   boxShadow: `0 0 8px #00BFFF20`
                                 }}
                               >
-                                <div className="flex items-center gap-2 mb-3">
-                                  <img 
-                                    src="/elements/binder.webp" 
-                                    alt="Binder" 
-                                    className="w-5 h-5"
-                                    style={{
-                                      filter: `drop-shadow(0 0 4px #00BFFF)`
-                                    }}
-                                  />
-                                  <div 
-                                    className="text-sm font-semibold uppercase tracking-wider"
-                                    style={{ color: '#00BFFF', textShadow: `0 0 4px #00BFFF` }}
-                                  >
-                                    Card Collection
-                                  </div>
-                                </div>
-                                
-                                {/* Card Grid - Show first 4 cards with right arrow */}
-                                <div className="flex items-center gap-2">
-                                  <div className="grid grid-cols-4 gap-2 flex-1">
-                                    {Array.from({ length: 4 }, (_, index) => {
-                                      const collectedCard = profile?.cards?.[index];
-                                      const hasCard = !!collectedCard?.cards;
-                                      const cardSlots = profile?.card_slots ?? 0;
-                                      const isSlotUnlocked = index < cardSlots;
-                                      
-                                      return (
-                                        <div
-                                          key={index}
-                                          className="relative aspect-[3/4] rounded-lg flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-200 hover:scale-105"
-                                          style={{
-                                            background: hasCard 
-                                              ? 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)'
-                                              : isSlotUnlocked 
-                                                ? 'linear-gradient(135deg, #333 0%, #555 100%)'
-                                                : 'linear-gradient(135deg, #111 0%, #222 100%)',
-                                            border: hasCard 
-                                              ? '2px solid #00BFFF60'
-                                              : isSlotUnlocked
-                                                ? '2px dashed #00BFFF40'
-                                                : '2px solid #333',
-                                            boxShadow: hasCard ? '0 0 8px #00BFFF30' : 'none'
-                                          }}
-                                          onClick={() => {
-                                            if (hasCard) {
-                                              try { sfx.play('click', 0.6); } catch {}
-                                              setSelectedCard(collectedCard.cards);
-                                              setIsCardFlipped(false);
-                                            }
-                                          }}
-                                        >
-                                          {hasCard ? (
-                                            <img
-                                              src={`/cards/${collectedCard.cards.card_name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/--+/g, '-').replace(/^-|-$/g, '')}.webp`}
-                                              alt={collectedCard.cards.card_name}
-                                              className="w-full h-full object-cover"
-                                              draggable={false}
-                                              onError={(e) => {
-                                                // Fallback image if card image doesn't exist
-                                                e.currentTarget.src = '/cards/default-card.webp';
-                                              }}
-                                            />
-                                          ) : isSlotUnlocked ? (
-                                            <div className="text-center text-white/40 text-xs">
-                                              <div>+</div>
-                                              <div>SLOT</div>
-                                            </div>
-                                          ) : (
-                                            <div className="text-center text-white/20 text-xs">
-                                              <div>🔒</div>
-                                            </div>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                  
-                                  {/* Right arrow button */}
-                                  {(profile?.cards?.length || 0) > 4 && (
-                                    <button
-                                      onClick={() => {
-                                        try { sfx.play('click', 0.4); } catch {}
-                                        // This could open full binder or show next cards
-                                        setShowCardsModal(true);
-                                      }}
-                                      className="flex items-center justify-center w-6 h-8 rounded transition-all duration-200 hover:scale-105"
-                                      style={{
-                                        background: 'rgba(0, 191, 255, 0.1)',
-                                        border: '1px solid #00BFFF40',
-                                        color: '#00BFFF',
-                                        boxShadow: '0 0 4px #00BFFF20'
-                                      }}
-                                    >
-                                      <svg 
-                                        width="12" 
-                                        height="12" 
-                                        viewBox="0 0 24 24" 
-                                        fill="none"
-                                        stroke="currentColor" 
-                                        strokeWidth="2"
-                                      >
-                                        <path d="m9 18 6-6-6-6"/>
-                                      </svg>
-                                    </button>
-                                  )}
-                                </div>
-                                
-                                {/* Card Stats */}
-                                <div className="flex justify-between items-center mt-3 pt-2 border-t border-white/10">
-                                  <div className="text-xs text-white/60">
-                                    Collected: {profile?.cards?.length || 0} cards
-                                  </div>
-                                  <div className="text-xs text-white/60">
-                                    Slots: {profile?.card_slots || 0}
-                                  </div>
-                                </div>
+                                <UserCards
+                                  userId={entry.user_id}
+                                  showTitle={true}
+                                  maxCards={4}
+                                  onCardClick={(card) => {
+                                    setSelectedCard(card);
+                                    setIsCardFlipped(false);
+                                  }}
+                                />
                               </div>
                             )}
 
@@ -1197,100 +1094,11 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                   boxShadow: `0 0 8px #FF69B420`
                                 }}
                               >
-                                <div className="flex items-center gap-2 mb-3">
-                                  <img 
-                                    src="/elements/badges.webp" 
-                                    alt="Badges" 
-                                    className="w-5 h-5"
-                                    style={{
-                                      filter: `drop-shadow(0 0 4px #FF69B4)`
-                                    }}
-                                  />
-                                  <div 
-                                    className="text-sm font-semibold uppercase tracking-wider"
-                                    style={{ color: '#FF69B4', textShadow: `0 0 4px #FF69B4` }}
-                                  >
-                                    Badges Collection
-                                  </div>
-                                </div>
-                                
-                                {/* Badge Row - Show first 6 badges */}
-                                <div className="flex items-center gap-2">
-                                  <div className="flex gap-2 flex-1">
-                                    {Array.from({ length: 6 }, (_, index) => {
-                                      const userBadgeIds = new Set(profile?.user_badges?.map(ub => ub.badge_id) || []);
-                                      const userUnlockedBadges = profile?.all_badges?.filter(badge => userBadgeIds.has(badge.id)) || [];
-                                      const badge = userUnlockedBadges[index];
-                                      const hasBadge = !!badge;
-                                      
-                                      return (
-                                        <div
-                                          key={index}
-                                          className="relative w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
-                                          style={{
-                                            background: hasBadge 
-                                              ? 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)'
-                                              : 'linear-gradient(135deg, #111 0%, #222 100%)',
-                                            border: hasBadge 
-                                              ? '2px solid #FF69B460'
-                                              : '2px solid #333',
-                                            boxShadow: hasBadge ? '0 0 8px #FF69B430' : 'none'
-                                          }}
-                                        >
-                                          {hasBadge ? (
-                                            <img
-                                              src={badge.icon_url || '/elements/badges.webp'}
-                                              alt={badge.badge_name}
-                                              className="w-8 h-8 object-cover rounded-full"
-                                              draggable={false}
-                                            />
-                                          ) : (
-                                            <div className="text-center text-white/20 text-xs">
-                                              <div>🏅</div>
-                                            </div>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                  
-                                  {/* Right arrow button - Always show for pagination */}
-                                  <button
-                                    onClick={() => {
-                                      try { sfx.play('click', 0.4); } catch {}
-                                      // Navigate to next page of badges
-                                      console.log('Navigate to next badges page');
-                                    }}
-                                    className="flex items-center justify-center w-8 h-8 rounded transition-all duration-200 hover:scale-105"
-                                    style={{
-                                      background: 'rgba(255, 105, 180, 0.1)',
-                                      border: '1px solid #FF69B440',
-                                      color: '#FF69B4',
-                                      boxShadow: '0 0 4px #FF69B420'
-                                    }}
-                                  >
-                                    <svg 
-                                      width="14" 
-                                      height="14" 
-                                      viewBox="0 0 24 24" 
-                                      fill="none"
-                                      stroke="currentColor" 
-                                      strokeWidth="2"
-                                    >
-                                      <path d="m9 18 6-6-6-6"/>
-                                    </svg>
-                                  </button>
-                                </div>
-                                
-                                {/* Badge Stats */}
-                                <div className="flex justify-between items-center mt-3 pt-2 border-t border-white/10">
-                                  <div className="text-xs text-white/60">
-                                    Earned: {profile?.user_badges?.length || 0} badges
-                                  </div>
-                                  <div className="text-xs text-white/60">
-                                    Total: {profile?.all_badges?.length || 0}
-                                  </div>
-                                </div>
+                                <UserBadges
+                                  userId={entry.user_id}
+                                  showTitle={true}
+                                  maxBadges={6}
+                                />
                               </div>
                             )}
 
@@ -1426,7 +1234,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         >
           {/* Main Entry Card Container */}
           <div 
-            className="rounded-lg px-1 py-2 space-y-4 sm:space-y-5"
+            className="rounded-lg px-1 pt-2 pb-1 space-y-3"
             style={{
               background: 'rgba(0, 0, 0, 0.7)',
               border: `1px solid ${elementTheme.color}60`,
@@ -1521,6 +1329,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
               {/* Privacy Toggle - Top Right */}
               <button
+                className="privacy-toggle-button"
                 onClick={async () => {
                   console.log('Privacy button clicked!', journalState.isPrivate);
                   try {
@@ -1559,7 +1368,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   zIndex: 10
                 }}
               >
-                {journalState.isPrivate ? '🔒 PRIVATE' : 'PUBLIC'}
+{journalState.isPrivate ? 'PRIVATE' : 'PUBLIC'}
               </button>
               
               {/* LIGHTNING Element - Top Left */}
@@ -1823,7 +1632,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-3 pt-1">
+                <div className="flex gap-3 pt-0">
                   {(!user?.id || !profile?.element) ? (
                     <button
                       onClick={() => {
@@ -2019,6 +1828,20 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         }
         .backface-hidden {
           backface-visibility: hidden;
+        }
+        /* Hide any lock icons that might appear in privacy toggle */
+        .privacy-toggle-button::before,
+        .privacy-toggle-button::after {
+          display: none !important;
+          content: none !important;
+        }
+        .privacy-toggle-button span[aria-hidden],
+        .privacy-toggle-button .lock-icon {
+          display: none !important;
+        }
+        /* Hide unicode lock characters */
+        .privacy-toggle-button {
+          font-feature-settings: "liga" 0;
         }
       `}</style>
 
