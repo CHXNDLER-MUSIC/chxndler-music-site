@@ -10,7 +10,7 @@ export type Profile = {
 };
 
 export type SoulJournalEntry = {
-  id: string;
+  entry_id: string;
   user_id: string;
   content: string;
   is_public: boolean;
@@ -46,7 +46,7 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
       let query = supabaseBrowser
         .from('soul_journal_entries')
         .select(`
-          id,
+          entry_id,
           user_id,
           soul_star,
           element,
@@ -87,7 +87,7 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
 
       // Map the data to our expected format
       const mappedEntries: SoulJournalEntry[] = (data || []).map((entry: any) => ({
-        id: entry.id,
+        entry_id: entry.entry_id,
         user_id: entry.user_id,
         content: entry.soul_star || '',
         is_public: entry.is_public ?? false,
@@ -128,13 +128,13 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
   // Function to update an entry in the local state
   const updateEntry = useCallback((entryId: string, updates: Partial<SoulJournalEntry>) => {
     setEntries(prev => prev.map(entry => 
-      entry.id === entryId ? { ...entry, ...updates } : entry
+      entry.entry_id === entryId ? { ...entry, ...updates } : entry
     ));
   }, []);
 
   // Function to remove an entry from the local state
   const removeEntry = useCallback((entryId: string) => {
-    setEntries(prev => prev.filter(entry => entry.id !== entryId));
+    setEntries(prev => prev.filter(entry => entry.entry_id !== entryId));
   }, []);
 
   return {

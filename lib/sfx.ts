@@ -22,6 +22,7 @@ class SFXBus {
     "join-aliens": "/audio/join-alien.mp3", // alias for convenience
     "join-alien": "/audio/join-alien.mp3",
     change: "/audio/change-channel.mp3",
+    "change-channel": "/audio/change-channel.mp3", // alias for consistency across code
     pause: "/audio/pause.mp3",
     launch: "/audio/launch.mp3",
     select: "/audio/song-select.mp3",

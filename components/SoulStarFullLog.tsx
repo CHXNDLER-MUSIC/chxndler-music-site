@@ -70,7 +70,7 @@ export default function SoulStarFullLog({ userId }: SoulStarFullLogProps) {
   const handleEditClick = (entry: SoulStarLogEntry, e: React.MouseEvent) => {
     e.stopPropagation();
     sfx.play('click', 0.6);
-    setEditingEntry(entry.id);
+    setEditingEntry(entry.entry_id);
     setEditText(entry.soulStar);
   };
 
@@ -83,14 +83,14 @@ export default function SoulStarFullLog({ userId }: SoulStarFullLogProps) {
       const { data, error } = await supabaseClient
         .from('soul_journal_entries')
         .update({ soul_star: editText.trim() })
-        .eq('id', entry.id)
+        .eq('entry_id', entry.entry_id)
         .select()
         .single();
       
       if (error) throw error;
 
       setEntries(prev => prev.map(e => 
-        e.id === entry.id 
+        e.entry_id === entry.entry_id 
           ? { ...e, soulStar: editText.trim() }
           : e
       ));
@@ -115,10 +115,10 @@ export default function SoulStarFullLog({ userId }: SoulStarFullLogProps) {
       sfx.play('click', 0.8);
       const newPrivacy = !entry.isPrivate;
       
-      await updateSoulStarPrivacy(entry.id, newPrivacy);
+      await updateSoulStarPrivacy(entry.entry_id, newPrivacy);
       
       setEntries(prev => prev.map(e => 
-        e.id === entry.id 
+        e.entry_id === entry.entry_id 
           ? { ...e, isPrivate: newPrivacy }
           : e
       ));
@@ -196,12 +196,12 @@ export default function SoulStarFullLog({ userId }: SoulStarFullLogProps) {
         const entryColor = ELEMENT_COLORS[entry.element as keyof typeof ELEMENT_COLORS]?.color || "#F91880";
         const entryGlow = ELEMENT_COLORS[entry.element as keyof typeof ELEMENT_COLORS]?.glow || "#F918B0";
         const entryEmoji = ELEMENT_EMOJIS[entry.element as keyof typeof ELEMENT_EMOJIS] || "💖";
-        const isExpanded = expandedEntry === entry.id;
-        const isEditing = editingEntry === entry.id;
+        const isExpanded = expandedEntry === entry.entry_id;
+        const isEditing = editingEntry === entry.entry_id;
         
         return (
           <div 
-            key={entry.id}
+            key={entry.entry_id}
             className="rounded-lg overflow-hidden"
             style={{
               background: `${entryColor}08`,
@@ -212,7 +212,7 @@ export default function SoulStarFullLog({ userId }: SoulStarFullLogProps) {
             {/* Header row */}
             <div 
               className="p-3 cursor-pointer hover:bg-black/20 flex items-center justify-between"
-              onClick={() => handleEntryClick(entry.id)}
+              onClick={() => handleEntryClick(entry.entry_id)}
             >
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <div className="text-sm font-semibold" style={{ color: entryColor }}>

@@ -567,7 +567,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         console.error('Failed to play warp effect:', err);
       }
 
-      // 3. Load the selected track but don't auto-play
+      // 3. Load the selected track and auto-play after warp completes
       const a = audioRef.current;
       if (!a) return;
 
@@ -614,18 +614,26 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      // 4. Update state with the loaded track (but keep playing: false)
+      // 4. Update state with the loaded track and start playback
       // Don't override duration - let the audio metadata loading handle it
       setState(s => ({ 
         ...s, 
         src: trackSource, 
         currentTrack: trackInfo,
         currentTime: 0,
-        playing: false,
+        // Set playing true optimistically for snappy UI; onPlay event will confirm
+        playing: true,
         isLoading: false
       }));
 
-      console.log('🎵 Track loaded and ready for play button:', normId);
+      try {
+        await a.play();
+        console.log('🎵 Auto-played selected track after warp:', normId);
+      } catch (err) {
+        console.error('Failed to auto-play after warp:', err);
+        // Reflect failure in state so UI shows correct status
+        setState(s => ({ ...s, playing: false }));
+      }
     },
 
     playTrack: async (trackId: string) => {

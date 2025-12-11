@@ -1229,11 +1229,11 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
           position: relative;
           display:grid; place-items:center;
           border-radius:9999px;
-          /* Neutral glass look when inactive */
+          /* Match Live Stream button: black glass shell */
           background:
-            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
-            rgba(255,255,255,0.18);
-          border:1px solid rgba(255,255,255,.14);
+            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.08), rgba(255,255,255,0) 42%),
+            linear-gradient(180deg, #0b0b0b, #000 64%);
+          border:1px solid rgba(255,255,255,.18);
           box-shadow:
             0 14px 24px rgba(0,0,0,.55),
             inset 0 1px 0 rgba(255,255,255,.22),
@@ -1296,10 +1296,11 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
         
         /* Enhanced glow effects when blue display is active */
         .power-btn-active {
-          /* Blue tint only when active */
+          /* Keep dark shell, add cyan tint overlay when active */
           background:
-            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
-            rgba(25,227,255,0.45);
+            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.08), rgba(255,255,255,0) 42%),
+            rgba(25,227,255,0.35),
+            linear-gradient(180deg, #0b0b0b, #000 64%);
           animation: powerActiveGlow 2s ease-in-out infinite, powerPulse 2.6s ease-in-out infinite;
           box-shadow:
             0 14px 28px rgba(0,0,0,.6),

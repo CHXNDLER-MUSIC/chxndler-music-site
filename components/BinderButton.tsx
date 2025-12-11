@@ -370,8 +370,8 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
     e.preventDefault();
     e.stopPropagation();
     try { sfx.play('click', 0.8); } catch {}
-    // Change beam color to magenta when Binder button is clicked
-    try { onBeamColorChange?.('magenta'); } catch {}
+    // Change beam color to pink when Binder button is clicked
+    try { onBeamColorChange?.('pink'); } catch {}
     // Close blue display first
     try { onCloseBlueDisplay?.(); } catch {}
     // Only open the binder modal, don't call other onClick handlers

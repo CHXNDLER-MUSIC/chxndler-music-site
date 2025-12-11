@@ -645,6 +645,11 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             {/* Category Selection Grid */}
             <div className="mt-6 p-4 bg-black/20 rounded-xl border border-white/10">
               <div className="text-center mb-4">
+                <div className="mb-3">
+                  <span className="text-pink-400 text-lg font-bold uppercase tracking-wider" style={{ textShadow: '0 0 8px rgba(255,105,180,0.6)' }}>
+                    BADGES UNLOCKED: {profile?.badges_unlocked || userUnlockedBadges.length}
+                  </span>
+                </div>
                 <h4 className="text-white/90 text-sm font-bold uppercase tracking-wider">
                   Choose a category to explore your badges and track your progress through the Heartverse.
                 </h4>

@@ -74,16 +74,26 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
     sfx.play('change', 0.5);
   };
 
-  const handleItemClick = (label: string) => {
+  const handleItemClick = (e: React.MouseEvent, label: string) => {
+    // Prevent this click from bubbling or re-targeting underlying UI when the menu closes
+    try { e.preventDefault(); } catch {}
+    try { e.stopPropagation(); } catch {}
+
     sfx.play('click', 0.7);
-    
-    // Always call the parent click handler
-    onItemClick?.(label);
-    if (externalIsOpen !== undefined) {
-      onMenuToggle?.(false);
-    } else {
-      setInternalIsOpen(false);
-    }
+
+    // Call the parent click handler
+    try { onItemClick?.(label); } catch {}
+
+    // Close the menu after a short delay to avoid the click landing on underlying elements
+    const close = () => {
+      if (externalIsOpen !== undefined) {
+        onMenuToggle?.(false);
+      } else {
+        setInternalIsOpen(false);
+      }
+    };
+    // Schedule on next tick
+    setTimeout(close, 60);
   };
 
   return (
@@ -186,7 +196,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                       setBadgesPoppedOut(true);
                       setTimeout(() => setBadgesPoppedOut(false), 200);
                     }
-                    handleItemClick(item.label);
+                    handleItemClick(e, item.label);
                   }}
                   onMouseEnter={handleMenuItemHover}
                   data-tour-id={

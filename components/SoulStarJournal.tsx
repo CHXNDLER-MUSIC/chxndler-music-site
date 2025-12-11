@@ -45,7 +45,7 @@ interface Profile {
 }
 
 interface JournalEntry {
-  id: string;
+  entry_id: string;
   entry_date: string;
   created_at: string;
   element: string;
@@ -280,11 +280,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         element: dailyPrompt.element,
         prompt_id: dailyPrompt?.id || null,
         intention: dailyPrompt?.intention?.text || null,
-        reflection: dailyPrompt?.soul_star?.text || null, // PROMPT QUESTION text goes to reflection column
-        intention_response: null, // Could be used later for intention responses
-        reflection_response: null, // Could be used later for separate reflection responses
-        soul_star: soulStarText.trim(), // USER'S written reflection text
-        is_public: !journalState.isPrivate // Convert isPrivate boolean to is_public
+        is_public: !journalState.isPrivate
       });
 
       if (!result) {
@@ -368,7 +364,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const handleEditClick = (entry: JournalEntry, e: React.MouseEvent) => {
     e.stopPropagation();
     sfx.play('click', 0.6);
-    setEditingEntry(entry.id);
+    setEditingEntry(entry.entry_id);
     setEditResponse(entry.soul_star || "");
   };
 
@@ -512,14 +508,14 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           }}
         >
           {/* Title Section with FULL LOG button and title */}
-          <div className="text-center mb-2 relative">
+          <div className="text-center mb-0.5 relative">
             {/* Full Log Button - Left of Title */}
             <button
               onClick={() => {
                 try { sfx.play('click', 0.8); } catch {}
                 setShowHistory(!showHistory);
               }}
-              className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs font-semibold transition-all duration-200 hover:opacity-100 px-3 py-1 rounded z-20"
+              className="absolute left-2 top-1/2 transform -translate-y-1/2 text-sm font-semibold transition-all duration-200 hover:opacity-100 px-3 py-1.5 rounded z-20"
               style={{
                 color: '#00FFFF',
                 textShadow: `0 0 8px #00FFFF, 0 0 15px #00FFFF, 0 0 25px #00FFFF`,
@@ -554,7 +550,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
             {/* SOUL STAR JOURNAL Title */}
             <div 
-              className="text-lg font-bold tracking-wider mb-2"
+              className="text-lg font-bold tracking-wider mt-0.5 mb-4"
               style={{
                 color: elementTheme.color,
                 textShadow: `0 0 15px ${elementTheme.glow}, 0 0 30px ${elementTheme.glow}`,
@@ -564,26 +560,26 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               SOUL STAR JOURNAL
             </div>
             
-            {/* Yellow line below title */}
+            {/* Element-colored line below title */}
             <div 
               className="mx-auto"
               style={{
                 width: 'min(300px, 90%)',
                 height: '2px',
-                background: '#F2EF1D',
-                boxShadow: '0 0 8px #F2EF1D, 0 0 15px #FFFF00'
+                background: elementTheme.color,
+                boxShadow: `0 0 8px ${elementTheme.color}, 0 0 15px ${elementTheme.glow}`
               }}
             />
           </div>
 
           {/* Tabs Switcher - below yellow line, Public left, Private right */}
-          <div className="flex items-center justify-center gap-4 p-3 border-b border-white/20">
+          <div className="flex items-center justify-center gap-4 px-3 py-1 border-b border-white/20">
             <button
               onClick={() => {
                 try { sfx.play('change-channel', 0.8); } catch {}
                 setActiveTab('public');
               }}
-              className="px-4 py-2 rounded-full text-sm font-semibold uppercase transition-all"
+              className="px-4 py-1.5 rounded-full text-sm font-semibold uppercase transition-all"
               style={{
                 background: activeTab === 'public' ? '#00FF0030' : 'rgba(0,0,0,0.4)',
                 color: activeTab === 'public' ? '#00FF00' : '#FFFFFFCC',
@@ -599,7 +595,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 try { sfx.play('change-channel', 0.8); } catch {}
                 setActiveTab('private');
               }}
-              className="px-4 py-2 rounded-full text-sm font-semibold uppercase transition-all"
+              className="px-4 py-1.5 rounded-full text-sm font-semibold uppercase transition-all"
               style={{
                 background: activeTab === 'private' ? '#FF69B430' : 'rgba(0,0,0,0.4)',
                 color: activeTab === 'private' ? '#FF69B4' : '#FFFFFFCC',
@@ -622,14 +618,14 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     const entryElement = entry.element as keyof typeof ELEMENT_COLORS;
                     const entryTheme = ELEMENT_COLORS[entryElement] || ELEMENT_COLORS.heart;
                     const entryEmoji = ELEMENT_EMOJIS[entryElement] || "💖";
-                    const isEditing = editingEntry === entry.id;
+                    const isEditing = editingEntry === entry.entry_id;
                     
-                    const isExpanded = expandedEntry === entry.id;
+                    const isExpanded = expandedEntry === entry.entry_id;
                     
                     return (
                       <div
-                        key={entry.id}
-                        onClick={() => handleEntryClick(entry.id)}
+                        key={entry.entry_id}
+                        onClick={() => handleEntryClick(entry.entry_id)}
                         className="rounded-lg p-2 space-y-2 cursor-pointer transition-all duration-200 hover:opacity-90"
                         style={{
                           background: 'rgba(0, 0, 0, 0.4)',
@@ -659,7 +655,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                 e.stopPropagation();
                                 try { sfx.play('change-channel', 0.8); } catch {}
                                 const currentIsPrivate = !(entry.is_public ?? false);
-                                updateJournalEntry(entry.id, { is_public: currentIsPrivate });
+                                updateJournalEntry(entry.entry_id, { is_public: currentIsPrivate });
                               }}
                               className="px-2 py-1 rounded text-xs font-semibold transition-all"
                               style={{
@@ -791,7 +787,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                               ) : (
                                 <>
                                   <button
-                                    onClick={() => handleSaveEdit(entry.id)}
+                                    onClick={() => handleSaveEdit(entry.entry_id)}
                                     className="text-xs px-2 py-1 rounded hover:opacity-80 transition-all"
                                     style={{
                                       background: '#22C55E20',
@@ -865,14 +861,14 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     const entryElement = entry.element as keyof typeof ELEMENT_COLORS;
                     const entryTheme = ELEMENT_COLORS[entryElement] || ELEMENT_COLORS.heart;
                     const entryEmoji = ELEMENT_EMOJIS[entryElement] || "💖";
-                    const isEditing = editingEntry === entry.id;
+                    const isEditing = editingEntry === entry.entry_id;
                     
-                    const isExpanded = expandedEntry === entry.id;
+                    const isExpanded = expandedEntry === entry.entry_id;
                     
                     return (
                       <div
-                        key={entry.id}
-                        onClick={() => handleEntryClick(entry.id)}
+                        key={entry.entry_id}
+                        onClick={() => handleEntryClick(entry.entry_id)}
                         className="rounded-lg p-2 space-y-2 cursor-pointer transition-all duration-200 hover:opacity-90"
                         style={{
                           background: 'rgba(0, 0, 0, 0.4)',
@@ -886,7 +882,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                             {/* Profile Info with Image and Username */}
                             <div className="flex items-center gap-2">
                               <img 
-                                src={entry.profiles?.avatar_url || "/elements/alien.webp"} 
+                                src={profile?.profile_image_url || "/elements/alien.webp"} 
                                 alt="User" 
                                 className="w-6 h-6 rounded-full object-cover"
                                 style={{
@@ -895,7 +891,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                 }}
                               />
                               <div className="text-xs font-medium text-white/80">
-                                {entry.profiles?.name || 'Anonymous'}
+                                {profile?.name || 'Anonymous'}
                               </div>
                             </div>
                             <div className="text-sm font-semibold text-white/90">{getDisplayDateString(entry.entry_date)}</div>
@@ -910,25 +906,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                             >
                               {entryEmoji} {entry.element?.toUpperCase()}
                             </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                try { sfx.play('change-channel', 0.8); } catch {}
-                                const currentIsPrivate = !(entry.is_public ?? false);
-                                updateJournalEntry(entry.id, { is_public: currentIsPrivate });
-                              }}
-                              className="px-2 py-1 rounded text-xs font-semibold transition-all"
-                              style={{
-                                background: !(entry.is_public ?? false) ? '#FF69B420' : `${entryTheme.color}20`,
-                                border: `1px solid ${!(entry.is_public ?? false) ? '#FF69B460' : entryTheme.color + '60'}`,
-                                color: !(entry.is_public ?? false) ? '#FF69B4' : entryTheme.color,
-                                textShadow: !(entry.is_public ?? false) ? '0 0 4px #FF69B4' : `0 0 4px ${entryTheme.glow}`
-                              }}
-                            >
-                              {!(entry.is_public ?? false) ? 'PRIVATE' : 'PUBLIC'}
-                            </button>
                           </div>
                         </div>
 
@@ -1148,7 +1125,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                               ) : (
                                 <>
                                   <button
-                                    onClick={() => handleSaveEdit(entry.id)}
+                                    onClick={() => handleSaveEdit(entry.entry_id)}
                                     className="text-xs px-2 py-1 rounded hover:opacity-80 transition-all"
                                     style={{
                                       background: '#22C55E20',
@@ -1234,7 +1211,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         >
           {/* Main Entry Card Container */}
           <div 
-            className="rounded-lg px-1 pt-2 pb-1 space-y-3"
+            className="rounded-lg px-1 pt-2 pb-1.5 space-y-3"
             style={{
               background: 'rgba(0, 0, 0, 0.7)',
               border: `1px solid ${elementTheme.color}60`,
@@ -1243,7 +1220,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             }}
           >
             {/* Title Section */}
-            <div className="text-center mb-2 relative">
+              <div className="text-center mb-1 relative">
               {/* Full Log Button - Left of Title */}
               <button
                 onClick={() => {
@@ -1255,7 +1232,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   }
                   setShowHistory(!showHistory);
                 }}
-                className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs font-semibold transition-all duration-200 hover:opacity-100 px-3 py-1 rounded z-20"
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 text-sm font-semibold transition-all duration-200 hover:opacity-100 px-3 py-1.5 rounded z-20"
                 style={{
                   color: '#00FFFF',
                   textShadow: `0 0 8px #00FFFF, 0 0 15px #00FFFF, 0 0 25px #00FFFF`,
@@ -1290,7 +1267,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
               {/* SOUL STAR JOURNAL Title */}
               <div 
-                className="text-lg font-bold tracking-wider mb-2"
+                className="text-lg font-bold tracking-wider mt-0.5 mb-4"
                 style={{
                   color: elementTheme.color,
                   textShadow: `0 0 15px ${elementTheme.glow}, 0 0 30px ${elementTheme.glow}`,
@@ -1300,21 +1277,21 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 SOUL STAR JOURNAL
               </div>
               
-              {/* Yellow line below title */}
+              {/* Element-colored line below title */}
               <div 
                 className="mx-auto"
                 style={{
                   width: 'min(300px, 90%)',
                   height: '2px',
-                  background: '#F2EF1D',
-                  boxShadow: '0 0 8px #F2EF1D, 0 0 15px #FFFF00'
+                  background: elementTheme.color,
+                  boxShadow: `0 0 8px ${elementTheme.color}, 0 0 15px ${elementTheme.glow}`
                 }}
               />
             </div>
 
 
             {/* Header Layout - Date and Element */}
-            <div className="relative pb-3">
+            <div className="relative pb-5">
               {/* Date - Top Center */}
               <div 
                 className="absolute top-0 left-1/2 transform -translate-x-1/2 text-lg font-semibold"
@@ -1348,7 +1325,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     );
                     if (todayEntry) {
                       try {
-                        await updateJournalEntry(todayEntry.id, { is_public: !newPrivacySetting });
+                        await updateJournalEntry(todayEntry.entry_id, { is_public: !newPrivacySetting });
                       } catch (error) {
                         console.error('Failed to update privacy setting:', error);
                         // Revert the state if update failed
@@ -1394,7 +1371,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
             {/* Section Cards */}
             {dailyPrompt && (
-              <div className="space-y-0">
+              <div className="space-y-0 mt-2">
                 {/* Intention Card */}
                 <div 
                   className="rounded-lg px-1 pt-0.5 pb-1 -mx-1"

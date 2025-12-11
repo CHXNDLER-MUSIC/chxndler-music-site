@@ -160,27 +160,47 @@ export default function ProfileBar({
   // Check if journal was completed today
   const checkJournalCompletion = async () => {
     try {
-      // Prefer auth context over an additional getUser() call
       if (!user) return false;
 
-      const today = getLocalDateString(); // YYYY-MM-DD (America/New_York)
-      
-      // Check for journal entry with soul_star content for today
-      const { data: journalEntries, error } = await supabaseBrowser
+      // Prefer checking by today's prompt_id when available
+      let promptId: string | null = null;
+      try {
+        const resp = await fetch('/api/soulPrompt/daily');
+        if (resp.ok) {
+          const prompt = await resp.json();
+          if (prompt?.id && typeof prompt.id === 'string') {
+            promptId = prompt.id;
+          }
+        }
+      } catch {}
+
+      if (promptId) {
+        const { data, error } = await supabaseBrowser
+          .from('soul_journal_entries')
+          .select('entry_id')
+          .eq('user_id', user.id)
+          .eq('prompt_id', promptId)
+          .limit(1);
+        if (error) {
+          console.error('Error checking journal completion by prompt_id:', (error as any)?.message || error);
+          return false;
+        }
+        return (data?.length ?? 0) > 0;
+      }
+
+      // Fallback: check by entry_date (local date)
+      const today = getLocalDateString();
+      const { data, error } = await supabaseBrowser
         .from('soul_journal_entries')
-        .select('soul_star')
+        .select('entry_id')
         .eq('user_id', user.id)
         .eq('entry_date', today)
         .limit(1);
-
       if (error) {
-        console.error('Error checking journal completion:', (error as any)?.message || error);
+        console.error('Error checking journal completion by date:', (error as any)?.message || error);
         return false;
       }
-
-      // Journal is completed if there's an entry with soul_star content
-      const entry = journalEntries?.[0];
-      return !!(entry && entry.soul_star && entry.soul_star.trim().length > 0);
+      return (data?.length ?? 0) > 0;
     } catch (error: any) {
       console.error('Error checking journal completion:', error?.message || error);
       return false;

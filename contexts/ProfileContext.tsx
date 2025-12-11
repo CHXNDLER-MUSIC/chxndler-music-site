@@ -99,19 +99,19 @@ interface Profile {
 }
 
 interface JournalEntry {
-  id: string;
+  entry_id: string; // primary key
   user_id: string;
-  entry_date: string;
-  element: string;
   prompt_id: string | null;
+  entry_date: string;
+  element: string | null;
   intention: string | null;
-  reflection: string | null; // prompt question text goes here (was 'prompt')
-  intention_response: string | null;
-  reflection_response: string | null; 
-  soul_star: string | null; // user's written reflection text
-  is_public?: boolean; // true for public entries, false for private
+  is_public: boolean | null;
   created_at: string;
-  updated_at: string;
+  // Optional legacy fields kept for UI compatibility if present
+  reflection?: string | null;
+  intention_response?: string | null;
+  reflection_response?: string | null;
+  soul_star?: string | null;
 }
 
 interface DailyPrompts {
@@ -164,10 +164,10 @@ interface ProfileContextType {
   journalEntries: JournalEntry[];
   loadJournalEntries: (userId: string) => Promise<void>;
   saveJournalEntry: (
-    entry: Omit<JournalEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
+    entry: Omit<JournalEntry, 'entry_id' | 'user_id' | 'created_at'>,
     options?: { sharePublic?: boolean }
   ) => Promise<JournalEntry | null>;
-  updateJournalEntry: (entryId: string, updates: Partial<Pick<JournalEntry, 'soul_star' | 'intention' | 'reflection' | 'is_private'>>) => Promise<void>;
+  updateJournalEntry: (entryId: string, updates: Partial<Pick<JournalEntry, 'intention' | 'is_public' | 'soul_star'>>) => Promise<void>;
   deleteJournalEntry: (entryId: string) => Promise<void>;
   getDailyPrompts: () => Promise<DailyPrompts | null>;
   isJournalOpen: boolean;
@@ -699,21 +699,16 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const saveJournalEntry = useCallback(async (
-    entry: Omit<JournalEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
+    entry: Omit<JournalEntry, 'entry_id' | 'user_id' | 'created_at'>,
     options?: { sharePublic?: boolean }
   ): Promise<JournalEntry | null> => {
     try {
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabaseBrowser.auth.getSession();
+      const { data: { user }, error: userError } = await supabaseBrowser.auth.getUser();
 
-      if (sessionError) {
-        console.error('Error getting session:', sessionError.message);
-        throw new Error(`Authentication error: ${sessionError.message}`);
+      if (userError) {
+        console.error('Error getting user:', userError);
+        throw new Error(`Authentication error: ${userError.message}`);
       }
-
-      const user = session?.user;
       if (!user) {
         console.error('No user session found');
         throw new Error('No user session found. Please log in again.');
@@ -724,7 +719,6 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         user_id: user.id,
         entry_date: entry.entry_date,
         element: entry.element,
-        soul_star: entry.soul_star?.trim() || null,
       };
 
       // Add fields from daily prompt (element, intention, prompt) 
@@ -756,17 +750,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         }
       }
       if (entry.intention !== null && entry.intention !== undefined) {
-        entryData.intention = entry.intention; // INTENTION from daily prompt
-      }
-      // Temporarily commented out until database schema is confirmed to have reflection column
-      // if (entry.reflection !== null && entry.reflection !== undefined) {
-      //   entryData.reflection = entry.reflection; // PROMPT QUESTION text from daily prompt
-      // }
-      if (entry.intention_response !== null && entry.intention_response !== undefined) {
-        entryData.intention_response = entry.intention_response; // USER'S response to intention
-      }
-      if (entry.reflection_response !== null && entry.reflection_response !== undefined) {
-        entryData.reflection_response = entry.reflection_response; // USER'S response to reflection prompt
+        entryData.intention = entry.intention;
       }
 
       // Handle is_public field instead of is_private
@@ -806,8 +790,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
       // Update local state
       setJournalEntries(prev => {
-        const filtered = prev.filter(e => e.entry_date !== data.entry_date || e.element !== data.element);
-        return [data, ...filtered].sort((a, b) => 
+        const filtered = prev.filter(e => e.entry_date !== (data as any).entry_date || e.element !== (data as any).element);
+        return [data as unknown as JournalEntry, ...filtered].sort((a, b) =>
           new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime()
         );
       });
@@ -828,24 +812,23 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   }, [profile]);
 
-  const updateJournalEntry = useCallback(async (entryId: string, updates: Partial<Pick<JournalEntry, 'soul_star' | 'intention' | 'prompt' | 'is_public'>>) => {
+  const updateJournalEntry = useCallback(async (entryId: string, updates: Partial<Pick<JournalEntry, 'intention' | 'is_public' | 'soul_star'>>) => {
     try {
       const { error } = await supabaseBrowser
         .from('soul_journal_entries')
         .update({
-          ...updates,
-          updated_at: new Date().toISOString()
+          ...updates
         })
-        .eq('id', entryId);
+        .eq('entry_id', entryId);
 
       if (error) {
         throw error;
       }
 
       // Update local state
-      setJournalEntries(prev => 
-        prev.map(entry => 
-          entry.id === entryId 
+      setJournalEntries(prev =>
+        prev.map(entry =>
+          entry.entry_id === entryId
             ? { ...entry, ...updates }
             : entry
         )
@@ -861,14 +844,14 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const { error } = await supabaseBrowser
         .from('soul_journal_entries')
         .delete()
-        .eq('id', entryId);
+        .eq('entry_id', entryId);
 
       if (error) {
         throw error;
       }
 
       // Update local state
-      setJournalEntries(prev => prev.filter(entry => entry.id !== entryId));
+      setJournalEntries(prev => prev.filter(entry => entry.entry_id !== entryId));
     } catch (error) {
       console.error('Error deleting journal entry:', error);
       throw error;

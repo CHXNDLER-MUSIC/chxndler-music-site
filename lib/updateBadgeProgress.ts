@@ -12,7 +12,7 @@ export async function updateBadgeProgressCounters(userId: string) {
     // Get current reflection count from soul_journal_entries
     const { data: reflectionData, error: reflectionError } = await supabaseBrowser
       .from('soul_journal_entries')
-      .select('id')
+      .select('entry_id')
       .eq('user_id', userId);
 
     if (reflectionError) {
@@ -62,7 +62,7 @@ export async function calculateRealtimeBadgeProgress(userId: string, requirement
       case 'reflections': {
         const { data, error } = await supabaseBrowser
           .from('soul_journal_entries')
-          .select('id')
+          .select('entry_id')
           .eq('user_id', userId);
         
         if (!error) {

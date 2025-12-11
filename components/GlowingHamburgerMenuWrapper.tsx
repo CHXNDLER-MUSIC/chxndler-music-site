@@ -56,6 +56,8 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
         break;
       case "JOURNAL":
       case "COMPLETED":
+        // Change beam color to pink when Journal is clicked
+        try { onBeamColorChange?.('pink'); } catch {}
         setJournalOpen(true);
         break;
       case "BADGES":

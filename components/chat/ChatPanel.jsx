@@ -253,6 +253,7 @@ export default function ChatPanel({ isOpen, onClose }) {
   const [binderStartIndex, setBinderStartIndex] = useState(0);
   const [selectedCardPopup, setSelectedCardPopup] = useState(null);
   const [cardFlipped, setCardFlipped] = useState(false);
+  const [selectedBadgePopup, setSelectedBadgePopup] = useState(null);
   const [activeTab, setActiveTab] = useState('chat'); // 'chat', 'voting', 'badges', 'cards'
   const [isVotingPanelCollapsed, setIsVotingPanelCollapsed] = useState(true); // Start collapsed by default
   const channelRef = useRef(null);
@@ -1075,12 +1076,12 @@ export default function ChatPanel({ isOpen, onClose }) {
                             <div className="flex items-center space-x-2 flex-1 min-w-0">
                               {/* User Icon */}
                               {selectedUser.id === 'anonymous' ? (
-                                <img src="/elements/alien.webp" alt="Alien" className="w-6 h-6 flex-shrink-0" />
+                                <img src="/elements/alien.webp" alt="Alien" className="w-7 h-7 flex-shrink-0" />
                               ) : selectedUser?.profile_image_url ? (
                                 <img 
                                   src={selectedUser.profile_image_url} 
                                   alt="Profile" 
-                                  className="w-6 h-6 rounded-full flex-shrink-0 object-cover"
+                                  className="w-7 h-7 rounded-full flex-shrink-0 object-cover"
                                   style={{
                                     border: '1px solid rgba(242, 239, 29, 0.5)',
                                     boxShadow: '0 0 8px rgba(242, 239, 29, 0.3)'
@@ -1094,7 +1095,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                       const el = (selectedUser.element || '').toLowerCase();
                                       img.src = el ? `/elements/${el}.webp` : '/elements/chxndler.webp';
                                       img.alt = 'Element';
-                                      img.className = 'w-6 h-6 flex-shrink-0 object-cover';
+                                      img.className = 'w-7 h-7 flex-shrink-0 object-cover';
                                       target.parentElement.appendChild(img);
                                     }
                                   }}
@@ -1104,7 +1105,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 <img 
                                   src={selectedUser?.element ? `/elements/${String(selectedUser.element).toLowerCase()}.webp` : '/elements/chxndler.webp'}
                                   alt="Element"
-                                  className="w-6 h-6 flex-shrink-0 object-cover rounded-full"
+                                  className="w-7 h-7 flex-shrink-0 object-cover rounded-full"
                                   style={{
                                     border: '1px solid rgba(242, 239, 29, 0.5)',
                                     boxShadow: '0 0 8px rgba(242, 239, 29, 0.3)'
@@ -1113,7 +1114,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                               )}
                               
                               <h3 
-                                className="text-base font-bold truncate flex-1"
+                                className="text-lg font-bold truncate flex-1"
                                 style={{
                                   color: '#F2EF1D',
                                   textShadow: '0 0 8px #F2EF1D'
@@ -1123,53 +1124,80 @@ export default function ChatPanel({ isOpen, onClose }) {
                               </h3>
                             </div>
                             
-                            {/* Total Heart Coins */}
+                            {/* Total Heart Coins + Journey */}
                             <div className="flex flex-col items-end space-y-0 flex-shrink-0">
-                              <div className="flex items-center space-x-1 px-2 py-0.5 rounded bg-black/30">
-                                <span className="text-xs text-white/80 font-medium">TOTAL</span>
-                                <img 
-                                  src="/elements/heart-coin.webp" 
-                                  alt="Total Heart Coins" 
-                                  className="w-4 h-4"
-                                />
-                                <span className="text-sm text-pink-400 font-bold">
-                                  {selectedUser.id === 'anonymous' 
-                                    ? 0 
-                                    : (user && profile?.heartcoin_balance !== undefined) 
-                                      ? profile.heartcoin_balance 
-                                      : (selectedUser.total_heart_coins || 0)
-                                  }
-                                </span>
-                                <button
-                                  onClick={() => {
-                                    try {
-                                      const audio = new Audio('/audio/close.mp3');
-                                      audio.volume = 0.5;
-                                      audio.play().catch(error => {
-                                        console.log('Close audio play failed:', error);
-                                      });
-                                    } catch (error) {
-                                      console.log('Close audio creation failed:', error);
-                                    }
-                                    setSelectedUser(null);
-                                    setShowUserBadges(false);
-                                    setShowUserBinder(false);
-                                    setShowSendHeartCoin(false);
-                                  }}
-                                  className="text-yellow-400 hover:text-yellow-300 transition-colors text-sm px-1 py-1 rounded flex-shrink-0 ml-1"
-                                  style={{
-                                    background: 'rgba(242, 239, 29, 0.1)',
-                                    border: '1px solid rgba(242, 239, 29, 0.3)',
-                                    color: '#F2EF1D',
-                                    textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
-                                  }}
+                              <div className="flex items-center space-x-2">
+                                {/* Journey to the left of TOTAL */}
+                                <span
+                                  className={"text-sm font-bold " + (
+                                    ((selectedUser.id === 'anonymous')
+                                      ? 'WANDERER'
+                                      : (user && profile?.journey)
+                                        ? String(profile.journey).toUpperCase()
+                                        : 'WANDERER') === 'LOVER'
+                                      ? 'text-pink-400'
+                                      : (((selectedUser.id === 'anonymous')
+                                          ? 'WANDERER'
+                                          : (user && profile?.journey)
+                                            ? String(profile.journey).toUpperCase()
+                                            : 'WANDERER') === 'DREAMER'
+                                          ? 'text-yellow-400'
+                                          : 'text-cyan-400')
+                                  )}
                                 >
-                                  ×
-                                </button>
+                                  { (selectedUser.id === 'anonymous')
+                                    ? 'WANDERER'
+                                    : (user && profile?.journey)
+                                      ? String(profile.journey).toUpperCase()
+                                      : 'WANDERER' }
+                                </span>
+
+                                <div className="flex items-center space-x-1 px-2 py-0.5 rounded bg-black/30">
+                                  <span className="text-xs text-white/80 font-medium">TOTAL</span>
+                                  <img 
+                                    src="/elements/heart-coin.webp" 
+                                    alt="Total Heart Coins" 
+                                    className="w-5 h-5"
+                                  />
+                                  <span className="text-base text-pink-400 font-bold">
+                                    {selectedUser.id === 'anonymous' 
+                                      ? 0 
+                                      : (user && profile?.heartcoin_balance !== undefined) 
+                                        ? profile.heartcoin_balance 
+                                        : (selectedUser.total_heart_coins || 0)
+                                    }
+                                  </span>
+                                  <button
+                                    onClick={() => {
+                                      try {
+                                        const audio = new Audio('/audio/close.mp3');
+                                        audio.volume = 0.5;
+                                        audio.play().catch(error => {
+                                          console.log('Close audio play failed:', error);
+                                        });
+                                      } catch (error) {
+                                        console.log('Close audio creation failed:', error);
+                                      }
+                                      setSelectedUser(null);
+                                      setShowUserBadges(false);
+                                      setShowUserBinder(false);
+                                      setShowSendHeartCoin(false);
+                                    }}
+                                    className="text-yellow-400 hover:text-yellow-300 transition-colors text-sm px-1 py-1 rounded flex-shrink-0 ml-1"
+                                    style={{
+                                      background: 'rgba(242, 239, 29, 0.1)',
+                                      border: '1px solid rgba(242, 239, 29, 0.3)',
+                                      color: '#F2EF1D',
+                                      textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
+                                    }}
+                                  >
+                                    ×
+                                  </button>
+                                </div>
                               </div>
                               {/* Days Streak */}
                               <div className="flex items-center space-x-1 px-2 py-0 text-xs text-white/70">
-                                <span className="text-yellow-400 font-bold">
+                                <span className="text-yellow-400 font-bold text-sm">
                                   {selectedUser.id === 'anonymous' 
                                     ? 0 
                                     : (user && profile?.daily_streak !== undefined) 
@@ -1214,7 +1242,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                               <img 
                                 src="/elements/badges.webp" 
                                 alt="Badges" 
-                                className="w-5 h-5"
+                                className="w-6 h-6"
                               />
                             </button>
                             
@@ -1248,7 +1276,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                               <img 
                                 src="/elements/binder.webp" 
                                 alt="Cards" 
-                                className="w-5 h-5"
+                                className="w-6 h-6"
                               />
                             </button>
                             
@@ -1441,6 +1469,18 @@ export default function ChatPanel({ isOpen, onClose }) {
                                           background: `linear-gradient(135deg, ${colors.bg}, ${colors.border})`,
                                           border: `2px solid ${colors.border}`,
                                           boxShadow: `0 0 15px ${colors.border}60, 0 0 25px ${colors.border}30`
+                                        }}
+                                        onClick={() => {
+                                          try {
+                                            const audio = new Audio('/audio/click.mp3');
+                                            audio.volume = 0.3;
+                                            audio.play().catch(error => {
+                                              console.log('Click audio play failed:', error);
+                                            });
+                                          } catch (error) {
+                                            console.log('Click audio creation failed:', error);
+                                          }
+                                          setSelectedBadgePopup(badge);
                                         }}
                                       >
                                         {badge.icon_url ? (
@@ -2030,6 +2070,100 @@ export default function ChatPanel({ isOpen, onClose }) {
             >
               ×
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Badge Popup Modal */}
+      {selectedBadgePopup && (
+        <div
+          className="absolute inset-0 z-[130] flex items-center justify-center p-6"
+          style={{ background: 'rgba(0, 0, 0, 0.8)' }}
+          onClick={() => setSelectedBadgePopup(null)}
+        >
+          <div
+            className="relative w-full max-w-sm rounded-lg p-5"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'rgba(0,0,0,0.6)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              boxShadow: '0 0 30px rgba(255, 105, 180, 0.25)'
+            }}
+          >
+            {(() => {
+              const getCategoryColors = (category) => {
+                switch(category) {
+                  case 'soul': return { bg: '#FFD700', border: '#FFA500' };
+                  case 'collector': return { bg: '#38B6FF', border: '#0EA5E9' };
+                  case 'community': return { bg: '#10B981', border: '#059669' };
+                  case 'elemental-streak': return { bg: '#FC54AF', border: '#EC4899' };
+                  case 'currency': return { bg: '#F59E0B', border: '#D97706' };
+                  case 'listening': return { bg: '#9333EA', border: '#7C3AED' };
+                  default: return { bg: '#FFD700', border: '#FFA500' };
+                }
+              };
+              const colors = getCategoryColors(selectedBadgePopup.category);
+              const fallbackEmoji = (() => {
+                switch(selectedBadgePopup.category) {
+                  case 'soul': return '⭐';
+                  case 'collector': return '🏆';
+                  case 'community': return '🌐';
+                  case 'elemental-streak': return '💠';
+                  case 'currency': return '💰';
+                  case 'listening': return '🎵';
+                  default: return '🏆';
+                }
+              })();
+              return (
+                <>
+                  <div className="flex items-center justify-center mb-4">
+                    <div
+                      className="w-28 h-28 rounded-full flex items-center justify-center border-4"
+                      style={{
+                        background: `linear-gradient(135deg, ${colors.bg}, ${colors.border})`,
+                        borderColor: colors.border,
+                        boxShadow: `0 0 25px ${colors.border}60, 0 0 45px ${colors.border}30`
+                      }}
+                    >
+                      {selectedBadgePopup.icon_url ? (
+                        <img
+                          src={selectedBadgePopup.icon_url}
+                          alt={selectedBadgePopup.badge_name || 'Badge'}
+                          className="w-16 h-16"
+                          style={{ filter: 'drop-shadow(0 0 6px rgba(0,0,0,0.8))' }}
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      ) : (
+                        <span className="text-5xl" style={{ filter: 'drop-shadow(0 0 6px rgba(0,0,0,0.8))' }}>
+                          {fallbackEmoji}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-semibold text-white mb-1">
+                      {selectedBadgePopup.badge_name}
+                    </div>
+                    {selectedBadgePopup.description && (
+                      <div className="text-sm text-white/80">
+                        {selectedBadgePopup.description}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setSelectedBadgePopup(null)}
+                    className="mt-4 w-full py-2 rounded-md text-sm font-medium transition-colors"
+                    style={{
+                      background: 'rgba(242, 239, 29, 0.15)',
+                      border: '1px solid rgba(242, 239, 29, 0.4)',
+                      color: '#F2EF1D'
+                    }}
+                  >
+                    Close
+                  </button>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}

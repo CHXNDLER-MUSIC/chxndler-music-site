@@ -80,7 +80,7 @@ export default function PublicJournalFeed() {
           const dateStr = created.toLocaleDateString();
           return (
             <div
-              key={entry.id}
+              key={entry.entry_id}
               className="rounded-lg p-3"
               style={{
                 background: `${theme.color}08`,
@@ -114,7 +114,7 @@ export default function PublicJournalFeed() {
                 <div className="flex-1">
                   {/* Username */}
                   <div className="text-sm font-semibold mb-1" style={{ color: theme.color }}>
-                    {entry.profiles?.name ? `@${entry.profiles.name}` : "@anonymous"}
+                    {entry.profiles?.name ? entry.profiles.name : "Anonymous"}
                   </div>
                   
                   {/* Date and Element */}
@@ -156,4 +156,3 @@ export default function PublicJournalFeed() {
     </div>
   );
 }
-

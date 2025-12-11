@@ -7,13 +7,16 @@ import HeartversePopup from "@/components/HeartversePopup";
 import PopoutShell from "@/components/PopoutShell";
 import { useBonusQuests } from '@/hooks/useBonusQuests';
 import { BonusQuestWithCompletion } from '@/types/bonusQuests';
+import { useMerchItems } from '@/hooks/useMerchItems';
+import { useMerchPurchase } from '@/hooks/useMerchPurchase';
+import { MerchItem } from '@/types/merch';
 
 type Props = {
   open: boolean;
   onClose: () => void;
   onOpenJournal?: () => void;
   onOpenWelcomeHome?: () => void;
-  initialTab?: 'earn' | 'use';
+  initialTab?: 'earn' | 'use' | 'merch' | 'cards';
 };
 
 type StoreItem = {
@@ -122,6 +125,8 @@ const storeItems: StoreItem[] = [
 export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWelcomeHome, initialTab = 'earn' }: Props) {
   const { profile, loading: profileLoading } = useProfile();
   const { bonusQuests, isLoading: questsLoading } = useBonusQuests();
+  const { items: merchItems, loading: merchLoading } = useMerchItems('physical');
+  const { purchaseWithHeartCoins, isProcessing } = useMerchPurchase();
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -317,7 +322,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         <div className="flex border-b border-white/20 mb-6">
           <button
             onClick={() => setActiveTab('earn')}
-            className={`px-6 py-3 font-bold text-sm transition-all duration-200 ${
+            className={`px-4 py-3 font-bold text-sm transition-all duration-200 ${
               activeTab === 'earn'
                 ? 'text-[#F2EF1D] border-b-2 border-[#F2EF1D]'
                 : 'text-white hover:text-white'
@@ -334,7 +339,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
           </button>
           <button
             onClick={() => setActiveTab('use')}
-            className={`px-6 py-3 font-bold text-sm transition-all duration-200 ${
+            className={`px-4 py-3 font-bold text-sm transition-all duration-200 ${
               activeTab === 'use'
                 ? 'text-[#F2EF1D] border-b-2 border-[#F2EF1D]'
                 : 'text-white hover:text-white'
@@ -348,6 +353,40 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
             }}
           >
             USE
+          </button>
+          <button
+            onClick={() => setActiveTab('merch')}
+            className={`px-4 py-3 font-bold text-sm transition-all duration-200 ${
+              activeTab === 'merch'
+                ? 'text-[#FC54AF] border-b-2 border-[#FC54AF]'
+                : 'text-white hover:text-white'
+            }`}
+            style={{
+              textShadow: activeTab === 'merch' 
+                ? '0 0 8px rgba(252,84,175,0.8), 0 0 15px rgba(252,84,175,0.6), 0 2px 4px rgba(0,0,0,0.8)' 
+                : '0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
+              backgroundColor: activeTab === 'merch' ? 'rgba(252,84,175,0.1)' : 'rgba(0,0,0,0.3)',
+              borderRadius: '8px 8px 0 0'
+            }}
+          >
+            MERCH
+          </button>
+          <button
+            onClick={() => setActiveTab('cards')}
+            className={`px-4 py-3 font-bold text-sm transition-all duration-200 ${
+              activeTab === 'cards'
+                ? 'text-[#4ECDC4] border-b-2 border-[#4ECDC4]'
+                : 'text-white hover:text-white'
+            }`}
+            style={{
+              textShadow: activeTab === 'cards' 
+                ? '0 0 8px rgba(78,205,196,0.8), 0 0 15px rgba(78,205,196,0.6), 0 2px 4px rgba(0,0,0,0.8)' 
+                : '0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
+              backgroundColor: activeTab === 'cards' ? 'rgba(78,205,196,0.1)' : 'rgba(0,0,0,0.3)',
+              borderRadius: '8px 8px 0 0'
+            }}
+          >
+            CARDS
           </button>
         </div>
 
@@ -689,6 +728,192 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
             </button>
           </div>
         )}
+          </div>
+        ) : activeTab === 'merch' ? (
+          <div>
+            {/* Error/Success Messages */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm">
+                {error}
+              </div>
+            )}
+            {message && (
+              <div className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg text-green-200 text-sm">
+                {message}
+              </div>
+            )}
+
+            <div className="text-center mb-6">
+              <p className="text-white/80 text-sm">
+                Trade your HeartCoins for collectibles and cards
+              </p>
+            </div>
+            
+            {/* Merch Items Grid */}
+            {merchLoading ? (
+              <div className="text-center py-8">
+                <div className="w-8 h-8 border-2 border-[#FC54AF] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                <p className="text-white/60 text-sm">Loading merchandise...</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[60vh] overflow-y-auto pr-2">
+                {merchItems.length > 0 ? merchItems.slice(0, 1).map((item) => (
+                  <div key={item.id} className="text-center space-y-4 p-4 bg-black/20 rounded-lg transition-all duration-300">
+                    <h3 className="text-lg font-bold text-white tracking-wider">
+                      {item.name.toUpperCase()}
+                    </h3>
+                    
+                    {/* Item Images */}
+                    <div className="relative h-48 w-full flex items-center justify-center">
+                      <img
+                        src={item.image_url || '/store/hat.webp'}
+                        alt={item.name}
+                        className="max-h-full max-w-full object-contain rounded-lg cursor-pointer hover:scale-105 transition-transform duration-300"
+                        onClick={() => {
+                          setEnlargedItem({
+                            name: item.name,
+                            image: item.image_url || '/store/hat.webp',
+                            image2: item.image_url_2 || undefined,
+                            stripeUrl: item.stripe_url || '',
+                            description: item.description || '',
+                            cost: item.cost_usd || 30,
+                            heartCoin: item.price_heartcoins
+                          });
+                          setEnlargedImageIndex(0);
+                        }}
+                      />
+                      {item.image_url_2 && (
+                        <img
+                          src={item.image_url_2}
+                          alt={`${item.name} alternative view`}
+                          className="max-h-full max-w-full object-contain rounded-lg absolute top-0 left-0 opacity-0 hover:opacity-100 transition-opacity duration-300 cursor-pointer"
+                          onClick={() => {
+                            setEnlargedItem({
+                              name: item.name,
+                              image: item.image_url || '/store/hat.webp',
+                              image2: item.image_url_2 || undefined,
+                              stripeUrl: item.stripe_url || '',
+                              description: item.description || '',
+                              cost: item.cost_usd || 30,
+                              heartCoin: item.price_heartcoins
+                            });
+                            setEnlargedImageIndex(0);
+                          }}
+                        />
+                      )}
+                    </div>
+                    
+                    {/* Price and Heart Coins */}
+                    <div className="flex items-center justify-between w-full px-2">
+                      {/* Left side - User heart coins */}
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-xs font-bold text-white/80">User</span>
+                        <div className="flex items-center gap-1">
+                          <img
+                            src="/elements/heart-coin.webp"
+                            alt="Heart Coin"
+                            className="w-4 h-4 object-contain"
+                            style={{
+                              filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
+                            }}
+                          />
+                          <span className="text-sm font-bold text-[#F2EF1D]">{profile?.heartcoin_balance || 0}</span>
+                        </div>
+                      </div>
+
+                      {/* Right side - Cost */}
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-xs font-bold text-white/80">Cost</span>
+                        <div className="flex items-center gap-1">
+                          <img
+                            src="/elements/heart-coin.webp"
+                            alt="Heart Coin"
+                            className="w-4 h-4 object-contain"
+                            style={{
+                              filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
+                            }}
+                          />
+                          <span className="text-sm font-bold text-[#F2EF1D]">{item.price_heartcoins}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Purchase Button */}
+                    <div className="flex justify-center">
+                      <button
+                        onClick={() => window.open(item.stripe_url || '#', '_blank')}
+                        className="px-3 py-2 rounded-lg font-bold text-sm text-green-400 hover:bg-green-500/20 hover:scale-105 transition-all duration-200"
+                      >
+                        PAY WITH ${item.cost_usd ? (item.cost_usd % 1 === 0 ? item.cost_usd.toFixed(0) : item.cost_usd.toFixed(1)) : '30'}
+                      </button>
+                    </div>
+                    
+                    {/* CONFIRM Button - This connects to orders table */}
+                    <button
+                      onClick={async () => {
+                        if (!profile) {
+                          setError("Please sign in to make purchases");
+                          return;
+                        }
+
+                        if ((profile.heartcoin_balance || 0) < item.price_heartcoins) {
+                          setError(`Insufficient HeartCoins! You need ${item.price_heartcoins} but only have ${profile.heartcoin_balance || 0}`);
+                          return;
+                        }
+
+                        setModalLoading(true);
+                        setError(null);
+                        setMessage(null);
+
+                        try {
+                          const result = await purchaseWithHeartCoins(item);
+                          
+                          if (result && result.success) {
+                            setMessage(`Successfully purchased ${item.name} for ${item.price_heartcoins} HeartCoins!`);
+                            // Refresh profile to update balance
+                            window.location.reload();
+                          } else {
+                            setError(`Failed to purchase ${item.name}`);
+                          }
+                        } catch (error: any) {
+                          console.error('Purchase error:', error);
+                          setError(error?.message || `Failed to purchase ${item.name}`);
+                        } finally {
+                          setModalLoading(false);
+                        }
+                      }}
+                      disabled={isProcessing || !profile || (profile.heartcoin_balance || 0) < item.price_heartcoins}
+                      className={`w-full py-2 px-4 rounded-lg font-bold text-xs transition-all duration-200 ${
+                        isProcessing || !profile || (profile.heartcoin_balance || 0) < item.price_heartcoins
+                          ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
+                          : 'bg-gradient-to-r from-[#FC54AF] to-[#FF69B4] text-white hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(252,84,175,0.6)]'
+                      }`}
+                      style={
+                        isProcessing || !profile || (profile.heartcoin_balance || 0) < item.price_heartcoins
+                          ? undefined
+                          : {
+                              boxShadow: '0 0 15px rgba(252,84,175,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
+                            }
+                      }
+                    >
+                      {isProcessing ? 'Processing...' : 'CONFIRM'}
+                    </button>
+                  </div>
+                )) : (
+                  <div className="text-center py-8 col-span-full">
+                    <p className="text-white/60 text-sm">No merchandise available</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : activeTab === 'cards' ? (
+          <div>
+            <div className="text-center mb-6">
+              <p className="text-white/80 text-sm">
+                Coming soon! Collect digital cards with HeartCoins.
+              </p>
+            </div>
           </div>
         ) : null}
       </div>

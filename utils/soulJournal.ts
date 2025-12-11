@@ -1,7 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 
 export type SoulJournalRow = {
-  id: string;
+  entry_id: string;
   user_id: string;
   prompt_id: string | null;
   entry_date: string; // YYYY-MM-DD
@@ -11,11 +11,11 @@ export type SoulJournalRow = {
   intention_response: string | null;
   reflection_response: string | null;
   soul_star: string | null; // user's written reflection text
-  is_private: boolean | null;
+  is_public: boolean | null;
 };
 
 export type SoulJournalWithPrompt = {
-  id: string;
+  entry_id: string;
   entry_date: string;
   element: string;
   soul_star: string | null; // user's written reflection text
@@ -51,7 +51,7 @@ export async function saveSoulStarEntry(
     intention: intention ?? null,
     reflection: reflection ?? null, // prompt question text
     soul_star: soulStarText?.trim() ?? null, // user's written reflection
-    is_private: isPrivate,
+    is_public: !isPrivate,
   } as any;
 
   const { data, error } = await supabaseClient
@@ -83,7 +83,7 @@ export async function loadSoulStarFullLog(
   const { data, error } = await supabaseClient
     .from('soul_journal_entries')
     .select(
-      `id, entry_date, element, soul_star, is_private,
+      `entry_id, entry_date, element, soul_star, is_public,
        soul_daily_prompts:prompt_id (prompt, intention)`
     )
     .eq('user_id', userId)
@@ -95,11 +95,11 @@ export async function loadSoulStarFullLog(
   }
 
   const mapped: SoulJournalWithPrompt[] = (data || []).map((row: any) => ({
-    id: row.id,
+    entry_id: row.entry_id,
     entry_date: row.entry_date,
     element: row.element,
     soul_star: row.soul_star ?? null, // user's written reflection text
-    is_private: row.is_private ?? false,
+    is_private: !(row.is_public ?? false),
     reflection: row.soul_daily_prompts?.prompt ?? null, // prompt question text
     intention: row.soul_daily_prompts?.intention ?? null,
   }));

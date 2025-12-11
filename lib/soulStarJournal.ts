@@ -1,7 +1,7 @@
 import { supabaseClient } from './supabaseClient';
 
 export type SoulStarLogEntry = {
-  id: string;
+  entry_id: string;
   entryDate: string;
   element: string;
   soulStar: string;
@@ -40,8 +40,8 @@ export async function saveSoulStarEntry({
     prompt_id: currentPrompt.id,
     intention: currentPrompt.intention || null,
     reflection: currentPrompt.reflection || null, // prompt question text
-    soul_star: soulStarText, // user's written reflection text
-    is_private: isPrivate
+    soul_star: soulStarText,
+    is_public: !isPrivate
   };
 
   const { data, error } = await supabaseClient
@@ -61,11 +61,11 @@ export async function loadSoulStarFullLog(userId: string): Promise<SoulStarLogEn
   const { data, error } = await supabaseClient
     .from("soul_journal_entries")
     .select(`
-      id,
+      entry_id,
       entry_date,
       element,
       soul_star,
-      is_private,
+      is_public,
       created_at,
       prompt_id,
       intention,
@@ -90,11 +90,11 @@ export async function loadSoulStarFullLog(userId: string): Promise<SoulStarLogEn
   }
 
   return data.map((entry: any) => ({
-    id: entry.id,
+    entry_id: entry.entry_id,
     entryDate: entry.entry_date,
     element: entry.element,
     soulStar: entry.soul_star || '',
-    isPrivate: entry.is_private,
+    isPrivate: !(entry.is_public ?? false),
     promptDate: entry.soul_daily_prompts?.prompt_date || entry.entry_date,
     // Use the reflection column (which stores the prompt text) or fallback to the relationship
     prompt: entry.reflection || entry.soul_daily_prompts?.prompt || '', 
@@ -107,8 +107,8 @@ export async function loadSoulStarFullLog(userId: string): Promise<SoulStarLogEn
 export async function updateSoulStarPrivacy(entryId: string, isPrivate: boolean) {
   const { data, error } = await supabaseClient
     .from("soul_journal_entries")
-    .update({ is_private: isPrivate })
-    .eq("id", entryId)
+    .update({ is_public: !isPrivate })
+    .eq("entry_id", entryId)
     .select()
     .single();
 

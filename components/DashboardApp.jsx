@@ -1074,7 +1074,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         }, BEAM_SWITCH_DELAY_MS);
       }
     } else if (color === 'blue') {
-      const blueActiveNow = (beamColor === 'blue') && (beamEnabled || showHUD);
+      // Treat "blue active" as the blue HUD actually being open, not just the beam lit
+      const blueActiveNow = (beamColor === 'blue') && (showHUD);
       if (blueActiveNow) {
         // Already showing blue - toggle off
         setBeamTransitioning(true);
@@ -2453,7 +2454,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         showUI={cockpitVisible}
         uiUnlocked={isLanded}
         joinAlienOpen={joinAlienOpen}
-        blueActive={beamColor === 'blue' && !!(beamEnabled || showHUD)}
+        // Only show power as active when the blue display (HUD) is open
+        blueActive={beamColor === 'blue' && !!(showHUD)}
         onJoinToggle={setJoinAlienOpen}
         onBeamColorChange={handleBeamToggle}
         closeAllSignal={uiCloseSignal}

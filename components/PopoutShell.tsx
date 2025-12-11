@@ -12,9 +12,10 @@ interface PopoutShellProps {
   pageIndicator?: string; // Optional, for binder's "1 / 6" display
   compact?: boolean; // Optional, for compact height like badges
   isOpen?: boolean;
+  subtitle?: string; // Optional subtitle below the title line
 }
 
-export default function PopoutShell({ title, onClose, children, overlayContent, backgroundContent, pageIndicator, compact = false, isOpen = true }: PopoutShellProps) {
+export default function PopoutShell({ title, onClose, children, overlayContent, backgroundContent, pageIndicator, compact = false, isOpen = true, subtitle }: PopoutShellProps) {
   if (!isOpen) return null;
   return (
     <>
@@ -29,16 +30,16 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
       <div 
         className="fixed inset-0 z-[2147483646] flex items-start justify-center"
         style={{
-          paddingTop: '24vh'
+          paddingTop: '15vh'
         }}
       >
         <div
           className="binder-hologram-container"
           style={{
-            width: 'min(90vw, 600px)',
+            width: 'min(85vw, 550px)',
             height: 'auto',
-            maxHeight: compact ? '320px' : '85vh',
-            minHeight: compact ? '200px' : '400px',
+            maxHeight: compact ? '320px' : '75vh',
+            minHeight: compact ? '200px' : '620px',
             display: 'flex',
             flexDirection: 'column',
             padding: '0px',
@@ -114,7 +115,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
                   style={{ 
                     color: '#FF69B4', 
                     textShadow: '0 0 8px rgba(255,105,180,0.6)', 
-                    fontSize: '14px',
+                    fontSize: '16px',
                     fontWeight: 'bold'
                   }}
                 >
@@ -130,6 +131,23 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
                   boxShadow: '0 0 4px rgba(255,105,180,0.6)'
                 }}
               />
+              
+              {/* Subtitle below the line */}
+              {subtitle && (
+                <div className="flex justify-center items-center flex-shrink-0" style={{ padding: '8px 14px 0px 14px' }}>
+                  <div 
+                    style={{ 
+                      color: '#FF69B4', 
+                      textShadow: '0 0 6px rgba(255,105,180,0.5)', 
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      opacity: 0.9
+                    }}
+                  >
+                    {subtitle}
+                  </div>
+                </div>
+              )}
             </>
           )}
 
@@ -141,7 +159,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
           )}
 
           {/* Content container - exact copy from Binder */}
-          <div className="flex-1 relative overflow-hidden z-10" style={{ maxHeight: 'calc(100% - 80px)', display: 'flex', alignItems: compact ? 'flex-start' : 'center' }}>
+          <div className="flex-1 relative overflow-hidden z-10" style={{ maxHeight: 'calc(100% - 80px)', display: 'flex', alignItems: compact ? 'flex-start' : 'center', paddingBottom: compact ? '8px' : '70px' }}>
             {overlayContent || children}
           </div>
 
@@ -150,7 +168,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
             <div 
               className="absolute left-1/2 transform -translate-x-1/2"
               style={{
-                bottom: '2px',
+                bottom: '15px',
                 color: '#FF69B4',
                 fontSize: '12px',
                 fontWeight: 'bold',

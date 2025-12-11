@@ -63,10 +63,10 @@ export default function FullSoulStarLog({ userId }: Props) {
     try {
       const { error } = await supabaseClient
         .from('soul_journal_entries')
-        .update({ is_private: !current })
-        .eq('id', id);
+        .update({ is_public: current === null ? true : !current })
+        .eq('entry_id', id);
       if (error) throw error;
-      setEntries(prev => prev.map(e => e.id === id ? { ...e, is_private: !current } : e));
+      setEntries(prev => prev.map(e => e.entry_id === id ? { ...e, is_private: !current } : e));
     } catch (e: any) {
       console.error('Toggle private failed:', e);
       setError(e?.message || 'Failed to update privacy');
@@ -75,7 +75,7 @@ export default function FullSoulStarLog({ userId }: Props) {
   };
 
   const startEdit = (entry: SoulJournalWithPrompt) => {
-    setEditingId(entry.id);
+    setEditingId(entry.entry_id);
     setEditValue(entry.soul_star || '');
   };
 
@@ -90,9 +90,9 @@ export default function FullSoulStarLog({ userId }: Props) {
       const { error } = await supabaseClient
         .from('soul_journal_entries')
         .update({ soul_star: trimmed })
-        .eq('id', id);
+        .eq('entry_id', id);
       if (error) throw error;
-      setEntries(prev => prev.map(e => e.id === id ? { ...e, soul_star: trimmed } : e));
+      setEntries(prev => prev.map(e => e.entry_id === id ? { ...e, soul_star: trimmed } : e));
       setEditingId(null);
       setEditValue('');
     } catch (e: any) {
@@ -117,10 +117,10 @@ export default function FullSoulStarLog({ userId }: Props) {
 
       {entries.map((entry) => {
         const color = elementColors[entry.element as keyof typeof elementColors]?.color || '#F2EF1D';
-        const isEditing = editingId === entry.id;
+        const isEditing = editingId === entry.entry_id;
         return (
           <div
-            key={entry.id}
+            key={entry.entry_id}
             className="rounded-lg p-3 border"
             style={{ borderColor: `${color}60`, background: 'rgba(0,0,0,0.5)' }}
           >
@@ -132,7 +132,7 @@ export default function FullSoulStarLog({ userId }: Props) {
               <div className="flex items-center gap-2">
                 <button
                   className="text-xs px-2 py-1 rounded border"
-                  onClick={() => togglePrivate(entry.id, entry.is_private ?? false)}
+                  onClick={() => togglePrivate(entry.entry_id, entry.is_private ?? false)}
                   style={{ borderColor: color, color }}
                 >
                   {entry.is_private ? 'Private' : 'Public'}
@@ -147,7 +147,7 @@ export default function FullSoulStarLog({ userId }: Props) {
                   </button>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <button className="text-xs px-2 py-1 rounded border" onClick={() => saveEdit(entry.id)} style={{ borderColor: color, color }}>Save</button>
+                    <button className="text-xs px-2 py-1 rounded border" onClick={() => saveEdit(entry.entry_id)} style={{ borderColor: color, color }}>Save</button>
                     <button className="text-xs px-2 py-1 rounded border" onClick={cancelEdit} style={{ borderColor: color, color }}>Cancel</button>
                   </div>
                 )}
@@ -179,4 +179,3 @@ export default function FullSoulStarLog({ userId }: Props) {
     </div>
   );
 }
-
