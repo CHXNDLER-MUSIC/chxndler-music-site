@@ -1496,12 +1496,15 @@ export default function ChatPanel({ isOpen, onClose }) {
                                     onMouseEnter={() => {
                                       try { sfx.play('hover', 0.3); } catch {}
                                     }}
-                                    className="text-yellow-400 hover:text-yellow-300 transition-colors text-lg px-2 py-2 rounded flex-shrink-0 ml-1"
+                                    className="text-yellow-400 hover:text-yellow-300 transition-all duration-200 text-xl px-3 py-2 rounded flex-shrink-0 ml-1 hover:scale-110"
                                     style={{
-                                      background: 'rgba(242, 239, 29, 0.1)',
-                                      border: '1px solid rgba(242, 239, 29, 0.3)',
+                                      background: 'rgba(242, 239, 29, 0.2)',
+                                      border: '2px solid #F2EF1D',
                                       color: '#F2EF1D',
-                                      textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
+                                      textShadow: '0 0 12px rgba(242, 239, 29, 0.8)',
+                                      boxShadow: '0 0 16px rgba(242, 239, 29, 0.6), 0 0 32px rgba(242, 239, 29, 0.3)',
+                                      fontSize: '20px',
+                                      fontWeight: 'bold'
                                     }}
                                   >
                                     ×
@@ -1535,7 +1538,13 @@ export default function ChatPanel({ isOpen, onClose }) {
                       {/* Badges Section */}
                       {showUserBadges && (
                         <div className="pt-2 border-t border-white/20">
-                          <h4 className="text-sm font-semibold mb-3 flex items-center" style={{ color: '#1E90FF' }}>
+                          <h4 className="text-sm font-semibold mb-3 flex items-center animate-pulse" 
+                              style={{ 
+                                color: '#1E90FF',
+                                textShadow: '0 0 10px rgba(0,255,255,0.8), 0 0 20px rgba(0,255,255,0.6), 0 0 30px rgba(0,255,255,0.4)',
+                                filter: 'brightness(1.2)',
+                                WebkitTextStroke: '1px rgba(0,255,255,0.3)'
+                              }}>
                             <img src="/elements/badges.webp" alt="Badges" className="w-4 h-4 mr-2" />
                             BADGES UNLOCKED
                           </h4>

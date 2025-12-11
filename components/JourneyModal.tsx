@@ -116,7 +116,7 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
       <div 
         className="fixed inset-0 z-[2147483647] flex justify-center"
         style={{
-          paddingTop: '80px'
+          paddingTop: '70px'
         }}
         onClick={handleClose}
       >
@@ -124,7 +124,7 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
           className="journey-container"
           style={{
             width: 'min(90vw, 700px)',
-            height: '45vh',
+            height: '50vh',
             padding: '15px',
             borderRadius: 15,
             background: 'rgba(0,0,0,0.7)',

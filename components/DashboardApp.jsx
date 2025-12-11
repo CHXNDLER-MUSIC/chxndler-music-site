@@ -2498,7 +2498,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             className="slot-container"
             style={{
               position: 'fixed',
-              top: '64px', // Start exactly at bottom of profile bar
+              top: '64px', // Start right at bottom of profile bar border
               bottom: 'calc(var(--display-touch-top) + 60px)', // Keep original bottom position
               left: '50%',
               transform: 'translateX(-50%)',
@@ -2512,7 +2512,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             <div className="relative h-full w-full p-0" style={{ overflow: 'visible' }} suppressHydrationWarning>
               {/* Safari fix: Use CSS transitions instead of Framer Motion for portal content */}
               <div
-                className="absolute bottom-0 left-0 right-0 p-0"
+                className="absolute top-0 left-0 right-0 bottom-0 p-0"
                 suppressHydrationWarning
                 key={safariRefreshKey} // Force re-render on Safari when needed
                 style={(() => {

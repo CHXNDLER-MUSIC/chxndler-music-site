@@ -278,7 +278,13 @@ export default function UserBadges({
             alt="Badges" 
             className="w-5 h-5"
           />
-          <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: '#00FFFF' }}>
+          <h3 className="text-sm font-bold uppercase tracking-wider animate-pulse" 
+              style={{ 
+                color: '#00FFFF',
+                textShadow: '0 0 10px rgba(0,255,255,0.8), 0 0 20px rgba(0,255,255,0.6), 0 0 30px rgba(0,255,255,0.4)',
+                filter: 'brightness(1.2)',
+                WebkitTextStroke: '1px rgba(0,255,255,0.3)'
+              }}>
             BADGES UNLOCKED
           </h3>
         </div>

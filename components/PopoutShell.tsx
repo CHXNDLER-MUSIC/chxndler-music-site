@@ -30,7 +30,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
       <div 
         className="fixed inset-0 z-[2147483646] flex items-start justify-center"
         style={{
-          paddingTop: '15vh'
+          paddingTop: '8vh'
         }}
       >
         <div
@@ -38,8 +38,8 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
           style={{
             width: 'min(85vw, 550px)',
             height: 'auto',
-            maxHeight: compact ? '320px' : '75vh',
-            minHeight: compact ? '200px' : '760px',
+            maxHeight: compact ? '70vh' : '60vh',
+            minHeight: compact ? '300px' : '500px',
             display: 'flex',
             flexDirection: 'column',
             padding: '0px',
@@ -99,7 +99,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'scale(1)';
             }}
-            className="absolute top-4 right-3 text-pink-400 hover:text-pink-200 cursor-pointer w-8 h-8 rounded-full border border-pink-400/80 flex items-center justify-center transition-transform duration-200"
+            className="absolute top-4 right-3 text-pink-400 hover:text-pink-200 cursor-pointer w-10 h-10 rounded-full border border-pink-400/80 flex items-center justify-center transition-transform duration-200"
             style={{ 
               fontSize: '16px',
               boxShadow: '0 0 15px rgba(255,105,180,0.8), 0 0 25px rgba(255,105,180,0.5), 0 0 35px rgba(255,105,180,0.3)',
@@ -108,7 +108,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
               backdropFilter: 'blur(2px)'
             }}
           >
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+            <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden>
               <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
               <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
             </svg>
@@ -122,7 +122,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
                   style={{ 
                     color: '#FF69B4', 
                     textShadow: '0 0 8px rgba(255,105,180,0.6)', 
-                    fontSize: '16px',
+                    fontSize: '24px',
                     fontWeight: 'bold'
                   }}
                 >
@@ -146,7 +146,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
                     style={{ 
                       color: '#FFFFFF', 
                       textShadow: '0 0 6px rgba(255,255,255,0.8)', 
-                      fontSize: '12px',
+                      fontSize: '16px',
                       fontWeight: 'bold',
                       opacity: 0.9
                     }}
@@ -166,7 +166,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
           )}
 
           {/* Content container - exact copy from Binder */}
-          <div className="flex-1 relative overflow-hidden z-10" style={{ maxHeight: 'calc(100% - 80px)', display: 'flex', alignItems: compact ? 'flex-start' : 'center', paddingBottom: compact ? '8px' : '110px' }}>
+          <div className="flex-1 relative overflow-hidden z-10" style={{ maxHeight: 'calc(100% - 80px)', display: 'flex', alignItems: compact ? 'flex-start' : 'center', paddingBottom: compact ? '8px' : '90px' }}>
             {overlayContent || children}
           </div>
 

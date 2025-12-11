@@ -575,7 +575,12 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                 // Main Categories View
                 <>
                   <div className="text-center mb-1" style={{ marginTop: '-4px' }}>
-                    <span className="text-white text-base font-bold uppercase tracking-wider" style={{ textShadow: '0 0 8px rgba(255,255,255,0.6)' }}>
+                    <span className="text-cyan-300 text-base font-bold uppercase tracking-wider animate-pulse" 
+                          style={{ 
+                            textShadow: '0 0 10px rgba(0,255,255,0.8), 0 0 20px rgba(0,255,255,0.6), 0 0 30px rgba(0,255,255,0.4)',
+                            filter: 'brightness(1.2)',
+                            WebkitTextStroke: '1px rgba(0,255,255,0.3)'
+                          }}>
                       BADGES UNLOCKED: {profile?.badges_unlocked || badgesWithUnlocked.filter(badge => badge.unlocked).length}
                     </span>
                   </div>
@@ -584,13 +589,13 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     style={{ 
                       whiteSpace: 'pre-wrap', 
                       lineHeight: 1.3, 
-                      fontSize: 13, 
+                      fontSize: 16, 
                       color: '#00BFFF', 
                       textShadow: '0 0 8px rgba(0,191,255,0.6), 0 0 15px rgba(0,191,255,0.4)',
                       marginTop: '4px' 
                     }}
                   >
-                    Choose a category to explore your badges and track your progress through the Heartverse.
+                    Explore your badges and track your progress through the Heartverse.
                   </div>
                   
                   <div className="flex flex-col items-center justify-center w-full">
