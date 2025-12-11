@@ -839,21 +839,17 @@ export default function HoloHubMenu({
           position:absolute; border-radius:9999px; cursor:pointer;
           display:grid; place-items:center;
           background:
-            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.04), rgba(255,255,255,0) 42%),
-            radial-gradient(ellipse 140% 120% at 30% 20%, #F2EF1D33, transparent 70%),
-            linear-gradient(135deg, #F2EF1D22, #F2EF1D08 50%, transparent 80%),
-            rgba(242,239,29,0.18);
-          border:1px solid #F2EF1D44;
+            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.08), rgba(255,255,255,0) 42%),
+            linear-gradient(180deg, #0b0b0b, #000 64%);
+          border:1px solid rgba(255,255,255,.18);
           box-shadow:
-            0 12px 24px rgba(0,0,0,.6),
+            0 18px 36px rgba(0,0,0,.65),
             0 0 22px #F2EF1DBB,
             0 0 56px #F2EF1D66,
-            0 0 100px #F2EF1D33,
-            inset 0 2px 0 rgba(255,255,255,.25),
-            inset 0 -6px 14px rgba(0,0,0,.6),
-            inset 0 0 20px #F2EF1D22;
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
+            inset 0 2px 0 rgba(255,255,255,.22),
+            inset 0 -6px 14px rgba(0,0,0,.8);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
           animation: holoPulse 2.6s ease-in-out infinite;
           transition: transform 150ms ease, box-shadow 200ms ease, filter 180ms ease;
         }

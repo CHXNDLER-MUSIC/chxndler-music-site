@@ -1,22 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { supabaseBrowser } from "@/lib/supabase-browser";
+import { usePublicSoulJournalEntries } from "@/hooks/useSoulJournalEntries";
 import { useProfile } from "@/contexts/ProfileContext";
-
-type PublicJournalEntry = {
-  id: string;
-  user_id: string;
-  soul_star: string;
-  element: "heart" | "water" | "lightning" | "darkness" | string;
-  entry_date: string;
-  created_at: string;
-  is_public: boolean;
-  profiles: {
-    username: string | null;
-    profile_image: string | null;
-  } | null;
-};
 
 const ELEMENT_COLORS: Record<string, { color: string; glow: string; emoji: string; label: string }> = {
   heart: { color: "#F91880", glow: "#F918B0", emoji: "💖", label: "HEART" },
@@ -27,53 +12,7 @@ const ELEMENT_COLORS: Record<string, { color: string; glow: string; emoji: strin
 
 export default function PublicJournalFeed() {
   const { user } = useProfile();
-  const [entries, setEntries] = useState<PublicJournalEntry[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
-
-  useEffect(() => {
-    const load = async () => {
-      if (!user?.id) return; // RLS requires signed-in
-      try {
-        setLoading(true);
-        setError("");
-        // Get public entries from soul_journal_entries table
-        const { data, error } = await supabaseBrowser
-          .from("soul_journal_entries")
-          .select(`
-            id,
-            user_id,
-            soul_star,
-            element,
-            entry_date,
-            created_at,
-            is_public,
-            profiles!soul_journal_entries_user_id_fkey (
-              username,
-              profile_image
-            )
-          `)
-          .eq("is_public", true)
-          .not("soul_star", "is", null)
-          .not("soul_star", "eq", "")
-          .order("created_at", { ascending: false });
-          
-        if (error) {
-          console.error("Failed to fetch public journal entries:", error);
-          setError("Failed to load public feed.");
-          return;
-        }
-        console.log("Public journal entries fetched:", data);
-        setEntries(data || []);
-      } catch (e) {
-        console.error("Unexpected error loading public feed:", e);
-        setError("Failed to load public feed.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [user?.id]);
+  const { entries, loading, error } = usePublicSoulJournalEntries();
 
   if (!user?.id) {
     return (
@@ -135,13 +74,13 @@ export default function PublicJournalFeed() {
           No public reflections yet.
         </div>
       ) : (
-        entries.map((e) => {
-          const theme = ELEMENT_COLORS[e.element] || ELEMENT_COLORS.heart;
-          const created = new Date(e.entry_date);
+        entries.map((entry) => {
+          const theme = ELEMENT_COLORS[entry.element] || ELEMENT_COLORS.heart;
+          const created = new Date(entry.entry_date);
           const dateStr = created.toLocaleDateString();
           return (
             <div
-              key={e.id}
+              key={entry.id}
               className="rounded-lg p-3"
               style={{
                 background: `${theme.color}08`,
@@ -154,15 +93,15 @@ export default function PublicJournalFeed() {
                 <div 
                   className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0"
                   style={{
-                    background: e.profiles?.profile_image ? 'none' : `linear-gradient(135deg, ${theme.color}40, ${theme.color}60)`,
+                    background: entry.profiles?.avatar_url ? 'none' : `linear-gradient(135deg, ${theme.color}40, ${theme.color}60)`,
                     border: `2px solid ${theme.color}40`,
                     boxShadow: `0 0 8px ${theme.color}20`
                   }}
                 >
-                  {e.profiles?.profile_image ? (
+                  {entry.profiles?.avatar_url ? (
                     <img 
-                      src={e.profiles.profile_image} 
-                      alt={`${e.profiles.username || 'User'} profile`}
+                      src={entry.profiles.avatar_url} 
+                      alt={`${entry.profiles.name || 'User'} profile`}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -175,7 +114,7 @@ export default function PublicJournalFeed() {
                 <div className="flex-1">
                   {/* Username */}
                   <div className="text-sm font-semibold mb-1" style={{ color: theme.color }}>
-                    {e.profiles?.username ? `@${e.profiles.username}` : "@anonymous"}
+                    {entry.profiles?.name ? `@${entry.profiles.name}` : "@anonymous"}
                   </div>
                   
                   {/* Date and Element */}
@@ -208,7 +147,7 @@ export default function PublicJournalFeed() {
                   border: `1px solid ${theme.color}15`,
                 }}
               >
-                {e.soul_star}
+                {entry.soul_star}
               </div>
             </div>
           );

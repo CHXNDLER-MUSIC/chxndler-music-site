@@ -36,6 +36,12 @@ interface SoulStarJournalProps {
   onJournalCompleted?: () => void;
 }
 
+interface Profile {
+  id: string;
+  name: string | null;
+  avatar_url: string | null;
+}
+
 interface JournalEntry {
   id: string;
   entry_date: string;
@@ -47,6 +53,9 @@ interface JournalEntry {
   reflection_response?: string;
   soul_star?: string; // user's written reflection text
   is_private?: boolean;
+  is_public?: boolean;
+  user_id?: string;
+  profiles?: Profile | null;
 }
 
 type SoulJournalEntry = {
@@ -874,7 +883,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                             {/* Profile Info with Image and Username */}
                             <div className="flex items-center gap-2">
                               <img 
-                                src="/elements/alien.webp" 
+                                src={entry.profiles?.avatar_url || "/elements/alien.webp"} 
                                 alt="User" 
                                 className="w-6 h-6 rounded-full object-cover"
                                 style={{
@@ -883,7 +892,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                 }}
                               />
                               <div className="text-xs font-medium text-white/80">
-                                {profile?.username || 'Anonymous'}
+                                {entry.profiles?.name || 'Anonymous'}
                               </div>
                             </div>
                             <div className="text-sm font-semibold text-white/90">{getDisplayDateString(entry.entry_date)}</div>
