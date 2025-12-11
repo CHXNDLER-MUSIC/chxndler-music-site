@@ -239,7 +239,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
               </div>
               <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-pink-500 to-purple-500 rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-500"
                   style={{ width: `${selectedBadge.progress.percentage}%` }}
                 />
               </div>
@@ -280,7 +280,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         <div className="relative">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full border border-pink-400/60 flex items-center justify-center text-pink-400 hover:text-pink-200 transition-colors z-10"
+            onMouseEnter={() => sfx.play('hover')}
+            className="absolute top-4 right-4 w-8 h-8 rounded-full border border-cyan-400/60 flex items-center justify-center text-cyan-400 hover:text-cyan-200 transition-colors z-10"
           >
             <svg viewBox="0 0 24 24" width="20" height="20">
               <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -376,7 +377,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                     ✓
                   </div>
                 ) : badge.progress && badge.progress.percentage > 0 && (
-                  <div className="absolute -bottom-1 -right-1 bg-pink-500/80 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold">
+                  <div className="absolute -bottom-1 -right-1 bg-cyan-500/80 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold">
                     {badge.progress.percentage}%
                   </div>
                 )}
@@ -403,7 +404,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         <div className="relative">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full border border-pink-400/60 flex items-center justify-center text-pink-400 hover:text-pink-200 transition-colors z-10"
+            onMouseEnter={() => sfx.play('hover')}
+            className="absolute top-4 right-4 w-8 h-8 rounded-full border border-cyan-400/60 flex items-center justify-center text-cyan-400 hover:text-cyan-200 transition-colors z-10"
           >
             <svg viewBox="0 0 24 24" width="20" height="20">
               <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -475,7 +477,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       {embedded && (
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 rounded-full border border-pink-400/60 flex items-center justify-center text-pink-400 hover:text-pink-200 transition-colors"
+          onMouseEnter={() => sfx.play('hover')}
+          className="absolute top-4 right-4 w-8 h-8 rounded-full border border-cyan-400/60 flex items-center justify-center text-cyan-400 hover:text-cyan-200 transition-colors"
         >
           <svg viewBox="0 0 24 24" width="20" height="20">
             <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -646,7 +649,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             <div className="mt-6 p-4 bg-black/20 rounded-xl border border-white/10">
               <div className="text-center mb-4">
                 <div className="mb-3">
-                  <span className="text-pink-400 text-lg font-bold uppercase tracking-wider" style={{ textShadow: '0 0 8px rgba(255,105,180,0.6)' }}>
+                  <span className="text-cyan-400 text-lg font-bold uppercase tracking-wider" style={{ textShadow: '0 0 8px rgba(0,255,255,0.6)' }}>
                     BADGES UNLOCKED: {profile?.badges_unlocked || userUnlockedBadges.length}
                   </span>
                 </div>
@@ -684,7 +687,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                     {/* Category Name */}
                     <div className="text-center">
                       <h5 
-                        className="text-white font-bold text-xs sm:text-sm leading-tight group-hover:text-pink-200 transition-colors"
+                        className="text-white font-bold text-xs sm:text-sm leading-tight group-hover:text-cyan-200 transition-colors"
                         style={{
                           textShadow: '0 0 4px rgba(255,255,255,0.3)'
                         }}

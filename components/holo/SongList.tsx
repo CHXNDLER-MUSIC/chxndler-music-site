@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from "react";
 import { playerStore } from "@/store/usePlayerStore";
 import { useCycleList } from "@/lib/useCycleList";
 import { useAudio } from "@/app/providers/AudioProvider";
+import { sfx } from "@/lib/sfx";
 
 export default function SongList({ onSongChange }: { onSongChange?: (id: string) => void }) {
   const [storeSnap, setStoreSnap] = React.useState(() => playerStore.getState());
@@ -70,6 +71,13 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
       if (id) {
         // If the active/focused song is the currently playing song, toggle play/pause
         if (id === mainId) {
+          try { 
+            if (audioManager?.playing) {
+              sfx.play('pause', 0.6);
+            } else {
+              sfx.play('flip', 0.6);
+            }
+          } catch {}
           audioManager?.togglePlayPause();
         } else {
           // Delegate selection to parent to run the global warp sequence
@@ -182,6 +190,13 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
               // If clicking on the currently selected song, toggle play/pause
               if (s.id === mainId) {
                 // Toggle play/pause for currently selected song
+                try { 
+                  if (audioManager?.playing) {
+                    sfx.play('pause', 0.6);
+                  } else {
+                    sfx.play('flip', 0.6);
+                  }
+                } catch {}
                 audioManager?.togglePlayPause();
               } else {
                 // Delegate selection to parent to run the global warp + playback flow

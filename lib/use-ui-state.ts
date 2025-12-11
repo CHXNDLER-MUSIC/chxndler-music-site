@@ -11,6 +11,9 @@ type UIState = {
   // Track when warp effect fully completes (including sound effects)
   warpFullyComplete: boolean;
   setWarpFullyComplete: (value: boolean) => void;
+  // Track if user has clicked the START button
+  userClickedStart: boolean;
+  setUserClickedStart: (value: boolean) => void;
 };
 
 // Enhanced Heartverse state with persistence and clear debugging
@@ -48,6 +51,17 @@ export const useUIState = create<UIState>()(
           });
         }
         set({ warpFullyComplete: value });
+      },
+      userClickedStart: false,
+      setUserClickedStart: (value) => {
+        if (typeof window !== 'undefined') {
+          console.log("🚀 HeartverseState: setUserClickedStart", {
+            previousValue: get().userClickedStart,
+            newValue: value,
+            timestamp: new Date().toISOString()
+          });
+        }
+        set({ userClickedStart: value });
       },
     }),
     {

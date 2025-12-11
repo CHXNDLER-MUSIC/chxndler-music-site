@@ -171,7 +171,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
             <div 
               className="absolute left-1/2 transform -translate-x-1/2"
               style={{
-                bottom: '25px',
+                bottom: '80px',
                 color: '#FF69B4',
                 fontSize: '12px',
                 fontWeight: 'bold',

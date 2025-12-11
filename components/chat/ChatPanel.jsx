@@ -1339,7 +1339,6 @@ export default function ChatPanel({ isOpen, onClose }) {
                         <div className="pt-2 border-t border-white/20">
                           <h4 className="text-sm text-white/80 font-semibold mb-3 flex items-center">
                             <img src="/elements/badges.webp" alt="Badges" className="w-4 h-4 mr-2" />
-                            User Badges
                           </h4>
                           
                           {(() => {

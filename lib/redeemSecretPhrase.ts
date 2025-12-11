@@ -41,15 +41,14 @@ export async function redeemSecretPhrase({
     const now = new Date().toISOString();
 
     // Query for active secret phrases
-    // Prefer context-specific phrases, but fall back to global if none found
+    // Note: current schema doesn't have context column, so we'll match any active phrase
     const { data: phrases, error: phrasesError } = await supabase
       .from('secret_phrases')
       .select('*')
-      .or(`context.eq.${context},context.eq.global`)
       .eq('code', trimmedPhrase.toLowerCase())
       .lte('start_at', now)
       .gte('end_at', now)
-      .order('context', { ascending: false }); // This will put context-specific phrases first
+      .eq('is_active', true);
 
     if (phrasesError) {
       console.error('Error fetching secret phrases:', phrasesError);
@@ -103,7 +102,7 @@ export async function redeemSecretPhrase({
       .insert({
         user_id: userId,
         secret_phrase_id: activePhrase.id,
-        heart_coins_awarded: activePhrase.reward_heart_coins
+        heart_coins_awarded: activePhrase.reward
       });
 
     if (insertError) {
@@ -124,7 +123,7 @@ export async function redeemSecretPhrase({
     }
 
     // 2. Award heart coins using the same pattern as existing code
-    if (activePhrase.reward_heart_coins > 0) {
+    if (activePhrase.reward > 0) {
       // Get current profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -144,8 +143,8 @@ export async function redeemSecretPhrase({
       const currentCoins = profile?.heart_coins_current || 0;
       const totalCoins = profile?.heart_coins_total || 0;
       
-      const newCurrentCoins = currentCoins + activePhrase.reward_heart_coins;
-      const newTotalCoins = totalCoins + activePhrase.reward_heart_coins;
+      const newCurrentCoins = currentCoins + activePhrase.reward;
+      const newTotalCoins = totalCoins + activePhrase.reward;
 
       // Update heart coins
       const { error: updateError } = await supabase
@@ -168,8 +167,8 @@ export async function redeemSecretPhrase({
 
       return {
         status: 'success',
-        message: `Signal accepted! You earned ${activePhrase.reward_heart_coins} Heart Coins.`,
-        rewardHeartCoins: activePhrase.reward_heart_coins,
+        message: `Signal accepted! You earned ${activePhrase.reward} Heart Coins.`,
+        rewardHeartCoins: activePhrase.reward,
         newHeartcoinBalance: newCurrentCoins
       };
     } else {

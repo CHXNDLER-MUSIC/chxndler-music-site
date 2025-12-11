@@ -118,7 +118,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const { profile } = useProfile();
   
   // Global UI state for profile bar visibility
-  const { setHasEnteredHeartverse, enterHeartverse, setWarpFullyComplete, warpFullyComplete } = useUIState();
+  const { setHasEnteredHeartverse, enterHeartverse, setWarpFullyComplete, warpFullyComplete, userClickedStart, setUserClickedStart } = useUIState();
   
   // Global wheel render mode (LUMA vs PLAIN). Must be top-level to obey Hooks rules.
   // Use false initially to match SSR, then sync with localStorage after hydration
@@ -208,8 +208,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [showWelcomeHomeModal, setShowWelcomeHomeModal] = useState(false);
   const [showHeartCoinModal, setShowHeartCoinModal] = useState(false);
   const [heartCoinModalTab, setHeartCoinModalTab] = useState('earn');
-  // Track if user actually clicked START button (vs just app loading)
-  const [userClickedStart, setUserClickedStart] = useState(false);
+  // Track if user actually clicked START button (now using global UI state)
   // Legacy state variables will be defined after UI phase variables below
   // Guard to prevent rapid double-trigger of Start flow before state updates
   const startInFlightRef = React.useRef(false);

@@ -185,6 +185,11 @@ export default function UserCards({
                     handleCardClick(collectedCard.cards);
                   }
                 }}
+                onMouseEnter={() => {
+                  if (hasCard) {
+                    try { sfx.play('hover', 0.6); } catch {}
+                  }
+                }}
               >
                 {hasCard ? (
                   <img
@@ -220,6 +225,9 @@ export default function UserCards({
                 sfx.play('click', 0.4); 
               } catch {}
               // This could trigger opening the full binder modal
+            }}
+            onMouseEnter={() => {
+              try { sfx.play('hover', 0.6); } catch {}
             }}
             className="flex items-center justify-center w-6 h-8 rounded transition-all duration-200 hover:scale-105"
             style={{

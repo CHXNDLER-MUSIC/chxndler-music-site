@@ -765,8 +765,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       stateMachine.current.send({ type: 'PAUSE' });
       gaTrack("pause", { slug: cur.slug }); 
       
-      // Safe to play UI click on pause (no conflict with main play)
-      try { uiClick(); } catch {}
+      // Safe to play UI pause sound on pause (no conflict with main play)
+      try { sfx.play('pause', 0.6); } catch {}
     }
   }
 

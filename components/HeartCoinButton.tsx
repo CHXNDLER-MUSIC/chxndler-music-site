@@ -1472,6 +1472,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       fontSize: '12px'
                     }}
                     onMouseEnter={(e) => {
+                      try { sfx.play('hover', 0.3); } catch {}
                       if (activeEarnTab !== tab) {
                         e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.35) 100%)';
                         e.currentTarget.style.color = 'rgba(255,255,255,0.9)';
@@ -1834,6 +1835,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           fontSize: '14px'
                         }}
                         onMouseEnter={(e) => {
+                          try { sfx.play('hover', 0.3); } catch {}
                           if (activeUseTab !== tab) {
                             e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.35) 100%)';
                             e.currentTarget.style.color = '#FFFFFF';

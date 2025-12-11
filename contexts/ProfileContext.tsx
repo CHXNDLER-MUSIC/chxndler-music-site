@@ -753,6 +753,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       if (entry.intention !== null && entry.intention !== undefined) {
         entryData.intention = entry.intention;
       }
+      if (entry.soul_star !== null && entry.soul_star !== undefined) {
+        entryData.soul_star = entry.soul_star;
+      }
 
       // Handle is_public field instead of is_private
       if (entry.is_public !== null && entry.is_public !== undefined) {

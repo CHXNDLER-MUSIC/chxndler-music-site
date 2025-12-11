@@ -3,6 +3,7 @@ import React from "react";
 import type { Track } from "@/lib/songs-consolidated";
 import { POS } from "@/config/cockpit";
 import { useAudio } from "@/app/providers/AudioProvider";
+import { sfx } from "@/lib/sfx";
 
 export default function HoloHUD({
   track,
@@ -43,6 +44,14 @@ export default function HoloHUD({
           type="button"
           className={`play-btn ${audioManager.playing ? "on" : ""}`}
           onClick={() => {
+            // Play flip sound when starting playback, pause sound when pausing
+            try { 
+              if (audioManager.playing) {
+                sfx.play('pause', 0.6);
+              } else {
+                sfx.play('flip', 0.6);
+              }
+            } catch {}
             // Use unified audio provider for play/pause
             audioManager.togglePlayPause();
           }}

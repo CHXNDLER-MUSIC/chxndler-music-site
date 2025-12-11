@@ -670,30 +670,36 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                   </div>
                 )}
               </button>
-              <div 
-                className={`font-bold text-sm cursor-pointer ${
-                  questStatus.elementOfDay 
-                    ? 'text-green-400' 
-                    : !isAuthenticated 
-                      ? 'text-yellow-400 hover:text-yellow-300' 
-                      : 'text-pink-400'
+              <button
+                onClick={!questStatus.elementOfDay ? handleElementTap : undefined}
+                disabled={questStatus.elementOfDay || loading}
+                className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 cursor-pointer ${
+                  questStatus.elementOfDay
+                    ? 'bg-green-500/40 border-2 border-green-400 text-green-300 cursor-not-allowed'
+                    : !isAuthenticated
+                      ? 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300'
+                      : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300'
                 }`}
-                style={{ 
-                  textShadow: questStatus.elementOfDay 
-                    ? '0 0 4px rgba(0,255,0,0.6)' 
+                style={{
+                  boxShadow: questStatus.elementOfDay
+                    ? '0 0 20px rgba(0,255,0,0.8), inset 0 0 15px rgba(0,255,0,0.3)'
+                    : !isAuthenticated
+                      ? '0 0 10px rgba(255,255,0,0.3)'
+                      : '0 0 10px rgba(252,84,175,0.3)',
+                  textShadow: questStatus.elementOfDay
+                    ? '0 0 12px rgba(0,255,0,1)'
                     : !isAuthenticated
                       ? '0 0 4px rgba(255,255,0,0.6)'
-                      : '0 0 4px rgba(252,84,175,0.6)' 
+                      : '0 0 4px rgba(252,84,175,0.6)'
                 }}
-                onClick={!questStatus.elementOfDay ? handleElementTap : undefined}
               >
                 {questStatus.elementOfDay 
-                  ? '✓ Complete' 
+                  ? 'COMPLETED' 
                   : !isAuthenticated 
-                    ? 'Log in to complete' 
+                    ? 'LOG IN TO COMPLETE' 
                     : '+1 HeartCoin'
                 }
-              </div>
+              </button>
             </div>
           </div>
         </div>
@@ -884,7 +890,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                       ? 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300'
                       : questStatus.inviteFriend
                         ? 'bg-black/30 border-2 border-[#F2EF1D] text-[#F2EF1D] hover:bg-[#F2EF1D]/10'
-                        : 'bg-pink-600/50 hover:bg-pink-600/60 border-2 border-pink-500/70 text-pink-200'
+                        : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300'
                 }`}
                 style={{
                   boxShadow: questStatus.inviteFriendConfirm
@@ -893,14 +899,14 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                       ? '0 0 10px rgba(255,255,0,0.3)'
                       : questStatus.inviteFriend
                         ? '0 0 20px rgba(242,239,29,0.8), inset 0 0 10px rgba(242,239,29,0.2)'
-                        : '0 0 15px rgba(252,84,175,0.6)',
+                        : '0 0 10px rgba(252,84,175,0.3)',
                   textShadow: questStatus.inviteFriendConfirm
                     ? '0 0 20px rgba(255,255,255,1), 0 0 8px rgba(34,197,94,1)'
                     : !isAuthenticated
                       ? '0 0 4px rgba(255,255,0,0.6)'
                       : questStatus.inviteFriend
                         ? '0 0 10px rgba(242,239,29,1)'
-                        : '0 0 8px rgba(252,84,175,0.8)',
+                        : '0 0 4px rgba(252,84,175,0.6)',
                   opacity: questStatus.inviteFriendConfirm ? 1 : undefined
                 }}
               >

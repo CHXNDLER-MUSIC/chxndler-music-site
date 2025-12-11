@@ -2144,7 +2144,14 @@ const HUDPanel = React.memo(function HUDPanel({
 
   // Toggle play/pause using unified audio system
   const handlePlayPause = () => {
-    try { sfx.play('click', 0.6); } catch {}
+    // Play flip sound when starting playback, pause sound when pausing
+    try { 
+      if (audioManager?.playing) {
+        sfx.play('pause', 0.6);
+      } else {
+        sfx.play('flip', 0.6);
+      }
+    } catch {}
     
     // Use the unified audio system for all play/pause operations
     try {

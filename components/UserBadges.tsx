@@ -287,13 +287,16 @@ export default function UserBadges({
             {userUnlockedBadges.slice(0, maxBadges).map((badge) => (
               <div
                 key={badge.id}
-                className="relative w-12 h-12 rounded-full flex items-center justify-center group overflow-hidden flex-shrink-0"
+                className="relative w-12 h-12 rounded-full flex items-center justify-center group overflow-hidden flex-shrink-0 cursor-pointer transition-all duration-200 hover:scale-105"
                 style={{
                   background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(40,40,40,0.8) 100%)',
                   boxShadow: '0 4px 15px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 255, 255, 0.1)',
                   border: '2px solid rgba(255, 255, 255, 0.3)'
                 }}
                 title={badge.badge_name}
+                onMouseEnter={() => {
+                  try { sfx.play('hover', 0.6); } catch {}
+                }}
               >
                 {/* Badge content */}
                 <div className="relative z-10">
@@ -311,14 +314,37 @@ export default function UserBadges({
               </div>
             ))}
             
-            {/* Show more indicator if user has more than maxBadges badges */}
+            {/* Right arrow button if user has more badges */}
             {userUnlockedBadges.length > maxBadges && (
-              <div 
-                className="flex items-center justify-center w-12 h-12 rounded-full border-2 border-dashed border-white/30 bg-black/40"
-                style={{ marginLeft: '4px' }}
+              <button
+                onClick={() => {
+                  try { 
+                    sfx.play('click', 0.4); 
+                  } catch {}
+                  // This could trigger opening the full badges modal or pagination
+                }}
+                onMouseEnter={() => {
+                  try { sfx.play('hover', 0.6); } catch {}
+                }}
+                className="flex items-center justify-center w-6 h-8 rounded transition-all duration-200 hover:scale-105 ml-2"
+                style={{
+                  background: 'rgba(255, 105, 180, 0.1)',
+                  border: '1px solid #FF69B440',
+                  color: '#FF69B4',
+                  boxShadow: '0 0 4px #FF69B420'
+                }}
               >
-                <span className="text-white text-xs font-bold">+{userUnlockedBadges.length - maxBadges}</span>
-              </div>
+                <svg 
+                  width="12" 
+                  height="12" 
+                  viewBox="0 0 24 24" 
+                  fill="none"
+                  stroke="currentColor" 
+                  strokeWidth="2"
+                >
+                  <path d="m9 18 6-6-6-6"/>
+                </svg>
+              </button>
             )}
           </>
         ) : (

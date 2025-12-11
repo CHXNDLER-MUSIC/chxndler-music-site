@@ -7,6 +7,7 @@ import { AUDIO_ASSETS_BY_SLUG } from "@/data/audioAssets";
 import { SONG_ELEMENT_MAPPING } from "@/data/songElements";
 import { useAudio, TRACK_INFO, TRACKS, TrackKey } from "@/app/providers/AudioProvider";
 import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
+import { sfx } from "@/lib/sfx";
 import SongDropdown from "./SongDropdown";
 
 // Normalize helper for slugs
@@ -117,6 +118,14 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
 
   // Handle play/pause button
   const handleTogglePlay = useCallback(() => {
+    // Play flip sound when starting playback, pause sound when pausing
+    try { 
+      if (audioManager.playing) {
+        sfx.play('pause', 0.6);
+      } else {
+        sfx.play('flip', 0.6);
+      }
+    } catch {}
     // Use the unified audio system's togglePlayPause which handles default track loading
     audioManager.togglePlayPause();
   }, [audioManager]);
