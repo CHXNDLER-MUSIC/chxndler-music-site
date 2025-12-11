@@ -163,7 +163,10 @@ interface ProfileContextType {
   // Journal functionality
   journalEntries: JournalEntry[];
   loadJournalEntries: (userId: string) => Promise<void>;
-  saveJournalEntry: (entry: Omit<JournalEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<JournalEntry | null>;
+  saveJournalEntry: (
+    entry: Omit<JournalEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
+    options?: { sharePublic?: boolean }
+  ) => Promise<JournalEntry | null>;
   updateJournalEntry: (entryId: string, updates: Partial<Pick<JournalEntry, 'soul_star' | 'intention' | 'reflection' | 'is_private'>>) => Promise<void>;
   deleteJournalEntry: (entryId: string) => Promise<void>;
   getDailyPrompts: () => Promise<DailyPrompts | null>;
@@ -695,7 +698,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const saveJournalEntry = useCallback(async (entry: Omit<JournalEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<JournalEntry | null> => {
+  const saveJournalEntry = useCallback(async (
+    entry: Omit<JournalEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
+    options?: { sharePublic?: boolean }
+  ): Promise<JournalEntry | null> => {
     try {
       const {
         data: { session },
@@ -810,12 +816,38 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         });
       }
 
+      // Conditionally share to public feed if requested
+      if (options?.sharePublic) {
+        try {
+          const publicPayload: any = {
+            user_id: user.id,
+            username: profile?.username ?? null,
+            element: entry.element,
+            content: (entry.soul_star ?? '').trim(),
+          };
+
+          if (!publicPayload.content) {
+            console.warn('Public share requested but content is empty; skipping public insert.');
+          } else {
+            const { error: publicError } = await supabaseBrowser
+              .from('public_journal_entries')
+              .insert(publicPayload);
+
+            if (publicError) {
+              console.error('Failed to insert into public_journal_entries:', publicError, publicPayload);
+            }
+          }
+        } catch (e) {
+          console.error('Unexpected error inserting into public_journal_entries:', e);
+        }
+      }
+
       return data;
     } catch (error) {
       console.error('Error in saveJournalEntry:', error);
       throw error; // Re-throw so the UI can show the specific error
     }
-  }, []);
+  }, [profile]);
 
   const updateJournalEntry = useCallback(async (entryId: string, updates: Partial<Pick<JournalEntry, 'soul_star' | 'intention' | 'prompt' | 'is_private'>>) => {
     try {

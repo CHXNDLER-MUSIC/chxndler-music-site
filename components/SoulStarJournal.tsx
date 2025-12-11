@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
+import PublicJournalFeed from "@/components/PublicJournalFeed";
 import { sfx } from "@/lib/sfx";
 import { useDailyReflectionStatus } from "@/hooks/useDailyReflectionStatus";
 import { supabaseBrowser } from "@/lib/supabase-browser";
@@ -106,6 +107,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [hasClickedInitialButton, setHasClickedInitialButton] = useState(false);
+  const [activeTab, setActiveTab] = useState<'private' | 'public'>('private');
 
   const today = getLocalDateString();
   const todayFormatted = getDisplayDateString();
@@ -459,8 +461,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
 
 
-      {showHistory ? (
-        /* History View - Show list of existing entries */
+      {activeTab === 'public' ? (
+        /* Public Journal Feed (Full Log) */
         <div style={{ 
           height: '400px', 
           overflowY: 'auto', 
@@ -470,237 +472,99 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           borderRadius: '8px',
           backdropFilter: 'blur(8px)'
         }}>
-          <div className="flex-1 space-y-2 overflow-y-auto p-4">
-            {/* Title Section with FULL LOG button and title */}
-            <div className="text-center mb-2 relative">
-              {/* Full Log Button - Left of Title */}
-              <button
-                onClick={() => {
-                  console.log('FULL LOG button clicked!');
-                  try {
-                    sfx.play('click', 0.8);
-                  } catch (e) {
-                    console.log('SFX not available');
-                  }
-                  setShowHistory(!showHistory);
-                }}
-                className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs font-semibold transition-all duration-200 hover:opacity-100 px-3 py-1 rounded z-20"
-                style={{
-                  color: '#FFD700',
-                  textShadow: `0 0 8px #FFD700, 0 0 15px #FFFF00`,
-                  opacity: showHistory ? 1 : 0.8,
-                  background: '#FFD70020',
-                  border: `2px solid #FFD700`,
-                  boxShadow: `0 0 12px #FFD700, 0 0 20px #FFD70060`,
-                  cursor: 'pointer',
-                  pointerEvents: 'auto',
-                  zIndex: 20
-                }}
-              >
-                {showHistory ? 'TODAY\'S ENTRY' : 'FULL LOG'}
-              </button>
+          {/* Title Section with FULL LOG button and title */}
+          <div className="text-center mb-2 relative">
+            {/* Full Log Button - Left of Title */}
+            <button
+              onClick={() => {
+                try { sfx.play('click', 0.8); } catch {}
+                setShowHistory(!showHistory);
+              }}
+              className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs font-semibold transition-all duration-200 hover:opacity-100 px-3 py-1 rounded z-20"
+              style={{
+                color: '#FFD700',
+                textShadow: `0 0 8px #FFD700, 0 0 15px #FFFF00`,
+                opacity: showHistory ? 1 : 0.8,
+                background: '#FFD70020',
+                border: `2px solid #FFD700`,
+                boxShadow: `0 0 12px #FFD700, 0 0 20px #FFD70060`,
+                cursor: 'pointer',
+                pointerEvents: 'auto',
+                zIndex: 20
+              }}
+            >
+              {showHistory ? 'TODAY\'S ENTRY' : 'FULL LOG'}
+            </button>
 
-              {/* Close Button - Right of Title */}
-              <button 
-                onClick={handleClose}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-white hover:bg-red-600/20 transition-all duration-200 z-20"
-                style={{
-                  background: 'rgba(0, 0, 0, 0.7)',
-                  border: `1px solid ${elementTheme.color}60`,
-                  boxShadow: `0 0 15px ${elementTheme.color}20`,
-                  fontSize: '16px'
-                }}
-                aria-label="Close journal"
-              >
-                ×
-              </button>
+            {/* Close Button - Right of Title */}
+            <button 
+              onClick={handleClose}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-white hover:bg-red-600/20 transition-all duration-200 z-20"
+              style={{
+                background: 'rgba(0, 0, 0, 0.7)',
+                border: `1px solid ${elementTheme.color}60`,
+                boxShadow: `0 0 15px ${elementTheme.color}20`,
+                fontSize: '16px'
+              }}
+              aria-label="Close journal"
+            >
+              ×
+            </button>
 
-              {/* SOUL STAR JOURNAL Title */}
-              <div 
-                className="text-lg font-bold tracking-wider mb-2"
-                style={{
-                  color: elementTheme.color,
-                  textShadow: `0 0 15px ${elementTheme.glow}, 0 0 30px ${elementTheme.glow}`,
-                  filter: `drop-shadow(0 0 8px ${elementTheme.color})`
-                }}
-              >
-                SOUL STAR JOURNAL
-              </div>
-              
-              {/* Yellow line below title */}
-              <div 
-                className="mx-auto"
-                style={{
-                  width: '300px',
-                  height: '2px',
-                  background: '#F2EF1D',
-                  boxShadow: '0 0 8px #F2EF1D, 0 0 15px #FFFF00'
-                }}
-              />
+            {/* SOUL STAR JOURNAL Title */}
+            <div 
+              className="text-lg font-bold tracking-wider mb-2"
+              style={{
+                color: elementTheme.color,
+                textShadow: `0 0 15px ${elementTheme.glow}, 0 0 30px ${elementTheme.glow}`,
+                filter: `drop-shadow(0 0 8px ${elementTheme.color})`
+              }}
+            >
+              SOUL STAR JOURNAL
             </div>
             
-            {/* Show existing journal entries if available */}
-            {(() => {
-              const filteredEntries = journalEntries
-                ? journalEntries.filter((entry: JournalEntry) => entry.soul_star && entry.soul_star.trim().length > 0)
-                : [];
-              
-              return filteredEntries.length > 0 ? (
-                filteredEntries
-                  .sort((a: JournalEntry, b: JournalEntry) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime())
-                  .slice(0, 10) // Show last 10 entries
-                  .map((entry: JournalEntry) => {
-                  const entryElementTheme = ELEMENT_COLORS[entry.element as keyof typeof ELEMENT_COLORS] || ELEMENT_COLORS.heart;
-                  const entryElementEmoji = ELEMENT_EMOJIS[entry.element as keyof typeof ELEMENT_EMOJIS] || "💖";
-                  const entryDate = new Date(entry.entry_date).toLocaleDateString();
-                  
-                  return (
-                    <div 
-                      key={entry.id}
-                      className="rounded-lg p-3 mb-3"
-                      style={{
-                        background: `${entryElementTheme.color}08`,
-                        border: `1px solid ${entryElementTheme.color}30`,
-                        borderLeft: `4px solid ${entryElementTheme.color}`
-                      }}
-                    >
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="text-sm font-semibold" style={{ color: entryElementTheme.color }}>
-                          {entryDate}
-                        </div>
-                        <span 
-                          className="text-xs px-2 py-1 rounded-full uppercase font-semibold flex items-center gap-1"
-                          style={{
-                            background: `${entryElementTheme.color}15`,
-                            color: entryElementTheme.color,
-                            border: `1px solid ${entryElementTheme.color}40`
-                          }}
-                        >
-                          {entryElementEmoji} {entry.element.toUpperCase()}
-                        </span>
-                        {entry.is_private && (
-                          <span 
-                            className="text-xs px-1 py-0.5 rounded uppercase font-semibold"
-                            style={{
-                              background: '#FF69B415',
-                              color: '#FF69B4',
-                              border: '1px solid #FF69B440'
-                            }}
-                          >
-                            PRIVATE
-                          </span>
-                        )}
-                      </div>
-                      
-                      <div 
-                        className="text-sm leading-relaxed"
-                        style={{ 
-                          color: '#FFFFFF',
-                          background: 'rgba(0,0,0,0.2)',
-                          padding: '8px',
-                          borderRadius: '6px',
-                          border: `1px solid ${entryElementTheme.color}15`
-                        }}
-                      >
-                        {entry.soul_star}
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-              /* No real entries exist - show message and sample entries */
-              <div>
-                <div 
-                  className="text-center mb-4 p-3 rounded-lg"
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    border: `1px solid ${elementTheme.color}30`,
-                    color: 'rgba(255, 255, 255, 0.7)'
-                  }}
-                >
-                  {user?.id ? 'No journal entries yet. Start writing to see your entries here!' : 'Sign in to see your journal entries.'}
-                </div>
-                
-                {/* Sample entries for demonstration */}
-                
-                <div 
-                  className="rounded-lg p-3 mb-3 opacity-60"
-                  style={{
-                    background: '#F2EF1D08',
-                    border: '1px solid #F2EF1D30',
-                    borderLeft: '4px solid #F2EF1D'
-                  }}
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="text-sm font-semibold" style={{ color: '#F2EF1D' }}>
-                      12/9/2025
-                    </div>
-                    <span 
-                      className="text-xs px-2 py-1 rounded-full uppercase font-semibold flex items-center gap-1"
-                      style={{
-                        background: '#F2EF1D15',
-                        color: '#F2EF1D',
-                        border: '1px solid #F2EF1D40'
-                      }}
-                    >
-                      ⚡ LIGHTNING
-                    </span>
-                  </div>
-                  
-                  <div 
-                    className="text-sm leading-relaxed"
-                    style={{ 
-                      color: '#FFFFFF',
-                      background: 'rgba(0,0,0,0.2)',
-                      padding: '8px',
-                      borderRadius: '6px',
-                      border: '1px solid #F2EF1D15'
-                    }}
-                  >
-                    Today I felt a surge of creative energy while working on my music. The lightning element really resonated with my breakthrough moment.
-                  </div>
-                </div>
+            {/* Yellow line below title */}
+            <div 
+              className="mx-auto"
+              style={{
+                width: '300px',
+                height: '2px',
+                background: '#F2EF1D',
+                boxShadow: '0 0 8px #F2EF1D, 0 0 15px #FFFF00'
+              }}
+            />
+          </div>
 
-                <div 
-                  className="rounded-lg p-3 opacity-60"
-                  style={{
-                    background: '#FF69B408',
-                    border: '1px solid #FF69B430',
-                    borderLeft: '4px solid #FF69B4'
-                  }}
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="text-sm font-semibold" style={{ color: '#FF69B4' }}>
-                      12/8/2025
-                    </div>
-                    <span 
-                      className="text-xs px-2 py-1 rounded-full uppercase font-semibold flex items-center gap-1"
-                      style={{
-                        background: '#FF69B415',
-                        color: '#FF69B4',
-                        border: '1px solid #FF69B440'
-                      }}
-                    >
-                      💖 HEART
-                    </span>
-                  </div>
-                  
-                  <div 
-                    className="text-sm leading-relaxed"
-                    style={{ 
-                      color: '#FFFFFF',
-                      background: 'rgba(0,0,0,0.2)',
-                      padding: '8px',
-                      borderRadius: '6px',
-                      border: '1px solid #FF69B415'
-                    }}
-                  >
-                    Spent time with family today. Felt gratitude for the connections in my life and the warmth of shared moments.
-                  </div>
-                </div>
-              </div>
-              );
-            })()}
+          {/* Tabs Switcher - below yellow line, Public left, Private right */}
+          <div className="flex items-center justify-center gap-2 p-2 border-b border-white/10">
+            <button
+              onClick={() => setActiveTab('public')}
+              className="px-3 py-1 rounded-full text-xs font-semibold uppercase transition-all"
+              style={{
+                background: activeTab === 'public' ? `${elementTheme.color}30` : 'rgba(0,0,0,0.4)',
+                color: activeTab === 'public' ? elementTheme.color : '#FFFFFFCC',
+                border: `1px solid ${elementTheme.color}60`,
+                boxShadow: activeTab === 'public' ? `0 0 12px ${elementTheme.color}60` : 'none'
+              }}
+            >
+              Public
+            </button>
+            <button
+              onClick={() => setActiveTab('private')}
+              className="px-3 py-1 rounded-full text-xs font-semibold uppercase transition-all"
+              style={{
+                background: activeTab === 'private' ? `${elementTheme.color}30` : 'rgba(0,0,0,0.4)',
+                color: activeTab === 'private' ? elementTheme.color : '#FFFFFFCC',
+                border: `1px solid ${elementTheme.color}60`,
+                boxShadow: activeTab === 'private' ? `0 0 12px ${elementTheme.color}60` : 'none'
+              }}
+            >
+              Private
+            </button>
+          </div>
+
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            <PublicJournalFeed />
           </div>
         </div>
       ) : (
@@ -790,6 +654,34 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   boxShadow: '0 0 8px #F2EF1D, 0 0 15px #FFFF00'
                 }}
               />
+            </div>
+
+            {/* Tabs Switcher - below yellow line, Public left, Private right */}
+            <div className="flex items-center justify-center gap-2 p-2 border-b border-white/10">
+              <button
+                onClick={() => setActiveTab('public')}
+                className="px-3 py-1 rounded-full text-xs font-semibold uppercase transition-all"
+                style={{
+                  background: activeTab === 'public' ? `${elementTheme.color}30` : 'rgba(0,0,0,0.4)',
+                  color: activeTab === 'public' ? elementTheme.color : '#FFFFFFCC',
+                  border: `1px solid ${elementTheme.color}60`,
+                  boxShadow: activeTab === 'public' ? `0 0 12px ${elementTheme.color}60` : 'none'
+                }}
+              >
+                Public
+              </button>
+              <button
+                onClick={() => setActiveTab('private')}
+                className="px-3 py-1 rounded-full text-xs font-semibold uppercase transition-all"
+                style={{
+                  background: activeTab === 'private' ? `${elementTheme.color}30` : 'rgba(0,0,0,0.4)',
+                  color: activeTab === 'private' ? elementTheme.color : '#FFFFFFCC',
+                  border: `1px solid ${elementTheme.color}60`,
+                  boxShadow: activeTab === 'private' ? `0 0 12px ${elementTheme.color}60` : 'none'
+                }}
+              >
+                Private
+              </button>
             </div>
 
             {/* Header Layout - Date and Element */}

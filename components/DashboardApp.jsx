@@ -1904,6 +1904,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             
             // Mark warp as completed for unified audio system
             try { audioManager?.markWarpCompleted(); } catch {}
+            // Auto-play ambient space music via unified audio when landing on home
+            try {
+              if (!pendingTrackPlay && !userSelected) {
+                audioManager?.playTrack('space-music');
+              }
+            } catch {}
             
             // Ensure user entered Heartverse state
             try { 
@@ -1948,6 +1954,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           
           // Mark that warp effect is fully complete (including sound effects)
           setWarpFullyComplete(true);
+          // If landing on home (no song pending), start ambient space music via unified audio
+          try {
+            if (!pendingTrackPlay && !userSelected) {
+              audioManager?.playTrack('space-music');
+            }
+          } catch {}
           
           // Disable warp to prevent additional warp sounds
           setAllowWarp(false);
@@ -2681,6 +2693,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         open={showHeartCoinModal} 
         onClose={() => setShowHeartCoinModal(false)}
         onOpenJournal={handleOpenJournal}
+        onOpenWelcomeHome={() => setShowWelcomeHomeModal(true)}
         initialTab={heartCoinModalTab}
       />
 

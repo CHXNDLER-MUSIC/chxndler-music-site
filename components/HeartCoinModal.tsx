@@ -5,11 +5,14 @@ import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useProfile } from '@/contexts/ProfileContext';
 import HeartversePopup from "@/components/HeartversePopup";
 import PopoutShell from "@/components/PopoutShell";
+import { useBonusQuests } from '@/hooks/useBonusQuests';
+import { BonusQuestWithCompletion } from '@/types/bonusQuests';
 
 type Props = {
   open: boolean;
   onClose: () => void;
   onOpenJournal?: () => void;
+  onOpenWelcomeHome?: () => void;
   initialTab?: 'earn' | 'use';
 };
 
@@ -116,8 +119,9 @@ const storeItems: StoreItem[] = [
   }
 ];
 
-export default function HeartCoinModal({ open, onClose, onOpenJournal, initialTab = 'earn' }: Props) {
+export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWelcomeHome, initialTab = 'earn' }: Props) {
   const { profile, loading: profileLoading } = useProfile();
+  const { bonusQuests, isLoading: questsLoading } = useBonusQuests();
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -125,6 +129,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, initialTa
   const [modalLoading, setModalLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [activeEarnTab, setActiveEarnTab] = useState<'DAILY QUESTS' | 'BONUS QUESTS'>('DAILY QUESTS');
   const [enlargedItem, setEnlargedItem] = useState<StoreItem | null>(null);
   const [enlargedImageIndex, setEnlargedImageIndex] = useState(0);
   const [enlargedCard, setEnlargedCard] = useState<any>(null);
@@ -136,6 +141,21 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, initialTa
       setActiveTab(initialTab);
     }
   }, [open, initialTab]);
+
+  // Helper function to check if quest is completed
+  const isQuestCompleted = (quest: BonusQuestWithCompletion): boolean => {
+    return quest.completion !== null && quest.completion !== undefined;
+  };
+
+  // Handler for login button in bonus quests
+  const handleLoginToComplete = () => {
+    if (onOpenWelcomeHome) {
+      onClose(); // Close the HeartCoin modal first
+      setTimeout(() => {
+        onOpenWelcomeHome(); // Then open the welcome home modal
+      }, 150);
+    }
+  };
 
   // Inject pulsing animation keyframes when enlarged item is shown
   useEffect(() => {
@@ -341,77 +361,166 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, initialTa
             
             {/* Daily Quests and Bonus Quests Tabs */}
             <div className="flex border-b border-white/10 mb-4">
-              <button className="px-4 py-2 font-bold text-xs text-[#4ECDC4] border-b-2 border-[#4ECDC4] bg-[#4ECDC4]/10 rounded-t">
+              <button 
+                onClick={() => setActiveEarnTab('DAILY QUESTS')}
+                className={`px-4 py-2 font-bold text-xs rounded-t transition-all duration-200 ${
+                  activeEarnTab === 'DAILY QUESTS'
+                    ? 'text-[#4ECDC4] border-b-2 border-[#4ECDC4] bg-[#4ECDC4]/10'
+                    : 'text-white/60 hover:text-white/80 bg-black/20'
+                }`}
+              >
                 DAILY QUESTS
               </button>
-              <button className="px-4 py-2 font-bold text-xs text-white/60 hover:text-white/80 bg-black/20 rounded-t">
+              <button 
+                onClick={() => setActiveEarnTab('BONUS QUESTS')}
+                className={`px-4 py-2 font-bold text-xs rounded-t transition-all duration-200 ${
+                  activeEarnTab === 'BONUS QUESTS'
+                    ? 'text-[#4ECDC4] border-b-2 border-[#4ECDC4] bg-[#4ECDC4]/10'
+                    : 'text-white/60 hover:text-white/80 bg-black/20'
+                }`}
+              >
                 BONUS QUESTS
               </button>
             </div>
 
-            {/* Daily Quest Items */}
-            <div className="space-y-4">
-              {/* Element of the Day Quest */}
-              <div className="bg-black/20 rounded-lg p-4 border border-white/10">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
-                      <img src="/elements/earth.webp" alt="Element" className="w-8 h-8" />
+            {/* Quest Content */}
+            {activeEarnTab === 'DAILY QUESTS' ? (
+              <div className="space-y-4">
+                {/* Element of the Day Quest */}
+                <div className="bg-black/20 rounded-lg p-4 border border-white/10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
+                        <img src="/elements/earth.webp" alt="Element" className="w-8 h-8" />
+                      </div>
+                      <div>
+                        <h3 className="text-white font-semibold text-sm">1. Tap the Element of the Day</h3>
+                        <p className="text-white/60 text-xs">Receive a random reward: HeartCoins, relics, or binder slot unlocks.</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-white font-semibold text-sm">1. Tap the Element of the Day</h3>
-                      <p className="text-white/60 text-xs">Receive a random reward: HeartCoins, relics, or binder slot unlocks.</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#4ECDC4] text-sm flex items-center">
+                        +1 <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-4 h-4 ml-1" />
+                      </span>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#4ECDC4] text-sm flex items-center">
-                      +1 <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-4 h-4 ml-1" />
-                    </span>
                   </div>
                 </div>
-              </div>
 
-              {/* Journal Entry Quest */}
-              <div className="bg-black/20 rounded-lg p-4 border border-white/10">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white/60" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-                      </svg>
+                {/* Journal Entry Quest */}
+                <div className="bg-black/20 rounded-lg p-4 border border-white/10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
+                        <svg className="w-6 h-6 text-white/60" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="text-white font-semibold text-sm">2. Journal Entry of the Day</h3>
+                        <p className="text-white/60 text-xs">Answer today's journal prompt to earn one HEART coin.</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-white font-semibold text-sm">2. Journal Entry of the Day</h3>
-                      <p className="text-white/60 text-xs">Answer today's journal prompt to earn one HEART coin.</p>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => {
+                          if (onOpenJournal) {
+                            onClose(); // Close the HeartCoin modal first
+                            setTimeout(() => {
+                              onOpenJournal(); // Then open the journal
+                            }, 150);
+                          }
+                        }}
+                        className="px-3 py-1 text-xs rounded border transition-colors bg-rgba(255,255,255,0.1) text-white hover:bg-white/20"
+                        style={{
+                          background: 'rgba(255,255,255,0.1)',
+                          color: '#FFFFFF',
+                          borderColor: 'rgba(255,255,255,0.6)',
+                          textShadow: 'none',
+                        }}
+                      >
+                        OPEN JOURNAL
+                      </button>
+                      <span className="text-[#4ECDC4] text-sm flex items-center">
+                        +1 <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-4 h-4 ml-1" />
+                      </span>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => {
-                        if (onOpenJournal) {
-                          onClose(); // Close the HeartCoin modal first
-                          setTimeout(() => {
-                            onOpenJournal(); // Then open the journal
-                          }, 150);
-                        }
-                      }}
-                      className="px-3 py-1 text-xs rounded border transition-colors bg-rgba(255,255,255,0.1) text-white hover:bg-white/20"
-                      style={{
-                        background: 'rgba(255,255,255,0.1)',
-                        color: '#FFFFFF',
-                        borderColor: 'rgba(255,255,255,0.6)',
-                        textShadow: 'none',
-                      }}
-                    >
-                      OPEN JOURNAL
-                    </button>
-                    <span className="text-[#4ECDC4] text-sm flex items-center">
-                      +1 <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-4 h-4 ml-1" />
-                    </span>
                   </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-3 max-h-[50vh] overflow-y-auto">
+                {questsLoading ? (
+                  <div className="text-center py-8">
+                    <div className="w-8 h-8 border-2 border-[#F2EF1D] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                    <p className="text-white/60 text-sm">Loading quests...</p>
+                  </div>
+                ) : bonusQuests.length > 0 ? (
+                  bonusQuests.map((quest, index) => (
+                    <div key={quest.id} className="flex items-center justify-between p-3 rounded-lg border border-white/30 bg-white/10">
+                      <div className="flex-1 mr-4">
+                        <div className="text-sm font-bold text-white">
+                          {index + 1}. {quest.title}
+                        </div>
+                        <div className="text-xs text-white/80">
+                          {quest.description}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={!profile ? handleLoginToComplete : undefined}
+                          disabled={!!profile && isQuestCompleted(quest)}
+                          className="px-3 py-2 text-xs rounded border transition-colors font-bold"
+                          style={{
+                            background: !profile
+                              ? 'rgba(100,100,100,0.3)'
+                              : isQuestCompleted(quest)
+                              ? 'rgba(0,255,0,0.2)'
+                              : 'rgba(255,255,255,0.1)',
+                            color: !profile
+                              ? '#666'
+                              : isQuestCompleted(quest)
+                              ? '#00FF00'
+                              : '#FFFFFF',
+                            borderColor: !profile
+                              ? 'rgba(100,100,100,0.6)'
+                              : isQuestCompleted(quest)
+                              ? '#00FF00'
+                              : 'rgba(255,255,255,0.6)',
+                            textShadow: !profile
+                              ? 'none'
+                              : isQuestCompleted(quest)
+                              ? '0 0 8px #00FF00, 0 0 16px #00FF00'
+                              : 'none',
+                            boxShadow: !profile
+                              ? 'none'
+                              : isQuestCompleted(quest)
+                              ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)'
+                              : 'none'
+                          }}
+                        >
+                          {!profile
+                            ? 'Log in to complete'
+                            : isQuestCompleted(quest)
+                            ? 'COMPLETED'
+                            : 'COMPLETE'}
+                        </button>
+                        <span className="text-sm flex items-center" style={{ 
+                          color: isQuestCompleted(quest) ? '#666' : '#90EE90', 
+                          textShadow: isQuestCompleted(quest) ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' 
+                        }}>
+                          {quest.reward_notes || `+${quest.reward_heartcoins}`}
+                          <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-white/60 text-sm">No bonus quests available</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ) : activeTab === 'use' ? (
           <div>

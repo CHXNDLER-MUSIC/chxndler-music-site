@@ -1924,6 +1924,12 @@ const HUDPanel = React.memo(function HUDPanel({
 
   // Audio progress tracking - track ambient audio on homepage, main player when song selected
   useEffect(() => {
+    // If unified audio provider is active, skip legacy DOM listeners
+    try {
+      if (typeof window !== 'undefined' && (window).__UNIFIED_AUDIO_ACTIVE) {
+        return;
+      }
+    } catch {}
     const findAndConnectAudio = () => {
       // On homepage (no currentId), track ambient audio for space-music.mp3
       // When a song is selected (currentId exists), track main player
@@ -2028,6 +2034,14 @@ const HUDPanel = React.memo(function HUDPanel({
     }
   }, [mounted, currentId]); // Re-run when currentId changes to switch between ambient and main player
 
+  // Sync HUD progress with unified audio provider
+  useEffect(() => {
+    try { setDuration(audioManager?.duration || 0); } catch {}
+  }, [audioManager?.duration]);
+  useEffect(() => {
+    try { setProgress(audioManager?.currentTime || 0); } catch {}
+  }, [audioManager?.currentTime]);
+
   // Persist volume to localStorage when it changes, but ONLY for the main player.
   // Avoid saving ambient (space-music.mp3) fades to 0 which would mute the main player later.
   useEffect(() => {
@@ -2113,22 +2127,18 @@ const HUDPanel = React.memo(function HUDPanel({
     };
   }, [playing, currentId]); // React to playing state changes and currentId changes
 
-  // Progress bar click handler
+  // Progress bar click handler (unified audio)
   const handleProgressClick = (e) => {
-    // Track ambient audio on homepage, main player when song selected
-    const audioSelector = !currentId ? 'audio[data-ambient="1"]' : 'audio[data-audio-player="1"]';
-    const a = document.querySelector(audioSelector);
-    if (DEBUG_MEDIA) dlog('HUDPanel: progress click', { selector: audioSelector, hasAudio: !!a, duration, currentId });
-    if (!a || !duration) {
-      if (DEBUG_MEDIA) dlog('HUDPanel: cannot seek — missing audio or duration');
+    if (!duration) {
+      if (DEBUG_MEDIA) dlog('HUDPanel: cannot seek — missing duration');
       return;
     }
     const rect = e.currentTarget.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const percentage = clickX / rect.width;
-    const seekTime = percentage * duration;
-    if (DEBUG_MEDIA) dlog('HUDPanel: seeking', { seekTime, percent: percentage * 100, audioType: !currentId ? 'ambient' : 'main' });
-    a.currentTime = seekTime;
+    const seekTime = Math.max(0, Math.min(duration, percentage * duration));
+    if (DEBUG_MEDIA) dlog('HUDPanel: seeking (unified)', { seekTime, percent: percentage * 100 });
+    try { audioManager.seek(seekTime); } catch {}
     try { sfx.play('click', 0.3); } catch {}
   };
 
@@ -2556,11 +2566,11 @@ const HUDPanel = React.memo(function HUDPanel({
                       <button 
                         onClick={handlePlayPause}
                         className="hud-play-btn-enhanced"
-                        aria-label={playing ? "Pause" : "Play"}
+                        aria-label={audioManager.playing ? "Pause" : "Play"}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                         style={{ marginTop: 1 }}
                       >
-                        {playing ? (
+                        {audioManager.playing ? (
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                             <rect x="6" y="4" width="4" height="16" rx="1"/>
                             <rect x="14" y="4" width="4" height="16" rx="1"/>

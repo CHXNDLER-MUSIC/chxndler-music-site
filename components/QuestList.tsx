@@ -174,6 +174,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   }, [showLoginModal]);
 
   // Helper functions to get quest data from server
+  const getElementalSongQuest = () => bonusQuests.find(q => q.quest_key === 'LISTEN_ELEMENT_SONG');
   const getInviteFriendQuest = () => bonusQuests.find(q => q.quest_key === 'INVITE_FRIEND');
   const getLiveShowQuest = () => bonusQuests.find(q => q.quest_key === 'ATTEND_LIVESTREAM');
 
@@ -234,8 +235,6 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
       handleLoginPrompt();
       return;
     }
-    
-    try { sfx.play('click', 0.8); } catch {}
     onCloseHeartCoinPopup?.();
     setShowJournal(true);
   };
@@ -272,6 +271,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
     const message = "I thought of you. I think this world could feel like home for you too. https://chxndler.world/";
     
     const markMessageSent = () => {
+      try { sfx.play('change', 0.8); } catch {}
       setQuestStatus(prev => ({ ...prev, inviteFriend: true }));
       // Save to localStorage to persist across sessions for today
       const today = new Date().toDateString();
@@ -435,6 +435,63 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
     setShowCheckIn(true);
     setCheckInError("");
     setSecretPhrase("");
+  };
+
+  const handleCompleteElementalSong = async () => {
+    if (loading) return;
+    if (!isAuthenticated) {
+      handleLoginPrompt();
+      return;
+    }
+
+    const elementalSongQuest = getElementalSongQuest();
+    if (!elementalSongQuest || elementalSongQuest.completed_today > 0) return;
+
+    try { sfx.play('click', 0.8); } catch {}
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/bonus-quests/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ questKey: 'LISTEN_ELEMENT_SONG' })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🎯 Elemental song quest completion result:', data);
+
+        if (data.status === 'completed_today' || data.status === 'already_completed_today') {
+          if (data.status === 'completed_today') {
+            showCelebration("🎵 Elemental Song Complete! Your musical essence has been awakened. +2 HeartCoins + Element Card earned.");
+            triggerHeartCoinCelebration(elementalSongQuest.reward_heartcoins || 2);
+          } else {
+            showCelebration("✨ Quest already completed today! Check back tomorrow for new opportunities.");
+          }
+
+          // Refresh profile to update heartcoin balance
+          if (data.shouldRefreshProfile || data.status === 'completed_today') {
+            await refreshProfile();
+          }
+
+          // Reload bonus quests to update button states
+          const { data: { session } } = await supabaseClient.auth.getSession();
+          if (session?.user?.id) {
+            await loadBonusQuests(session.user.id);
+          }
+        }
+      } else {
+        const errorData = await response.json();
+        console.error('Elemental song quest completion failed:', errorData);
+        showCelebration("❌ Failed to complete quest. Please try again.");
+      }
+    } catch (error) {
+      console.error('Failed to complete elemental song quest:', error);
+      showCelebration("❌ Failed to complete quest. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Calculate quest progress
@@ -720,7 +777,82 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
           ⭐ BONUS QUESTS
         </h3>
 
-        {/* Quest 1: Invite a Friend */}
+        {/* Quest 1: Listen to Your Elemental Song (if available) */}
+        {getElementalSongQuest() && (
+          <div 
+            className="border border-cyan-400/40 rounded-lg p-4 mb-4"
+            style={{ 
+              background: 'rgba(0,255,255,0.05)',
+              boxShadow: '0 0 10px rgba(0,255,255,0.2)'
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <h4 className="text-white font-semibold mb-1">1. Listen to Your Elemental Song</h4>
+                <p className="text-white/80 text-sm mb-2">Play the track aligned with your element.</p>
+                <p className="text-white/60 text-xs">+2 + Element Card</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={getElementalSongQuest()?.completed_today > 0 ? undefined : handleCompleteElementalSong}
+                  disabled={getElementalSongQuest()?.completed_today > 0 || loading || bonusQuestsLoading}
+                  className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 cursor-pointer ${
+                    getElementalSongQuest()?.completed_today > 0
+                      ? 'bg-green-500/30 border-2 border-green-400 text-green-200 cursor-not-allowed'
+                      : !isAuthenticated
+                        ? 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300'
+                        : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300'
+                  }`}
+                  style={{
+                    boxShadow: getElementalSongQuest()?.completed_today > 0
+                      ? '0 0 20px rgba(0,255,0,0.8), inset 0 0 15px rgba(0,255,0,0.3)'
+                      : !isAuthenticated
+                        ? '0 0 10px rgba(255,255,0,0.3)'
+                        : '0 0 10px rgba(252,84,175,0.3)',
+                    textShadow: getElementalSongQuest()?.completed_today > 0
+                      ? '0 0 12px rgba(0,255,0,1)'
+                      : !isAuthenticated
+                        ? '0 0 4px rgba(255,255,0,0.6)'
+                        : '0 0 4px rgba(252,84,175,0.6)'
+                  }}
+                >
+                  {getElementalSongQuest()?.completed_today > 0
+                    ? 'COMPLETED' 
+                    : !isAuthenticated
+                      ? 'LOG IN TO COMPLETE'
+                      : 'COMPLETE'
+                  }
+                </button>
+                <div 
+                  className={`font-bold text-sm cursor-pointer ${
+                    getElementalSongQuest()?.completed_today > 0
+                      ? 'text-green-400' 
+                      : !isAuthenticated
+                        ? 'text-yellow-400 hover:text-yellow-300'
+                        : 'text-pink-400'
+                  }`}
+                  style={{ 
+                    textShadow: getElementalSongQuest()?.completed_today > 0
+                      ? '0 0 4px rgba(0,255,0,0.6)' 
+                      : !isAuthenticated
+                        ? '0 0 4px rgba(255,255,0,0.6)'
+                        : '0 0 4px rgba(252,84,175,0.6)' 
+                  }}
+                  onClick={getElementalSongQuest()?.completed_today > 0 ? undefined : handleCompleteElementalSong}
+                >
+                  {getElementalSongQuest()?.completed_today > 0
+                    ? '✓ Complete' 
+                    : !isAuthenticated
+                      ? 'Log in to complete'
+                      : '+1'
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Quest 2: Invite a Friend */}
         <div 
           className="border border-cyan-400/40 rounded-lg p-4 mb-4"
           style={{ 
@@ -730,7 +862,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         >
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <h4 className="text-white font-semibold mb-1">1. Invite a Friend</h4>
+              <h4 className="text-white font-semibold mb-1">2. Invite a Friend</h4>
               <p className="text-white/80 text-sm mb-2">Share the Heartverse with someone you love. When they join, you both earn HeartCoins.</p>
               <p className="text-white/60 text-xs">+1 /day</p>
             </div>

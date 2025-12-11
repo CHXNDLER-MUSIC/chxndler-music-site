@@ -250,7 +250,7 @@ export default function OnboardingTour({
   const positionBubble = (element: HTMLElement | null, step: TourStep) => {
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    const bubbleWidth = 320;
+    const bubbleWidth = 240; // Match hamburger menu width (w-60 = 240px)
     const bubbleHeight = 200;
     
     // If no element, center the tooltip (ERROR-PROOF TARGETING)
@@ -277,21 +277,13 @@ export default function OnboardingTour({
       
       if (menuDropdown) {
         const dropdownRect = menuDropdown.getBoundingClientRect();
-        const top = Math.max(20, Math.min(
-          dropdownRect.top + (dropdownRect.height / 2) - (bubbleHeight / 2),
-          viewportHeight - bubbleHeight - 20
-        ));
         
-        // Always position on the right side of the screen for menu items
-        // Use a larger gap and ensure it's always on the right side
-        const rightSidePosition = Math.max(
-          dropdownRect.right + 40,  // Larger 40px gap from menu edge
-          viewportWidth * 0.55      // Ensure it's at least 55% from left edge (right side)
-        );
-        const left = Math.min(
-          rightSidePosition,
-          viewportWidth - bubbleWidth - 20  // Still respect viewport bounds
-        );
+        // Position at the same vertical position as the menu dropdown
+        const top = dropdownRect.top;
+        
+        // Position directly to the right of the menu with no gap
+        const left = dropdownRect.right;
+        
         setBubblePosition({ top, left });
         
         // Update spotlight for menu dropdown
@@ -551,8 +543,9 @@ export default function OnboardingTour({
           }}
         >
           <div
-            className="relative max-w-sm rounded-2xl p-6"
+            className="relative rounded-2xl p-6"
             style={{
+              width: '240px',
               background: `linear-gradient(180deg, rgba(252,84,175,0.18), rgba(252,84,175,0.12))`,
               border: '1px solid rgba(252,84,175,0.35)',
               backdropFilter: 'blur(16px)',

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
 import { getBadgeIcon } from "@/config/assets";
+import { getBadgeProgressForUser, formatRequirementText } from "@/lib/badgeProgress";
 
 type BadgeWithProgress = {
   id: string;
@@ -44,16 +45,40 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
   const [currentPage, setCurrentPage] = useState(0);
   
   // Use ProfileContext data
-  const { allBadges, userBadges, badgesLoading: loading, badgesError: error } = useProfile();
+  const { allBadges, userBadges, badgesLoading: loading, badgesError: error, profile } = useProfile();
 
-  // Create badge display objects with unlocked status (same logic as BadgesModal)
+  // Create badge display objects with unlocked status and accurate progress
   const badgesWithUnlocked = allBadges.map(badge => {
     const userBadgeIds = new Set(userBadges.map(ub => ub.badge_id));
+    const isUnlocked = userBadgeIds.has(badge.id);
+
+    // Normalize badge shape for progress utility
+    const normalizedBadge = {
+      id: badge.id,
+      slug: (badge as any).slug || '',
+      badge_name: badge.badge_name,
+      description: badge.description,
+      icon_url: badge.icon_url,
+      requirement_text: null,
+      requirement_type: (badge as any).requirement_type,
+      requirement_count: (badge as any).requirement_count,
+      category: (badge as any).category,
+      created_at: (badge as any).created_at,
+    } as any;
+
+    const progressData = getBadgeProgressForUser(normalizedBadge, profile as any);
+
     return {
       ...badge,
       badge_name: badge.badge_name,
-      unlocked: userBadgeIds.has(badge.id),
-      progress: 100, // Set default progress as 100 for unlocked badges
+      unlocked: isUnlocked,
+      // Percent for ring display
+      progress: progressData.percentage,
+      // Current/total for detail display
+      current: progressData.current,
+      total: progressData.target,
+      // Display-ready requirement text
+      requirement: formatRequirementText(normalizedBadge),
     };
   });
 

@@ -894,21 +894,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   };
 
   const handleJournalEntry = () => {
+    try { sfx.play('click', 0.6); } catch {}
     if (!dailyQuests.journalEntry) {
-      try { sfx.play('click', 0.8); } catch {}
-      
-      // Close heart coin display and reset all popup states
+      // Only close the HeartCoin display and open the journal popout
       setOpen(false);
-      setIsFromCollectCard(false);
-      setShowQRCode(false);
-      setShowBlueDisplay(false);
-      
-      // Small delay to ensure popup closes before journal opens
       setTimeout(() => {
-        try { 
-          // Use the ProfileContext journal state to open the journal popup
+        try {
           setIsJournalOpen(true);
-          onOpenJournal?.(); 
+          onOpenJournal?.();
         } catch {}
       }, 150);
     }

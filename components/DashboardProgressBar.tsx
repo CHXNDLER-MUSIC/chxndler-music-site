@@ -1,15 +1,18 @@
 "use client";
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { ELEMENT_COLORS, type Element } from '@/lib/planets';
+import { useAudio } from "@/app/providers/AudioProvider";
 
 interface DashboardProgressBarProps {
   className?: string;
 }
 
 const DashboardProgressBar: React.FC<DashboardProgressBarProps> = ({ className = "" }) => {
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  // Read time and duration directly from the unified audio context
+  const audio = useAudio();
+  const currentTime = audio.currentTime || 0;
+  const duration = audio.duration || 0;
   const [isHovering, setIsHovering] = useState(false);
   const [hoverPosition, setHoverPosition] = useState(0);
   const [hoverTime, setHoverTime] = useState(0);
@@ -28,65 +31,7 @@ const DashboardProgressBar: React.FC<DashboardProgressBarProps> = ({ className =
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Find audio element and track progress
-  useEffect(() => {
-    const findAudioElement = () => {
-      // Look for the main audio player element
-      const audioElement = document.querySelector('audio[data-audio-player="1"]') as HTMLAudioElement;
-      return audioElement;
-    };
-
-    const updateProgress = () => {
-      const audio = findAudioElement();
-      if (audio) {
-        setCurrentTime(audio.currentTime || 0);
-        setDuration(audio.duration || 0);
-      }
-    };
-
-    const onTimeUpdate = () => updateProgress();
-    const onDurationChange = () => updateProgress();
-    const onLoadedMetadata = () => updateProgress();
-
-    // Set up polling for audio element and attach listeners
-    const setupAudioListeners = () => {
-      const audio = findAudioElement();
-      if (audio) {
-        audio.addEventListener('timeupdate', onTimeUpdate);
-        audio.addEventListener('durationchange', onDurationChange);
-        audio.addEventListener('loadedmetadata', onLoadedMetadata);
-        updateProgress(); // Initial update
-        
-        return () => {
-          audio.removeEventListener('timeupdate', onTimeUpdate);
-          audio.removeEventListener('durationchange', onDurationChange);
-          audio.removeEventListener('loadedmetadata', onLoadedMetadata);
-        };
-      }
-      return null;
-    };
-
-    // Poll for audio element until found
-    let cleanup: (() => void) | null = null;
-    let pollInterval: NodeJS.Timeout;
-
-    const pollForAudio = () => {
-      if (!cleanup) {
-        cleanup = setupAudioListeners();
-        if (cleanup) {
-          clearInterval(pollInterval);
-        }
-      }
-    };
-
-    pollInterval = setInterval(pollForAudio, 500);
-    pollForAudio(); // Initial check
-
-    return () => {
-      clearInterval(pollInterval);
-      if (cleanup) cleanup();
-    };
-  }, []);
+  // Remove legacy DOM-audio polling; progress is now driven by AudioProvider
 
   // Determine current element based on playing track
   useEffect(() => {
@@ -124,12 +69,9 @@ const DashboardProgressBar: React.FC<DashboardProgressBarProps> = ({ className =
     const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
     const time = (percentage / 100) * duration;
     
-    // Find audio element and seek
-    const audio = document.querySelector('audio[data-audio-player="1"]') as HTMLAudioElement;
-    if (audio) {
-      audio.currentTime = time;
-    }
-  }, [duration]);
+    // Seek via the unified audio context
+    try { audio.seek(time); } catch {}
+  }, [duration, audio]);
 
   // Don't render if no audio is playing
   if (duration <= 0) return null;
