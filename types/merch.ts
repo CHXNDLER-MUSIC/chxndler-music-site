@@ -37,23 +37,19 @@ export interface Order {
   updated_at: string;
 }
 
-export interface PurchaseResponse {
+// Normalized API response for merch purchases via HeartCoins
+export interface PurchaseWithHeartcoinsResult {
   success: boolean;
-  order_id: number;
-  previous_balance: number;
-  new_balance: number;
+  message: string;
+  order_id: string | null;
+  user_id: string | null;
+  heartcoins_before: number | null;
+  heartcoins_after: number | null;
   amount_spent: number;
-  merch_item_id: string;
-  item_name: string;
-  quantity: number;
-  unit_price: number;
-  transaction_id: string;
-  item_category: 'physical' | 'digital';
-  requires_shipping: boolean;
 }
 
 export interface ShippingInfo {
-  orderId: number;
+  orderId: string; // pass through order_id from purchase result
   fullName: string;
   addressLine1: string;
   addressLine2?: string;

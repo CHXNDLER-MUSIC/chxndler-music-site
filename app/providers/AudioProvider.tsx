@@ -1,5 +1,6 @@
 "use client";
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
 
 // Track info for audio and visual display
 export type TrackInfo = {
@@ -335,6 +336,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   // This will be used for auto-playing after warp completion
   const autoPlayAfterWarpRef = useRef<string | null>(null);
 
+  // Normalize incoming slugs so dropdown selections (e.g. `we're-just-friends`) map to TRACK_INFO ids (e.g. `were-just-friends`)
+  const normalizeSlug = (slug?: string): string => {
+    if (!slug) return "";
+    // Remove apostrophes and normalize common variations
+    return String(slug).toLowerCase().replace(/'/g, "");
+  };
+
   // Prefer Opus when available. Fallback to MP3.
   const bestSourceFor = (t: { mp3?: string; opus?: string }): string => {
     if (t?.opus) return t.opus;
@@ -423,28 +431,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         if (state.currentTrack) {
           console.log('🎵 Current track exists, checking if it matches audio source:', state.currentTrack.id);
           
-          // Get the expected source for the current track
-          const SONG_TRACK_MAP: Record<string, TrackKey> = {
-            "baby": "BABY",
-            "be-my-bee": "BE_MY_BEE",
-            "ocean-girl": "OCEAN_GIRL",
-            "space-music": "SPACE_MUSIC",
-            "game-boy-heart": "GAME_BOY_HEART",
-            "house-party": "HOUSE_PARTY",
-            "kid-forever": "KID_FOREVER",
-            "paris": "PARIS",
-            "pokemon": "POKEMON",
-            "we're-just-friends": "WJF",
-            "welcome-to-the-heartverse": "WELCOME_TO_HEARTVERSE",
-            "welcome-back": "WELCOME_BACK",
-          };
-          
-          const trackKey = SONG_TRACK_MAP[state.currentTrack.id];
-          const expectedSource = trackKey ? bestSourceFor(TRACKS[trackKey]) : `/tracks/${state.currentTrack.id}.opus`;
+          // Determine expected source using shared mapper with normalized slug
+          const norm = normalizeSlug(state.currentTrack.id);
+          const key = trackKeyFromSlug(norm) as TrackKey | null;
+          const expectedSource = key ? bestSourceFor(TRACKS[key]) : `/tracks/${norm}.opus`;
           
           // Check if the audio element has the correct source loaded
-          if (!a.src || a.src === 'null' || a.src === '' || !a.src.includes(state.currentTrack.id)) {
-            console.log('🎵 Audio source mismatch, loading current track:', state.currentTrack.id);
+          if (!a.src || a.src === 'null' || a.src === '' || !a.src.includes(norm)) {
+            console.log('🎵 Audio source mismatch, loading current track:', norm);
             a.src = expectedSource;
             try { a.load(); } catch {}
             setState(s => ({ 
@@ -539,37 +533,17 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     },
 
     selectTrack: async (trackId: string) => {
-      const trackInfo = TRACK_INFO[trackId];
+      const normId = normalizeSlug(trackId);
+      const trackInfo = TRACK_INFO[normId] || TRACK_INFO[trackId];
       if (!trackInfo) {
         console.warn(`Track not found: ${trackId}`);
         return;
       }
 
-      // Find the track source using the SONG_TRACK_MAP
+      // Find the track source using the shared mapper
       let trackSource = "";
-      const SONG_TRACK_MAP: Record<string, TrackKey> = {
-        "baby": "BABY",
-        "be-my-bee": "BE_MY_BEE",
-        "ocean-girl": "OCEAN_GIRL",
-        "space-music": "SPACE_MUSIC",
-        "game-boy-heart": "GAME_BOY_HEART",
-        "house-party": "HOUSE_PARTY",
-        "kid-forever": "KID_FOREVER",
-        "paris": "PARIS",
-        "pokemon": "POKEMON",
-        "we're-just-friends": "WJF",
-        "welcome-to-the-heartverse": "WELCOME_TO_HEARTVERSE",
-        "welcome-back": "WELCOME_BACK",
-      };
-      
-      const trackKey = SONG_TRACK_MAP[trackId];
-
-      if (trackKey) {
-        trackSource = bestSourceFor(TRACKS[trackKey]);
-      } else {
-        // Fallback: try direct path
-        trackSource = `/tracks/${trackId}.opus`;
-      }
+      const key = trackKeyFromSlug(normId) as TrackKey | null;
+      trackSource = key ? bestSourceFor(TRACKS[key]) : `/tracks/${normId}.opus`;
 
       if (!trackSource) {
         console.warn(`No source found for track: ${trackId}`);
@@ -597,7 +571,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const a = audioRef.current;
       if (!a) return;
 
-      console.log('🎵 Loading selected track:', trackId, 'with source:', trackSource);
+      console.log('🎵 Loading selected track:', normId, 'with source:', trackSource);
       a.src = trackSource;
       console.log('🎵 Audio element src set to:', a.src);
       try { 
@@ -651,41 +625,21 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         isLoading: false
       }));
 
-      console.log('🎵 Track loaded and ready for play button:', trackId);
+      console.log('🎵 Track loaded and ready for play button:', normId);
     },
 
     playTrack: async (trackId: string) => {
-      const trackInfo = TRACK_INFO[trackId];
+      const normId = normalizeSlug(trackId);
+      const trackInfo = TRACK_INFO[normId] || TRACK_INFO[trackId];
       if (!trackInfo) {
         console.warn(`Track not found: ${trackId}`);
         return;
       }
 
-      // Find the track source using the SONG_TRACK_MAP
+      // Find the track source using the shared mapper
       let trackSource = "";
-      const SONG_TRACK_MAP: Record<string, TrackKey> = {
-        "baby": "BABY",
-        "be-my-bee": "BE_MY_BEE",
-        "ocean-girl": "OCEAN_GIRL",
-        "space-music": "SPACE_MUSIC",
-        "game-boy-heart": "GAME_BOY_HEART",
-        "house-party": "HOUSE_PARTY",
-        "kid-forever": "KID_FOREVER",
-        "paris": "PARIS",
-        "pokemon": "POKEMON",
-        "we're-just-friends": "WJF",
-        "welcome-to-the-heartverse": "WELCOME_TO_HEARTVERSE",
-        "welcome-back": "WELCOME_BACK",
-      };
-      
-      const trackKey = SONG_TRACK_MAP[trackId];
-
-      if (trackKey) {
-        trackSource = bestSourceFor(TRACKS[trackKey]);
-      } else {
-        // Fallback: try direct path
-        trackSource = `/tracks/${trackId}.opus`;
-      }
+      const key = trackKeyFromSlug(normId) as TrackKey | null;
+      trackSource = key ? bestSourceFor(TRACKS[key]) : `/tracks/${normId}.opus`;
 
       if (!trackSource) {
         console.warn(`No source found for track: ${trackId}`);
@@ -697,7 +651,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
       // Only stop audio if we're switching to a different track
       const currentAudio = audioRef.current;
-      const isSameTrack = currentAudio && currentAudio.src && currentAudio.src.includes(trackId);
+      const isSameTrack = currentAudio && currentAudio.src && currentAudio.src.includes(normId);
       
       if (!isSameTrack) {
         // Stop any existing audio only when switching tracks
@@ -723,8 +677,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Ensure we're still working with the same track (prevent race conditions)
-      if (state.currentTrack?.id !== trackId) {
-        console.log('🎵 Track changed during loading, aborting:', trackId);
+      if (state.currentTrack?.id !== normId) {
+        console.log('🎵 Track changed during loading, aborting:', normId);
         return;
       }
 
@@ -774,7 +728,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         // Set playing state immediately for instant UI feedback
         setState(s => ({ ...s, playing: true, isLoading: false }));
         await a.play();
-        console.log('🎵 Successfully started playing:', trackId);
+        console.log('🎵 Successfully started playing:', normId);
       } catch (err) {
         console.error('Failed to play track:', err);
         setState(s => ({ ...s, isLoading: false, playing: false }));
@@ -910,4 +864,3 @@ export function useAudio() {
   if (!ctx) throw new Error("useAudio must be used within <AudioProvider>");
   return ctx;
 }
-

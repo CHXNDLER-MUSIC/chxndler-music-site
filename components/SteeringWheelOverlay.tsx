@@ -1229,37 +1229,20 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
           position: relative;
           display:grid; place-items:center;
           border-radius:9999px;
-          /* Match comms/join hologram style, tinted blue */
+          /* Neutral glass look when inactive */
           background:
             radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
-            rgba(25,227,255,0.45);
+            rgba(255,255,255,0.18);
           border:1px solid rgba(255,255,255,.14);
           box-shadow:
             0 14px 24px rgba(0,0,0,.55),
-            0 0 12px #19E3FF66,
-            0 0 22px #19E3FF44,
             inset 0 1px 0 rgba(255,255,255,.22),
             inset 0 -6px 14px rgba(0,0,0,.6);
           backdrop-filter: blur(8px);
           -webkit-backdrop-filter: blur(8px);
           transition: transform .15s ease, box-shadow .2s ease, filter .18s ease;
-          animation: powerPulse 2.6s ease-in-out infinite;
         }
-        /* When blue is selected/active: tone down glow and stop pulsing */
-        .power-btn.power-btn-active{
-          animation: none;
-          box-shadow:
-            0 10px 22px rgba(0,0,0,.5),
-            0 0 10px #19E3FF55,
-            0 0 18px #19E3FF44,
-            inset 0 1px 0 rgba(255,255,255,.22),
-            inset 0 -6px 14px rgba(0,0,0,.6);
-          filter: brightness(1.0) saturate(1.02);
-        }
-        .power-btn::before{ /* outer halo to match hubs (subtle) */
-          content:""; position:absolute; inset:-1%; border-radius:9999px; pointer-events:none;
-          box-shadow: 0 0 14px #19E3FF88, 0 0 24px #19E3FF55;
-        }
+        /* Remove outer halo by default; only show when active via .power-btn-active::before */
         .power-btn::after{ /* sheen + scanlines */
           content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none; mix-blend-mode:screen; opacity:.6;
           background:
@@ -1267,19 +1250,13 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
             repeating-linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.08) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px);
         }
         .power-glyph{ position:relative; display:inline-flex; align-items:center; justify-content:center; color:#fff;
-          /* Blue glow coming through the icon */
+          /* Neutral by default; blue glow only when active */
           mix-blend-mode: screen;
-          filter: brightness(1.06) saturate(1.1)
-            drop-shadow(0 0 10px #19E3FF)
-            drop-shadow(0 0 22px #19E3FF);
+          filter: brightness(1.02) saturate(1.02);
         }
-        .power-icon{ width: 86%; height: 86%; object-fit: contain; display:block; filter:
-          saturate(1.05) brightness(1.03)
-          drop-shadow(0 0 8px #19E3FF)
-          drop-shadow(0 0 18px #19E3FF);
-        }
-        /* Inner cyan glow masked to the power symbol shape */
-        .power-glyph::before{
+        .power-icon{ width: 86%; height: 86%; object-fit: contain; display:block; filter: none; }
+        /* Inner cyan glow masked to the power symbol shape appears only when active */
+        .power-btn-active .power-glyph::before{
           content:""; position:absolute; inset:14%; pointer-events:none; mix-blend-mode:screen;
           background: radial-gradient(closest-side, #19E3FFCC, #19E3FF55 60%, transparent 78%);
           filter: blur(5px) saturate(1.05) brightness(1.02);
@@ -1288,11 +1265,9 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
           transform: scale(1.07);
           box-shadow:
             0 18px 30px rgba(0,0,0,.6),
-            0 0 18px #19E3FFAA,
-            0 0 40px #19E3FF77,
-          inset 0 1px 0 rgba(255,255,255,.28),
-          inset 0 -8px 18px rgba(0,0,0,.65);
-          filter: brightness(1.04) saturate(1.08);
+            inset 0 1px 0 rgba(255,255,255,.28),
+            inset 0 -8px 18px rgba(0,0,0,.65);
+          filter: brightness(1.04) saturate(1.06);
         }
         .power-btn:active{ transform: scale(.96); }
         @keyframes powerPulse{ 0%,100%{ filter: brightness(1) } 50%{ filter: brightness(1.08) } }
@@ -1319,8 +1294,12 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
           }
         }
         
-        /* Enhanced glow effects when beam is active */
+        /* Enhanced glow effects when blue display is active */
         .power-btn-active {
+          /* Blue tint only when active */
+          background:
+            radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.06), rgba(255,255,255,0) 42%),
+            rgba(25,227,255,0.45);
           animation: powerActiveGlow 2s ease-in-out infinite, powerPulse 2.6s ease-in-out infinite;
           box-shadow:
             0 14px 28px rgba(0,0,0,.6),
@@ -1331,8 +1310,19 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
             inset 0 1px 0 rgba(255,255,255,.22),
             inset 0 -6px 14px rgba(0,0,0,.6);
         }
-        .power-btn-active::before {
+        .power-btn-active::before { /* outer halo when active */
+          content:""; position:absolute; inset:-1%; border-radius:9999px; pointer-events:none;
           box-shadow: 0 0 50px #19E3FFFF, 0 0 100px #19E3FFCC, 0 0 150px #19E3FF88;
+        }
+        .power-btn-active .power-glyph{
+          filter: brightness(1.06) saturate(1.1)
+            drop-shadow(0 0 10px #19E3FF)
+            drop-shadow(0 0 22px #19E3FF);
+        }
+        .power-btn-active .power-icon{
+          filter: saturate(1.05) brightness(1.03)
+            drop-shadow(0 0 8px #19E3FF)
+            drop-shadow(0 0 18px #19E3FF);
         }
         @keyframes powerActiveGlow {
           0%, 100% { 

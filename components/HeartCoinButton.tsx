@@ -417,22 +417,37 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const fetchCards = useCallback(async () => {
     setIsLoadingCards(true);
     try {
+      // Select all to avoid column-mismatch errors if gating columns are missing
       const { data, error } = await supabaseBrowser
         .from('cards')
-        .select('id, card_name, element, rarity, artwork_url, description, is_released, min_tier')
+        .select('*')
         .order('card_name');
-      
+
       if (error) throw error;
-      
-      // Add default costs if not in database
-      const cardsWithCosts = data.map(card => ({
+
+      // Normalize records: provide safe defaults for optional/gating fields
+      const cardsWithCosts = (data || []).map((card: any) => ({
         ...card,
-        digitalCost: card.digitalCost || (card.rarity?.toLowerCase() === 'legendary' ? 50 : 
-                     card.rarity?.toLowerCase() === 'rare' ? 5 : 5),
-        physicalCost: card.physicalCost || (card.rarity?.toLowerCase() === 'legendary' ? 75 :
-                      card.rarity?.toLowerCase() === 'rare' ? 20 : 20)
+        // Default gating to permissive if absent so cards render instead of all-blurred
+        is_released: card?.is_released ?? true,
+        min_tier: card?.min_tier ?? 'wanderer',
+        // Add default costs if not in database
+        digitalCost:
+          card?.digitalCost ??
+          (card?.rarity?.toLowerCase() === 'legendary'
+            ? 50
+            : card?.rarity?.toLowerCase() === 'rare'
+            ? 5
+            : 5),
+        physicalCost:
+          card?.physicalCost ??
+          (card?.rarity?.toLowerCase() === 'legendary'
+            ? 75
+            : card?.rarity?.toLowerCase() === 'rare'
+            ? 20
+            : 20),
       }));
-      
+
       setCards(cardsWithCosts);
     } catch (error) {
       console.error('Error fetching cards:', error);
@@ -549,15 +564,19 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
   // Helper function to check if card should be blurred based on release status and user tier
   const shouldBlurCard = (card: Card): boolean => {
+    // Treat missing gating fields as visible to prevent accidental full blur
+    const isReleased = (card as any)?.is_released;
+    const minTier = (card as any)?.min_tier;
+
     // Special case: if min_tier is 'dreamer' and user is 'dreamer', show even if unreleased
-    if (card.min_tier?.toLowerCase() === 'dreamer' && profile?.tier?.toLowerCase() === 'dreamer') {
+    if (minTier?.toLowerCase() === 'dreamer' && profile?.tier?.toLowerCase() === 'dreamer') {
       return false;
     }
-    
-    // If card is not released, blur it
-    if (!card.is_released) return true;
-    
-    // If card is released, show it (no tier restrictions for released cards)
+
+    // Only blur if the field exists and is explicitly false
+    if (isReleased === false) return true;
+
+    // Otherwise show the card
     return false;
   };
 
@@ -1007,10 +1026,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     // Use the new purchase hook that calls secure API
     const purchaseResult = await purchaseWithHeartCoins(merchItem, 1);
 
-    if (purchaseResult) {
+    if (purchaseResult && purchaseResult.success) {
       console.log("Purchase successful, order created:", purchaseResult.order_id);
 
-      setCurrentOrderId(purchaseResult.order_id.toString());
+      setCurrentOrderId(purchaseResult.order_id || null);
       setStep('shipping');
       
       // Play success sound
@@ -1038,7 +1057,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
     // Use the new shipping update hook
     const updateResult = await updateShipping({
-      orderId: parseInt(currentOrderId),
+      orderId: currentOrderId,
       fullName: shippingForm.full_name,
       addressLine1: shippingForm.address_line1,
       addressLine2: shippingForm.address_line2,

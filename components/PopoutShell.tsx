@@ -27,15 +27,15 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
       
       {/* Main modal container - exact copy from Binder */}
       <div 
-        className="fixed inset-0 z-[2147483646] flex items-center justify-center"
+        className="fixed inset-0 z-[2147483646] flex items-start justify-center"
         style={{
-          paddingTop: '1vh'
+          paddingTop: '24vh'
         }}
       >
         <div
           className="binder-hologram-container"
           style={{
-            width: 'min(85vw, 580px)',
+            width: 'min(90vw, 600px)',
             height: 'auto',
             maxHeight: compact ? '320px' : '85vh',
             minHeight: compact ? '200px' : '400px',

@@ -9,21 +9,8 @@ import { useAudio, TRACK_INFO, TRACKS, TrackKey } from "@/app/providers/AudioPro
 import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
 import SongDropdown from "./SongDropdown";
 
-// Map song IDs to track keys
-const SONG_TRACK_MAP: Record<string, TrackKey> = {
-  "baby": "BABY",
-  "be-my-bee": "BE_MY_BEE",
-  "ocean-girl": "OCEAN_GIRL",
-  "space-music": "SPACE_MUSIC",
-  "game-boy-heart": "GAME_BOY_HEART",
-  "house-party": "HOUSE_PARTY",
-  "kid-forever": "KID_FOREVER",
-  "paris": "PARIS",
-  "pokemon": "POKEMON",
-  "we're-just-friends": "WJF",
-  "welcome-to-the-heartverse": "WELCOME_TO_HEARTVERSE",
-  "welcome-back": "WELCOME_BACK",
-};
+// Normalize helper for slugs
+const normalizeSlug = (slug?: string) => (slug ? String(slug).toLowerCase().replace(/'/g, "") : "");
 
 // Element mapping for visual consistency
 const ELEMENT_MAP: Record<string, string> = {
@@ -42,13 +29,13 @@ const ELEMENT_MAP: Record<string, string> = {
 
 // Helper to get track URL from song ID
 function getTrackUrlFromSongId(songId: string): string {
-  const trackKey = SONG_TRACK_MAP[songId];
-  if (trackKey && TRACKS[trackKey]) {
+  const key = trackKeyFromSlug(normalizeSlug(songId)) as TrackKey | null;
+  if (key && TRACKS[key]) {
     // Prefer opus, fallback to mp3
-    return TRACKS[trackKey].opus || TRACKS[trackKey].mp3 || "";
+    return TRACKS[key].opus || TRACKS[key].mp3 || "";
   }
   // Fallback: try direct path
-  return `/tracks/${songId}.mp3`;
+  return `/tracks/${normalizeSlug(songId)}.mp3`;
 }
 
 // Brand colors for the glowing progress bar

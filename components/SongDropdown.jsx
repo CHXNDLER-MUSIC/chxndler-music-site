@@ -59,7 +59,11 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
   const hoverBtnRef = useRef(null);
   const [activeElement, setActiveElement] = useState(null);
 
-  const current = useMemo(() => items.find(i => i.id === activeId) || items[0], [items, activeId]);
+  const normalizeSlug = (slug) => (slug ? String(slug).toLowerCase().replace(/'/g, '') : '');
+  const current = useMemo(() => {
+    const a = normalizeSlug(activeId);
+    return items.find(i => normalizeSlug(i.id) === a) || items[0];
+  }, [items, activeId]);
 
   // Set mounted state for portal
   useEffect(() => {
@@ -77,7 +81,8 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
 
   // Keep highlight in sync with the visible list
   useEffect(() => {
-    const idx = displayItems.findIndex(i => i.id === activeId);
+    const a = normalizeSlug(activeId);
+    const idx = displayItems.findIndex(i => normalizeSlug(i.id) === a);
     setHighlight(Math.max(0, idx === -1 ? 0 : idx));
   }, [activeId, displayItems]);
 

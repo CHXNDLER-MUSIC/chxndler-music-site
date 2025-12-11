@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MerchItem, PurchaseResponse, ShippingInfo, ShippingUpdateResponse } from '@/types/merch';
+import { MerchItem, PurchaseWithHeartcoinsResult, ShippingInfo, ShippingUpdateResponse } from '@/types/merch';
 
 export function useMerchPurchase() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -8,7 +8,7 @@ export function useMerchPurchase() {
   const purchaseWithHeartCoins = async (
     merchItem: MerchItem,
     quantity: number = 1
-  ): Promise<PurchaseResponse | null> => {
+  ): Promise<PurchaseWithHeartcoinsResult | null> => {
     setIsProcessing(true);
     setError(null);
 
@@ -30,8 +30,9 @@ export function useMerchPurchase() {
         throw new Error(result.error || 'Purchase failed');
       }
 
-      console.log('Purchase successful:', result.data);
-      return result.data as PurchaseResponse;
+      // The API returns a normalized shape
+      console.log('Purchase successful:', result);
+      return result as PurchaseWithHeartcoinsResult;
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Purchase failed';

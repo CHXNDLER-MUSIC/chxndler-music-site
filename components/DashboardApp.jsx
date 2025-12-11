@@ -1902,6 +1902,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         onWarpSfxEnd={() => {
           // Simple cleanup - core UI transitions handled by phase state machine
           console.log("🎵 Warp SFX ended");
+          // Notify unified audio system that warp completed so pending tracks auto-play
+          try { audioManager?.markWarpCompleted(); } catch {}
           
           // FALLBACK: Ensure cockpit is fully revealed if Start button warp
           if (startButtonWarpRef.current && uiPhase !== "landed") {
@@ -1961,6 +1963,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           
           // Mark that warp effect is fully complete (including sound effects)
           setWarpFullyComplete(true);
+          // Ensure unified audio system can auto-play now if a pending track exists
+          try { audioManager?.markWarpCompleted(); } catch {}
           // If landing on home (no song pending), start ambient space music via unified audio
           try {
             if (!pendingTrackPlay && !userSelected) {
@@ -2211,6 +2215,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           try { startInFlightRef.current = false; } catch {}
           setWarpActive(false);
           setAllowWarp(false);
+          // Backup: also notify unified audio that warp ended (in case SFX callback was missed)
+          try { audioManager?.markWarpCompleted(); } catch {}
           setLandingMode(false); // leave landing mode after first warp
           // Reset start button warp flag to allow normal effects to resume
           startButtonWarpRef.current = false;

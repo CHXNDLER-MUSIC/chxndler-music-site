@@ -853,7 +853,10 @@ export default function HoloHubMenu({
           content:""; position:absolute; inset:10%; pointer-events:none; mix-blend-mode:screen;
           background: radial-gradient(closest-side, ${hubColor}CC, ${hubColor}55 60%, transparent 75%);
           filter: blur(6px) saturate(1.1) brightness(1.05);
+          opacity: 0; /* off by default; only glow when panel is open/active */
+          transition: opacity 160ms ease;
         }
+        .hub.on .hub-glyph::before, .hub.hub-active .hub-glyph::before{ opacity: 1; }
         .hub{
           position:absolute; border-radius:9999px; cursor:pointer;
           display:grid; place-items:center;
@@ -861,38 +864,34 @@ export default function HoloHubMenu({
             radial-gradient(120% 100% at 50% -10%, rgba(255,255,255,.08), rgba(255,255,255,0) 42%),
             linear-gradient(180deg, #0b0b0b, #000 64%);
           border:1px solid rgba(255,255,255,.18);
+          /* Default: NO yellow glow when closed */
           box-shadow:
             0 18px 36px rgba(0,0,0,.65),
-            0 0 22px #F2EF1DBB,
-            0 0 56px #F2EF1D66,
             inset 0 2px 0 rgba(255,255,255,.22),
             inset 0 -6px 14px rgba(0,0,0,.8);
           backdrop-filter: blur(8px);
           -webkit-backdrop-filter: blur(8px);
-          animation: holoPulse 2.6s ease-in-out infinite;
+          animation: none; /* only pulse when open/active */
           transition: transform 150ms ease, box-shadow 200ms ease, filter 180ms ease;
         }
         .hub::before{ content:""; position:absolute; inset:-2%; border-radius:9999px; pointer-events:none;
-          /* Subtler yellow halo glow */
-          box-shadow: 
-            0 0 26px #F2EF1DDD, 
-            0 0 56px #F2EF1D88,
-            0 0 90px #F2EF1D44;
-          animation: holoHalo 3.2s ease-in-out infinite;
+          /* Yellow halo disabled by default; enabled for open/active */
+          box-shadow: none;
+          opacity: 0;
+          animation: none;
+          transition: opacity 180ms ease;
         }
-        .hub::after{ content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none; mix-blend-mode:screen; opacity:.8;
+        .hub::after{ content:""; position:absolute; inset:0; border-radius:9999px; pointer-events:none; mix-blend-mode:screen; opacity:.65;
+          /* Neutral sheen by default; no yellow tint when closed */
           background:
             linear-gradient(120deg, rgba(255,255,255,.25), rgba(255,255,255,0) 60%),
-            linear-gradient(45deg, #F2EF1D44, transparent 30%),
             repeating-linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.12) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px);
         }
         .hub:hover{ transform: scale(1.05); box-shadow:
             0 22px 44px rgba(0,0,0,.7),
-            0 0 40px #F2EF1D88,
-            0 0 90px #F2EF1D55,
             inset 0 2px 0 rgba(255,255,255,.35), 
             inset 0 -8px 18px rgba(0,0,0,.65);
-          filter: brightness(1.06) saturate(1.12);
+          filter: brightness(1.06) saturate(1.08);
         }
         /* Selected/open state: calmer than hover */
         .hub.on{
@@ -904,6 +903,22 @@ export default function HoloHubMenu({
             inset 0 2px 0 rgba(255,255,255,.22),
             inset 0 -6px 14px rgba(0,0,0,.8);
           filter: brightness(1.0) saturate(1.06);
+          animation: holoPulse 2.6s ease-in-out infinite;
+        }
+        .hub.on::before{
+          box-shadow: 
+            0 0 26px #F2EF1DDD, 
+            0 0 56px #F2EF1D88,
+            0 0 90px #F2EF1D44;
+          opacity: 1;
+          animation: holoHalo 3.2s ease-in-out infinite;
+        }
+        .hub.on::after{
+          /* Add back yellow tint overlay when open */
+          background:
+            linear-gradient(120deg, rgba(255,255,255,.25), rgba(255,255,255,0) 60%),
+            linear-gradient(45deg, #F2EF1D44, transparent 30%),
+            repeating-linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.12) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px);
         }
         @keyframes holoHalo { 
           0%, 100% { opacity: 0.8; transform: scale(1); } 
@@ -923,6 +938,9 @@ export default function HoloHubMenu({
             inset 0 0 20px #F2EF1D22;
         }
         .hub-active::before {
+          opacity: 1;
+        }
+        .hub-active::before {
           box-shadow: 
             0 0 80px #F2EF1DFF, 
             0 0 160px #F2EF1DFF,
@@ -939,13 +957,15 @@ export default function HoloHubMenu({
           }
         }
         .hub-icon{ object-fit: contain; display:block; transition: filter 180ms ease, transform 180ms ease; mix-blend-mode: screen;
+          /* Default: no yellow glow when closed */
+          filter: saturate(1.1) brightness(1.04);
+        }
+        .hub:hover .hub-icon{ transform: scale(1.06); filter: saturate(1.18) brightness(1.06); }
+        .hub.on .hub-icon, .hub.hub-active .hub-icon{
           filter: saturate(1.24) brightness(1.08)
             drop-shadow(0 0 24px #F2EF1D)
             drop-shadow(0 0 62px #F2EF1D);
         }
-        .hub:hover .hub-icon{ transform: scale(1.06); filter: saturate(1.34) brightness(1.14)
-            drop-shadow(0 0 32px #F2EF1D)
-            drop-shadow(0 0 88px #F2EF1D); }
         @keyframes holoPulse { 0%,100%{ filter: brightness(1) } 50%{ filter: brightness(1.08) } }
         
         /* Synchronized yellow panel pulsing */

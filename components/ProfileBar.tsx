@@ -15,6 +15,7 @@ import { track as trackAnalytics } from '@/lib/analytics';
 import { createPortal } from 'react-dom';
 import QuestList from '@/components/QuestList';
 import { supabaseBrowser } from '@/lib/supabase-browser';
+import { getLocalDateString } from '@/utils/dateHelpers';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useUIStore } from '@/store/useUIStore';
@@ -159,27 +160,29 @@ export default function ProfileBar({
   // Check if journal was completed today
   const checkJournalCompletion = async () => {
     try {
-      const { data: { user } } = await supabaseBrowser.auth.getUser();
+      // Prefer auth context over an additional getUser() call
       if (!user) return false;
 
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      const today = getLocalDateString(); // YYYY-MM-DD (America/New_York)
       
       // Check for journal entry with soul_star content for today
       const { data: journalEntries, error } = await supabaseBrowser
         .from('soul_journal_entries')
-        .select('*')
+        .select('soul_star')
         .eq('user_id', user.id)
-        .eq('entry_date', today);
+        .eq('entry_date', today)
+        .limit(1);
 
       if (error) {
-        console.error('Error checking journal completion:', error);
+        console.error('Error checking journal completion:', (error as any)?.message || error);
         return false;
       }
 
       // Journal is completed if there's an entry with soul_star content
-      return journalEntries && journalEntries.length > 0 && journalEntries[0].soul_star && journalEntries[0].soul_star.trim().length > 0;
-    } catch (error) {
-      console.error('Error checking journal completion:', error);
+      const entry = journalEntries?.[0];
+      return !!(entry && entry.soul_star && entry.soul_star.trim().length > 0);
+    } catch (error: any) {
+      console.error('Error checking journal completion:', error?.message || error);
       return false;
     }
   };
