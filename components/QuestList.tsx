@@ -879,7 +879,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                 disabled={questStatus.inviteFriendConfirm || loading || bonusQuestsLoading}
                 className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 cursor-pointer ${
                   questStatus.inviteFriendConfirm
-                    ? 'bg-green-500/40 border-2 border-green-400 text-green-300 cursor-not-allowed'
+                    ? 'bg-green-500 border-2 border-green-400 text-white cursor-default !opacity-100'
                     : !isAuthenticated
                       ? 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300'
                       : questStatus.inviteFriend
@@ -888,19 +888,20 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                 }`}
                 style={{
                   boxShadow: questStatus.inviteFriendConfirm
-                    ? '0 0 20px rgba(0,255,0,0.8), inset 0 0 15px rgba(0,255,0,0.3)'
+                    ? '0 0 30px rgba(34,197,94,1), inset 0 0 25px rgba(74,222,128,0.6), 0 0 60px rgba(34,197,94,0.8)'
                     : !isAuthenticated
                       ? '0 0 10px rgba(255,255,0,0.3)'
                       : questStatus.inviteFriend
                         ? '0 0 20px rgba(242,239,29,0.8), inset 0 0 10px rgba(242,239,29,0.2)'
                         : '0 0 15px rgba(252,84,175,0.6)',
                   textShadow: questStatus.inviteFriendConfirm
-                    ? '0 0 12px rgba(0,255,0,1)'
+                    ? '0 0 20px rgba(255,255,255,1), 0 0 8px rgba(34,197,94,1)'
                     : !isAuthenticated
                       ? '0 0 4px rgba(255,255,0,0.6)'
                       : questStatus.inviteFriend
                         ? '0 0 10px rgba(242,239,29,1)'
-                        : '0 0 8px rgba(252,84,175,0.8)'
+                        : '0 0 8px rgba(252,84,175,0.8)',
+                  opacity: questStatus.inviteFriendConfirm ? 1 : undefined
                 }}
               >
                 {questStatus.inviteFriendConfirm 

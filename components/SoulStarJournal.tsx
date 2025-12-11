@@ -8,6 +8,8 @@ import { useDailyReflectionStatus } from "@/hooks/useDailyReflectionStatus";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { getLocalDateString, getDisplayDateString } from "@/utils/dateHelpers";
 import PopoutShell from "./PopoutShell";
+import BinderModal from "./BinderModal";
+import BadgesModal from "./BadgesModal";
 
 interface DailyPrompt {
   id: string;
@@ -108,6 +110,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [hasClickedInitialButton, setHasClickedInitialButton] = useState(false);
   const [activeTab, setActiveTab] = useState<'private' | 'public'>('private');
+  const [showCardsModal, setShowCardsModal] = useState(false);
+  const [showBadgesModal, setShowBadgesModal] = useState(false);
 
   const today = getLocalDateString();
   const todayFormatted = getDisplayDateString();
@@ -195,7 +199,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       setSoulStarText(isCorruptedWithPromptText ? "" : soulStarValue);
       setJournalState(prev => ({
         ...prev,
-        isPrivate: todayEntry.is_private ?? false,
+        isPrivate: !(todayEntry.is_public ?? false),
         isSubmitted: !isCorruptedWithPromptText && !!(soulStarValue && soulStarValue.trim().length > 0),
       }));
     } else {
@@ -266,7 +270,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         intention_response: null, // Could be used later for intention responses
         reflection_response: null, // Could be used later for separate reflection responses
         soul_star: soulStarText.trim(), // USER'S written reflection text
-        is_private: journalState.isPrivate
+        is_public: !journalState.isPrivate // Convert isPrivate boolean to is_public
       });
 
       if (!result) {
@@ -383,6 +387,18 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
     setEditResponse("");
   };
 
+  // Helper function to get element icon path
+  const getElementIcon = (element: string | null) => {
+    const iconMap: Record<string, string> = {
+      'heart': '/elements/heart.webp',
+      'water': '/elements/water.webp', 
+      'lightning': '/elements/lightning.webp',
+      'darkness': '/elements/darkness.webp'
+    };
+    return iconMap[element || ''] || '/elements/elementals.webp';
+  };
+
+
   if (!isOpen) return null;
 
   if (!dailyPrompt) {
@@ -395,9 +411,9 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
   return (
     <div 
-      className="fixed inset-0 z-[2147483649] flex items-center justify-center"
+      className="fixed inset-0 z-[2147483649] flex items-start justify-center"
       style={{ 
-        paddingTop: '0px',
+        paddingTop: '15vh',
         paddingBottom: '20px',
         paddingLeft: '20px',
         paddingRight: '20px'
@@ -410,7 +426,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         style={{
           width: 'min(800px, 100%)',
           height: '250px',
-          top: '50%',
+          top: 'calc(15vh + 200px)',
           left: '50%',
           transform: 'translateX(-50%) translateY(-50%)',
           background: `radial-gradient(ellipse, ${elementTheme.color}15, transparent 70%)`,
@@ -426,7 +442,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         style={{
           width: 'min(600px, 90%)',
           height: '200px',
-          top: '50%',
+          top: 'calc(15vh + 200px)',
           left: '50%',
           transform: 'translateX(-50%) translateY(-50%)',
           background: `radial-gradient(ellipse, ${elementTheme.color}08, transparent 60%)`,
@@ -470,8 +486,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             overflowY: 'auto', 
             display: 'flex', 
             flexDirection: 'column',
-            background: 'rgba(0, 0, 0, 0.2)',
-            borderRadius: '8px',
+            background: 'rgba(0, 0, 0, 0.7)',
+            border: `2px solid ${elementTheme.color}`,
+            boxShadow: `0 0 30px ${elementTheme.color}60, 0 0 60px ${elementTheme.color}40, 0 0 100px ${elementTheme.color}20`,
+            borderRadius: '12px',
             backdropFilter: 'blur(8px)'
           }}
         >
@@ -502,12 +520,14 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             {/* Close Button - Right of Title */}
             <button 
               onClick={handleClose}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-white hover:bg-red-600/20 transition-all duration-200 z-20"
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full transition-all duration-200 z-20"
               style={{
                 background: 'rgba(0, 0, 0, 0.7)',
-                border: `1px solid ${elementTheme.color}60`,
-                boxShadow: `0 0 15px ${elementTheme.color}20`,
-                fontSize: '16px'
+                border: `2px solid ${elementTheme.color}`,
+                boxShadow: `0 0 15px ${elementTheme.color}, 0 0 30px ${elementTheme.color}60`,
+                fontSize: '16px',
+                color: elementTheme.color,
+                textShadow: `0 0 8px ${elementTheme.color}, 0 0 15px ${elementTheme.color}`
               }}
               aria-label="Close journal"
             >
@@ -553,7 +573,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 boxShadow: activeTab === 'public' ? `0 0 12px ${elementTheme.color}60` : 'none'
               }}
             >
-              Public
+              PUBLIC
             </button>
             <button
               onClick={() => {
@@ -568,16 +588,15 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 boxShadow: activeTab === 'private' ? `0 0 12px ${elementTheme.color}60` : 'none'
               }}
             >
-              Private
+              PRIVATE
             </button>
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto' }}>
-            {activeTab === 'public' ? (
-              <PublicJournalFeed />
-            ) : (
+            {activeTab === 'private' ? (
               <div className="p-4 space-y-4">
                 {journalEntries
+                  .filter(entry => true) // Show all entries in private tab
                   .sort((a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime())
                   .map((entry) => {
                     const entryElement = entry.element as keyof typeof ELEMENT_COLORS;
@@ -618,17 +637,18 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                updateJournalEntry(entry.id, { is_private: !entry.is_private });
+                                const currentIsPrivate = !(entry.is_public ?? false);
+                                updateJournalEntry(entry.id, { is_public: currentIsPrivate });
                               }}
                               className="px-2 py-1 rounded text-xs font-semibold transition-all"
                               style={{
-                                background: entry.is_private ? '#FF69B420' : `${entryTheme.color}20`,
-                                border: `1px solid ${entry.is_private ? '#FF69B460' : entryTheme.color + '60'}`,
-                                color: entry.is_private ? '#FF69B4' : entryTheme.color,
-                                textShadow: entry.is_private ? '0 0 4px #FF69B4' : `0 0 4px ${entryTheme.glow}`
+                                background: !(entry.is_public ?? false) ? '#FF69B420' : `${entryTheme.color}20`,
+                                border: `1px solid ${!(entry.is_public ?? false) ? '#FF69B460' : entryTheme.color + '60'}`,
+                                color: !(entry.is_public ?? false) ? '#FF69B4' : entryTheme.color,
+                                textShadow: !(entry.is_public ?? false) ? '0 0 4px #FF69B4' : `0 0 4px ${entryTheme.glow}`
                               }}
                             >
-                              {entry.is_private ? '🔒 PRIVATE' : '🌍 PUBLIC'}
+                              {!(entry.is_public ?? false) ? '🔒 PRIVATE' : 'PUBLIC'}
                             </button>
                           </div>
                         </div>
@@ -814,6 +834,281 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   </div>
                 )}
               </div>
+            ) : (
+              <div className="p-4 space-y-4">
+                {journalEntries
+                  .filter(entry => entry.is_public === true) // Show only public entries
+                  .sort((a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime())
+                  .map((entry) => {
+                    const entryElement = entry.element as keyof typeof ELEMENT_COLORS;
+                    const entryTheme = ELEMENT_COLORS[entryElement] || ELEMENT_COLORS.heart;
+                    const entryEmoji = ELEMENT_EMOJIS[entryElement] || "💖";
+                    const isEditing = editingEntry === entry.id;
+                    
+                    const isExpanded = expandedEntry === entry.id;
+                    
+                    return (
+                      <div
+                        key={entry.id}
+                        onClick={() => handleEntryClick(entry.id)}
+                        className="rounded-lg p-2 space-y-2 cursor-pointer transition-all duration-200 hover:opacity-90"
+                        style={{
+                          background: 'rgba(0, 0, 0, 0.4)',
+                          border: `2px solid ${entryTheme.color}40`,
+                          boxShadow: `0 0 15px ${entryTheme.color}20`
+                        }}
+                      >
+                        {/* Header with Date, Element, Profile, and Privacy Toggle */}
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            {/* Profile Info with Image and Username */}
+                            <div className="flex items-center gap-2">
+                              {profile?.profile_image_url && (
+                                <img 
+                                  src={profile.profile_image_url} 
+                                  alt={profile.display_name || 'User'} 
+                                  className="w-6 h-6 rounded-full object-cover"
+                                  style={{
+                                    border: `1px solid ${entryTheme.color}60`,
+                                    boxShadow: `0 0 4px ${entryTheme.color}30`
+                                  }}
+                                />
+                              )}
+                              <div className="text-xs font-medium text-white/80">
+                                {profile?.display_name || 'Anonymous'}
+                              </div>
+                            </div>
+                            <div className="text-sm font-semibold text-white/90">{getDisplayDateString(entry.entry_date)}</div>
+                            <div 
+                              className="px-2 py-1 rounded text-xs font-semibold uppercase flex items-center gap-1"
+                              style={{
+                                background: `${entryTheme.color}20`,
+                                color: entryTheme.color,
+                                border: `1px solid ${entryTheme.color}40`,
+                                textShadow: `0 0 4px ${entryTheme.glow}`
+                              }}
+                            >
+                              {entryEmoji} {entry.element?.toUpperCase()}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const currentIsPrivate = !(entry.is_public ?? false);
+                                updateJournalEntry(entry.id, { is_public: currentIsPrivate });
+                              }}
+                              className="px-2 py-1 rounded text-xs font-semibold transition-all"
+                              style={{
+                                background: !(entry.is_public ?? false) ? '#FF69B420' : `${entryTheme.color}20`,
+                                border: `1px solid ${!(entry.is_public ?? false) ? '#FF69B460' : entryTheme.color + '60'}`,
+                                color: !(entry.is_public ?? false) ? '#FF69B4' : entryTheme.color,
+                                textShadow: !(entry.is_public ?? false) ? '0 0 4px #FF69B4' : `0 0 4px ${entryTheme.glow}`
+                              }}
+                            >
+                              {!(entry.is_public ?? false) ? '🔒 PRIVATE' : 'PUBLIC'}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Expanded content - only show when expanded */}
+                        {isExpanded && (
+                          <>
+                            {/* Profile Information Section */}
+                            <div 
+                              className="rounded-lg px-3 py-2 mb-2"
+                              style={{
+                                background: 'rgba(0, 0, 0, 0.3)',
+                                border: `1px solid ${entryTheme.color}30`,
+                                boxShadow: `0 0 8px ${entryTheme.color}10`
+                              }}
+                            >
+                              {/* Daily Streak and Heart Coins - Two columns */}
+                              <div className="flex gap-4 mb-3">
+                                <div className="flex-1 flex items-center gap-2 bg-black/30 rounded-full px-3 py-1">
+                                  <span className="text-xs text-white/80">Daily Streak:</span>
+                                  <span 
+                                    className="font-bold text-sm"
+                                    style={{
+                                      color: '#00FFFF',
+                                      textShadow: '0 0 6px #00FFFF'
+                                    }}
+                                  >
+                                    {profile?.daily_streak || 0} days
+                                  </span>
+                                </div>
+                                <div className="flex-1 flex items-center gap-2 bg-black/30 rounded-full px-3 py-1">
+                                  <img 
+                                    src="/elements/heart-coin.webp" 
+                                    alt="Heart Coin" 
+                                    className="w-4 h-4"
+                                  />
+                                  <span 
+                                    className="font-bold text-sm"
+                                    style={{
+                                      color: '#FF69B4',
+                                      textShadow: '0 0 6px #FF69B4'
+                                    }}
+                                  >
+                                    {profile?.heartcoin_total || 0}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Action buttons */}
+                              <div className="flex gap-2">
+                                {/* Binder button */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    try { sfx.play('click', 0.4); } catch {}
+                                    setShowCardsModal(true);
+                                  }}
+                                  className="flex-1 py-1.5 px-2 rounded text-xs font-semibold transition-all duration-200 hover:scale-105"
+                                  style={{
+                                    background: 'rgba(0, 191, 255, 0.1)',
+                                    borderColor: '#00BFFF',
+                                    border: '1px solid #00BFFF60',
+                                    color: '#00BFFF',
+                                    textShadow: '0 0 4px #00BFFF',
+                                    boxShadow: '0 0 8px #00BFFF30'
+                                  }}
+                                >
+                                  BINDER
+                                </button>
+
+                                {/* Badges button */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    try { sfx.play('click', 0.4); } catch {}
+                                    setShowBadgesModal(true);
+                                  }}
+                                  className="flex-1 py-1.5 px-2 rounded text-xs font-semibold transition-all duration-200 hover:scale-105"
+                                  style={{
+                                    background: 'rgba(255, 105, 180, 0.1)',
+                                    borderColor: '#FF69B4',
+                                    border: '1px solid #FF69B460',
+                                    color: '#FF69B4',
+                                    textShadow: '0 0 4px #FF69B4',
+                                    boxShadow: '0 0 8px #FF69B440'
+                                  }}
+                                >
+                                  BADGES
+                                </button>
+                              </div>
+                            </div>
+
+                        {/* Soul Star Section with Edit Functionality */}
+                        <div 
+                          className="rounded-lg px-3 py-2"
+                          style={{
+                            background: 'rgba(0, 0, 0, 0.3)',
+                            border: `2px solid ${entryTheme.color}60`,
+                            boxShadow: `0 0 12px ${entryTheme.color}20`
+                          }}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <svg 
+                                width="16" 
+                                height="16" 
+                                viewBox="0 0 24 24" 
+                                fill="none"
+                                style={{
+                                  filter: `drop-shadow(0 0 4px ${entryTheme.color})`
+                                }}
+                              >
+                                <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z" fill={entryTheme.color} stroke={entryTheme.color} strokeWidth="0.5"/>
+                                <circle cx="12" cy="12" r="8" fill="none" stroke={entryTheme.color} strokeWidth="1" opacity="0.6"/>
+                              </svg>
+                              <div 
+                                className="text-sm font-semibold uppercase tracking-wider"
+                                style={{ color: entryTheme.color, textShadow: `0 0 4px ${entryTheme.glow}` }}
+                              >
+                                Soul Star
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              {!isEditing ? (
+                                <button
+                                  onClick={(e) => handleEditClick(entry, e)}
+                                  className="text-xs px-2 py-1 rounded hover:opacity-80 transition-all"
+                                  style={{
+                                    background: `${entryTheme.color}20`,
+                                    color: entryTheme.color,
+                                    border: `1px solid ${entryTheme.color}40`
+                                  }}
+                                >
+                                  Edit
+                                </button>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => handleSaveEdit(entry.id)}
+                                    className="text-xs px-2 py-1 rounded hover:opacity-80 transition-all"
+                                    style={{
+                                      background: '#22C55E20',
+                                      color: '#22C55E',
+                                      border: '1px solid #22C55E40'
+                                    }}
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={handleCancelEdit}
+                                    className="text-xs px-2 py-1 rounded hover:opacity-80 transition-all"
+                                    style={{
+                                      background: '#EF444420',
+                                      color: '#EF4444',
+                                      border: '1px solid #EF444440'
+                                    }}
+                                  >
+                                    Cancel
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {isEditing ? (
+                            <textarea
+                              value={editResponse}
+                              onChange={(e) => setEditResponse(e.target.value)}
+                              className="w-full h-20 p-2 rounded text-white placeholder-white/50 resize-none focus:outline-none"
+                              style={{
+                                background: 'rgba(0,0,0,0.4)',
+                                border: `1px solid ${entryTheme.color}30`,
+                                boxShadow: `0 0 8px ${entryTheme.color}15`
+                              }}
+                              onFocus={(e) => {
+                                e.target.style.borderColor = `${entryTheme.color}60`;
+                                e.target.style.boxShadow = `0 0 15px ${entryTheme.glow}`;
+                              }}
+                              onBlur={(e) => {
+                                e.target.style.borderColor = `${entryTheme.color}30`;
+                                e.target.style.boxShadow = `0 0 8px ${entryTheme.color}15`;
+                              }}
+                            />
+                          ) : (
+                            <div className="text-sm leading-relaxed text-white">
+                              {entry.soul_star || "No soul star response"}
+                            </div>
+                          )}
+                        </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })
+                }
+                {journalEntries.filter(entry => entry.is_public === true).length === 0 && (
+                  <div className="text-center p-8 text-white/60">
+                    <div className="text-lg mb-2">🌍 No Public Journal Entries</div>
+                    <div className="text-sm opacity-80">Your public journal entries will appear here</div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -826,8 +1121,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             overflowY: 'auto', 
             display: 'flex', 
             flexDirection: 'column',
-            background: 'rgba(0, 0, 0, 0.2)',
-            borderRadius: '8px',
+            background: 'rgba(0, 0, 0, 0.7)',
+            border: `2px solid ${elementTheme.color}`,
+            boxShadow: `0 0 30px ${elementTheme.color}60, 0 0 60px ${elementTheme.color}40, 0 0 100px ${elementTheme.color}20`,
+            borderRadius: '12px',
             backdropFilter: 'blur(8px)'
           }}
         >
@@ -836,8 +1133,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             className="rounded-lg px-1 py-2 space-y-4 sm:space-y-5"
             style={{
               background: 'rgba(0, 0, 0, 0.7)',
-              border: `1px solid ${elementTheme.color}40`,
-              boxShadow: `0 0 20px ${elementTheme.color}20, 0 0 40px ${elementTheme.color}10`,
+              border: `2px solid ${elementTheme.color}`,
+              boxShadow: `0 0 30px ${elementTheme.color}60, 0 0 60px ${elementTheme.color}40, 0 0 100px ${elementTheme.color}20`,
               borderRadius: '12px'
             }}
           >
@@ -873,12 +1170,14 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               {/* Close Button - Right of Title */}
               <button 
                 onClick={handleClose}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-white hover:bg-red-600/20 transition-all duration-200 z-20"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full transition-all duration-200 z-20"
                 style={{
                   background: 'rgba(0, 0, 0, 0.7)',
-                  border: `1px solid ${elementTheme.color}60`,
-                  boxShadow: `0 0 15px ${elementTheme.color}20`,
-                  fontSize: '16px'
+                  border: `2px solid ${elementTheme.color}`,
+                  boxShadow: `0 0 15px ${elementTheme.color}, 0 0 30px ${elementTheme.color}60`,
+                  fontSize: '16px',
+                  color: elementTheme.color,
+                  textShadow: `0 0 8px ${elementTheme.color}, 0 0 15px ${elementTheme.color}`
                 }}
                 aria-label="Close journal"
               >
@@ -944,7 +1243,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     );
                     if (todayEntry) {
                       try {
-                        await updateJournalEntry(todayEntry.id, { is_private: newPrivacySetting });
+                        await updateJournalEntry(todayEntry.id, { is_public: !newPrivacySetting });
                       } catch (error) {
                         console.error('Failed to update privacy setting:', error);
                         // Revert the state if update failed
@@ -953,7 +1252,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     }
                   }
                 }}
-                className="absolute top-0 right-0 px-2 py-1 rounded text-xs font-semibold transition-all duration-200 z-10"
+                className="absolute top-0 right-0 px-3 py-1 rounded text-xs font-semibold transition-all duration-200 z-10"
                 style={{
                   background: journalState.isPrivate ? '#FF69B420' : `${elementTheme.color}20`,
                   border: `1px solid ${journalState.isPrivate ? '#FF69B4' : elementTheme.color}60`,
@@ -964,7 +1263,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   zIndex: 10
                 }}
               >
-                {journalState.isPrivate ? 'PRIVATE' : 'PUBLIC'}
+                {journalState.isPrivate ? '🔒 PRIVATE' : 'SHARE PUBLIC'}
               </button>
               
               {/* LIGHTNING Element - Top Left */}
@@ -1307,6 +1606,24 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             )}
           </div>
         </div>
+      )}
+
+
+      {/* Cards Modal - opened from journal profile section */}
+      {showCardsModal && (
+        <BinderModal 
+          open={showCardsModal}
+          onClose={() => setShowCardsModal(false)}
+          pulsingCards={true}
+        />
+      )}
+
+      {/* Badges Modal - opened from journal profile section */}
+      {showBadgesModal && (
+        <BadgesModal 
+          open={showBadgesModal}
+          onClose={() => setShowBadgesModal(false)}
+        />
       )}
     </div>
   );

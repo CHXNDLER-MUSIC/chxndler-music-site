@@ -72,9 +72,12 @@ export async function POST(request: NextRequest) {
           .eq('id', user.id);
 
         if (balanceError) {
-          console.error('Balance update error:', balanceError);
+          console.error('Failed to update balance in Supabase', balanceError);
           return NextResponse.json(
-            { error: 'Failed to update balance' },
+            { 
+              error: `Failed to update balance: ${balanceError.message}`,
+              details: balanceError 
+            },
             { status: 500 }
           );
         }
@@ -93,7 +96,7 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (transactionError) {
-          console.error('Transaction record error:', transactionError);
+          console.error('Failed to record transaction in Supabase', transactionError);
           // Try to rollback balance update
           await supabase
             .from('profiles')
@@ -101,7 +104,10 @@ export async function POST(request: NextRequest) {
             .eq('id', user.id);
           
           return NextResponse.json(
-            { error: 'Failed to record transaction' },
+            { 
+              error: `Failed to record transaction: ${transactionError.message}`,
+              details: transactionError 
+            },
             { status: 500 }
           );
         }
@@ -122,7 +128,7 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (orderError) {
-          console.error('Order creation error:', orderError);
+          console.error('Failed to create order in Supabase', orderError, orderData);
           // Try to rollback previous changes
           await supabase
             .from('profiles')
@@ -130,7 +136,10 @@ export async function POST(request: NextRequest) {
             .eq('id', user.id);
           
           return NextResponse.json(
-            { error: 'Failed to create order' },
+            { 
+              error: `Failed to create order: ${orderError.message}`,
+              details: orderError 
+            },
             { status: 500 }
           );
         }
@@ -149,7 +158,10 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         console.error('Physical purchase error:', error);
         return NextResponse.json(
-          { error: 'Purchase failed' },
+          { 
+            error: `Purchase failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            details: error 
+          },
           { status: 500 }
         );
       }
@@ -192,7 +204,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Purchase error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        details: error 
+      },
       { status: 500 }
     );
   }

@@ -46,7 +46,7 @@ export async function redeemSecretPhrase({
       .from('secret_phrases')
       .select('*')
       .or(`context.eq.${context},context.eq.global`)
-      .ilike('code', trimmedPhrase.toLowerCase())
+      .eq('code', trimmedPhrase.toLowerCase())
       .lte('start_at', now)
       .gte('end_at', now)
       .order('context', { ascending: false }); // This will put context-specific phrases first

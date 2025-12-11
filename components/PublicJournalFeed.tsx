@@ -11,7 +11,7 @@ type PublicJournalEntry = {
   element: "heart" | "water" | "lightning" | "darkness" | string;
   entry_date: string;
   created_at: string;
-  is_private: boolean;
+  is_public: boolean;
   profiles: {
     username: string | null;
     profile_image: string | null;
@@ -37,9 +37,9 @@ export default function PublicJournalFeed() {
       try {
         setLoading(true);
         setError("");
-        // First try to get the entries without the profiles join to debug
+        // Get public entries from soul_journal_entries table
         const { data, error } = await supabaseBrowser
-          .from("journal_entries")
+          .from("soul_journal_entries")
           .select(`
             id,
             user_id,
@@ -47,24 +47,17 @@ export default function PublicJournalFeed() {
             element,
             entry_date,
             created_at,
-            is_private
+            is_public,
+            profiles!soul_journal_entries_user_id_fkey (
+              username,
+              profile_image
+            )
           `)
-          .eq("is_private", false)
+          .eq("is_public", true)
           .not("soul_star", "is", null)
           .not("soul_star", "eq", "")
           .order("created_at", { ascending: false });
           
-        // If that works, then get profile data separately
-        if (data && data.length > 0) {
-          for (let i = 0; i < data.length; i++) {
-            const { data: profileData } = await supabaseBrowser
-              .from("profiles")
-              .select("username, profile_image")
-              .eq("user_id", data[i].user_id)
-              .single();
-            (data[i] as any).profiles = profileData;
-          }
-        }
         if (error) {
           console.error("Failed to fetch public journal entries:", error);
           setError("Failed to load public feed.");

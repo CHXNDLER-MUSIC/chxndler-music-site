@@ -991,6 +991,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       setCurrentOrderId(newOrder.id);
       setStep('shipping');
       
+      // Play success sound
+      try { sfx.play('card-ding', 0.8); } catch {}
+      
       // Refresh profile to update HeartCoin balance
       await refreshProfile();
 

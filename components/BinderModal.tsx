@@ -581,10 +581,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       
       // TODO: Add card to user_cards table via API
       
-      // Update profile balance
-      await updateProfile({ 
-        heartcoin_balance: (profile.heartcoin_balance || 0) - cost 
-      });
+      // Refresh profile to get updated balance from API
+      await refreshProfile();
       
       setPurchaseState('success');
       try { sfx.play('card-ding', 0.8); } catch {}

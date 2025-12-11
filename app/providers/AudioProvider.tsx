@@ -408,6 +408,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       if (!a) return;
       
       console.log('🎵 togglePlayPause called - current playing state:', state.playing);
+      console.log('🎵 Audio element src:', a.src);
+      console.log('🎵 State src:', state.src);
+      console.log('🎵 Current track:', state.currentTrack?.id);
+      console.log('🎵 Audio readyState:', a.readyState);
       
       if (state.playing) {
         console.log('🎵 Pausing audio');
@@ -428,14 +432,61 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           }));
         }
         
-        console.log('🎵 Starting audio playback');
-        // Update state immediately to provide instant UI feedback
-        setState(s => ({ ...s, playing: true }));
-        void a.play().catch((err) => {
-          console.error('Failed to toggle play audio:', err);
-          // Revert playing state if play fails
-          setState(s => ({ ...s, playing: false }));
-        });
+        console.log('🎵 Starting audio playback with src:', a.src);
+        
+        // Check if audio is ready to play
+        if (a.readyState >= 3) {
+          // Audio is ready, play immediately
+          console.log('🎵 Audio ready, playing immediately');
+          setState(s => ({ ...s, playing: true }));
+          void a.play().catch((err) => {
+            console.error('Failed to toggle play audio:', err);
+            setState(s => ({ ...s, playing: false }));
+          });
+        } else {
+          // Audio not ready, wait for it to load
+          console.log('🎵 Audio not ready (readyState:', a.readyState, '), waiting for load...');
+          setState(s => ({ ...s, playing: true, isLoading: true }));
+          
+          const handleCanPlay = () => {
+            console.log('🎵 Audio can play, starting playback');
+            setState(s => ({ ...s, isLoading: false }));
+            void a.play().catch((err) => {
+              console.error('Failed to play audio after load:', err);
+              setState(s => ({ ...s, playing: false, isLoading: false }));
+            });
+            a.removeEventListener('canplay', handleCanPlay);
+            a.removeEventListener('error', handleError);
+          };
+          
+          const handleError = (e: Event) => {
+            console.error('🎵 Audio load error during toggle play:', e);
+            setState(s => ({ ...s, playing: false, isLoading: false }));
+            a.removeEventListener('canplay', handleCanPlay);
+            a.removeEventListener('error', handleError);
+          };
+          
+          a.addEventListener('canplay', handleCanPlay, { once: true });
+          a.addEventListener('error', handleError, { once: true });
+          
+          // Trigger load if needed
+          if (a.readyState === 0) {
+            try { a.load(); } catch {}
+          }
+          
+          // Timeout fallback
+          setTimeout(() => {
+            if (a.readyState < 3) {
+              console.warn('🎵 Audio load timeout, attempting to play anyway');
+              a.removeEventListener('canplay', handleCanPlay);
+              a.removeEventListener('error', handleError);
+              void a.play().catch((err) => {
+                console.error('Failed to play audio after timeout:', err);
+                setState(s => ({ ...s, playing: false, isLoading: false }));
+              });
+            }
+          }, 3000);
+        }
       }
     },
     
@@ -458,12 +509,24 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Find the track source
+      // Find the track source using the SONG_TRACK_MAP
       let trackSource = "";
-      const trackKey = Object.keys(TRACKS).find(key => {
-        const normalizedKey = key.toLowerCase().replace(/_/g, '-');
-        return normalizedKey === trackId || trackId.includes(normalizedKey);
-      }) as TrackKey;
+      const SONG_TRACK_MAP: Record<string, TrackKey> = {
+        "baby": "BABY",
+        "be-my-bee": "BE_MY_BEE",
+        "ocean-girl": "OCEAN_GIRL",
+        "space-music": "SPACE_MUSIC",
+        "game-boy-heart": "GAME_BOY_HEART",
+        "house-party": "HOUSE_PARTY",
+        "kid-forever": "KID_FOREVER",
+        "paris": "PARIS",
+        "pokemon": "POKEMON",
+        "we're-just-friends": "WJF",
+        "welcome-to-the-heartverse": "WELCOME_TO_HEARTVERSE",
+        "welcome-back": "WELCOME_BACK",
+      };
+      
+      const trackKey = SONG_TRACK_MAP[trackId];
 
       if (trackKey) {
         trackSource = bestSourceFor(TRACKS[trackKey]);
@@ -498,10 +561,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const a = audioRef.current;
       if (!a) return;
 
-      console.log('🎵 Loading selected track:', trackId);
+      console.log('🎵 Loading selected track:', trackId, 'with source:', trackSource);
       a.src = trackSource;
+      console.log('🎵 Audio element src set to:', a.src);
       try { 
         a.load();
+        console.log('🎵 Audio load() called successfully');
         
         // Wait for audio to be ready
         await new Promise<void>((resolve, reject) => {
@@ -560,12 +625,24 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Find the track source
+      // Find the track source using the SONG_TRACK_MAP
       let trackSource = "";
-      const trackKey = Object.keys(TRACKS).find(key => {
-        const normalizedKey = key.toLowerCase().replace(/_/g, '-');
-        return normalizedKey === trackId || trackId.includes(normalizedKey);
-      }) as TrackKey;
+      const SONG_TRACK_MAP: Record<string, TrackKey> = {
+        "baby": "BABY",
+        "be-my-bee": "BE_MY_BEE",
+        "ocean-girl": "OCEAN_GIRL",
+        "space-music": "SPACE_MUSIC",
+        "game-boy-heart": "GAME_BOY_HEART",
+        "house-party": "HOUSE_PARTY",
+        "kid-forever": "KID_FOREVER",
+        "paris": "PARIS",
+        "pokemon": "POKEMON",
+        "we're-just-friends": "WJF",
+        "welcome-to-the-heartverse": "WELCOME_TO_HEARTVERSE",
+        "welcome-back": "WELCOME_BACK",
+      };
+      
+      const trackKey = SONG_TRACK_MAP[trackId];
 
       if (trackKey) {
         trackSource = bestSourceFor(TRACKS[trackKey]);

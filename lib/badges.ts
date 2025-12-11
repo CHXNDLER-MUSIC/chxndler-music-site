@@ -331,6 +331,7 @@ export const elementBadges: Record<Element, Badge[]> = {
   heart: [
     { id: 'heart_1', name: 'HEARTBEAT', description: 'First pulse of emotion', emoji: '💗', category: 'element_streak', element: 'heart', streakDays: 1, rarity: 'common', unlocked: false },
     { id: 'heart_3', name: 'WARMTH', description: '3 days of loving connection', emoji: '💕', category: 'element_streak', element: 'heart', streakDays: 3, rarity: 'common', unlocked: false },
+    { id: 'heart_5', name: 'EMBER GLOW', description: '5 days of inner radiance', emoji: '✨', category: 'element_streak', element: 'heart', streakDays: 5, rarity: 'common', unlocked: false },
     { id: 'heart_7', name: 'COMPASSION', description: 'Week of caring presence', emoji: '💖', category: 'element_streak', element: 'heart', streakDays: 7, rarity: 'rare', unlocked: false },
     { id: 'heart_14', name: 'EMPATHY', description: 'Understanding others deeply', emoji: '💝', category: 'element_streak', element: 'heart', streakDays: 14, rarity: 'rare', unlocked: false },
     { id: 'heart_21', name: 'DEVOTION', description: 'Three weeks of unwavering love', emoji: '💘', category: 'element_streak', element: 'heart', streakDays: 21, rarity: 'epic', unlocked: false },

@@ -109,7 +109,7 @@ interface JournalEntry {
   intention_response: string | null;
   reflection_response: string | null; 
   soul_star: string | null; // user's written reflection text
-  is_private?: boolean; // Make optional since column might not exist
+  is_public?: boolean; // true for public entries, false for private
   created_at: string;
   updated_at: string;
 }
@@ -769,9 +769,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         entryData.reflection_response = entry.reflection_response; // USER'S response to reflection prompt
       }
 
-      // Only include is_private if explicitly set (since column may not exist in all database schemas)
-      if (entry.is_private !== null && entry.is_private !== undefined) {
-        entryData.is_private = entry.is_private;
+      // Handle is_public field instead of is_private
+      if (entry.is_public !== null && entry.is_public !== undefined) {
+        entryData.is_public = entry.is_public;
+      } else {
+        // Default to false (private) if not specified
+        entryData.is_public = false;
       }
 
       console.log('Saving journal entry with data:', entryData);
@@ -816,31 +819,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         });
       }
 
-      // Conditionally share to public feed if requested
-      if (options?.sharePublic) {
-        try {
-          const publicPayload: any = {
-            user_id: user.id,
-            username: profile?.username ?? null,
-            element: entry.element,
-            content: (entry.soul_star ?? '').trim(),
-          };
-
-          if (!publicPayload.content) {
-            console.warn('Public share requested but content is empty; skipping public insert.');
-          } else {
-            const { error: publicError } = await supabaseBrowser
-              .from('public_journal_entries')
-              .insert(publicPayload);
-
-            if (publicError) {
-              console.error('Failed to insert into public_journal_entries:', publicError, publicPayload);
-            }
-          }
-        } catch (e) {
-          console.error('Unexpected error inserting into public_journal_entries:', e);
-        }
-      }
+      // Public sharing is now handled via the is_public column in the main entry
 
       return data;
     } catch (error) {
@@ -849,7 +828,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   }, [profile]);
 
-  const updateJournalEntry = useCallback(async (entryId: string, updates: Partial<Pick<JournalEntry, 'soul_star' | 'intention' | 'prompt' | 'is_private'>>) => {
+  const updateJournalEntry = useCallback(async (entryId: string, updates: Partial<Pick<JournalEntry, 'soul_star' | 'intention' | 'prompt' | 'is_public'>>) => {
     try {
       const { error } = await supabaseBrowser
         .from('soul_journal_entries')

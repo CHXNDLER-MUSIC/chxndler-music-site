@@ -29,7 +29,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
       <div 
         className="fixed inset-0 z-[2147483646] flex items-start justify-center"
         style={{
-          paddingTop: '1vh'
+          paddingTop: '0.5vh'
         }}
       >
         <div
@@ -150,7 +150,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
             <div 
               className="absolute left-1/2 transform -translate-x-1/2"
               style={{
-                bottom: '-8px',
+                bottom: '2px',
                 color: '#FF69B4',
                 fontSize: '12px',
                 fontWeight: 'bold',

@@ -113,7 +113,7 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
   // Handle track change from dropdown
   const handleTrackChange = useCallback(async (newTrackId: string) => {
     try {
-      // Use the new selectTrack method which stops music, plays warp, then loads the track
+      // Use selectTrack method which stops music, plays warp, then loads the track (but doesn't auto-play)
       await audioManager.selectTrack(newTrackId);
     } catch (err) {
       console.error('Failed to select track:', err);
