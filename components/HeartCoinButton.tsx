@@ -1242,7 +1242,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         data-tour-id="heartcoin-button"
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="flex items-center gap-2 p-1 rounded-lg transition-all duration-200 h-12"
+        className="flex items-center gap-3 p-2 rounded-lg transition-all duration-200 h-16"
         style={{
           transition: 'all 0.3s ease',
           ...restProps.style
@@ -1267,13 +1267,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         <img
           src="/elements/heart-coin.webp"
           alt="Heart Coins"
-          className="w-12 h-12 object-cover rounded"
+          className="w-16 h-16 object-cover rounded"
           style={{
             objectFit: 'cover'
           }}
           draggable={false}
         />
-        <span className="text-white text-lg font-semibold">
+        <span className="text-white text-xl font-semibold">
           {profile?.id ? heartCoins : 0}
         </span>
       </button>

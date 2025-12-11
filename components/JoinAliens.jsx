@@ -530,8 +530,8 @@ export default function JoinAliens({ visible = true } = {}) {
           position: 'absolute',
           top: '12px',
           left: '12px',
-          width: '48px',
-          height: '48px',
+          width: '80px',
+          height: '80px',
           background: 'rgba(242, 239, 29, 0.1)',
           border: '2px solid #F2EF1D',
           borderRadius: '50%',
@@ -582,8 +582,8 @@ export default function JoinAliens({ visible = true } = {}) {
           position: 'absolute',
           bottom: '12px',
           left: '12px',
-          width: '40px',
-          height: '40px',
+          width: '55px',
+          height: '55px',
           background: 'rgba(0, 255, 255, 0.1)',
           border: '2px solid #00FFFF',
           borderRadius: '50%',
@@ -644,15 +644,15 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
         style={{
           position: 'absolute',
-          bottom: '150px', // Position above $5 button
+          bottom: '205px', // Position above $5 button
           right: '12px',
-          width: '40px',
-          height: '40px',
+          width: '55px',
+          height: '55px',
           background: 'rgba(252, 84, 175, 0.1)',
           border: '2px solid #FC54AF',
           borderRadius: '50%',
           color: '#FC54AF',
-          fontSize: '14px',
+          fontSize: '16px',
           fontWeight: 'bold',
           cursor: 'pointer',
           display: 'flex',
@@ -695,15 +695,15 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
         style={{
           position: 'absolute',
-          bottom: '104px', // Position above $10 button
+          bottom: '140px', // Position above $10 button
           right: '12px',
-          width: '40px',
-          height: '40px',
+          width: '55px',
+          height: '55px',
           background: 'rgba(252, 84, 175, 0.1)',
           border: '2px solid #FC54AF',
           borderRadius: '50%',
           color: '#FC54AF',
-          fontSize: '14px',
+          fontSize: '16px',
           fontWeight: 'bold',
           cursor: 'pointer',
           display: 'flex',
@@ -748,15 +748,15 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
         style={{
           position: 'absolute',
-          bottom: '58px', // Position above $ button
+          bottom: '75px', // Position above $ button
           right: '12px',
-          width: '40px',
-          height: '40px',
+          width: '55px',
+          height: '55px',
           background: 'rgba(252, 84, 175, 0.1)',
           border: '2px solid #FC54AF',
           borderRadius: '50%',
           color: '#FC54AF',
-          fontSize: '12px',
+          fontSize: '14px',
           fontWeight: 'bold',
           cursor: 'pointer',
           display: 'flex',
@@ -794,8 +794,8 @@ export default function JoinAliens({ visible = true } = {}) {
           position: 'absolute',
           bottom: '12px',
           right: '12px',
-          width: '40px',
-          height: '40px',
+          width: '55px',
+          height: '55px',
           background: 'rgba(252, 84, 175, 0.1)',
           border: '2px solid #FC54AF',
           borderRadius: '50%',

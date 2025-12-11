@@ -1,5 +1,6 @@
 import { supabaseClient } from '@/lib/supabaseClient';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import type { ReactionEvent, ReactionType } from '@/lib/reactions';
 
 // Element color mappings
 export const ELEMENT_COLORS = {
@@ -43,6 +44,7 @@ export class ChatService {
   private currentSessionId: string | null = null;
   // Session tracking for first-time user connections
   private sessionConnectedUsers: Set<string> = new Set();
+  private reactionChannel: RealtimeChannel | null = null;
 
   /**
    * Get the current stream session ID
@@ -597,6 +599,95 @@ export class ChatService {
     } catch (error) {
       console.error('Error in cleanupOldMessages:', error);
       return false;
+    }
+  }
+
+  /**
+   * Subscribe to reaction events
+   */
+  async subscribeToReactions(
+    onReaction: (reaction: ReactionEvent) => void,
+    onError?: (error: any) => void
+  ): Promise<RealtimeChannel> {
+    try {
+      // Unsubscribe from existing reaction channel
+      if (this.reactionChannel) {
+        await supabaseClient.removeChannel(this.reactionChannel);
+      }
+
+      this.reactionChannel = supabaseClient
+        .channel('heart_signal_reactions')
+        .on('broadcast', { event: 'reaction' }, (payload) => {
+          if (onReaction && payload.payload) {
+            onReaction(payload.payload);
+          }
+        })
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('✅ Reaction subscription active');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('❌ Reaction subscription error');
+            onError?.('Reaction subscription failed');
+          }
+        });
+
+      return this.reactionChannel;
+    } catch (error) {
+      console.error('Error subscribing to reactions:', error);
+      onError?.(error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send a reaction event
+   */
+  async sendReaction(
+    reaction: ReactionType,
+    messageId?: string,
+    userId?: string
+  ): Promise<void> {
+    try {
+      if (!this.reactionChannel) {
+        throw new Error('Reaction channel not initialized');
+      }
+
+      // Get user ID if not provided
+      let actualUserId = userId;
+      if (!actualUserId) {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        actualUserId = session?.user?.id || 'anonymous';
+      }
+
+      const reactionEvent: ReactionEvent = {
+        type: messageId ? 'message_reaction' : 'room_reaction',
+        reaction,
+        message_id: messageId,
+        user_id: actualUserId,
+        created_at: new Date().toISOString()
+      };
+
+      await this.reactionChannel.send({
+        type: 'broadcast',
+        event: 'reaction',
+        payload: reactionEvent
+      });
+
+      console.log('✅ Reaction sent:', reactionEvent);
+    } catch (error) {
+      console.error('Error sending reaction:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Disconnect from reaction channel
+   */
+  async disconnectReactions(): Promise<void> {
+    if (this.reactionChannel) {
+      await supabaseClient.removeChannel(this.reactionChannel);
+      this.reactionChannel = null;
+      console.log('❌ Disconnected from reactions');
     }
   }
 }

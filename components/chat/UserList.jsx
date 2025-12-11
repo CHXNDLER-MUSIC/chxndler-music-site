@@ -112,8 +112,8 @@ function UserListItem({ user, onClick, currentUserProfile }) {
       className="w-full p-2 rounded-lg transition-all duration-200 hover:scale-105 group"
       style={{
         background: 'rgba(255, 255, 255, 0.05)',
-        border: `1px solid ${elementColor}40`,
-        boxShadow: `0 0 10px ${elementColor}30`
+        border: `1px solid ${elementColor}80`,
+        boxShadow: `0 0 15px ${elementColor}50`
       }}
       onMouseEnter={(e) => {
         e.target.style.background = `${elementColor}15`;
@@ -123,8 +123,8 @@ function UserListItem({ user, onClick, currentUserProfile }) {
       }}
       onMouseLeave={(e) => {
         e.target.style.background = 'rgba(255, 255, 255, 0.05)';
-        e.target.style.boxShadow = `0 0 10px ${elementColor}30`;
-        e.target.style.borderColor = `${elementColor}40`;
+        e.target.style.boxShadow = `0 0 15px ${elementColor}50`;
+        e.target.style.borderColor = `${elementColor}80`;
       }}
     >
       <div className="flex flex-col items-center space-y-1">
@@ -132,12 +132,12 @@ function UserListItem({ user, onClick, currentUserProfile }) {
         <div className="flex items-center space-x-1 w-full justify-center">
           {/* Small user icon */}
           {user.id === 'anonymous' ? (
-            <img src="/elements/alien.webp" alt="Alien" className="w-3 h-3 flex-shrink-0" />
+            <img src="/elements/alien.webp" alt="Alien" className="w-4 h-4 flex-shrink-0" />
           ) : user?.profile_image_url ? (
             <img 
               src={user.profile_image_url} 
               alt="Profile" 
-              className="w-3 h-3 rounded-full flex-shrink-0 object-cover"
+              className="w-4 h-4 rounded-full flex-shrink-0 object-cover"
               style={{
                 border: '1px solid rgba(242, 239, 29, 0.5)',
                 boxShadow: '0 0 4px rgba(242, 239, 29, 0.3)'
@@ -159,7 +159,7 @@ function UserListItem({ user, onClick, currentUserProfile }) {
             <img 
               src={user?.element ? `/elements/${String(user.element).toLowerCase()}.webp` : '/elements/chxndler.webp'}
               alt="Element"
-              className="w-3 h-3 flex-shrink-0 object-cover rounded-full"
+              className="w-4 h-4 flex-shrink-0 object-cover rounded-full"
               style={{
                 border: '1px solid rgba(242, 239, 29, 0.5)',
                 boxShadow: '0 0 4px rgba(242, 239, 29, 0.3)'
@@ -168,28 +168,15 @@ function UserListItem({ user, onClick, currentUserProfile }) {
           )}
           
           <p 
-            className="text-xs font-medium leading-tight truncate"
+            className="text-sm font-semibold leading-tight truncate"
             style={{
               color: elementColor,
-              textShadow: `0 0 6px ${elementColor}80`,
+              textShadow: `0 0 8px ${elementColor}FF`,
               maxWidth: '90px'
             }}
           >
             {displayName.length > 14 ? displayName.slice(0, 13) + '…' : displayName}
           </p>
-          
-          {/* User's chosen element */}
-          {user.element && user.element !== 'alien' && (
-            <ElementIcon 
-              name={user.element}
-              width={12}
-              height={12}
-              className="flex-shrink-0 ml-1"
-              style={{
-                filter: `drop-shadow(0 0 4px ${elementColor}60)`
-              }}
-            />
-          )}
         </div>
       </div>
     </button>

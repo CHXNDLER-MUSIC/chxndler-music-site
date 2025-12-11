@@ -144,9 +144,9 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
               rows={1}
               className="w-full resize-none rounded-lg px-3 py-1.5 text-sm transition-all duration-200 focus:outline-none"
               style={{
-                height: '36px',
-                minHeight: '36px',
-                maxHeight: '36px',
+                height: '44px',
+                minHeight: '44px',
+                maxHeight: '44px',
                 background: 'rgba(0, 0, 0, 0.6)',
                 border: `2px solid ${isFocused ? '#F2EF1D' : 'rgba(242, 239, 29, 0.3)'}`,
                 color: '#F2EF1D',
@@ -161,7 +161,7 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
               }}
               onInput={(e) => {
                 // Ensure textarea stays at fixed height
-                e.target.style.height = '36px';
+                e.target.style.height = '44px';
               }}
             />
             
@@ -187,12 +187,12 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
                 try { sfx.play('hover', 0.3); } catch {}
               }
             }}
-            className="px-3 py-1.5 rounded-lg font-semibold text-sm transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex-shrink-0"
+            className="px-4 py-2 rounded-lg font-semibold text-base transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex-shrink-0"
             style={{
-              height: '36px',
-              minHeight: '36px',
+              height: '44px',
+              minHeight: '44px',
               width: 'auto',
-              minWidth: '60px',
+              minWidth: '80px',
               background: disabled || !message.trim() 
                 ? 'rgba(128, 128, 128, 0.1)'
                 : 'transparent',

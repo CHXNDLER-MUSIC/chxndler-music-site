@@ -824,6 +824,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                           try { sfx.play('hover', 0.3); } catch {}
                         }}
                         onClick={() => {
+                          try { sfx.play('flip.mp3', 0.8); } catch {}
                           setEnlargedItem({
                             name: item.name,
                             image: item.image_url || '/store/hat.webp',
@@ -833,7 +834,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             cost: item.cost_usd || 30,
                             heartCoin: item.price_heartcoins
                           });
-                          setEnlargedImageIndex(0);
+                          setEnlargedImageIndex(item.image_url_2 ? 1 : 0);
                         }}
                       />
                       {item.image_url_2 && (
@@ -845,6 +846,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             try { sfx.play('hover', 0.3); } catch {}
                           }}
                           onClick={() => {
+                            try { sfx.play('flip.mp3', 0.8); } catch {}
                             setEnlargedItem({
                               name: item.name,
                               image: item.image_url || '/store/hat.webp',
@@ -854,7 +856,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                               cost: item.cost_usd || 30,
                               heartCoin: item.price_heartcoins
                             });
-                            setEnlargedImageIndex(0);
+                            setEnlargedImageIndex(1);
                           }}
                         />
                       )}
@@ -1030,9 +1032,10 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         <img
                           src={currentImage}
                           alt=""
-                          className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                          className="max-w-full max-h-[70vh] object-contain rounded-lg transition-transform duration-500"
                           style={{
                             animation: 'merchPulse 2.5s ease-in-out infinite',
+                            transform: enlargedImageIndex === 1 && enlargedItem.image2 ? 'rotateY(180deg) scaleX(-1)' : 'rotateY(0deg)',
                           }}
                         />
                         
@@ -1040,7 +1043,10 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         {images.length > 1 && (
                           <>
                             <button
-                              onClick={() => setEnlargedImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))}
+                              onClick={() => {
+                                try { sfx.play('flip.mp3', 0.8); } catch {}
+                                setEnlargedImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+                              }}
                               className="absolute left-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-all duration-200"
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1049,7 +1055,10 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             </button>
                             
                             <button
-                              onClick={() => setEnlargedImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0))}
+                              onClick={() => {
+                                try { sfx.play('flip.mp3', 0.8); } catch {}
+                                setEnlargedImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+                              }}
                               className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-all duration-200"
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

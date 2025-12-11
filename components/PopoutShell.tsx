@@ -144,8 +144,8 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
                 <div className="flex justify-center items-center flex-shrink-0" style={{ padding: '8px 14px 0px 14px' }}>
                   <div 
                     style={{ 
-                      color: '#FF69B4', 
-                      textShadow: '0 0 6px rgba(255,105,180,0.5)', 
+                      color: '#FFFFFF', 
+                      textShadow: '0 0 6px rgba(255,255,255,0.8)', 
                       fontSize: '12px',
                       fontWeight: 'bold',
                       opacity: 0.9

@@ -11,6 +11,9 @@ import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import ProfileModal from './ProfileModal';
 import VotingPanel from './VotingPanel';
+import ReactionTray from './ReactionTray';
+import FloatingRoomReactions from './FloatingRoomReactions';
+import { RATE_LIMITS, markSoulStarUsed } from '@/lib/reactions';
 
 // Debug flag to control console logging
 const DEBUG = process.env.NODE_ENV === 'development' && true;
@@ -246,6 +249,14 @@ export default function ChatPanel({ isOpen, onClose }) {
   const [typingUsers, setTypingUsers] = useState([]);
   const [isUserPanelCollapsed, setIsUserPanelCollapsed] = useState(false); // Start expanded by default
   
+  // Reaction state
+  const [messageReactions, setMessageReactions] = useState({});
+  const [roomReactions, setRoomReactions] = useState([]);
+  const [showRoomReactionTray, setShowRoomReactionTray] = useState(false);
+  const [lastReactionTime, setLastReactionTime] = useState(0);
+  const [lastLightningTime, setLastLightningTime] = useState(0);
+  const [messageReactionCooldowns, setMessageReactionCooldowns] = useState({}); // messageId_reaction -> timestamp
+  
   // Auto-collapse user panel on small screens when profile is selected
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -350,6 +361,65 @@ export default function ChatPanel({ isOpen, onClose }) {
       }
     }
   }, [isOpen, user, profile?.id, profile?.name, alienName]);
+
+  // Reaction subscription useEffect
+  useEffect(() => {
+    let reactionChannelRef = null;
+
+    const setupReactions = async () => {
+      if (isOpen) {
+        try {
+          reactionChannelRef = await chatService.subscribeToReactions(
+            (reactionEvent) => {
+              DEBUG && console.log('🎉 Reaction received:', reactionEvent);
+              
+              if (reactionEvent.type === 'message_reaction' && reactionEvent.message_id) {
+                // Update message reactions
+                setMessageReactions(prev => ({
+                  ...prev,
+                  [reactionEvent.message_id]: {
+                    ...prev[reactionEvent.message_id],
+                    [reactionEvent.reaction]: (prev[reactionEvent.message_id]?.[reactionEvent.reaction] || 0) + 1
+                  }
+                }));
+              } else if (reactionEvent.type === 'room_reaction') {
+                // Add room reaction for animation
+                const roomReaction = {
+                  id: `${reactionEvent.user_id}_${Date.now()}`,
+                  reaction: reactionEvent.reaction,
+                  user_id: reactionEvent.user_id,
+                  created_at: reactionEvent.created_at
+                };
+                setRoomReactions(prev => [...prev, roomReaction]);
+              }
+            },
+            (error) => {
+              console.error('Reaction subscription error:', error);
+            }
+          );
+        } catch (error) {
+          console.error('Error setting up reaction subscription:', error);
+        }
+      }
+    };
+
+    const cleanupReactions = async () => {
+      if (reactionChannelRef) {
+        try {
+          await chatService.disconnectReactions();
+          reactionChannelRef = null;
+        } catch (error) {
+          console.error('Error cleaning up reactions:', error);
+        }
+      }
+    };
+
+    setupReactions();
+
+    return () => {
+      cleanupReactions();
+    };
+  }, [isOpen]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -729,6 +799,88 @@ export default function ChatPanel({ isOpen, onClose }) {
     onClose();
   };
 
+  /**
+   * Handle reaction events
+   */
+  const handleReaction = async (reaction, messageId) => {
+    const now = Date.now();
+    const currentUserId = user?.id || 'anonymous';
+
+    // Rate limiting checks
+    if (now - lastReactionTime < RATE_LIMITS.global) {
+      console.log('Rate limited: too fast');
+      return;
+    }
+
+    if (reaction === 'lightning_spark' && now - lastLightningTime < RATE_LIMITS.lightning_spark) {
+      console.log('Rate limited: lightning too fast');
+      return;
+    }
+
+    if (messageId) {
+      const cooldownKey = `${messageId}_${reaction}`;
+      const lastMessageReaction = messageReactionCooldowns[cooldownKey] || 0;
+      if (now - lastMessageReaction < RATE_LIMITS.message_repeat) {
+        console.log('Rate limited: same reaction on same message');
+        return;
+      }
+    }
+
+    // Soul star special handling
+    if (reaction === 'soul_star') {
+      markSoulStarUsed(currentUserId);
+    }
+
+    try {
+      // Send reaction via chat service
+      await chatService.sendReaction(reaction, messageId, currentUserId);
+
+      // Update rate limiting state
+      setLastReactionTime(now);
+      if (reaction === 'lightning_spark') {
+        setLastLightningTime(now);
+      }
+      if (messageId) {
+        const cooldownKey = `${messageId}_${reaction}`;
+        setMessageReactionCooldowns(prev => ({
+          ...prev,
+          [cooldownKey]: now
+        }));
+      }
+
+      // Optimistic local update
+      if (messageId) {
+        setMessageReactions(prev => ({
+          ...prev,
+          [messageId]: {
+            ...prev[messageId],
+            [reaction]: (prev[messageId]?.[reaction] || 0) + 1
+          }
+        }));
+      } else {
+        // Add room reaction
+        const roomReaction = {
+          id: `${currentUserId}_${now}`,
+          reaction,
+          user_id: currentUserId,
+          created_at: new Date().toISOString()
+        };
+        setRoomReactions(prev => [...prev, roomReaction]);
+      }
+
+      console.log(`✨ ${reaction} sent for ${messageId ? 'message' : 'room'}`);
+    } catch (error) {
+      console.error('Error sending reaction:', error);
+    }
+  };
+
+  /**
+   * Handle room reaction complete (animation finished)
+   */
+  const handleRoomReactionComplete = (reactionId) => {
+    setRoomReactions(prev => prev.filter(r => r.id !== reactionId));
+  };
+
   // Panel variants for smooth sliding animation
   const panelVariants = {
     closed: {
@@ -800,7 +952,7 @@ export default function ChatPanel({ isOpen, onClose }) {
             >
               {/* Header */}
               <div className="p-4 border-b border-yellow-400/30 flex items-center">
-                <div className="flex items-center space-x-3 flex-1 mr-4 ml-12">
+                <div className="flex items-center space-x-3 flex-1 mr-4 ml-20">
                   <div 
                     className="w-3 h-3 rounded-full animate-pulse flex-shrink-0"
                     style={{
@@ -820,6 +972,34 @@ export default function ChatPanel({ isOpen, onClose }) {
                   >
                     HEART SIGNAL LIVE
                   </h2>
+                  
+                  {/* Room Reaction Button */}
+                  <motion.button
+                    onClick={() => setShowRoomReactionTray(!showRoomReactionTray)}
+                    className="ml-3 px-2 py-1 rounded-lg text-cyan-400 hover:text-cyan-300 transition-colors flex-shrink-0 relative"
+                    style={{
+                      background: 'rgba(0, 255, 255, 0.1)',
+                      border: '1px solid rgba(0, 255, 255, 0.3)'
+                    }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    title="React to the room"
+                  >
+                    💫
+                    {showRoomReactionTray && (
+                      <div className="absolute top-full left-0 mt-2 z-20">
+                        <ReactionTray
+                          onReact={(reaction) => {
+                            handleReaction(reaction);
+                            setShowRoomReactionTray(false);
+                          }}
+                          userId={user?.id || 'anonymous'}
+                          className="shadow-lg"
+                        />
+                      </div>
+                    )}
+                  </motion.button>
+                  
                   {/* Extended glow line */}
                   <div 
                     className="flex-1 h-px ml-4"
@@ -890,10 +1070,11 @@ export default function ChatPanel({ isOpen, onClose }) {
                       {/* ONLINE label on the left */}
                       {!isUserPanelCollapsed && (
                         <p 
-                          className="text-xs font-semibold"
+                          className="text-sm font-semibold"
                           style={{
                             color: '#F2EF1D',
-                            textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
+                            textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
+                            fontSize: '16px'
                           }}
                         >
                           ALIENS ONLINE
@@ -1011,10 +1192,11 @@ export default function ChatPanel({ isOpen, onClose }) {
                         {/* VOTING label on the left */}
                         {!isUserPanelCollapsed && (
                           <p 
-                            className="text-xs font-semibold"
+                            className="text-sm font-semibold"
                             style={{
                               color: '#F2EF1D',
-                              textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
+                              textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
+                              fontSize: '16px'
                             }}
                           >
                             VOTING
@@ -1053,6 +1235,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                       messages={messages}
                       onUserClick={handleUserClick}
                       loading={loading}
+                      messageReactions={messageReactions}
+                      onReact={handleReaction}
+                      currentUserId={user?.id || 'anonymous'}
                     />
                   </div>
                   
@@ -1095,12 +1280,12 @@ export default function ChatPanel({ isOpen, onClose }) {
                             <div className="flex items-center space-x-2 flex-1 min-w-0">
                               {/* User Icon */}
                               {selectedUser.id === 'anonymous' ? (
-                                <img src="/elements/alien.webp" alt="Alien" className="w-7 h-7 flex-shrink-0" />
+                                <img src="/elements/alien.webp" alt="Alien" className="w-10 h-10 flex-shrink-0" />
                               ) : selectedUser?.profile_image_url ? (
                                 <img 
                                   src={selectedUser.profile_image_url} 
                                   alt="Profile" 
-                                  className="w-7 h-7 rounded-full flex-shrink-0 object-cover"
+                                  className="w-10 h-10 rounded-full flex-shrink-0 object-cover"
                                   style={{
                                     border: '1px solid rgba(242, 239, 29, 0.5)',
                                     boxShadow: '0 0 8px rgba(242, 239, 29, 0.3)'
@@ -1114,7 +1299,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                       const el = (selectedUser.element || '').toLowerCase();
                                       img.src = el ? `/elements/${el}.webp` : '/elements/chxndler.webp';
                                       img.alt = 'Element';
-                                      img.className = 'w-7 h-7 flex-shrink-0 object-cover';
+                                      img.className = 'w-10 h-10 flex-shrink-0 object-cover';
                                       target.parentElement.appendChild(img);
                                     }
                                   }}
@@ -1124,7 +1309,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 <img 
                                   src={selectedUser?.element ? `/elements/${String(selectedUser.element).toLowerCase()}.webp` : '/elements/chxndler.webp'}
                                   alt="Element"
-                                  className="w-7 h-7 flex-shrink-0 object-cover rounded-full"
+                                  className="w-10 h-10 flex-shrink-0 object-cover rounded-full"
                                   style={{
                                     border: '1px solid rgba(242, 239, 29, 0.5)',
                                     boxShadow: '0 0 8px rgba(242, 239, 29, 0.3)'
@@ -1134,10 +1319,11 @@ export default function ChatPanel({ isOpen, onClose }) {
                               
                               <div className="flex flex-col">
                                 <h3 
-                                  className="text-lg font-bold truncate flex-1"
+                                  className="text-xl font-bold truncate flex-1"
                                   style={{
                                     color: '#F2EF1D',
-                                    textShadow: '0 0 8px #F2EF1D'
+                                    textShadow: '0 0 8px #F2EF1D',
+                                    fontSize: '22px'
                                   }}
                                 >
                                   {selectedUser.id === 'anonymous' ? alienName : (selectedUser.name || getDisplayName())}
@@ -1183,8 +1369,113 @@ export default function ChatPanel({ isOpen, onClose }) {
                               </div>
                             </div>
                             
+                            {/* Action Icons - moved up one row */}
+                            <div className="flex items-center space-x-2 flex-shrink-0">
+                              <button 
+                                onClick={() => {
+                                  try {
+                                    const audio = new Audio('/audio/click.mp3');
+                                    audio.volume = 0.3;
+                                    audio.play().catch(error => {
+                                      console.log('Click audio play failed:', error);
+                                    });
+                                  } catch (error) {
+                                    console.log('Click audio creation failed:', error);
+                                  }
+                                  if (showUserBinder) {
+                                    setBinderStartIndex(0);
+                                    setShowUserBinder(false);
+                                  } else {
+                                    setBinderStartIndex(0);
+                                    setShowUserBinder(true);
+                                    setShowUserBadges(false);
+                                    setShowSendHeartCoin(false);
+                                    setBadgeStartIndex(0);
+                                  }
+                                }}
+                                onMouseEnter={() => {
+                                  try { sfx.play('hover', 0.3); } catch {}
+                                }}
+                                className="hover:scale-110 transition-transform"
+                                title="View Cards"
+                              >
+                                <img 
+                                  src="/elements/binder.webp" 
+                                  alt="Cards" 
+                                  className="w-8 h-8"
+                                />
+                              </button>
+                              
+                              <button 
+                                onClick={() => {
+                                  try {
+                                    const audio = new Audio('/audio/click.mp3');
+                                    audio.volume = 0.3;
+                                    audio.play().catch(error => {
+                                      console.log('Click audio play failed:', error);
+                                    });
+                                  } catch (error) {
+                                    console.log('Click audio creation failed:', error);
+                                  }
+                                  if (showUserBadges) {
+                                    setBadgeStartIndex(0);
+                                    setShowUserBadges(false);
+                                  } else {
+                                    setBadgeStartIndex(0);
+                                    setShowUserBadges(true);
+                                    setShowUserBinder(false);
+                                    setShowSendHeartCoin(false);
+                                    setBinderStartIndex(0);
+                                  }
+                                }}
+                                onMouseEnter={() => {
+                                  try { sfx.play('hover', 0.3); } catch {}
+                                }}
+                                className="hover:scale-110 transition-transform"
+                                title="View Badges"
+                              >
+                                <img 
+                                  src="/elements/badges.webp" 
+                                  alt="Badges" 
+                                  className="w-8 h-8"
+                                />
+                              </button>
+                              
+                              {selectedUser.id !== 'anonymous' && (
+                                <button 
+                                  className="hover:scale-110 transition-transform"
+                                  title="Send Heart Coin"
+                                  onClick={() => {
+                                    try {
+                                      const audio = new Audio('/audio/click.mp3');
+                                      audio.volume = 0.3;
+                                      audio.play().catch(error => {
+                                        console.log('Click audio play failed:', error);
+                                      });
+                                    } catch (error) {
+                                      console.log('Click audio creation failed:', error);
+                                    }
+                                    setShowSendHeartCoin(true);
+                                    setShowUserBadges(false);
+                                    setShowUserBinder(false);
+                                    setBadgeStartIndex(0);
+                                    setBinderStartIndex(0);
+                                  }}
+                                  onMouseEnter={() => {
+                                    try { sfx.play('hover', 0.3); } catch {}
+                                  }}
+                                >
+                                  <img 
+                                    src="/elements/heart-coin.webp" 
+                                    alt="Send Heart Coin" 
+                                    className="w-8 h-8"
+                                  />
+                                </button>
+                              )}
+                            </div>
+                            
                             {/* Total Heart Coins */}
-                            <div className="flex flex-col items-end space-y-0 flex-shrink-0">
+                            <div className="flex flex-col items-center space-y-0 flex-shrink-0">
                               <div className="flex items-center space-x-2">
 
                                 <div className="flex items-center space-x-1 px-2 py-0.5 rounded bg-black/30">
@@ -1221,7 +1512,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                     onMouseEnter={() => {
                                       try { sfx.play('hover', 0.3); } catch {}
                                     }}
-                                    className="text-yellow-400 hover:text-yellow-300 transition-colors text-sm px-1 py-1 rounded flex-shrink-0 ml-1"
+                                    className="text-yellow-400 hover:text-yellow-300 transition-colors text-lg px-2 py-2 rounded flex-shrink-0 ml-1"
                                     style={{
                                       background: 'rgba(242, 239, 29, 0.1)',
                                       border: '1px solid rgba(242, 239, 29, 0.3)',
@@ -1245,117 +1536,6 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 </span>
                                 <span>Days Streak</span>
                               </div>
-                              
-                              {/* Badges and Binder Icons - positioned directly under streak */}
-                              <div className="flex items-center space-x-3 mt-2 justify-center">
-                                <button 
-                                  onClick={() => {
-                                    try {
-                                      const audio = new Audio('/audio/click.mp3');
-                                      audio.volume = 0.3;
-                                      audio.play().catch(error => {
-                                        console.log('Click audio play failed:', error);
-                                      });
-                                    } catch (error) {
-                                      console.log('Click audio creation failed:', error);
-                                    }
-                                    if (showUserBadges) {
-                                      // If badges are already showing, hide them
-                                      setBadgeStartIndex(0);
-                                      setShowUserBadges(false);
-                                    } else {
-                                      // Show badges and hide other panels
-                                      setBadgeStartIndex(0);
-                                      setShowUserBadges(true);
-                                      setShowUserBinder(false);
-                                      setShowSendHeartCoin(false);
-                                      setBinderStartIndex(0);
-                                    }
-                                  }}
-                                  onMouseEnter={() => {
-                                    try { sfx.play('hover', 0.3); } catch {}
-                                  }}
-                                  className="hover:scale-110 transition-transform"
-                                  title="View Badges"
-                                >
-                                  <img 
-                                    src="/elements/badges.webp" 
-                                    alt="Badges" 
-                                    className="w-7 h-7"
-                                  />
-                                </button>
-                                
-                                <button 
-                                  onClick={() => {
-                                    try {
-                                      const audio = new Audio('/audio/click.mp3');
-                                      audio.volume = 0.3;
-                                      audio.play().catch(error => {
-                                        console.log('Click audio play failed:', error);
-                                      });
-                                    } catch (error) {
-                                      console.log('Click audio creation failed:', error);
-                                    }
-                                    if (showUserBinder) {
-                                      // If binder is already showing, hide it
-                                      setBinderStartIndex(0);
-                                      setShowUserBinder(false);
-                                    } else {
-                                      // Show binder and hide other panels
-                                      setBinderStartIndex(0);
-                                      setShowUserBinder(true);
-                                      setShowUserBadges(false);
-                                      setShowSendHeartCoin(false);
-                                      setBadgeStartIndex(0);
-                                    }
-                                  }}
-                                  onMouseEnter={() => {
-                                    try { sfx.play('hover', 0.3); } catch {}
-                                  }}
-                                  className="hover:scale-110 transition-transform"
-                                  title="View Cards"
-                                >
-                                  <img 
-                                    src="/elements/binder.webp" 
-                                    alt="Cards" 
-                                    className="w-7 h-7"
-                                  />
-                                </button>
-                                
-                                {/* Send Heart Coin Button - Show for all users for now */}
-                                {selectedUser.id !== 'anonymous' && (
-                                  <button 
-                                    className="hover:scale-110 transition-transform"
-                                    title="Send Heart Coin"
-                                    onClick={() => {
-                                      try {
-                                        const audio = new Audio('/audio/click.mp3');
-                                        audio.volume = 0.3;
-                                        audio.play().catch(error => {
-                                          console.log('Click audio play failed:', error);
-                                        });
-                                      } catch (error) {
-                                        console.log('Click audio creation failed:', error);
-                                      }
-                                      // Show send heart coin interface and hide others
-                                      setShowSendHeartCoin(true);
-                                      setShowUserBadges(false);
-                                      setShowUserBinder(false);
-                                      setBadgeStartIndex(0);
-                                      setBinderStartIndex(0);
-                                    }}
-                                    onMouseEnter={() => {
-                                      try { sfx.play('hover', 0.3); } catch {}
-                                    }}
-                                  >
-                                    <img 
-                                      src="/elements/heart-coin.webp" 
-                                      alt="Send Heart Coin" 
-                                      className="w-7 h-7"
-                                    />
-                                  </button>
-                                )}
-                              </div>
                             </div>
                           </div>
                           
@@ -1371,8 +1551,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                       {/* Badges Section */}
                       {showUserBadges && (
                         <div className="pt-2 border-t border-white/20">
-                          <h4 className="text-sm text-white/80 font-semibold mb-3 flex items-center">
+                          <h4 className="text-sm font-semibold mb-3 flex items-center" style={{ color: '#1E90FF' }}>
                             <img src="/elements/badges.webp" alt="Badges" className="w-4 h-4 mr-2" />
+                            BADGES UNLOCKED
                           </h4>
                           
                           {(() => {
@@ -1488,7 +1669,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                       case 'collector': return { bg: '#38B6FF', border: '#0EA5E9' };
                                       case 'community': return { bg: '#10B981', border: '#059669' };
                                       case 'elemental-streak': return { bg: '#FC54AF', border: '#EC4899' };
-                                      case 'currency': return { bg: '#F59E0B', border: '#D97706' };
+                                      case 'currency': return { bg: '#FFD700', border: '#FFA500' };
                                       case 'listening': return { bg: '#9333EA', border: '#7C3AED' };
                                       default: return { bg: '#FFD700', border: '#FFA500' };
                                     }
@@ -1520,6 +1701,17 @@ export default function ChatPanel({ isOpen, onClose }) {
                                           background: `linear-gradient(135deg, ${colors.bg}, ${colors.border})`,
                                           border: `2px solid ${colors.border}`,
                                           boxShadow: `0 0 15px ${colors.border}60, 0 0 25px ${colors.border}30`
+                                        }}
+                                        onMouseEnter={() => {
+                                          try {
+                                            const audio = new Audio('/audio/hover.mp3');
+                                            audio.volume = 0.3;
+                                            audio.play().catch(error => {
+                                              console.log('Hover audio play failed:', error);
+                                            });
+                                          } catch (error) {
+                                            console.log('Hover audio creation failed:', error);
+                                          }
                                         }}
                                         onClick={() => {
                                           try {
@@ -1651,9 +1843,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                       {/* Binder Section */}
                       {showUserBinder && (
                         <div className="pt-2 border-t border-white/20">
-                          <h4 className="text-sm text-white/80 font-semibold mb-3 flex items-center">
+                          <h4 className="text-sm font-semibold mb-3 flex items-center" style={{ color: '#FF69B4' }}>
                             <img src="/elements/binder.webp" alt="Cards" className="w-4 h-4 mr-2" />
-                            Card Collection
+                            CARD COLLECTION
                           </h4>
                           <div className="flex items-center space-x-2">
                             {/* Left Arrow */}
@@ -1709,13 +1901,26 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 return (
                                   <div 
                                     key={`card-slot-${cardIndex}`} 
-                                    className="rounded-lg border border-white/10 backdrop-blur-sm transition-all duration-300 cursor-pointer hover:scale-110 hover:shadow-2xl hover:-translate-y-1"
+                                    className="rounded-lg border border-white/10 backdrop-blur-sm transition-all duration-300 cursor-pointer hover:scale-105 hover:shadow-2xl hover:-translate-y-1"
                                     style={{
                                       boxShadow: hasCard ? '0 0 8px rgba(255,105,180,0.4), 0 4px 12px rgba(255,105,180,0.2)' : '0 0 5px rgba(255,105,180,0.1)',
                                       aspectRatio: '2.2/3',
                                       background: 'rgba(0, 0, 0, 0.3)',
                                       transform: 'perspective(1000px)',
                                       backfaceVisibility: 'hidden'
+                                    }}
+                                    onMouseEnter={() => {
+                                      if (hasCard) {
+                                        try {
+                                          const audio = new Audio('/audio/hover.mp3');
+                                          audio.volume = 0.3;
+                                          audio.play().catch(error => {
+                                            console.log('Hover audio play failed:', error);
+                                          });
+                                        } catch (error) {
+                                          console.log('Hover audio creation failed:', error);
+                                        }
+                                      }
                                     }}
                                     onClick={() => {
                                       if (hasCard && cardSong) {
@@ -1840,9 +2045,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                       {/* Send Heart Coin Section */}
                       {showSendHeartCoin && (
                         <div className="pt-2 border-t border-white/20">
-                          <h4 className="text-sm text-white/80 font-semibold mb-3 flex items-center">
-                            <span className="text-sm mr-2">💖</span>
-                            Send Heart Coin
+                          <h4 className="text-sm font-semibold mb-3 flex items-center" style={{ color: '#FF69B4' }}>
+                            <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-4 h-4 mr-2" />
+                            SEND HEARTCOIN
                           </h4>
                           <div className="flex items-center justify-between p-4 bg-black/20 rounded-lg border border-pink-400/30">
                             {/* YOU HAVE section on the left */}
@@ -1940,7 +2145,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   console.error('Error importing transfer function:', error);
                                 }
                               }}
-                              className="flex items-center space-x-2 px-4 py-2 bg-pink-500/20 border border-pink-400/60 hover:border-pink-400/80 rounded-lg transition-all duration-200 hover:bg-pink-500/30"
+                              className="flex items-center space-x-2 px-6 py-3 bg-pink-500/20 border border-pink-400/60 hover:border-pink-400/80 rounded-lg transition-all duration-200 hover:bg-pink-500/30"
                               style={{
                                 background: 'rgba(255, 105, 180, 0.1)',
                                 color: '#FF69B4',
@@ -1948,13 +2153,13 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 boxShadow: '0 0 15px rgba(255, 105, 180, 0.3)',
                               }}
                             >
-                              <span className="text-sm font-bold">SEND</span>
+                              <span className="text-lg font-bold">SEND</span>
                               <img 
                                 src="/elements/heart-coin.webp" 
                                 alt="Heart Coin" 
-                                className="w-4 h-4"
+                                className="w-6 h-6"
                               />
-                              <span className="text-sm font-bold">1</span>
+                              <span className="text-lg font-bold">1</span>
                             </button>
                           </div>
                         </div>
@@ -1965,6 +2170,12 @@ export default function ChatPanel({ isOpen, onClose }) {
               </div>
             </div>
           </motion.div>
+          
+          {/* Floating Room Reactions */}
+          <FloatingRoomReactions
+            reactions={roomReactions}
+            onReactionComplete={handleRoomReactionComplete}
+          />
         </>
       )}
 
@@ -1981,7 +2192,7 @@ export default function ChatPanel({ isOpen, onClose }) {
           }}
         >
           <div
-            className="relative w-60 aspect-[2/3] max-h-[70vh]"
+            className="relative w-48 aspect-[2/3] max-h-[60vh]"
             onClick={(e) => e.stopPropagation()}
             style={{
               perspective: '1000px',
@@ -2144,7 +2355,8 @@ export default function ChatPanel({ isOpen, onClose }) {
             style={{
               background: 'rgba(0,0,0,0.6)',
               border: '1px solid rgba(255,255,255,0.12)',
-              boxShadow: '0 0 30px rgba(255, 105, 180, 0.25)'
+              boxShadow: '0 0 30px rgba(255, 105, 180, 0.25)',
+              animation: 'cardPulse 2s ease-in-out infinite'
             }}
           >
             {(() => {
@@ -2154,7 +2366,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                   case 'collector': return { bg: '#38B6FF', border: '#0EA5E9' };
                   case 'community': return { bg: '#10B981', border: '#059669' };
                   case 'elemental-streak': return { bg: '#FC54AF', border: '#EC4899' };
-                  case 'currency': return { bg: '#F59E0B', border: '#D97706' };
+                  case 'currency': return { bg: '#FFD700', border: '#FFA500' };
                   case 'listening': return { bg: '#9333EA', border: '#7C3AED' };
                   default: return { bg: '#FFD700', border: '#FFA500' };
                 }

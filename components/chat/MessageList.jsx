@@ -4,12 +4,15 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ElementIcon } from '@/lib/elementIcons';
 import { getElementColor, formatChatTimestamp, sanitizeMessage } from '@/lib/supabase/chat';
+import ReactionTray from './ReactionTray';
+import MessageReactions from './MessageReactions';
+// import { ReactionType } from '@/lib/reactions'; // Types not needed in JSX
 
 /**
  * MessageList Component
  * Displays chat messages with real-time updates and auto-scroll
  */
-export default function MessageList({ messages, onUserClick, loading }) {
+export default function MessageList({ messages, onUserClick, loading, messageReactions, onReact, currentUserId }) {
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const [isNearBottom, setIsNearBottom] = useState(true);
@@ -84,6 +87,9 @@ export default function MessageList({ messages, onUserClick, loading }) {
             <ChatMessage 
               message={message}
               onUserClick={onUserClick}
+              reactions={messageReactions?.[message.id] || {}}
+              onReact={onReact}
+              currentUserId={currentUserId}
               isConsecutive={
                 index > 0 && 
                 messages[index - 1].user_id === message.user_id &&
@@ -113,7 +119,11 @@ export default function MessageList({ messages, onUserClick, loading }) {
 /**
  * Individual Chat Message Component
  */
-function ChatMessage({ message, onUserClick, isConsecutive }) {
+function ChatMessage({ message, onUserClick, reactions, onReact, currentUserId, isConsecutive }) {
+  const [showReactionTray, setShowReactionTray] = useState(false);
+  const [longPressTimer, setLongPressTimer] = useState(null);
+  const reactionTrayTimeoutRef = useRef(null);
+  
   const userProfile = message.user_profile;
   const displayName = userProfile?.name || 'Anonymous';
   const elementColor = getElementColor(userProfile?.element);
@@ -121,6 +131,57 @@ function ChatMessage({ message, onUserClick, isConsecutive }) {
   const textColor = userProfile?.element ? elementColor : '#F2EF1D';
   const timestamp = formatChatTimestamp(message.created_at);
   const sanitizedMessage = sanitizeMessage(message.message);
+
+  // Handle reaction tray visibility
+  const handleMouseEnter = () => {
+    if (message.message_type !== 'message') return;
+    
+    if (reactionTrayTimeoutRef.current) {
+      clearTimeout(reactionTrayTimeoutRef.current);
+    }
+    setShowReactionTray(true);
+  };
+
+  const handleMouseLeave = () => {
+    reactionTrayTimeoutRef.current = setTimeout(() => {
+      setShowReactionTray(false);
+    }, 200);
+  };
+
+  // Handle long press for mobile
+  const handleTouchStart = () => {
+    if (message.message_type !== 'message') return;
+    
+    const timer = setTimeout(() => {
+      setShowReactionTray(true);
+    }, 500);
+    setLongPressTimer(timer);
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  };
+
+  // Handle reaction click
+  const handleReaction = (reaction) => {
+    onReact(reaction, message.id);
+    setShowReactionTray(false);
+  };
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (reactionTrayTimeoutRef.current) {
+        clearTimeout(reactionTrayTimeoutRef.current);
+      }
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+      }
+    };
+  }, [longPressTimer]);
 
   // System messages (join/leave/system announcements)
   if (message.message_type === 'join' || message.message_type === 'leave' || message.user_id === 'system') {
@@ -173,9 +234,13 @@ function ChatMessage({ message, onUserClick, isConsecutive }) {
 
   return (
     <div 
-      className={`group hover:bg-white/5 rounded-lg transition-colors duration-200 ${
+      className={`group hover:bg-white/5 rounded-lg transition-colors duration-200 relative ${
         isConsecutive ? 'py-1 px-3' : 'py-2 px-3'
       }`}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       <div className="flex items-start space-x-2">
         {/* Avatar (only show for non-consecutive messages) */}
@@ -304,8 +369,30 @@ function ChatMessage({ message, onUserClick, isConsecutive }) {
               __html: formatMessageText(sanitizedMessage, textColor)
             }}
           />
+          
+          {/* Message reactions summary */}
+          {reactions && Object.keys(reactions).length > 0 && (
+            <MessageReactions
+              reactions={reactions}
+              messageId={message.id}
+              className="mt-1"
+            />
+          )}
         </div>
       </div>
+      
+      {/* Reaction tray */}
+      <AnimatePresence>
+        {showReactionTray && (
+          <div className="absolute top-0 right-2 z-10">
+            <ReactionTray
+              onReact={handleReaction}
+              userId={currentUserId}
+              className="shadow-lg"
+            />
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

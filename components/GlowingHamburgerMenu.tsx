@@ -21,7 +21,6 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
   
   // Use external state if provided, otherwise use internal state
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
-  const [badgesPoppedOut, setBadgesPoppedOut] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { profile, user } = useProfile();
   const { hasPendingReflection } = useDailyReflectionStatus();
@@ -106,19 +105,19 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
         aria-label={isOpen ? "Close menu" : "Open menu"}
         data-tour-id="hamburger"
       >
-        <div className="w-8 h-8 flex flex-col justify-center items-center relative">
+        <div className="w-12 h-12 flex flex-col justify-center items-center relative">
           {isOpen ? (
             /* Yellow X - Only when open */
             <>
               <div
-                className="w-7 h-1 absolute rotate-45 bg-yellow-400"
+                className="w-9 h-1.5 absolute rotate-45 bg-yellow-400"
                 style={{
                   boxShadow: "0 0 12px rgba(255, 255, 0, 1), 0 0 24px rgba(255, 255, 0, 0.8), 0 0 36px rgba(255, 255, 0, 0.6)",
                   animation: "neonPulseYellow 2s ease-in-out infinite alternate"
                 }}
               />
               <div
-                className="w-7 h-1 absolute -rotate-45 bg-yellow-400"
+                className="w-9 h-1.5 absolute -rotate-45 bg-yellow-400"
                 style={{
                   boxShadow: "0 0 12px rgba(255, 255, 0, 1), 0 0 24px rgba(255, 255, 0, 0.8), 0 0 36px rgba(255, 255, 0, 0.6)",
                   animation: "neonPulseYellow 2s ease-in-out infinite alternate"
@@ -129,21 +128,21 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
             /* White hamburger lines - Only when closed */
             <>
               <div
-                className="w-7 h-1 absolute bg-white -translate-y-2.5"
+                className="w-9 h-1.5 absolute bg-white -translate-y-3"
                 style={{
                   boxShadow: "0 0 12px rgba(255, 255, 255, 1), 0 0 24px rgba(255, 255, 255, 0.8), 0 0 36px rgba(255, 255, 255, 0.6)",
                   animation: "neonPulse 2s ease-in-out infinite alternate"
                 }}
               />
               <div
-                className="w-7 h-1 absolute bg-white"
+                className="w-9 h-1.5 absolute bg-white"
                 style={{
                   boxShadow: "0 0 12px rgba(255, 255, 255, 1), 0 0 24px rgba(255, 255, 255, 0.8), 0 0 36px rgba(255, 255, 255, 0.6)",
                   animation: "neonPulse 2s ease-in-out infinite alternate"
                 }}
               />
               <div
-                className="w-7 h-1 absolute bg-white translate-y-2.5"
+                className="w-9 h-1.5 absolute bg-white translate-y-3"
                 style={{
                   boxShadow: "0 0 12px rgba(255, 255, 255, 1), 0 0 24px rgba(255, 255, 255, 0.8), 0 0 36px rgba(255, 255, 255, 0.6)",
                   animation: "neonPulse 2s ease-in-out infinite alternate"
@@ -191,11 +190,6 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
               <React.Fragment key={item.label}>
                 <button
                   onClick={(e) => {
-                    if (item.label === "BADGES") {
-                      // Trigger pop-out animation
-                      setBadgesPoppedOut(true);
-                      setTimeout(() => setBadgesPoppedOut(false), 200);
-                    }
                     handleItemClick(e, item.label);
                   }}
                   onMouseEnter={handleMenuItemHover}
@@ -211,10 +205,6 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                   className={`w-full px-8 py-3 text-left text-white text-lg font-semibold tracking-wide transition-all duration-200 hover:bg-cyan-500/10 hover:text-cyan-300 relative group ${
                     item.label === "JOURNAL" && hasPendingReflection 
                       ? 'bg-gradient-to-r from-pink-500/10 via-transparent to-pink-500/10' 
-                      : ''
-                  } ${
-                    item.label === "BADGES" && badgesPoppedOut 
-                      ? 'scale-110 shadow-lg shadow-yellow-500/50' 
                       : ''
                   } ${
                     item.label === "COMPLETED" 

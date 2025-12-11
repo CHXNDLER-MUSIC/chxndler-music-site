@@ -523,10 +523,11 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
           <div className="flex justify-center items-center mb-3">
             <div 
               style={{ 
-                color: '#FF69B4', 
-                textShadow: '0 0 8px rgba(255,105,180,0.6)', 
-                fontSize: '12px',
-                fontWeight: 'bold'
+                color: '#FF1493', 
+                textShadow: '0 0 5px rgba(255,20,147,1), 0 0 10px rgba(255,20,147,0.8), 0 0 15px rgba(255,20,147,0.6), 0 0 20px rgba(255,20,147,0.4), 0 0 35px rgba(255,20,147,0.3)', 
+                fontSize: '20px',
+                fontWeight: 'bold',
+                letterSpacing: '2px'
               }}
             >
               DIGITAL CARD BINDER
@@ -851,8 +852,8 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                 <div 
                   className="text-center mb-3"
                   style={{ 
-                    color: '#FFB6C1', 
-                    textShadow: '0 0 4px rgba(255,182,193,0.8)', 
+                    color: '#FFFFFF', 
+                    textShadow: '0 0 4px rgba(255,255,255,0.8)', 
                     fontSize: '10px',
                     fontWeight: 'bold',
                     marginTop: '8px'

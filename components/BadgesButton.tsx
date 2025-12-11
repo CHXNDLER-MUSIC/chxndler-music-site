@@ -148,33 +148,30 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
     }
   };
 
-  // Listen for openBadges event from hamburger menu - move this before early returns
-  useEffect(() => {
-    const handleOpenBadges = (e: CustomEvent) => {
-      try {
-        // Simulate a click to trigger badges opening
-        const fakeEvent = {
-          preventDefault: () => {},
-          defaultPrevented: false
-        } as React.MouseEvent<HTMLButtonElement>;
-        
-        try { sfx.play('click', 0.8); } catch {}
-        // Trigger yellow light beam
-        try { onBeamColorChange?.('yellow'); } catch {}
-        // Close blue display first
-        try { onCloseBlueDisplay?.(); } catch {}
-        // Trigger parent click handler to open badges
-        try { onClick?.(fakeEvent); } catch {}
-        
-        console.log('Badges opened from hamburger menu');
-      } catch (error) {
-        console.error('Error handling openBadges event:', error);
-      }
-    };
+  // DISABLED: Listen for openBadges event from hamburger menu
+  // This was causing the badges to open when journal was clicked
+  // useEffect(() => {
+  //   const handleOpenBadges = (e: CustomEvent) => {
+  //     try {
+  //       const fakeEvent = {
+  //         preventDefault: () => {},
+  //         defaultPrevented: false
+  //       } as React.MouseEvent<HTMLButtonElement>;
+  //       
+  //       try { sfx.play('click', 0.8); } catch {}
+  //       try { onBeamColorChange?.('yellow'); } catch {}
+  //       try { onCloseBlueDisplay?.(); } catch {}
+  //       try { onClick?.(fakeEvent); } catch {}
+  //       
+  //       console.log('Badges opened from hamburger menu');
+  //     } catch (error) {
+  //       console.error('Error handling openBadges event:', error);
+  //     }
+  //   };
 
-    window.addEventListener('openBadges', handleOpenBadges as EventListener);
-    return () => window.removeEventListener('openBadges', handleOpenBadges as EventListener);
-  }, [onClick, onBeamColorChange, onCloseBlueDisplay]);
+  //   window.addEventListener('openBadges', handleOpenBadges as EventListener);
+  //   return () => window.removeEventListener('openBadges', handleOpenBadges as EventListener);
+  // }, [onClick, onBeamColorChange, onCloseBlueDisplay]);
 
   // Show loading state
   if (loading) {
@@ -380,19 +377,19 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
           }}
         >
           <div
-            className="badges-hologram-container flex flex-col"
+            className="badges-hologram-container flex flex-col relative"
             style={{
               width: 'min(92vw, 700px)',
               maxWidth: '700px',
-              minHeight: '500px',
+              minHeight: '350px',
               maxHeight: '90vh',
-              padding: '10px 14px 24px 14px',
+              padding: '10px 14px 10px 14px',
               borderRadius: 18,
-              background: 'linear-gradient(135deg, rgba(255,105,180,0.10), rgba(0,0,0,0.60))',
-              border: '1px solid rgba(255,105,180,0.55)',
-              boxShadow: '0 -8px 25px rgba(255,105,180,0.4), 0 -4px 15px rgba(255,105,180,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,105,180,0.45)',
+              background: 'linear-gradient(135deg, rgba(0,191,255,0.10), rgba(0,0,0,0.60))',
+              border: '1px solid rgba(0,191,255,0.55)',
+              boxShadow: '0 -8px 25px rgba(0,191,255,0.4), 0 -4px 15px rgba(0,191,255,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(0,191,255,0.45)',
               backdropFilter: 'blur(12px) saturate(140%)',
-              color: '#FF69B4',
+              color: '#00BFFF',
               position: 'relative',
               zIndex: 1
             }}
@@ -410,12 +407,12 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                 setElementFilter(null);
                 try { onOpenBlueDisplay?.(); } catch {}
               }}
-              className="absolute top-2 right-4 text-pink-400 hover:text-pink-200 cursor-pointer w-8 h-8 rounded-full border border-pink-400/80 flex items-center justify-center"
+              className="absolute top-2 right-4 text-cyan-400 hover:text-cyan-200 cursor-pointer w-8 h-8 rounded-full border border-cyan-400/80 flex items-center justify-center"
               style={{ 
                 fontSize: '16px',
-                boxShadow: '0 0 15px rgba(255,105,180,0.8), 0 0 25px rgba(255,105,180,0.5), 0 0 35px rgba(255,105,180,0.3)',
-                textShadow: '0 0 8px rgba(255,105,180,0.8), 0 0 15px rgba(255,105,180,0.6)',
-                background: 'rgba(255,105,180,0.1)',
+                boxShadow: '0 0 15px rgba(0,191,255,0.8), 0 0 25px rgba(0,191,255,0.5), 0 0 35px rgba(0,191,255,0.3)',
+                textShadow: '0 0 8px rgba(0,191,255,0.8), 0 0 15px rgba(0,191,255,0.6)',
+                background: 'rgba(0,191,255,0.1)',
                 backdropFilter: 'blur(2px)'
               }}
             >
@@ -426,7 +423,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
             </button>
             
             {/* Header */}
-            <div className="flex justify-between items-center mb-3 pt-3">
+            <div className="flex justify-between items-center mb-3 pt-4">
               {selectedCategory && (
                 <button
                   onClick={() => {
@@ -436,12 +433,12 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     setElementFilter(null);
                     setCurrentPage(0);
                   }}
-                  className="px-3 py-1 text-[10px] font-bold rounded border border-pink-400/60 hover:border-pink-400/80 transition-all duration-200"
+                  className="px-3 py-1 text-[10px] font-bold rounded border border-cyan-400/60 hover:border-cyan-400/80 transition-all duration-200"
                   style={{
-                    background: 'rgba(255,105,180,0.1)',
-                    color: '#FF69B4',
-                    textShadow: '0 0 4px rgba(255,105,180,0.8)',
-                    boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                    background: 'rgba(0,191,255,0.1)',
+                    color: '#00BFFF',
+                    textShadow: '0 0 4px rgba(0,191,255,0.8)',
+                    boxShadow: '0 0 8px rgba(0,191,255,0.3)',
                   }}
                 >
                   ← BACK TO CATEGORIES
@@ -450,9 +447,9 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
               <div 
                 className="absolute left-1/2 transform -translate-x-1/2"
                 style={{ 
-                  color: '#FF69B4', 
-                  textShadow: '0 0 15px rgba(255,105,180,0.9), 0 0 25px rgba(255,105,180,0.7)', 
-                  fontSize: '18px',
+                  color: '#00BFFF', 
+                  textShadow: '0 0 15px rgba(0,191,255,0.9), 0 0 25px rgba(0,191,255,0.7)', 
+                  fontSize: '26px',
                   fontWeight: '900',
                   letterSpacing: '1px'
                 }}
@@ -462,22 +459,123 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
               <div className="w-32"></div>
             </div>
             
-            {/* Thin pink neon line */}
+            {/* Thin cyan neon line */}
             <div 
               className="w-full h-px mb-4"
               style={{
-                background: 'linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)',
-                boxShadow: '0 0 4px rgba(255,105,180,0.6)'
+                background: 'linear-gradient(90deg, transparent, rgba(0,191,255,0.8) 20%, rgba(0,191,255,1) 50%, rgba(0,191,255,0.8) 80%, transparent)',
+                boxShadow: '0 0 4px rgba(0,191,255,0.6)'
               }}
             />
 
             {/* Content */}
             <div className="relative mt-1 flex-1 overflow-auto">
-              {!selectedCategory ? (
+              {/* Badge Detail Overlay */}
+              {selectedBadge && (
+                <div className="absolute inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-20 rounded-lg">
+                  <div className="w-full max-w-sm mx-4 p-6 text-center space-y-4">
+                    {/* Back button */}
+                    <button
+                      onClick={() => {
+                        try { sfx.play('close', 0.6); } catch {}
+                        setSelectedBadge(null);
+                      }}
+                      className="mb-4 px-3 py-1 text-[10px] font-bold rounded border border-cyan-400/60 hover:border-cyan-400/80 transition-all duration-200"
+                      style={{
+                        background: 'rgba(0,191,255,0.1)',
+                        color: '#00BFFF',
+                        textShadow: '0 0 4px rgba(0,191,255,0.8)',
+                        boxShadow: '0 0 8px rgba(0,191,255,0.3)',
+                      }}
+                    >
+                      ← BACK TO BADGES
+                    </button>
+
+                    {/* Badge display */}
+                    <div className="flex flex-col items-center space-y-4">
+                      <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-cyan-400/60 flex items-center justify-center overflow-hidden transform transition-all duration-300"
+                           style={{
+                             animation: 'pulse 2s ease-in-out infinite',
+                             boxShadow: '0 0 25px rgba(0,191,255,0.6), 0 0 50px rgba(0,191,255,0.3)',
+                           }}>
+                        {selectedBadge.icon_url ? (
+                          <img
+                            src={selectedBadge.icon_url}
+                            alt={selectedBadge.badge_name}
+                            className="w-full h-full object-cover rounded-full"
+                            style={{
+                              opacity: isUnlocked(selectedBadge) ? 1 : 0.4
+                            }}
+                            draggable={false}
+                          />
+                        ) : (
+                          <div className="relative z-10 text-2xl opacity-60">
+                            {getBadgeDisplayIcon(selectedBadge, selectedCategory || '')}
+                          </div>
+                        )}
+                        {!isUnlocked(selectedBadge) && (
+                          <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
+                            <div className="w-3 h-3 bg-white/20 rounded-full" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      <h2 className="text-white font-bold text-lg text-center">
+                        {selectedBadge.badge_name}
+                      </h2>
+                      
+                      <div className={`text-sm font-bold ${isUnlocked(selectedBadge) ? 'text-green-400' : 'text-white/40'}`}>
+                        {isUnlocked(selectedBadge) ? '✅ UNLOCKED' : '🔒 LOCKED'}
+                      </div>
+
+                      {selectedBadge.description && (
+                        <p className="text-white/80 text-sm text-center">
+                          {selectedBadge.description}
+                        </p>
+                      )}
+                      
+                      <div className="space-y-2 text-center">
+                        <div className="text-cyan-400 text-xs font-semibold uppercase tracking-wider">
+                          REQUIREMENT
+                        </div>
+                        <p className="text-white/70 text-xs">
+                          {selectedBadge.requirement || selectedBadge.description || 'Complete the required action to earn this badge'}
+                        </p>
+                      </div>
+
+                      {selectedBadge.progress !== undefined && (
+                        <div className="space-y-2 w-full">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-white/70">Progress</span>
+                            <span className="text-white/70">{selectedBadge.current || 0} / {selectedBadge.total || 0}</span>
+                          </div>
+                          <div className="w-full bg-white/20 rounded-full h-2">
+                            <div 
+                              className={`h-2 rounded-full transition-all duration-300 ${
+                                isUnlocked(selectedBadge) ? 'bg-green-500' : 'bg-cyan-500'
+                              }`}
+                              style={{ width: `${selectedBadge.progress || 0}%` }}
+                            />
+                          </div>
+                          <div className="text-center">
+                            <span className={`text-xs font-bold ${
+                              isUnlocked(selectedBadge) ? 'text-green-400' : 'text-cyan-400'
+                            }`}>
+                              {selectedBadge.progress || 0}% Complete
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {!selectedCategory && !selectedBadge ? (
                 // Main Categories View
                 <>
-                  <div className="text-center mb-2">
-                    <span className="text-pink-400 text-lg font-bold uppercase tracking-wider" style={{ textShadow: '0 0 8px rgba(255,105,180,0.6)' }}>
+                  <div className="text-center mb-1" style={{ marginTop: '-4px' }}>
+                    <span className="text-white text-base font-bold uppercase tracking-wider" style={{ textShadow: '0 0 8px rgba(255,255,255,0.6)' }}>
                       BADGES UNLOCKED: {profile?.badges_unlocked || badgesWithUnlocked.filter(badge => badge.unlocked).length}
                     </span>
                   </div>
@@ -487,7 +585,8 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                       whiteSpace: 'pre-wrap', 
                       lineHeight: 1.3, 
                       fontSize: 13, 
-                      color: '#FF69B4', 
+                      color: '#00BFFF', 
+                      textShadow: '0 0 8px rgba(0,191,255,0.6), 0 0 15px rgba(0,191,255,0.4)',
                       marginTop: '4px' 
                     }}
                   >
@@ -508,7 +607,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                           }}
                         >
                           <div 
-                            className="w-20 h-20 rounded-full border-2 border-pink-400/60 hover:border-pink-400/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105 flex items-center justify-center"
+                            className="w-20 h-20 rounded-full border-2 border-cyan-400/60 hover:border-cyan-400/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105 flex items-center justify-center"
                             style={{
                               boxShadow: `0 0 15px ${category.color}40`,
                               background: `linear-gradient(135deg, ${category.color}20, rgba(252,84,175,0.1))`
@@ -540,7 +639,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     </div>
                   </div>
                 </>
-              ) : !selectedBadge ? (
+              ) : (
                 // Category Badges View
                 (() => {
                   const category = badgeCategories.find(cat => cat.id === selectedCategory);
@@ -560,12 +659,12 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                                   setElementFilter(null);
                                   setCurrentPage(0);
                                 }}
-                                className="px-3 py-1 text-[10px] font-bold rounded border border-pink-400/60 hover:border-pink-400/80 transition-all duration-200"
+                                className="px-3 py-1 text-[10px] font-bold rounded border border-cyan-400/60 hover:border-cyan-400/80 transition-all duration-200"
                                 style={{
-                                  background: 'rgba(255,105,180,0.1)',
-                                  color: '#FF69B4',
-                                  textShadow: '0 0 4px rgba(255,105,180,0.8)',
-                                  boxShadow: '0 0 8px rgba(255,105,180,0.3)',
+                                  background: 'rgba(0,191,255,0.1)',
+                                  color: '#00BFFF',
+                                  textShadow: '0 0 4px rgba(0,191,255,0.8)',
+                                  boxShadow: '0 0 8px rgba(0,191,255,0.3)',
                               }}
                               >
                                 ← BACK TO ELEMENTS
@@ -817,103 +916,6 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     </div>
                   );
                 })()
-              ) : (
-                // Badge Detail View - Inline within the popup
-                <div className="relative space-y-2 max-w-xs mx-auto" style={{ paddingBottom: '12px' }}>
-                  {/* Back button positioned to the left */}
-                  <button
-                    onClick={() => {
-                      try { sfx.play('close', 0.6); } catch {}
-                      setSelectedBadge(null);
-                    }}
-                    className="absolute -left-8 top-0 px-3 py-1 text-[10px] font-bold rounded border border-pink-400/60 hover:border-pink-400/80 transition-all duration-200"
-                    style={{
-                      background: 'rgba(255,105,180,0.1)',
-                      color: '#FF69B4',
-                      textShadow: '0 0 4px rgba(255,105,180,0.8)',
-                      boxShadow: '0 0 8px rgba(255,105,180,0.3)',
-                    }}
-                  >
-                    ← BACK TO BADGES
-                  </button>
-
-                  {/* Larger badge display */}
-                  <div className="flex flex-col items-center space-y-2">
-                    <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border border-white/30 flex items-center justify-center overflow-hidden">
-                      {selectedBadge.icon_url ? (
-                        <img
-                          src={selectedBadge.icon_url}
-                          alt={selectedBadge.badge_name}
-                          className="w-full h-full object-cover rounded-full"
-                          style={{
-                            opacity: isUnlocked(selectedBadge) ? 1 : 0.4
-                          }}
-                          draggable={false}
-                        />
-                      ) : (
-                        <div className="relative z-10 text-lg opacity-60">
-                          {getBadgeDisplayIcon(selectedBadge, selectedCategory || '')}
-                        </div>
-                      )}
-                      {!isUnlocked(selectedBadge) && (
-                        <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
-                          <div className="w-2 h-2 bg-white/20 rounded-full" />
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Badge name directly below PNG */}
-                    <h2 className="text-white font-bold text-sm text-center">
-                      {selectedBadge.badge_name}
-                    </h2>
-                    
-                    {/* Status directly below badge name */}
-                    <div className={`text-xs ${isUnlocked(selectedBadge) ? 'text-green-400' : 'text-white/40'}`}>
-                      {isUnlocked(selectedBadge) ? '✅ UNLOCKED' : '🔒 LOCKED'}
-                    </div>
-                  </div>
-                  
-                  {selectedBadge.description && (
-                    <p className="text-white/70 text-xs px-2">
-                      {selectedBadge.description}
-                    </p>
-                  )}
-                  
-                  {/* Requirement section - Always show */}
-                  <div className="space-y-1 px-2">
-                    <div className="text-white/50 text-xs font-semibold uppercase tracking-wider">
-                      REQUIREMENT
-                    </div>
-                    <p className="text-white/60 text-xs">
-                      {selectedBadge.requirement || selectedBadge.description || 'Complete the required action to earn this badge'}
-                    </p>
-                  </div>
-                  
-                  {selectedBadge.progress !== undefined && (
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs px-2">
-                        <span className="text-white/70">Progress</span>
-                        <span className="text-white/70">{selectedBadge.current || 0} / {selectedBadge.total || 0}</span>
-                      </div>
-                      <div className="w-full bg-white/20 rounded-full h-1.5 mx-2">
-                        <div 
-                          className={`h-1.5 rounded-full transition-all duration-300 ${
-                            isUnlocked(selectedBadge) ? 'bg-green-500' : 'bg-blue-500'
-                          }`}
-                          style={{ width: `${selectedBadge.progress || 0}%` }}
-                        />
-                      </div>
-                      <div className="text-center" style={{ marginBottom: '8px' }}>
-                        <span className={`text-xs font-bold ${
-                          isUnlocked(selectedBadge) ? 'text-green-400' : 'text-blue-400'
-                        }`}>
-                          {selectedBadge.progress || 0}% Complete
-                        </span>
-                      </div>
-                      
-                    </div>
-                  )}
-                </div>
               )}
             </div>
           </div>

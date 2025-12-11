@@ -161,13 +161,13 @@ export default function AuthButton() {
           }
         }}
         disabled={isDisabled}
-        className={`flex items-center font-medium text-lg relative flex-shrink-0 transition-all duration-200 cursor-pointer bg-transparent border-none focus:outline-none rounded pointer-events-auto ${
+        className={`flex items-center font-medium text-xl relative flex-shrink-0 transition-all duration-200 cursor-pointer bg-transparent border-none focus:outline-none rounded pointer-events-auto ${
           isDimmed ? 'opacity-50 pointer-events-none' : 'opacity-100 pointer-events-auto'
         }`}
         style={{ 
           color: getUsernameColor(currentElement),
           filter: 'brightness(1.2)',
-          padding: '8px 12px',
+          padding: '12px 18px',
           background: 'transparent',
           transition: 'all 0.3s ease'
         }}
@@ -196,9 +196,9 @@ export default function AuthButton() {
             <ElementIcon 
               name={currentElement} 
               alt={currentElement} 
-              width={24} 
-              height={24}
-              className="w-6 h-6 object-cover"
+              width={32} 
+              height={32}
+              className="w-8 h-8 object-cover"
             />
           </div>
         )}

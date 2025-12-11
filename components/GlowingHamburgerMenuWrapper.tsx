@@ -29,6 +29,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
   const [heartCoinOpen, setHeartCoinOpen] = useState(false);
   const [journalOpen, setJournalOpen] = useState(false);
   const [welcomeHomeOpen, setWelcomeHomeOpen] = useState(false);
+  const [lastClickedItem, setLastClickedItem] = useState<string | null>(null);
   
   const { hasEnteredHeartverse } = useUIState();
   const tour = useTour();
@@ -42,53 +43,75 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
   // Avoid auto-opening on initial load or generic "entered" events to prevent early popups.
 
   const handleItemClick = (label: string) => {
-    switch (label) {
-      case "ABOUT":
-        setChxndlerOpen(true);
-        break;
-      // Handle dynamic journey titles:
-      case "JOURNEY":
-      case "MY JOURNEY":
-        setJourneyOpen(true);
-        break;
-      case "BINDER":
-        setBinderOpen(true);
-        break;
-      case "JOURNAL":
-      case "COMPLETED":
-        // Change beam color to pink when Journal is clicked
-        try { onBeamColorChange?.('pink'); } catch {}
-        setJournalOpen(true);
-        break;
-      case "BADGES":
-        setBadgesOpen(true);
-        break;
-      case "STORE":
-        // Clear any existing tab preferences and set initial tab preference to USE tab and MERCH sub-tab for heart coin modal
-        if (typeof window !== 'undefined') {
-          // Clear any existing preferences first
-          delete (window as any).priceHeartCoinsInitialTab;
-          delete (window as any).priceHeartCoinsInitialUseTab;
-          delete (window as any).priceHeartCoinsSelectedCard;
-          
-          // Set our preferences
-          (window as any).priceHeartCoinsInitialTab = 'USE';
-          (window as any).priceHeartCoinsInitialUseTab = 'MERCH';
-          // Set a flag to indicate this is from the STORE menu
-          (window as any).priceHeartCoinsFromStore = true;
-        }
-        setHeartCoinOpen(true);
-        break;
-      case "CHXNDLER":
-        setChxndlerOpen(true);
-        break;
-      case "SIGNAL":
-        // Handle Signal functionality
-        console.log('Signal functionality not yet implemented');
-        break;
-      default:
-        console.log(`No handler for menu item: ${label}`);
-    }
+    console.log(`🍔 Hamburger menu item clicked: ${label}`);
+    setLastClickedItem(label);
+    
+    // Ensure we close all modals first to prevent conflicts
+    setBadgesOpen(false);
+    setHeartCoinOpen(false);
+    setJourneyOpen(false);
+    setBinderOpen(false);
+    setChxndlerOpen(false);
+    setJournalOpen(false);
+    setCodeOpen(false);
+    setWelcomeHomeOpen(false);
+    
+    // Use setTimeout to ensure state is cleared before opening new modal
+    setTimeout(() => {
+      switch (label) {
+        case "ABOUT":
+          setChxndlerOpen(true);
+          break;
+        // Handle dynamic journey titles:
+        case "JOURNEY":
+        case "MY JOURNEY":
+          setJourneyOpen(true);
+          break;
+        case "BINDER":
+          setBinderOpen(true);
+          break;
+        case "JOURNAL":
+        case "COMPLETED":
+          console.log(`🔔 Opening journal modal...`);
+          // Change beam color to pink when Journal is clicked
+          try { onBeamColorChange?.('pink'); } catch {}
+          setJournalOpen(true);
+          console.log(`✅ Journal modal state set to true`);
+          break;
+        case "BADGES":
+          console.log(`🏅 Opening badges modal...`);
+          // Only open badges if we specifically clicked badges
+          if (label === "BADGES") {
+            setBadgesOpen(true);
+          }
+          break;
+        case "STORE":
+          // Clear any existing tab preferences and set initial tab preference to USE tab and MERCH sub-tab for heart coin modal
+          if (typeof window !== 'undefined') {
+            // Clear any existing preferences first
+            delete (window as any).priceHeartCoinsInitialTab;
+            delete (window as any).priceHeartCoinsInitialUseTab;
+            delete (window as any).priceHeartCoinsSelectedCard;
+            
+            // Set our preferences
+            (window as any).priceHeartCoinsInitialTab = 'USE';
+            (window as any).priceHeartCoinsInitialUseTab = 'MERCH';
+            // Set a flag to indicate this is from the STORE menu
+            (window as any).priceHeartCoinsFromStore = true;
+          }
+          setHeartCoinOpen(true);
+          break;
+        case "CHXNDLER":
+          setChxndlerOpen(true);
+          break;
+        case "SIGNAL":
+          // Handle Signal functionality
+          console.log('Signal functionality not yet implemented');
+          break;
+        default:
+          console.log(`No handler for menu item: ${label}`);
+      }
+    }, 10);
   };
 
   // Debug logging for Chrome issue
@@ -99,6 +122,18 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
       browser: navigator.userAgent.includes('Chrome') ? 'Chrome' : 'Other'
     });
   }, [hidden]);
+
+  // Debug logging for modal states
+  useEffect(() => {
+    console.log("🔔 Modal states changed:", { 
+      journalOpen, 
+      badgesOpen, 
+      binderOpen, 
+      heartCoinOpen,
+      chxndlerOpen,
+      journeyOpen 
+    });
+  }, [journalOpen, badgesOpen, binderOpen, heartCoinOpen, chxndlerOpen, journeyOpen]);
 
   return (
     <>
@@ -129,7 +164,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
       {/* Badges popout */}
       <BadgesButton
         style={{ display: 'none' }}
-        isActive={badgesOpen}
+        isActive={badgesOpen && lastClickedItem === "BADGES"}
         onClick={() => setBadgesOpen(false)}
         onBeamColorChange={onBeamColorChange}
       />
