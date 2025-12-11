@@ -637,9 +637,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
             onMouseEnter={() => {
               try { sfx.play('hover', 0.3); } catch {}
             }}
-            className="absolute top-16 right-4 w-10 h-10 rounded-full border-2 border-pink-400/60 bg-pink-400/10 hover:border-pink-400/80 hover:bg-pink-400/20 transition-all duration-200 hover:scale-110 flex items-center justify-center overflow-hidden"
+            className="absolute top-16 right-4 w-10 h-10 rounded-full border-2 border-yellow-400/60 bg-yellow-400/10 hover:border-yellow-400/80 hover:bg-yellow-400/20 transition-all duration-200 hover:scale-110 flex items-center justify-center overflow-hidden"
             style={{
-              boxShadow: 'inset 0 0 15px rgba(255, 20, 147, 0.4)'
+              boxShadow: 'inset 0 0 15px rgba(255, 193, 7, 0.4)'
             }}
             title="View Relics"
           >

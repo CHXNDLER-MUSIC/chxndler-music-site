@@ -1227,6 +1227,11 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // Enter warp phase immediately
     setUiPhase("warping");
     
+    // Hide HUD immediately when warp starts so power button turns off
+    setShowHUD(false);
+    setBeamEnabled(false);
+    setBeamColor('off');
+    
     // Trigger existing warp visual/audio systems
     setAllowWarp(true);
     setSky(SPACE_SKY);
@@ -1288,6 +1293,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       // Enable remaining systems for landed state
       setBeamEnabled(true);
       setShowHUD(true);
+      setBeamColor('blue');
       setBeamOnly(false);
       setPowerBusy(false);
       setLandingRevealReady(true);

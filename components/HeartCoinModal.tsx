@@ -145,6 +145,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   useEffect(() => {
     if (open) {
       setActiveTab(initialTab);
+      // Enable sfx when modal opens
+      try { sfx.setEnabled(true); } catch {}
     }
   }, [open, initialTab]);
 
@@ -324,7 +326,10 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
           <button
             onClick={() => setActiveTab('earn')}
             onMouseEnter={() => {
-              try { sfx.play('hover', 0.3); } catch {}
+              try { 
+                sfx.setEnabled(true);
+                sfx.play('hover', 0.3); 
+              } catch {}
             }}
             className={`px-4 py-3 font-bold text-sm transition-all duration-200 ${
               activeTab === 'earn'
@@ -344,7 +349,10 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
           <button
             onClick={() => setActiveTab('use')}
             onMouseEnter={() => {
-              try { sfx.play('hover', 0.3); } catch {}
+              try { 
+                sfx.setEnabled(true);
+                sfx.play('hover', 0.3); 
+              } catch {}
             }}
             className={`px-4 py-3 font-bold text-sm transition-all duration-200 ${
               activeTab === 'use'
@@ -364,7 +372,10 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
           <button
             onClick={() => setActiveTab('merch')}
             onMouseEnter={() => {
-              try { sfx.play('hover', 0.3); } catch {}
+              try { 
+                sfx.setEnabled(true);
+                sfx.play('hover', 0.3); 
+              } catch {}
             }}
             className={`px-4 py-3 font-bold text-sm transition-all duration-200 ${
               activeTab === 'merch'
@@ -384,7 +395,10 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
           <button
             onClick={() => setActiveTab('cards')}
             onMouseEnter={() => {
-              try { sfx.play('hover', 0.3); } catch {}
+              try { 
+                sfx.setEnabled(true);
+                sfx.play('hover', 0.3); 
+              } catch {}
             }}
             className={`px-4 py-3 font-bold text-sm transition-all duration-200 ${
               activeTab === 'cards'
@@ -672,6 +686,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               <div className="flex justify-center">
                 <button
                   onClick={() => handlePurchase(item.stripeUrl)}
+                  onMouseEnter={() => {
+                    try { sfx.play('hover', 0.3); } catch {}
+                  }}
                   className="px-3 py-2 rounded-lg font-bold text-sm text-green-400 hover:bg-green-500/20 hover:scale-105 transition-all duration-200"
                 >
                   PAY WITH ${item.cost % 1 === 0 ? item.cost.toFixed(0) : item.cost.toFixed(1)}
@@ -681,6 +698,11 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               {/* Add to Collection Button */}
               <button
                 onClick={() => handleHeartCoinPurchase(item)}
+                onMouseEnter={() => {
+                  if (!modalLoading && profile && (profile.heartcoin_balance || 0) >= item.heartCoin) {
+                    try { sfx.play('hover', 0.3); } catch {}
+                  }
+                }}
                 disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < item.heartCoin}
                 className={`w-full py-2 px-4 rounded-lg font-bold text-xs transition-all duration-200 ${
                   modalLoading || !profile || (profile.heartcoin_balance || 0) < item.heartCoin
@@ -706,6 +728,11 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
           <div className="flex justify-center items-center gap-4 mt-6 pt-4 border-t border-white/10">
             <button
               onClick={handlePrevPage}
+              onMouseEnter={() => {
+                if (currentPage !== 0) {
+                  try { sfx.play('hover', 0.3); } catch {}
+                }
+              }}
               disabled={currentPage === 0}
               className={`p-3 rounded-full border-2 transition-all duration-300 ${
                 currentPage === 0
@@ -734,6 +761,11 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
             <button
               onClick={handleNextPage}
+              onMouseEnter={() => {
+                if (currentPage !== totalPages - 1) {
+                  try { sfx.play('hover', 0.3); } catch {}
+                }
+              }}
               disabled={currentPage === totalPages - 1}
               className={`p-3 rounded-full border-2 transition-all duration-300 ${
                 currentPage === totalPages - 1
@@ -788,6 +820,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         src={item.image_url || '/store/hat.webp'}
                         alt={item.name}
                         className="max-h-full max-w-full object-contain rounded-lg cursor-pointer hover:scale-105 transition-transform duration-300"
+                        onMouseEnter={() => {
+                          try { sfx.play('hover', 0.3); } catch {}
+                        }}
                         onClick={() => {
                           setEnlargedItem({
                             name: item.name,
@@ -806,6 +841,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                           src={item.image_url_2}
                           alt={`${item.name} alternative view`}
                           className="max-h-full max-w-full object-contain rounded-lg absolute top-0 left-0 opacity-0 hover:opacity-100 transition-opacity duration-300 cursor-pointer"
+                          onMouseEnter={() => {
+                            try { sfx.play('hover', 0.3); } catch {}
+                          }}
                           onClick={() => {
                             setEnlargedItem({
                               name: item.name,
@@ -861,6 +899,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     <div className="flex justify-center">
                       <button
                         onClick={() => window.open(item.stripe_url || '#', '_blank')}
+                        onMouseEnter={() => {
+                          try { sfx.play('hover', 0.3); } catch {}
+                        }}
                         className="px-3 py-2 rounded-lg font-bold text-sm text-green-400 hover:bg-green-500/20 hover:scale-105 transition-all duration-200"
                       >
                         PAY WITH ${item.cost_usd ? (item.cost_usd % 1 === 0 ? item.cost_usd.toFixed(0) : item.cost_usd.toFixed(1)) : '30'}
@@ -899,6 +940,11 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                           setError(error?.message || `Failed to purchase ${item.name}`);
                         } finally {
                           setModalLoading(false);
+                        }
+                      }}
+                      onMouseEnter={() => {
+                        if (!isProcessing && profile && (profile.heartcoin_balance || 0) >= item.price_heartcoins) {
+                          try { sfx.play('hover', 0.3); } catch {}
                         }
                       }}
                       disabled={isProcessing || !profile || (profile.heartcoin_balance || 0) < item.price_heartcoins}

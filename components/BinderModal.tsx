@@ -955,7 +955,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           }
                         }}
                         onMouseEnter={() => {
-                          if (!isLockedSlot && (hasCard || isFirstSlotWithChxndler)) {
+                          if (!isLockedSlot) {
                             try { sfx.play('hover', 0.3); } catch {}
                           }
                         }}
@@ -1118,7 +1118,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           }
                         }}
                         onMouseEnter={() => {
-                          if (!isLockedSlot && (hasCard || isFirstSlotWithChxndler)) {
+                          if (!isLockedSlot) {
                             try { sfx.play('hover', 0.3); } catch {}
                           }
                         }}
@@ -1201,6 +1201,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       if (currentIndex < pages.length - 1) {
                         setBinderPage(pages[currentIndex + 1] as any);
                       }
+                    }}
+                    onMouseEnter={() => {
+                      try { sfx.play('hover', 0.3); } catch {}
                     }}
                     style={{
                       boxShadow: '0 0 15px rgba(255,105,180,0.3)',

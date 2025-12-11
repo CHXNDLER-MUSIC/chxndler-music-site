@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { sfx } from '@/lib/sfx';
 
 /**
  * MessageInput Component
@@ -181,6 +182,11 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
           <button
             type="submit"
             disabled={disabled || !message.trim()}
+            onMouseEnter={() => {
+              if (!disabled && message.trim()) {
+                try { sfx.play('hover', 0.3); } catch {}
+              }
+            }}
             className="px-3 py-1.5 rounded-lg font-semibold text-sm transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex-shrink-0"
             style={{
               height: '36px',

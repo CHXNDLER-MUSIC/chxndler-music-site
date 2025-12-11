@@ -415,19 +415,31 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
   const loadPublicEntries = async () => {
     try {
-      const { data, error } = await supabaseBrowser
-        .from('soul_journal_entries')
-        .select('entry_id, user_id, entry_date, element, stars_count, is_public, soul_star, intention, reflection, created_at, profiles(id, name, profile_image_url, daily_streak_current, heartcoin_total)')
-        .eq('is_public', true)
-        .order('entry_date', { ascending: false })
-        .order('stars_count', { ascending: false });
+      // For now, let's use the existing journalEntries and filter them on the client side
+      // This is a temporary solution to get the PUBLIC tab working
+      const publicEntriesFromContext = journalEntries.filter(entry => entry.is_public === true);
+      
+      // Sort them by date desc, then stars desc
+      const sortedPublicEntries = publicEntriesFromContext.sort((a, b) => {
+        const dateComparison = new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime();
+        if (dateComparison !== 0) return dateComparison;
+        return (b.stars_count ?? 0) - (a.stars_count ?? 0);
+      });
 
-      if (error) {
-        console.error('Error loading public journal entries:', error);
-        return;
-      }
+      // Add the current user's profile data to each entry for display
+      const enrichedEntries = sortedPublicEntries.map(entry => ({
+        ...entry,
+        profiles: {
+          id: profile?.id || '',
+          name: profile?.name || 'Anonymous',
+          profile_image_url: profile?.profile_image_url || '/elements/alien.webp',
+          daily_streak_current: profile?.daily_streak || 0,
+          heartcoin_total: profile?.heartcoin_total || 0
+        }
+      }));
 
-      setPublicEntries(data || []);
+      console.log('Public entries loaded from context:', enrichedEntries.length, enrichedEntries);
+      setPublicEntries(enrichedEntries);
     } catch (error) {
       console.error('Error in loadPublicEntries:', error);
     }
@@ -580,6 +592,9 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 try { sfx.play('click', 0.8); } catch {}
                 setShowHistory(!showHistory);
               }}
+              onMouseEnter={() => {
+                try { sfx.play('hover', 0.6); } catch {}
+              }}
               className="absolute left-2 top-1/2 transform -translate-y-1/2 text-sm font-semibold transition-all duration-200 hover:opacity-100 px-3 py-1.5 rounded z-20"
               style={{
                 color: '#00FFFF',
@@ -599,6 +614,9 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             {/* Close Button - Right of Title */}
             <button 
               onClick={handleClose}
+              onMouseEnter={() => {
+                try { sfx.play('hover', 0.6); } catch {}
+              }}
               className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full transition-all duration-200 hover:scale-110 z-20"
               style={{
                 background: 'rgba(0, 0, 0, 0.8)',
@@ -644,6 +662,9 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 try { sfx.play('change-channel', 0.8); } catch {}
                 setActiveTab('public');
               }}
+              onMouseEnter={() => {
+                try { sfx.play('hover', 0.6); } catch {}
+              }}
               className="px-4 py-1.5 rounded-full text-sm font-semibold uppercase transition-all"
               style={{
                 background: activeTab === 'public' ? '#00FF0030' : 'rgba(0,0,0,0.4)',
@@ -659,6 +680,9 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               onClick={() => {
                 try { sfx.play('change-channel', 0.8); } catch {}
                 setActiveTab('private');
+              }}
+              onMouseEnter={() => {
+                try { sfx.play('hover', 0.6); } catch {}
               }}
               className="px-4 py-1.5 rounded-full text-sm font-semibold uppercase transition-all"
               style={{

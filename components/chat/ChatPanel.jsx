@@ -819,6 +819,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                 
                 <button
                   onClick={handleClose}
+                  onMouseEnter={() => {
+                    try { sfx.play('hover', 0.3); } catch {}
+                  }}
                   className="text-yellow-400 hover:text-yellow-300 transition-colors p-1 flex-shrink-0"
                   style={{
                     background: 'rgba(242, 239, 29, 0.1)',
@@ -863,6 +866,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                       onMouseEnter={(e) => {
                         e.target.style.color = '#FFFF99';
                         e.target.style.textShadow = '0 0 12px rgba(242, 239, 29, 0.8)';
+                        try { sfx.play('hover', 0.3); } catch {}
                       }}
                       onMouseLeave={(e) => {
                         e.target.style.color = '#F2EF1D';
@@ -983,6 +987,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                         onMouseEnter={(e) => {
                           e.target.style.color = '#FFFF99';
                           e.target.style.textShadow = '0 0 12px rgba(242, 239, 29, 0.8)';
+                          try { sfx.play('hover', 0.3); } catch {}
                         }}
                         onMouseLeave={(e) => {
                           e.target.style.color = '#F2EF1D';
