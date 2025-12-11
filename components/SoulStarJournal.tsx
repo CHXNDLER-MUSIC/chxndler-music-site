@@ -398,9 +398,9 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       className="fixed z-[2147483649] flex items-center justify-center"
       style={{ 
         top: '60px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: 'min(99vw, 1000px)'
+        left: 'max(280px, calc(50vw - 350px))',
+        width: 'min(calc(100vw - 320px), 700px)',
+        right: '20px'
       }}
     >
 
@@ -408,7 +408,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       <div 
         className="absolute"
         style={{
-          width: 'min(120vw, 800px)',
+          width: 'min(800px, 100%)',
           height: '250px',
           top: '50%',
           left: '50%',
@@ -424,7 +424,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       <div 
         className="absolute"
         style={{
-          width: 'min(100vw, 600px)',
+          width: 'min(600px, 90%)',
           height: '200px',
           top: '50%',
           left: '50%',
@@ -527,7 +527,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             <div 
               className="mx-auto"
               style={{
-                width: '300px',
+                width: 'min(300px, 90%)',
                 height: '2px',
                 background: '#F2EF1D',
                 boxShadow: '0 0 8px #F2EF1D, 0 0 15px #FFFF00'
@@ -535,44 +535,269 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             />
           </div>
 
-          {/* Tabs Switcher - below yellow line, Public left, Private right - only show when in full log mode */}
-          {showHistory && (
-            <div className="flex items-center justify-center gap-2 p-2 border-b border-white/10">
-              <button
-                onClick={() => setActiveTab('public')}
-                className="px-3 py-1 rounded-full text-xs font-semibold uppercase transition-all"
-                style={{
-                  background: activeTab === 'public' ? `${elementTheme.color}30` : 'rgba(0,0,0,0.4)',
-                  color: activeTab === 'public' ? elementTheme.color : '#FFFFFFCC',
-                  border: `1px solid ${elementTheme.color}60`,
-                  boxShadow: activeTab === 'public' ? `0 0 12px ${elementTheme.color}60` : 'none'
-                }}
-              >
-                Public
-              </button>
-              <button
-                onClick={() => setActiveTab('private')}
-                className="px-3 py-1 rounded-full text-xs font-semibold uppercase transition-all"
-                style={{
-                  background: activeTab === 'private' ? `${elementTheme.color}30` : 'rgba(0,0,0,0.4)',
-                  color: activeTab === 'private' ? elementTheme.color : '#FFFFFFCC',
-                  border: `1px solid ${elementTheme.color}60`,
-                  boxShadow: activeTab === 'private' ? `0 0 12px ${elementTheme.color}60` : 'none'
-                }}
-              >
-                Private
-              </button>
-            </div>
-          )}
+          {/* Tabs Switcher - below yellow line, Public left, Private right */}
+          <div className="flex items-center justify-center gap-4 p-3 border-b border-white/20">
+            <button
+              onClick={() => setActiveTab('public')}
+              className="px-4 py-2 rounded-full text-sm font-semibold uppercase transition-all"
+              style={{
+                background: activeTab === 'public' ? `${elementTheme.color}30` : 'rgba(0,0,0,0.4)',
+                color: activeTab === 'public' ? elementTheme.color : '#FFFFFFCC',
+                border: `1px solid ${elementTheme.color}60`,
+                boxShadow: activeTab === 'public' ? `0 0 12px ${elementTheme.color}60` : 'none'
+              }}
+            >
+              Public
+            </button>
+            <button
+              onClick={() => setActiveTab('private')}
+              className="px-4 py-2 rounded-full text-sm font-semibold uppercase transition-all"
+              style={{
+                background: activeTab === 'private' ? `${elementTheme.color}30` : 'rgba(0,0,0,0.4)',
+                color: activeTab === 'private' ? elementTheme.color : '#FFFFFFCC',
+                border: `1px solid ${elementTheme.color}60`,
+                boxShadow: activeTab === 'private' ? `0 0 12px ${elementTheme.color}60` : 'none'
+              }}
+            >
+              Private
+            </button>
+          </div>
 
           <div style={{ flex: 1, overflowY: 'auto' }}>
             {activeTab === 'public' ? (
               <PublicJournalFeed />
             ) : (
-              // For now, show a placeholder for private entries. Later this could be SoulStarFullLog component
-              <div className="text-center p-8 text-white">
-                <div className="text-lg mb-2">🔒 Private Entries</div>
-                <div className="text-sm opacity-80">Your private journal entries will appear here</div>
+              <div className="p-4 space-y-4">
+                {journalEntries
+                  .filter(entry => entry.is_private === true)
+                  .sort((a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime())
+                  .map((entry) => {
+                    const entryElement = entry.element as keyof typeof ELEMENT_COLORS;
+                    const entryTheme = ELEMENT_COLORS[entryElement] || ELEMENT_COLORS.heart;
+                    const entryEmoji = ELEMENT_EMOJIS[entryElement] || "💖";
+                    const isEditing = editingEntry === entry.id;
+                    
+                    return (
+                      <div
+                        key={entry.id}
+                        className="rounded-lg p-4 space-y-3"
+                        style={{
+                          background: 'rgba(0, 0, 0, 0.4)',
+                          border: `2px solid ${entryTheme.color}40`,
+                          boxShadow: `0 0 15px ${entryTheme.color}20`
+                        }}
+                      >
+                        {/* Header with Date, Element, and Privacy Toggle */}
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="text-sm font-semibold text-white/90">{getDisplayDateString(entry.entry_date)}</div>
+                            <div 
+                              className="px-2 py-1 rounded text-xs font-semibold uppercase flex items-center gap-1"
+                              style={{
+                                background: `${entryTheme.color}20`,
+                                color: entryTheme.color,
+                                border: `1px solid ${entryTheme.color}40`,
+                                textShadow: `0 0 4px ${entryTheme.glow}`
+                              }}
+                            >
+                              {entryEmoji} {entry.element?.toUpperCase()}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                updateJournalEntry(entry.id, { is_private: !entry.is_private });
+                              }}
+                              className="px-2 py-1 rounded text-xs font-semibold transition-all"
+                              style={{
+                                background: entry.is_private ? '#FF69B420' : `${entryTheme.color}20`,
+                                border: `1px solid ${entry.is_private ? '#FF69B460' : entryTheme.color + '60'}`,
+                                color: entry.is_private ? '#FF69B4' : entryTheme.color,
+                                textShadow: entry.is_private ? '0 0 4px #FF69B4' : `0 0 4px ${entryTheme.glow}`
+                              }}
+                            >
+                              {entry.is_private ? '🔒 PRIVATE' : '🌍 PUBLIC'}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Intention Section */}
+                        {entry.intention && (
+                          <div 
+                            className="rounded-lg px-3 py-2 mb-2"
+                            style={{
+                              background: 'rgba(0, 0, 0, 0.3)',
+                              border: `1px solid ${entryTheme.color}30`,
+                              boxShadow: `0 0 8px ${entryTheme.color}10`
+                            }}
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <svg 
+                                width="14" 
+                                height="14" 
+                                viewBox="0 0 24 24" 
+                                fill="none"
+                                style={{
+                                  filter: `drop-shadow(0 0 4px ${entryTheme.color})`
+                                }}
+                              >
+                                <circle cx="12" cy="12" r="9" fill="none" stroke={entryTheme.color} strokeWidth="2" strokeDasharray="3 3"/>
+                                <circle cx="12" cy="12" r="3" fill={entryTheme.color}/>
+                                <path d="M12 3v6m0 6v6m-9-9h6m6 0h6" stroke={entryTheme.color} strokeWidth="2" strokeLinecap="round"/>
+                              </svg>
+                              <div 
+                                className="text-xs font-semibold uppercase tracking-wider"
+                                style={{ color: entryTheme.color, textShadow: `0 0 4px ${entryTheme.glow}` }}
+                              >
+                                Intention
+                              </div>
+                            </div>
+                            <div className="text-xs leading-relaxed text-white/90">{entry.intention}</div>
+                          </div>
+                        )}
+
+                        {/* Prompt Section */}
+                        {entry.reflection && (
+                          <div 
+                            className="rounded-lg px-3 py-2 mb-2"
+                            style={{
+                              background: 'rgba(0, 0, 0, 0.3)',
+                              border: `1px solid ${entryTheme.color}30`,
+                              boxShadow: `0 0 8px ${entryTheme.color}10`
+                            }}
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <svg 
+                                width="14" 
+                                height="14" 
+                                viewBox="0 0 24 24" 
+                                fill="none"
+                                style={{
+                                  filter: `drop-shadow(0 0 4px ${entryTheme.color})`
+                                }}
+                              >
+                                <path d="M8 9h8M8 12h8M8 15h6" stroke={entryTheme.color} strokeWidth="2" strokeLinecap="round"/>
+                                <path d="M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" stroke={entryTheme.color} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                                <circle cx="19" cy="8" r="2" fill={entryTheme.color} opacity="0.8"/>
+                              </svg>
+                              <div 
+                                className="text-xs font-semibold uppercase tracking-wider"
+                                style={{ color: entryTheme.color, textShadow: `0 0 4px ${entryTheme.glow}` }}
+                              >
+                                Prompt
+                              </div>
+                            </div>
+                            <div className="text-xs leading-relaxed text-white/90">{entry.reflection}</div>
+                          </div>
+                        )}
+
+                        {/* Soul Star Section with Edit Functionality */}
+                        <div 
+                          className="rounded-lg px-3 py-2"
+                          style={{
+                            background: 'rgba(0, 0, 0, 0.3)',
+                            border: `2px solid ${entryTheme.color}60`,
+                            boxShadow: `0 0 12px ${entryTheme.color}20`
+                          }}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <svg 
+                                width="16" 
+                                height="16" 
+                                viewBox="0 0 24 24" 
+                                fill="none"
+                                style={{
+                                  filter: `drop-shadow(0 0 4px ${entryTheme.color})`
+                                }}
+                              >
+                                <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z" fill={entryTheme.color} stroke={entryTheme.color} strokeWidth="0.5"/>
+                                <circle cx="12" cy="12" r="8" fill="none" stroke={entryTheme.color} strokeWidth="1" opacity="0.6"/>
+                              </svg>
+                              <div 
+                                className="text-sm font-semibold uppercase tracking-wider"
+                                style={{ color: entryTheme.color, textShadow: `0 0 4px ${entryTheme.glow}` }}
+                              >
+                                Soul Star
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              {!isEditing ? (
+                                <button
+                                  onClick={(e) => handleEditClick(entry, e)}
+                                  className="text-xs px-2 py-1 rounded hover:opacity-80 transition-all"
+                                  style={{
+                                    background: `${entryTheme.color}20`,
+                                    color: entryTheme.color,
+                                    border: `1px solid ${entryTheme.color}40`
+                                  }}
+                                >
+                                  Edit
+                                </button>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => handleSaveEdit(entry.id)}
+                                    className="text-xs px-2 py-1 rounded hover:opacity-80 transition-all"
+                                    style={{
+                                      background: '#22C55E20',
+                                      color: '#22C55E',
+                                      border: '1px solid #22C55E40'
+                                    }}
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={handleCancelEdit}
+                                    className="text-xs px-2 py-1 rounded hover:opacity-80 transition-all"
+                                    style={{
+                                      background: '#EF444420',
+                                      color: '#EF4444',
+                                      border: '1px solid #EF444440'
+                                    }}
+                                  >
+                                    Cancel
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {isEditing ? (
+                            <textarea
+                              value={editResponse}
+                              onChange={(e) => setEditResponse(e.target.value)}
+                              className="w-full h-20 p-2 rounded text-white placeholder-white/50 resize-none focus:outline-none"
+                              style={{
+                                background: 'rgba(0,0,0,0.4)',
+                                border: `1px solid ${entryTheme.color}30`,
+                                boxShadow: `0 0 8px ${entryTheme.color}15`
+                              }}
+                              onFocus={(e) => {
+                                e.target.style.borderColor = `${entryTheme.color}60`;
+                                e.target.style.boxShadow = `0 0 15px ${entryTheme.glow}`;
+                              }}
+                              onBlur={(e) => {
+                                e.target.style.borderColor = `${entryTheme.color}30`;
+                                e.target.style.boxShadow = `0 0 8px ${entryTheme.color}15`;
+                              }}
+                            />
+                          ) : (
+                            <div className="text-sm leading-relaxed text-white">
+                              {entry.soul_star || "No soul star response"}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                }
+                {journalEntries.filter(entry => entry.is_private === true).length === 0 && (
+                  <div className="text-center p-8 text-white/60">
+                    <div className="text-lg mb-2">🔒 No Private Entries</div>
+                    <div className="text-sm opacity-80">Your private journal entries will appear here</div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -658,7 +883,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               <div 
                 className="mx-auto"
                 style={{
-                  width: '300px',
+                  width: 'min(300px, 90%)',
                   height: '2px',
                   background: '#F2EF1D',
                   boxShadow: '0 0 8px #F2EF1D, 0 0 15px #FFFF00'
@@ -666,35 +891,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               />
             </div>
 
-            {/* Tabs Switcher - below yellow line, Public left, Private right - only show when in full log mode */}
-            {showHistory && (
-              <div className="flex items-center justify-center gap-2 p-2 border-b border-white/10">
-                <button
-                  onClick={() => setActiveTab('public')}
-                  className="px-3 py-1 rounded-full text-xs font-semibold uppercase transition-all"
-                  style={{
-                    background: activeTab === 'public' ? `${elementTheme.color}30` : 'rgba(0,0,0,0.4)',
-                    color: activeTab === 'public' ? elementTheme.color : '#FFFFFFCC',
-                    border: `1px solid ${elementTheme.color}60`,
-                    boxShadow: activeTab === 'public' ? `0 0 12px ${elementTheme.color}60` : 'none'
-                  }}
-                >
-                  Public
-                </button>
-                <button
-                  onClick={() => setActiveTab('private')}
-                  className="px-3 py-1 rounded-full text-xs font-semibold uppercase transition-all"
-                  style={{
-                    background: activeTab === 'private' ? `${elementTheme.color}30` : 'rgba(0,0,0,0.4)',
-                    color: activeTab === 'private' ? elementTheme.color : '#FFFFFFCC',
-                    border: `1px solid ${elementTheme.color}60`,
-                    boxShadow: activeTab === 'private' ? `0 0 12px ${elementTheme.color}60` : 'none'
-                  }}
-                >
-                  Private
-                </button>
-              </div>
-            )}
 
             {/* Header Layout - Date and Element */}
             <div className="relative pb-6">

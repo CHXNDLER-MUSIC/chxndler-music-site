@@ -42,9 +42,9 @@ function AnchoredPreviewModal({
   const cardWidth = getYellowDisplayWidth();
   const cardHeight = Math.min(heightPx || 240, 280); // Reduced from 280 to 240, max 280
   
-  // Center the preview on the page
+  // Center the preview on the page, positioned slightly higher
   const left = (window.innerWidth - cardWidth) / 2;
-  const top = (window.innerHeight - cardHeight) / 2;
+  const top = (window.innerHeight - cardHeight) / 2 - 80; // Move 80px higher
 
   return createPortal(
     <div

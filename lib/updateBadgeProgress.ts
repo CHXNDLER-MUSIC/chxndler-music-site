@@ -1,4 +1,5 @@
 import { supabaseBrowser } from '@/lib/supabase-browser';
+import { getBadgeProgressForUser } from '@/lib/badgeProgress';
 
 /**
  * Update badge progress counters for a specific user
@@ -36,6 +37,13 @@ export async function updateBadgeProgressCounters(userId: string) {
     }
 
     console.log('Successfully updated badge progress counters');
+    
+    // Check and award any newly eligible badges
+    const newlyAwardedBadges = await checkAndAwardEligibleBadges(userId);
+    if (newlyAwardedBadges.length > 0) {
+      console.log(`🎉 Awarded ${newlyAwardedBadges.length} new badges:`, newlyAwardedBadges.map(b => b.badge_name));
+    }
+    
     return true;
   } catch (error) {
     console.error('Error in updateBadgeProgressCounters:', error);
@@ -87,5 +95,114 @@ export async function calculateRealtimeBadgeProgress(userId: string, requirement
   } catch (error) {
     console.error('Error calculating real-time badge progress:', error);
     return 0;
+  }
+}
+
+/**
+ * Manually trigger badge check for current user (for testing/debug)
+ */
+export async function manualBadgeCheck() {
+  if (typeof window !== 'undefined') {
+    // Get current user from Supabase auth
+    const { data: { user }, error } = await supabaseBrowser.auth.getUser();
+    if (user) {
+      console.log('🔍 Manual badge check triggered for user:', user.id);
+      return await checkAndAwardEligibleBadges(user.id);
+    } else {
+      console.warn('No authenticated user for manual badge check');
+      return [];
+    }
+  }
+  return [];
+}
+
+/**
+ * Check and automatically award badges that the user has earned
+ */
+export async function checkAndAwardEligibleBadges(userId: string) {
+  try {
+    console.log('Checking for eligible badges for user:', userId);
+
+    // Get user profile for progress calculation
+    const { data: profile, error: profileError } = await supabaseBrowser
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (profileError || !profile) {
+      console.error('Error fetching profile for badge check:', profileError);
+      return [];
+    }
+
+    // Get all badges
+    const { data: allBadges, error: badgesError } = await supabaseBrowser
+      .from('badges')
+      .select('*');
+
+    if (badgesError || !allBadges) {
+      console.error('Error fetching badges for eligibility check:', badgesError);
+      return [];
+    }
+
+    // Get already earned badges
+    const { data: userBadges, error: userBadgesError } = await supabaseBrowser
+      .from('user_badges')
+      .select('badge_id')
+      .eq('user_id', userId);
+
+    if (userBadgesError) {
+      console.error('Error fetching user badges:', userBadgesError);
+      return [];
+    }
+
+    const earnedBadgeIds = new Set(userBadges?.map(ub => ub.badge_id) || []);
+    const newlyAwardedBadges = [];
+
+    // Check each badge for eligibility
+    for (const badge of allBadges) {
+      // Skip if already earned
+      if (earnedBadgeIds.has(badge.id)) {
+        continue;
+      }
+
+      // Skip if missing requirement data
+      if (!badge.requirement_type || !badge.requirement_count) {
+        continue;
+      }
+
+      // Calculate progress for this badge
+      const badgeProgress = getBadgeProgressForUser(badge, profile);
+      
+      console.log(`Badge ${badge.badge_name}: ${badgeProgress.current}/${badgeProgress.target} (${badgeProgress.percentage}%) - Unlocked: ${badgeProgress.isUnlocked}`);
+
+      // Award badge if requirement is met
+      if (badgeProgress.isUnlocked) {
+        console.log(`🎉 Awarding badge: ${badge.badge_name}`);
+        
+        const { error: awardError } = await supabaseBrowser
+          .from('user_badges')
+          .insert({
+            user_id: userId,
+            badge_id: badge.id,
+            earned_at: new Date().toISOString()
+          });
+
+        if (awardError) {
+          // Ignore duplicate key errors (already awarded)
+          if (awardError.code !== '23505') {
+            console.error('Error awarding badge:', badge.badge_name, awardError);
+          }
+        } else {
+          newlyAwardedBadges.push(badge);
+          console.log(`✅ Successfully awarded badge: ${badge.badge_name}`);
+        }
+      }
+    }
+
+    return newlyAwardedBadges;
+  } catch (error) {
+    console.error('Error in checkAndAwardEligibleBadges:', error);
+    return [];
   }
 }

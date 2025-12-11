@@ -645,7 +645,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                 disabled={questStatus.elementOfDay || loading}
                 className={`w-12 h-12 border-2 rounded-full overflow-hidden transition-all relative ${
                   questStatus.elementOfDay 
-                    ? 'border-green-500/60 cursor-not-allowed opacity-60' 
+                    ? 'border-green-500/60 cursor-not-allowed' 
                     : `border-pink-500/60 hover:border-pink-400 cursor-pointer`
                 }`}
                 style={{
@@ -798,7 +798,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                   disabled={getElementalSongQuest()?.completed_today > 0 || loading || bonusQuestsLoading}
                   className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 cursor-pointer ${
                     getElementalSongQuest()?.completed_today > 0
-                      ? 'bg-green-500/30 border-2 border-green-400 text-green-200 cursor-not-allowed'
+                      ? 'bg-green-500/40 border-2 border-green-400 text-green-300 cursor-not-allowed'
                       : !isAuthenticated
                         ? 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300'
                         : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300'
@@ -878,7 +878,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                 disabled={questStatus.inviteFriendConfirm || loading || bonusQuestsLoading}
                 className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 cursor-pointer ${
                   questStatus.inviteFriendConfirm
-                    ? 'bg-green-500/30 border-2 border-green-400 text-green-200 cursor-not-allowed'
+                    ? 'bg-green-500/40 border-2 border-green-400 text-green-300 cursor-not-allowed'
                     : !isAuthenticated
                       ? 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300'
                       : questStatus.inviteFriend
@@ -1002,7 +1002,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                   disabled={questStatus.liveShow || bonusQuestsLoading || (showCheckIn && loading)}
                   className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 cursor-pointer ${
                     questStatus.liveShow
-                      ? 'bg-green-600/30 border border-green-500/50 text-green-300 cursor-not-allowed'
+                      ? 'bg-green-600/40 border border-green-500/50 text-green-300 cursor-not-allowed'
                       : !isAuthenticated
                         ? 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300'
                         : showCheckIn && secretPhrase.trim()

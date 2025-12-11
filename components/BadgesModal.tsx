@@ -7,7 +7,7 @@ import BadgeCategoryButton from "@/components/BadgeCategoryButton";
 import PopoutShell from "@/components/PopoutShell";
 import { sfx } from "@/lib/sfx";
 import { getBadgeProgressForUser, formatRequirementText } from "@/lib/badgeProgress";
-import { updateBadgeProgressCounters, calculateRealtimeBadgeProgress } from "@/lib/updateBadgeProgress";
+import { updateBadgeProgressCounters, calculateRealtimeBadgeProgress, manualBadgeCheck } from "@/lib/updateBadgeProgress";
 
 // Local types for badge display
 interface BadgeDisplay {
@@ -474,6 +474,26 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           <h2 className="text-2xl font-bold text-white">BADGES</h2>
         </div>
       )}
+
+      {/* Debug button for manual badge check */}
+      <div className="text-center mb-4">
+        <button
+          onClick={async () => {
+            console.log('🔄 Manual badge check triggered');
+            const newBadges = await manualBadgeCheck();
+            if (newBadges.length > 0) {
+              alert(`🎉 Awarded ${newBadges.length} new badges: ${newBadges.map(b => b.badge_name).join(', ')}`);
+              // Trigger a refresh of the badges data
+              window.location.reload();
+            } else {
+              alert('No new badges to award at this time');
+            }
+          }}
+          className="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white text-sm rounded transition-colors"
+        >
+          Check for New Badges
+        </button>
+      </div>
 
       {badgesLoading && (
         <div className="text-center text-white/60">

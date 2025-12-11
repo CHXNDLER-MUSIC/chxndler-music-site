@@ -11,6 +11,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { sfx } from "@/lib/sfx";
 import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
 import { triggerCardCelebration } from "@/utils/cardCelebration";
+import { triggerBadgeCelebration } from "@/utils/badgeCelebration";
 
 // Helper to detect Safari browser
 const isSafariUA =
@@ -65,6 +66,8 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
   const [suspendYellowPanel, setSuspendYellowPanel] = useState(false);
   const yellowFromPinkTimeoutA = useRef<number | null>(null);
   const yellowFromPinkTimeoutB = useRef<number | null>(null);
+  // Feature flag to show/hide test celebration buttons (default hidden)
+  const showTestCelebrations = process.env.NEXT_PUBLIC_SHOW_TEST_CELEBRATIONS === 'true';
   
   // Use the uiUnlocked prop passed from DashboardApp instead of reading from window
   const isUIUnlocked = uiUnlocked;
@@ -934,8 +937,8 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
         </span>
       </button>}
 
-      {/* Temporary HeartCoin Celebration Test Button */}
-      {!hideStartButton && <button
+      {/* Temporary HeartCoin Celebration Test Button (hidden by default) */}
+      {showTestCelebrations && <button
         onClick={() => triggerHeartCoinCelebration(1)}
         data-no-track
         className="pointer-events-auto"
@@ -974,8 +977,8 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
         ❤️
       </button>}
 
-      {/* Card Purchase Celebration Test Button */}
-      {!hideStartButton && <button
+      {/* Card Purchase Celebration Test Button (hidden by default) */}
+      {showTestCelebrations && <button
         onClick={() => triggerCardCelebration('/cards/CHXNDLER.webp', 'CHXNDLER')}
         data-no-track
         className="pointer-events-auto"
@@ -1012,6 +1015,46 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
         title="Test Card Purchase Celebration"
       >
         🃏
+      </button>}
+
+      {/* Badge Celebration Test Button (hidden by default) */}
+      {showTestCelebrations && <button
+        onClick={() => triggerBadgeCelebration('/badges/ocean surge.webp', 'Ocean Surge')}
+        data-no-track
+        className="pointer-events-auto"
+        style={{
+          position: "absolute",
+          bottom: `calc(-2vh + ${vs * 0.35}px - 150px)`, // Same level as others
+          left: 'calc(50% + 80px)', // Position to the right of HeartCoin button
+          width: 60,
+          height: 60,
+          borderRadius: 9999,
+          transform: `translate(-50%, 0)`,
+          zIndex: 9998,
+          pointerEvents: 'auto',
+          background: 'rgba(59, 130, 246, 0.8)',
+          border: '2px solid #3b82f6',
+          color: 'white',
+          fontSize: '24px',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translate(-50%, 0) scale(1.1)';
+          e.currentTarget.style.background = 'rgba(59, 130, 246, 1)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translate(-50%, 0) scale(1)';
+          e.currentTarget.style.background = 'rgba(59, 130, 246, 0.8)';
+        }}
+        aria-label="Test Badge Celebration"
+        title="Test Badge Celebration"
+      >
+        🏅
       </button>}
 
       <style jsx>{`

@@ -165,6 +165,7 @@ type AudioControls = {
   togglePlayPause: () => void;
   seek: (t: number) => void;
   setVolume: (v: number) => void;
+  selectTrack: (trackId: string) => Promise<void>;
   playTrack: (trackId: string) => Promise<void>;
   playStartSequence: (isLoggedIn: boolean) => Promise<void>;
   bestSourceFor: (t: { mp3?: string; opus?: string }) => string;
@@ -216,6 +217,16 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const onLoadStart = () => setState(s => ({ ...s, isLoading: true }));
     const onLoadEnd = () => setState(s => ({ ...s, isLoading: false }));
     
+    const onEnded = () => {
+      console.log('🎵 AudioProvider: Song ended, restarting...');
+      if (a.src && a.src !== 'null' && a.src !== '') {
+        a.currentTime = 0;
+        a.play().catch((err) => {
+          console.error('Failed to repeat song:', err);
+        });
+      }
+    };
+    
     a.addEventListener("timeupdate", onTime);
     a.addEventListener("durationchange", onDur);
     a.addEventListener("loadedmetadata", onDur);
@@ -224,6 +235,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     a.addEventListener("volumechange", onVol);
     a.addEventListener("loadstart", onLoadStart);
     a.addEventListener("canplaythrough", onLoadEnd);
+    a.addEventListener("ended", onEnded);
     
     // Debug: Track unexpected pauses
     const onPauseDebug = () => {
@@ -239,6 +251,18 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           console.log('🎵 Current playing state:', state.playing);
           console.log('🎵 Audio src:', a.src);
           console.log('🎵 Audio readyState:', a.readyState);
+          console.log('🎵 All audio elements on page:');
+          const allAudio = document.querySelectorAll('audio');
+          allAudio.forEach((audio, index) => {
+            console.log(`🎵 Audio ${index}:`, {
+              src: audio.src,
+              paused: audio.paused,
+              currentTime: audio.currentTime,
+              duration: audio.duration,
+              readyState: audio.readyState,
+              hasGlobalFlag: audio.hasAttribute('data-global-audio')
+            });
+          });
         }
       }
     };
@@ -271,6 +295,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       a.removeEventListener("volumechange", onVol);
       a.removeEventListener("loadstart", onLoadStart);
       a.removeEventListener("canplaythrough", onLoadEnd);
+      a.removeEventListener("ended", onEnded);
       a.removeEventListener("pause", onPauseDebug);
       a.removeEventListener("ended", onEndedDebug);
       try { a.pause(); } catch {}
@@ -424,6 +449,108 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const a = audioRef.current; 
       if (!a) return; 
       a.volume = Math.max(0, Math.min(1, v)); 
+    },
+
+    selectTrack: async (trackId: string) => {
+      const trackInfo = TRACK_INFO[trackId];
+      if (!trackInfo) {
+        console.warn(`Track not found: ${trackId}`);
+        return;
+      }
+
+      // Find the track source
+      let trackSource = "";
+      const trackKey = Object.keys(TRACKS).find(key => {
+        const normalizedKey = key.toLowerCase().replace(/_/g, '-');
+        return normalizedKey === trackId || trackId.includes(normalizedKey);
+      }) as TrackKey;
+
+      if (trackKey) {
+        trackSource = bestSourceFor(TRACKS[trackKey]);
+      } else {
+        // Fallback: try direct path
+        trackSource = `/tracks/${trackId}.opus`;
+      }
+
+      if (!trackSource) {
+        console.warn(`No source found for track: ${trackId}`);
+        return;
+      }
+
+      // 1. Stop current music immediately
+      console.log('🎵 Stopping current music for track selection');
+      stopAllAudioInternal();
+      setState(s => ({ ...s, playing: false }));
+
+      // 2. Play warp sound effect
+      try {
+        console.log('🎵 Playing warp sound effect');
+        await playAudioOnce(SFX.WARP);
+        console.log('🎵 Warp sound effect completed');
+        
+        // Small delay after warp to ensure audio session is clear
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (err) {
+        console.error('Failed to play warp effect:', err);
+      }
+
+      // 3. Load the selected track but don't auto-play
+      const a = audioRef.current;
+      if (!a) return;
+
+      console.log('🎵 Loading selected track:', trackId);
+      a.src = trackSource;
+      try { 
+        a.load();
+        
+        // Wait for audio to be ready
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            cleanup();
+            reject(new Error('Audio load timeout'));
+          }, 10000);
+          
+          const onCanPlay = () => {
+            cleanup();
+            resolve();
+          };
+          const onError = (e: Event) => {
+            cleanup();
+            console.error('Audio load error:', e);
+            reject(new Error('Audio load failed'));
+          };
+          const cleanup = () => {
+            clearTimeout(timeout);
+            a.removeEventListener('canplay', onCanPlay);
+            a.removeEventListener('error', onError);
+          };
+          
+          if (a.readyState >= 3) {
+            clearTimeout(timeout);
+            resolve();
+          } else {
+            a.addEventListener('canplay', onCanPlay, { once: true });
+            a.addEventListener('error', onError, { once: true });
+          }
+        });
+      } catch (loadErr) {
+        console.error('Failed to load track:', loadErr);
+        setState(s => ({ ...s, isLoading: false }));
+        return;
+      }
+      
+      // 4. Update state with the loaded track (but keep playing: false)
+      // Don't override duration - let the audio metadata loading handle it
+      setState(s => ({ 
+        ...s, 
+        src: trackSource, 
+        currentTrack: trackInfo,
+        currentTime: 0,
+        playing: false,
+        isLoading: false
+      }));
+
+      console.log('🎵 Track loaded and ready for play button:', trackId);
     },
 
     playTrack: async (trackId: string) => {

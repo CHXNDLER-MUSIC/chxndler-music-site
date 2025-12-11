@@ -289,10 +289,12 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
     // Fallback: parse from badge name for elemental streak badges
     if (badge.category === 'elemental-streak' && badge.badge_name) {
       const name = badge.badge_name.toLowerCase();
-      if (name.includes('heart')) return 'HEART';
-      if (name.includes('water')) return 'WATER';
-      if (name.includes('lightning')) return 'LIGHTNING';
-      if (name.includes('darkness')) return 'DARKNESS';
+      
+      // Check for specific element patterns
+      if (name.includes('heart') || name.includes('love') || name.includes('devotion') || name.includes('radiance') || name.includes('pulse') || name.includes('bloom')) return 'HEART';
+      if (name.includes('water') || name.includes('ocean') || name.includes('tide') || name.includes('flow') || name.includes('drift') || name.includes('surge') || name.includes('depth') || name.includes('ripple')) return 'WATER';
+      if (name.includes('lightning') || name.includes('spark') || name.includes('flash') || name.includes('charge') || name.includes('storm') || name.includes('ember') || name.includes('glow')) return 'LIGHTNING';
+      if (name.includes('darkness') || name.includes('shadow') || name.includes('night') || name.includes('dusk') || name.includes('midnight') || name.includes('veil') || name.includes('eclipse')) return 'DARKNESS';
     }
     
     // Legacy fallback: parse from description

@@ -64,6 +64,7 @@ export default function ChatPanel({ isOpen, onClose }) {
   
   // Real song collection data from BinderModal - exact match
   const songCollection = [
+    { name: 'CHXNDLER', element: 'ALL', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
     { name: 'MR. BRIGHTSIDE', element: 'DARKNESS', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
     { name: 'CHEERLEADER (ACOUSTIC)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
     { name: 'I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)', element: 'HEART', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
@@ -113,8 +114,13 @@ export default function ChatPanel({ isOpen, onClose }) {
     { name: 'HEART', element: 'HEART', rarity: 'Rare', is_released: true, min_tier: 'lover' },
     { name: 'LIGHTNING', element: 'LIGHTNING', rarity: 'Rare', is_released: true, min_tier: 'lover' },
     { name: 'DARKNESS', element: 'DARKNESS', rarity: 'Rare', is_released: true, min_tier: 'lover' },
-    { name: 'CHXNDLER', element: 'ALL', rarity: 'Common', is_released: true, min_tier: 'wanderer' },
   ];
+
+  // Helper to check if user owns a card
+  const isCardOwned = (cardName) => {
+    if (!profile?.cards) return false;
+    return profile.cards.some(cardRow => cardRow.cards.card_name === cardName);
+  };
 
   // Helper function to get element color and icon
   const getElementDisplay = (element) => {
@@ -1246,30 +1252,32 @@ export default function ChatPanel({ isOpen, onClose }) {
                               />
                             </button>
                             
-                            {/* Send Heart Coin Button */}
-                            <button 
-                              className="w-6 h-6 rounded flex items-center justify-center bg-black/20 border border-pink-400/30 hover:bg-pink-400/20 transition-colors hover:scale-110"
-                              title="Send Heart Coin"
-                              onClick={() => {
-                                try {
-                                  const audio = new Audio('/audio/click.mp3');
-                                  audio.volume = 0.3;
-                                  audio.play().catch(error => {
-                                    console.log('Click audio play failed:', error);
-                                  });
-                                } catch (error) {
-                                  console.log('Click audio creation failed:', error);
-                                }
-                                // Show send heart coin interface and hide others
-                                setShowSendHeartCoin(true);
-                                setShowUserBadges(false);
-                                setShowUserBinder(false);
-                                setBadgeStartIndex(0);
-                                setBinderStartIndex(0);
-                              }}
-                            >
-                              <span className="text-xs">💖</span>
-                            </button>
+                            {/* Send Heart Coin Button - Only show if not viewing your own profile */}
+                            {selectedUser.id !== user?.id && selectedUser.id !== 'anonymous' && user && profile?.name && (
+                              <button 
+                                className="w-6 h-6 rounded flex items-center justify-center bg-black/20 border border-pink-400/30 hover:bg-pink-400/20 transition-colors hover:scale-110"
+                                title="Send Heart Coin"
+                                onClick={() => {
+                                  try {
+                                    const audio = new Audio('/audio/click.mp3');
+                                    audio.volume = 0.3;
+                                    audio.play().catch(error => {
+                                      console.log('Click audio play failed:', error);
+                                    });
+                                  } catch (error) {
+                                    console.log('Click audio creation failed:', error);
+                                  }
+                                  // Show send heart coin interface and hide others
+                                  setShowSendHeartCoin(true);
+                                  setShowUserBadges(false);
+                                  setShowUserBinder(false);
+                                  setBadgeStartIndex(0);
+                                  setBinderStartIndex(0);
+                                }}
+                              >
+                                <span className="text-xs">💖</span>
+                              </button>
+                            )}
                           </div>
                         </div>
                         {/* Removed right-side arrow close button to declutter UI near streak */}
@@ -1294,7 +1302,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                             const isViewingAnonymous = selectedUser && selectedUser.id === 'anonymous';
                             
                             // Use actual unlocked badges from ProfileContext
-                            const badgesToShow = isViewingOwnProfile ? unlockedBadges : []; // Only show badges for own profile
+                            const badgesToShow = isViewingOwnProfile && unlockedBadges ? unlockedBadges : []; // Only show badges for own profile
                             
                             DEBUG && console.log('🔥 Badge display debug:', {
                               isViewingOwnProfile,
@@ -1302,7 +1310,8 @@ export default function ChatPanel({ isOpen, onClose }) {
                               unlockedBadges,
                               badgesToShow,
                               badgeStartIndex,
-                              totalBadges: badgesToShow?.length
+                              totalBadges: badgesToShow?.length,
+                              firstBadge: badgesToShow?.[0]
                             });
                             
                             return (
@@ -1353,8 +1362,8 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   </div>
                                 )}
                                 
-                                {/* Show badge navigation for own profile */}
-                                {isViewingOwnProfile && !badgesLoading && (
+                                {/* Show badge section for own profile with unlocked badges */}
+                                {isViewingOwnProfile && !badgesLoading && badgesToShow && badgesToShow.length > 0 && (
                                   <div className="flex items-center space-x-2">
                                     {/* Left Arrow */}
                                     <button 
@@ -1410,11 +1419,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   
                                   // Try to get icon from icon_url or use a default based on category
                                   const getDisplayIcon = (badge) => {
-                                    if (badge.icon_url) {
-                                      return badge.icon_url;
-                                    }
-                                    
-                                    // Fallback icons based on category
+                                    // Fallback emoji icons based on category
                                     switch(badge.category) {
                                       case 'soul': return '⭐';
                                       case 'collector': return '🏆';
@@ -1439,26 +1444,37 @@ export default function ChatPanel({ isOpen, onClose }) {
                                         }}
                                       >
                                         {badge.icon_url ? (
-                                          <img 
-                                            src={badge.icon_url} 
-                                            alt={badge.badge_name}
-                                            className="w-6 h-6"
-                                            style={{ filter: 'drop-shadow(0 0 4px rgba(0,0,0,0.8))' }}
-                                            onError={(e) => {
-                                              e.target.style.display = 'none';
-                                              e.target.nextSibling.style.display = 'block';
+                                          <>
+                                            <img 
+                                              src={badge.icon_url} 
+                                              alt={badge.badge_name || 'Badge'}
+                                              className="w-6 h-6"
+                                              style={{ filter: 'drop-shadow(0 0 4px rgba(0,0,0,0.8))' }}
+                                              onError={(e) => {
+                                                e.target.style.display = 'none';
+                                                e.target.nextSibling.style.display = 'block';
+                                              }}
+                                            />
+                                            <span 
+                                              className="text-lg" 
+                                              style={{ 
+                                                filter: 'drop-shadow(0 0 4px rgba(0,0,0,0.8))',
+                                                display: 'none'
+                                              }}
+                                            >
+                                              {displayIcon}
+                                            </span>
+                                          </>
+                                        ) : (
+                                          <span 
+                                            className="text-lg" 
+                                            style={{ 
+                                              filter: 'drop-shadow(0 0 4px rgba(0,0,0,0.8))'
                                             }}
-                                          />
-                                        ) : null}
-                                        <span 
-                                          className="text-lg" 
-                                          style={{ 
-                                            filter: 'drop-shadow(0 0 4px rgba(0,0,0,0.8))',
-                                            display: badge.icon_url ? 'none' : 'block'
-                                          }}
-                                        >
-                                          {displayIcon}
-                                        </span>
+                                          >
+                                            {displayIcon}
+                                          </span>
+                                        )}
                                       </div>
                                     </div>
                                   );
@@ -1513,6 +1529,28 @@ export default function ChatPanel({ isOpen, onClose }) {
                                     </button>
                                   </div>
                                 )}
+                                
+                                {/* Show empty badge slots for own profile when no badges are unlocked */}
+                                {isViewingOwnProfile && !badgesLoading && (!badgesToShow || badgesToShow.length === 0) && (
+                                  <div className="text-center py-4">
+                                    <div className="text-sm text-white/60 mb-2">No badges unlocked yet</div>
+                                    <div className="flex justify-center space-x-2">
+                                      {Array.from({ length: 5 }, (_, index) => (
+                                        <div 
+                                          key={`empty-badge-${index}`}
+                                          className="w-12 h-12 rounded-full flex items-center justify-center border-2 border-dashed"
+                                          style={{
+                                            background: 'rgba(128, 128, 128, 0.1)',
+                                            border: '2px dashed rgba(128, 128, 128, 0.3)',
+                                            boxShadow: 'inset 0 0 8px rgba(0, 0, 0, 0.2)'
+                                          }}
+                                        >
+                                          <span className="text-xs opacity-30">◯</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
                               </>
                             );
                           })()}
@@ -1559,26 +1597,18 @@ export default function ChatPanel({ isOpen, onClose }) {
 
                             {/* Cards Grid */}
                             <div className="flex-1 grid grid-cols-5 gap-3">
-                              {/* Display user's actual cards */}
+                              {/* Display user's owned cards from songCollection */}
                               {Array.from({ length: 5 }, (_, index) => {
-                                // Get user's actual cards if available
-                                const userCards = selectedUser.id !== 'anonymous' && profile?.cards ? profile.cards : [];
+                                // Get owned cards by filtering songCollection
+                                const ownedCards = songCollection.filter(song => isCardOwned(song.name));
+                                
+                                // Always include CHXNDLER as first card for everyone
+                                const chxndlerCard = songCollection.find(song => song.name === 'CHXNDLER');
+                                const cardsToShow = [chxndlerCard, ...ownedCards.filter(card => card.name !== 'CHXNDLER')];
+                                
                                 const cardIndex = binderStartIndex + index;
-                                
-                                // Everyone gets CHXNDLER card in the first slot (cardIndex 0)
-                                let cardSong = null;
-                                let hasCard = false;
-                                let userCard = userCards[cardIndex];
-                                
-                                if (cardIndex === 0) {
-                                  // Always show CHXNDLER card in first slot for everyone
-                                  cardSong = songCollection.find(song => song.name === 'CHXNDLER');
-                                  hasCard = true;
-                                } else if (userCard) {
-                                  // For other slots, show user's actual cards
-                                  cardSong = songCollection.find(song => song.name === userCard.cards?.card_name);
-                                  hasCard = !!userCard && !!cardSong;
-                                }
+                                const cardSong = cardsToShow[cardIndex];
+                                const hasCard = !!cardSong;
                                 
                                 const elementDisplay = cardSong ? getElementDisplay(cardSong.element) : null;
                                 
@@ -1679,9 +1709,19 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 } catch (error) {
                                   console.log('Click audio creation failed:', error);
                                 }
-                                setBinderStartIndex(Math.min(Math.max(0, songCollection.length - 5), binderStartIndex + 5));
+                                // Get owned cards count for pagination
+                                const ownedCards = songCollection.filter(song => isCardOwned(song.name));
+                                const chxndlerCard = songCollection.find(song => song.name === 'CHXNDLER');
+                                const cardsToShow = [chxndlerCard, ...ownedCards.filter(card => card.name !== 'CHXNDLER')];
+                                const totalCards = cardsToShow.length;
+                                setBinderStartIndex(Math.min(Math.max(0, totalCards - 5), binderStartIndex + 5));
                               }}
-                              disabled={binderStartIndex + 5 >= songCollection.length}
+                              disabled={(() => {
+                                const ownedCards = songCollection.filter(song => isCardOwned(song.name));
+                                const chxndlerCard = songCollection.find(song => song.name === 'CHXNDLER');
+                                const cardsToShow = [chxndlerCard, ...ownedCards.filter(card => card.name !== 'CHXNDLER')];
+                                return binderStartIndex + 5 >= cardsToShow.length;
+                              })()}
                               className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
                               style={{
                                 textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
