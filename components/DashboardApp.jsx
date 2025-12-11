@@ -1691,9 +1691,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     return () => window.removeEventListener('resize', computeBeamBaseBgPos);
   }, []);
 
-  // Position the blue display slightly lower than the light beam top  
-  // Raise the bottom edge of the blue display by 70px total (relative to original)
-  // Keep top fixed by reducing height by the same 70px
+  // Position the blue display at its original location but extend upward to profile bar
+  // Keep original bottom positioning
   const hudBottom = useMemo(() => 'calc(var(--display-touch-top) + 60px)', []);
 
   // Provide CSS variables globally (avoids any runtime style factory edge cases)
@@ -2499,11 +2498,11 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             className="slot-container"
             style={{
               position: 'fixed',
-              bottom: hudBottom,
+              top: '64px', // Start exactly at bottom of profile bar
+              bottom: 'calc(var(--display-touch-top) + 60px)', // Keep original bottom position
               left: '50%',
               transform: 'translateX(-50%)',
               width: 'calc(var(--display-width) + 32px)',
-              height: '1px',
               paddingTop: '0px',
               zIndex: 93,
               ['--hud-y']: `${hudYOffset}px`,
@@ -2541,9 +2540,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                     transition: 'opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)',
                     willChange: 'opacity',
                     transform: 'translateZ(0)', // Force hardware acceleration on Safari
-                    // Lower the top by 30px more (keep bottom fixed)
-                    height: 'calc(25vh - 100px)',
-                    maxHeight: '100px'
+                    // Height is handled by the container above
+                    height: '100%'
                   };
                 })()}
               >

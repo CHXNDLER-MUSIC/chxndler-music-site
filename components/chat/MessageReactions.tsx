@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageReactionCount, ReactionType, REACTION_CONFIG } from '@/lib/reactions';
 import { useState } from 'react';
+import Image from 'next/image';
 
 interface MessageReactionsProps {
   reactions: MessageReactionCount;
@@ -58,7 +59,19 @@ export default function MessageReactions({ reactions, messageId, className = "" 
               }}
               transition={{ type: 'spring', stiffness: 500, damping: 25 }}
             >
-              <span className="text-sm">{config.icon}</span>
+              <div className="w-7 h-7 flex items-center justify-center">
+                <Image
+                  src={config.image}
+                  alt={config.description}
+                  width={28}
+                  height={28}
+                  className="object-contain"
+                  draggable={false}
+                  style={{ 
+                    filter: `drop-shadow(0 0 10px ${config.color}60)`
+                  }}
+                />
+              </div>
               <span 
                 className="text-xs font-medium"
                 style={{ color: config.color }}

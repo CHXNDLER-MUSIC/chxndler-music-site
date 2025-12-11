@@ -973,33 +973,6 @@ export default function ChatPanel({ isOpen, onClose }) {
                     HEART SIGNAL LIVE
                   </h2>
                   
-                  {/* Room Reaction Button */}
-                  <motion.button
-                    onClick={() => setShowRoomReactionTray(!showRoomReactionTray)}
-                    className="ml-3 px-2 py-1 rounded-lg text-cyan-400 hover:text-cyan-300 transition-colors flex-shrink-0 relative"
-                    style={{
-                      background: 'rgba(0, 255, 255, 0.1)',
-                      border: '1px solid rgba(0, 255, 255, 0.3)'
-                    }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    title="React to the room"
-                  >
-                    💫
-                    {showRoomReactionTray && (
-                      <div className="absolute top-full left-0 mt-2 z-20">
-                        <ReactionTray
-                          onReact={(reaction) => {
-                            handleReaction(reaction);
-                            setShowRoomReactionTray(false);
-                          }}
-                          userId={user?.id || 'anonymous'}
-                          className="shadow-lg"
-                        />
-                      </div>
-                    )}
-                  </motion.button>
-                  
                   {/* Extended glow line */}
                   <div 
                     className="flex-1 h-px ml-4"
@@ -1015,13 +988,20 @@ export default function ChatPanel({ isOpen, onClose }) {
                   onMouseEnter={() => {
                     try { sfx.play('hover', 0.3); } catch {}
                   }}
-                  className="text-yellow-400 hover:text-yellow-300 transition-colors p-1 flex-shrink-0"
+                  className="text-yellow-400 hover:text-yellow-300 transition-all duration-200 p-2 flex-shrink-0 hover:scale-110"
                   style={{
-                    background: 'rgba(242, 239, 29, 0.1)',
-                    borderRadius: '4px',
-                    border: '1px solid rgba(242, 239, 29, 0.3)',
+                    background: 'rgba(242, 239, 29, 0.2)',
+                    borderRadius: '8px',
+                    border: '2px solid rgba(242, 239, 29, 0.6)',
                     color: '#F2EF1D',
-                    textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
+                    textShadow: '0 0 12px rgba(242, 239, 29, 0.8)',
+                    boxShadow: '0 0 16px rgba(242, 239, 29, 0.4)',
+                    fontSize: '18px',
+                    minWidth: '40px',
+                    minHeight: '40px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}
                 >
                   ◀
@@ -1263,6 +1243,10 @@ export default function ChatPanel({ isOpen, onClose }) {
                       <MessageInput 
                         onSendMessage={handleSendMessage}
                         onTyping={handleTyping}
+                        onRoomReaction={handleReaction}
+                        showRoomReactionTray={showRoomReactionTray}
+                        setShowRoomReactionTray={setShowRoomReactionTray}
+                        user={user}
                       />
                     )}
                   </div>
@@ -1280,12 +1264,12 @@ export default function ChatPanel({ isOpen, onClose }) {
                             <div className="flex items-center space-x-2 flex-1 min-w-0">
                               {/* User Icon */}
                               {selectedUser.id === 'anonymous' ? (
-                                <img src="/elements/alien.webp" alt="Alien" className="w-10 h-10 flex-shrink-0" />
+                                <img src="/elements/alien.webp" alt="Alien" className="w-14 h-14 flex-shrink-0" />
                               ) : selectedUser?.profile_image_url ? (
                                 <img 
                                   src={selectedUser.profile_image_url} 
                                   alt="Profile" 
-                                  className="w-10 h-10 rounded-full flex-shrink-0 object-cover"
+                                  className="w-14 h-14 rounded-full flex-shrink-0 object-cover"
                                   style={{
                                     border: '1px solid rgba(242, 239, 29, 0.5)',
                                     boxShadow: '0 0 8px rgba(242, 239, 29, 0.3)'
@@ -1309,7 +1293,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 <img 
                                   src={selectedUser?.element ? `/elements/${String(selectedUser.element).toLowerCase()}.webp` : '/elements/chxndler.webp'}
                                   alt="Element"
-                                  className="w-10 h-10 flex-shrink-0 object-cover rounded-full"
+                                  className="w-14 h-14 flex-shrink-0 object-cover rounded-full"
                                   style={{
                                     border: '1px solid rgba(242, 239, 29, 0.5)',
                                     boxShadow: '0 0 8px rgba(242, 239, 29, 0.3)'
@@ -1323,7 +1307,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   style={{
                                     color: '#F2EF1D',
                                     textShadow: '0 0 8px #F2EF1D',
-                                    fontSize: '22px'
+                                    fontSize: '28px'
                                   }}
                                 >
                                   {selectedUser.id === 'anonymous' ? alienName : (selectedUser.name || getDisplayName())}
@@ -1402,7 +1386,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 <img 
                                   src="/elements/binder.webp" 
                                   alt="Cards" 
-                                  className="w-8 h-8"
+                                  className="w-12 h-12"
                                 />
                               </button>
                               
@@ -1437,7 +1421,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 <img 
                                   src="/elements/badges.webp" 
                                   alt="Badges" 
-                                  className="w-8 h-8"
+                                  className="w-12 h-12"
                                 />
                               </button>
                               
@@ -1468,7 +1452,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   <img 
                                     src="/elements/heart-coin.webp" 
                                     alt="Send Heart Coin" 
-                                    className="w-8 h-8"
+                                    className="w-12 h-12"
                                   />
                                 </button>
                               )}
@@ -1479,13 +1463,13 @@ export default function ChatPanel({ isOpen, onClose }) {
                               <div className="flex items-center space-x-2">
 
                                 <div className="flex items-center space-x-1 px-2 py-0.5 rounded bg-black/30">
-                                  <span className="text-xs text-white/80 font-medium">TOTAL</span>
+                                  <span className="text-sm text-white/80 font-medium">TOTAL</span>
                                   <img 
                                     src="/elements/heart-coin.webp" 
                                     alt="Total Heart Coins" 
-                                    className="w-5 h-5"
+                                    className="w-7 h-7"
                                   />
-                                  <span className="text-base text-pink-400 font-bold">
+                                  <span className="text-lg text-pink-400 font-bold">
                                     {selectedUser.id === 'anonymous' 
                                       ? 0 
                                       : (user && profile?.heartcoin_balance !== undefined) 
@@ -1525,8 +1509,8 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 </div>
                               </div>
                               {/* Days Streak */}
-                              <div className="flex items-center space-x-1 px-2 py-0 text-xs text-white/70">
-                                <span className="text-yellow-400 font-bold text-sm">
+                              <div className="flex items-center space-x-2 px-3 py-1 text-sm text-white/70">
+                                <span className="text-yellow-400 font-bold text-lg">
                                   {selectedUser.id === 'anonymous' 
                                     ? 0 
                                     : (user && profile?.daily_streak !== undefined) 
@@ -1534,7 +1518,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                       : 0
                                   }
                                 </span>
-                                <span>Days Streak</span>
+                                <span className="text-sm">Days Streak</span>
                               </div>
                             </div>
                           </div>
@@ -2051,14 +2035,16 @@ export default function ChatPanel({ isOpen, onClose }) {
                           </h4>
                           <div className="flex items-center justify-between p-4 bg-black/20 rounded-lg border border-pink-400/30">
                             {/* YOU HAVE section on the left */}
-                            <div className="flex items-center space-x-2">
+                            <div className="flex flex-col items-start space-y-1">
                               <span className="text-sm text-pink-400 font-bold">YOU HAVE</span>
-                              <img 
-                                src="/elements/heart-coin.webp" 
-                                alt="Heart Coins" 
-                                className="w-6 h-6"
-                              />
-                              <span className="text-lg text-pink-400 font-bold">{profile?.heartcoin_balance || 0}</span>
+                              <div className="flex items-center space-x-2">
+                                <img 
+                                  src="/elements/heart-coin.webp" 
+                                  alt="Heart Coins" 
+                                  className="w-6 h-6"
+                                />
+                                <span className="text-lg text-pink-400 font-bold">{profile?.heartcoin_balance || 0}</span>
+                              </div>
                             </div>
                             
                             {/* SEND button on the right */}

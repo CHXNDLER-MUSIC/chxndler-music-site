@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { ReactionType, REACTION_CONFIG, canUseSoulStar, getSoulStarCooldownRemaining } from '@/lib/reactions';
 import { useState } from 'react';
+import Image from 'next/image';
 
 interface ReactionTrayProps {
   onReact: (reaction: ReactionType) => void;
@@ -40,7 +41,11 @@ export default function ReactionTray({ onReact, userId, disabled = false, classN
 
   return (
     <motion.div
-      className={`flex items-center gap-2 p-2 rounded-lg bg-black/80 backdrop-blur-md border border-cyan-400/30 ${className}`}
+      className={`flex items-center gap-2 p-2 rounded-lg bg-black/80 backdrop-blur-md border-2 ${className}`}
+      style={{
+        borderColor: '#F2EF1D',
+        boxShadow: '0 0 20px rgba(242, 239, 29, 0.6), 0 0 40px rgba(242, 239, 29, 0.3)'
+      }}
       initial={{ opacity: 0, scale: 0.8, y: 10 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.8, y: 10 }}
@@ -55,7 +60,17 @@ export default function ReactionTray({ onReact, userId, disabled = false, classN
           <motion.button
             key={reaction}
             onClick={() => handleReactionClick(reaction)}
-            onMouseEnter={() => setHoveredReaction(reaction)}
+            onMouseEnter={() => {
+              setHoveredReaction(reaction);
+              // Play hover sound effect
+              if (!disabled && (reaction !== 'soul_star' || canUseSoul)) {
+                try {
+                  const audio = new Audio('/audio/hover.mp3');
+                  audio.volume = 0.3;
+                  audio.play().catch(() => {});
+                } catch {}
+              }
+            }}
             onMouseLeave={() => setHoveredReaction(null)}
             disabled={disabled || (isSoulStar && !canUseSoul)}
             className={`
@@ -68,19 +83,26 @@ export default function ReactionTray({ onReact, userId, disabled = false, classN
               }
               ${isSoulStar ? 'ring-1 ring-yellow-400/50' : ''}
             `}
-            whileHover={!disabled && canUseSoul ? { scale: 1.1 } : {}}
+            whileHover={!disabled && canUseSoul ? { scale: 1.15 } : {}}
             whileTap={!disabled && canUseSoul ? { scale: 0.95 } : {}}
           >
-            <span 
-              className="text-lg"
+            <div
+              className="w-32 h-32 relative flex items-center justify-center"
               style={{ 
                 filter: hoveredReaction === reaction 
-                  ? `drop-shadow(0 0 8px ${config.color})` 
-                  : 'none'
+                  ? `drop-shadow(0 0 40px ${config.color}) brightness(1.8)` 
+                  : `drop-shadow(0 0 24px ${config.color}60)`
               }}
             >
-              {config.icon}
-            </span>
+              <Image
+                src={config.image}
+                alt={config.description}
+                width={128}
+                height={128}
+                className="object-contain"
+                draggable={false}
+              />
+            </div>
             
             {/* Glow effect for hovered reaction */}
             {hoveredReaction === reaction && (

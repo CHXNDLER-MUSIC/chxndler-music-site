@@ -90,7 +90,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
           className="fixed inset-0 z-[2147483646] flex items-center justify-center p-4"
           style={{ 
             alignItems: 'center', 
-            transform: 'translateY(-130px)',
+            transform: 'translateY(-180px)',
             cursor: 'none'
           }}
         >

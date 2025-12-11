@@ -671,9 +671,9 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
         style={{
           position: "absolute",
           bottom: `${buttonsBottomPercent}%`, // Same vertical level as blue button
-          // Slightly adjust on small screens so it aligns horizontally with blue/pink
-          left: `calc(50% - ${buttonOffsetPx}px - ${isMobile ? 6 : 10}px)`,
-          transform: `translate(-50%, ${isMobile ? 12 : 8}px)`,
+          // Position to the left of center
+          left: `calc(50% - ${buttonOffsetPx}px - 10px)`,
+          transform: 'translate(-50%, 8px)',
           zIndex: 92,
           pointerEvents: showUI && !isDimmingOverlayActive && isUIUnlocked ? 'auto' : 'none',
           opacity: showUI ? 1 : 0,
@@ -683,8 +683,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
       >
         {(() => {
           return (
-            <div style={{ pointerEvents: showUI && !isDimmingOverlayActive && isUIUnlocked ? 'auto' : 'none' }}>
-              <HoloHubMenu
+            <HoloHubMenu
                 items={[
                 LINKS.instagram ? { id: 'ig', label: 'Instagram', href: LINKS.instagram, icon: '/elements/instagram.webp', color: '#E1306C' } : null,
                 LINKS.tiktok ? { id: 'tt', label: 'TikTok', href: LINKS.tiktok, icon: '/elements/tiktok.webp', color: '#69C9D0' } : null,
@@ -760,7 +759,6 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
                   }
                 }}
               />
-            </div>
           );
         })()}
       </div>
@@ -799,9 +797,9 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
             ref={joinFormRef}
             style={{
               position: "fixed",
-              // Bottom of pink display should touch the light beam top
-              // Use global CSS var so we can tune per-device
-              bottom: 'calc(var(--display-touch-top) - var(--pink-bottom-nudge) + 90px)',
+              // Position from top instead to ensure it touches profile bar
+              top: '64px',
+              bottom: 'calc(var(--buttons-bottom, 36%) + 60px)',
               // Center horizontally in the viewport (always centered)
               left: '50%',
               transform: 'translateX(-50%)',
@@ -816,8 +814,8 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
             <div
               style={{
                 // Fixed width so the pink display stays the same size across viewports
-                width: 'calc(var(--pink-display-width, 320px) + 120px)',
-                maxHeight: '60vh',
+                width: 'calc(var(--pink-display-width, 320px) + 80px)',
+                height: '100%',
                 borderRadius: 'var(--display-border-radius)',
                 padding: '0px 12px 12px 12px',
                 color: '#fff',

@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { RoomReaction, REACTION_CONFIG } from '@/lib/reactions';
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 interface FloatingRoomReactionsProps {
   reactions: RoomReaction[];
@@ -59,15 +60,21 @@ function FloatingReaction({ reaction, index, onComplete }: FloatingReactionProps
     >
       <div className="relative">
         {/* Main reaction icon */}
-        <span 
-          className="text-2xl block"
+        <div 
+          className="w-20 h-20 flex items-center justify-center"
           style={{ 
-            filter: `drop-shadow(0 0 12px ${config.color})`,
-            textShadow: `0 0 20px ${config.color}`
+            filter: `drop-shadow(0 0 24px ${config.color}) brightness(1.5)`
           }}
         >
-          {config.icon}
-        </span>
+          <Image
+            src={config.image}
+            alt={config.description}
+            width={80}
+            height={80}
+            className="object-contain"
+            draggable={false}
+          />
+        </div>
         
         {/* Special effects for different reactions */}
         {reaction.reaction === 'heart_pulse' && (

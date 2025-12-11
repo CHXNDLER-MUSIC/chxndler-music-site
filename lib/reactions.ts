@@ -26,36 +26,42 @@ export interface MessageReactions {
 export const REACTION_CONFIG = {
   heart_pulse: {
     icon: '💖',
+    image: '/elements/heart.webp',
     color: '#FC54AF',
     duration: 1200,
     description: 'Heart Pulse'
   },
   water_ripple: {
     icon: '🌊',
+    image: '/elements/water.webp',
     color: '#38B6FF',
     duration: 1400,
     description: 'Water Ripple'
   },
   lightning_spark: {
     icon: '⚡',
+    image: '/elements/lightning.webp',
     color: '#F2EF1D',
     duration: 500,
     description: 'Lightning Spark'
   },
   shadow_glow: {
     icon: '🌑',
+    image: '/elements/darkness.webp',
     color: '#8B5A9F',
     duration: 2000,
     description: 'Shadow Glow'
   },
   alien_wave: {
     icon: '👽',
+    image: '/elements/alien.webp',
     color: '#00FF00',
     duration: 900,
     description: 'Alien Wave'
   },
   soul_star: {
     icon: '⭐',
+    image: '/elements/soul-star.webp',
     color: '#FFD700',
     duration: 1800,
     description: 'Soul Star',

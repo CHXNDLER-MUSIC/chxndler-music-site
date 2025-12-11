@@ -3,30 +3,18 @@
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { sfx } from '@/lib/sfx';
+import ReactionTray from './ReactionTray';
 
 /**
  * MessageInput Component
  * Input field for sending chat messages with emoji picker and formatting
  */
-export default function MessageInput({ onSendMessage, disabled, placeholder = "Type a message...", onTyping }) {
+export default function MessageInput({ onSendMessage, disabled, placeholder = "Type a message...", onTyping, onRoomReaction, showRoomReactionTray, setShowRoomReactionTray, user }) {
   const [message, setMessage] = useState('');
   const [isFocused, setIsFocused] = useState(false);
-  const [showEmojis, setShowEmojis] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const inputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
-
-  // Quick emoji options themed to Heartverse elements
-  const quickEmojis = [
-    '💖', '❤️', '💕', '💗', // Heart
-    '🌊', '💧', '🏄‍♀️', '🏄', // Water
-    '⚡', '🌩️', '⛈️', '🌪️', // Lightning  
-    '🌑', '🌚', '🖤', '⭐', // Darkness
-    '🎵', '🎶', '🎤', '🎧', // Music
-    '✨', '💫', '🌟', '🔥', // General
-    '👋', '😊', '😍', '🥰', // Reactions
-    '🙌', '👏', '💯', '🚀'  // Celebration
-  ];
 
   // Handle typing indicators
   const handleTyping = () => {
@@ -80,12 +68,6 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
     }
   };
 
-  const insertEmoji = (emoji) => {
-    const newMessage = message + emoji;
-    setMessage(newMessage);
-    setShowEmojis(false);
-    inputRef.current?.focus();
-  };
 
   const insertFormatting = (format) => {
     const input = inputRef.current;
@@ -148,12 +130,12 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
                 minHeight: '44px',
                 maxHeight: '44px',
                 background: 'rgba(0, 0, 0, 0.6)',
-                border: `2px solid ${isFocused ? '#F2EF1D' : 'rgba(242, 239, 29, 0.3)'}`,
+                border: `2px solid #F2EF1D`,
                 color: '#F2EF1D',
                 textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
                 boxShadow: isFocused 
-                  ? '0 0 20px rgba(242, 239, 29, 0.4), inset 0 0 20px rgba(242, 239, 29, 0.1)' 
-                  : '0 0 10px rgba(242, 239, 29, 0.2)',
+                  ? '0 0 25px rgba(242, 239, 29, 0.6), 0 0 50px rgba(242, 239, 29, 0.3), inset 0 0 20px rgba(242, 239, 29, 0.1)' 
+                  : '0 0 15px rgba(242, 239, 29, 0.4), 0 0 30px rgba(242, 239, 29, 0.2)',
                 overflow: 'hidden',
                 resize: 'none',
                 whiteSpace: 'nowrap',
@@ -177,6 +159,47 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
               </div>
             )}
           </div>
+
+          {/* Room Reaction Button */}
+          <motion.button
+            type="button"
+            onClick={() => {
+              // Play sound effect
+              try {
+                const audio = new Audio('/audio/change-channel.mp3');
+                audio.volume = 0.5;
+                audio.play().catch(() => {});
+              } catch {}
+              
+              setShowRoomReactionTray(!showRoomReactionTray);
+            }}
+            disabled={disabled}
+            onMouseEnter={() => {
+              if (!disabled) {
+                try { sfx.play('hover', 0.3); } catch {}
+              }
+            }}
+            className="px-3 py-2 rounded-lg text-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex-shrink-0 relative"
+            style={{
+              height: '44px',
+              minHeight: '44px',
+              width: '44px',
+              background: showRoomReactionTray 
+                ? 'rgba(242, 239, 29, 0.2)'
+                : 'rgba(242, 239, 29, 0.1)',
+              color: '#F2EF1D',
+              textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
+              border: '2px solid #F2EF1D',
+              boxShadow: showRoomReactionTray
+                ? '0 0 20px rgba(242, 239, 29, 0.6), 0 0 40px rgba(242, 239, 29, 0.3)'
+                : '0 0 12px rgba(242, 239, 29, 0.4)'
+            }}
+            title="React to the room"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            💫
+          </motion.button>
 
           {/* Send Button */}
           <button
@@ -203,12 +226,26 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "T
                 : '2px solid #F2EF1D',
               boxShadow: disabled || !message.trim()
                 ? 'none'
-                : '0 0 20px rgba(242, 239, 29, 0.4), inset 0 0 10px rgba(242, 239, 29, 0.1)'
+                : '0 0 25px rgba(242, 239, 29, 0.6), 0 0 50px rgba(242, 239, 29, 0.3), inset 0 0 15px rgba(242, 239, 29, 0.2)'
             }}
           >
             {disabled ? 'Chat Disabled' : 'Send'}
           </button>
         </div>
+
+        {/* Room Reaction Tray */}
+        {showRoomReactionTray && (
+          <div className="absolute bottom-full left-0 right-0 mb-2 z-20 flex justify-center">
+            <ReactionTray
+              onReact={(reaction) => {
+                onRoomReaction(reaction);
+                setShowRoomReactionTray(false);
+              }}
+              userId={user?.id || 'anonymous'}
+              className="shadow-lg w-full max-w-md"
+            />
+          </div>
+        )}
 
       </form>
     </div>
