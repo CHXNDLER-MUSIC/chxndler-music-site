@@ -1,26 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
+import { createClient } from '@supabase/supabase-js';
 
 export async function GET(request: NextRequest) {
   try {
-    // Get user from session
-    const cookieStore = await cookies();
-    const token = cookieStore.get('sb-access-token')?.value || '';
-    
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const supabase = createSupabaseServerClientWithJwt(token);
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
+    // Use service role key for public access to merch items
+    // Merch items should be publicly viewable (purchasing requires auth)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     // Get search params
     const { searchParams } = new URL(request.url);
@@ -32,10 +20,10 @@ export async function GET(request: NextRequest) {
       .select('*')
       .eq('is_active', true);
 
-    // Filter by category if specified
-    if (category && (category === 'physical' || category === 'digital')) {
-      query = query.eq('category', category);
-    }
+    // Filter by category if specified (temporarily disabled until schema is updated)
+    // if (category && (category === 'physical' || category === 'digital')) {
+    //   query = query.eq('category', category);
+    // }
 
     // Order by name for consistent display
     query = query.order('name');
@@ -50,7 +38,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log(`[MERCH_ITEMS] Retrieved ${items?.length || 0} items for user ${user.id}`);
+    console.log(`[MERCH_ITEMS] Retrieved ${items?.length || 0} active merch items`);
 
     return NextResponse.json({
       success: true,
