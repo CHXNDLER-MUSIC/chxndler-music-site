@@ -305,6 +305,13 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   // Category view
   if (selectedCategory) {
     const categoryBadges = getBadgesForCategory(selectedCategory);
+    // Sort badges by requirement count (ascending). Fallback to name for ties.
+    const sortedBadges = [...categoryBadges].sort((a, b) => {
+      const ac = typeof a.requirement_count === 'number' ? a.requirement_count : Number.MAX_SAFE_INTEGER;
+      const bc = typeof b.requirement_count === 'number' ? b.requirement_count : Number.MAX_SAFE_INTEGER;
+      if (ac !== bc) return ac - bc;
+      return (a.badge_name || '').localeCompare(b.badge_name || '');
+    });
     const categoryInfo = badgeCategories.find(cat => cat.id === selectedCategory);
     
     const categoryContent = (
@@ -321,7 +328,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         
         {/* Badge grid matching binder layout */}
         <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3 sm:gap-4 max-h-80 sm:max-h-96 overflow-y-auto px-2 pt-2 pb-0">
-          {categoryBadges.length > 0 ? categoryBadges.map((badge, index) => (
+          {sortedBadges.length > 0 ? sortedBadges.map((badge, index) => (
             <div key={index} className="flex flex-col items-center space-y-2">
               <div className="relative">
                 <button

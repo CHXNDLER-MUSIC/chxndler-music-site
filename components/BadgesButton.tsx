@@ -667,8 +667,15 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                           <div className="space-y-3">
                             {(() => {
                               const badges = filterBadgesByElement(category.badges);
+                              // Sort by requirement count/target ascending, then by name
+                              const sorted = [...badges].sort((a, b) => {
+                                const at = typeof a.total === 'number' ? a.total : (a as any).requirement_count ?? Number.MAX_SAFE_INTEGER;
+                                const bt = typeof b.total === 'number' ? b.total : (b as any).requirement_count ?? Number.MAX_SAFE_INTEGER;
+                                if (at !== bt) return at - bt;
+                                return (a.badge_name || '').localeCompare(b.badge_name || '');
+                              });
                               const pageOffset = currentPage * 30;
-                              const pageBadges = badges.slice(pageOffset, pageOffset + 30);
+                              const pageBadges = sorted.slice(pageOffset, pageOffset + 30);
                               
                               if (pageBadges.length === 0) {
                                 return (

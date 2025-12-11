@@ -461,8 +461,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
 
 
-      {activeTab === 'public' ? (
-        /* Public Journal Feed (Full Log) */
+      {showHistory ? (
+        /* Full Log View - Public or Private based on activeTab */
         <div style={{ 
           height: '400px', 
           overflowY: 'auto', 
@@ -535,36 +535,46 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             />
           </div>
 
-          {/* Tabs Switcher - below yellow line, Public left, Private right */}
-          <div className="flex items-center justify-center gap-2 p-2 border-b border-white/10">
-            <button
-              onClick={() => setActiveTab('public')}
-              className="px-3 py-1 rounded-full text-xs font-semibold uppercase transition-all"
-              style={{
-                background: activeTab === 'public' ? `${elementTheme.color}30` : 'rgba(0,0,0,0.4)',
-                color: activeTab === 'public' ? elementTheme.color : '#FFFFFFCC',
-                border: `1px solid ${elementTheme.color}60`,
-                boxShadow: activeTab === 'public' ? `0 0 12px ${elementTheme.color}60` : 'none'
-              }}
-            >
-              Public
-            </button>
-            <button
-              onClick={() => setActiveTab('private')}
-              className="px-3 py-1 rounded-full text-xs font-semibold uppercase transition-all"
-              style={{
-                background: activeTab === 'private' ? `${elementTheme.color}30` : 'rgba(0,0,0,0.4)',
-                color: activeTab === 'private' ? elementTheme.color : '#FFFFFFCC',
-                border: `1px solid ${elementTheme.color}60`,
-                boxShadow: activeTab === 'private' ? `0 0 12px ${elementTheme.color}60` : 'none'
-              }}
-            >
-              Private
-            </button>
-          </div>
+          {/* Tabs Switcher - below yellow line, Public left, Private right - only show when in full log mode */}
+          {showHistory && (
+            <div className="flex items-center justify-center gap-2 p-2 border-b border-white/10">
+              <button
+                onClick={() => setActiveTab('public')}
+                className="px-3 py-1 rounded-full text-xs font-semibold uppercase transition-all"
+                style={{
+                  background: activeTab === 'public' ? `${elementTheme.color}30` : 'rgba(0,0,0,0.4)',
+                  color: activeTab === 'public' ? elementTheme.color : '#FFFFFFCC',
+                  border: `1px solid ${elementTheme.color}60`,
+                  boxShadow: activeTab === 'public' ? `0 0 12px ${elementTheme.color}60` : 'none'
+                }}
+              >
+                Public
+              </button>
+              <button
+                onClick={() => setActiveTab('private')}
+                className="px-3 py-1 rounded-full text-xs font-semibold uppercase transition-all"
+                style={{
+                  background: activeTab === 'private' ? `${elementTheme.color}30` : 'rgba(0,0,0,0.4)',
+                  color: activeTab === 'private' ? elementTheme.color : '#FFFFFFCC',
+                  border: `1px solid ${elementTheme.color}60`,
+                  boxShadow: activeTab === 'private' ? `0 0 12px ${elementTheme.color}60` : 'none'
+                }}
+              >
+                Private
+              </button>
+            </div>
+          )}
 
           <div style={{ flex: 1, overflowY: 'auto' }}>
-            <PublicJournalFeed />
+            {activeTab === 'public' ? (
+              <PublicJournalFeed />
+            ) : (
+              // For now, show a placeholder for private entries. Later this could be SoulStarFullLog component
+              <div className="text-center p-8 text-white">
+                <div className="text-lg mb-2">🔒 Private Entries</div>
+                <div className="text-sm opacity-80">Your private journal entries will appear here</div>
+              </div>
+            )}
           </div>
         </div>
       ) : (
@@ -656,33 +666,35 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               />
             </div>
 
-            {/* Tabs Switcher - below yellow line, Public left, Private right */}
-            <div className="flex items-center justify-center gap-2 p-2 border-b border-white/10">
-              <button
-                onClick={() => setActiveTab('public')}
-                className="px-3 py-1 rounded-full text-xs font-semibold uppercase transition-all"
-                style={{
-                  background: activeTab === 'public' ? `${elementTheme.color}30` : 'rgba(0,0,0,0.4)',
-                  color: activeTab === 'public' ? elementTheme.color : '#FFFFFFCC',
-                  border: `1px solid ${elementTheme.color}60`,
-                  boxShadow: activeTab === 'public' ? `0 0 12px ${elementTheme.color}60` : 'none'
-                }}
-              >
-                Public
-              </button>
-              <button
-                onClick={() => setActiveTab('private')}
-                className="px-3 py-1 rounded-full text-xs font-semibold uppercase transition-all"
-                style={{
-                  background: activeTab === 'private' ? `${elementTheme.color}30` : 'rgba(0,0,0,0.4)',
-                  color: activeTab === 'private' ? elementTheme.color : '#FFFFFFCC',
-                  border: `1px solid ${elementTheme.color}60`,
-                  boxShadow: activeTab === 'private' ? `0 0 12px ${elementTheme.color}60` : 'none'
-                }}
-              >
-                Private
-              </button>
-            </div>
+            {/* Tabs Switcher - below yellow line, Public left, Private right - only show when in full log mode */}
+            {showHistory && (
+              <div className="flex items-center justify-center gap-2 p-2 border-b border-white/10">
+                <button
+                  onClick={() => setActiveTab('public')}
+                  className="px-3 py-1 rounded-full text-xs font-semibold uppercase transition-all"
+                  style={{
+                    background: activeTab === 'public' ? `${elementTheme.color}30` : 'rgba(0,0,0,0.4)',
+                    color: activeTab === 'public' ? elementTheme.color : '#FFFFFFCC',
+                    border: `1px solid ${elementTheme.color}60`,
+                    boxShadow: activeTab === 'public' ? `0 0 12px ${elementTheme.color}60` : 'none'
+                  }}
+                >
+                  Public
+                </button>
+                <button
+                  onClick={() => setActiveTab('private')}
+                  className="px-3 py-1 rounded-full text-xs font-semibold uppercase transition-all"
+                  style={{
+                    background: activeTab === 'private' ? `${elementTheme.color}30` : 'rgba(0,0,0,0.4)',
+                    color: activeTab === 'private' ? elementTheme.color : '#FFFFFFCC',
+                    border: `1px solid ${elementTheme.color}60`,
+                    boxShadow: activeTab === 'private' ? `0 0 12px ${elementTheme.color}60` : 'none'
+                  }}
+                >
+                  Private
+                </button>
+              </div>
+            )}
 
             {/* Header Layout - Date and Element */}
             <div className="relative pb-6">
