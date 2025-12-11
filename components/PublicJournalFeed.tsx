@@ -7,11 +7,15 @@ import { useProfile } from "@/contexts/ProfileContext";
 type PublicJournalEntry = {
   id: string;
   user_id: string;
-  username: string | null;
-  profile_image: string | null;
+  soul_star: string;
   element: "heart" | "water" | "lightning" | "darkness" | string;
-  content: string;
+  entry_date: string;
   created_at: string;
+  is_private: boolean;
+  profiles: {
+    username: string | null;
+    profile_image: string | null;
+  } | null;
 };
 
 const ELEMENT_COLORS: Record<string, { color: string; glow: string; emoji: string; label: string }> = {
@@ -33,15 +37,40 @@ export default function PublicJournalFeed() {
       try {
         setLoading(true);
         setError("");
+        // First try to get the entries without the profiles join to debug
         const { data, error } = await supabaseBrowser
-          .from<PublicJournalEntry>("public_journal_entries")
-          .select("id, user_id, username, profile_image, element, content, created_at")
+          .from("journal_entries")
+          .select(`
+            id,
+            user_id,
+            soul_star,
+            element,
+            entry_date,
+            created_at,
+            is_private
+          `)
+          .eq("is_private", false)
+          .not("soul_star", "is", null)
+          .not("soul_star", "eq", "")
           .order("created_at", { ascending: false });
+          
+        // If that works, then get profile data separately
+        if (data && data.length > 0) {
+          for (let i = 0; i < data.length; i++) {
+            const { data: profileData } = await supabaseBrowser
+              .from("profiles")
+              .select("username, profile_image")
+              .eq("user_id", data[i].user_id)
+              .single();
+            (data[i] as any).profiles = profileData;
+          }
+        }
         if (error) {
-          console.error("Failed to fetch public_journal_entries:", error);
+          console.error("Failed to fetch public journal entries:", error);
           setError("Failed to load public feed.");
           return;
         }
+        console.log("Public journal entries fetched:", data);
         setEntries(data || []);
       } catch (e) {
         console.error("Unexpected error loading public feed:", e);
@@ -115,7 +144,7 @@ export default function PublicJournalFeed() {
       ) : (
         entries.map((e) => {
           const theme = ELEMENT_COLORS[e.element] || ELEMENT_COLORS.heart;
-          const created = new Date(e.created_at);
+          const created = new Date(e.entry_date);
           const dateStr = created.toLocaleDateString();
           return (
             <div
@@ -132,15 +161,15 @@ export default function PublicJournalFeed() {
                 <div 
                   className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0"
                   style={{
-                    background: e.profile_image ? 'none' : `linear-gradient(135deg, ${theme.color}40, ${theme.color}60)`,
+                    background: e.profiles?.profile_image ? 'none' : `linear-gradient(135deg, ${theme.color}40, ${theme.color}60)`,
                     border: `2px solid ${theme.color}40`,
                     boxShadow: `0 0 8px ${theme.color}20`
                   }}
                 >
-                  {e.profile_image ? (
+                  {e.profiles?.profile_image ? (
                     <img 
-                      src={e.profile_image} 
-                      alt={`${e.username || 'User'} profile`}
+                      src={e.profiles.profile_image} 
+                      alt={`${e.profiles.username || 'User'} profile`}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -153,7 +182,7 @@ export default function PublicJournalFeed() {
                 <div className="flex-1">
                   {/* Username */}
                   <div className="text-sm font-semibold mb-1" style={{ color: theme.color }}>
-                    {e.username ? `@${e.username}` : "@anonymous"}
+                    {e.profiles?.username ? `@${e.profiles.username}` : "@anonymous"}
                   </div>
                   
                   {/* Date and Element */}
@@ -186,7 +215,7 @@ export default function PublicJournalFeed() {
                   border: `1px solid ${theme.color}15`,
                 }}
               >
-                {e.content}
+                {e.soul_star}
               </div>
             </div>
           );

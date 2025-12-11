@@ -281,8 +281,8 @@ export default function OnboardingTour({
         // Position at the same vertical position as the menu dropdown
         const top = dropdownRect.top;
         
-        // Position directly to the right of the menu with no gap
-        const left = dropdownRect.right;
+        // Position to the right of the menu with spacing to avoid overlap
+        const left = dropdownRect.right + 20;
         
         setBubblePosition({ top, left });
         

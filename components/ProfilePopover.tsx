@@ -450,6 +450,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
       
       if (selectedImageUrl !== (profile.profile_image_url || getElementImageUrl(profile.element))) {
         updates.profile_image_url = selectedImageUrl;
+        try { sfx.play('flip', 0.6); } catch {}
       }
 
       if (Object.keys(updates).length > 0) {
@@ -1309,6 +1310,8 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                     await refreshProfile();
                     setSelectedImageUrl(currentElement.url);
                     
+                    try { sfx.play('star', 0.6); } catch {}
+                    try { sfx.play('flip', 0.6); } catch {}
                     try { sfx.play('success', 0.8); } catch {}
                     
                     // Close the element info panel

@@ -395,12 +395,12 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
   return (
     <div 
-      className="fixed z-[2147483649] flex items-center justify-center"
+      className="fixed inset-0 z-[2147483649] flex items-center justify-center"
       style={{ 
-        top: '60px',
-        left: 'max(280px, calc(50vw - 350px))',
-        width: 'min(calc(100vw - 320px), 700px)',
-        right: '20px'
+        paddingTop: '0px',
+        paddingBottom: '20px',
+        paddingLeft: '20px',
+        paddingRight: '20px'
       }}
     >
 
@@ -463,15 +463,18 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
       {showHistory ? (
         /* Full Log View - Public or Private based on activeTab */
-        <div style={{ 
-          height: '400px', 
-          overflowY: 'auto', 
-          display: 'flex', 
-          flexDirection: 'column',
-          background: 'rgba(0, 0, 0, 0.2)',
-          borderRadius: '8px',
-          backdropFilter: 'blur(8px)'
-        }}>
+        <div 
+          className="w-full max-w-4xl mx-auto"
+          style={{ 
+            height: '400px', 
+            overflowY: 'auto', 
+            display: 'flex', 
+            flexDirection: 'column',
+            background: 'rgba(0, 0, 0, 0.2)',
+            borderRadius: '8px',
+            backdropFilter: 'blur(8px)'
+          }}
+        >
           {/* Title Section with FULL LOG button and title */}
           <div className="text-center mb-2 relative">
             {/* Full Log Button - Left of Title */}
@@ -482,18 +485,18 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               }}
               className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs font-semibold transition-all duration-200 hover:opacity-100 px-3 py-1 rounded z-20"
               style={{
-                color: '#FFD700',
-                textShadow: `0 0 8px #FFD700, 0 0 15px #FFFF00`,
-                opacity: showHistory ? 1 : 0.8,
-                background: '#FFD70020',
-                border: `2px solid #FFD700`,
-                boxShadow: `0 0 12px #FFD700, 0 0 20px #FFD70060`,
+                color: '#00FFFF',
+                textShadow: `0 0 8px #00FFFF, 0 0 15px #00FFFF, 0 0 25px #00FFFF`,
+                opacity: 1,
+                background: '#00FFFF30',
+                border: `2px solid #00FFFF`,
+                boxShadow: `0 0 15px #00FFFF, 0 0 30px #00FFFF60`,
                 cursor: 'pointer',
                 pointerEvents: 'auto',
                 zIndex: 20
               }}
             >
-              {showHistory ? 'TODAY\'S ENTRY' : 'FULL LOG'}
+              {showHistory ? 'TODAY' : 'FULL LOG'}
             </button>
 
             {/* Close Button - Right of Title */}
@@ -538,7 +541,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           {/* Tabs Switcher - below yellow line, Public left, Private right */}
           <div className="flex items-center justify-center gap-4 p-3 border-b border-white/20">
             <button
-              onClick={() => setActiveTab('public')}
+              onClick={() => {
+                try { sfx.play('change-channel', 0.8); } catch {}
+                setActiveTab('public');
+              }}
               className="px-4 py-2 rounded-full text-sm font-semibold uppercase transition-all"
               style={{
                 background: activeTab === 'public' ? `${elementTheme.color}30` : 'rgba(0,0,0,0.4)',
@@ -550,7 +556,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               Public
             </button>
             <button
-              onClick={() => setActiveTab('private')}
+              onClick={() => {
+                try { sfx.play('change-channel', 0.8); } catch {}
+                setActiveTab('private');
+              }}
               className="px-4 py-2 rounded-full text-sm font-semibold uppercase transition-all"
               style={{
                 background: activeTab === 'private' ? `${elementTheme.color}30` : 'rgba(0,0,0,0.4)',
@@ -569,7 +578,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             ) : (
               <div className="p-4 space-y-4">
                 {journalEntries
-                  .filter(entry => entry.is_private === true)
                   .sort((a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime())
                   .map((entry) => {
                     const entryElement = entry.element as keyof typeof ELEMENT_COLORS;
@@ -577,10 +585,13 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     const entryEmoji = ELEMENT_EMOJIS[entryElement] || "💖";
                     const isEditing = editingEntry === entry.id;
                     
+                    const isExpanded = expandedEntry === entry.id;
+                    
                     return (
                       <div
                         key={entry.id}
-                        className="rounded-lg p-4 space-y-3"
+                        onClick={() => handleEntryClick(entry.id)}
+                        className="rounded-lg p-2 space-y-2 cursor-pointer transition-all duration-200 hover:opacity-90"
                         style={{
                           background: 'rgba(0, 0, 0, 0.4)',
                           border: `2px solid ${entryTheme.color}40`,
@@ -588,7 +599,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                         }}
                       >
                         {/* Header with Date, Element, and Privacy Toggle */}
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-3">
                             <div className="text-sm font-semibold text-white/90">{getDisplayDateString(entry.entry_date)}</div>
                             <div 
@@ -605,7 +616,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                           </div>
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 updateJournalEntry(entry.id, { is_private: !entry.is_private });
                               }}
                               className="px-2 py-1 rounded text-xs font-semibold transition-all"
@@ -621,8 +633,11 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                           </div>
                         </div>
 
-                        {/* Intention Section */}
-                        {entry.intention && (
+                        {/* Expanded content - only show when expanded */}
+                        {isExpanded && (
+                          <>
+                            {/* Intention Section */}
+                            {entry.intention && (
                           <div 
                             className="rounded-lg px-3 py-2 mb-2"
                             style={{
@@ -657,39 +672,37 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                         )}
 
                         {/* Prompt Section */}
-                        {entry.reflection && (
-                          <div 
-                            className="rounded-lg px-3 py-2 mb-2"
-                            style={{
-                              background: 'rgba(0, 0, 0, 0.3)',
-                              border: `1px solid ${entryTheme.color}30`,
-                              boxShadow: `0 0 8px ${entryTheme.color}10`
-                            }}
-                          >
-                            <div className="flex items-center gap-2 mb-1">
-                              <svg 
-                                width="14" 
-                                height="14" 
-                                viewBox="0 0 24 24" 
-                                fill="none"
-                                style={{
-                                  filter: `drop-shadow(0 0 4px ${entryTheme.color})`
-                                }}
-                              >
-                                <path d="M8 9h8M8 12h8M8 15h6" stroke={entryTheme.color} strokeWidth="2" strokeLinecap="round"/>
-                                <path d="M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" stroke={entryTheme.color} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-                                <circle cx="19" cy="8" r="2" fill={entryTheme.color} opacity="0.8"/>
-                              </svg>
-                              <div 
-                                className="text-xs font-semibold uppercase tracking-wider"
-                                style={{ color: entryTheme.color, textShadow: `0 0 4px ${entryTheme.glow}` }}
-                              >
-                                Prompt
-                              </div>
+                        <div 
+                          className="rounded-lg px-3 py-2 mb-2"
+                          style={{
+                            background: 'rgba(0, 0, 0, 0.3)',
+                            border: `1px solid ${entryTheme.color}30`,
+                            boxShadow: `0 0 8px ${entryTheme.color}10`
+                          }}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <svg 
+                              width="14" 
+                              height="14" 
+                              viewBox="0 0 24 24" 
+                              fill="none"
+                              style={{
+                                filter: `drop-shadow(0 0 4px ${entryTheme.color})`
+                              }}
+                            >
+                              <path d="M8 9h8M8 12h8M8 15h6" stroke={entryTheme.color} strokeWidth="2" strokeLinecap="round"/>
+                              <path d="M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" stroke={entryTheme.color} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                              <circle cx="19" cy="8" r="2" fill={entryTheme.color} opacity="0.8"/>
+                            </svg>
+                            <div 
+                              className="text-xs font-semibold uppercase tracking-wider"
+                              style={{ color: entryTheme.color, textShadow: `0 0 4px ${entryTheme.glow}` }}
+                            >
+                              Prompt
                             </div>
-                            <div className="text-xs leading-relaxed text-white/90">{entry.reflection}</div>
                           </div>
-                        )}
+                          <div className="text-xs leading-relaxed text-white/90">{entry.reflection || "No prompt available"}</div>
+                        </div>
 
                         {/* Soul Star Section with Edit Functionality */}
                         <div 
@@ -788,14 +801,16 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                             </div>
                           )}
                         </div>
+                          </>
+                        )}
                       </div>
                     );
                   })
                 }
-                {journalEntries.filter(entry => entry.is_private === true).length === 0 && (
+                {journalEntries.length === 0 && (
                   <div className="text-center p-8 text-white/60">
-                    <div className="text-lg mb-2">🔒 No Private Entries</div>
-                    <div className="text-sm opacity-80">Your private journal entries will appear here</div>
+                    <div className="text-lg mb-2">📝 No Journal Entries</div>
+                    <div className="text-sm opacity-80">Your journal entries will appear here</div>
                   </div>
                 )}
               </div>
@@ -804,15 +819,18 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         </div>
       ) : (
         /* Today's Journal Interface */
-        <div style={{ 
-          height: '400px', 
-          overflowY: 'auto', 
-          display: 'flex', 
-          flexDirection: 'column',
-          background: 'rgba(0, 0, 0, 0.2)',
-          borderRadius: '8px',
-          backdropFilter: 'blur(8px)'
-        }}>
+        <div 
+          className="w-full max-w-4xl mx-auto"
+          style={{ 
+            height: '400px', 
+            overflowY: 'auto', 
+            display: 'flex', 
+            flexDirection: 'column',
+            background: 'rgba(0, 0, 0, 0.2)',
+            borderRadius: '8px',
+            backdropFilter: 'blur(8px)'
+          }}
+        >
           {/* Main Entry Card Container */}
           <div 
             className="rounded-lg px-1 py-2 space-y-4 sm:space-y-5"
@@ -838,18 +856,18 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 }}
                 className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs font-semibold transition-all duration-200 hover:opacity-100 px-3 py-1 rounded z-20"
                 style={{
-                  color: '#FFD700',
-                  textShadow: `0 0 8px #FFD700, 0 0 15px #FFFF00`,
-                  opacity: showHistory ? 1 : 0.8,
-                  background: '#FFD70020',
-                  border: `2px solid #FFD700`,
-                  boxShadow: `0 0 12px #FFD700, 0 0 20px #FFD70060`,
+                  color: '#00FFFF',
+                  textShadow: `0 0 8px #00FFFF, 0 0 15px #00FFFF, 0 0 25px #00FFFF`,
+                  opacity: 1,
+                  background: '#00FFFF30',
+                  border: `2px solid #00FFFF`,
+                  boxShadow: `0 0 15px #00FFFF, 0 0 30px #00FFFF60`,
                   cursor: 'pointer',
                   pointerEvents: 'auto',
                   zIndex: 20
                 }}
               >
-                {showHistory ? 'TODAY\'S ENTRY' : 'FULL LOG'}
+                {showHistory ? 'TODAY' : 'FULL LOG'}
               </button>
 
               {/* Close Button - Right of Title */}
@@ -908,24 +926,40 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
               {/* Privacy Toggle - Top Right */}
               <button
-                onClick={() => {
+                onClick={async () => {
                   console.log('Privacy button clicked!', journalState.isPrivate);
                   try {
                     sfx.play('click', 0.8);
                   } catch (e) {
                     console.log('SFX not available');
                   }
-                  setJournalState(prev => ({ ...prev, isPrivate: !prev.isPrivate }));
+                  
+                  const newPrivacySetting = !journalState.isPrivate;
+                  setJournalState(prev => ({ ...prev, isPrivate: newPrivacySetting }));
+                  
+                  // If entry is already submitted, update it in the database
+                  if (journalState.isSubmitted && journalEntries && dailyPrompt) {
+                    const todayEntry = journalEntries.find(entry => 
+                      entry.entry_date === today && entry.element === dailyPrompt.element
+                    );
+                    if (todayEntry) {
+                      try {
+                        await updateJournalEntry(todayEntry.id, { is_private: newPrivacySetting });
+                      } catch (error) {
+                        console.error('Failed to update privacy setting:', error);
+                        // Revert the state if update failed
+                        setJournalState(prev => ({ ...prev, isPrivate: !newPrivacySetting }));
+                      }
+                    }
+                  }
                 }}
-                disabled={journalState.isSubmitted}
-                className="absolute top-0 right-0 px-2 py-1 rounded text-xs font-semibold transition-all duration-200 disabled:cursor-not-allowed z-10"
+                className="absolute top-0 right-0 px-2 py-1 rounded text-xs font-semibold transition-all duration-200 z-10"
                 style={{
                   background: journalState.isPrivate ? '#FF69B420' : `${elementTheme.color}20`,
                   border: `1px solid ${journalState.isPrivate ? '#FF69B4' : elementTheme.color}60`,
                   color: journalState.isPrivate ? '#FF69B4' : elementTheme.color,
                   textShadow: journalState.isPrivate ? '0 0 4px #FF69B4' : `0 0 4px ${elementTheme.glow}`,
-                  opacity: journalState.isSubmitted ? 0.4 : 1,
-                  cursor: journalState.isSubmitted ? 'not-allowed' : 'pointer',
+                  cursor: 'pointer',
                   pointerEvents: 'auto',
                   zIndex: 10
                 }}
@@ -1221,17 +1255,17 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                       className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 disabled:opacity-40"
                       style={{
                         background: journalState.isSubmitted 
-                          ? 'rgba(34, 197, 94, 0.2)' 
+                          ? 'rgba(57, 255, 20, 0.2)' 
                           : `linear-gradient(135deg, ${elementTheme.color}60, ${elementTheme.color}80)`,
-                        color: journalState.isSubmitted ? '#22C55E' : '#000000',
+                        color: journalState.isSubmitted ? '#39FF14' : '#000000',
                         border: journalState.isSubmitted 
-                          ? '1px solid #22C55E60' 
+                          ? '2px solid #39FF14' 
                           : `1px solid ${elementTheme.color}`,
                         boxShadow: journalState.isSubmitted 
-                          ? '0 0 20px #22C55E20' 
+                          ? '0 0 20px #39FF14, 0 0 40px #39FF1460, inset 0 0 15px #39FF1430' 
                           : `0 0 20px ${elementTheme.color}40, inset 0 0 10px ${elementTheme.color}20`,
                         textShadow: journalState.isSubmitted 
-                          ? '0 0 8px #22C55E' 
+                          ? '0 0 8px #39FF14, 0 0 15px #39FF14, 0 0 25px #39FF14' 
                           : 'none',
                         cursor: (journalState.isSubmitted || !soulStarText.trim() || isSaving) ? 'not-allowed' : 'pointer'
                       }}
