@@ -453,22 +453,37 @@ function TourOverlay() {
             case 'right':
               // For menu items, position to the right of the entire dropdown menu
               if (isMenuStep) {
-                // Get the hamburger menu element to calculate its actual width
+                // Find the actual hamburger menu container to get its true width and position
                 const hamburgerMenu = document.querySelector('[data-tour-id="hamburger"]')?.closest('.absolute') as HTMLElement;
                 const viewportWidth = window.innerWidth;
                 
-                let menuWidth = 320; // Default fallback width
+                let menuRightEdge = 320; // Default fallback
+                
                 if (hamburgerMenu) {
                   const menuRect = hamburgerMenu.getBoundingClientRect();
-                  menuWidth = menuRect.width;
+                  // Calculate the right edge of the menu
+                  menuRightEdge = menuRect.left + menuRect.width;
                 }
                 
-                // Position tooltip to the right of the menu with additional margin
-                // Use the larger of: menu width + 50px margin, or 50% viewport width
-                left = Math.max(menuWidth + 50, viewportWidth * 0.5);
+                // Position tooltip well to the right with significant margin
+                // For mobile/smaller screens, use more of the available width
+                const isMobile = viewportWidth <= 768;
+                const marginFromMenu = isMobile ? 40 : 80;
+                
+                // Ensure tooltip is positioned past the menu's right edge plus margin
+                left = Math.max(
+                  menuRightEdge + marginFromMenu,
+                  viewportWidth * (isMobile ? 0.55 : 0.6)
+                );
+                
+                // For very small screens, limit the left position to prevent overflow
+                if (isMobile && left > viewportWidth - 300) {
+                  left = viewportWidth - 300;
+                }
+                
                 top = rect.top + scrollTop + (rect.height / 2);
                 
-                console.log(`Tour: Positioning menu step at left: ${left}, menu width: ${menuWidth}, viewport width: ${viewportWidth}`);
+                console.log(`Tour: Positioning menu step at left: ${left}, menu right edge: ${menuRightEdge}, viewport width: ${viewportWidth}`);
               } else {
                 top += rect.height / 2;
                 left += rect.width + 20;
@@ -562,7 +577,7 @@ function TourOverlay() {
 
       {/* Tooltip */}
       <div
-        className={`absolute pointer-events-auto bg-gray-900/95 backdrop-blur-lg border border-green-500/30 rounded-2xl p-6 max-w-xs sm:max-w-sm shadow-2xl ${
+        className={`absolute pointer-events-auto bg-gray-900/95 backdrop-blur-lg border border-green-500/30 rounded-2xl p-4 sm:p-6 max-w-xs sm:max-w-sm shadow-2xl ${
           !currentStepData.targetId ? 'top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2' : ''
         }`}
         style={
@@ -570,6 +585,8 @@ function TourOverlay() {
             ? {
                 top: `${tooltipPosition.top}px`,
                 left: `${tooltipPosition.left}px`,
+                right: 'auto',
+                maxWidth: window.innerWidth <= 768 ? '280px' : '384px',
                 transform: currentStepData.position === 'left' ? 'translateX(-100%)' :
                           currentStepData.position === 'top' ? 'translate(-50%, -100%)' :
                           currentStepData.position === 'bottom' ? 'translateX(-50%)' :

@@ -587,7 +587,7 @@ export default function HoloHubMenu({
             src="/elements/comms.webp"
             alt=""
             className="hub-icon"
-            style={{ width: Math.round(hubSize*0.88), height: Math.round(hubSize*0.88) }}
+            style={{ width: Math.round(hubSize*0.95), height: Math.round(hubSize*0.95) }}
             draggable={false}
           />
         </span>

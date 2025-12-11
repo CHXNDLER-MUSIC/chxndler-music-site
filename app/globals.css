@@ -744,6 +744,22 @@ img[src$="/elements/music.webp"] {
 .mask-element-power::before { -webkit-mask-image: url('/elements/power.webp'); mask-image: url('/elements/power.webp'); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: contain; mask-size: contain; -webkit-mask-position: center; mask-position: center; }
 .mask-element-comms::before { -webkit-mask-image: url('/elements/comms.webp'); mask-image: url('/elements/comms.webp'); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: contain; mask-size: contain; -webkit-mask-position: center; mask-position: center; }
 
+/* Hub comms button dark background */
+.hub {
+  background: rgba(0,0,0,0.35);
+  border-radius: 50%;
+}
+
+/* Hub comms button yellow glow when active/on */
+.hub.on,
+.hub.hub-active {
+  box-shadow: 
+    0 0 15px rgba(255, 255, 0, 0.8),
+    0 0 25px rgba(255, 255, 0, 0.6),
+    0 0 35px rgba(255, 255, 0, 0.4);
+  animation: neonPulseYellow 2s ease-in-out infinite;
+}
+
 /* Light beam animation keyframes */
 @keyframes beamFlow {
   0% {

@@ -5939,7 +5939,7 @@ const HUDPanel = React.memo(function HUDPanel({
                     ) : lyricsError ? (
                       <div style={{ fontSize: 18, color: '#ff7b7b' }}>{lyricsError}</div>
                     ) : (
-                      <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: 18, color: '#F6F4A9', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(246,244,169,0.6)' }}>{lyricsContent || 'No lyrics available.'}</div>
+                      <div className="lyrics-content-enhanced" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.65, fontSize: 18, color: '#F6F4A9', textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 8px rgba(246,244,169,0.6)', paddingTop: '8px', paddingBottom: '8px' }}>{lyricsContent || 'No lyrics available.'}</div>
                     )}
                     {null}
                     </div>,
@@ -7223,6 +7223,13 @@ const HUDPanel = React.memo(function HUDPanel({
               currentId={currentId}
               onChange={(id) => {
                 setActive(id);
+
+                // Load the selected track into the audio provider for play/pause button
+                try {
+                  audioManager.selectTrack(id);
+                } catch (error) {
+                  if (DEBUG_MEDIA) dwarn('HUDPanel: failed to load track into audio provider', error);
+                }
 
                 // Stop ambient space music when switching songs
                 try {

@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { sfx } from "@/lib/sfx";
 
 export default function InlineBrowserModal({
   url,
@@ -27,7 +28,10 @@ export default function InlineBrowserModal({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose?.();
+      if (e.key === "Escape") {
+        sfx.play('close', 0.35);
+        onClose?.();
+      }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -86,7 +90,12 @@ export default function InlineBrowserModal({
         background: compact ? 'transparent' : 'rgba(0,0,0,.85)',
         backdropFilter: compact ? 'none' : 'blur(13px)'
       }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose?.(); }}
+      onClick={(e) => { 
+        if (e.target === e.currentTarget) {
+          sfx.play('close', 0.35);
+          onClose?.();
+        }
+      }}
     >
       <div
         className={`mx-4 w-full ${compact ? 'max-w-2xl' : 'max-w-4xl'}`}
@@ -130,7 +139,10 @@ export default function InlineBrowserModal({
               <button
                 type="button"
                 aria-label="Close"
-                onClick={onClose}
+                onClick={() => {
+                  sfx.play('close', 0.35);
+                  onClose();
+                }}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/80 border border-white/20 hover:bg-white/15"
               >
                 ×

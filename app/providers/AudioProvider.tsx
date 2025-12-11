@@ -419,17 +419,53 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         setState(s => ({ ...s, playing: false }));
         try { a.pause(); } catch {}
       } else {
-        // If no track loaded, load space music as default
-        if (!a.src || a.src === 'null' || a.src === '') {
-          console.log('🎵 No track loaded, loading space music as default');
-          const spaceMusicSource = bestSourceFor(TRACKS.SPACE_MUSIC);
-          a.src = spaceMusicSource;
-          try { a.load(); } catch {}
-          setState(s => ({ 
-            ...s, 
-            src: spaceMusicSource, 
-            currentTrack: TRACK_INFO['space-music'] || null 
-          }));
+        // Check if there's a current track that should be playing
+        if (state.currentTrack) {
+          console.log('🎵 Current track exists, checking if it matches audio source:', state.currentTrack.id);
+          
+          // Get the expected source for the current track
+          const SONG_TRACK_MAP: Record<string, TrackKey> = {
+            "baby": "BABY",
+            "be-my-bee": "BE_MY_BEE",
+            "ocean-girl": "OCEAN_GIRL",
+            "space-music": "SPACE_MUSIC",
+            "game-boy-heart": "GAME_BOY_HEART",
+            "house-party": "HOUSE_PARTY",
+            "kid-forever": "KID_FOREVER",
+            "paris": "PARIS",
+            "pokemon": "POKEMON",
+            "we're-just-friends": "WJF",
+            "welcome-to-the-heartverse": "WELCOME_TO_HEARTVERSE",
+            "welcome-back": "WELCOME_BACK",
+          };
+          
+          const trackKey = SONG_TRACK_MAP[state.currentTrack.id];
+          const expectedSource = trackKey ? bestSourceFor(TRACKS[trackKey]) : `/tracks/${state.currentTrack.id}.opus`;
+          
+          // Check if the audio element has the correct source loaded
+          if (!a.src || a.src === 'null' || a.src === '' || !a.src.includes(state.currentTrack.id)) {
+            console.log('🎵 Audio source mismatch, loading current track:', state.currentTrack.id);
+            a.src = expectedSource;
+            try { a.load(); } catch {}
+            setState(s => ({ 
+              ...s, 
+              src: expectedSource
+            }));
+          }
+        } else {
+          // If no track loaded, load space music as default for now
+          // Note: The existing player store sync logic will handle switching to selected songs
+          if (!a.src || a.src === 'null' || a.src === '') {
+            console.log('🎵 No track loaded, loading space music as default');
+            const spaceMusicSource = bestSourceFor(TRACKS.SPACE_MUSIC);
+            a.src = spaceMusicSource;
+            try { a.load(); } catch {}
+            setState(s => ({ 
+              ...s, 
+              src: spaceMusicSource, 
+              currentTrack: TRACK_INFO['space-music'] || null 
+            }));
+          }
         }
         
         console.log('🎵 Starting audio playback with src:', a.src);

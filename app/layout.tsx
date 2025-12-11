@@ -22,6 +22,7 @@ import CustomCursor from "@/components/CustomCursor";
 import HeartCoinCelebration from "@/components/HeartCoinCelebration";
 import BadgeCelebration from "@/components/BadgeCelebration";
 import CardCelebration from "@/components/CardCelebration";
+import GlobalKeyboardHandler from "@/components/GlobalKeyboardHandler";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://chxndler.world"),
@@ -133,6 +134,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <ProfileProvider>
             <AudioProvider>
+              <GlobalKeyboardHandler />
               <MenuStateProvider>
                 <TourProvider>
             {!analyticsOff && (
