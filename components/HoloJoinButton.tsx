@@ -96,6 +96,9 @@ export default function HoloJoinButton({
           animation: joinActivePulse 2.0s ease-in-out infinite;
           box-shadow:
             0 18px 36px rgba(0,0,0,.8),
+            0 0 20px ${hubColor}AA,
+            0 0 40px ${hubColor}77,
+            0 0 60px ${hubColor}44,
             inset 0 2px 0 rgba(255,255,255,.35),
             inset 0 -6px 14px rgba(0,0,0,.7);
           filter: brightness(1.3) saturate(1.4);
@@ -117,6 +120,9 @@ export default function HoloJoinButton({
             filter: brightness(1.3) saturate(1.4);
             box-shadow:
               0 18px 36px rgba(0,0,0,.8),
+              0 0 20px ${hubColor}AA,
+              0 0 40px ${hubColor}77,
+              0 0 60px ${hubColor}44,
               inset 0 2px 0 rgba(255,255,255,.35),
               inset 0 -6px 14px rgba(0,0,0,.7);
           }
@@ -124,6 +130,9 @@ export default function HoloJoinButton({
             filter: brightness(1.45) saturate(1.6);
             box-shadow:
               0 20px 40px rgba(0,0,0,.9),
+              0 0 30px ${hubColor}DD,
+              0 0 60px ${hubColor}AA,
+              0 0 90px ${hubColor}66,
               inset 0 2px 0 rgba(255,255,255,.4),
               inset 0 -6px 14px rgba(0,0,0,.7);
           }

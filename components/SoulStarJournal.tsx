@@ -112,6 +112,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const [activeTab, setActiveTab] = useState<'private' | 'public'>('private');
   const [showCardsModal, setShowCardsModal] = useState(false);
   const [showBadgesModal, setShowBadgesModal] = useState(false);
+  const [showIntegratedBinder, setShowIntegratedBinder] = useState(false);
 
   const today = getLocalDateString();
   const todayFormatted = getDisplayDateString();
@@ -413,7 +414,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
     <div 
       className="fixed inset-0 z-[2147483649] flex items-start justify-center"
       style={{ 
-        paddingTop: '15vh',
+        paddingTop: '8vh',
         paddingBottom: '20px',
         paddingLeft: '20px',
         paddingRight: '20px'
@@ -426,7 +427,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         style={{
           width: 'min(800px, 100%)',
           height: '250px',
-          top: 'calc(15vh + 200px)',
+          top: 'calc(8vh + 200px)',
           left: '50%',
           transform: 'translateX(-50%) translateY(-50%)',
           background: `radial-gradient(ellipse, ${elementTheme.color}15, transparent 70%)`,
@@ -442,7 +443,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         style={{
           width: 'min(600px, 90%)',
           height: '200px',
-          top: 'calc(15vh + 200px)',
+          top: 'calc(8vh + 200px)',
           left: '50%',
           transform: 'translateX(-50%) translateY(-50%)',
           background: `radial-gradient(ellipse, ${elementTheme.color}08, transparent 60%)`,
@@ -489,7 +490,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             background: 'rgba(0, 0, 0, 0.7)',
             border: `2px solid ${elementTheme.color}`,
             boxShadow: `0 0 30px ${elementTheme.color}60, 0 0 60px ${elementTheme.color}40, 0 0 100px ${elementTheme.color}20`,
-            borderRadius: '12px',
+            borderRadius: '14px',
             backdropFilter: 'blur(8px)'
           }}
         >
@@ -800,6 +801,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                             <textarea
                               value={editResponse}
                               onChange={(e) => setEditResponse(e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
                               className="w-full h-20 p-2 rounded text-white placeholder-white/50 resize-none focus:outline-none"
                               style={{
                                 background: 'rgba(0,0,0,0.4)',
@@ -875,7 +877,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                 />
                               )}
                               <div className="text-xs font-medium text-white/80">
-                                {profile?.display_name || 'Anonymous'}
+                                Anonymous
                               </div>
                             </div>
                             <div className="text-sm font-semibold text-white/90">{getDisplayDateString(entry.entry_date)}</div>
@@ -908,6 +910,40 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                             >
                               {!(entry.is_public ?? false) ? '🔒 PRIVATE' : 'PUBLIC'}
                             </button>
+                          </div>
+                        </div>
+
+                        {/* Soul Star Preview - Always visible in public view */}
+                        <div 
+                          className="rounded-lg px-3 py-2 mb-2"
+                          style={{
+                            background: 'rgba(0, 0, 0, 0.3)',
+                            border: `2px solid ${entryTheme.color}60`,
+                            boxShadow: `0 0 12px ${entryTheme.color}20`
+                          }}
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <svg 
+                              width="16" 
+                              height="16" 
+                              viewBox="0 0 24 24" 
+                              fill="none"
+                              style={{
+                                filter: `drop-shadow(0 0 4px ${entryTheme.color})`
+                              }}
+                            >
+                              <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z" fill={entryTheme.color} stroke={entryTheme.color} strokeWidth="0.5"/>
+                              <circle cx="12" cy="12" r="8" fill="none" stroke={entryTheme.color} strokeWidth="1" opacity="0.6"/>
+                            </svg>
+                            <div 
+                              className="text-sm font-semibold uppercase tracking-wider"
+                              style={{ color: entryTheme.color, textShadow: `0 0 4px ${entryTheme.glow}` }}
+                            >
+                              Soul Star
+                            </div>
+                          </div>
+                          <div className="text-sm leading-relaxed text-white">
+                            {entry.soul_star || "No soul star response"}
                           </div>
                         </div>
 
@@ -962,19 +998,23 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     try { sfx.play('click', 0.4); } catch {}
-                                    setShowCardsModal(true);
+                                    setShowIntegratedBinder(!showIntegratedBinder);
                                   }}
-                                  className="flex-1 py-1.5 px-2 rounded text-xs font-semibold transition-all duration-200 hover:scale-105"
+                                  className="flex-1 py-1.5 px-2 rounded text-xs font-semibold transition-all duration-200 hover:scale-105 flex items-center justify-center"
                                   style={{
-                                    background: 'rgba(0, 191, 255, 0.1)',
+                                    background: showIntegratedBinder ? 'rgba(0, 191, 255, 0.2)' : 'rgba(0, 191, 255, 0.1)',
                                     borderColor: '#00BFFF',
                                     border: '1px solid #00BFFF60',
                                     color: '#00BFFF',
                                     textShadow: '0 0 4px #00BFFF',
-                                    boxShadow: '0 0 8px #00BFFF30'
+                                    boxShadow: showIntegratedBinder ? '0 0 12px #00BFFF50' : '0 0 8px #00BFFF30'
                                   }}
                                 >
-                                  BINDER
+                                  <img 
+                                    src="/elements/binder.webp" 
+                                    alt="Binder" 
+                                    className="w-5 h-5"
+                                  />
                                 </button>
 
                                 {/* Badges button */}
@@ -982,22 +1022,236 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     try { sfx.play('click', 0.4); } catch {}
-                                    setShowBadgesModal(true);
+                                    setShowBadgesModal(!showBadgesModal);
                                   }}
-                                  className="flex-1 py-1.5 px-2 rounded text-xs font-semibold transition-all duration-200 hover:scale-105"
+                                  className="flex-1 py-1.5 px-2 rounded text-xs font-semibold transition-all duration-200 hover:scale-105 flex items-center justify-center gap-1"
                                   style={{
-                                    background: 'rgba(255, 105, 180, 0.1)',
+                                    background: showBadgesModal ? 'rgba(255, 105, 180, 0.2)' : 'rgba(255, 105, 180, 0.1)',
                                     borderColor: '#FF69B4',
                                     border: '1px solid #FF69B460',
                                     color: '#FF69B4',
                                     textShadow: '0 0 4px #FF69B4',
-                                    boxShadow: '0 0 8px #FF69B440'
+                                    boxShadow: showBadgesModal ? '0 0 12px #FF69B450' : '0 0 8px #FF69B440'
                                   }}
                                 >
+                                  <img 
+                                    src="/elements/badges.webp" 
+                                    alt="Badges" 
+                                    className="w-4 h-4"
+                                  />
                                   BADGES
                                 </button>
                               </div>
                             </div>
+
+                            {/* Integrated Binder Display - Show when BINDER is clicked */}
+                            {showIntegratedBinder && (
+                              <div 
+                                className="rounded-lg px-3 py-2 mb-2"
+                                style={{
+                                  background: 'rgba(0, 191, 255, 0.1)',
+                                  border: `1px solid #00BFFF30`,
+                                  boxShadow: `0 0 8px #00BFFF20`
+                                }}
+                              >
+                                <div className="flex items-center gap-2 mb-3">
+                                  <img 
+                                    src="/elements/binder.webp" 
+                                    alt="Binder" 
+                                    className="w-5 h-5"
+                                    style={{
+                                      filter: `drop-shadow(0 0 4px #00BFFF)`
+                                    }}
+                                  />
+                                  <div 
+                                    className="text-sm font-semibold uppercase tracking-wider"
+                                    style={{ color: '#00BFFF', textShadow: `0 0 4px #00BFFF` }}
+                                  >
+                                    Card Collection
+                                  </div>
+                                </div>
+                                
+                                {/* Card Grid - Show first 4 cards with right arrow */}
+                                <div className="flex items-center gap-2">
+                                  <div className="grid grid-cols-4 gap-2 flex-1">
+                                    {Array.from({ length: 4 }, (_, index) => {
+                                      const collectedCard = profile?.cards?.[index];
+                                      const hasCard = !!collectedCard?.cards;
+                                      const cardSlots = profile?.card_slots ?? 0;
+                                      const isSlotUnlocked = index < cardSlots;
+                                      
+                                      return (
+                                        <div
+                                          key={index}
+                                          className="relative aspect-[3/4] rounded-lg flex items-center justify-center overflow-hidden"
+                                          style={{
+                                            background: hasCard 
+                                              ? 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)'
+                                              : isSlotUnlocked 
+                                                ? 'linear-gradient(135deg, #333 0%, #555 100%)'
+                                                : 'linear-gradient(135deg, #111 0%, #222 100%)',
+                                            border: hasCard 
+                                              ? '2px solid #00BFFF60'
+                                              : isSlotUnlocked
+                                                ? '2px dashed #00BFFF40'
+                                                : '2px solid #333',
+                                            boxShadow: hasCard ? '0 0 8px #00BFFF30' : 'none'
+                                          }}
+                                        >
+                                          {hasCard ? (
+                                            <img
+                                              src={`/cards/${collectedCard.cards.card_name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/--+/g, '-').replace(/^-|-$/g, '')}.webp`}
+                                              alt={collectedCard.cards.card_name}
+                                              className="w-full h-full object-cover"
+                                              draggable={false}
+                                              onError={(e) => {
+                                                // Fallback image if card image doesn't exist
+                                                e.currentTarget.src = '/cards/default-card.webp';
+                                              }}
+                                            />
+                                          ) : isSlotUnlocked ? (
+                                            <div className="text-center text-white/40 text-xs">
+                                              <div>+</div>
+                                              <div>SLOT</div>
+                                            </div>
+                                          ) : (
+                                            <div className="text-center text-white/20 text-xs">
+                                              <div>🔒</div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                  
+                                  {/* Right arrow button */}
+                                  {(profile?.cards?.length || 0) > 4 && (
+                                    <button
+                                      onClick={() => {
+                                        try { sfx.play('click', 0.4); } catch {}
+                                        // This could open full binder or show next cards
+                                        setShowCardsModal(true);
+                                      }}
+                                      className="flex items-center justify-center w-6 h-8 rounded transition-all duration-200 hover:scale-105"
+                                      style={{
+                                        background: 'rgba(0, 191, 255, 0.1)',
+                                        border: '1px solid #00BFFF40',
+                                        color: '#00BFFF',
+                                        boxShadow: '0 0 4px #00BFFF20'
+                                      }}
+                                    >
+                                      <svg 
+                                        width="12" 
+                                        height="12" 
+                                        viewBox="0 0 24 24" 
+                                        fill="none"
+                                        stroke="currentColor" 
+                                        strokeWidth="2"
+                                      >
+                                        <path d="m9 18 6-6-6-6"/>
+                                      </svg>
+                                    </button>
+                                  )}
+                                </div>
+                                
+                                {/* Card Stats */}
+                                <div className="flex justify-between items-center mt-3 pt-2 border-t border-white/10">
+                                  <div className="text-xs text-white/60">
+                                    Collected: {profile?.cards?.length || 0} cards
+                                  </div>
+                                  <div className="text-xs text-white/60">
+                                    Slots: {profile?.card_slots || 0}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Integrated Badges Display - Show when BADGES is clicked */}
+                            {showBadgesModal && (
+                              <div 
+                                className="rounded-lg px-3 py-2 mb-2"
+                                style={{
+                                  background: 'rgba(255, 105, 180, 0.1)',
+                                  border: `1px solid #FF69B430`,
+                                  boxShadow: `0 0 8px #FF69B420`
+                                }}
+                              >
+                                <div className="flex items-center gap-2 mb-3">
+                                  <img 
+                                    src="/elements/badges.webp" 
+                                    alt="Badges" 
+                                    className="w-5 h-5"
+                                    style={{
+                                      filter: `drop-shadow(0 0 4px #FF69B4)`
+                                    }}
+                                  />
+                                  <div 
+                                    className="text-sm font-semibold uppercase tracking-wider"
+                                    style={{ color: '#FF69B4', textShadow: `0 0 4px #FF69B4` }}
+                                  >
+                                    Badges Collection
+                                  </div>
+                                </div>
+                                
+                                {/* Badge Row - Show first 4 badges */}
+                                <div className="flex items-center gap-2">
+                                  <div className="flex gap-2 flex-1">
+                                    {Array.from({ length: 4 }, (_, index) => {
+                                      const userBadgeIds = new Set(profile?.user_badges?.map(ub => ub.badge_id) || []);
+                                      const userUnlockedBadges = profile?.all_badges?.filter(badge => userBadgeIds.has(badge.id)) || [];
+                                      const badge = userUnlockedBadges[index];
+                                      const hasBadge = !!badge;
+                                      
+                                      return (
+                                        <div
+                                          key={index}
+                                          className="relative w-12 h-12 rounded-full flex items-center justify-center overflow-hidden"
+                                          style={{
+                                            background: hasBadge 
+                                              ? 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)'
+                                              : 'linear-gradient(135deg, #111 0%, #222 100%)',
+                                            border: hasBadge 
+                                              ? '2px solid #FF69B460'
+                                              : '2px solid #333',
+                                            boxShadow: hasBadge ? '0 0 8px #FF69B430' : 'none'
+                                          }}
+                                        >
+                                          {hasBadge ? (
+                                            <img
+                                              src={badge.icon_url || '/elements/badges.webp'}
+                                              alt={badge.badge_name}
+                                              className="w-10 h-10 object-cover rounded-full"
+                                              draggable={false}
+                                            />
+                                          ) : (
+                                            <div className="text-center text-white/20 text-xs">
+                                              <div>🏅</div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                  
+                                  {/* Right arrow button if more badges */}
+                                  {(profile?.user_badges?.length || 0) > 4 && (
+                                    <div className="flex items-center justify-center text-white/60 text-xs">
+                                      +{(profile?.user_badges?.length || 0) - 4}
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Badge Stats */}
+                                <div className="flex justify-between items-center mt-3 pt-2 border-t border-white/10">
+                                  <div className="text-xs text-white/60">
+                                    Earned: {profile?.user_badges?.length || 0} badges
+                                  </div>
+                                  <div className="text-xs text-white/60">
+                                    Total: {profile?.all_badges?.length || 0}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
 
                         {/* Soul Star Section with Edit Functionality */}
                         <div 
@@ -1075,6 +1329,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                             <textarea
                               value={editResponse}
                               onChange={(e) => setEditResponse(e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
                               className="w-full h-20 p-2 rounded text-white placeholder-white/50 resize-none focus:outline-none"
                               style={{
                                 background: 'rgba(0,0,0,0.4)',
@@ -1124,7 +1379,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             background: 'rgba(0, 0, 0, 0.7)',
             border: `2px solid ${elementTheme.color}`,
             boxShadow: `0 0 30px ${elementTheme.color}60, 0 0 60px ${elementTheme.color}40, 0 0 100px ${elementTheme.color}20`,
-            borderRadius: '12px',
+            borderRadius: '14px',
             backdropFilter: 'blur(8px)'
           }}
         >
@@ -1220,7 +1475,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   filter: `drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))`
                 }}
               >
-                12/10/2025
+                {getDisplayDateString(dailyPrompt.prompt_date)}
               </div>
 
               {/* Privacy Toggle - Top Right */}
@@ -1228,7 +1483,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 onClick={async () => {
                   console.log('Privacy button clicked!', journalState.isPrivate);
                   try {
-                    sfx.play('click', 0.8);
+                    sfx.play('change-channel', 0.8);
                   } catch (e) {
                     console.log('SFX not available');
                   }
@@ -1254,16 +1509,16 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 }}
                 className="absolute top-0 right-0 px-3 py-1 rounded text-xs font-semibold transition-all duration-200 z-10"
                 style={{
-                  background: journalState.isPrivate ? '#FF69B420' : `${elementTheme.color}20`,
-                  border: `1px solid ${journalState.isPrivate ? '#FF69B4' : elementTheme.color}60`,
-                  color: journalState.isPrivate ? '#FF69B4' : elementTheme.color,
-                  textShadow: journalState.isPrivate ? '0 0 4px #FF69B4' : `0 0 4px ${elementTheme.glow}`,
+                  background: journalState.isPrivate ? '#FF69B420' : '#39FF1420',
+                  border: `1px solid ${journalState.isPrivate ? '#FF69B4' : '#39FF14'}`,
+                  color: journalState.isPrivate ? '#FF69B4' : '#39FF14',
+                  textShadow: journalState.isPrivate ? '0 0 4px #FF69B4' : '0 0 8px #39FF14, 0 0 15px #39FF14',
                   cursor: 'pointer',
                   pointerEvents: 'auto',
                   zIndex: 10
                 }}
               >
-                {journalState.isPrivate ? '🔒 PRIVATE' : 'SHARE PUBLIC'}
+                {journalState.isPrivate ? '🔒 PRIVATE' : 'PUBLIC'}
               </button>
               
               {/* LIGHTNING Element - Top Left */}
@@ -1272,11 +1527,18 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 style={{
                   background: `${elementTheme.color}20`,
                   color: elementTheme.color,
-                  border: `1px solid ${elementTheme.color}60`,
+                  border: dailyPrompt?.element === 'darkness' 
+                    ? '2px solid #FFFFFF' 
+                    : `1px solid ${elementTheme.color}60`,
                   textShadow: `0 0 4px ${elementTheme.glow}`
                 }}
               >
-                {elementEmoji} {dailyPrompt?.element?.toUpperCase()}
+                <img 
+                  src={getElementIcon(dailyPrompt?.element || null)} 
+                  alt={dailyPrompt?.element || 'element'} 
+                  className="w-4 h-4"
+                />
+                {dailyPrompt?.element?.toUpperCase()}
               </div>
             </div>
 
@@ -1494,6 +1756,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     <textarea
                       value={soulStarText}
                       onChange={(e) => setSoulStarText(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
                       placeholder={(!user?.id || !profile?.element) ? "Let your Soul speak..." : "Let your Soul Star speak…"}
                       className="w-full h-14 p-3 rounded-lg text-white placeholder-white/50 resize-none focus:outline-none transition-all"
                       disabled={isSaving || journalState.isSubmitted}
@@ -1538,11 +1801,19 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                       }}
                       className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 hover:opacity-90"
                       style={{
-                        background: `linear-gradient(135deg, ${elementTheme.color}60, ${elementTheme.color}80)`,
-                        color: '#000000',
-                        border: `1px solid ${elementTheme.color}`,
-                        boxShadow: `0 0 20px ${elementTheme.color}40, inset 0 0 10px ${elementTheme.color}20`,
-                        textShadow: 'none'
+                        background: hasClickedInitialButton 
+                          ? 'rgba(255, 255, 0, 0.15)' 
+                          : `linear-gradient(135deg, ${elementTheme.color}60, ${elementTheme.color}80)`,
+                        color: hasClickedInitialButton ? '#FFFF00' : '#000000',
+                        border: hasClickedInitialButton 
+                          ? '2px solid #FFFF00' 
+                          : `1px solid ${elementTheme.color}`,
+                        boxShadow: hasClickedInitialButton 
+                          ? '0 0 20px #FFFF00, 0 0 40px #FFFF0060, inset 0 0 15px #FFFF0030' 
+                          : `0 0 20px ${elementTheme.color}40, inset 0 0 10px ${elementTheme.color}20`,
+                        textShadow: hasClickedInitialButton 
+                          ? '0 0 8px #FFFF00, 0 0 15px #FFFF00, 0 0 25px #FFFF00' 
+                          : 'none'
                       }}
                     >
                       {!hasClickedInitialButton ? 'CAST YOUR SOUL STAR' : 'Create ALIEN profile to submit'}
@@ -1618,13 +1889,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         />
       )}
 
-      {/* Badges Modal - opened from journal profile section */}
-      {showBadgesModal && (
-        <BadgesModal 
-          open={showBadgesModal}
-          onClose={() => setShowBadgesModal(false)}
-        />
-      )}
     </div>
   );
 }

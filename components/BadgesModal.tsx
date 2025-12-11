@@ -315,19 +315,19 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     const categoryInfo = badgeCategories.find(cat => cat.id === selectedCategory);
     
     const categoryContent = (
-      <div className="relative space-y-2">
+      <div className="relative flex flex-col h-full">
         <button
           onClick={() => {
             sfx.play('click');
             setSelectedCategory(null);
           }}
-          className="mb-4 text-[#38B6FF] hover:text-[#38B6FF]/80 transition text-sm"
+          className="mb-4 text-[#38B6FF] hover:text-[#38B6FF]/80 transition text-sm flex-shrink-0"
         >
           ← Back to Categories
         </button>
         
         {/* Badge grid matching binder layout */}
-        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3 sm:gap-4 max-h-80 sm:max-h-96 overflow-y-auto px-2 pt-2 pb-0">
+        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3 sm:gap-4 flex-1 overflow-y-auto px-2" style={{ paddingBottom: '0px', marginBottom: '0px' }}>
           {sortedBadges.length > 0 ? sortedBadges.map((badge, index) => (
             <div key={index} className="flex flex-col items-center space-y-2">
               <div className="relative">
@@ -420,7 +420,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
 
     return (
       <PopoutShell title={categoryInfo?.displayName || "CATEGORY"} onClose={onClose} compact={true}>
-        <div className="relative badges-modal-container" style={{ overflow: 'hidden' }}>
+        <div className="relative badges-modal-container" style={{ overflow: 'hidden', height: '100%' }}>
           {/* Hide all navigation elements in badges modal */}
           <style jsx global>{`
             /* Hide navigation arrows and pagination */
@@ -445,8 +445,20 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             .badges-modal-container .binder-hologram-container {
               height: fit-content !important;
             }
+            /* Remove bottom space in badges modal */
+            .badges-modal-container [data-badges-modal] {
+              height: 100% !important;
+              display: flex !important;
+              flex-direction: column !important;
+            }
+            /* Ensure grid takes up remaining space without bottom padding */
+            .badges-modal-container .grid {
+              flex: 1 !important;
+              margin-bottom: 0 !important;
+              padding-bottom: 0 !important;
+            }
           `}</style>
-          <div data-badges-modal>
+          <div data-badges-modal style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             {categoryContent}
           </div>
         </div>
@@ -454,7 +466,10 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     );
   }
 
-  // Main badges view - six circular categories
+  // Get user's unlocked badges for display
+  const userUnlockedBadges = badgesWithUnlocked.filter(badge => badge.unlocked);
+  
+  // Main badges view - horizontal row of user badges like chat profile
   const badgesContent = (
     <>
       {embedded && (
@@ -469,30 +484,38 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         </button>
       )}
 
-      {embedded && (
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-white">BADGES</h2>
+      {/* User Stats and Title Section - HeartCoin and Daily Streak */}
+      <div className="flex justify-between items-center mb-4 p-3 bg-black/40 rounded-lg border border-white/20">
+        {/* HeartCoin Total */}
+        <div className="flex items-center gap-2">
+          <img 
+            src="/elements/heart-coin.webp" 
+            alt="Heart Coin" 
+            className="w-6 h-6"
+          />
+          <span 
+            className="font-bold text-lg"
+            style={{
+              color: '#FF69B4',
+              textShadow: '0 0 8px #FF69B4'
+            }}
+          >
+            {profile?.heartcoin_total || 0}
+          </span>
         </div>
-      )}
-
-      {/* Debug button for manual badge check */}
-      <div className="text-center mb-4">
-        <button
-          onClick={async () => {
-            console.log('🔄 Manual badge check triggered');
-            const newBadges = await manualBadgeCheck();
-            if (newBadges.length > 0) {
-              alert(`🎉 Awarded ${newBadges.length} new badges: ${newBadges.map(b => b.badge_name).join(', ')}`);
-              // Trigger a refresh of the badges data
-              window.location.reload();
-            } else {
-              alert('No new badges to award at this time');
-            }
-          }}
-          className="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white text-sm rounded transition-colors"
-        >
-          Check for New Badges
-        </button>
+        
+        {/* Daily Streak */}
+        <div className="flex items-center gap-2">
+          <span 
+            className="font-bold text-lg"
+            style={{
+              color: '#00FFFF',
+              textShadow: '0 0 8px #00FFFF, 0 0 15px #00FFFF'
+            }}
+          >
+            {profile?.daily_streak || 0} days
+          </span>
+        </div>
       </div>
 
       {badgesLoading && (
@@ -516,82 +539,163 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
 
       {!badgesLoading && !badgesError && (
         <div 
-          className="relative backdrop-blur-sm"
+          className="relative"
           style={{
-            background: 'rgba(0,0,0,0.4)',
-            backdropFilter: 'blur(8px)',
-            borderRadius: '14px',
-            boxShadow: '0 0 30px rgba(252,84,175,0.3), 0 0 60px rgba(252,84,175,0.15), inset 0 0 30px rgba(252,84,175,0.1)'
+            background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(20,20,20,0.8) 100%)',
+            borderRadius: '16px',
+            border: '1px solid rgba(255,255,255,0.1)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
           }}
         >
-          {/* Additional pink glow behind container */}
-          <div 
-            className="absolute inset-0"
-            style={{
-              background: 'radial-gradient(ellipse 80% 60% at 50% 50%, rgba(252,84,175,0.08) 0%, rgba(252,84,175,0.04) 40%, transparent 70%)',
-              borderRadius: '14px',
-              pointerEvents: 'none',
-              zIndex: -1
-            }}
-          />
+          {/* Header with User Name and Badges title */}
+          <div className="flex items-center justify-between p-4 border-b border-white/10">
+            <div className="flex items-center gap-2">
+              <img 
+                src="/elements/heart-star.webp" 
+                alt="Star" 
+                className="w-6 h-6"
+              />
+              <h3 
+                className="text-white font-bold text-lg"
+                style={{
+                  textShadow: '0 0 8px rgba(255,255,255,0.5)'
+                }}
+              >
+                {profile?.display_name || 'Anonymous'} Badges
+              </h3>
+            </div>
+          </div>
           
-          {/* Content container */}
-          <div className="flex flex-col items-center justify-start space-y-1 pt-2 pb-0">
-              {/* Top row - first 3 categories */}
-              <div className="grid grid-cols-3 gap-4">
-                {badgeCategories.slice(0, 3).map((category) => {
-                  return (
-                    <div key={category.id} className="flex flex-col items-center space-y-0.5">
-                      <button
-                        onClick={() => handleCategoryClick(category.id)}
-                        onMouseEnter={() => sfx.play('hover')}
-                        className="relative w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
+          {/* Integrated Badge Display Area */}
+          <div className="p-4">
+            {/* Horizontal Badge Row - More integrated design */}
+            <div className="flex items-center justify-start gap-2 min-h-[100px] bg-black/30 rounded-xl p-4 border border-white/10">
+              {userUnlockedBadges.length > 0 ? (
+                <>
+                  {userUnlockedBadges.slice(0, 5).map((badge, index) => (
+                    <button
+                      key={badge.id}
+                      onClick={() => {
+                        sfx.play('click');
+                        setEnlargedBadge(badge);
+                        // After a short delay, show the detail view if needed
+                        setTimeout(() => {
+                          setEnlargedBadge(null);
+                          setSelectedBadge(badge);
+                        }, 800);
+                      }}
+                      onMouseEnter={() => sfx.play('hover')}
+                      className="relative w-20 h-20 rounded-full flex items-center justify-center group overflow-hidden flex-shrink-0 transition-all duration-200 hover:scale-105"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(40,40,40,0.8) 100%)',
+                        boxShadow: '0 6px 20px rgba(0, 0, 0, 0.4), 0 0 30px rgba(255, 255, 255, 0.1), inset 0 2px 10px rgba(255,255,255,0.1)',
+                        border: '2px solid rgba(255, 255, 255, 0.3)'
+                      }}
+                      title={badge.badge_name}
+                    >
+                      {/* Inner glow effect */}
+                      <div 
+                        className="absolute inset-1 rounded-full"
                         style={{
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
+                          background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3) 0%, transparent 50%)',
+                          pointerEvents: 'none'
                         }}
-                      >
-                        <img
-                          src={category.image}
-                          alt={category.displayName}
-                          className="w-12 h-12 object-cover rounded-full group-hover:scale-110 transition-transform"
-                          draggable={false}
-                        />
-                      </button>
-                      <span className="text-white text-xs font-medium text-center max-w-20">
-                        {category.displayName}
-                      </span>
+                      />
+                      
+                      {/* Badge content */}
+                      <div className="relative z-10">
+                        {badge.icon_url ? (
+                          <img
+                            src={badge.icon_url}
+                            alt={badge.badge_name}
+                            className="w-14 h-14 object-cover rounded-full"
+                            draggable={false}
+                          />
+                        ) : (
+                          <div className="text-3xl">🏅</div>
+                        )}
+                      </div>
+                      
+                      {/* Outer highlight ring on hover */}
+                      <div className="absolute inset-0 rounded-full border-2 border-transparent group-hover:border-white/50 transition-all duration-200" />
+                    </button>
+                  ))}
+                  
+                  {/* Show more indicator if user has more than 5 badges */}
+                  {userUnlockedBadges.length > 5 && (
+                    <div 
+                      className="flex items-center justify-center w-20 h-20 rounded-full border-2 border-dashed border-white/30 bg-black/40"
+                      style={{
+                        marginLeft: '8px'
+                      }}
+                    >
+                      <span className="text-white text-sm font-bold">+{userUnlockedBadges.length - 5}</span>
                     </div>
-                  );
-                })}
+                  )}
+                </>
+              ) : (
+                <div className="flex-1 text-center text-white/60 py-8">
+                  <div className="text-xl mb-2">🏅</div>
+                  <div className="text-sm font-medium mb-1">No Badges Yet</div>
+                  <div className="text-xs opacity-80">Complete challenges to earn your first badge</div>
+                </div>
+              )}
+            </div>
+            
+            {/* Category Selection Grid */}
+            <div className="mt-6 p-4 bg-black/20 rounded-xl border border-white/10">
+              <div className="text-center mb-4">
+                <h4 className="text-white/90 text-sm font-bold uppercase tracking-wider">
+                  Choose a category to explore your badges and track your progress through the Heartverse.
+                </h4>
               </div>
               
-              {/* Bottom row - last 3 categories */}
-              <div className="grid grid-cols-3 gap-4">
-                {badgeCategories.slice(3, 6).map((category) => {
-                  return (
-                    <div key={category.id} className="flex flex-col items-center space-y-0.5">
-                      <button
-                        onClick={() => handleCategoryClick(category.id)}
-                        onMouseEnter={() => sfx.play('hover')}
-                        className="relative w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
-                        style={{
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,105,180,0.2)'
-                        }}
-                      >
+              {/* 6-item category grid (2x3) */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
+                {badgeCategories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => handleCategoryClick(category.id)}
+                    onMouseEnter={() => sfx.play('hover')}
+                    className="group relative flex flex-col items-center space-y-3 p-4 rounded-xl bg-black/40 border border-white/20 hover:border-white/40 transition-all duration-200 hover:scale-105"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(40,40,40,0.8) 100%)',
+                      boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)'
+                    }}
+                  >
+                    {/* Category Image */}
+                    <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-white/30 group-hover:border-white/50 transition-colors">
+                      <div className="absolute inset-1 bg-gradient-to-br from-gray-800/80 to-black/90 rounded-full" />
+                      <div className="relative z-10 w-full h-full flex items-center justify-center">
                         <img
                           src={category.image}
                           alt={category.displayName}
-                          className="w-12 h-12 object-cover rounded-full group-hover:scale-110 transition-transform"
+                          className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-full"
                           draggable={false}
                         />
-                      </button>
-                      <span className="text-white text-xs font-medium text-center max-w-20">
-                        {category.displayName}
-                      </span>
+                      </div>
                     </div>
-                  );
-                })}
+                    
+                    {/* Category Name */}
+                    <div className="text-center">
+                      <h5 
+                        className="text-white font-bold text-xs sm:text-sm leading-tight group-hover:text-pink-200 transition-colors"
+                        style={{
+                          textShadow: '0 0 4px rgba(255,255,255,0.3)'
+                        }}
+                      >
+                        {category.displayName}
+                      </h5>
+                    </div>
+                    
+                    {/* Badge Count */}
+                    <div className="text-white/60 text-xs">
+                      {category.badges.length} badge{category.badges.length !== 1 ? 's' : ''}
+                    </div>
+                  </button>
+                ))}
               </div>
+            </div>
           </div>
         </div>
       )}

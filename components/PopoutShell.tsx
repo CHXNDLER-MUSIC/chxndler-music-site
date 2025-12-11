@@ -27,9 +27,9 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
       
       {/* Main modal container - exact copy from Binder */}
       <div 
-        className="fixed inset-0 z-[2147483646] flex items-start justify-center"
+        className="fixed inset-0 z-[2147483646] flex items-center justify-center"
         style={{
-          paddingTop: '0.5vh'
+          paddingTop: '1vh'
         }}
       >
         <div
