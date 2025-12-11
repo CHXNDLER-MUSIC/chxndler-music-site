@@ -36,7 +36,7 @@ type Props = {
   unlockPlays?: boolean;     // if false, gesture unlock will not auto-play
 };
 
-export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChange, onAudioReady, wrapChannels = true, startSignal = 0, startIndex = 0, playSignal = 0, toggleSignal = 0, showHUDPlay = true, index, onIndexChange, autoPlayOnIndex = false, unlockPlays = true }: Props) {
+export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChange, onAudioReady, wrapChannels = true, startSignal = 0, startIndex = 0, playSignal = 0, toggleSignal = 0, showHUDPlay = true, index, onIndexChange, autoPlayOnIndex = true, unlockPlays = true }: Props) {
   // Small positive lead time so UI tracks perceived audio output, not decoded timestamp
   // Tuned conservatively to avoid overshoot on slower devices/browsers
   const CURSOR_LEAD_SEC = 0.12;

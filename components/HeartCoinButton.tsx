@@ -61,8 +61,9 @@ interface Card {
 }
 
 
-// Physical store items
-const PHYSICAL_ITEMS: StoreItem[] = [
+// Physical store items - now loaded dynamically from database
+// This hardcoded array is replaced by the dynamic PHYSICAL_ITEMS computed in the component
+const LEGACY_PHYSICAL_ITEMS: StoreItem[] = [
   {
     id: 'necklace',
     slug: 'necklace',
@@ -221,8 +222,8 @@ const PHYSICAL_ITEMS: StoreItem[] = [
   }
 ];
 
-// Combine all items
-const ALL_STORE_ITEMS = [...PHYSICAL_ITEMS];
+// Legacy array for fallback - actual PHYSICAL_ITEMS is now computed dynamically from database
+const ALL_STORE_ITEMS = [...LEGACY_PHYSICAL_ITEMS];
 
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -246,6 +247,17 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, onOpenBinder, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, isActive = false, journalCompleted = false, onJournalCompleted, onClose, onBeamColorChange, ...restProps }: Props) {
   const { profile, refreshProfile, setIsJournalOpen } = useProfile();
+  
+  // New hooks for database-driven merch
+  const { items: merchItems, loading: merchLoading, error: merchError } = useMerchItems('physical');
+  const { purchaseWithHeartCoins, updateShipping, isProcessing, error: purchaseError, clearError } = useMerchPurchase();
+  
+  // Convert MerchItems to StoreItems for backward compatibility
+  const PHYSICAL_ITEMS = useMemo(() => 
+    merchItems.map(merchItemToStoreItem), 
+    [merchItems]
+  );
+  
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'EARN' | 'USE'>('EARN');
   const [activeUseTab, setActiveUseTab] = useState<'MERCH' | 'CARDS'>('MERCH');
@@ -285,7 +297,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [showItemDetail, setShowItemDetail] = useState(false);
   const [showHeartCoinPurchase, setShowHeartCoinPurchase] = useState(false);
   const [heartCoinPayToggled, setHeartCoinPayToggled] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [dailyQuests, setDailyQuests] = useState({
     elementTapped: false,
     journalEntry: journalCompleted,
@@ -969,46 +980,37 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const handlePurchaseWithHeartCoins = async (item: StoreItem) => {
     if (!profile || !item) return;
 
-    // Use the selected item's heartcoin cost, not a hardcoded value
-    const costInHeartCoins = item.priceHeartCoins;
+    // Find the corresponding MerchItem from database
+    const merchItem = merchItems.find(m => m.slug === item.slug);
+    if (!merchItem) {
+      console.error('MerchItem not found for slug:', item.slug);
+      setCheckInMessage("Item not found");
+      setStatusType('error');
+      setTimeout(() => {
+        setCheckInMessage("");
+        setStatusType('idle');
+      }, 3000);
+      return;
+    }
 
-    setIsProcessing(true);
+    console.log("Attempting HeartCoin purchase:", {
+      user_id: profile.id,
+      merch_item_id: merchItem.id,
+      item_slug: item.slug,
+      cost: merchItem.price_heartcoins,
+      current_balance: profile.heartcoin_balance
+    });
 
-    try {
-      console.log("Attempting HeartCoin purchase:", {
-        user_id: profile.id,
-        item_slug: item.slug,
-        cost: costInHeartCoins,
-        current_balance: profile.heartcoin_balance
-      });
+    // Clear any previous errors
+    clearError();
 
-      // Use the API route for HeartCoin purchases
-      const response = await fetch('/api/purchase-item-with-heartcoins', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          itemId: item.slug,
-          itemTitle: item.title,
-          priceHeartCoins: costInHeartCoins,
-          isPhysical: true
-        }),
-      });
+    // Use the new purchase hook that calls secure API
+    const purchaseResult = await purchaseWithHeartCoins(merchItem, 1);
 
-      const result = await response.json();
+    if (purchaseResult) {
+      console.log("Purchase successful, order created:", purchaseResult.order_id);
 
-      if (!response.ok) {
-        console.error('Error purchasing item with HeartCoins', result.error);
-        setIsProcessing(false);
-        throw new Error(result.error || 'Purchase failed');
-      }
-
-      // Capture the new order and shift to the shipping step
-      const newOrder = result.data as { id: string };
-      console.log("Purchase successful, order created:", newOrder);
-
-      setCurrentOrderId(newOrder.id);
+      setCurrentOrderId(purchaseResult.order_id.toString());
       setStep('shipping');
       
       // Play success sound
@@ -1017,46 +1019,37 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       // Refresh profile to update HeartCoin balance
       await refreshProfile();
 
-      setIsProcessing(false);
-
-    } catch (err: any) {
-      console.error("Error completing HeartCoin purchase:", err);
-      setCheckInMessage(err.message || "Purchase failed");
+    } else {
+      // Error is handled by the hook, but we can show it in our UI
+      setCheckInMessage(purchaseError || "Purchase failed");
       setStatusType('error');
       setTimeout(() => {
         setCheckInMessage("");
         setStatusType('idle');
       }, 3000);
-      setIsProcessing(false);
     }
   };
 
   const handleConfirmShipping = async () => {
     if (!currentOrderId || !profile?.id) return;
 
-    setIsProcessing(true);
+    // Clear any previous errors
+    clearError();
 
-    try {
-      const { error } = await supabaseBrowser
-        .from('orders')
-        .update({
-          shipping_name: shippingForm.full_name,
-          shipping_address_line1: shippingForm.address_line1,
-          shipping_address_line2: shippingForm.address_line2,
-          shipping_city: shippingForm.city,
-          shipping_state: shippingForm.state,
-          shipping_zip: shippingForm.zip,
-          shipping_country: shippingForm.country,
-          status: 'ready_to_fulfill'
-        })
-        .eq('id', currentOrderId)
-        .eq('user_id', profile.id);
+    // Use the new shipping update hook
+    const updateResult = await updateShipping({
+      orderId: parseInt(currentOrderId),
+      fullName: shippingForm.full_name,
+      addressLine1: shippingForm.address_line1,
+      addressLine2: shippingForm.address_line2,
+      city: shippingForm.city,
+      state: shippingForm.state,
+      zip: shippingForm.zip,
+      country: shippingForm.country || 'United States'
+    });
 
-      if (error) {
-        console.error('Error updating shipping info', error);
-        setIsProcessing(false);
-        return;
-      }
+    if (updateResult) {
+      console.log('Shipping update successful:', updateResult);
 
       // Success behaviour
       setStep('confirm');
@@ -1081,17 +1074,21 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
       // Close the modal and show success message
       setOpen(false);
-      setCheckInMessage("Order placed with HeartCoins!");
+      setCheckInMessage("Order confirmed! Your artifact is on its way through the Heartverse.");
       setStatusType('success');
       setTimeout(() => {
         setCheckInMessage("");
         setStatusType('idle');
       }, 3000);
-      setIsProcessing(false);
 
-    } catch (error) {
-      console.error('Error updating shipping information:', error);
-      setIsProcessing(false);
+    } else {
+      // Error is handled by the hook
+      setCheckInMessage(purchaseError || "Failed to update shipping information");
+      setStatusType('error');
+      setTimeout(() => {
+        setCheckInMessage("");
+        setStatusType('idle');
+      }, 3000);
     }
   };
 
@@ -1108,7 +1105,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       county: '',
       country: ''
     });
-    setIsProcessing(false);
   };
 
 
@@ -1851,10 +1847,25 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   {/* MERCH Tab Content */}
                   {activeUseTab === 'MERCH' && (
                     <div className="px-2">
+                      {/* Loading state */}
+                      {merchLoading && (
+                        <div className="text-center py-8">
+                          <div className="text-white/70 text-sm">Loading merchandise...</div>
+                        </div>
+                      )}
                       
-                      {/* Current Item Display */}
-                      <div className="mb-2">
-                        {PHYSICAL_ITEMS[currentMerchIndex] && (
+                      {/* Error state */}
+                      {merchError && !merchLoading && (
+                        <div className="text-center py-8">
+                          <div className="text-red-400 text-sm">Failed to load merchandise</div>
+                          <div className="text-white/50 text-xs mt-1">{merchError}</div>
+                        </div>
+                      )}
+                      
+                      {/* Current Item Display - only show if we have items */}
+                      {!merchLoading && !merchError && (
+                        <div className="mb-2">
+                          {PHYSICAL_ITEMS[currentMerchIndex] && (
                           <div 
                             className="rounded-lg pl-4 pr-1 pt-2 pb-4 transition-all duration-200"
                           >
@@ -2100,8 +2111,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               </div>
                             </div>
                           </div>
-                        )}
-                      </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
 
