@@ -16,6 +16,7 @@ type OwnedCardRow = {
     rarity: string;
     is_released?: boolean;
     min_tier?: string;
+    artwork_url?: string;
   };
 };
 
@@ -47,6 +48,7 @@ export default function UserCards({
   const [userCards, setUserCards] = useState<OwnedCardRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
 
   // Fetch user profile and cards
   useEffect(() => {
@@ -76,7 +78,8 @@ export default function UserCards({
                 element,
                 rarity,
                 is_released,
-                min_tier
+                min_tier,
+                artwork_url
               )
             `)
             .eq('user_id', userId)
@@ -111,6 +114,7 @@ export default function UserCards({
     };
 
     fetchUserData();
+    setCurrentPage(0); // Reset to first page when userId changes
   }, [userId]);
 
   const handleCardClick = (card: OwnedCardRow['cards']) => {
@@ -148,20 +152,54 @@ export default function UserCards({
             alt="Card Binder" 
             className="w-5 h-5"
           />
-          <h3 className="text-white/90 text-sm font-bold uppercase tracking-wider">
-            {userProfile?.name || 'User'} Collection
+          <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: '#FF69B4' }}>
+            CARD COLLECTION
           </h3>
         </div>
       )}
 
       {/* Card Grid */}
       <div className="flex items-center gap-2">
+        {/* Left arrow button if not on first page */}
+        {currentPage > 0 && (
+          <button
+            onClick={() => {
+              try { 
+                sfx.play('click', 0.4); 
+              } catch {}
+              setCurrentPage(currentPage - 1);
+            }}
+            onMouseEnter={() => {
+              try { sfx.play('hover', 0.6); } catch {}
+            }}
+            className="flex items-center justify-center w-6 h-8 rounded transition-all duration-200 hover:scale-105"
+            style={{
+              background: 'rgba(255, 105, 180, 0.1)',
+              border: '1px solid #FF69B440',
+              color: '#FF69B4',
+              boxShadow: '0 0 4px #FF69B420'
+            }}
+          >
+            <svg 
+              width="12" 
+              height="12" 
+              viewBox="0 0 24 24" 
+              fill="none"
+              stroke="currentColor" 
+              strokeWidth="2"
+            >
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+          </button>
+        )}
+
         <div className="grid grid-cols-4 gap-2 flex-1">
           {Array.from({ length: maxCards }, (_, index) => {
-            const collectedCard = userCards[index];
+            const cardIndex = currentPage * maxCards + index;
+            const collectedCard = userCards[cardIndex];
             const hasCard = !!collectedCard?.cards;
             const cardSlots = userProfile?.card_slots ?? 0;
-            const isSlotUnlocked = index < cardSlots;
+            const isSlotUnlocked = cardIndex < cardSlots;
             
             return (
               <div
@@ -174,11 +212,11 @@ export default function UserCards({
                       ? 'linear-gradient(135deg, #333 0%, #555 100%)'
                       : 'linear-gradient(135deg, #111 0%, #222 100%)',
                   border: hasCard 
-                    ? '2px solid #00BFFF60'
+                    ? '2px solid #FF69B460'
                     : isSlotUnlocked
-                      ? '2px dashed #00BFFF40'
+                      ? '2px dashed #FF69B440'
                       : '2px solid #333',
-                  boxShadow: hasCard ? '0 0 8px #00BFFF30' : 'none'
+                  boxShadow: hasCard ? '0 0 8px #FF69B430' : 'none'
                 }}
                 onClick={() => {
                   if (hasCard) {
@@ -193,12 +231,13 @@ export default function UserCards({
               >
                 {hasCard ? (
                   <img
-                    src={`/cards/${collectedCard.cards.card_name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/--+/g, '-').replace(/^-|-$/g, '')}.webp`}
+                    src={collectedCard.cards.artwork_url || '/cards/default-card.webp'}
                     alt={collectedCard.cards.card_name}
                     className="w-full h-full object-cover"
                     draggable={false}
                     onError={(e) => {
                       // Fallback image if card image doesn't exist
+                      console.log('Card image failed to load:', e.currentTarget.src);
                       e.currentTarget.src = '/cards/default-card.webp';
                     }}
                   />
@@ -218,23 +257,23 @@ export default function UserCards({
         </div>
         
         {/* Right arrow button if user has more cards */}
-        {userCards.length > maxCards && (
+        {userCards.length > (currentPage + 1) * maxCards && (
           <button
             onClick={() => {
               try { 
                 sfx.play('click', 0.4); 
               } catch {}
-              // This could trigger opening the full binder modal
+              setCurrentPage(currentPage + 1);
             }}
             onMouseEnter={() => {
               try { sfx.play('hover', 0.6); } catch {}
             }}
             className="flex items-center justify-center w-6 h-8 rounded transition-all duration-200 hover:scale-105"
             style={{
-              background: 'rgba(0, 191, 255, 0.1)',
-              border: '1px solid #00BFFF40',
-              color: '#00BFFF',
-              boxShadow: '0 0 4px #00BFFF20'
+              background: 'rgba(255, 105, 180, 0.1)',
+              border: '1px solid #FF69B440',
+              color: '#FF69B4',
+              boxShadow: '0 0 4px #FF69B420'
             }}
           >
             <svg 
@@ -251,15 +290,6 @@ export default function UserCards({
         )}
       </div>
       
-      {/* Card Stats */}
-      <div className="flex justify-between items-center mt-3 pt-2 border-t border-white/10">
-        <div className="text-xs text-white/60">
-          Collected: {userCards.length} cards
-        </div>
-        <div className="text-xs text-white/60">
-          Slots: {userProfile?.card_slots || 0}
-        </div>
-      </div>
     </div>
   );
 }

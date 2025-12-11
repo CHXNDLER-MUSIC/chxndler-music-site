@@ -150,7 +150,14 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                   setInternalOpen(false);
                 }
               }}
-              className="absolute top-2 right-4 text-pink-400 hover:text-pink-200 w-8 h-8 rounded-full border border-pink-400/80 flex items-center justify-center"
+              onMouseEnter={(e) => {
+                try { sfx.play('hover', 0.6); } catch {}
+                e.currentTarget.style.transform = 'scale(1.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+              className="absolute top-2 right-4 text-pink-400 hover:text-pink-200 w-8 h-8 rounded-full border border-pink-400/80 flex items-center justify-center transition-transform duration-200"
               style={{ 
                 fontSize: '16px',
                 boxShadow: '0 0 15px rgba(252,84,175,0.8), 0 0 25px rgba(252,84,175,0.5), 0 0 35px rgba(252,84,175,0.3)',

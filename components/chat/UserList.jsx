@@ -172,11 +172,24 @@ function UserListItem({ user, onClick, currentUserProfile }) {
             style={{
               color: elementColor,
               textShadow: `0 0 6px ${elementColor}80`,
-              maxWidth: '120px'
+              maxWidth: '90px'
             }}
           >
             {displayName.length > 14 ? displayName.slice(0, 13) + '…' : displayName}
           </p>
+          
+          {/* User's chosen element */}
+          {user.element && user.element !== 'alien' && (
+            <ElementIcon 
+              name={user.element}
+              width={12}
+              height={12}
+              className="flex-shrink-0 ml-1"
+              style={{
+                filter: `drop-shadow(0 0 4px ${elementColor}60)`
+              }}
+            />
+          )}
         </div>
       </div>
     </button>

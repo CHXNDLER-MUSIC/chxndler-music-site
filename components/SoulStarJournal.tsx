@@ -125,6 +125,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const [activeTab, setActiveTab] = useState<'private' | 'public'>('private');
   const [showCardsModal, setShowCardsModal] = useState(false);
   const [showBadgesModal, setShowBadgesModal] = useState(false);
+  const [enlargedBadge, setEnlargedBadge] = useState<any>(null);
   const [showIntegratedBinder, setShowIntegratedBinder] = useState(false);
   const [selectedCard, setSelectedCard] = useState<any>(null);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
@@ -504,7 +505,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
   return (
     <div 
-      className="fixed inset-0 z-[2147483649] flex items-start justify-center"
+      className="fixed inset-0 z-[2147483646] flex items-start justify-center"
       style={{ 
         paddingTop: '8vh',
         paddingBottom: '20px',
@@ -597,7 +598,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               onMouseEnter={() => {
                 try { sfx.play('hover', 0.6); } catch {}
               }}
-              className="absolute left-2 top-1/2 transform -translate-y-1/2 text-sm font-semibold transition-all duration-200 hover:opacity-100 px-3 py-1.5 rounded z-20"
+              className="absolute left-2 top-1/2 transform -translate-y-1/2 text-sm font-semibold transition-all duration-200 hover:opacity-100 hover:scale-105 px-3 py-1.5 rounded z-20"
               style={{
                 color: '#00FFFF',
                 textShadow: `0 0 8px #00FFFF, 0 0 15px #00FFFF, 0 0 25px #00FFFF`,
@@ -667,7 +668,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               onMouseEnter={() => {
                 try { sfx.play('hover', 0.6); } catch {}
               }}
-              className="px-4 py-1.5 rounded-full text-sm font-semibold uppercase transition-all"
+              className="px-4 py-1.5 rounded-full text-sm font-semibold uppercase transition-all duration-200 hover:scale-105"
               style={{
                 background: activeTab === 'public' ? '#00FF0030' : 'rgba(0,0,0,0.4)',
                 color: activeTab === 'public' ? '#00FF00' : '#FFFFFFCC',
@@ -686,7 +687,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               onMouseEnter={() => {
                 try { sfx.play('hover', 0.6); } catch {}
               }}
-              className="px-4 py-1.5 rounded-full text-sm font-semibold uppercase transition-all"
+              className="px-4 py-1.5 rounded-full text-sm font-semibold uppercase transition-all duration-200 hover:scale-105"
               style={{
                 background: activeTab === 'private' ? '#FF69B430' : 'rgba(0,0,0,0.4)',
                 color: activeTab === 'private' ? '#FF69B4' : '#FFFFFFCC',
@@ -718,7 +719,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                       <div
                         key={entry.entry_id}
                         onClick={() => handleEntryClick(entry.entry_id)}
-                        className="rounded-lg p-2 space-y-2 cursor-pointer transition-all duration-200 hover:opacity-90"
+                        onMouseEnter={() => {
+                          try { sfx.play('hover', 0.6); } catch {}
+                        }}
+                        className="rounded-lg p-2 space-y-2 cursor-pointer transition-all duration-200 hover:opacity-90 hover:scale-105"
                         style={{
                           background: 'rgba(0, 0, 0, 0.4)',
                           border: `1px solid ${entryTheme.color}40`,
@@ -738,9 +742,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                 textShadow: `0 0 4px ${entryTheme.glow}`
                               }}
                             >
-                              {entryElement === 'darkness' ? (
-                                <img src="/elements/darkness.webp" alt="Darkness" className="w-4 h-4" />
-                              ) : entryEmoji} {entry.element?.toUpperCase()}
+                              {entry.element?.toUpperCase()}
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
@@ -974,7 +976,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                         <div className="flex items-center justify-between mb-2 relative">
                           {/* Profile Info - Left */}
                           <div 
-                            className="flex items-center gap-2 cursor-pointer transition-all duration-200 hover:opacity-80"
+                            className="flex items-center gap-2 cursor-pointer transition-all duration-200 hover:opacity-80 hover:scale-105"
                             onClick={(e) => {
                               e.stopPropagation();
                               try { sfx.play('click', 0.6); } catch {}
@@ -1017,9 +1019,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                 textShadow: `0 0 4px ${entryTheme.glow}`
                               }}
                             >
-                              {entryElement === 'darkness' ? (
-                                <img src="/elements/darkness.webp" alt="Darkness" className="w-4 h-4" />
-                              ) : entryEmoji} {entry.element?.toUpperCase()}
+                              {entry.element?.toUpperCase()}
                             </div>
                             {/* Soul Star Button */}
                             <button
@@ -1072,15 +1072,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                         >
                           {showProfileInfo[entry.entry_id] ? (
                             <>
-                              {/* Profile Header */}
-                              <div className="flex items-center gap-2 mb-2">
-                                <div 
-                                  className="text-sm font-semibold uppercase tracking-wider"
-                                  style={{ color: entryTheme.color, textShadow: `0 0 4px ${entryTheme.glow}` }}
-                                >
-                                  User Profile
-                                </div>
-                              </div>
                               
                               {/* Profile Info Layout */}
                               <div className="flex items-start gap-3 mb-3">
@@ -1094,103 +1085,110 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                   }}
                                 />
                                 <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <div className="text-base font-semibold text-white">
-                                      {entry.profiles?.name || 'Anonymous'}
-                                    </div>
-                                    <div 
-                                      className="text-sm font-medium uppercase tracking-wider flex items-center gap-1"
-                                      style={{ color: entryTheme.color }}
-                                    >
-                                      {entryElement === 'darkness' ? (
-                                        <img src="/elements/darkness.webp" alt="Darkness" className="w-4 h-4" />
-                                      ) : entryEmoji} {entry.element?.toUpperCase() || 'Unknown Element'}
+                                  <div className="mb-2">
+                                    <div className="flex items-center">
+                                      <div className="text-lg font-semibold text-white">
+                                        {entry.profiles?.name || 'Anonymous'}
+                                      </div>
                                     </div>
                                   </div>
                                   
-                                  {/* Action buttons below username */}
-                                  <div className="flex gap-2">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        try { sfx.play('click', 0.4); } catch {}
-                                        setShowIntegratedBinder(!showIntegratedBinder);
-                                      }}
-                                      onMouseEnter={() => {
-                                        try { sfx.play('hover', 0.6); } catch {}
-                                      }}
-                                      className="w-8 h-8 rounded-full text-xs font-semibold transition-all duration-200 hover:scale-105 flex items-center justify-center"
-                                      style={{
-                                        background: showIntegratedBinder ? 'rgba(0, 191, 255, 0.2)' : 'rgba(0, 191, 255, 0.1)',
-                                        color: '#00BFFF',
-                                        textShadow: '0 0 4px #00BFFF',
-                                        boxShadow: showIntegratedBinder ? '0 0 12px #00BFFF50' : '0 0 8px #00BFFF30'
-                                      }}
-                                    >
-                                      <img 
-                                        src="/elements/binder.webp" 
-                                        alt="Binder" 
-                                        className="w-4 h-4"
-                                      />
-                                    </button>
+                                  {/* Action buttons and element badge row */}
+                                  <div className="flex items-center justify-between w-full">
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          try { sfx.play('click', 0.4); } catch {}
+                                          setShowIntegratedBinder(!showIntegratedBinder);
+                                        }}
+                                        onMouseEnter={() => {
+                                          try { sfx.play('hover', 0.6); } catch {}
+                                        }}
+                                        className="w-10 h-10 rounded-full text-xs font-semibold transition-all duration-200 hover:scale-105 flex items-center justify-center"
+                                        style={{
+                                          background: 'transparent',
+                                          color: '#00BFFF',
+                                          textShadow: '0 0 4px #00BFFF'
+                                        }}
+                                      >
+                                        <img 
+                                          src="/elements/binder.webp" 
+                                          alt="Binder" 
+                                          className="w-7 h-7"
+                                        />
+                                      </button>
 
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        try { sfx.play('click', 0.4); } catch {}
-                                        setShowBadgesModal(!showBadgesModal);
-                                      }}
-                                      onMouseEnter={() => {
-                                        try { sfx.play('hover', 0.6); } catch {}
-                                      }}
-                                      className="w-8 h-8 rounded-full text-xs font-semibold transition-all duration-200 hover:scale-105 flex items-center justify-center"
-                                      style={{
-                                        background: showBadgesModal ? 'rgba(255, 105, 180, 0.2)' : 'rgba(255, 105, 180, 0.1)',
-                                        color: '#FF69B4',
-                                        textShadow: '0 0 4px #FF69B4',
-                                        boxShadow: showBadgesModal ? '0 0 12px #FF69B450' : '0 0 8px #FF69B440'
-                                      }}
-                                    >
-                                      <img 
-                                        src="/elements/badges.webp" 
-                                        alt="Badges" 
-                                        className="w-4 h-4"
-                                      />
-                                    </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          try { sfx.play('click', 0.4); } catch {}
+                                          setShowBadgesModal(!showBadgesModal);
+                                        }}
+                                        onMouseEnter={() => {
+                                          try { sfx.play('hover', 0.6); } catch {}
+                                        }}
+                                        className="w-10 h-10 rounded-full text-xs font-semibold transition-all duration-200 hover:scale-105 flex items-center justify-center"
+                                        style={{
+                                          background: 'transparent',
+                                          color: '#FF69B4',
+                                          textShadow: '0 0 4px #FF69B4'
+                                        }}
+                                      >
+                                        <img 
+                                          src="/elements/badges.webp" 
+                                          alt="Badges" 
+                                          className="w-7 h-7"
+                                        />
+                                      </button>
+                                    </div>
+                                    
+                                    {/* Element badge centered between buttons and stats */}
+                                    <div className="flex-1 flex justify-center">
+                                      <div 
+                                        className="text-sm font-medium uppercase tracking-wider flex items-center gap-1 px-2 py-1 rounded-full"
+                                        style={{ 
+                                          color: entryTheme.color,
+                                          background: `${entryTheme.color}20`,
+                                          border: `1px solid ${entryTheme.color}40`
+                                        }}
+                                      >
+                                        {entry.element?.toUpperCase() || 'Unknown Element'}
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                              
-                              {/* Stats */}
-                              <div className="flex gap-3 mb-3">
-                                <div className="flex-1 flex items-center gap-2 bg-black/30 rounded-full px-3 py-1">
-                                  <span className="text-xs text-white/60">Streak:</span>
-                                  <span 
-                                    className="font-bold text-sm"
-                                    style={{
-                                      color: '#00FFFF',
-                                      textShadow: '0 0 6px #00FFFF'
-                                    }}
-                                  >
-                                    {entry.profiles?.daily_streak_current || 0} days
-                                  </span>
-                                </div>
-                                <div className="flex-1 flex items-center gap-2 bg-black/30 rounded-full px-3 py-1">
-                                  <span className="text-xs text-white/60">Total:</span>
-                                  <img 
-                                    src="/elements/heart-coin.webp" 
-                                    alt="Heart Coin" 
-                                    className="w-4 h-4"
-                                  />
-                                  <span 
-                                    className="font-bold text-sm"
-                                    style={{
-                                      color: '#FF69B4',
-                                      textShadow: '0 0 6px #FF69B4'
-                                    }}
-                                  >
-                                    {entry.profiles?.heartcoin_total || 0}
-                                  </span>
+                                
+                                {/* Stats positioned at the very right */}
+                                <div className="flex flex-col items-end gap-1">
+                                  <div className="flex items-center gap-1 bg-black/30 rounded-full px-2 py-1">
+                                    <span className="text-xs text-white/60">Total:</span>
+                                    <img 
+                                      src="/elements/heart-coin.webp" 
+                                      alt="Heart Coin" 
+                                      className="w-4 h-4"
+                                    />
+                                    <span 
+                                      className="font-bold text-xs"
+                                      style={{
+                                        color: '#FF69B4',
+                                        textShadow: '0 0 6px #FF69B4'
+                                      }}
+                                    >
+                                      {entry.profiles?.heartcoin_total || 0}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1 bg-black/30 rounded-full px-2 py-1">
+                                    <span 
+                                      className="font-bold text-xs"
+                                      style={{
+                                        color: '#FF69B4',
+                                        textShadow: '0 0 6px #FF69B4'
+                                      }}
+                                    >
+                                      Streak: {entry.profiles?.daily_streak || 0} Days
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
 
@@ -1199,9 +1197,9 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                 <div 
                                   className="rounded-lg px-3 py-2 mb-2"
                                   style={{
-                                    background: 'rgba(0, 191, 255, 0.1)',
-                                    border: `1px solid #00BFFF30`,
-                                    boxShadow: `0 0 8px #00BFFF20`
+                                    background: 'rgba(255, 105, 180, 0.1)',
+                                    border: `1px solid #FF69B430`,
+                                    boxShadow: `0 0 8px #FF69B420`
                                   }}
                                 >
                                   <UserCards
@@ -1209,10 +1207,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                     embedded={true}
                                     showTitle={true}
                                     maxCards={4}
-                                    onCardClick={(card) => {
-                                      setSelectedCard(card);
-                                      setShowCardsModal(true);
-                                    }}
                                   />
                                 </div>
                               )}
@@ -1222,16 +1216,20 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                 <div 
                                   className="rounded-lg px-3 py-2 mb-2"
                                   style={{
-                                    background: 'rgba(255, 105, 180, 0.1)',
-                                    border: `1px solid #FF69B430`,
-                                    boxShadow: `0 0 8px #FF69B420`
+                                    background: 'rgba(0, 255, 255, 0.1)',
+                                    border: `1px solid #00FFFF30`,
+                                    boxShadow: `0 0 8px #00FFFF20`
                                   }}
                                 >
                                   <UserBadges
                                     userId={entry.user_id}
                                     embedded={true}
                                     showTitle={true}
-                                    maxBadges={12}
+                                    maxBadges={5}
+                                    onBadgeClick={(badge) => {
+                                      setEnlargedBadge(badge);
+                                      setShowBadgesModal(true);
+                                    }}
                                   />
                                 </div>
                               )}
@@ -1322,16 +1320,15 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                   }}
                                   className="flex-1 w-10 h-10 rounded-full text-xs font-semibold transition-all duration-200 hover:scale-105 flex items-center justify-center"
                                   style={{
-                                    background: showIntegratedBinder ? 'rgba(0, 191, 255, 0.2)' : 'rgba(0, 191, 255, 0.1)',
+                                    background: 'transparent',
                                                                         color: '#00BFFF',
-                                    textShadow: '0 0 4px #00BFFF',
-                                    boxShadow: showIntegratedBinder ? '0 0 12px #00BFFF50' : '0 0 8px #00BFFF30'
+                                    textShadow: '0 0 4px #00BFFF'
                                   }}
                                 >
                                   <img 
                                     src="/elements/binder.webp" 
                                     alt="Binder" 
-                                    className="w-5 h-5"
+                                    className="w-6 h-6"
                                   />
                                 </button>
 
@@ -1347,16 +1344,15 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                   }}
                                   className="flex-1 w-10 h-10 rounded-full text-xs font-semibold transition-all duration-200 hover:scale-105 flex items-center justify-center"
                                   style={{
-                                    background: showBadgesModal ? 'rgba(255, 105, 180, 0.2)' : 'rgba(255, 105, 180, 0.1)',
+                                    background: 'transparent',
                                                                         color: '#FF69B4',
-                                    textShadow: '0 0 4px #FF69B4',
-                                    boxShadow: showBadgesModal ? '0 0 12px #FF69B450' : '0 0 8px #FF69B440'
+                                    textShadow: '0 0 4px #FF69B4'
                                   }}
                                 >
                                   <img 
                                     src="/elements/badges.webp" 
                                     alt="Badges" 
-                                    className="w-4 h-4"
+                                    className="w-5 h-5"
                                   />
                                 </button>
                               </div>
@@ -2003,7 +1999,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       {/* Card Popup Modal */}
       {selectedCard && (
         <div 
-          className="fixed inset-0 z-[2147483650] flex items-center justify-center p-4 pointer-events-none"
+          className="fixed inset-0 z-[2147483645] flex items-center justify-center p-4 pointer-events-none"
           onClick={() => {
             setSelectedCard(null);
             setIsCardFlipped(false);
@@ -2072,6 +2068,16 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
         </div>
       )}
+
+      {/* Badges Modal for enlarged badge view */}
+      <BadgesModal
+        open={showBadgesModal && !!enlargedBadge}
+        onClose={() => {
+          setShowBadgesModal(false);
+          setEnlargedBadge(null);
+        }}
+        embedded={false}
+      />
 
       <style jsx>{`
         @keyframes cardPulse {

@@ -68,6 +68,7 @@ type Props = {
   className?: string;
   showTitle?: boolean;
   maxBadges?: number; // Limit number of badges shown
+  onBadgeClick?: (badge: BadgeDisplay) => void;
 };
 
 export default function UserBadges({ 
@@ -75,7 +76,8 @@ export default function UserBadges({
   embedded = true, 
   className = "", 
   showTitle = false,
-  maxBadges = 6 
+  maxBadges = 6,
+  onBadgeClick 
 }: Props) {
   const { user: currentUser } = useProfile();
   
@@ -85,6 +87,7 @@ export default function UserBadges({
   const [userBadges, setUserBadges] = useState<UserBadgeRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
 
   // Fetch user profile data
   useEffect(() => {
@@ -191,6 +194,7 @@ export default function UserBadges({
     };
 
     fetchBadgeData();
+    setCurrentPage(0); // Reset to first page when userId changes
   }, [userId]);
 
   // Create badge display objects with unlocked status and progress
@@ -274,17 +278,50 @@ export default function UserBadges({
             alt="Badges" 
             className="w-5 h-5"
           />
-          <h3 className="text-white/90 text-sm font-bold uppercase tracking-wider">
-            {userProfile?.name || 'User'} Badges
+          <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: '#00FFFF' }}>
+            BADGES UNLOCKED
           </h3>
         </div>
       )}
 
       {/* Horizontal Badge Row */}
       <div className="flex items-center justify-start gap-2 min-h-[60px] bg-black/30 rounded-xl p-3 border border-white/10">
+        {/* Left arrow button if not on first page */}
+        {currentPage > 0 && (
+          <button
+            onClick={() => {
+              try { 
+                sfx.play('click', 0.4); 
+              } catch {}
+              setCurrentPage(currentPage - 1);
+            }}
+            onMouseEnter={() => {
+              try { sfx.play('hover', 0.6); } catch {}
+            }}
+            className="flex items-center justify-center w-6 h-8 rounded transition-all duration-200 hover:scale-105"
+            style={{
+              background: 'rgba(255, 105, 180, 0.1)',
+              border: '1px solid #FF69B440',
+              color: '#FF69B4',
+              boxShadow: '0 0 4px #FF69B420'
+            }}
+          >
+            <svg 
+              width="12" 
+              height="12" 
+              viewBox="0 0 24 24" 
+              fill="none"
+              stroke="currentColor" 
+              strokeWidth="2"
+            >
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+          </button>
+        )}
+
         {userUnlockedBadges.length > 0 ? (
           <>
-            {userUnlockedBadges.slice(0, maxBadges).map((badge) => (
+            {userUnlockedBadges.slice(currentPage * maxBadges, (currentPage + 1) * maxBadges).map((badge) => (
               <div
                 key={badge.id}
                 className="relative w-12 h-12 rounded-full flex items-center justify-center group overflow-hidden flex-shrink-0 cursor-pointer transition-all duration-200 hover:scale-105"
@@ -294,6 +331,12 @@ export default function UserBadges({
                   border: '2px solid rgba(255, 255, 255, 0.3)'
                 }}
                 title={badge.badge_name}
+                onClick={() => {
+                  try { sfx.play('click', 0.6); } catch {}
+                  if (onBadgeClick) {
+                    onBadgeClick(badge);
+                  }
+                }}
                 onMouseEnter={() => {
                   try { sfx.play('hover', 0.6); } catch {}
                 }}
@@ -315,13 +358,13 @@ export default function UserBadges({
             ))}
             
             {/* Right arrow button if user has more badges */}
-            {userUnlockedBadges.length > maxBadges && (
+            {userUnlockedBadges.length > (currentPage + 1) * maxBadges && (
               <button
                 onClick={() => {
                   try { 
                     sfx.play('click', 0.4); 
                   } catch {}
-                  // This could trigger opening the full badges modal or pagination
+                  setCurrentPage(currentPage + 1);
                 }}
                 onMouseEnter={() => {
                   try { sfx.play('hover', 0.6); } catch {}

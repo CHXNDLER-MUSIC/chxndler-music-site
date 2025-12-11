@@ -39,7 +39,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
             width: 'min(85vw, 550px)',
             height: 'auto',
             maxHeight: compact ? '320px' : '75vh',
-            minHeight: compact ? '200px' : '720px',
+            minHeight: compact ? '200px' : '760px',
             display: 'flex',
             flexDirection: 'column',
             padding: '0px',
@@ -92,10 +92,14 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
               try { sfx.play('close', 0.8); } catch {}
               onClose();
             }}
-            onMouseEnter={() => {
-              try { sfx.play('hover', 0.3); } catch {}
+            onMouseEnter={(e) => {
+              try { sfx.play('hover.mp3', 0.3); } catch {}
+              e.currentTarget.style.transform = 'scale(1.1)';
             }}
-            className="absolute top-4 right-3 text-pink-400 hover:text-pink-200 cursor-pointer w-8 h-8 rounded-full border border-pink-400/80 flex items-center justify-center"
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+            className="absolute top-4 right-3 text-pink-400 hover:text-pink-200 cursor-pointer w-8 h-8 rounded-full border border-pink-400/80 flex items-center justify-center transition-transform duration-200"
             style={{ 
               fontSize: '16px',
               boxShadow: '0 0 15px rgba(255,105,180,0.8), 0 0 25px rgba(255,105,180,0.5), 0 0 35px rgba(255,105,180,0.3)',
@@ -171,11 +175,12 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
             <div 
               className="absolute left-1/2 transform -translate-x-1/2"
               style={{
-                bottom: '80px',
+                bottom: '50px',
                 color: '#FF69B4',
                 fontSize: '12px',
                 fontWeight: 'bold',
                 textShadow: '0 0 4px rgba(255,105,180,0.6)',
+                zIndex: 20,
                 pointerEvents: 'none'
               }}
             >

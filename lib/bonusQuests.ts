@@ -268,7 +268,7 @@ export async function completeSecretPhraseQuest(params: {
       .from('secret_phrases')
       .select('*')
       .ilike('secret_phrase', trimmedPhrase)
-      .lte('active_date', today)
+      .eq('active_date', today)
       .eq('is_active', true)
       .maybeSingle();
 

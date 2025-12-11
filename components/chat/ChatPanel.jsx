@@ -134,6 +134,19 @@ export default function ChatPanel({ isOpen, onClose }) {
     }
   };
 
+  // Helper function to get element color (hex values for consistency with BinderModal)
+  const getElementColor = (element) => {
+    const elementColors = {
+      'LIGHTNING': '#FFD700', // Gold
+      'DARKNESS': '#FFFFFF', // White
+      'WATER': '#1E90FF', // Dodger blue
+      'HEART': '#FF69B4', // Hot pink
+      'ALL': '#FFFFFF', // White for special cards
+      'CHXNDLER': '#FF69B4' // Hot pink for default
+    };
+    return elementColors[element] || '#FFFFFF';
+  };
+
   // Get card image URL for a given song
   const getCardImage = (songName, element) => {
     const songImages = {
@@ -1119,21 +1132,18 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 />
                               )}
                               
-                              <h3 
-                                className="text-lg font-bold truncate flex-1"
-                                style={{
-                                  color: '#F2EF1D',
-                                  textShadow: '0 0 8px #F2EF1D'
-                                }}
-                              >
-                                {selectedUser.id === 'anonymous' ? alienName : (selectedUser.name || getDisplayName())}
-                              </h3>
-                            </div>
-                            
-                            {/* Total Heart Coins + Journey */}
-                            <div className="flex flex-col items-end space-y-0 flex-shrink-0">
-                              <div className="flex items-center space-x-2">
-                                {/* Journey to the left of TOTAL */}
+                              <div className="flex flex-col">
+                                <h3 
+                                  className="text-lg font-bold truncate flex-1"
+                                  style={{
+                                    color: '#F2EF1D',
+                                    textShadow: '0 0 8px #F2EF1D'
+                                  }}
+                                >
+                                  {selectedUser.id === 'anonymous' ? alienName : (selectedUser.name || getDisplayName())}
+                                </h3>
+                                
+                                {/* Journey directly below user name */}
                                 <span
                                   className={"text-sm font-bold " + (
                                     ((selectedUser.id === 'anonymous')
@@ -1150,6 +1160,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                           ? 'text-yellow-400'
                                           : 'text-cyan-400')
                                   )}
+                                  style={{ lineHeight: '1.2' }}
                                 >
                                   { (selectedUser.id === 'anonymous')
                                     ? 'WANDERER'
@@ -1157,6 +1168,24 @@ export default function ChatPanel({ isOpen, onClose }) {
                                       ? String(profile.journey).toUpperCase()
                                       : 'WANDERER' }
                                 </span>
+                                
+                                {/* Element directly below journey */}
+                                <span 
+                                  className="text-sm font-bold mt-1"
+                                  style={{
+                                    color: getElementColor(selectedUser?.element ? String(selectedUser.element).toUpperCase() : 'CHXNDLER'),
+                                    textShadow: `0 0 4px ${getElementColor(selectedUser?.element ? String(selectedUser.element).toUpperCase() : 'CHXNDLER')}80`,
+                                    lineHeight: '1.2'
+                                  }}
+                                >
+                                  {selectedUser?.element ? String(selectedUser.element).toUpperCase() : 'CHXNDLER'}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            {/* Total Heart Coins */}
+                            <div className="flex flex-col items-end space-y-0 flex-shrink-0">
+                              <div className="flex items-center space-x-2">
 
                                 <div className="flex items-center space-x-1 px-2 py-0.5 rounded bg-black/30">
                                   <span className="text-xs text-white/80 font-medium">TOTAL</span>
@@ -1216,115 +1245,120 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 </span>
                                 <span>Days Streak</span>
                               </div>
+                              
+                              {/* Badges and Binder Icons - positioned directly under streak */}
+                              <div className="flex items-center space-x-3 mt-2 justify-center">
+                                <button 
+                                  onClick={() => {
+                                    try {
+                                      const audio = new Audio('/audio/click.mp3');
+                                      audio.volume = 0.3;
+                                      audio.play().catch(error => {
+                                        console.log('Click audio play failed:', error);
+                                      });
+                                    } catch (error) {
+                                      console.log('Click audio creation failed:', error);
+                                    }
+                                    if (showUserBadges) {
+                                      // If badges are already showing, hide them
+                                      setBadgeStartIndex(0);
+                                      setShowUserBadges(false);
+                                    } else {
+                                      // Show badges and hide other panels
+                                      setBadgeStartIndex(0);
+                                      setShowUserBadges(true);
+                                      setShowUserBinder(false);
+                                      setShowSendHeartCoin(false);
+                                      setBinderStartIndex(0);
+                                    }
+                                  }}
+                                  onMouseEnter={() => {
+                                    try { sfx.play('hover', 0.3); } catch {}
+                                  }}
+                                  className="hover:scale-110 transition-transform"
+                                  title="View Badges"
+                                >
+                                  <img 
+                                    src="/elements/badges.webp" 
+                                    alt="Badges" 
+                                    className="w-7 h-7"
+                                  />
+                                </button>
+                                
+                                <button 
+                                  onClick={() => {
+                                    try {
+                                      const audio = new Audio('/audio/click.mp3');
+                                      audio.volume = 0.3;
+                                      audio.play().catch(error => {
+                                        console.log('Click audio play failed:', error);
+                                      });
+                                    } catch (error) {
+                                      console.log('Click audio creation failed:', error);
+                                    }
+                                    if (showUserBinder) {
+                                      // If binder is already showing, hide it
+                                      setBinderStartIndex(0);
+                                      setShowUserBinder(false);
+                                    } else {
+                                      // Show binder and hide other panels
+                                      setBinderStartIndex(0);
+                                      setShowUserBinder(true);
+                                      setShowUserBadges(false);
+                                      setShowSendHeartCoin(false);
+                                      setBadgeStartIndex(0);
+                                    }
+                                  }}
+                                  onMouseEnter={() => {
+                                    try { sfx.play('hover', 0.3); } catch {}
+                                  }}
+                                  className="hover:scale-110 transition-transform"
+                                  title="View Cards"
+                                >
+                                  <img 
+                                    src="/elements/binder.webp" 
+                                    alt="Cards" 
+                                    className="w-7 h-7"
+                                  />
+                                </button>
+                                
+                                {/* Send Heart Coin Button - Show for all users for now */}
+                                {selectedUser.id !== 'anonymous' && (
+                                  <button 
+                                    className="hover:scale-110 transition-transform"
+                                    title="Send Heart Coin"
+                                    onClick={() => {
+                                      try {
+                                        const audio = new Audio('/audio/click.mp3');
+                                        audio.volume = 0.3;
+                                        audio.play().catch(error => {
+                                          console.log('Click audio play failed:', error);
+                                        });
+                                      } catch (error) {
+                                        console.log('Click audio creation failed:', error);
+                                      }
+                                      // Show send heart coin interface and hide others
+                                      setShowSendHeartCoin(true);
+                                      setShowUserBadges(false);
+                                      setShowUserBinder(false);
+                                      setBadgeStartIndex(0);
+                                      setBinderStartIndex(0);
+                                    }}
+                                    onMouseEnter={() => {
+                                      try { sfx.play('hover', 0.3); } catch {}
+                                    }}
+                                  >
+                                    <img 
+                                      src="/elements/heart-coin.webp" 
+                                      alt="Send Heart Coin" 
+                                      className="w-7 h-7"
+                                    />
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
                           
-                          {/* Badges, Binder Icons, and Send Heart Coin Row */}
-                          <div className="flex items-center space-x-3 mt-0 ml-8">
-                            <button 
-                              onClick={() => {
-                                try {
-                                  const audio = new Audio('/audio/click.mp3');
-                                  audio.volume = 0.3;
-                                  audio.play().catch(error => {
-                                    console.log('Click audio play failed:', error);
-                                  });
-                                } catch (error) {
-                                  console.log('Click audio creation failed:', error);
-                                }
-                                if (showUserBadges) {
-                                  // If badges are already showing, hide them
-                                  setBadgeStartIndex(0);
-                                  setShowUserBadges(false);
-                                } else {
-                                  // Show badges and hide other panels
-                                  setBadgeStartIndex(0);
-                                  setShowUserBadges(true);
-                                  setShowUserBinder(false);
-                                  setShowSendHeartCoin(false);
-                                  setBinderStartIndex(0);
-                                }
-                              }}
-                              onMouseEnter={() => {
-                                try { sfx.play('hover', 0.3); } catch {}
-                              }}
-                              className="hover:scale-110 transition-transform"
-                              title="View Badges"
-                            >
-                              <img 
-                                src="/elements/badges.webp" 
-                                alt="Badges" 
-                                className="w-6 h-6"
-                              />
-                            </button>
-                            
-                            <button 
-                              onClick={() => {
-                                try {
-                                  const audio = new Audio('/audio/click.mp3');
-                                  audio.volume = 0.3;
-                                  audio.play().catch(error => {
-                                    console.log('Click audio play failed:', error);
-                                  });
-                                } catch (error) {
-                                  console.log('Click audio creation failed:', error);
-                                }
-                                if (showUserBinder) {
-                                  // If binder is already showing, hide it
-                                  setBinderStartIndex(0);
-                                  setShowUserBinder(false);
-                                } else {
-                                  // Show binder and hide other panels
-                                  setBinderStartIndex(0);
-                                  setShowUserBinder(true);
-                                  setShowUserBadges(false);
-                                  setShowSendHeartCoin(false);
-                                  setBadgeStartIndex(0);
-                                }
-                              }}
-                              onMouseEnter={() => {
-                                try { sfx.play('hover', 0.3); } catch {}
-                              }}
-                              className="hover:scale-110 transition-transform"
-                              title="View Cards"
-                            >
-                              <img 
-                                src="/elements/binder.webp" 
-                                alt="Cards" 
-                                className="w-6 h-6"
-                              />
-                            </button>
-                            
-                            {/* Send Heart Coin Button - Only show if not viewing your own profile */}
-                            {selectedUser.id !== user?.id && selectedUser.id !== 'anonymous' && user && profile?.name && (
-                              <button 
-                                className="w-6 h-6 rounded flex items-center justify-center bg-black/20 border border-pink-400/30 hover:bg-pink-400/20 transition-colors hover:scale-110"
-                                title="Send Heart Coin"
-                                onClick={() => {
-                                  try {
-                                    const audio = new Audio('/audio/click.mp3');
-                                    audio.volume = 0.3;
-                                    audio.play().catch(error => {
-                                      console.log('Click audio play failed:', error);
-                                    });
-                                  } catch (error) {
-                                    console.log('Click audio creation failed:', error);
-                                  }
-                                  // Show send heart coin interface and hide others
-                                  setShowSendHeartCoin(true);
-                                  setShowUserBadges(false);
-                                  setShowUserBinder(false);
-                                  setBadgeStartIndex(0);
-                                  setBinderStartIndex(0);
-                                }}
-                                onMouseEnter={() => {
-                                  try { sfx.play('hover', 0.3); } catch {}
-                                }}
-                              >
-                                <span className="text-xs">💖</span>
-                              </button>
-                            )}
-                          </div>
                         </div>
                         {/* Removed right-side arrow close button to declutter UI near streak */}
                       </div>

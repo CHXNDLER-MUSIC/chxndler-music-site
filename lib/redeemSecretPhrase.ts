@@ -42,12 +42,12 @@ export async function redeemSecretPhrase({
 
     // Query for active secret phrases
     // Note: current schema doesn't have context column, so we'll match any active phrase
+    const today = now.split('T')[0]; // Get YYYY-MM-DD format
     const { data: phrases, error: phrasesError } = await supabase
       .from('secret_phrases')
       .select('*')
-      .eq('code', trimmedPhrase.toLowerCase())
-      .lte('start_at', now)
-      .gte('end_at', now)
+      .eq('secret_phrase', trimmedPhrase.toLowerCase())
+      .eq('active_date', today)
       .eq('is_active', true);
 
     if (phrasesError) {

@@ -1202,8 +1202,12 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                         setBinderPage(pages[currentIndex + 1] as any);
                       }
                     }}
-                    onMouseEnter={() => {
+                    onMouseEnter={(e) => {
                       try { sfx.play('hover', 0.3); } catch {}
+                      e.currentTarget.style.transform = 'scale(1.1)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)';
                     }}
                     style={{
                       boxShadow: '0 0 15px rgba(255,105,180,0.3)',
@@ -1241,8 +1245,12 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           setBinderPage(pages[currentIndex - 1] as any);
                         }
                       }}
-                      onMouseEnter={() => {
+                      onMouseEnter={(e) => {
                         try { sfx.play('hover', 0.3); } catch {}
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
                       }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',

@@ -171,6 +171,9 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
         {/* Close button with tier color */}
         <button
           onClick={handleClose}
+          onMouseEnter={() => {
+            try { sfx.play('hover', 0.6); } catch {}
+          }}
           className="absolute top-4 right-4 cursor-pointer w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
           style={{ 
             fontSize: '16px',
@@ -268,6 +271,7 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
                     }}
                     onMouseEnter={(e) => {
                       if (!isFlipped) {
+                        try { sfx.play('hover', 0.6); } catch {}
                         e.currentTarget.style.transform = 'scale(1.05)';
                         e.currentTarget.style.boxShadow = `0 0 50px ${data.glowColor}, inset 0 0 50px rgba(255,255,255,0.2)`;
                       }
