@@ -611,6 +611,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               try { sfx.play('close', 0.8); } catch {}
               onClose();
             }}
+            onMouseEnter={() => {
+              try { sfx.play('hover', 0.3); } catch {}
+            }}
             className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
             style={{
               background: 'rgba(0,255,255,0.2)',
@@ -630,6 +633,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               setShowRelicsInline(!showRelicsInline);
               setShowElementMenu(false); // Close element menu when opening relics display
               try { sfx.play('click', 0.6); } catch {}
+            }}
+            onMouseEnter={() => {
+              try { sfx.play('hover', 0.3); } catch {}
             }}
             className="absolute top-16 right-4 w-10 h-10 rounded-full border-2 border-pink-400/60 bg-pink-400/10 hover:border-pink-400/80 hover:bg-pink-400/20 transition-all duration-200 hover:scale-110 flex items-center justify-center overflow-hidden"
             style={{
@@ -678,6 +684,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                     setShowElementMenu(!showElementMenu);
                     setShowRelicsInline(false); // Close relics display when opening profile menu
                     try { sfx.play('click', 0.4); } catch {}
+                  }}
+                  onMouseEnter={() => {
+                    try { sfx.play('hover', 0.3); } catch {}
                   }}
                   className="w-20 h-20 rounded-full border-2 border-cyan-400/60 overflow-hidden transition-all duration-200 hover:scale-105 hover:shadow-[0_0_25px_rgba(0,255,255,0.6)]"
                   style={{
@@ -767,6 +776,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                       setShowElementInfo(!showElementInfo);
                       try { sfx.play('click', 0.4); } catch {}
                     }
+                  }}
+                  onMouseEnter={() => {
+                    try { sfx.play('hover', 0.3); } catch {}
                   }}
                   className="font-bold transition-all duration-200 hover:scale-105 cursor-pointer flex items-center"
                   style={{ 
@@ -862,6 +874,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 onClick={() => {
                   setShowElementMenu(false);
                   try { sfx.play('close', 0.6); } catch {}
+                }}
+                onMouseEnter={() => {
+                  try { sfx.play('hover', 0.3); } catch {}
                 }}
                 className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
                 style={{
@@ -1021,6 +1036,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   setShowRelicsInline(false);
                   try { sfx.play('close', 0.6); } catch {}
                 }}
+                onMouseEnter={() => {
+                  try { sfx.play('hover', 0.3); } catch {}
+                }}
                 className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
                 style={{
                   background: 'rgba(0,255,255,0.2)',
@@ -1167,6 +1185,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 onClick={() => {
                   setShowElementInfo(false);
                   try { sfx.play('close', 0.6); } catch {}
+                }}
+                onMouseEnter={() => {
+                  try { sfx.play('hover', 0.3); } catch {}
                 }}
                 className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
                 style={{
@@ -1344,6 +1365,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
             }}>
               <button
                 onClick={handleStartTour}
+                onMouseEnter={() => {
+                  try { sfx.play('hover', 0.3); } catch {}
+                }}
                 className="w-full px-4 py-3 rounded-lg font-semibold transition-all duration-200 hover:scale-105 active:scale-95 mb-3"
                 style={{
                   background: 'linear-gradient(135deg, rgba(0,255,255,0.25), rgba(0,255,255,0.15))',
@@ -1360,6 +1384,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               {/* Sign Out Button */}
               <button
                 onClick={handleSignOut}
+                onMouseEnter={() => {
+                  try { sfx.play('hover', 0.3); } catch {}
+                }}
                 className="w-full px-4 py-2 rounded-lg font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
                 style={{
                   background: 'linear-gradient(135deg, rgba(255,80,80,0.25), rgba(255,80,80,0.15))',
@@ -1409,6 +1436,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               onClick={() => {
                 setShowRelicsModal(false);
                 try { sfx.play('close', 0.8); } catch {}
+              }}
+              onMouseEnter={() => {
+                try { sfx.play('hover', 0.3); } catch {}
               }}
               className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
               style={{

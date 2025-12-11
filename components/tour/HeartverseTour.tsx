@@ -453,37 +453,42 @@ function TourOverlay() {
             case 'right':
               // For menu items, position to the right of the entire dropdown menu
               if (isMenuStep) {
-                // Find the actual hamburger menu container to get its true width and position
-                const hamburgerMenu = document.querySelector('[data-tour-id="hamburger"]')?.closest('.absolute') as HTMLElement;
+                // Find the dropdown menu panel instead of the hamburger button
+                const dropdownMenu = document.querySelector('[data-tour-id="nav-panel"]') as HTMLElement;
                 const viewportWidth = window.innerWidth;
                 
                 let menuRightEdge = 320; // Default fallback
                 
-                if (hamburgerMenu) {
-                  const menuRect = hamburgerMenu.getBoundingClientRect();
-                  // Calculate the right edge of the menu
+                if (dropdownMenu) {
+                  const menuRect = dropdownMenu.getBoundingClientRect();
+                  // Calculate the right edge of the dropdown menu panel
                   menuRightEdge = menuRect.left + menuRect.width;
+                } else {
+                  // Fallback: use hamburger menu position + estimated dropdown width
+                  const hamburgerMenu = document.querySelector('[data-tour-id="hamburger"]') as HTMLElement;
+                  if (hamburgerMenu) {
+                    const hamburgerRect = hamburgerMenu.getBoundingClientRect();
+                    menuRightEdge = hamburgerRect.left + 240; // 240px is the dropdown width (w-60)
+                  }
                 }
                 
-                // Position tooltip well to the right with significant margin
-                // For mobile/smaller screens, use more of the available width
+                // Position tooltip well to the right with sufficient margin
                 const isMobile = viewportWidth <= 768;
-                const marginFromMenu = isMobile ? 40 : 80;
+                const marginFromMenu = isMobile ? 30 : 50;
                 
-                // Ensure tooltip is positioned past the menu's right edge plus margin
-                left = Math.max(
-                  menuRightEdge + marginFromMenu,
-                  viewportWidth * (isMobile ? 0.55 : 0.6)
-                );
+                // Calculate left position with more generous spacing
+                left = menuRightEdge + marginFromMenu + scrollLeft;
                 
-                // For very small screens, limit the left position to prevent overflow
-                if (isMobile && left > viewportWidth - 300) {
-                  left = viewportWidth - 300;
+                // For mobile screens, ensure we don't exceed viewport bounds
+                if (isMobile) {
+                  const maxLeft = viewportWidth - 300; // Reserve 300px for tooltip
+                  left = Math.min(left, maxLeft);
                 }
                 
+                // Center tooltip vertically relative to the menu item
                 top = rect.top + scrollTop + (rect.height / 2);
                 
-                console.log(`Tour: Positioning menu step at left: ${left}, menu right edge: ${menuRightEdge}, viewport width: ${viewportWidth}`);
+                console.log(`Tour: Positioning menu step at left: ${left}, menu right edge: ${menuRightEdge}, viewport width: ${viewportWidth}, margin: ${marginFromMenu}`);
               } else {
                 top += rect.height / 2;
                 left += rect.width + 20;

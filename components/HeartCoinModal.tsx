@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import { sfx } from "@/lib/sfx";
 import { useProfile } from '@/contexts/ProfileContext';
 import HeartversePopup from "@/components/HeartversePopup";
 import PopoutShell from "@/components/PopoutShell";
@@ -322,6 +323,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         <div className="flex border-b border-white/20 mb-6">
           <button
             onClick={() => setActiveTab('earn')}
+            onMouseEnter={() => {
+              try { sfx.play('hover', 0.3); } catch {}
+            }}
             className={`px-4 py-3 font-bold text-sm transition-all duration-200 ${
               activeTab === 'earn'
                 ? 'text-[#F2EF1D] border-b-2 border-[#F2EF1D]'
@@ -339,6 +343,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
           </button>
           <button
             onClick={() => setActiveTab('use')}
+            onMouseEnter={() => {
+              try { sfx.play('hover', 0.3); } catch {}
+            }}
             className={`px-4 py-3 font-bold text-sm transition-all duration-200 ${
               activeTab === 'use'
                 ? 'text-[#F2EF1D] border-b-2 border-[#F2EF1D]'
@@ -356,6 +363,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
           </button>
           <button
             onClick={() => setActiveTab('merch')}
+            onMouseEnter={() => {
+              try { sfx.play('hover', 0.3); } catch {}
+            }}
             className={`px-4 py-3 font-bold text-sm transition-all duration-200 ${
               activeTab === 'merch'
                 ? 'text-[#FC54AF] border-b-2 border-[#FC54AF]'
@@ -373,6 +383,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
           </button>
           <button
             onClick={() => setActiveTab('cards')}
+            onMouseEnter={() => {
+              try { sfx.play('hover', 0.3); } catch {}
+            }}
             className={`px-4 py-3 font-bold text-sm transition-all duration-200 ${
               activeTab === 'cards'
                 ? 'text-[#4ECDC4] border-b-2 border-[#4ECDC4]'
@@ -402,6 +415,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
             <div className="flex border-b border-white/10 mb-4">
               <button 
                 onClick={() => setActiveEarnTab('DAILY QUESTS')}
+                onMouseEnter={() => {
+                  try { sfx.play('hover', 0.3); } catch {}
+                }}
                 className={`px-4 py-2 font-bold text-xs rounded-t transition-all duration-200 ${
                   activeEarnTab === 'DAILY QUESTS'
                     ? 'text-[#4ECDC4] border-b-2 border-[#4ECDC4] bg-[#4ECDC4]/10'
@@ -412,6 +428,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               </button>
               <button 
                 onClick={() => setActiveEarnTab('BONUS QUESTS')}
+                onMouseEnter={() => {
+                  try { sfx.play('hover', 0.3); } catch {}
+                }}
                 className={`px-4 py-2 font-bold text-xs rounded-t transition-all duration-200 ${
                   activeEarnTab === 'BONUS QUESTS'
                     ? 'text-[#4ECDC4] border-b-2 border-[#4ECDC4] bg-[#4ECDC4]/10'

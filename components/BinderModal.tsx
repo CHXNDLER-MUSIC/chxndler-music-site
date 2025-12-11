@@ -808,6 +808,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     setCardOpen(false);
                     setIsCardFlipped(false);
                   }}
+                  onMouseEnter={() => {
+                    try { sfx.play('hover', 0.3); } catch {}
+                  }}
                   className="absolute top-4 left-2 w-8 h-8 rounded-full flex items-center justify-center text-pink-400 hover:text-pink-200 transition-all duration-200 z-20"
                   style={{
                     background: 'rgba(255,105,180,0.1)',
@@ -949,6 +952,11 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                                 detail: { source: 'binder_empty_slot' }
                               }));
                             } catch {}
+                          }
+                        }}
+                        onMouseEnter={() => {
+                          if (!isLockedSlot && (hasCard || isFirstSlotWithChxndler)) {
+                            try { sfx.play('hover', 0.3); } catch {}
                           }
                         }}
                         style={{
@@ -1109,6 +1117,11 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                             } catch {}
                           }
                         }}
+                        onMouseEnter={() => {
+                          if (!isLockedSlot && (hasCard || isFirstSlotWithChxndler)) {
+                            try { sfx.play('hover', 0.3); } catch {}
+                          }
+                        }}
                         style={{
                           boxShadow: hasCard
                             ? '0 0 20px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.4)' 
@@ -1225,6 +1238,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           setBinderPage(pages[currentIndex - 1] as any);
                         }
                       }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',
                         backdropFilter: 'blur(10px)',
@@ -1319,6 +1335,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           setBinderPage(pages[currentIndex + 1] as any);
                         }
                       }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',
                         backdropFilter: 'blur(10px)',
@@ -1354,6 +1373,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                         if (currentIndex > 0) {
                           setBinderPage(pages[currentIndex - 1] as any);
                         }
+                      }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
                       }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',
@@ -1450,6 +1472,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           setBinderPage(pages[currentIndex + 1] as any);
                         }
                       }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',
                         backdropFilter: 'blur(10px)',
@@ -1485,6 +1510,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                         if (currentIndex > 0) {
                           setBinderPage(pages[currentIndex - 1] as any);
                         }
+                      }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
                       }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',
@@ -1581,6 +1609,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           setBinderPage(pages[currentIndex + 1] as any);
                         }
                       }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',
                         backdropFilter: 'blur(10px)',
@@ -1616,6 +1647,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                         if (currentIndex > 0) {
                           setBinderPage(pages[currentIndex - 1] as any);
                         }
+                      }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
                       }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',
@@ -1712,6 +1746,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           setBinderPage(pages[currentIndex + 1] as any);
                         }
                       }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',
                         backdropFilter: 'blur(10px)',
@@ -1747,6 +1784,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                         if (currentIndex > 0) {
                           setBinderPage(pages[currentIndex - 1] as any);
                         }
+                      }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
                       }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',
@@ -1843,6 +1883,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           setBinderPage(pages[currentIndex + 1] as any);
                         }
                       }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',
                         backdropFilter: 'blur(10px)',
@@ -1878,6 +1921,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                         if (currentIndex > 0) {
                           setBinderPage(pages[currentIndex - 1] as any);
                         }
+                      }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
                       }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',
@@ -1974,6 +2020,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           setBinderPage(pages[currentIndex + 1] as any);
                         }
                       }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',
                         backdropFilter: 'blur(10px)',
@@ -2009,6 +2058,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                         if (currentIndex > 0) {
                           setBinderPage(pages[currentIndex - 1] as any);
                         }
+                      }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
                       }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',
@@ -2105,6 +2157,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           setBinderPage(pages[currentIndex + 1] as any);
                         }
                       }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',
                         backdropFilter: 'blur(10px)',
@@ -2140,6 +2195,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                         if (currentIndex > 0) {
                           setBinderPage(pages[currentIndex - 1] as any);
                         }
+                      }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
                       }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',
@@ -2236,6 +2294,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           setBinderPage(pages[currentIndex + 1] as any);
                         }
                       }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',
                         backdropFilter: 'blur(10px)',
@@ -2271,6 +2332,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                         if (currentIndex > 0) {
                           setBinderPage(pages[currentIndex - 1] as any);
                         }
+                      }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
                       }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',
@@ -2367,6 +2431,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           setBinderPage(pages[currentIndex + 1] as any);
                         }
                       }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',
                         backdropFilter: 'blur(10px)',
@@ -2402,6 +2469,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                         if (currentIndex > 0) {
                           setBinderPage(pages[currentIndex - 1] as any);
                         }
+                      }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
                       }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',
@@ -2498,6 +2568,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           setBinderPage(pages[currentIndex + 1] as any);
                         }
                       }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',
                         backdropFilter: 'blur(10px)',
@@ -2533,6 +2606,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                         if (currentIndex > 0) {
                           setBinderPage(pages[currentIndex - 1] as any);
                         }
+                      }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
                       }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',
@@ -2629,6 +2705,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           setBinderPage(pages[currentIndex + 1] as any);
                         }
                       }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',
                         backdropFilter: 'blur(10px)',
@@ -2664,6 +2743,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                         if (currentIndex > 0) {
                           setBinderPage(pages[currentIndex - 1] as any);
                         }
+                      }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
                       }}
                       style={{
                         boxShadow: '0 0 15px rgba(255,105,180,0.3)',

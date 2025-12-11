@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { chatService } from '@/lib/supabase/chat';
 import { useProfile } from '@/contexts/ProfileContext';
+import { sfx } from '@/lib/sfx';
 // import { useLiveStatus } from '@/hooks/useLiveStatus'; // Removed since chat is always available
 import UserList from './UserList';
 import MessageList from './MessageList';
@@ -1183,6 +1184,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                                       setShowUserBinder(false);
                                       setShowSendHeartCoin(false);
                                     }}
+                                    onMouseEnter={() => {
+                                      try { sfx.play('hover', 0.3); } catch {}
+                                    }}
                                     className="text-yellow-400 hover:text-yellow-300 transition-colors text-sm px-1 py-1 rounded flex-shrink-0 ml-1"
                                     style={{
                                       background: 'rgba(242, 239, 29, 0.1)',
@@ -1236,6 +1240,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   setBinderStartIndex(0);
                                 }
                               }}
+                              onMouseEnter={() => {
+                                try { sfx.play('hover', 0.3); } catch {}
+                              }}
                               className="hover:scale-110 transition-transform"
                               title="View Badges"
                             >
@@ -1270,6 +1277,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   setBadgeStartIndex(0);
                                 }
                               }}
+                              onMouseEnter={() => {
+                                try { sfx.play('hover', 0.3); } catch {}
+                              }}
                               className="hover:scale-110 transition-transform"
                               title="View Cards"
                             >
@@ -1301,6 +1311,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   setShowUserBinder(false);
                                   setBadgeStartIndex(0);
                                   setBinderStartIndex(0);
+                                }}
+                                onMouseEnter={() => {
+                                  try { sfx.play('hover', 0.3); } catch {}
                                 }}
                               >
                                 <span className="text-xs">💖</span>
@@ -1619,6 +1632,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 }
                                 setBinderStartIndex(Math.max(0, binderStartIndex - 5));
                               }}
+                              onMouseEnter={() => {
+                                try { sfx.play('hover', 0.3); } catch {}
+                              }}
                               disabled={binderStartIndex === 0}
                               className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
                               style={{
@@ -1755,6 +1771,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 const cardsToShow = [chxndlerCard, ...ownedCards.filter(card => card.name !== 'CHXNDLER')];
                                 const totalCards = cardsToShow.length;
                                 setBinderStartIndex(Math.min(Math.max(0, totalCards - 5), binderStartIndex + 5));
+                              }}
+                              onMouseEnter={() => {
+                                try { sfx.play('hover', 0.3); } catch {}
                               }}
                               disabled={(() => {
                                 const ownedCards = songCollection.filter(song => isCardOwned(song.name));

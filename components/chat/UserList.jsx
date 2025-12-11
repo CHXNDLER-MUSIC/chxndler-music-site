@@ -2,6 +2,7 @@
 
 import { ElementIcon } from '@/lib/elementIcons';
 import { getElementColor } from '@/lib/supabase/chat';
+import { sfx } from '@/lib/sfx';
 
 // Import the global alien name function from ChatPanel
 const getGlobalAlienName = () => {
@@ -118,6 +119,7 @@ function UserListItem({ user, onClick, currentUserProfile }) {
         e.target.style.background = `${elementColor}15`;
         e.target.style.boxShadow = `0 0 20px ${elementColor}50`;
         e.target.style.borderColor = `${elementColor}60`;
+        try { sfx.play('hover', 0.3); } catch {}
       }}
       onMouseLeave={(e) => {
         e.target.style.background = 'rgba(255, 255, 255, 0.05)';

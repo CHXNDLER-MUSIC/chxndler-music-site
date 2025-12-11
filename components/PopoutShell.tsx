@@ -39,7 +39,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
             width: 'min(85vw, 550px)',
             height: 'auto',
             maxHeight: compact ? '320px' : '75vh',
-            minHeight: compact ? '200px' : '620px',
+            minHeight: compact ? '200px' : '660px',
             display: 'flex',
             flexDirection: 'column',
             padding: '0px',
@@ -91,6 +91,9 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
             onClick={() => {
               try { sfx.play('close', 0.8); } catch {}
               onClose();
+            }}
+            onMouseEnter={() => {
+              try { sfx.play('hover', 0.3); } catch {}
             }}
             className="absolute top-4 right-3 text-pink-400 hover:text-pink-200 cursor-pointer w-8 h-8 rounded-full border border-pink-400/80 flex items-center justify-center"
             style={{ 
@@ -159,7 +162,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
           )}
 
           {/* Content container - exact copy from Binder */}
-          <div className="flex-1 relative overflow-hidden z-10" style={{ maxHeight: 'calc(100% - 80px)', display: 'flex', alignItems: compact ? 'flex-start' : 'center', paddingBottom: compact ? '8px' : '70px' }}>
+          <div className="flex-1 relative overflow-hidden z-10" style={{ maxHeight: 'calc(100% - 80px)', display: 'flex', alignItems: compact ? 'flex-start' : 'center', paddingBottom: compact ? '8px' : '90px' }}>
             {overlayContent || children}
           </div>
 

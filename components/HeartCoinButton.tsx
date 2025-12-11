@@ -1665,6 +1665,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             handleBonusQuestComplete(quest);
                           }
                         }}
+                        onMouseEnter={() => {
+                          try { sfx.play('hover', 0.3); } catch {}
+                        }}
                         disabled={!isLoggedIn || (!quest.can_complete && !inviteFriendShared) || isQuestCompleted(quest) || (quest.quest_key === 'SECRET_PHRASE' && secretPhraseLoading)}
                         className="px-2 py-1 text-xs rounded border transition-colors font-bold"
                         style={{

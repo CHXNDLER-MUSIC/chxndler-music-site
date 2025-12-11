@@ -12,6 +12,7 @@ import BinderModal from "./BinderModal";
 import BadgesModal from "./BadgesModal";
 import UserBadges from "./UserBadges";
 import UserCards from "./UserCards";
+import Image from 'next/image';
 
 interface DailyPrompt {
   id: string;
@@ -58,6 +59,7 @@ interface JournalEntry {
   is_public?: boolean;
   user_id?: string;
   profiles?: Profile | null;
+  stars_count?: number;
 }
 
 type SoulJournalEntry = {
@@ -126,6 +128,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const [showIntegratedBinder, setShowIntegratedBinder] = useState(false);
   const [selectedCard, setSelectedCard] = useState<any>(null);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
+  const [publicEntries, setPublicEntries] = useState<JournalEntry[]>([]);
 
   const today = getLocalDateString();
   const todayFormatted = getDisplayDateString();
@@ -136,8 +139,17 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       loadDailyPrompt();
       setShowLoginPrompt(false);
       setHasClickedInitialButton(false);
+      // Load public entries when journal opens
+      loadPublicEntries();
     }
   }, [isOpen]);
+
+  // Load public entries when switching to PUBLIC tab
+  useEffect(() => {
+    if (isOpen && activeTab === 'public') {
+      loadPublicEntries();
+    }
+  }, [isOpen, activeTab]);
 
   // Load existing entry on mount
   useEffect(() => {
@@ -401,6 +413,59 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
     setEditResponse("");
   };
 
+  const loadPublicEntries = async () => {
+    try {
+      const { data, error } = await supabaseBrowser
+        .from('soul_journal_entries')
+        .select('entry_id, user_id, entry_date, element, stars_count, is_public, soul_star, intention, reflection, created_at, profiles(id, name, profile_image_url, daily_streak_current, heartcoin_total)')
+        .eq('is_public', true)
+        .order('entry_date', { ascending: false })
+        .order('stars_count', { ascending: false });
+
+      if (error) {
+        console.error('Error loading public journal entries:', error);
+        return;
+      }
+
+      setPublicEntries(data || []);
+    } catch (error) {
+      console.error('Error in loadPublicEntries:', error);
+    }
+  };
+
+  const handleGiveStar = async (entryId: string) => {
+    try {
+      // Check if user is authenticated
+      if (!user?.id) {
+        // Open welcome home modal since we don't have openAuthModal
+        if (openWelcomeHome) {
+          openWelcomeHome();
+        }
+        return;
+      }
+
+      // Call the RPC function
+      const { error } = await supabaseBrowser.rpc('give_star_to_journal_entry', {
+        p_entry_id: entryId,
+        p_user_id: user.id,
+      });
+
+      if (error) {
+        console.error('Error giving star:', error);
+        return;
+      }
+
+      // Refresh both profile and public entries to update the counts
+      await Promise.all([
+        refreshProfile(),
+        loadPublicEntries()
+      ]);
+      
+    } catch (error) {
+      console.error('Failed to give star:', error);
+    }
+  };
+
   // Helper function to get element icon path
   const getElementIcon = (element: string | null) => {
     const iconMap: Record<string, string> = {
@@ -534,12 +599,12 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             {/* Close Button - Right of Title */}
             <button 
               onClick={handleClose}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full transition-all duration-200 z-20"
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full transition-all duration-200 hover:scale-110 z-20"
               style={{
-                background: 'rgba(0, 0, 0, 0.7)',
-                border: `1px solid ${elementTheme.color}60`,
+                background: 'rgba(0, 0, 0, 0.8)',
+                border: `2px solid ${elementTheme.color}`,
                 boxShadow: `0 0 15px ${elementTheme.color}, 0 0 30px ${elementTheme.color}60`,
-                fontSize: '16px',
+                fontSize: '20px',
                 color: elementTheme.color,
                 textShadow: `0 0 8px ${elementTheme.color}, 0 0 15px ${elementTheme.color}`
               }}
@@ -608,9 +673,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             </button>
           </div>
 
-          <div style={{ flex: 1, overflowY: 'auto' }}>
+          {/* Scrollable entries container for both PUBLIC and PRIVATE tabs */}
+          <div className="journal-scroll mt-3 space-y-3 max-h-[60vh] overflow-y-auto pr-1 px-4">
             {activeTab === 'private' ? (
-              <div className="p-4 space-y-4">
+              <div className="space-y-4">
                 {journalEntries
                   .filter(entry => true) // Show all entries in private tab
                   .sort((a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime())
@@ -853,10 +919,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 )}
               </div>
             ) : (
-              <div className="p-4 space-y-4">
-                {journalEntries
-                  .filter(entry => entry.is_public === true) // Show only public entries
-                  .sort((a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime())
+              <div className="space-y-4">
+                {publicEntries
                   .map((entry) => {
                     const entryElement = entry.element as keyof typeof ELEMENT_COLORS;
                     const entryTheme = ELEMENT_COLORS[entryElement] || ELEMENT_COLORS.heart;
@@ -876,25 +940,31 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                           boxShadow: `0 0 15px ${entryTheme.color}20`
                         }}
                       >
-                        {/* Header with Date, Element, Profile, and Privacy Toggle */}
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-3">
-                            {/* Profile Info with Image and Username */}
-                            <div className="flex items-center gap-2">
-                              <img 
-                                src={profile?.profile_image_url || "/elements/alien.webp"} 
-                                alt="User" 
-                                className="w-6 h-6 rounded-full object-cover"
-                                style={{
-                                  border: `1px solid ${entryTheme.color}60`,
-                                  boxShadow: `0 0 4px ${entryTheme.color}30`
-                                }}
-                              />
-                              <div className="text-xs font-medium text-white/80">
-                                {profile?.name || 'Anonymous'}
-                              </div>
+                        {/* Header with Profile (left), Date (center), Element + Soul Star (right) */}
+                        <div className="flex items-center justify-between mb-2 relative">
+                          {/* Profile Info - Left */}
+                          <div className="flex items-center gap-2">
+                            <img 
+                              src={entry.profiles?.profile_image_url || "/elements/alien.webp"} 
+                              alt="User" 
+                              className="w-6 h-6 rounded-full object-cover"
+                              style={{
+                                border: `1px solid ${entryTheme.color}60`,
+                                boxShadow: `0 0 4px ${entryTheme.color}30`
+                              }}
+                            />
+                            <div className="text-xs font-medium text-white/80">
+                              {entry.profiles?.name || 'Anonymous'}
                             </div>
-                            <div className="text-sm font-semibold text-white/90">{getDisplayDateString(entry.entry_date)}</div>
+                          </div>
+                          
+                          {/* Date - Center */}
+                          <div className="text-sm font-semibold text-white/90 absolute left-1/2 transform -translate-x-1/2">
+                            {getDisplayDateString(entry.entry_date)}
+                          </div>
+                          
+                          {/* Element + Soul Star - Right */}
+                          <div className="flex items-center gap-2">
                             <div 
                               className="px-2 py-1 rounded text-xs font-semibold uppercase flex items-center gap-1"
                               style={{
@@ -906,6 +976,40 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                             >
                               {entryEmoji} {entry.element?.toUpperCase()}
                             </div>
+                            {/* Soul Star Button */}
+                            <button
+                              type="button"
+                              className="flex items-center gap-1 transition-all duration-200 hover:scale-105 px-2 py-1 rounded-full"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                sfx.play('click', 0.6);
+                                handleGiveStar(entry.entry_id);
+                              }}
+                              style={{
+                                background: 'rgba(0, 0, 0, 0.6)',
+                                border: `1px solid ${entryTheme.color}60`,
+                                boxShadow: `0 0 8px ${entryTheme.color}30`
+                              }}
+                            >
+                              <Image
+                                src="/elements/soul-star.webp"
+                                alt="Soul Star"
+                                width={16}
+                                height={16}
+                                style={{
+                                  filter: `drop-shadow(0 0 4px ${entryTheme.color})`
+                                }}
+                              />
+                              <span 
+                                className="text-xs font-medium"
+                                style={{ 
+                                  color: entryTheme.color,
+                                  textShadow: `0 0 4px ${entryTheme.glow}`
+                                }}
+                              >
+                                {entry.stars_count ?? 0}
+                              </span>
+                            </button>
                           </div>
                         </div>
 
@@ -966,7 +1070,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                       textShadow: '0 0 6px #00FFFF'
                                     }}
                                   >
-                                    {profile?.daily_streak || 0} days
+                                    {entry.profiles?.daily_streak_current || 0} days
                                   </span>
                                 </div>
                                 <div className="flex-1 flex items-center gap-2 bg-black/30 rounded-full px-3 py-1">
@@ -982,7 +1086,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                       textShadow: '0 0 6px #FF69B4'
                                     }}
                                   >
-                                    {profile?.heartcoin_total || 0}
+                                    {entry.profiles?.heartcoin_total || 0}
                                   </span>
                                 </div>
                               </div>
@@ -1183,10 +1287,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     );
                   })
                 }
-                {journalEntries.filter(entry => entry.is_public === true).length === 0 && (
+                {publicEntries.length === 0 && (
                   <div className="text-center p-8 text-white/60">
                     <div className="text-lg mb-2">🌍 No Public Journal Entries</div>
-                    <div className="text-sm opacity-80">Your public journal entries will appear here</div>
+                    <div className="text-sm opacity-80">Public journal entries will appear here</div>
                   </div>
                 )}
               </div>
@@ -1251,12 +1355,12 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               {/* Close Button - Right of Title */}
               <button 
                 onClick={handleClose}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full transition-all duration-200 z-20"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full transition-all duration-200 hover:scale-110 z-20"
                 style={{
-                  background: 'rgba(0, 0, 0, 0.7)',
-                  border: `1px solid ${elementTheme.color}60`,
+                  background: 'rgba(0, 0, 0, 0.8)',
+                  border: `2px solid ${elementTheme.color}`,
                   boxShadow: `0 0 15px ${elementTheme.color}, 0 0 30px ${elementTheme.color}60`,
-                  fontSize: '16px',
+                  fontSize: '20px',
                   color: elementTheme.color,
                   textShadow: `0 0 8px ${elementTheme.color}, 0 0 15px ${elementTheme.color}`
                 }}

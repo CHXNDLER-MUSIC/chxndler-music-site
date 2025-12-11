@@ -107,6 +107,7 @@ interface JournalEntry {
   intention: string | null;
   is_public: boolean | null;
   created_at: string;
+  stars_count?: number; // Added for soul star functionality
   // Optional legacy fields kept for UI compatibility if present
   reflection?: string | null;
   intention_response?: string | null;
@@ -683,7 +684,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabaseBrowser
         .from('soul_journal_entries')
-        .select('*')
+        .select('*, stars_count')
         .eq('user_id', userId)
         .order('entry_date', { ascending: false });
 

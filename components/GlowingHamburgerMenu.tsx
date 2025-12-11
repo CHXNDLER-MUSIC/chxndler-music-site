@@ -36,6 +36,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
     { label: "BINDER", href: undefined },
     { label: "BADGES", href: undefined },
     { label: journalLabel, href: undefined },
+    { label: "SIGNAL", href: undefined },
     { label: "STORE", href: undefined },
   ];
 
@@ -104,7 +105,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
         onMouseEnter={handleHover}
         className="relative transition-all duration-300 hover:scale-105"
         aria-label={isOpen ? "Close menu" : "Open menu"}
-        data-tour-id="nav-toggle"
+        data-tour-id="hamburger"
       >
         <div className="w-8 h-8 flex flex-col justify-center items-center relative">
           {isOpen ? (
@@ -205,6 +206,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                     (item.label === "JOURNAL" || item.label === "COMPLETED") ? "menu-journal" :
                     item.label === "BINDER" ? "menu-binder" :
                     item.label === "BADGES" ? "menu-badges" :
+                    item.label === "SIGNAL" ? "menu-signal" :
                     item.label === "STORE" ? "menu-store" :
                     `menu-${item.label.toLowerCase().replace(/ /g, '-')}`
                   }
@@ -292,6 +294,15 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                         style={{
                           filter: 'drop-shadow(0 0 6px rgba(255, 215, 0, 0.6))'
                         }}
+                      />
+                    )}
+                    {item.label === "SIGNAL" && (
+                      <Image
+                        src="/elements/comms.webp"
+                        alt="Signal"
+                        width={36}
+                        height={36}
+                        className="transition-all duration-200"
                       />
                     )}
                     {item.label === "STORE" && (

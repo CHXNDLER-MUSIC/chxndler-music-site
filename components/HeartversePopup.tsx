@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { sfx } from "@/lib/sfx";
 
 type Props = {
   isOpen: boolean;
@@ -60,6 +61,9 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
             type="button"
             aria-label="Close"
             onClick={onClose}
+            onMouseEnter={() => {
+              try { sfx.play('hover', 0.3); } catch {}
+            }}
             className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border-2 text-lg font-bold transition-all duration-200 hover:scale-110 pink-neon-close"
           >
             ×

@@ -8,6 +8,7 @@ export function useDailyReflectionStatus() {
   const { user, journalEntries, profile } = useProfile();
   const [hasPendingReflection, setHasPendingReflection] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [manuallyCompleted, setManuallyCompleted] = useState(false);
 
   useEffect(() => {
     const checkReflectionStatus = () => {
@@ -38,8 +39,8 @@ export function useDailyReflectionStatus() {
       const todayReflection = journalEntries.find(entry => {
         const dateMatch = entry.entry_date === today || entry.entry_date === yesterdayStr;
         const elementMatch = entry.element === profile.element;
-        const hasContent = (entry.reflection_response && entry.reflection_response.trim() !== '') || 
-                          (entry.soul_star && entry.soul_star.trim() !== '') ||
+        const hasContent = (entry.soul_star && entry.soul_star.trim() !== '') || 
+                          (entry.reflection_response && entry.reflection_response.trim() !== '') ||
                           (entry.intention_response && entry.intention_response.trim() !== '');
         
         // Debug logging to help track down the issue
@@ -61,20 +62,31 @@ export function useDailyReflectionStatus() {
         return dateMatch && elementMatch && hasContent;
       });
 
+      // If manually marked as completed, don't override
+      if (manuallyCompleted) {
+        console.log('useDailyReflectionStatus - manually completed, keeping false');
+        setHasPendingReflection(false);
+        setLoading(false);
+        return;
+      }
+
       // If no reflection found for today, user has pending reflection
       console.log('useDailyReflectionStatus - final result:', {
         todayReflection: !!todayReflection,
-        hasPendingReflection: !todayReflection
+        hasPendingReflection: !todayReflection,
+        manuallyCompleted
       });
       setHasPendingReflection(!todayReflection);
       setLoading(false);
     };
 
     checkReflectionStatus();
-  }, [user, journalEntries, profile]);
+  }, [user, journalEntries, profile, manuallyCompleted]);
 
   // Function to manually mark reflection as completed
   const markReflectionComplete = () => {
+    console.log('markReflectionComplete called - manually setting hasPendingReflection to false');
+    setManuallyCompleted(true);
     setHasPendingReflection(false);
   };
 

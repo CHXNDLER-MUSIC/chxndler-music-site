@@ -131,6 +131,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
         style={{ display: 'none' }}
         isActive={badgesOpen}
         onClick={() => setBadgesOpen(false)}
+        onBeamColorChange={onBeamColorChange}
       />
       {/* Direct Code Popup for ABOUT functionality */}
       {codeOpen && (

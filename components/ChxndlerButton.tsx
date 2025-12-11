@@ -188,6 +188,9 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                     sfx.play('click', 0.7);
                     setActiveTab("WE BELIEVE");
                   }}
+                  onMouseEnter={() => {
+                    try { sfx.play('hover', 0.3); } catch {}
+                  }}
                   className={`px-4 py-2 rounded-md text-base font-semibold transition-all duration-200 border ${
                     activeTab === "WE BELIEVE"
                       ? "bg-pink-500/30 text-pink-200 border-pink-400/70"
@@ -206,6 +209,9 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                     sfx.play('click', 0.7);
                     setActiveTab("CHXNDLER");
                   }}
+                  onMouseEnter={() => {
+                    try { sfx.play('hover', 0.3); } catch {}
+                  }}
                   className={`px-4 py-2 rounded-md text-base font-semibold transition-all duration-200 border ${
                     activeTab === "CHXNDLER"
                       ? "bg-pink-500/30 text-pink-200 border-pink-400/70"
@@ -223,6 +229,9 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                   onClick={() => {
                     sfx.play('click', 0.7);
                     setActiveTab("ELEMENTS");
+                  }}
+                  onMouseEnter={() => {
+                    try { sfx.play('hover', 0.3); } catch {}
                   }}
                   className={`px-4 py-2 rounded-md text-base font-semibold transition-all duration-200 border ${
                     activeTab === "ELEMENTS"
@@ -321,6 +330,9 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                   <div className="grid grid-cols-2 gap-0">
                     <button 
                       onClick={() => handleElementClick('lightning')}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }}
                       className="border-2 transition-all duration-200 hover:scale-105 flex items-center justify-center" 
                       style={{ 
                         borderColor: '#FFFF00', 
@@ -344,6 +356,9 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                     </button>
                     <button 
                       onClick={() => handleElementClick('heart')}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }}
                       className="border-2 transition-all duration-200 hover:scale-105 flex items-center justify-center" 
                       style={{ 
                         borderColor: '#FF1493', 
@@ -367,6 +382,9 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                     </button>
                     <button 
                       onClick={() => handleElementClick('darkness')}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }}
                       className="border-2 transition-all duration-200 hover:scale-105 flex items-center justify-center" 
                       style={{ 
                         borderColor: '#9A00FF', 
@@ -390,6 +408,9 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                     </button>
                     <button 
                       onClick={() => handleElementClick('water')}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }}
                       className="border-2 transition-all duration-200 hover:scale-105 flex items-center justify-center" 
                       style={{ 
                         borderColor: '#00E5FF', 

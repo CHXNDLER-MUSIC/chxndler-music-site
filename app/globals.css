@@ -2209,3 +2209,28 @@ button:hover > .heart-coin-glow,
 .heartcoin-backdrop-fade {
   animation: heartcoinBackdropFade 3s ease-out;
 }
+
+
+/* Journal Scroll - Custom neon scrollbar for Soul Star Journal entries */
+.journal-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(252, 248, 180, 0.9) rgba(10, 10, 20, 0.8);
+}
+
+.journal-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.journal-scroll::-webkit-scrollbar-track {
+  background: rgba(5, 5, 15, 0.8);
+  border-radius: 9999px;
+}
+
+.journal-scroll::-webkit-scrollbar-thumb {
+  background: radial-gradient(circle, rgba(252, 248, 180, 0.9), rgba(252, 220, 80, 0.4));
+  border-radius: 9999px;
+}
+
+.journal-scroll::-webkit-scrollbar-thumb:hover {
+  background: radial-gradient(circle, rgba(252, 248, 180, 1), rgba(252, 220, 80, 0.6));
+}

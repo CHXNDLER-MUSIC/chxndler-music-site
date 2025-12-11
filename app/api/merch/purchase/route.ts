@@ -209,21 +209,29 @@ export async function POST(request: NextRequest) {
 
         // 5) Create order
         const orderStatus = merchItem.category === 'physical' ? 'pending_shipping' : 'paid';
+        console.log('[PURCHASE] Creating order with data:', {
+          user_id: user.id,
+          item_id: merchItem.slug,
+          item_name: merchItem.name,
+          price_heartcoins: totalPrice,
+          status: orderStatus
+        });
+        
         const { data: order, error: orderError } = await supabase
           .from('orders')
           .insert({
             user_id: user.id,
-            merch_item_id: merchItem.id,
             item_id: merchItem.slug,
             item_name: merchItem.name,
-            quantity,
-            total_heartcoins: totalPrice,
+            price_heartcoins: totalPrice,
             status: orderStatus,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
           .select('id')
           .single();
+          
+        console.log('[PURCHASE] Order creation result:', { order, error: orderError });
 
         if (orderError) {
           // Attempt to rollback balance
@@ -253,7 +261,7 @@ export async function POST(request: NextRequest) {
               acquisition_method: 'heartcoin_purchase',
               metadata: {
                 merch_item_id: merchItem.id,
-                order_id: order.id,
+                order_id: order?.id,
                 transaction_id: tx.id
               },
               acquisition_date: new Date().toISOString(),
@@ -268,13 +276,15 @@ export async function POST(request: NextRequest) {
 
         const normalized: PurchaseWithHeartcoinsResult = {
           success: true,
-          message: `Successfully purchased for ${totalPrice} HeartCoins!`,
-          order_id: String(order.id),
+          message: `Successfully purchased ${merchItem.name} for ${totalPrice} HeartCoins!`,
+          order_id: order?.id ? String(order.id) : null,
           user_id: String(user.id),
           heartcoins_before: currentBalance,
           heartcoins_after: newBalance,
           amount_spent: totalPrice,
         };
+        
+        console.log('[PURCHASE] Normalized response:', normalized);
 
         console.log(`[PURCHASE] Fallback success - Order ${order.id} created for user ${user.id}`);
 

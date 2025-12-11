@@ -478,7 +478,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                 <>
                   <div className="text-center mb-2">
                     <span className="text-pink-400 text-lg font-bold uppercase tracking-wider" style={{ textShadow: '0 0 8px rgba(255,105,180,0.6)' }}>
-                      BADGES UNLOCKED: {profile?.badges_unlocked || userUnlockedBadges.length}
+                      BADGES UNLOCKED: {profile?.badges_unlocked || badgesWithUnlocked.filter(badge => badge.unlocked).length}
                     </span>
                   </div>
                   <div 

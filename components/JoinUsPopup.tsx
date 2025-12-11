@@ -476,6 +476,11 @@ export default function JoinUsPopup({ isOpen, onClose, onOpenChat }: Props) {
               <button
                 type="button"
                 onClick={sendHeartSignal}
+                onMouseEnter={() => {
+                  if (!heartSignalSent) {
+                    try { sfx.play('hover', 0.3); } catch {}
+                  }
+                }}
                 className="heart-signal-button mx-auto inline-flex items-center justify-center rounded-full transition-all duration-300 hover:scale-110 shadow-lg hover:shadow-xl"
                 style={{
                   background: heartSignalSent 
@@ -822,7 +827,7 @@ export default function JoinUsPopup({ isOpen, onClose, onOpenChat }: Props) {
                     e.target.style.boxShadow = '0 0 40px rgba(0, 255, 255, 0.8), 0 0 60px rgba(0, 255, 255, 0.4), inset 0 0 30px rgba(0, 255, 255, 0.2)';
                     e.target.style.textShadow = '0 0 15px #00FFFF, 0 0 25px #00FFFF, 0 0 35px #00FFFF, 0 0 45px #00FFFF';
                     e.target.style.borderColor = '#00E5FF';
-                    try { sfx.play('hover.mp3', 0.3); } catch {}
+                    try { sfx.play('hover', 0.3); } catch {}
                   }
                 }}
                 onMouseLeave={(e) => {
