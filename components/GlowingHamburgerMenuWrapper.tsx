@@ -46,6 +46,9 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
     console.log(`🍔 Hamburger menu item clicked: ${label}`);
     setLastClickedItem(label);
     
+    // Close the hamburger menu immediately when any item is clicked
+    setMenuOpen(false);
+    
     // Ensure we close all modals first to prevent conflicts
     setBadgesOpen(false);
     setHeartCoinOpen(false);

@@ -259,7 +259,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
   // Base wheel size before global scale
   const vsBase = Math.round(clamp(vmin * (scaleFactor * 0.97), vsMin, 980));
   // Apply global 80% size reduction to the wheel
-  const vs = Math.round(vsBase * 0.8); // wheel.mp4 square size at 80%
+  const vs = Math.round(vsBase * 0.8); // wheel square size at 80%
   const yellowHubSize = 72; // Fixed size - yellow hub should never change size
   const yellowItemSize = 68; // Fixed size - social media buttons should never change size
   // Resolve power (blue) button size responsively so beam can be positioned relative to it

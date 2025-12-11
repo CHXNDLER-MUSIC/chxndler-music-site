@@ -139,7 +139,7 @@ export const POS = {
       offsetVw: 0, 
       centerHoriz: true, 
       debug: false,
-      // Chroma-key config for wheel.mp4 background removal
+      // Chroma-key config for background removal
       // keyColor targets near-black; tweak tolerance/softness to tighten/loosen removal
       keyColor: [0, 0, 0],
       keyTolerance: 0.16, // 0..1 — higher eats more near-black
