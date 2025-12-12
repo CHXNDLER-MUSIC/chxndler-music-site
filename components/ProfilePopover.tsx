@@ -74,6 +74,19 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
 
   const popoverRef = useRef<HTMLDivElement>(null);
 
+  // Helper to render user's JOURNEY label
+  const getJourneyDisplay = () => {
+    const j = (profile?.journey || 'wanderer').toString().toLowerCase();
+    switch (j) {
+      case 'lover':
+        return { label: 'LOVER', color: '#FF6B9D' };
+      case 'dreamer':
+        return { label: 'DREAMER', color: '#FFD700' };
+      default:
+        return { label: 'WANDERER', color: '#00FFFF' };
+    }
+  };
+
   // Initialize form state when profile changes
   useEffect(() => {
     if (profile) {
@@ -614,13 +627,13 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
             onMouseEnter={() => {
               try { sfx.play('hover', 0.3); } catch {}
             }}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+            className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
             style={{
               background: 'rgba(0,255,255,0.2)',
               border: '1px solid rgba(0,255,255,0.6)',
               color: '#00FFFF',
               boxShadow: '0 0 10px rgba(0,255,255,0.3)',
-              fontSize: '14px',
+              fontSize: '16px',
               fontWeight: 'bold'
             }}
           >
@@ -637,7 +650,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
             onMouseEnter={() => {
               try { sfx.play('hover', 0.3); } catch {}
             }}
-            className="absolute top-16 right-4 w-10 h-10 rounded-full border-2 border-yellow-400/60 bg-yellow-400/10 hover:border-yellow-400/80 hover:bg-yellow-400/20 transition-all duration-200 hover:scale-110 flex items-center justify-center overflow-hidden"
+            className="absolute top-[85vh] right-4 w-10 h-10 rounded-full border-2 border-yellow-400/60 bg-yellow-400/10 hover:border-yellow-400/80 hover:bg-yellow-400/20 transition-all duration-200 hover:scale-110 flex items-center justify-center overflow-hidden"
             style={{
               boxShadow: 'inset 0 0 15px rgba(255, 193, 7, 0.4)'
             }}
@@ -756,6 +769,25 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               >
                 {profile?.name || 'Unknown'}
               </div>
+
+              {/* Journey label under name */}
+              <div className="mt-1">
+                {(() => {
+                  const { label, color } = getJourneyDisplay();
+                  return (
+                    <div
+                      className="text-sm font-semibold tracking-wide"
+                      style={{
+                        color,
+                        textShadow: `0 0 6px ${color}80`,
+                        letterSpacing: '0.06em'
+                      }}
+                    >
+                      [{label}]
+                    </div>
+                  );
+                })()}
+              </div>
               
               {/* Element */}
               <div className="flex items-center mt-2">
@@ -832,11 +864,11 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   >
                     {profile?.heartcoin_total || 0}
                   </span>
+
                 </div>
               </div>
             </div>
           </div>
-          
           
           {/* Thin cyan neon line */}
           <div 

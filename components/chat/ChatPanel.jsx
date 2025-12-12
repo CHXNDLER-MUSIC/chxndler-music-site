@@ -319,6 +319,14 @@ export default function ChatPanel({ isOpen, onClose }) {
   useEffect(() => {
     if (isOpen) {
       initializeChat();
+      // Reset profile-related states when chat opens
+      setSelectedUser(null);
+      setShowUserBadges(false);
+      setShowUserBinder(false);
+      setShowSendHeartCoin(false);
+      setSelectedCardPopup(null);
+      setSelectedBadgePopup(null);
+      setCardFlipped(false);
     } else {
       cleanupChat();
     }
@@ -962,7 +970,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                     }}
                   />
                   <h2 
-                    className="text-lg font-bold whitespace-nowrap"
+                    className="text-xl font-bold whitespace-nowrap"
                     style={{
                       color: '#F2EF1D !important',
                       textShadow: '0 0 10px #F2EF1D, 0 0 20px #F2EF1D, 0 0 30px #F2EF1D',
@@ -1202,6 +1210,111 @@ export default function ChatPanel({ isOpen, onClose }) {
                           <VotingPanel />
                         )}
                       </div>
+
+                      {/* Centered action icons row across popout */}
+                      <div className="w-full flex items-center justify-center space-x-4 mt-3 pb-1">
+                        <button 
+                          onClick={() => {
+                            try {
+                              const audio = new Audio('/audio/click.mp3');
+                              audio.volume = 0.3;
+                              audio.play().catch(error => {
+                                console.log('Click audio play failed:', error);
+                              });
+                            } catch (error) {
+                              console.log('Click audio creation failed:', error);
+                            }
+                            if (showUserBinder) {
+                              setBinderStartIndex(0);
+                              setShowUserBinder(false);
+                            } else {
+                              setBinderStartIndex(0);
+                              setShowUserBinder(true);
+                              setShowUserBadges(false);
+                              setShowSendHeartCoin(false);
+                              setBadgeStartIndex(0);
+                            }
+                          }}
+                          onMouseEnter={() => {
+                            try { sfx.play('hover', 0.3); } catch {}
+                          }}
+                          className="hover:scale-110 transition-transform"
+                          title="View Cards"
+                        >
+                          <img 
+                            src="/elements/binder.webp" 
+                            alt="Cards" 
+                            className="w-12 h-12 object-contain"
+                          />
+                        </button>
+                        
+                        <button 
+                          onClick={() => {
+                            try {
+                              const audio = new Audio('/audio/click.mp3');
+                              audio.volume = 0.3;
+                              audio.play().catch(error => {
+                                console.log('Click audio play failed:', error);
+                              });
+                            } catch (error) {
+                              console.log('Click audio creation failed:', error);
+                            }
+                            if (showUserBadges) {
+                              setBadgeStartIndex(0);
+                              setShowUserBadges(false);
+                            } else {
+                              setBadgeStartIndex(0);
+                              setShowUserBadges(true);
+                              setShowUserBinder(false);
+                              setShowSendHeartCoin(false);
+                              setBinderStartIndex(0);
+                            }
+                          }}
+                          onMouseEnter={() => {
+                            try { sfx.play('hover', 0.3); } catch {}
+                          }}
+                          className="hover:scale-110 transition-transform"
+                          title="View Badges"
+                        >
+                          <img 
+                            src="/elements/badges.webp" 
+                            alt="Badges" 
+                            className="w-12 h-12 object-contain"
+                          />
+                        </button>
+                        
+                        {selectedUser && selectedUser.id !== 'anonymous' && (
+                          <button 
+                            className="hover:scale-110 transition-transform"
+                            title="Send Heart Coin"
+                            onClick={() => {
+                              try {
+                                const audio = new Audio('/audio/click.mp3');
+                                audio.volume = 0.3;
+                                audio.play().catch(error => {
+                                  console.log('Click audio play failed:', error);
+                                });
+                              } catch (error) {
+                                console.log('Click audio creation failed:', error);
+                              }
+                              setShowSendHeartCoin(true);
+                              setShowUserBadges(false);
+                              setShowUserBinder(false);
+                              setBadgeStartIndex(0);
+                              setBinderStartIndex(0);
+                            }}
+                            onMouseEnter={() => {
+                              try { sfx.play('hover', 0.3); } catch {}
+                            }}
+                          >
+                            <img 
+                              src="/elements/heart-coin.webp" 
+                              alt="Send Heart Coin" 
+                              className="w-12 h-12 object-contain"
+                            />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1256,7 +1369,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                 {selectedUser && (
                   <div className="flex-1 border-l border-yellow-400/30 flex flex-col overflow-hidden h-full">
                     {/* Profile Header */}
-                    <div className="px-2 py-1 sm:px-3 sm:py-1.5 border-b border-yellow-400/30">
+                    <div className="relative px-2 py-1 sm:px-3 sm:py-1.5 border-b border-yellow-400/30">
                       <div className="flex items-center justify-between">
                         <div className="flex flex-col flex-1 min-w-0">
                           {/* User Icon and Name Row */}
@@ -1264,12 +1377,12 @@ export default function ChatPanel({ isOpen, onClose }) {
                             <div className="flex items-center space-x-2 flex-1 min-w-0">
                               {/* User Icon */}
                               {selectedUser.id === 'anonymous' ? (
-                                <img src="/elements/alien.webp" alt="Alien" className="w-14 h-14 flex-shrink-0" />
+                                <img src="/elements/alien.webp" alt="Alien" className="w-14 h-14 flex-shrink-0 relative -top-8" />
                               ) : selectedUser?.profile_image_url ? (
                                 <img 
                                   src={selectedUser.profile_image_url} 
                                   alt="Profile" 
-                                  className="w-14 h-14 rounded-full flex-shrink-0 object-cover"
+                                  className="w-14 h-14 rounded-full flex-shrink-0 object-cover relative -top-8"
                                   style={{
                                     border: '1px solid rgba(242, 239, 29, 0.5)',
                                     boxShadow: '0 0 8px rgba(242, 239, 29, 0.3)'
@@ -1293,7 +1406,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 <img 
                                   src={selectedUser?.element ? `/elements/${String(selectedUser.element).toLowerCase()}.webp` : '/elements/chxndler.webp'}
                                   alt="Element"
-                                  className="w-14 h-14 flex-shrink-0 object-cover rounded-full"
+                                  className="w-14 h-14 flex-shrink-0 object-cover rounded-full relative -top-8"
                                   style={{
                                     border: '1px solid rgba(242, 239, 29, 0.5)',
                                     boxShadow: '0 0 8px rgba(242, 239, 29, 0.3)'
@@ -1301,21 +1414,23 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 />
                               )}
                               
-                              <div className="flex flex-col">
-                                <h3 
-                                  className="text-xl font-bold truncate flex-1"
-                                  style={{
-                                    color: '#F2EF1D',
-                                    textShadow: '0 0 8px #F2EF1D',
-                                    fontSize: '28px'
-                                  }}
-                                >
-                                  {selectedUser.id === 'anonymous' ? alienName : (selectedUser.name || getDisplayName())}
-                                </h3>
+                              <div className="flex flex-col mt-3 ml-2">
+                                <div className="flex items-start gap-2">
+                                  <h3 
+                                    className="text-xl font-bold truncate"
+                                    style={{
+                                      color: '#F2EF1D',
+                                      textShadow: '0 0 8px #F2EF1D',
+                                      fontSize: '28px'
+                                    }}
+                                  >
+                                    {selectedUser.id === 'anonymous' ? alienName : (selectedUser.name || getDisplayName())}
+                                  </h3>
+                                </div>
                                 
                                 {/* Journey directly below user name */}
                                 <span
-                                  className={"text-sm font-bold " + (
+                                  className={"text-base font-bold " + (
                                     ((selectedUser.id === 'anonymous')
                                       ? 'WANDERER'
                                       : (user && profile?.journey)
@@ -1339,136 +1454,49 @@ export default function ChatPanel({ isOpen, onClose }) {
                                       : 'WANDERER' }
                                 </span>
                                 
-                                {/* Element directly below journey */}
-                                <span 
-                                  className="text-sm font-bold mt-1"
-                                  style={{
-                                    color: getElementColor(selectedUser?.element ? String(selectedUser.element).toUpperCase() : 'CHXNDLER'),
-                                    textShadow: `0 0 4px ${getElementColor(selectedUser?.element ? String(selectedUser.element).toUpperCase() : 'CHXNDLER')}80`,
-                                    lineHeight: '1.2'
-                                  }}
-                                >
-                                  {selectedUser?.element ? String(selectedUser.element).toUpperCase() : 'CHXNDLER'}
-                                </span>
+                                {/* Element name */}
+                                <div className="mt-1">
+                                  <span 
+                                    className="text-sm font-bold"
+                                    style={{
+                                      color: getElementColor(selectedUser?.element ? String(selectedUser.element).toUpperCase() : 'CHXNDLER'),
+                                      textShadow: `0 0 4px ${getElementColor(selectedUser?.element ? String(selectedUser.element).toUpperCase() : 'CHXNDLER')}80`,
+                                      lineHeight: '1.2'
+                                    }}
+                                  >
+                                    {selectedUser?.element ? String(selectedUser.element).toUpperCase() : 'CHXNDLER'}
+                                  </span>
+                                </div>
+
+                                {/* Action icons moved below header for full-width centering */}
                               </div>
                             </div>
                           
-                          {/* Action Icons - moved below element text */}
-                          <div className="flex items-center justify-center space-x-2 flex-shrink-0 mt-2">
-                              <button 
-                                onClick={() => {
-                                  try {
-                                    const audio = new Audio('/audio/click.mp3');
-                                    audio.volume = 0.3;
-                                    audio.play().catch(error => {
-                                      console.log('Click audio play failed:', error);
-                                    });
-                                  } catch (error) {
-                                    console.log('Click audio creation failed:', error);
-                                  }
-                                  if (showUserBinder) {
-                                    setBinderStartIndex(0);
-                                    setShowUserBinder(false);
-                                  } else {
-                                    setBinderStartIndex(0);
-                                    setShowUserBinder(true);
-                                    setShowUserBadges(false);
-                                    setShowSendHeartCoin(false);
-                                    setBadgeStartIndex(0);
-                                  }
-                                }}
-                                onMouseEnter={() => {
-                                  try { sfx.play('hover', 0.3); } catch {}
-                                }}
-                                className="hover:scale-110 transition-transform"
-                                title="View Cards"
-                              >
-                                <img 
-                                  src="/elements/binder.webp" 
-                                  alt="Cards" 
-                                  className="w-12 h-12"
-                                />
-                              </button>
-                              
-                              <button 
-                                onClick={() => {
-                                  try {
-                                    const audio = new Audio('/audio/click.mp3');
-                                    audio.volume = 0.3;
-                                    audio.play().catch(error => {
-                                      console.log('Click audio play failed:', error);
-                                    });
-                                  } catch (error) {
-                                    console.log('Click audio creation failed:', error);
-                                  }
-                                  if (showUserBadges) {
-                                    setBadgeStartIndex(0);
-                                    setShowUserBadges(false);
-                                  } else {
-                                    setBadgeStartIndex(0);
-                                    setShowUserBadges(true);
-                                    setShowUserBinder(false);
-                                    setShowSendHeartCoin(false);
-                                    setBinderStartIndex(0);
-                                  }
-                                }}
-                                onMouseEnter={() => {
-                                  try { sfx.play('hover', 0.3); } catch {}
-                                }}
-                                className="hover:scale-110 transition-transform"
-                                title="View Badges"
-                              >
-                                <img 
-                                  src="/elements/badges.webp" 
-                                  alt="Badges" 
-                                  className="w-12 h-12"
-                                />
-                              </button>
-                              
-                              {selectedUser.id !== 'anonymous' && (
-                                <button 
-                                  className="hover:scale-110 transition-transform"
-                                  title="Send Heart Coin"
-                                  onClick={() => {
-                                    try {
-                                      const audio = new Audio('/audio/click.mp3');
-                                      audio.volume = 0.3;
-                                      audio.play().catch(error => {
-                                        console.log('Click audio play failed:', error);
-                                      });
-                                    } catch (error) {
-                                      console.log('Click audio creation failed:', error);
-                                    }
-                                    setShowSendHeartCoin(true);
-                                    setShowUserBadges(false);
-                                    setShowUserBinder(false);
-                                    setBadgeStartIndex(0);
-                                    setBinderStartIndex(0);
-                                  }}
-                                  onMouseEnter={() => {
-                                    try { sfx.play('hover', 0.3); } catch {}
-                                  }}
-                                >
-                                  <img 
-                                    src="/elements/heart-coin.webp" 
-                                    alt="Send Heart Coin" 
-                                    className="w-12 h-12"
-                                  />
-                                </button>
-                              )}
-                            </div>
                             
                             {/* Total Heart Coins */}
-                            <div className="flex flex-col items-center space-y-0 flex-shrink-0">
+                            <div className="flex flex-col items-center space-y-0 flex-shrink-0 relative -top-2">
                               <div className="flex items-center space-x-2">
 
                                 <div className="flex items-center space-x-1 px-2 py-0.5 rounded bg-black/30">
                                   <span className="text-sm text-white/80 font-medium">TOTAL</span>
-                                  <img 
-                                    src="/elements/heart-coin.webp" 
-                                    alt="Total Heart Coins" 
-                                    className="w-7 h-7"
-                                  />
+                                  <div className="flex flex-col items-center">
+                                    <img 
+                                      src="/elements/heart-coin.webp" 
+                                      alt="Total Heart Coins" 
+                                      className="w-7 h-7"
+                                    />
+                                    <div className="text-[11px] leading-tight text-white/70 mt-0.5">
+                                      <span className="text-yellow-400 font-bold">
+                                        {selectedUser.id === 'anonymous' 
+                                          ? 0 
+                                          : (user && profile?.daily_streak !== undefined) 
+                                            ? profile.daily_streak 
+                                            : 0
+                                        }
+                                      </span>
+                                      <span className="ml-1">Days Streak</span>
+                                    </div>
+                                  </div>
                                   <span className="text-lg text-pink-400 font-bold">
                                     {selectedUser.id === 'anonymous' 
                                       ? 0 
@@ -1477,56 +1505,45 @@ export default function ChatPanel({ isOpen, onClose }) {
                                         : (selectedUser.total_heart_coins || 0)
                                     }
                                   </span>
-                                  <button
-                                    onClick={() => {
-                                      try {
-                                        const audio = new Audio('/audio/close.mp3');
-                                        audio.volume = 0.5;
-                                        audio.play().catch(error => {
-                                          console.log('Close audio play failed:', error);
-                                        });
-                                      } catch (error) {
-                                        console.log('Close audio creation failed:', error);
-                                      }
-                                      setSelectedUser(null);
-                                      setShowUserBadges(false);
-                                      setShowUserBinder(false);
-                                      setShowSendHeartCoin(false);
-                                    }}
-                                    onMouseEnter={() => {
-                                      try { sfx.play('hover', 0.3); } catch {}
-                                    }}
-                                    className="text-yellow-400 hover:text-yellow-300 transition-all duration-200 text-xl px-3 py-2 rounded flex-shrink-0 ml-1 hover:scale-110"
-                                    style={{
-                                      background: 'rgba(242, 239, 29, 0.2)',
-                                      border: '2px solid #F2EF1D',
-                                      color: '#F2EF1D',
-                                      textShadow: '0 0 12px rgba(242, 239, 29, 0.8)',
-                                      boxShadow: '0 0 16px rgba(242, 239, 29, 0.6), 0 0 32px rgba(242, 239, 29, 0.3)',
-                                      fontSize: '20px',
-                                      fontWeight: 'bold'
-                                    }}
-                                  >
-                                    ×
-                                  </button>
                                 </div>
                               </div>
-                              {/* Days Streak */}
-                              <div className="flex items-center space-x-2 px-3 py-1 text-sm text-white/70">
-                                <span className="text-yellow-400 font-bold text-lg">
-                                  {selectedUser.id === 'anonymous' 
-                                    ? 0 
-                                    : (user && profile?.daily_streak !== undefined) 
-                                      ? profile.daily_streak 
-                                      : 0
-                                  }
-                                </span>
-                                <span className="text-sm">Days Streak</span>
-                              </div>
+                              
                             </div>
                           </div>
                         </div>
-                        {/* Removed right-side arrow close button to declutter UI near streak */}
+                        {/* Close button aligned to far right */}
+                        <button
+                          onClick={() => {
+                            try {
+                              const audio = new Audio('/audio/close.mp3');
+                              audio.volume = 0.5;
+                              audio.play().catch(error => {
+                                console.log('Close audio play failed:', error);
+                              });
+                            } catch (error) {
+                              console.log('Close audio creation failed:', error);
+                            }
+                            setSelectedUser(null);
+                            setShowUserBadges(false);
+                            setShowUserBinder(false);
+                            setShowSendHeartCoin(false);
+                          }}
+                          onMouseEnter={() => {
+                            try { sfx.play('hover', 0.3); } catch {}
+                          }}
+                          className="absolute right-2 top-1 z-10 text-yellow-400 hover:text-yellow-300 transition-all duration-200 text-xl px-3 py-1 rounded"
+                          style={{
+                            background: 'rgba(242, 239, 29, 0.15)',
+                            border: '1px solid #F2EF1D',
+                            color: '#F2EF1D',
+                            textShadow: '0 0 10px rgba(242, 239, 29, 0.7)',
+                            boxShadow: '0 0 12px rgba(242, 239, 29, 0.45)'
+                          }}
+                          aria-label="Close profile"
+                          title="Close"
+                        >
+                          ×
+                        </button>
                       </div>
                     </div>
 
@@ -1835,7 +1852,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                       {/* Binder Section */}
                       {showUserBinder && (
                         <div className="pt-2 border-t border-white/20">
-                          <h4 className="text-sm font-semibold mb-3 flex items-center" style={{ color: '#FF69B4' }}>
+                          <h4 className="text-base font-semibold mb-3 flex items-center" style={{ color: '#FF69B4' }}>
                             <img src="/elements/binder.webp" alt="Cards" className="w-4 h-4 mr-2" />
                             CARD COLLECTION
                           </h4>
@@ -1874,9 +1891,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                             </button>
 
                             {/* Cards Grid */}
-                            <div className="flex-1 grid grid-cols-5 gap-3">
+                            <div className="flex-1 grid grid-cols-4 gap-3">
                               {/* Display user's owned cards from songCollection */}
-                              {Array.from({ length: 5 }, (_, index) => {
+                              {Array.from({ length: 4 }, (_, index) => {
                                 // Get owned cards by filtering songCollection
                                 const ownedCards = songCollection.filter(song => isCardOwned(song.name));
                                 

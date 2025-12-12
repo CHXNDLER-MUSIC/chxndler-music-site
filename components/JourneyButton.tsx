@@ -167,7 +167,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
             <div
               className="journey-container"
               style={{
-                width: 'min(90vw, 700px)',
+                width: 'min(94vw, 740px)',
                 height: '55vh',
                 padding: '15px',
                 borderRadius: 15,
@@ -262,7 +262,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
             </div>
             
             {/* Three Tier Buttons */}
-            <div className="flex justify-center gap-6 h-4/5" style={{ marginTop: '-10px' }}>
+            <div className="flex justify-center gap-5 h-4/5" style={{ marginTop: '-10px' }}>
               {(Object.keys(tierData) as TierType[]).map((tier) => {
                 const data = tierData[tier];
                 const isFlipped = flippedTier === tier;
@@ -272,7 +272,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
                     key={tier}
                     className="tier-card"
                     style={{
-                      width: '185px',
+                      width: '195px',
                       height: '100%',
                       perspective: '1000px',
                       cursor: 'pointer'

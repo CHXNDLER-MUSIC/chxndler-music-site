@@ -222,7 +222,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
   const pp = ppConfig;
   // Get responsive wheel video configuration
   const vconf = getResponsiveValue(wheel.video) || { scale: 1.0, offsetVh: 0, offsetVw: 0, centerHoriz: true, debug: false };
-  // Viewport-aware scaling for wheel video, start button, and hub buttons
+  // Viewport-aware scaling for wheel video and hub buttons (Start position will be fixed)
   const [vmin, setVmin] = useState<number>(() => {
     if (typeof window === 'undefined') return 800;
     return Math.min(window.innerWidth, window.innerHeight);
@@ -241,6 +241,10 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
   // Ensure Start button isn't too small on phones
   const startBase = vmin * (vw <= 480 ? 0.19 : vw <= 768 ? 0.17 : 0.16);
   const startSize = Math.round(clamp(startBase, vw <= 480 ? 112 : 92, 210)); // increased minimums for better tap targets
+  // Fixed size for START variant so it does not adjust on small screens
+  const startFixedSizePx = 140;
+  // Fixed vertical offset for START relative to buttons baseline so it doesn't drift by screen size
+  const startBottomOffsetPx = 130; // place START below the baseline consistently
   // Make wheel responsive with better minimum size scaling for small screens
   // Increase scale on narrower viewports so the wheel doesn't shrink as much
   const scaleFactor = (() => {
@@ -362,6 +366,8 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
     process.env.NEXT_PUBLIC_START_BUTTON === '1' ||
     process.env.NEXT_PUBLIC_PLAY_BUTTON_STYLE === 'start'
   );
+  // Use fixed size for START only; keep responsive size for Play/Pause
+  const startButtonSizePx = isStart ? startFixedSizePx : startSize;
 
   return (
     <div
@@ -672,7 +678,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
           position: "absolute",
           bottom: `${buttonsBottomPercent}%`, // Same vertical level as blue button
           // Position to the left of center
-          left: `calc(50% - ${buttonOffsetPx}px - 10px)`,
+          left: `calc(50% - ${buttonOffsetPx}px - 4px)`,
           transform: 'translate(-50%, 8px)',
           zIndex: 92,
           pointerEvents: showUI && !isDimmingOverlayActive && isUIUnlocked ? 'auto' : 'none',
@@ -853,7 +859,8 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
         <div
           style={{
             position: "absolute",
-            bottom: `calc(-2vh + ${vs * 0.35}px + 40px)`, // Positioned higher above the start button
+            // Anchor to the same baseline used by other cockpit buttons for stability
+            bottom: `calc(${buttonsBottomPercent}% + 40px)`,
             left: '50%',
             transform: 'translate(-50%, 0)',
             zIndex: 9998, // Just below the start button (9999)
@@ -886,20 +893,19 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
         </div>
       )}
 
-      {/* Start button positioned directly on top of the wheel */}
+      {/* Start button positioned with fixed baseline (no responsive drift) */}
       {!hideStartButton && <button
         onClick={handleLaunch}
         data-no-track
         className={`pointer-events-auto wheel-play${isStart ? ' chx' : ''} no-spotlight${isStart && startPulseOn ? ' start-pulse' : ''}`}
         style={{
           position: "absolute",
-          // Position directly on top of the wheel surface
-          // Move START button slightly further downward
-          bottom: `calc(-2vh + ${vs * 0.35}px - 72px)`,
+          // Anchor to cockpit buttons baseline with a fixed offset so position doesn't change across breakpoints
+          bottom: `calc(${buttonsBottomPercent}% - ${startBottomOffsetPx}px)`,
           left: '50%',
           // Slightly larger start button for better prominence
-          width: startSize * 1.02,
-          height: startSize * 1.02,
+          width: startButtonSizePx * 1.02,
+          height: startButtonSizePx * 1.02,
           borderRadius: 9999,
           transform: `translate(-50%, 0)`,
           zIndex: 9999, // HIGHEST z-index to ensure always clickable

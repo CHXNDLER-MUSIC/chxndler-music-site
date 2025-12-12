@@ -794,11 +794,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               </div>
             )}
 
-            <div className="text-center mb-6">
-              <p className="text-white/80 text-sm">
-                Trade your HeartCoins for collectibles and cards
-              </p>
-            </div>
+            
             
             {/* Merch Items Grid */}
             {merchLoading ? (

@@ -334,6 +334,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // Track if modal was opened via collect card button to prevent automatic closing
   const [isFromCollectCard, setIsFromCollectCard] = useState(false);
   
+  // State for toggling HeartCoins description text
+  const [showHeartCoinsInfo, setShowHeartCoinsInfo] = useState(false);
+  
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).priceHeartCoinsInitialTab) {
       setActiveTab((window as any).priceHeartCoinsInitialTab);
@@ -1386,11 +1389,18 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           {/* Header */}
           <div className="text-center mb-3 mt-2">
             <div 
-              className="text-lg font-bold mb-2"
+              className="text-lg font-bold mb-2 cursor-pointer hover:scale-105 transition-transform duration-200"
               style={{ 
                 color: '#FFFFFF', 
                 textShadow: '0 0 12px rgba(255,255,255,0.9), 0 0 24px rgba(255,255,255,0.6), 0 0 36px rgba(255,255,255,0.3)', 
                 fontSize: '20px'
+              }}
+              onClick={() => {
+                try { sfx.play('click', 0.6); } catch {}
+                setShowHeartCoinsInfo(!showHeartCoinsInfo);
+              }}
+              onMouseEnter={() => {
+                try { sfx.play('hover', 0.3); } catch {}
               }}
             >
               HeartCoins
@@ -1491,18 +1501,50 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 ))}
               </div>
 
-              {/* Description Text */}
+          {/* Show HeartCoins info when title is clicked, otherwise show quests */}
+          {showHeartCoinsInfo ? (
+            <div 
+              className="text-center p-4 rounded-lg"
+              style={{ 
+                background: 'rgba(255,255,255,0.1)',
+                border: '1px solid rgba(255,255,255,0.3)'
+              }}
+            >
               <div 
-                className="text-base text-center mb-3"
+                className="text-base mb-3"
                 style={{ 
                   color: '#FFFFFF', 
                   textShadow: '0 0 4px rgba(255,255,255,0.8)', 
                   fontSize: '14px',
-                  lineHeight: 1.3
+                  fontWeight: 'bold',
+                  lineHeight: 1.4
                 }}
               >
-                HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting and showing up.
+                HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting, and showing up.
               </div>
+              <div 
+                className="text-sm mb-3"
+                style={{ 
+                  color: 'rgba(255,255,255,0.9)', 
+                  fontSize: '14px',
+                  lineHeight: 1.4
+                }}
+              >
+                Complete quests. Attend community events. Engage with the Heartverse.
+              </div>
+              <div 
+                className="text-sm"
+                style={{ 
+                  color: 'rgba(255,255,255,0.8)', 
+                  fontSize: '14px',
+                  lineHeight: 1.4
+                }}
+              >
+                Use your HeartCoins to unlock collectibles and cards, and deepen your place in the community.
+              </div>
+            </div>
+          ) : (
+            <div>
 
           {/* Daily Quests Tab Content */}
           {activeEarnTab === 'DAILY QUESTS' && (
@@ -1805,6 +1847,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             </div>
           )}
           
+            </div>
+          )}
             </>
           )}
 
@@ -1856,23 +1900,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     ))}
                   </div>
 
-                  <div 
-                    className="text-base text-center mb-2 mt-1"
-                    style={{ 
-                      color: '#FFFFFF', 
-                      textShadow: '0 0 4px rgba(255,255,255,0.8)', 
-                      fontSize: '14px',
-                      lineHeight: 1,
-                      width: '100%',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    Trade your HeartCoins for collectibles and cards
-                  </div>
+                  
 
                   {/* MERCH Tab Content */}
                   {activeUseTab === 'MERCH' && (
-                    <div className="px-2">
+                    <div className="px-2 pb-20">
                       {/* Loading state */}
                       {merchLoading && (
                         <div className="text-center py-8">
@@ -1898,6 +1930,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             {/* Image and Title with Navigation */}
                             <div className="flex items-start gap-1 mb-3">
                               {/* Left Arrow */}
+                              <div className="flex-1 flex items-start">
                               <button
                                 onClick={() => {
                                   try { sfx.play('click', 0.6); } catch {}
@@ -1906,16 +1939,23 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 onMouseEnter={() => {
                                   try { sfx.play('hover', 0.3); } catch {}
                                 }}
-                                className="flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-110 transition-all duration-200 flex-shrink-0 mt-8 -ml-6"
+                                className="flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-110 transition-all duration-200 mt-8"
                                 style={{
                                   boxShadow: '0 0 8px rgba(255,255,255,0.3)'
                                 }}
                               >
                                 <span className="text-white text-sm font-bold">←</span>
                               </button>
+                              </div>
                               
-                              {/* Item Image */}
+                              {/* Item Title + Image */}
                               <div className="flex flex-col items-center">
+                                <div 
+                                  className="text-center text-white font-bold text-lg mb-1"
+                                  style={{ textShadow: '0 0 6px rgba(255,255,255,0.6)' }}
+                                >
+                                  {PHYSICAL_ITEMS[currentMerchIndex].title.toUpperCase()}
+                                </div>
                                 <div 
                                   className="relative w-28 h-28 flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-200"
                                   onMouseEnter={() => {
@@ -1941,24 +1981,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   {currentMerchIndex + 1} of {PHYSICAL_ITEMS.length}
                                 </div>
                                 
-                                {/* PAY WITH $ button only */}
-                                <div className="flex justify-start mt-3">
-                                  <button
-                                    onClick={() => {
-                                      window.open(PHYSICAL_ITEMS[currentMerchIndex].stripeUrl, '_blank');
-                                    }}
-                                    onMouseEnter={() => {
-                                      try { sfx.play('hover', 0.3); } catch {}
-                                    }}
-                                    className="px-8 py-3 rounded border border-white/60 bg-white/20 hover:bg-white/30 hover:scale-105 cursor-pointer transition-all duration-200 text-white font-semibold text-xs whitespace-nowrap"
-                                    style={{
-                                      textShadow: '0 0 4px rgba(255,255,255,0.6)',
-                                      boxShadow: '0 0 8px rgba(255,255,255,0.2)'
-                                    }}
-                                  >
-                                    PAY WITH ${PHYSICAL_ITEMS[currentMerchIndex].priceUsd % 1 === 0 ? PHYSICAL_ITEMS[currentMerchIndex].priceUsd.toFixed(0) : PHYSICAL_ITEMS[currentMerchIndex].priceUsd.toFixed(1)}
-                                  </button>
-                                </div>
+                                {/* PAY WITH $ button moved to bottom action bar */}
                               </div>
                               
                               {/* Item Details */}
@@ -2075,24 +2098,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 ) : (
                                   /* Normal Item Details */
                                   <>
-                                    <div 
-                                      className="font-bold text-white text-lg mb-1"
-                                      style={{
-                                        textShadow: '0 0 4px rgba(255,255,255,0.6)'
-                                      }}
-                                    >
-                                      {PHYSICAL_ITEMS[currentMerchIndex].title}
-                                    </div>
-                                    <div className="relative mb-1">
-                                      <div 
-                                        className="text-xs text-white/90 pr-12"
-                                        style={{
-                                          textShadow: '0 0 2px rgba(255,255,255,0.4)',
-                                          lineHeight: '1.3'
-                                        }}
-                                      >
-                                        {PHYSICAL_ITEMS[currentMerchIndex].description}
-                                      </div>
+                                    <div className="relative mb-1 h-8">
                                       
                                       
                                       {/* Right Arrow */}
@@ -2104,7 +2110,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                         onMouseEnter={() => {
                                           try { sfx.play('hover', 0.3); } catch {}
                                         }}
-                                        className="absolute -right-2 top-0 flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-110 transition-all duration-200"
+                                        className="absolute -right-3 top-0 flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-110 transition-all duration-200"
                                         style={{
                                           boxShadow: '0 0 8px rgba(255,255,255,0.3)'
                                         }}
@@ -2117,44 +2123,54 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   </>
                                 )}
                                 
-                                {/* PAY WITH heart coin button - always visible */}
-                                <div className="flex justify-center mt-3">
-                                  <button
-                                    onClick={() => {
-                                      try { sfx.play('click', 0.6); } catch {}
-                                      setSelectedItem(PHYSICAL_ITEMS[currentMerchIndex]);
-                                      setShowHeartCoinPurchase(!showHeartCoinPurchase);
-                                    }}
-                                    onMouseEnter={() => {
-                                      try { sfx.play('hover', 0.3); } catch {}
-                                    }}
-                                    className={`px-8 py-3 rounded border cursor-pointer transition-all duration-200 text-white font-semibold flex items-center justify-center gap-1 text-xs whitespace-nowrap hover:scale-105 ${
-                                      showHeartCoinPurchase && selectedItem?.slug === PHYSICAL_ITEMS[currentMerchIndex].slug
-                                        ? 'border-yellow-400 bg-yellow-500/40 shadow-[0_0_20px_rgba(255,215,0,0.6)]'
-                                        : 'border-yellow-500/60 bg-yellow-500/20 hover:bg-yellow-500/30'
-                                    }`}
-                                    style={{
-                                      textShadow: '0 0 4px rgba(255,255,255,0.6)',
-                                      boxShadow: showHeartCoinPurchase && selectedItem?.slug === PHYSICAL_ITEMS[currentMerchIndex].slug 
-                                        ? '0 0 20px rgba(255,215,0,0.6)' 
-                                        : '0 0 8px rgba(255,215,0,0.2)'
-                                    }}
-                                  >
-                                    PAY WITH
-                                    <img
-                                      src="/elements/heart-coin.webp"
-                                      alt="Heart Coin"
-                                      className="w-4 h-4"
-                                    />
-                                    {PHYSICAL_ITEMS[currentMerchIndex].priceHeartCoins}
-                                  </button>
-                                </div>
+                                {/* PAY WITH heart coin button moved to bottom action bar */}
                               </div>
                             </div>
                           </div>
                           )}
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* Bottom description above action bar */}
+                  {activeUseTab === 'MERCH' && PHYSICAL_ITEMS[currentMerchIndex] && (
+                    <div className="absolute left-6 right-6 bottom-16 text-xs text-white/90" style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)', lineHeight: '1.3' }}>
+                      {PHYSICAL_ITEMS[currentMerchIndex].description}
+                    </div>
+                  )}
+
+                  {/* Bottom action bar for MERCH payments */}
+                  {activeUseTab === 'MERCH' && PHYSICAL_ITEMS[currentMerchIndex] && (
+                    <div className="absolute left-6 right-6 bottom-4 flex gap-2">
+                      <button
+                        onClick={() => {
+                          try { sfx.play('click', 0.6); } catch {}
+                          window.open(PHYSICAL_ITEMS[currentMerchIndex].stripeUrl, '_blank');
+                        }}
+                        onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                        className="flex-1 px-4 py-3 rounded border border-white/60 bg-white/20 hover:bg-white/30 transition-all duration-200 text-white font-semibold text-xs whitespace-nowrap"
+                        style={{ textShadow: '0 0 4px rgba(255,255,255,0.6)', boxShadow: '0 0 8px rgba(255,255,255,0.2)' }}
+                      >
+                        PAY WITH ${PHYSICAL_ITEMS[currentMerchIndex].priceUsd % 1 === 0 ? PHYSICAL_ITEMS[currentMerchIndex].priceUsd.toFixed(0) : PHYSICAL_ITEMS[currentMerchIndex].priceUsd.toFixed(1)}
+                      </button>
+                      <button
+                        onClick={() => {
+                          try { sfx.play('click', 0.6); } catch {}
+                          setSelectedItem(PHYSICAL_ITEMS[currentMerchIndex]);
+                          setShowHeartCoinPurchase(!showHeartCoinPurchase);
+                        }}
+                        onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                        className={`flex-1 px-4 py-3 rounded border cursor-pointer transition-all duration-200 text-white font-semibold flex items-center justify-center gap-1 text-xs whitespace-nowrap ${
+                          showHeartCoinPurchase && selectedItem?.slug === PHYSICAL_ITEMS[currentMerchIndex].slug
+                            ? 'border-yellow-400 bg-yellow-500/40 shadow-[0_0_20px_rgba(255,215,0,0.6)]'
+                            : 'border-yellow-500/60 bg-yellow-500/20 hover:bg-yellow-500/30'
+                        }`}
+                      >
+                        PAY WITH
+                        <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-4 h-4" />
+                        {PHYSICAL_ITEMS[currentMerchIndex].priceHeartCoins}
+                      </button>
                     </div>
                   )}
 

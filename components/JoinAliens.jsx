@@ -323,7 +323,7 @@ export default function JoinAliens({ visible = true } = {}) {
       }} />
 
       {/* Stay Connected Section - Bottom */}
-      <div style={{ marginTop: '2px', paddingBottom: '80px' }}>
+      <div style={{ marginTop: '40px', paddingBottom: '80px' }}>
         {/* Header Text */}
         {showPhoneForm && (
         <div 
@@ -1252,11 +1252,11 @@ export default function JoinAliens({ visible = true } = {}) {
         <div 
           style={{
             position: 'absolute',
-            bottom: '155px',
-            right: '60px',
+            bottom: '205px',
+            right: '80px',
             zIndex: 15,
             display: 'flex',
-            gap: '8px',
+            gap: '10px',
             alignItems: 'center'
           }}
           onClick={(e) => {
@@ -1282,8 +1282,8 @@ export default function JoinAliens({ visible = true } = {}) {
             }}
             style={{
               padding: '0',
-              width: '40px',
-              height: '40px',
+              width: '48px',
+              height: '48px',
               background: 'rgba(0, 255, 255, 0.1)',
               border: '2px solid #00FFFF',
               borderRadius: '50%',
@@ -1312,8 +1312,8 @@ export default function JoinAliens({ visible = true } = {}) {
               src="/elements/venmo.webp" 
               alt="Venmo" 
               style={{
-                width: '38px',
-                height: '38px',
+                width: '44px',
+                height: '44px',
                 filter: 'brightness(1) invert(0)'
               }}
             />
@@ -1329,11 +1329,11 @@ export default function JoinAliens({ visible = true } = {}) {
             }}
             style={{
               padding: '0',
-              width: '50px',
-              height: '32px',
+              width: '58px',
+              height: '38px',
               background: 'rgba(252, 84, 175, 0.1)',
               border: '2px solid #FC54AF',
-              borderRadius: '6px',
+              borderRadius: '8px',
               color: '#FC54AF',
               fontSize: '14px',
               fontWeight: 'bold',
@@ -1359,8 +1359,8 @@ export default function JoinAliens({ visible = true } = {}) {
               src="/elements/credit-card.webp" 
               alt="Credit Card" 
               style={{
-                width: '48px',
-                height: '30px',
+                width: '54px',
+                height: '34px',
                 filter: 'brightness(0) saturate(100%) invert(19%) sepia(95%) saturate(1646%) hue-rotate(300deg) brightness(102%) contrast(98%)'
               }}
             />
@@ -1373,11 +1373,11 @@ export default function JoinAliens({ visible = true } = {}) {
         <div 
           style={{
             position: 'absolute',
-            bottom: '105px',
-            right: '60px',
+            bottom: '140px',
+            right: '80px',
             zIndex: 15,
             display: 'flex',
-            gap: '8px',
+            gap: '10px',
             alignItems: 'center'
           }}
           onClick={(e) => {
@@ -1403,8 +1403,8 @@ export default function JoinAliens({ visible = true } = {}) {
             }}
             style={{
               padding: '0',
-              width: '40px',
-              height: '40px',
+              width: '48px',
+              height: '48px',
               background: 'rgba(0, 255, 255, 0.1)',
               border: '2px solid #00FFFF',
               borderRadius: '50%',
@@ -1433,8 +1433,8 @@ export default function JoinAliens({ visible = true } = {}) {
               src="/elements/venmo.webp" 
               alt="Venmo" 
               style={{
-                width: '38px',
-                height: '38px',
+                width: '44px',
+                height: '44px',
                 filter: 'brightness(1) invert(0)'
               }}
             />
@@ -1450,11 +1450,11 @@ export default function JoinAliens({ visible = true } = {}) {
             }}
             style={{
               padding: '0',
-              width: '50px',
-              height: '32px',
+              width: '58px',
+              height: '38px',
               background: 'rgba(252, 84, 175, 0.1)',
               border: '2px solid #FC54AF',
-              borderRadius: '6px',
+              borderRadius: '8px',
               color: '#FC54AF',
               fontSize: '14px',
               fontWeight: 'bold',
@@ -1480,8 +1480,8 @@ export default function JoinAliens({ visible = true } = {}) {
               src="/elements/credit-card.webp" 
               alt="Credit Card" 
               style={{
-                width: '48px',
-                height: '30px',
+                width: '54px',
+                height: '34px',
                 filter: 'brightness(0) saturate(100%) invert(19%) sepia(95%) saturate(1646%) hue-rotate(300deg) brightness(102%) contrast(98%)'
               }}
             />
@@ -1494,11 +1494,11 @@ export default function JoinAliens({ visible = true } = {}) {
         <div 
           style={{
             position: 'absolute',
-            bottom: '60px',
-            right: '60px',
+            bottom: '75px',
+            right: '80px',
             zIndex: 15,
             display: 'flex',
-            gap: '8px',
+            gap: '10px',
             alignItems: 'center'
           }}
           onClick={(e) => {
@@ -1521,8 +1521,8 @@ export default function JoinAliens({ visible = true } = {}) {
             }}
             style={{
               padding: '0',
-              width: '40px',
-              height: '40px',
+              width: '48px',
+              height: '48px',
               background: 'rgba(0, 255, 255, 0.1)',
               border: '2px solid #00FFFF',
               borderRadius: '50%',
@@ -1551,8 +1551,8 @@ export default function JoinAliens({ visible = true } = {}) {
               src="/elements/venmo.webp" 
               alt="Venmo" 
               style={{
-                width: '38px',
-                height: '38px',
+                width: '44px',
+                height: '44px',
                 filter: 'brightness(1) invert(0)'
               }}
             />
@@ -1568,11 +1568,11 @@ export default function JoinAliens({ visible = true } = {}) {
             }}
             style={{
               padding: '0',
-              width: '50px',
-              height: '32px',
+              width: '58px',
+              height: '38px',
               background: 'rgba(252, 84, 175, 0.1)',
               border: '2px solid #FC54AF',
-              borderRadius: '6px',
+              borderRadius: '8px',
               color: '#FC54AF',
               fontSize: '14px',
               fontWeight: 'bold',
@@ -1598,8 +1598,8 @@ export default function JoinAliens({ visible = true } = {}) {
               src="/elements/credit-card.webp" 
               alt="Credit Card" 
               style={{
-                width: '48px',
-                height: '30px',
+                width: '54px',
+                height: '34px',
                 filter: 'brightness(0) saturate(100%) invert(19%) sepia(95%) saturate(1646%) hue-rotate(300deg) brightness(102%) contrast(98%)'
               }}
             />

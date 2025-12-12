@@ -2498,7 +2498,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             className="slot-container"
             style={{
               position: 'fixed',
-              top: '64px', // Start right at bottom of profile bar border
+              top: '62px', // Slight overlap to sit flush against the profile bar bottom line
               bottom: 'calc(var(--display-touch-top) + 60px)', // Keep original bottom position
               left: '50%',
               transform: 'translateX(-50%)',

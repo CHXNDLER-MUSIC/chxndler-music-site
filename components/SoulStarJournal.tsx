@@ -129,6 +129,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const [showIntegratedBinder, setShowIntegratedBinder] = useState(false);
   const [selectedCard, setSelectedCard] = useState<any>(null);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
+  const [cardOpen, setCardOpen] = useState(false);
   const [publicEntries, setPublicEntries] = useState<JournalEntry[]>([]);
   const [showProfileInfo, setShowProfileInfo] = useState<{[key: string]: boolean}>({});
   const [isJourneyModalOpen, setIsJourneyModalOpen] = useState(false);
@@ -451,32 +452,30 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
   const handleGiveStar = async (entryId: string) => {
     try {
-      // Check if user is authenticated
+      // Require authentication to star entries
       if (!user?.id) {
-        // Open welcome home modal since we don't have openAuthModal
-        if (openWelcomeHome) {
-          openWelcomeHome();
-        }
+        if (openWelcomeHome) openWelcomeHome();
         return;
       }
 
-      // Call the RPC function
-      const { error } = await supabaseBrowser.rpc('give_star_to_journal_entry', {
-        p_entry_id: entryId,
-        p_user_id: user.id,
-      });
+      // Insert a star into the journal_entry_stars table
+      const { error } = await supabaseBrowser
+        .from('journal_entry_stars')
+        .insert({ entry_id: entryId, user_id: user.id });
 
       if (error) {
-        console.error('Error giving star:', error);
-        return;
+        // Ignore duplicate insert errors if user already starred
+        const msg = (error as any)?.message || '';
+        const code = (error as any)?.code || '';
+        const isDuplicate = code === '23505' || /duplicate key|already exists|unique/i.test(msg);
+        if (!isDuplicate) {
+          console.error('Error giving star:', error);
+          return;
+        }
       }
 
-      // Refresh both profile and public entries to update the counts
-      await Promise.all([
-        refreshProfile(),
-        loadPublicEntries()
-      ]);
-      
+      // Refresh to reflect updated star counts
+      await Promise.all([refreshProfile(), loadPublicEntries()]);
     } catch (error) {
       console.error('Failed to give star:', error);
     }
@@ -491,6 +490,79 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       'darkness': '/elements/darkness.webp'
     };
     return iconMap[element || ''] || '/elements/elementals.webp';
+  };
+
+  // Helper function to get card images (same as in BinderModal)
+  const getCardImage = (songName: string, element: string) => {
+    const songImages: { [key: string]: string } = {
+      'ALWAYS ON MY MIND': 'https://ik.imagekit.io/CHXNDLER/card/HEART.png',
+      'ALWAYS ON MY MIND (REMIX)': 'https://ik.imagekit.io/CHXNDLER/card/always-on-my-mind-remix.png?updatedAt=1762388342107',
+      'ALONE': 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png',
+      'ALONE (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png',
+      'AMERICAN DREAM': 'https://ik.imagekit.io/CHXNDLER/card/american-dream.png?updatedAt=1762388346126',
+      'BABY': 'https://ik.imagekit.io/CHXNDLER/card/baby.png?updatedAt=1762388345192',
+      'BE MY BEE': 'https://ik.imagekit.io/CHXNDLER/card/be-my-bee.png?updatedAt=1762388342848',
+      'BE MY BEE (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/be-my-bee-acoustic.png?updatedAt=1762388342912',
+      'BLUE (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/BLUE%20(ACOUSTIC).png?updatedAt=1763055066119',
+      'BLUE': 'https://ik.imagekit.io/CHXNDLER/card/LIGHTNING.png',
+      'BRAIN FREEZE': 'https://ik.imagekit.io/CHXNDLER/card/brain-freeze.png?updatedAt=1762388344632',
+      'CHEERLEADER': 'https://ik.imagekit.io/CHXNDLER/card/cheerleader.png?updatedAt=1762388343479',
+      'CHEERLEADER (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/cheerleader-acoustic.png?updatedAt=1762388343544',
+      'CHXNDLER': 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
+      'COLLIDE': 'https://ik.imagekit.io/CHXNDLER/card/HEART.png',
+      'COLORS OF OUR HOME': 'https://ik.imagekit.io/CHXNDLER/card/colors-of-our-home.png?updatedAt=1762388343640',
+      'COLORS OF OUR HOME (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/colors-of-our-home-acoustic.png?updatedAt=1762388343676',
+      'COLORS OF OUR HOME (BLUMA Game Soundtrack)': 'https://ik.imagekit.io/CHXNDLER/card/colors-of-our-home-bluma.png?updatedAt=1762388343737',
+      'FEELING THIS': 'https://ik.imagekit.io/CHXNDLER/card/LIGHTNING.png',
+      'GAME BOY HEART': 'https://ik.imagekit.io/CHXNDLER/card/game-boy-heart.png?updatedAt=1762388344698',
+      'HOME': 'https://ik.imagekit.io/CHXNDLER/card/home.png?updatedAt=1762388344763',
+      'HOME (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/home-acoustic.png?updatedAt=1762388344796',
+      'HOUSE PARTY': 'https://ik.imagekit.io/CHXNDLER/card/house-party.png?updatedAt=1762388344829',
+      'HOUSE PARTY (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/house-party-acoustic.png?updatedAt=1762388344863',
+      'I MIGHT FALL IN LOVE WITH YOU': 'https://ik.imagekit.io/CHXNDLER/card/i-might-fall-in-love-with-you.png?updatedAt=1762388344896',
+      'I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/i-might-fall-in-love-with-you-acoustic.png?updatedAt=1762388344931',
+      'KID FOREVER': 'https://ik.imagekit.io/CHXNDLER/card/kid-forever.png?updatedAt=1762388344964',
+      'LETTING GO': 'https://ik.imagekit.io/CHXNDLER/card/WATER.png',
+      'LITTLE BLACK HEART': 'https://ik.imagekit.io/CHXNDLER/card/little-black-heart.png?updatedAt=1762388345061',
+      'LITTLE BLACK HEART (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/little-black-heart-acoustic.png?updatedAt=1762388345095',
+      'LOVE ME': 'https://ik.imagekit.io/CHXNDLER/card/love-me.png?updatedAt=1762388345127',
+      'LOVE ME (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/love-me-acoustic.png?updatedAt=1762388345159',
+      'MR. BRIGHTSIDE': 'https://ik.imagekit.io/CHXNDLER/card/mr-brightside.png?updatedAt=1762388345259',
+      'OCEAN GIRL': 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl.png?updatedAt=1762388345326',
+      'OCEAN GIRL (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl-acoustic.png?updatedAt=1762388345359',
+      'OCEAN GIRL (REMIX)': 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl-remix.png?updatedAt=1762388345393',
+      'PARIS': 'https://ik.imagekit.io/CHXNDLER/card/paris.png?updatedAt=1762388345426',
+      'PINK MOON': 'https://ik.imagekit.io/CHXNDLER/card/pink-moon.png?updatedAt=1762388345458',
+      'POKÉMON': 'https://ik.imagekit.io/CHXNDLER/card/pokemon.png?updatedAt=1762388345491',
+      'SOMEBODY TO LOVE': 'https://ik.imagekit.io/CHXNDLER/card/HEART.png',
+      'TIENES UN AMIGO': 'https://ik.imagekit.io/CHXNDLER/card/tienes-un-amigo.png?updatedAt=1762388345524',
+      'WE\'RE JUST FRIENDS': 'https://ik.imagekit.io/CHXNDLER/card/were-just-friends.png?updatedAt=1762388345557',
+      'WE\'RE JUST FRIENDS (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/were-just-friends-acoustic.png?updatedAt=1762388345589',
+      'WE\'RE JUST FRIENDS (DMVRCO REMIX)': 'https://ik.imagekit.io/CHXNDLER/card/were-just-friends-dmvrco.png?updatedAt=1762388345622',
+      'WE\'RE JUST FRIENDS (mickey jas REMIX)': 'https://ik.imagekit.io/CHXNDLER/card/were-just-friends-mickeyjas.png?updatedAt=1762388345654',
+      // Elemental cards
+      'WATER': 'https://ik.imagekit.io/CHXNDLER/card/WATER.png',
+      'HEART': 'https://ik.imagekit.io/CHXNDLER/card/HEART.png',
+      'LIGHTNING': 'https://ik.imagekit.io/CHXNDLER/card/LIGHTNING.png',
+      'DARKNESS': 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png',
+    };
+
+    return songImages[songName] || `https://ik.imagekit.io/CHXNDLER/card/${element}.png`;
+  };
+
+  // Handle card click to show popup
+  const handleCardClick = (card: any) => {
+    try { 
+      sfx.play('card-ding', 0.45); 
+    } catch {}
+    
+    setSelectedCard({
+      name: card.card_name,
+      image: getCardImage(card.card_name, card.element),
+      rarity: card.rarity,
+      element: card.element
+    });
+    setCardOpen(true);
   };
 
 
@@ -514,6 +586,127 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         paddingRight: '20px'
       }}
     >
+
+      {/* Card popup - positioned absolutely within journal bounds */}
+      {cardOpen && selectedCard && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm z-50">
+          {/* Large card display */}
+          <div 
+            className="relative flex items-center justify-center"
+            style={{ 
+              perspective: '1000px',
+              maxWidth: 'min(400px, 90vw)',
+              maxHeight: 'min(600px, 80vh)'
+            }}
+          >
+            {/* Back arrow - positioned at top left of card */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                try { sfx.play('close', 0.8); } catch {}
+                setCardOpen(false);
+                setIsCardFlipped(false);
+              }}
+              onMouseEnter={() => {
+                try { sfx.play('hover', 0.3); } catch {}
+              }}
+              className="absolute -top-12 left-0 z-10 bg-black/50 backdrop-blur border border-white/20 rounded-full p-2 hover:bg-white/20 transition-all duration-300 hover:scale-105"
+              style={{
+                boxShadow: '0 0 15px rgba(255,255,255,0.2)'
+              }}
+            >
+              <svg 
+                width="20" 
+                height="20" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="white" 
+                strokeWidth="2"
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <path d="m15 18-6-6 6-6"/>
+              </svg>
+            </button>
+
+            {/* Card container with 3D perspective */}
+            <div
+              className="relative cursor-pointer transition-all duration-700 hover:scale-105"
+              style={{
+                width: 'min(300px, 80vw)',
+                height: 'min(420px, 80vw * 1.4)',
+                transformStyle: 'preserve-3d',
+                transform: isCardFlipped 
+                  ? 'rotateY(180deg) rotateX(9deg) rotateZ(-2deg)' 
+                  : 'rotateX(9deg) rotateZ(-2deg)',
+                filter: 'saturate(1.1) brightness(1.1) contrast(1.05)',
+                perspective: '1000px'
+              }}
+              onClick={() => {
+                try { sfx.play('card-flip', 0.6); } catch {}
+                setIsCardFlipped(!isCardFlipped);
+              }}
+            >
+              {/* Front face */}
+              <div
+                className="absolute inset-0 rounded-lg overflow-hidden shadow-2xl"
+                style={{
+                  backfaceVisibility: 'hidden',
+                  background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+                  border: '3px solid rgba(255,255,255,0.3)',
+                  boxShadow: `
+                    0 0 30px rgba(255,255,255,0.3),
+                    0 0 60px rgba(255,255,255,0.15),
+                    inset 0 1px 0 rgba(255,255,255,0.2)
+                  `
+                }}
+              >
+                <img
+                  src={selectedCard.image}
+                  alt={selectedCard.name}
+                  className="w-full h-full object-cover"
+                  draggable={false}
+                />
+              </div>
+
+              {/* Back face */}
+              <div
+                className="absolute inset-0 rounded-lg overflow-hidden shadow-2xl"
+                style={{
+                  backfaceVisibility: 'hidden',
+                  transform: 'rotateY(180deg)',
+                  background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%)',
+                  border: '3px solid rgba(255,255,255,0.3)',
+                  boxShadow: `
+                    0 0 30px rgba(255,255,255,0.3),
+                    0 0 60px rgba(255,255,255,0.15),
+                    inset 0 1px 0 rgba(255,255,255,0.2)
+                  `
+                }}
+              >
+                <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
+                  <h3 className="text-2xl font-bold mb-4" style={{ color: '#FFFFFF' }}>
+                    {selectedCard.name}
+                  </h3>
+                  <div className="mb-2">
+                    <span className="text-sm uppercase tracking-wider font-semibold" style={{ color: '#CCCCCC' }}>
+                      Element: {selectedCard.element}
+                    </span>
+                  </div>
+                  <div className="mb-4">
+                    <span className="text-sm uppercase tracking-wider font-semibold" style={{ color: '#CCCCCC' }}>
+                      Rarity: {selectedCard.rarity}
+                    </span>
+                  </div>
+                  <div className="text-xs text-white/60 mt-4">
+                    Click to flip back
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Holographic base glow */}
       <div 
@@ -1262,6 +1455,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                     embedded={true}
                                     showTitle={true}
                                     maxCards={4}
+                                    onCardClick={handleCardClick}
                                   />
                                 </div>
                               )}

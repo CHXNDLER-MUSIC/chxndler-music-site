@@ -35,8 +35,7 @@ export default function ReactionTray({ onReact, userId, disabled = false, classN
     'water_ripple', 
     'lightning_spark',
     'shadow_glow',
-    'alien_wave',
-    'soul_star'
+    'alien_wave'
   ];
 
   return (
@@ -44,7 +43,9 @@ export default function ReactionTray({ onReact, userId, disabled = false, classN
       className={`flex items-center gap-2 p-2 rounded-lg bg-black/80 backdrop-blur-md border-2 ${className}`}
       style={{
         borderColor: '#F2EF1D',
-        boxShadow: '0 0 20px rgba(242, 239, 29, 0.6), 0 0 40px rgba(242, 239, 29, 0.3)'
+        boxShadow: '0 0 20px rgba(242, 239, 29, 0.6), 0 0 40px rgba(242, 239, 29, 0.3)',
+        minWidth: 'fit-content',
+        overflowX: 'visible'
       }}
       initial={{ opacity: 0, scale: 0.8, y: 10 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -81,7 +82,6 @@ export default function ReactionTray({ onReact, userId, disabled = false, classN
                 ? 'opacity-50 cursor-not-allowed' 
                 : 'cursor-pointer hover:bg-white/10'
               }
-              ${isSoulStar ? 'ring-1 ring-yellow-400/50' : ''}
             `}
             whileHover={!disabled && canUseSoul ? { scale: 1.15 } : {}}
             whileTap={!disabled && canUseSoul ? { scale: 0.95 } : {}}

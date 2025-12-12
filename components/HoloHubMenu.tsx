@@ -1246,7 +1246,12 @@ export default function HoloHubMenu({
 
         /* YouTube styles fall back to the shared .item rules with --tint set to red */
 
-        @media (max-width: 480px) { .hub{ left:-32px; top:-32px; width:64px; height:64px; } .hub-icon{ width: 38px; height: 38px; } }
+        /* Prevent mobile-specific positional offsets that pushed the hub upward */
+        @media (max-width: 480px) {
+          .hub { left: 0; top: 0; }
+          /* Size is controlled inline via props; no hard-coded width/height here */
+          /* Keep icons centered and let inline sizing dictate dimensions */
+        }
       `}</style>
       {/* Comms click SFX */}
       <audio ref={joinRef} src="/audio/join-alien.mp3" preload="auto" playsInline />

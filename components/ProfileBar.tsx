@@ -689,9 +689,9 @@ export default function ProfileBar({
       {/* Chxndler Popout */}
       {isChxndlerPopoutOpen && (
         <div 
-          className="fixed inset-0 z-[2147483647] flex items-center justify-center"
+          className="fixed inset-0 z-[400] flex items-start justify-center"
           style={{
-            paddingTop: '250px'
+            paddingTop: '80px'
           }}
         >
           <div

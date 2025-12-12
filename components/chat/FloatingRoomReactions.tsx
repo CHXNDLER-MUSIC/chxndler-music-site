@@ -27,24 +27,30 @@ function FloatingReaction({ reaction, index, onComplete }: FloatingReactionProps
     return () => clearTimeout(timer);
   }, [config.duration, onComplete]);
 
-  // Create unique animation path for each reaction
-  const xOffset = (index % 3 - 1) * 30; // -30, 0, 30
+  // Create random starting position and animation path
+  const startX = Math.random() * 80 + 10; // Random X position between 10% and 90%
+  const startY = Math.random() * 60 + 20; // Random Y position between 20% and 80%
+  const xOffset = (Math.random() - 0.5) * 40; // Random horizontal drift
   const rotationDirection = index % 2 === 0 ? 1 : -1;
   
   return (
     <motion.div
-      className="absolute bottom-0 right-4 pointer-events-none z-50"
+      className="absolute pointer-events-none z-50"
+      style={{
+        left: `${startX}%`,
+        top: `${startY}%`,
+      }}
       initial={{ 
         opacity: 0, 
         y: 0, 
-        x: xOffset,
+        x: 0,
         scale: 0.8,
         rotate: 0
       }}
       animate={{ 
         opacity: [0, 1, 1, 0], 
-        y: -100,
-        x: xOffset + (rotationDirection * 20),
+        y: -120,
+        x: xOffset + (rotationDirection * 30),
         scale: [0.8, 1.2, 1, 0.8],
         rotate: rotationDirection * 15
       }}
@@ -226,7 +232,7 @@ export default function FloatingRoomReactions({ reactions, onReactionComplete }:
   };
 
   return (
-    <div className="fixed bottom-20 right-4 w-20 h-32 pointer-events-none z-40 overflow-hidden">
+    <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden">
       <AnimatePresence>
         {activeReactions.map((reaction, index) => (
           <FloatingReaction

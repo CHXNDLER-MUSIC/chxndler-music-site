@@ -123,7 +123,7 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
         <div
           className="journey-container"
           style={{
-            width: 'min(90vw, 700px)',
+            width: 'min(94vw, 740px)',
             height: '50vh',
             padding: '15px',
             borderRadius: 15,
@@ -217,7 +217,7 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
         </div>
         
         {/* Three Tier Buttons */}
-        <div className="flex justify-center gap-6 h-3/4">
+        <div className="flex justify-center gap-5 h-3/4">
           {(Object.keys(tierData) as TierType[]).map((tier) => {
             const data = tierData[tier];
             const isFlipped = flippedTier === tier;
@@ -227,7 +227,7 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
                 key={tier}
                 className="tier-card"
                 style={{
-                  width: '165px',
+                  width: '175px',
                   height: '100%',
                   perspective: '1000px',
                   cursor: 'pointer'
