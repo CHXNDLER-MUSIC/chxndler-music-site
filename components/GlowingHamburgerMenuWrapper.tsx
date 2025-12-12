@@ -75,11 +75,16 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
           break;
         case "JOURNAL":
         case "COMPLETED":
-          console.log(`🔔 Opening journal modal...`);
+          console.log(`🔔 Opening journal modal from hamburger menu...`);
+          console.log(`🔔 Current journalOpen state:`, journalOpen);
           // Change beam color to pink when Journal is clicked
           try { onBeamColorChange?.('pink'); } catch {}
           setJournalOpen(true);
-          console.log(`✅ Journal modal state set to true`);
+          console.log(`✅ Journal modal state set to true from hamburger menu`);
+          // Add a small delay to ensure state is set
+          setTimeout(() => {
+            console.log(`🔔 Journal modal state after timeout:`, journalOpen);
+          }, 100);
           break;
         case "BADGES":
           console.log(`🏅 Opening badges modal...`);

@@ -74,7 +74,7 @@ export default function ReactionTray({ onReact, userId, disabled = false, classN
             onMouseLeave={() => setHoveredReaction(null)}
             disabled={disabled || (isSoulStar && !canUseSoul)}
             className={`
-              relative flex items-center justify-center w-8 h-8 rounded-lg
+              relative flex items-center justify-center w-16 h-16 rounded-lg
               transition-all duration-200 transform
               hover:scale-110 active:scale-95
               ${disabled || (isSoulStar && !canUseSoul) 
@@ -87,7 +87,7 @@ export default function ReactionTray({ onReact, userId, disabled = false, classN
             whileTap={!disabled && canUseSoul ? { scale: 0.95 } : {}}
           >
             <div
-              className="w-32 h-32 relative flex items-center justify-center"
+              className="w-14 h-14 relative flex items-center justify-center"
               style={{ 
                 filter: hoveredReaction === reaction 
                   ? `drop-shadow(0 0 40px ${config.color}) brightness(1.8)` 
@@ -97,8 +97,8 @@ export default function ReactionTray({ onReact, userId, disabled = false, classN
               <Image
                 src={config.image}
                 alt={config.description}
-                width={128}
-                height={128}
+                width={56}
+                height={56}
                 className="object-contain"
                 draggable={false}
               />

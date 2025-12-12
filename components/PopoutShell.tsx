@@ -38,8 +38,8 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
           style={{
             width: 'min(85vw, 550px)',
             height: 'auto',
-            maxHeight: compact ? '70vh' : '60vh',
-            minHeight: compact ? '300px' : '500px',
+            maxHeight: compact ? '50vh' : '45vh',
+            minHeight: compact ? '300px' : '400px',
             display: 'flex',
             flexDirection: 'column',
             padding: '0px',
@@ -166,7 +166,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
           )}
 
           {/* Content container - exact copy from Binder */}
-          <div className="flex-1 relative overflow-hidden z-10" style={{ maxHeight: 'calc(100% - 80px)', display: 'flex', alignItems: compact ? 'flex-start' : 'center', paddingBottom: compact ? '8px' : '90px' }}>
+          <div className="flex-1 relative overflow-hidden z-10" style={{ maxHeight: 'calc(100% - 80px)', display: 'flex', alignItems: compact ? 'flex-start' : 'flex-start', paddingBottom: compact ? '8px' : '20px' }}>
             {overlayContent || children}
           </div>
 

@@ -1260,7 +1260,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                       <div className="flex items-center justify-between">
                         <div className="flex flex-col flex-1 min-w-0">
                           {/* User Icon and Name Row */}
-                          <div className="flex items-center justify-between space-x-2">
+                          <div className="flex items-center space-x-2">
                             <div className="flex items-center space-x-2 flex-1 min-w-0">
                               {/* User Icon */}
                               {selectedUser.id === 'anonymous' ? (
@@ -1352,9 +1352,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 </span>
                               </div>
                             </div>
-                            
-                            {/* Action Icons - moved up one row */}
-                            <div className="flex items-center space-x-2 flex-shrink-0">
+                          
+                          {/* Action Icons - moved below element text */}
+                          <div className="flex items-center justify-center space-x-2 flex-shrink-0 mt-2">
                               <button 
                                 onClick={() => {
                                   try {
@@ -1525,7 +1525,6 @@ export default function ChatPanel({ isOpen, onClose }) {
                               </div>
                             </div>
                           </div>
-                          
                         </div>
                         {/* Removed right-side arrow close button to declutter UI near streak */}
                       </div>
