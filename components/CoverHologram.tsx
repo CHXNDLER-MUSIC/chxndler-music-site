@@ -1149,15 +1149,15 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
         
         
         .card-modal{
-          /* Smaller pop container */
-          width: min(78vw, 260px);
-          max-width: 78vw;
+          /* Larger pop container */
+          width: min(85vw, 400px);
+          max-width: 85vw;
           background: rgba(25,227,255,0.45);
           box-shadow: 0 0 60px rgba(25,227,255,0.45), inset 0 0 0 1px rgba(25,227,255,0.35);
         }
         @media (max-width: 380px) {
           /* Nudge down more on very narrow devices */
-          .card-modal{ width: min(82vw, 240px); }
+          .card-modal{ width: min(88vw, 320px); }
         }
         .tilt-wrap{ perspective: 1200px; transform-style: preserve-3d; }
         .card-frame{
@@ -1315,7 +1315,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
           }
           
           .card-modal {
-            width: min(85vw, 220px) !important;
+            width: min(90vw, 300px) !important;
           }
         }
         /* ELEMENT button icon styles */

@@ -262,7 +262,7 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
             </div>
             
             {/* Three Tier Buttons */}
-            <div className="flex justify-center gap-5 h-4/5" style={{ marginTop: '-10px' }}>
+            <div className="flex justify-center gap-4 h-4/5" style={{ marginTop: '-10px' }}>
               {(Object.keys(tierData) as TierType[]).map((tier) => {
                 const data = tierData[tier];
                 const isFlipped = flippedTier === tier;

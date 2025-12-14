@@ -765,6 +765,10 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       <PopoutShell 
         title="DIGITAL CARD BINDER" 
         subtitle={`CARDS COLLECTED: ${profile?.cards?.length || 0}`}
+        minWidth={'min(96vw, 440px)'}
+        maxHeight={'78vh'}
+        fitToPowerTop
+        powerGapPx={4}
         onClose={() => {
           try { sfx.play('close', 0.8); } catch {}
           onClose();
@@ -898,7 +902,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
               binderPage === 'first' ? (
                 // User's Binder - First Page - Show 5 initial slots
               <div className="relative">
-                <div className="grid grid-cols-3 place-items-center px-12">
+                <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5">
                   {Array.from({ length: 6 }, (_, index) => {
                     // Check if there's a collected card for this slot
                     const collectedCard = profile?.cards?.[index];
@@ -914,7 +918,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     return (
                       <div
                         key={`slot-${index}`}
-                        className={`rounded-lg border backdrop-blur-sm transition-all duration-300 w-24 h-32 ${
+                        className={`rounded-lg border backdrop-blur-sm transition-all duration-300 w-28 h-36 ${
                           isLockedSlot
                             ? 'border-white/5 cursor-default'
                             : hasCard || isFirstSlotWithChxndler
@@ -1074,116 +1078,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   })}
                 </div>
                 
-                {/* Second row of 4 slots */}
-                <div className="grid grid-cols-3 place-items-center px-12">
-                  {Array.from({ length: 6 }, (_, index) => {
-                    const slotIndex = index + 4; // Slots 4-7
-                    const cardSlots = profile?.card_slots ?? 0;
-                    const isLockedSlot = slotIndex >= cardSlots;
-                    const collectedCard = profile?.cards?.[slotIndex];
-                    const hasCard = !!collectedCard?.cards;
-                    
-                    return (
-                      <div
-                        key={`slot-${slotIndex}`}
-                        className={`rounded-lg border backdrop-blur-sm transition-all duration-300 w-24 h-32 ${
-                          isLockedSlot
-                            ? 'border-white/5 cursor-default'
-                            : hasCard
-                            ? 'border-white/10 cursor-pointer hover:scale-105' 
-                            : 'border-white/10 cursor-pointer hover:scale-105'
-                        }`}
-                        onClick={() => {
-                          if (isLockedSlot) {
-                            // Do nothing for locked slots or optionally show upgrade modal
-                            return;
-                          }
-                          if (hasCard && collectedCard?.cards) {
-                            try { sfx.play('card-ding', 0.8); } catch {}
-                            setSelectedCard({
-                              name: collectedCard.cards.card_name,
-                              image: getCardImage(collectedCard.cards.card_name, collectedCard.cards.element),
-                              rarity: collectedCard.cards.rarity,
-                              element: collectedCard.cards.element
-                            });
-                            setCardOpen(true);
-                          } else if (!hasCard && !isLockedSlot) {
-                            // Empty slot: open HeartCoin modal with CARDS tab
-                            try { sfx.play('click', 0.4); } catch {}
-                            try {
-                              window.dispatchEvent(new CustomEvent('openHeartCoinCards', {
-                                detail: { source: 'binder_empty_slot' }
-                              }));
-                            } catch {}
-                          }
-                        }}
-                        onMouseEnter={() => {
-                          if (!isLockedSlot) {
-                            try { sfx.play('hover', 0.3); } catch {}
-                          }
-                        }}
-                        style={{
-                          boxShadow: hasCard
-                            ? '0 0 20px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.4)' 
-                            : !hasCard && !isLockedSlot
-                            ? '0 0 15px rgba(255,105,180,0.4), 0 0 25px rgba(255,105,180,0.2), 0 0 35px rgba(255,105,180,0.1)'
-                            : '0 0 5px rgba(255,105,180,0.1)',
-                          aspectRatio: '2/3',
-                          border: !hasCard && !isLockedSlot
-                            ? '2px dotted rgba(255,105,180,0.5)' 
-                            : undefined
-                        }}
-                      >
-                        <div className="relative w-full h-full">
-                          {hasCard && collectedCard?.cards ? (
-                            <>
-                              <img
-                                src={getCardImage(collectedCard.cards.card_name, collectedCard.cards.element)}
-                                alt={collectedCard.cards.card_name}
-                                className="w-full h-full object-cover rounded transition-all duration-300"
-                                draggable={false}
-                              />
-                              <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-green-500/80 rounded-full flex items-center justify-center">
-                                <svg viewBox="0 0 24 24" width="10" height="10" fill="white">
-                                  <path d="M20 6L9 17l-5-5"/>
-                                </svg>
-                              </div>
-                            </>
-                          ) : isLockedSlot ? (
-                            <div className="w-full h-full bg-gradient-to-br from-pink-500/5 to-purple-500/5 rounded flex items-center justify-center">
-                              <div 
-                                className="text-xs font-bold text-center"
-                                style={{ 
-                                  color: 'rgba(255,105,180,0.4)', 
-                                  textShadow: '0 0 4px rgba(255,105,180,0.3)',
-                                  fontSize: '10px',
-                                  letterSpacing: '0.5px'
-                                }}
-                              >
-                                LOCKED
-                              </div>
-                            </div>
-                          ) : (
-                            <div 
-                              className="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded flex items-center justify-center"
-                            >
-                              <div 
-                                className="text-xs font-bold"
-                                style={{ 
-                                  color: '#FFB6C1', 
-                                  textShadow: '0 0 4px rgba(255,182,193,0.6)',
-                                  fontSize: '8px'
-                                }}
-                              >
-                                EMPTY
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                
                 
                 {/* Right arrow to go to second page - positioned within popup on the right side */}
                 <div 
@@ -1268,14 +1163,14 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     </div>
                   </div>
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 8; // Slots 8-11
                       
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-28 h-36"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}
@@ -1298,36 +1193,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     })}
                   </div>
 
-                  {/* Second row of 4 locked slots */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 12; // Slots 12-15
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  
                   
                   {/* Right arrow to go to next page - positioned within popup on the right side */}
                   <div 
@@ -1405,14 +1271,14 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 16; // Slots 16-19
                       
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-28 h-36"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}
@@ -1435,36 +1301,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     })}
                   </div>
 
-                  {/* Second row of 4 locked slots */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 20; // Slots 20-23
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  
                   
                   {/* Right arrow to go to next page */}
                   <div 
@@ -1542,14 +1379,14 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 24; // Slots 24-27
                       
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-28 h-36"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}
@@ -1572,36 +1409,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     })}
                   </div>
 
-                  {/* Second row of 4 locked slots */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 28; // Slots 28-31
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  
                   
                   {/* Right arrow to go to next page */}
                   <div 
@@ -1679,14 +1487,14 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 32; // Slots 32-35
                       
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-28 h-36"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}
@@ -1709,36 +1517,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     })}
                   </div>
 
-                  {/* Second row of 4 locked slots */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 36; // Slots 36-39
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  
                   
                   {/* Right arrow to go to next page */}
                   <div 
@@ -1816,14 +1595,14 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 40; // Slots 40-43
                       
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-28 h-36"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}
@@ -1846,36 +1625,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     })}
                   </div>
 
-                  {/* Second row of 4 locked slots */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 44; // Slots 44-47
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  
                   
                   {/* Right arrow to go to next page */}
                   <div 
@@ -1953,14 +1703,14 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 48; // Slots 48-51
                       
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-28 h-36"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}
@@ -1983,36 +1733,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     })}
                   </div>
 
-                  {/* Second row of 4 locked slots */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 52; // Slots 52-55
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  
                   
                   {/* Right arrow to go to next page */}
                   <div 
@@ -2090,14 +1811,14 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 56; // Slots 56-59
                       
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-28 h-36"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}
@@ -2120,36 +1841,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     })}
                   </div>
 
-                  {/* Second row of 4 locked slots */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 60; // Slots 60-63
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  
                   
                   {/* Right arrow to go to next page */}
                   <div 
@@ -2227,14 +1919,14 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 64; // Slots 64-67
                       
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-28 h-36"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}
@@ -2257,36 +1949,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     })}
                   </div>
 
-                  {/* Second row of 4 locked slots */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 68; // Slots 68-71
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  
                   
                   {/* Right arrow to go to next page */}
                   <div 
@@ -2364,14 +2027,14 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 72; // Slots 72-75
                       
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-28 h-36"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}
@@ -2394,36 +2057,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     })}
                   </div>
 
-                  {/* Second row of 4 locked slots */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 76; // Slots 76-79
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  
                   
                   {/* Right arrow to go to next page */}
                   <div 
@@ -2501,14 +2135,14 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 80; // Slots 80-83
                       
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-28 h-36"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}
@@ -2531,36 +2165,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     })}
                   </div>
 
-                  {/* Second row of 4 locked slots */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 84; // Slots 84-87
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  
                   
                   {/* Right arrow to go to next page */}
                   <div 
@@ -2638,14 +2243,14 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 88; // Slots 88-91
                       
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
+                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-28 h-36"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}
@@ -2668,36 +2273,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     })}
                   </div>
 
-                  {/* Second row of 4 locked slots */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 92; // Slots 92-95
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  
                   
                   {/* Right arrow to go to next page */}
                   <div 
@@ -2775,7 +2351,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-3">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 96; // Slots 96-99
                       
@@ -2805,36 +2381,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     })}
                   </div>
 
-                  {/* Second row of 4 locked slots */}
-                  <div className="grid grid-cols-3 place-items-center px-12">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 100; // Slots 100-103
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  
                   
                   {/* NO RIGHT ARROW ON THIRTEENTH PAGE */}
                 </div>
@@ -2856,7 +2403,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     >
                       SELECT AN ELEMENT TO VIEW CARDS
                     </div>
-                    <div className="grid grid-cols-3 gap-2 justify-center" style={{ marginTop: '-8px' }}>
+                    <div className="grid grid-cols-2 gap-2 justify-center place-items-center mx-auto" style={{ marginTop: '-8px' }}>
                       {elements.map((element) => (
                         <div
                           key={element}
@@ -2871,13 +2418,13 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           }}
                         >
                           <div 
-                            className="w-full h-full rounded-lg border-2 border-pink-400/60 hover:border-pink-400/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105"
+                            className={`w-full aspect-square rounded-lg border-2 border-pink-400/60 hover:border-pink-400/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105`}
                             style={{
                               boxShadow: '0 0 15px rgba(255,105,180,0.3)',
                             }}
                           >
                             <img
-                              src={getCardImage(element.toUpperCase(), element)}
+                              src={`/elements/${element}.webp`}
                               alt={`${element} Card`}
                               className="w-full h-full object-cover rounded-lg"
                               draggable={false}

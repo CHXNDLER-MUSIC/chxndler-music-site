@@ -217,7 +217,7 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
         </div>
         
         {/* Three Tier Buttons */}
-        <div className="flex justify-center gap-5 h-3/4">
+        <div className="flex justify-center gap-4 h-3/4">
           {(Object.keys(tierData) as TierType[]).map((tier) => {
             const data = tierData[tier];
             const isFlipped = flippedTier === tier;

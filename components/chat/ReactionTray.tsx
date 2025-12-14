@@ -10,9 +10,10 @@ interface ReactionTrayProps {
   userId: string;
   disabled?: boolean;
   className?: string;
+  style?: React.CSSProperties;
 }
 
-export default function ReactionTray({ onReact, userId, disabled = false, className = "" }: ReactionTrayProps) {
+export default function ReactionTray({ onReact, userId, disabled = false, className = "", style = {} }: ReactionTrayProps) {
   const [hoveredReaction, setHoveredReaction] = useState<ReactionType | null>(null);
   
   const handleReactionClick = (reaction: ReactionType) => {
@@ -45,7 +46,8 @@ export default function ReactionTray({ onReact, userId, disabled = false, classN
         borderColor: '#F2EF1D',
         boxShadow: '0 0 20px rgba(242, 239, 29, 0.6), 0 0 40px rgba(242, 239, 29, 0.3)',
         minWidth: 'fit-content',
-        overflowX: 'visible'
+        overflowX: 'visible',
+        ...style
       }}
       initial={{ opacity: 0, scale: 0.8, y: 10 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}

@@ -297,7 +297,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     }
 
     return (
-      <PopoutShell title="BADGE DETAILS" onClose={onClose}>
+      <PopoutShell title="BADGE DETAILS" onClose={onClose} minWidth={'min(95vw, 420px)'}>
         {badgeDetailContent}
       </PopoutShell>
     );
@@ -421,7 +421,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     }
 
     return (
-      <PopoutShell title={categoryInfo?.displayName || "CATEGORY"} onClose={onClose} compact={true}>
+      <PopoutShell title={categoryInfo?.displayName || "CATEGORY"} onClose={onClose} compact={true} minWidth={'min(95vw, 420px)'}>
         <div className="relative badges-modal-container" style={{ overflow: 'hidden', height: '100%' }}>
           {/* Hide all navigation elements in badges modal */}
           <style jsx global>{`
@@ -649,12 +649,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             <div className="mt-6 p-4 bg-black/20 rounded-xl border border-white/10">
               <div className="text-center mb-8">
                 <div className="mb-3">
-                  <span className="text-cyan-300 text-lg font-bold uppercase tracking-wider animate-pulse" 
-                        style={{ 
-                          textShadow: '0 0 10px rgba(0,255,255,0.8), 0 0 20px rgba(0,255,255,0.6), 0 0 30px rgba(0,255,255,0.4)',
-                          filter: 'brightness(1.2)',
-                          WebkitTextStroke: '1px rgba(0,255,255,0.3)'
-                        }}>
+                  <span className="text-cyan-300 text-lg font-bold uppercase tracking-wider">
                     BADGES UNLOCKED: {profile?.badges_unlocked || userUnlockedBadges.length}
                   </span>
                 </div>
@@ -789,7 +784,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   }
 
   return (
-    <PopoutShell title="BADGES" onClose={onClose} compact={true}>
+    <PopoutShell title="BADGES" onClose={onClose} compact={true} minWidth={'min(95vw, 420px)'} headerRuleVariant={'cyan'}>
       <div className="relative badges-modal-container" style={{ overflow: 'hidden' }}>
         {/* Hide all navigation elements in badges modal */}
         <style jsx global>{`

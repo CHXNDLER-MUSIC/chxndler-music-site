@@ -550,7 +550,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
         style={{
           zIndex: 2147483648,
           pointerEvents: 'none',
-          paddingTop: '200px'
+          paddingTop: '220px'
         }}
       >
         <div
@@ -568,15 +568,15 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
         className="fixed inset-0 flex items-start justify-center"
         style={{
           zIndex: 2147483648,
-          paddingTop: '60px'
+          paddingTop: '80px'
         }}
       >
         <div
           className="profile-hologram-container"
           style={{
             width: 'min(92vw, 500px)',
-            minHeight: '380px',
-            padding: '16px 24px 6px 24px',
+            minHeight: '440px',
+            padding: '16px 24px 18px 24px',
             borderRadius: 18,
             background: 'rgba(0,0,0,0.6)',
             border: '1px solid rgba(0,255,255,0.55)',
@@ -686,6 +686,15 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
             </h1>
           </div>
 
+          {/* Thin cyan neon line under PROFILE title */}
+          <div 
+            className="w-full h-px mb-3"
+            style={{
+              background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)',
+              boxShadow: '0 0 4px rgba(0,255,255,0.6)'
+            }}
+          />
+
           {/* Top section with Profile Image and Header */}
           <div className="flex items-start justify-between mb-4">
             {/* Profile Image - Left */}
@@ -783,7 +792,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                         letterSpacing: '0.06em'
                       }}
                     >
-                      [{label}]
+                      {label}
                     </div>
                   );
                 })()}
@@ -791,7 +800,6 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               
               {/* Element */}
               <div className="flex items-center mt-2">
-                <span className="text-white/80 text-base mr-2">ELEMENT:</span>
                 <button
                   onClick={() => {
                     if (profile?.element) {
@@ -821,28 +829,15 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   }}
                   title={profile?.element ? "Click to view element details" : undefined}
                 >
-                  {profile?.element && (
-                    <img
-                      src={getElementImageUrl(profile.element)}
-                      alt={profile.element}
-                      className="w-4 h-4 mr-2"
-                      style={{ 
-                        filter: `drop-shadow(0 0 4px ${getElementInfo(profile.element).color}60)` 
-                      }}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
-                    />
-                  )}
                   {profile?.element ? profile.element.toUpperCase() : 'NONE'}
                 </button>
               </div>
               
               {/* Daily Streak and Heart Coins */}
-              <div className="flex items-center gap-3 mt-2">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-2 items-start">
+                {/* Left column: Daily streak */}
                 <div className="flex items-center">
-                  <span className="text-white/80 text-xs mr-1">DAILY STREAK:</span>
+                  <span className="text-white/80 text-xs mr-1">Daily Streak:</span>
                   <span 
                     className="font-bold text-xs"
                     style={{ 
@@ -850,34 +845,49 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                       textShadow: '0 0 8px rgba(0,255,255,0.6)' 
                     }}
                   >
-                    {profile?.daily_streak || 0} days
+                    {profile?.daily_streak || 0}
                   </span>
                 </div>
-                <div className="flex items-center">
-                  <span className="text-white/80 text-xs mr-1">TOTAL HEARTCOINS:</span>
-                  <span 
-                    className="font-bold text-xs"
-                    style={{ 
-                      color: '#00FFFF', 
-                      textShadow: '0 0 8px rgba(0,255,255,0.6)' 
-                    }}
+                {/* Right column: Relics button above total heartcoins */}
+                <div className="flex flex-col items-start">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => { setShowRelicsInline(true); try { sfx.play('click', 0.6); } catch {} }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowRelicsInline(true); try { sfx.play('click', 0.6); } catch {} } }}
+                    onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                    className="w-16 h-16 transition-transform mb-1 hover:scale-[1.08] flex items-center justify-center cursor-pointer select-none"
+                    style={{ background: 'transparent', backgroundColor: 'transparent', border: 'none', boxShadow: 'none', outline: 'none' }}
+                    title="View your relics"
                   >
-                    {profile?.heartcoin_total || 0}
-                  </span>
-
+                    <img
+                      src="/elements/relics.webp"
+                      alt="Relics"
+                      className="w-14 h-14 object-contain"
+                      onError={(e) => {
+                        const target = e.currentTarget as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                  <div className="flex items-center">
+                    <span className="text-white/80 text-xs mr-1">Total HeartCoins:</span>
+                    <span 
+                      className="font-bold text-xs"
+                      style={{ 
+                        color: '#00FFFF', 
+                        textShadow: '0 0 8px rgba(0,255,255,0.6)' 
+                      }}
+                    >
+                      {profile?.heartcoin_total || 0}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
           
-          {/* Thin cyan neon line */}
-          <div 
-            className="w-full h-px mb-1"
-            style={{
-              background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)',
-              boxShadow: '0 0 4px rgba(0,255,255,0.6)'
-            }}
-          />
+          
 
           {/* Profile Image Selection Menu - Full Modal Overlay */}
           {showElementMenu && (
@@ -926,10 +936,10 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               {/* Elements Section */}
               <div className="mb-2">
                 <div 
-                  className="text-center mb-1 text-xs"
+                  className="text-center mb-1 text-sm"
                   style={{ 
                     color: '#00FFFF', 
-                    fontSize: '10px',
+                    fontSize: '12px',
                     textShadow: '0 0 4px rgba(0,255,255,0.8)'
                   }}
                 >
@@ -944,11 +954,11 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                         setShowElementMenu(false);
                         try { sfx.play('flip', 0.6); } catch {}
                       }}
-                      className={`w-10 h-10 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 ${
-                        selectedImageUrl === element.url
-                          ? 'border-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.6)]'
-                          : 'border-white/30 hover:border-cyan-400/60'
-                      }`}
+                      className={`w-14 h-14 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 ${
+                         selectedImageUrl === element.url
+                           ? 'border-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.6)]'
+                           : 'border-white/30 hover:border-cyan-400/60'
+                       }`}
                       title={element.label}
                     >
                       <img
@@ -977,10 +987,10 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               {/* Relics Section */}
               <div className="mb-1">
                 <div 
-                  className="text-center mb-1 text-xs"
+                  className="text-center mb-1 text-sm"
                   style={{ 
                     color: '#00FFFF', 
-                    fontSize: '10px',
+                    fontSize: '12px',
                     textShadow: '0 0 4px rgba(0,255,255,0.8)'
                   }}
                 >
@@ -1008,11 +1018,11 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                           }
                         }}
                         disabled={!isUnlocked}
-                        className={`relative w-12 h-12 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 disabled:opacity-60 disabled:cursor-not-allowed ${
-                          selectedImageUrl === relic.icon_url
-                            ? 'border-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.6)]'
-                            : 'border-white/30 hover:border-cyan-400/60'
-                        }`}
+                        className={`relative w-14 h-14 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 disabled:opacity-60 disabled:cursor-not-allowed ${
+                            selectedImageUrl === relic.icon_url
+                              ? 'border-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.6)]'
+                              : 'border-white/30 hover:border-cyan-400/60'
+                          }`}
                         title={isUnlocked ? (relic.relic_name || `Relic ${i + 1}`) : 'Locked'}
                       >
                         {hasImage ? (
@@ -1090,7 +1100,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 style={{ 
                   color: '#00FFFF', 
                   textShadow: '0 0 8px rgba(0,255,255,0.6)', 
-                  fontSize: '16px',
+                  fontSize: '18px',
                   fontWeight: 'bold'
                 }}
               >
@@ -1099,7 +1109,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
 
               {/* Info text - moved below header */}
               <div className="text-center mb-2">
-                <p className="text-xs text-white" style={{ textShadow: '0 0 8px rgba(255,255,255,0.85)' }}>
+                <p className="text-sm text-white" style={{ textShadow: '0 0 8px rgba(255,255,255,0.85)' }}>
                   Tap the Element of the Day to unlock ancient relics
                 </p>
               </div>
@@ -1145,7 +1155,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-4 gap-2 mb-1" style={{ maxWidth: '260px', marginLeft: 'auto', marginRight: 'auto' }}>
+                <div className="grid grid-cols-4 gap-3 mb-1" style={{ maxWidth: '320px', marginLeft: 'auto', marginRight: 'auto' }}>
                   {(allRelics.length > 0 ? allRelics.slice(0, 16) : Array.from({ length: 16 }, (_, i) => ({
                     id: `placeholder-${i}`,
                     relic_name: `Relic ${i + 1}`,
@@ -1162,7 +1172,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                         key={`relic-inline-${relic.id}`}
                         className="aspect-square rounded-lg border border-white/20 bg-black/40 relative overflow-hidden transition-transform hover:scale-[1.03] disabled:opacity-60 disabled:cursor-not-allowed"
                         style={{
-                          minHeight: '48px'
+                          minHeight: '68px'
                         }}
                         disabled={!isUnlocked}
                         title={isUnlocked ? (hasImage ? `View ${relic.relic_name}` : relic.relic_name || `Relic ${i + 1}`) : 'Locked'}
@@ -1491,7 +1501,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               style={{ 
                 color: '#00FFFF', 
                 textShadow: '0 0 8px rgba(0,255,255,0.6)', 
-                fontSize: '20px',
+                fontSize: '22px',
                 fontWeight: 'bold'
               }}
             >
@@ -1545,7 +1555,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-4 gap-1 mb-6">
                 {(allRelics.length > 0 ? allRelics.slice(0, 16) : Array.from({ length: 16 }, (_, i) => ({
                   id: `placeholder-${i}`,
                   relic_name: `Relic ${i + 1}`,
@@ -1598,7 +1608,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
 
             {/* Info text */}
             <div className="text-center">
-              <p className="text-sm text-white" style={{ textShadow: '0 0 8px rgba(255,255,255,0.85)' }}>
+              <p className="text-base text-white" style={{ textShadow: '0 0 8px rgba(255,255,255,0.85)' }}>
                 Tap the Element of the Day to unlock ancient relics
               </p>
             </div>

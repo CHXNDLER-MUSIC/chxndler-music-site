@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { sfx } from "@/lib/sfx";
 import Image from "next/image";
 import { useProfile } from '@/contexts/ProfileContext';
@@ -268,6 +268,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [showPhysicalConfirm, setShowPhysicalConfirm] = useState(false);
   const [showDigitalForm, setShowDigitalForm] = useState(false);
   const [currentMerchIndex, setCurrentMerchIndex] = useState(0);
+  // Enlarged merch modal state (must be defined before effects referencing it)
+  const [enlargedMerchItem, setEnlargedMerchItem] = useState<StoreItem | null>(null);
+  
   const [inviteFriendShared, setInviteFriendShared] = useState(false);
   const [completedQuests, setCompletedQuests] = useState<Set<string>>(new Set());
   const [shippingInfo, setShippingInfo] = useState({
@@ -459,6 +462,78 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     }
   }, []);
 
+  // Keyboard navigation for MERCH items (← / → keys)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!open || activeTab !== 'USE' || activeUseTab !== 'MERCH') return;
+      // Only in main MERCH view (not enlarged modal)
+      if (enlargedMerchItem) return;
+      // Ignore when typing in inputs/textareas/contenteditable
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      if (!PHYSICAL_ITEMS || PHYSICAL_ITEMS.length === 0) return;
+      e.preventDefault();
+      try { sfx.play('click', 0.6); } catch {}
+      setCurrentMerchIndex(prev => {
+        const len = PHYSICAL_ITEMS.length;
+        if (e.key === 'ArrowLeft') {
+          return prev > 0 ? prev - 1 : len - 1;
+        } else {
+          return prev < len - 1 ? prev + 1 : 0;
+        }
+      });
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, activeTab, activeUseTab, PHYSICAL_ITEMS.length, enlargedMerchItem]);
+
+  // Mobile swipe navigation for MERCH items (← / → via swipe)
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+  const touchStartTimeRef = useRef<number | null>(null);
+
+  const handleMerchTouchStart = (e: React.TouchEvent) => {
+    if (!open || activeTab !== 'USE' || activeUseTab !== 'MERCH' || enlargedMerchItem) return;
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0];
+    touchStartXRef.current = t.clientX;
+    touchStartYRef.current = t.clientY;
+    touchStartTimeRef.current = Date.now();
+  };
+
+  const handleMerchTouchEnd = (e: React.TouchEvent) => {
+    if (!open || activeTab !== 'USE' || activeUseTab !== 'MERCH' || enlargedMerchItem) return;
+    const startX = touchStartXRef.current;
+    const startY = touchStartYRef.current;
+    const startTime = touchStartTimeRef.current;
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+    touchStartTimeRef.current = null;
+    if (startX == null || startY == null) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    const dt = startTime ? Date.now() - startTime : 0;
+    // Only treat as horizontal swipe if horizontal movement dominates and exceeds threshold
+    const SWIPE_DIST = 40;
+    const SWIPE_TIME = 800; // ms (optional time threshold)
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE_DIST && dt < SWIPE_TIME) {
+      try { sfx.play('click', 0.6); } catch {}
+      setCurrentMerchIndex(prev => {
+        const len = PHYSICAL_ITEMS.length;
+        if (dx < 0) {
+          // swipe left -> next item
+          return prev < len - 1 ? prev + 1 : 0;
+        } else {
+          // swipe right -> previous item
+          return prev > 0 ? prev - 1 : len - 1;
+        }
+      });
+    }
+  };
+
   // Get unique rarities for filter dropdown
   const availableRarities = useMemo(() => {
     const rarities = new Set<string>();
@@ -625,7 +700,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [checkInMessage, setCheckInMessage] = useState("");
   const [enlargedCard, setEnlargedCard] = useState<Card | null>(null);
   const [isEnlargedCardFlipped, setIsEnlargedCardFlipped] = useState(false);
-  const [enlargedMerchItem, setEnlargedMerchItem] = useState<StoreItem | null>(null);
+  // enlargedMerchItem state is declared earlier for effect ordering
   const [showCheckInSuccess, setShowCheckInSuccess] = useState(false);
   const [isSubmittingPhrase, setIsSubmittingPhrase] = useState(false);
   const [statusType, setStatusType] = useState<'idle' | 'success' | 'error'>('idle');
@@ -1366,28 +1441,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           </button>
 
           
-          {/* Heart Coin Balance - Top Left */}
-          <div className="absolute top-3 left-4 flex items-center space-x-2">
-            <img
-              src="/elements/heart-coin.webp"
-              alt="Heart Coin"
-              className="w-10 h-10"
-            />
-            <div className="flex items-center">
-              <div 
-                className="text-lg font-bold text-left leading-none"
-                style={{ 
-                  color: '#FFFFFF', 
-                  textShadow: '0 0 8px rgba(255,255,255,0.8)' 
-                }}
-              >
-                {profile?.id ? heartCoins : 0}
-              </div>
-            </div>
-          </div>
+          {/* Removed Heart Coin Balance from top-left per request */}
           
           {/* Header */}
-          <div className="text-center mb-3 mt-2">
+          <div className="text-center mb-0.5 mt-2">
             <div 
               className="text-lg font-bold mb-2 cursor-pointer hover:scale-105 transition-transform duration-200"
               style={{ 
@@ -1406,45 +1463,139 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               HeartCoins
             </div>
             
-            {/* Tabs */}
-            <div className="flex justify-center space-x-1 pl-1 pr-4">
-              {(['EARN', 'USE'] as const).map((tab) => (
-                <button
-                  key={tab}
-                  data-tour-id={`heartcoins-${tab.toLowerCase()}-tab`}
-                  onClick={() => {
-                    try { sfx.play('click', 0.6); } catch {}
-                    setActiveTab(tab);
-                  }}
-                  className="flex-1 py-1.5 text-lg rounded border transition-all duration-200"
-                  style={{
-                    background: activeTab === tab 
-                      ? (tab === 'EARN' ? 'linear-gradient(135deg, rgba(0,255,255,0.4) 0%, rgba(0,255,255,0.6) 100%)' : 'linear-gradient(135deg, rgba(255,105,180,0.6) 0%, rgba(255,182,193,0.8) 100%)')
-                      : 'linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.6) 100%)',
-                    color: activeTab === tab ? (tab === 'EARN' ? '#00FFFF' : '#FFFFFF') : '#FFFFFF',
-                    borderColor: activeTab === tab ? (tab === 'EARN' ? '#00FFFF' : '#FF69B4') : 'rgba(255,255,255,0.6)',
-                    textShadow: activeTab === tab ? (tab === 'EARN' ? '0 0 8px rgba(0,255,255,1), 0 0 16px rgba(0,255,255,0.8)' : '0 0 8px rgba(255,255,255,1), 0 0 16px rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.9)') : '0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
-                    boxShadow: activeTab === tab ? (tab === 'EARN' ? '0 0 15px rgba(0,255,255,0.8), 0 0 30px rgba(0,255,255,0.6)' : '0 0 15px rgba(255,105,180,0.8), 0 0 30px rgba(255,105,180,0.6)') : 'none',
-                    fontWeight: 700,
-                    fontSize: '14px'
-                  }}
-                  onMouseEnter={(e) => {
-                    try { sfx.play('hover', 0.3); } catch {}
-                    if (activeTab !== tab) {
-                      e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.35) 100%)';
-                      e.currentTarget.style.color = 'rgba(255,255,255,0.9)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (activeTab !== tab) {
-                      e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 100%)';
-                      e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
-                    }
-                  }}
-                >
-                  {tab}
-                </button>
-              ))}
+            {/* Tabs arranged in a 2x2 grid: EARN/USE (top), MERCH/CARDS (bottom) */}
+            <div className="grid grid-cols-2 gap-1 pl-1 pr-4">
+              {/* EARN */}
+              <button
+                data-tour-id="heartcoins-earn-tab"
+                onClick={() => { try { sfx.play('click', 0.6); } catch {} ; setActiveTab('EARN'); }}
+                className="w-full py-1.5 text-lg rounded border transition-all duration-200"
+                style={{
+                  background: activeTab === 'EARN'
+                    ? 'linear-gradient(135deg, rgba(0,255,255,0.4) 0%, rgba(0,255,255,0.6) 100%)'
+                    : 'linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.6) 100%)',
+                  color: '#FFFFFF',
+                  borderColor: activeTab === 'EARN' ? '#00FFFF' : 'rgba(255,255,255,0.6)',
+                  textShadow: activeTab === 'EARN' ? '0 0 8px rgba(0,255,255,1), 0 0 16px rgba(0,255,255,0.8)' : '0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
+                  boxShadow: activeTab === 'EARN' ? '0 0 15px rgba(0,255,255,0.8), 0 0 30px rgba(0,255,255,0.6)' : 'none',
+                  fontWeight: 700,
+                  fontSize: '14px'
+                }}
+                onMouseEnter={(e) => {
+                  try { sfx.play('hover', 0.3); } catch {}
+                  if (activeTab !== 'EARN') {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.35) 100%)';
+                    e.currentTarget.style.color = 'rgba(255,255,255,0.9)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== 'EARN') {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 100%)';
+                    e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                  }
+                }}
+              >
+                EARN
+              </button>
+
+              {/* USE */}
+              <button
+                data-tour-id="heartcoins-use-tab"
+                onClick={() => { try { sfx.play('click', 0.6); } catch {} ; setActiveTab('USE'); }}
+                className="w-full py-1.5 text-lg rounded border transition-all duration-200"
+                style={{
+                  background: activeTab === 'USE'
+                    ? 'linear-gradient(135deg, rgba(255,105,180,0.6) 0%, rgba(255,182,193,0.8) 100%)'
+                    : 'linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.6) 100%)',
+                  color: '#FFFFFF',
+                  borderColor: activeTab === 'USE' ? '#FF69B4' : 'rgba(255,255,255,0.6)',
+                  textShadow: activeTab === 'USE' ? '0 0 8px rgba(255,255,255,1), 0 0 16px rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.9)' : '0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
+                  boxShadow: activeTab === 'USE' ? '0 0 15px rgba(255,105,180,0.8), 0 0 30px rgba(255,105,180,0.6)' : 'none',
+                  fontWeight: 700,
+                  fontSize: '14px'
+                }}
+                onMouseEnter={(e) => {
+                  try { sfx.play('hover', 0.3); } catch {}
+                  if (activeTab !== 'USE') {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.35) 100%)';
+                    e.currentTarget.style.color = 'rgba(255,255,255,0.9)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== 'USE') {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 100%)';
+                    e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                  }
+                }}
+              >
+                USE
+              </button>
+
+              {/* MERCH (smaller, shorter, less glow) */}
+              <button
+                data-tour-id="heartcoins-merch-tab"
+                onClick={() => { try { sfx.play('click', 0.6); } catch {} ; setActiveTab('USE'); setActiveUseTab('MERCH'); }}
+                className="w-full py-1 text-base rounded border transition-all duration-200"
+                style={{
+                  background: activeTab === 'USE' && activeUseTab === 'MERCH'
+                    ? 'linear-gradient(135deg, rgba(255,105,180,0.45) 0%, rgba(255,182,193,0.6) 100%)'
+                    : 'linear-gradient(135deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+                  color: '#FFFFFF',
+                  borderColor: activeTab === 'USE' && activeUseTab === 'MERCH' ? 'rgba(255,105,180,0.9)' : 'rgba(255,255,255,0.45)',
+                  textShadow: activeTab === 'USE' && activeUseTab === 'MERCH' ? '0 0 6px rgba(255,255,255,0.9)' : '0 1px 2px rgba(0,0,0,1)',
+                  boxShadow: activeTab === 'USE' && activeUseTab === 'MERCH' ? '0 0 10px rgba(255,105,180,0.5)' : 'none',
+                  fontWeight: 700,
+                  fontSize: '13px'
+                }}
+                onMouseEnter={(e) => {
+                  try { sfx.play('hover', 0.3); } catch {}
+                  if (!(activeTab === 'USE' && activeUseTab === 'MERCH')) {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.3) 100%)';
+                    e.currentTarget.style.color = 'rgba(255,255,255,0.95)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!(activeTab === 'USE' && activeUseTab === 'MERCH')) {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)';
+                    e.currentTarget.style.color = '#FFFFFF';
+                  }
+                }}
+              >
+                MERCH
+              </button>
+
+              {/* CARDS (smaller, shorter, less glow) */}
+              <button
+                data-tour-id="heartcoins-cards-tab"
+                onClick={() => { try { sfx.play('click', 0.6); } catch {} ; setActiveTab('USE'); setActiveUseTab('CARDS'); }}
+                className="w-full py-1 text-base rounded border transition-all duration-200"
+                style={{
+                  background: activeTab === 'USE' && activeUseTab === 'CARDS'
+                    ? 'linear-gradient(135deg, rgba(255,105,180,0.45) 0%, rgba(255,182,193,0.6) 100%)'
+                    : 'linear-gradient(135deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+                  color: '#FFFFFF',
+                  borderColor: activeTab === 'USE' && activeUseTab === 'CARDS' ? 'rgba(255,105,180,0.9)' : 'rgba(255,255,255,0.45)',
+                  textShadow: activeTab === 'USE' && activeUseTab === 'CARDS' ? '0 0 6px rgba(255,255,255,0.9)' : '0 1px 2px rgba(0,0,0,1)',
+                  boxShadow: activeTab === 'USE' && activeUseTab === 'CARDS' ? '0 0 10px rgba(255,105,180,0.5)' : 'none',
+                  fontWeight: 700,
+                  fontSize: '13px'
+                }}
+                onMouseEnter={(e) => {
+                  try { sfx.play('hover', 0.3); } catch {}
+                  if (!(activeTab === 'USE' && activeUseTab === 'CARDS')) {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.3) 100%)';
+                    e.currentTarget.style.color = 'rgba(255,255,255,0.95)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!(activeTab === 'USE' && activeUseTab === 'CARDS')) {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)';
+                    e.currentTarget.style.color = '#FFFFFF';
+                  }
+                }}
+              >
+                CARDS
+              </button>
             </div>
             
             {/* Thin pink neon line */}
@@ -1857,48 +2008,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             <div className="pl-1 pr-2 pb-2 pt-0">
               {!showItemDetail ? (
                 <>
-                  {/* Sub-tabs for USE */}
-                  <div className="flex justify-center space-x-1">
-                    {(['MERCH', 'CARDS'] as const).map((tab) => (
-                      <button
-                        key={tab}
-                        data-tour-id={`heartcoins-${tab.toLowerCase()}-tab`}
-                        onClick={() => {
-                          try { sfx.play('click', 0.6); } catch {}
-                          setActiveUseTab(tab);
-                        }}
-                        className="flex-1 py-1.5 text-base rounded border transition-all duration-200"
-                        style={{
-                          background: activeUseTab === tab 
-                            ? 'linear-gradient(135deg, rgba(255,105,180,0.6) 0%, rgba(255,182,193,0.8) 100%)'
-                            : 'linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.6) 100%)',
-                          color: activeUseTab === tab ? '#FFFFFF' : '#FFFFFF',
-                          borderColor: activeUseTab === tab ? '#FF69B4' : 'rgba(255,255,255,0.6)',
-                          textShadow: activeUseTab === tab ? '0 0 8px rgba(255,255,255,1), 0 0 16px rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.9)' : '0 0 4px rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
-                          boxShadow: activeUseTab === tab ? '0 0 15px rgba(255,105,180,0.8), 0 0 30px rgba(255,105,180,0.6)' : 'none',
-                          fontWeight: 700,
-                          fontSize: '14px'
-                        }}
-                        onMouseEnter={(e) => {
-                          try { sfx.play('hover', 0.3); } catch {}
-                          if (activeUseTab !== tab) {
-                            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.35) 100%)';
-                            e.currentTarget.style.color = '#FFFFFF';
-                            e.currentTarget.style.textShadow = '0 0 6px rgba(255,255,255,0.9), 0 2px 4px rgba(0,0,0,0.9)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (activeUseTab !== tab) {
-                            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.6) 100%)';
-                            e.currentTarget.style.color = '#FFFFFF';
-                            e.currentTarget.style.textShadow = '0 0 4px rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)';
-                          }
-                        }}
-                      >
-                        {tab}
-                      </button>
-                    ))}
-                  </div>
+                  {/* Sub-tabs moved into header grid (MERCH/CARDS) */}
 
                   
 
@@ -1926,27 +2036,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           {PHYSICAL_ITEMS[currentMerchIndex] && (
                           <div 
                             className="rounded-lg pl-4 pr-1 pt-2 pb-4 transition-all duration-200"
+                            onTouchStart={handleMerchTouchStart}
+                            onTouchEnd={handleMerchTouchEnd}
                           >
                             {/* Image and Title with Navigation */}
                             <div className="flex items-start gap-1 mb-3">
-                              {/* Left Arrow */}
-                              <div className="flex-1 flex items-start">
-                              <button
-                                onClick={() => {
-                                  try { sfx.play('click', 0.6); } catch {}
-                                  setCurrentMerchIndex(prev => prev > 0 ? prev - 1 : PHYSICAL_ITEMS.length - 1);
-                                }}
-                                onMouseEnter={() => {
-                                  try { sfx.play('hover', 0.3); } catch {}
-                                }}
-                                className="flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-110 transition-all duration-200 mt-8"
-                                style={{
-                                  boxShadow: '0 0 8px rgba(255,255,255,0.3)'
-                                }}
-                              >
-                                <span className="text-white text-sm font-bold">←</span>
-                              </button>
-                              </div>
+                              {/* Left spacer (kept for layout balance) */}
+                              <div className="flex-1" />
                               
                               {/* Item Title + Image */}
                               <div className="flex flex-col items-center">
@@ -1957,7 +2053,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   {PHYSICAL_ITEMS[currentMerchIndex].title.toUpperCase()}
                                 </div>
                                 <div 
-                                  className="relative w-28 h-28 flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-200"
+                                  className="relative w-28 h-28 -mt-1 flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-200"
                                   onMouseEnter={() => {
                                     try { sfx.play('hover', 0.3); } catch {}
                                   }}
@@ -1971,15 +2067,35 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     alt={PHYSICAL_ITEMS[currentMerchIndex].title}
                                     className="w-full h-full object-cover rounded"
                                   />
+                                  {/* Overlay navigation arrows centered on image */}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      try { sfx.play('click', 0.6); } catch {}
+                                      setCurrentMerchIndex(prev => prev > 0 ? prev - 1 : PHYSICAL_ITEMS.length - 1);
+                                    }}
+                                    onMouseEnter={(e) => { e.stopPropagation(); try { sfx.play('hover', 0.3); } catch {} }}
+                                    className="absolute flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-110 transition-all duration-200"
+                                    style={{ left: '-14px', top: '50%', transform: 'translateY(-50%)', boxShadow: '0 0 8px rgba(255,255,255,0.3)' }}
+                                    aria-label="Previous item"
+                                  >
+                                    <span className="text-white text-sm font-bold">←</span>
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      try { sfx.play('click', 0.6); } catch {}
+                                      setCurrentMerchIndex(prev => prev < PHYSICAL_ITEMS.length - 1 ? prev + 1 : 0);
+                                    }}
+                                    onMouseEnter={(e) => { e.stopPropagation(); try { sfx.play('hover', 0.3); } catch {} }}
+                                    className="absolute flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-110 transition-all duration-200"
+                                    style={{ right: '-14px', top: '50%', transform: 'translateY(-50%)', boxShadow: '0 0 8px rgba(255,255,255,0.3)' }}
+                                    aria-label="Next item"
+                                  >
+                                    <span className="text-white text-sm font-bold">→</span>
+                                  </button>
                                 </div>
-                                <div 
-                                  className="text-xs text-white/80 mt-2 text-center"
-                                  style={{
-                                    textShadow: '0 0 4px rgba(255,255,255,0.4)'
-                                  }}
-                                >
-                                  {currentMerchIndex + 1} of {PHYSICAL_ITEMS.length}
-                                </div>
+                                {/* Item index moved near description below */}
                                 
                                 {/* PAY WITH $ button moved to bottom action bar */}
                               </div>
@@ -2098,26 +2214,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 ) : (
                                   /* Normal Item Details */
                                   <>
-                                    <div className="relative mb-1 h-8">
-                                      
-                                      
-                                      {/* Right Arrow */}
-                                      <button
-                                        onClick={() => {
-                                          try { sfx.play('click', 0.6); } catch {}
-                                          setCurrentMerchIndex(prev => prev < PHYSICAL_ITEMS.length - 1 ? prev + 1 : 0);
-                                        }}
-                                        onMouseEnter={() => {
-                                          try { sfx.play('hover', 0.3); } catch {}
-                                        }}
-                                        className="absolute -right-3 top-0 flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-110 transition-all duration-200"
-                                        style={{
-                                          boxShadow: '0 0 8px rgba(255,255,255,0.3)'
-                                        }}
-                                      >
-                                        <span className="text-white text-sm font-bold">→</span>
-                                      </button>
-                                    </div>
+                                    <div className="mb-1" />
                                     
                                     {/* Buy Buttons - removed, now located below counter */}
                                   </>
@@ -2133,10 +2230,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     </div>
                   )}
 
-                  {/* Bottom description above action bar */}
+                  {/* Bottom description and index above action bar */}
                   {activeUseTab === 'MERCH' && PHYSICAL_ITEMS[currentMerchIndex] && (
-                    <div className="absolute left-6 right-6 bottom-16 text-xs text-white/90" style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)', lineHeight: '1.3' }}>
-                      {PHYSICAL_ITEMS[currentMerchIndex].description}
+                    <div className="absolute left-6 right-6 bottom-16" style={{ lineHeight: '1.3' }}>
+                      <div className="text-center text-white/70 text-xs mb-1" style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}>
+                        {currentMerchIndex + 1} of {PHYSICAL_ITEMS.length}
+                      </div>
+                      <div className="text-xs text-white/90" style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}>
+                        {PHYSICAL_ITEMS[currentMerchIndex].description}
+                      </div>
                     </div>
                   )}
 
@@ -2192,7 +2294,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             SELECT AN ELEMENT TO VIEW CARDS
                           </div>
 
-                          <div className="grid grid-cols-4 gap-2 justify-center" style={{ marginTop: '4px' }}>
+                          <div className="grid grid-cols-2 gap-2 justify-center place-items-center mx-auto" style={{ marginTop: '4px' }}>
                             {['lightning', 'darkness', 'water', 'heart'].map((element, index) => {
                               const elementCounts = getElementCardCounts();
                               const count = elementCounts[element] || 0;
@@ -2209,13 +2311,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   }}
                                 >
                                   <div 
-                                    className="w-full h-28 rounded-lg border-2 border-white/60 hover:border-white/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105"
+                                    className={`w-full h-20 rounded-lg border-2 border-white/60 hover:border-white/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105`}
                                     style={{
                                       boxShadow: '0 0 15px rgba(255,255,255,0.3)',
                                     }}
                                   >
                                     <img
-                                      src={`/cards/${element.toUpperCase()}.webp`}
+                                      src={`/elements/${element}.webp`}
                                       alt={`${element} Card`}
                                       className="w-full h-full object-cover rounded-lg"
                                       draggable={false}

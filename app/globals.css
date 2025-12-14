@@ -153,7 +153,8 @@
   /* Mobile-specific display sizing */
   /* Increase minimum width so blue display stays wider on small screens */
   /* Slightly widen the minimum blue display width on small screens */
-  --display-width: max(380px, min(420px, calc((100vw - 16px) * 0.8)));
+  /* Slightly narrower minimum on mobile */
+  --display-width: max(360px, min(420px, calc((100vw - 16px) * 0.8)));
   /* Fixed width for the pink display so it remains constant across breakpoints */
   --pink-display-width: 360px;
   --display-border-radius: 12px;
@@ -170,7 +171,8 @@
     
     /* Tablet-specific display sizing */
     /* Slightly widen the minimum blue display width on tablets */
-    --display-width: max(380px, min(480px, calc((100vw - 24px) * 0.8)));
+    /* Slightly narrower minimum on tablets */
+    --display-width: max(360px, min(480px, calc((100vw - 24px) * 0.8)));
     --display-border-radius: 14px;
     
     /* Enhanced beam visual properties for tablets */
@@ -190,7 +192,8 @@
     
     /* Desktop-specific display sizing */
     /* Slightly widen the minimum blue display width on desktops */
-    --display-width: max(420px, min(580px, calc((100vw - 32px) * 0.8)));
+    /* Slightly narrower minimum on desktops */
+    --display-width: max(400px, min(580px, calc((100vw - 32px) * 0.8)));
     --display-border-radius: 16px;
     
     /* Enhanced beam visual properties for desktop */
@@ -210,7 +213,8 @@
     
     /* Large desktop display sizing */
     /* Slightly widen the minimum blue display width on large desktops */
-    --display-width: max(470px, min(650px, calc((100vw - 48px) * 0.8)));
+    /* Slightly narrower minimum on large desktops */
+    --display-width: max(450px, min(650px, calc((100vw - 48px) * 0.8)));
     --display-border-radius: 18px;
     
     /* Enhanced visual effects for large screens */
@@ -229,7 +233,8 @@
     
     /* Ultra-wide display sizing */
     /* Slightly widen the minimum blue display width on ultra-wide displays */
-    --display-width: max(520px, min(720px, calc((100vw - 64px) * 0.8)));
+    /* Slightly narrower minimum on ultra-wide */
+    --display-width: max(500px, min(720px, calc((100vw - 64px) * 0.8)));
     --display-border-radius: 20px;
   }
 }
@@ -383,8 +388,8 @@ main {
     inset 0 -10px 24px rgba(0,0,0,.65);      /* inner shade */
   /* Contain inner visuals so they don't spill past frame */
   overflow: hidden;
-  /* Prevent HUD from shrinking on small screens */
-  min-width: 460px;
+  /* Prevent HUD from shrinking below the configured display width */
+  min-width: var(--display-width);
   /* Reduce minimum height to make blue display shorter */
   min-height: 80px;
 }

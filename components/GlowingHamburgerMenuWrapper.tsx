@@ -42,13 +42,43 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
   // Welcome Home modal now opens only from explicit triggers (Start flow or specific actions)
   // Avoid auto-opening on initial load or generic "entered" events to prevent early popups.
 
+  // Listen for modal trigger events from chat panel buttons
+  useEffect(() => {
+    const handleOpenBinderModal = () => {
+      try { onBeamColorChange?.('pink'); } catch {}
+      setBinderOpen(true);
+    };
+
+    const handleOpenBadgesModal = () => {
+      try { onBeamColorChange?.('yellow'); } catch {}
+      setBadgesOpen(true);
+    };
+
+    const handleOpenHeartCoinModal = () => {
+      try { onBeamColorChange?.('pink'); } catch {}
+      setHeartCoinOpen(true);
+    };
+
+    window.addEventListener('openBinderModal', handleOpenBinderModal);
+    window.addEventListener('openBadgesModal', handleOpenBadgesModal);
+    window.addEventListener('openHeartCoinModal', handleOpenHeartCoinModal);
+
+    return () => {
+      window.removeEventListener('openBinderModal', handleOpenBinderModal);
+      window.removeEventListener('openBadgesModal', handleOpenBadgesModal);
+      window.removeEventListener('openHeartCoinModal', handleOpenHeartCoinModal);
+    };
+  }, [onBeamColorChange]);
+
   const handleItemClick = (label: string) => {
     console.log(`🍔 Hamburger menu item clicked: ${label}`);
     setLastClickedItem(label);
-    
-    // Close the hamburger menu immediately when any item is clicked
-    setMenuOpen(false);
-    
+    // Do not close the hamburger menu immediately here.
+    // GlowingHamburgerMenu already closes itself after a short delay
+    // to prevent click-through to underlying UI. Closing here
+    // synchronously can allow the click to land on elements below
+    // (e.g., live stream popouts). Let the child handle the close.
+
     // Ensure we close all modals first to prevent conflicts
     setBadgesOpen(false);
     setHeartCoinOpen(false);
@@ -74,18 +104,31 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
           setBinderOpen(true);
           break;
         case "JOURNAL":
-        case "COMPLETED":
+        case "COMPLETED": {
           console.log(`🔔 Opening journal modal from hamburger menu...`);
           console.log(`🔔 Current journalOpen state:`, journalOpen);
-          // Change beam color to pink when Journal is clicked
-          try { onBeamColorChange?.('pink'); } catch {}
-          setJournalOpen(true);
-          console.log(`✅ Journal modal state set to true from hamburger menu`);
-          // Add a small delay to ensure state is set
-          setTimeout(() => {
-            console.log(`🔔 Journal modal state after timeout:`, journalOpen);
-          }, 100);
+          // Ensure no other displays (e.g., livestream) open when Journal opens
+          try { onBeamColorChange?.('off'); } catch {}
+          // Open the journal on pointerup to avoid any chance of click-through
+          let opened = false;
+          const openJournal = (ev: Event) => {
+            if (opened) return; opened = true;
+            try { ev.stopPropagation(); } catch {}
+            try { ev.preventDefault?.(); } catch {}
+            try { window.removeEventListener('pointerup', openJournal, true); } catch {}
+            try { window.removeEventListener('mouseup', openJournal, true); } catch {}
+            setJournalOpen(true);
+            console.log(`✅ Journal modal opened on pointerup`);
+            setTimeout(() => { console.log(`🔔 Journal modal state after timeout:`, journalOpen); }, 100);
+          };
+          try {
+            window.addEventListener('pointerup', openJournal, true);
+            window.addEventListener('mouseup', openJournal, true);
+          } catch {}
+          // Fallback open if no pointerup fires quickly
+          setTimeout(() => { if (!opened) { try { window.removeEventListener('pointerup', openJournal, true); } catch {}; try { window.removeEventListener('mouseup', openJournal, true); } catch {}; setJournalOpen(true); } }, 300);
           break;
+        }
         case "BADGES":
           console.log(`🏅 Opening badges modal...`);
           // Only open badges if we specifically clicked badges

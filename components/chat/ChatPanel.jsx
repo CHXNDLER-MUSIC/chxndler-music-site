@@ -1454,8 +1454,8 @@ export default function ChatPanel({ isOpen, onClose }) {
                                       : 'WANDERER' }
                                 </span>
                                 
-                                {/* Element name */}
-                                <div className="mt-1">
+                                {/* Element name with action buttons */}
+                                <div className="mt-1 flex items-center gap-2">
                                   <span 
                                     className="text-sm font-bold"
                                     style={{
@@ -1466,6 +1466,119 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   >
                                     {selectedUser?.element ? String(selectedUser.element).toUpperCase() : 'CHXNDLER'}
                                   </span>
+                                  
+                                  {/* Action buttons next to element */}
+                                  {selectedUser?.id !== 'anonymous' && user && profile && (
+                                    <div className="flex items-center gap-1 ml-2 sm:gap-2">
+                                      {/* Binder Button */}
+                                      <button
+                                        onClick={() => {
+                                          try { sfx.play('click', 0.8); } catch {}
+                                          // Trigger binder modal
+                                          window.dispatchEvent(new CustomEvent('openBinderModal'));
+                                        }}
+                                        onMouseEnter={(e) => {
+                                          try { sfx.play('hover.mp3', 0.3); } catch {}
+                                          e.currentTarget.style.transform = 'scale(1.1)';
+                                          const img = e.currentTarget.querySelector('img');
+                                          if (img) {
+                                            img.style.filter = 'drop-shadow(0 0 8px rgba(252, 84, 175, 0.8)) drop-shadow(0 0 16px rgba(252, 84, 175, 0.4)) drop-shadow(0 0 20px rgba(255, 105, 180, 0.8))';
+                                          }
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          e.currentTarget.style.transform = 'scale(1)';
+                                          const img = e.currentTarget.querySelector('img');
+                                          if (img) {
+                                            img.style.filter = 'drop-shadow(0 0 4px rgba(252, 84, 175, 0.6))';
+                                          }
+                                        }}
+                                        className="w-5 h-5 sm:w-6 sm:h-6 rounded transition-all duration-200 flex-shrink-0"
+                                        title="Open Binder"
+                                      >
+                                        <img
+                                          src="/elements/binder.webp"
+                                          alt="Binder"
+                                          className="w-full h-full object-cover rounded"
+                                          style={{
+                                            filter: 'drop-shadow(0 0 4px rgba(252, 84, 175, 0.6))'
+                                          }}
+                                          draggable={false}
+                                        />
+                                      </button>
+
+                                      {/* Badges Button */}
+                                      <button
+                                        onClick={() => {
+                                          try { sfx.play('click', 0.8); } catch {}
+                                          // Trigger badges modal
+                                          window.dispatchEvent(new CustomEvent('openBadgesModal'));
+                                        }}
+                                        onMouseEnter={(e) => {
+                                          try { sfx.play('hover.mp3', 0.3); } catch {}
+                                          e.currentTarget.style.transform = 'scale(1.1)';
+                                          const img = e.currentTarget.querySelector('img');
+                                          if (img) {
+                                            img.style.filter = 'drop-shadow(0 0 8px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 16px rgba(255, 215, 0, 0.4)) drop-shadow(0 0 20px rgba(255, 215, 0, 0.8))';
+                                          }
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          e.currentTarget.style.transform = 'scale(1)';
+                                          const img = e.currentTarget.querySelector('img');
+                                          if (img) {
+                                            img.style.filter = 'drop-shadow(0 0 4px rgba(255, 215, 0, 0.6))';
+                                          }
+                                        }}
+                                        className="w-5 h-5 sm:w-6 sm:h-6 rounded transition-all duration-200 flex-shrink-0"
+                                        title="Open Badges"
+                                      >
+                                        <img
+                                          src="/elements/badges.webp"
+                                          alt="Badges"
+                                          className="w-full h-full object-cover rounded"
+                                          style={{
+                                            filter: 'drop-shadow(0 0 4px rgba(255, 215, 0, 0.6))'
+                                          }}
+                                          draggable={false}
+                                        />
+                                      </button>
+
+                                      {/* Heart Coin Button */}
+                                      <button
+                                        onClick={() => {
+                                          try { sfx.play('click', 0.8); } catch {}
+                                          // Trigger heart coin modal
+                                          window.dispatchEvent(new CustomEvent('openHeartCoinModal'));
+                                        }}
+                                        onMouseEnter={(e) => {
+                                          try { sfx.play('hover.mp3', 0.3); } catch {}
+                                          e.currentTarget.style.transform = 'scale(1.1)';
+                                          const img = e.currentTarget.querySelector('img');
+                                          if (img) {
+                                            img.style.filter = 'drop-shadow(0 0 8px rgba(255, 105, 180, 0.8)) drop-shadow(0 0 16px rgba(255, 105, 180, 0.4)) drop-shadow(0 0 20px rgba(255, 105, 180, 0.8))';
+                                          }
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          e.currentTarget.style.transform = 'scale(1)';
+                                          const img = e.currentTarget.querySelector('img');
+                                          if (img) {
+                                            img.style.filter = 'drop-shadow(0 0 4px rgba(255, 105, 180, 0.6))';
+                                          }
+                                        }}
+                                        className="w-5 h-5 sm:w-6 sm:h-6 rounded transition-all duration-200 flex-shrink-0"
+                                        title="Open Heart Coins"
+                                      >
+                                        <img
+                                          src="/elements/heart-coin.webp"
+                                          alt="Heart Coins"
+                                          className="w-full h-full object-cover rounded"
+                                          style={{
+                                            filter: 'drop-shadow(0 0 4px rgba(255, 105, 180, 0.6))'
+                                          }}
+                                          draggable={false}
+                                        />
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
 
                                 {/* Action icons moved below header for full-width centering */}

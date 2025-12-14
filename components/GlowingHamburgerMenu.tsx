@@ -83,7 +83,8 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
     // Call the parent click handler
     try { onItemClick?.(label); } catch {}
 
-    // Close the menu after a short delay to avoid the click landing on underlying elements
+    // Close the menu on pointerup to avoid click retargeting to underlying UI.
+    // Fallback: also close after a brief delay in case pointerup is missed.
     const close = () => {
       if (externalIsOpen !== undefined) {
         onMenuToggle?.(false);
@@ -91,8 +92,23 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
         setInternalIsOpen(false);
       }
     };
-    // Schedule on next tick
-    setTimeout(close, 60);
+
+    let closed = false;
+    const onUp = (ev: Event) => {
+      if (closed) return;
+      closed = true;
+      try { ev.stopPropagation(); } catch {}
+      try { ev.preventDefault?.(); } catch {}
+      try { window.removeEventListener('pointerup', onUp, true); } catch {}
+      try { window.removeEventListener('mouseup', onUp, true); } catch {}
+      close();
+    };
+    try {
+      window.addEventListener('pointerup', onUp, true);
+      window.addEventListener('mouseup', onUp, true);
+    } catch {}
+    // Fallback close if no pointerup within 300ms
+    setTimeout(() => { if (!closed) { try { window.removeEventListener('pointerup', onUp, true); } catch {}; try { window.removeEventListener('mouseup', onUp, true); } catch {}; close(); } }, 300);
   };
 
   return (

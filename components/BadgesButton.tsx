@@ -379,10 +379,12 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
           <div
             className="badges-hologram-container flex flex-col relative"
             style={{
-              width: 'min(92vw, 700px)',
+              width: 'min(95vw, 740px)',
               maxWidth: '700px',
               minHeight: '350px',
-              maxHeight: '90vh',
+              // Leave extra safety gap above the power button
+              height: 'calc(100vh - 8vh - (var(--power-size-px, 72px) + 16px))',
+              maxHeight: 'calc(100vh - 8vh - (var(--power-size-px, 72px) + 16px))',
               padding: '10px 14px 10px 14px',
               borderRadius: 18,
               background: 'linear-gradient(135deg, rgba(0,191,255,0.10), rgba(0,0,0,0.60))',
@@ -391,7 +393,8 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
               backdropFilter: 'blur(12px) saturate(140%)',
               color: '#00BFFF',
               position: 'relative',
-              zIndex: 1
+              zIndex: 1,
+              overflow: 'hidden'
             }}
           >
             {/* Extra bloom glows removed to mirror Binder's chrome */}
@@ -459,7 +462,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
               <div className="w-32"></div>
             </div>
             
-            {/* Thin cyan neon line */}
+            {/* Thin cyan neon line under BADGES title */}
             <div 
               className="w-full h-px mb-4"
               style={{
@@ -574,13 +577,8 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
               {!selectedCategory && !selectedBadge ? (
                 // Main Categories View
                 <>
-                  <div className="text-center mb-1" style={{ marginTop: '-4px' }}>
-                    <span className="text-cyan-300 text-base font-bold uppercase tracking-wider animate-pulse" 
-                          style={{ 
-                            textShadow: '0 0 10px rgba(0,255,255,0.8), 0 0 20px rgba(0,255,255,0.6), 0 0 30px rgba(0,255,255,0.4)',
-                            filter: 'brightness(1.2)',
-                            WebkitTextStroke: '1px rgba(0,255,255,0.3)'
-                          }}>
+                  <div className="text-center mb-2">
+                    <span className="text-cyan-300 text-base font-bold uppercase tracking-wider">
                       BADGES UNLOCKED: {profile?.badges_unlocked || badgesWithUnlocked.filter(badge => badge.unlocked).length}
                     </span>
                   </div>

@@ -962,7 +962,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                     >
                       SELECT AN ELEMENT TO VIEW CARDS
                     </div>
-                    <div className="grid grid-cols-4 gap-3 justify-center" style={{ marginTop: '-8px' }}>
+                    <div className="grid grid-cols-2 gap-3 justify-center place-items-center mx-auto" style={{ marginTop: '-8px' }}>
                       {elements.map((element) => (
                         <div
                           key={element}
@@ -977,13 +977,13 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                           }}
                         >
                           <div 
-                            className="w-full h-36 rounded-lg border-2 border-pink-400/60 hover:border-pink-400/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105"
+                            className={`w-full aspect-square rounded-lg border-2 border-pink-400/60 hover:border-pink-400/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105`}
                             style={{
                               boxShadow: '0 0 15px rgba(255,105,180,0.3)',
                             }}
                           >
                             <img
-                              src={`https://ik.imagekit.io/CHXNDLER/card/${element.toUpperCase()}.png`}
+                              src={`/elements/${element}.webp`}
                               alt={`${element} Card`}
                               className="w-full h-full object-cover rounded-lg"
                               draggable={false}

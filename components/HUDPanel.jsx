@@ -2277,7 +2277,9 @@ const HUDPanel = React.memo(function HUDPanel({
             // Remove hover glow/scale for the entire HUD display per request
             transition={{ type: "spring", stiffness: 200, damping: 20 }}
             style={inConsole
-              ? { width: '100%', maxHeight: '350px', transform: 'perspective(1200px) rotateX(6deg)', transformOrigin: 'center', marginTop: 0, willChange: 'opacity, transform', contain: 'layout paint', backfaceVisibility: 'hidden' }
+              // Let the blue display grow to fill the portal slot from the profile bar to the button baseline
+              ? { width: '100%', height: '100%', maxHeight: 'none', transform: 'perspective(1200px) rotateX(6deg)', transformOrigin: 'center', marginTop: 0, willChange: 'opacity, transform', contain: 'layout paint', backfaceVisibility: 'hidden' }
+              // Keep previous cap for non-console usage
               : { maxHeight: '350px', transform: 'perspective(1200px) rotateX(6deg)', marginTop: 0, willChange: 'opacity, transform', contain: 'layout paint', backfaceVisibility: 'hidden' }
             }
           >
@@ -2540,7 +2542,9 @@ const HUDPanel = React.memo(function HUDPanel({
             height: '60px',
             // Keep player snug to the blue display; slightly lower
             // Move the visual nudge into the bottom offset so it stays inside the overflow-hidden blue display
-            bottom: 'calc(var(--hud-player-bottom-offset, 0px) + 2px)'
+            // Position the control row directly below the music dropdown: align player top ~8px under dropdown
+            // Dropdown is anchored with bottom: calc(80px - 24px + 68px); player height is 60px
+            bottom: 'calc((80px - 24px + 68px) - 60px - 8px)'
           }}>
             <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '10px', paddingBottom: 10, position: 'relative' }}>
               <div className="flex flex-wrap items-start gap-3 pt-0 pr-2 pl-2 pb-0">
@@ -2564,7 +2568,7 @@ const HUDPanel = React.memo(function HUDPanel({
                         position: 'absolute',
                         left: 8,
                         right: 8,
-                        bottom: 30,
+                        top: 4,
                         zIndex: 6,
                         borderRadius: '8px',
                         padding: '4px 8px',
@@ -2819,8 +2823,19 @@ const HUDPanel = React.memo(function HUDPanel({
                         )}
                       </button>
                     </div>
-                      {/* Waveform positioned below controls */}
-                      <div className="hud-mini-wave flex items-center justify-center" style={{ marginBottom: 8, marginLeft: -8 }}>
+                      {/* Subtle visual connector line */}
+                      <div style={{
+                        position: 'absolute',
+                        left: '17px', // Center under play button
+                        top: '32px',
+                        width: '2px',
+                        height: '6px',
+                        background: 'linear-gradient(to bottom, rgba(255,255,255,0.3), transparent)',
+                        borderRadius: '1px',
+                        zIndex: 5
+                      }} />
+                      {/* Waveform positioned below controls, aligned with play button */}
+                      <div className="hud-mini-wave flex items-center justify-start" style={{ marginBottom: 8, marginLeft: 0, marginTop: 2 }}>
                         <div 
                           className="waveform"
                           onClick={handleProgressClick}
@@ -2836,7 +2851,8 @@ const HUDPanel = React.memo(function HUDPanel({
                             width: `calc((100vw - ${(inConsole ? 6 : 8) + (oneLinerRight + 4) + 32}px) * 0.85)`, // 85% of dropdown width
                             height: 18,
                             borderRadius: 0,
-                            background: 'transparent'
+                            background: 'transparent',
+                            marginLeft: '8px' // Align with play button
                           }}
                           onMouseEnter={(e) => {
                             try { sfx.play('hover', 0.3); } catch {}
@@ -2964,7 +2980,7 @@ const HUDPanel = React.memo(function HUDPanel({
                               className="hud-enhanced-track"
                               style={{
                                 position: 'absolute',
-                                left: 6,
+                                left: 14, // Start closer to play button alignment
                                 right: 6,
                                 bottom: -1,
                                 height: 10,

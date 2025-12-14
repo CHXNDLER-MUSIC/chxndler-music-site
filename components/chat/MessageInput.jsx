@@ -108,7 +108,7 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "S
       <form onSubmit={handleSubmit} className="relative">
 
         {/* Message Input */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2" style={{ alignItems: 'center' }}>
           <div className="flex-1 relative">
             <textarea
               ref={inputRef}
@@ -124,11 +124,13 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "S
               disabled={disabled}
               maxLength={500}
               rows={1}
-              className="w-full resize-none rounded-lg px-3 py-1.5 text-sm transition-all duration-200 focus:outline-none"
+              className="w-full resize-none rounded-lg px-3 text-sm transition-all duration-200 focus:outline-none"
               style={{
                 height: '44px',
                 minHeight: '44px',
                 maxHeight: '44px',
+                padding: '10px 12px',
+                lineHeight: '24px',
                 background: 'rgba(0, 0, 0, 0.6)',
                 border: `2px solid #F2EF1D`,
                 color: '#F2EF1D',
@@ -139,7 +141,9 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "S
                 overflow: 'hidden',
                 resize: 'none',
                 whiteSpace: 'nowrap',
-                textOverflow: 'ellipsis'
+                textOverflow: 'ellipsis',
+                display: 'flex',
+                alignItems: 'center'
               }}
               onInput={(e) => {
                 // Ensure textarea stays at fixed height
@@ -179,11 +183,12 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "S
                 try { sfx.play('hover', 0.3); } catch {}
               }
             }}
-            className="px-3 py-2 rounded-lg text-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex-shrink-0 relative"
+            className="rounded-lg text-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex-shrink-0 relative flex items-center justify-center"
             style={{
               height: '44px',
               minHeight: '44px',
               width: '44px',
+              padding: '0',
               background: showRoomReactionTray 
                 ? 'rgba(242, 239, 29, 0.2)'
                 : 'rgba(242, 239, 29, 0.1)',
@@ -192,7 +197,10 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "S
               border: '2px solid #F2EF1D',
               boxShadow: showRoomReactionTray
                 ? '0 0 20px rgba(242, 239, 29, 0.6), 0 0 40px rgba(242, 239, 29, 0.3)'
-                : '0 0 12px rgba(242, 239, 29, 0.4)'
+                : '0 0 12px rgba(242, 239, 29, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
             title="React to the room"
             whileHover={{ scale: 1.05 }}
@@ -210,12 +218,13 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "S
                 try { sfx.play('hover', 0.3); } catch {}
               }
             }}
-            className="px-4 py-2 rounded-lg font-semibold text-base transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex-shrink-0"
+            className="px-4 rounded-lg font-semibold text-base transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex-shrink-0 flex items-center justify-center"
             style={{
               height: '44px',
               minHeight: '44px',
               width: 'auto',
               minWidth: '80px',
+              padding: '0 16px',
               background: disabled || !message.trim() 
                 ? 'rgba(128, 128, 128, 0.1)'
                 : 'transparent',
@@ -226,7 +235,10 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "S
                 : '2px solid #F2EF1D',
               boxShadow: disabled || !message.trim()
                 ? 'none'
-                : '0 0 25px rgba(242, 239, 29, 0.6), 0 0 50px rgba(242, 239, 29, 0.3), inset 0 0 15px rgba(242, 239, 29, 0.2)'
+                : '0 0 25px rgba(242, 239, 29, 0.6), 0 0 50px rgba(242, 239, 29, 0.3), inset 0 0 15px rgba(242, 239, 29, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
           >
             {disabled ? 'Chat Disabled' : 'Send'}
@@ -235,14 +247,23 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "S
 
         {/* Room Reaction Tray */}
         {showRoomReactionTray && (
-          <div className="absolute bottom-full left-0 right-0 mb-2 z-20 flex justify-center">
+          <div className="absolute bottom-full mb-2 z-20 flex justify-center" style={{
+            left: '0',
+            right: '0',
+            paddingLeft: '8px',
+            paddingRight: '8px'
+          }}>
             <ReactionTray
               onReact={(reaction) => {
                 onRoomReaction(reaction);
                 setShowRoomReactionTray(false);
               }}
               userId={user?.id || 'anonymous'}
-              className="shadow-lg w-full max-w-md"
+              className="shadow-lg"
+              style={{
+                maxWidth: 'calc(100vw - 32px)',
+                width: 'fit-content'
+              }}
             />
           </div>
         )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { sfx } from "@/lib/sfx";
 
 interface PopoutShellProps {
@@ -13,10 +13,45 @@ interface PopoutShellProps {
   compact?: boolean; // Optional, for compact height like badges
   isOpen?: boolean;
   subtitle?: string; // Optional subtitle below the title line
+  minWidth?: string; // Optional minimum width for container (e.g., 'min(90vw, 380px)')
+  maxHeight?: string; // Optional max height for container (e.g., '78vh')
+  fitToPowerTop?: boolean; // If true, dynamically fit bottom to top of Power button
+  powerGapPx?: number; // Gap above power button when fitting
+  hideHeaderRule?: boolean; // Optional, hide the neon separator line under the title
+  headerRuleVariant?: 'pink' | 'cyan'; // Optional, choose pink (default) or cyan line
 }
 
-export default function PopoutShell({ title, onClose, children, overlayContent, backgroundContent, pageIndicator, compact = false, isOpen = true, subtitle }: PopoutShellProps) {
+export default function PopoutShell({ title, onClose, children, overlayContent, backgroundContent, pageIndicator, compact = false, isOpen = true, subtitle, minWidth, maxHeight, fitToPowerTop = false, powerGapPx = 12, hideHeaderRule = false, headerRuleVariant = 'pink' }: PopoutShellProps) {
   if (!isOpen) return null;
+
+  const [computedMaxHeight, setComputedMaxHeight] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!fitToPowerTop) {
+      setComputedMaxHeight(null);
+      return;
+    }
+    function compute() {
+      try {
+        const vh = window.innerHeight || 0;
+        const containerTopPx = Math.round(vh * 0.08); // matches paddingTop: '8vh'
+        const powerEl = document.querySelector('.power-btn') as HTMLElement | null;
+        if (powerEl) {
+          const rect = powerEl.getBoundingClientRect();
+          const topOfPower = Math.max(0, Math.round(rect.top));
+          const h = Math.max(300, topOfPower - containerTopPx - powerGapPx);
+          setComputedMaxHeight(`${h}px`);
+        } else {
+          setComputedMaxHeight(maxHeight ?? (compact ? '50vh' : '45vh'));
+        }
+      } catch {
+        setComputedMaxHeight(maxHeight ?? (compact ? '50vh' : '45vh'));
+      }
+    }
+    compute();
+    window.addEventListener('resize', compute);
+    return () => window.removeEventListener('resize', compute);
+  }, [fitToPowerTop, powerGapPx, compact, maxHeight]);
   return (
     <>
       {/* Backdrop overlay - no dimming */}
@@ -36,9 +71,10 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
         <div
           className="binder-hologram-container"
           style={{
-            width: 'min(85vw, 550px)',
+            width: 'min(85vw, 600px)',
+            minWidth: minWidth,
             height: 'auto',
-            maxHeight: compact ? '50vh' : '45vh',
+            maxHeight: fitToPowerTop ? (computedMaxHeight ?? (maxHeight ?? (compact ? '50vh' : '45vh'))) : (maxHeight ?? (compact ? '50vh' : '45vh')),
             minHeight: compact ? '300px' : '400px',
             display: 'flex',
             flexDirection: 'column',
@@ -130,18 +166,24 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
                 </div>
               </div>
               
-              {/* Thin pink neon line - exact copy from Binder */}
-              <div 
-                className="w-full h-px flex-shrink-0"
-                style={{
-                  background: 'linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)',
-                  boxShadow: '0 0 4px rgba(255,105,180,0.6)'
-                }}
-              />
+              {/* Thin neon line - optional, variant controlled */}
+              {!hideHeaderRule && (
+                <div 
+                  className="w-full h-px flex-shrink-0"
+                  style={{
+                    background: headerRuleVariant === 'cyan'
+                      ? 'linear-gradient(90deg, transparent, rgba(0,191,255,0.8) 20%, rgba(0,191,255,1) 50%, rgba(0,191,255,0.8) 80%, transparent)'
+                      : 'linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)',
+                    boxShadow: headerRuleVariant === 'cyan'
+                      ? '0 0 4px rgba(0,191,255,0.6)'
+                      : '0 0 4px rgba(255,105,180,0.6)'
+                  }}
+                />
+              )}
               
               {/* Subtitle below the line */}
               {subtitle && (
-                <div className="flex justify-center items-center flex-shrink-0" style={{ padding: '8px 14px 0px 14px' }}>
+                <div className="flex justify-center items-center flex-shrink-0" style={{ padding: '8px 14px 6px 14px' }}>
                   <div 
                     style={{ 
                       color: '#FFFFFF', 
@@ -175,7 +217,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
             <div 
               className="absolute left-1/2 transform -translate-x-1/2"
               style={{
-                bottom: '50px',
+                bottom: '8px',
                 color: '#FF69B4',
                 fontSize: '12px',
                 fontWeight: 'bold',
