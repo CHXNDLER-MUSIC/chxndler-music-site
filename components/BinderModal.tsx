@@ -2403,7 +2403,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     >
                       SELECT AN ELEMENT TO VIEW CARDS
                     </div>
-                    <div className="grid grid-cols-2 gap-2 justify-center place-items-center mx-auto" style={{ marginTop: '-8px' }}>
+                    <div className="grid grid-cols-2 gap-1 justify-center place-items-center mx-auto" style={{ marginTop: '-8px' }}>
                       {elements.map((element) => (
                         <div
                           key={element}
@@ -2418,10 +2418,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           }}
                         >
                           <div 
-                            className={`w-full aspect-square rounded-lg border-2 border-pink-400/60 hover:border-pink-400/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105`}
-                            style={{
-                              boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                            }}
+                            className={`w-full aspect-square rounded-lg relative overflow-hidden transition-all duration-300 group-hover:scale-105`}
                           >
                             <img
                               src={`/elements/${element}.webp`}
@@ -2429,14 +2426,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                               className="w-full h-full object-cover rounded-lg"
                               draggable={false}
                             />
-                            {/* Holographic effect */}
-                            <div 
-                              className="absolute inset-0 opacity-20"
-                              style={{
-                                background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%)',
-                                animation: 'shimmer 3s ease-in-out infinite'
-                              }}
-                            />
+                            
                             {/* Show song count for this element */}
                             <div 
                               className="absolute top-1 right-1 bg-black/70 rounded px-1 py-0.5"

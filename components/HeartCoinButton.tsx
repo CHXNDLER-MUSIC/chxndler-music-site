@@ -1695,13 +1695,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               </div>
             </div>
           ) : (
-            <div>
+            <div className="flex flex-col max-h-[70vh] min-h-0">
 
           {/* Daily Quests Tab Content */}
           {activeEarnTab === 'DAILY QUESTS' && (
-            <div className="mb-4">
+            <div className="mb-4 flex-1 min-h-0 flex flex-col gap-2">
             {/* Element of the Day */}
-            <div className="flex items-center justify-between mb-2 p-2 rounded border border-white/30 bg-white/10">
+            <div className="flex items-center justify-between p-2 rounded border border-white/30 bg-white/10 flex-1 min-h-0">
               <div>
                 <div className="text-xs font-bold" style={{ color: '#FFFFFF' }}>
                   1. Tap the Element of the Day
@@ -1733,7 +1733,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             </div>
 
             {/* Journal Entry */}
-            <div className="flex items-center justify-between mb-1 p-2 rounded border border-white/30 bg-white/10">
+            <div className="flex items-center justify-between p-2 rounded border border-white/30 bg-white/10 flex-1 min-h-0">
               <div>
                 <div className="text-xs font-bold" style={{ color: '#FFFFFF' }}>
                   2. Journal Entry of the Day
@@ -2044,184 +2044,118 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               {/* Left spacer (kept for layout balance) */}
                               <div className="flex-1" />
                               
-                              {/* Item Title + Image */}
-                              <div className="flex flex-col items-center">
-                                <div 
-                                  className="text-center text-white font-bold text-lg mb-1"
-                                  style={{ textShadow: '0 0 6px rgba(255,255,255,0.6)' }}
-                                >
-                                  {PHYSICAL_ITEMS[currentMerchIndex].title.toUpperCase()}
-                                </div>
-                                <div 
-                                  className="relative w-28 h-28 -mt-1 flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-200"
-                                  onMouseEnter={() => {
-                                    try { sfx.play('hover', 0.3); } catch {}
-                                  }}
-                                  onClick={() => {
-                                    try { sfx.play('click', 0.8); } catch {}
-                                    setEnlargedMerchItem(PHYSICAL_ITEMS[currentMerchIndex]);
-                                  }}
-                                >
-                                  <img
-                                    src={PHYSICAL_ITEMS[currentMerchIndex].image}
-                                    alt={PHYSICAL_ITEMS[currentMerchIndex].title}
-                                    className="w-full h-full object-cover rounded"
-                                  />
-                                  {/* Overlay navigation arrows centered on image */}
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      try { sfx.play('click', 0.6); } catch {}
-                                      setCurrentMerchIndex(prev => prev > 0 ? prev - 1 : PHYSICAL_ITEMS.length - 1);
-                                    }}
-                                    onMouseEnter={(e) => { e.stopPropagation(); try { sfx.play('hover', 0.3); } catch {} }}
-                                    className="absolute flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-110 transition-all duration-200"
-                                    style={{ left: '-14px', top: '50%', transform: 'translateY(-50%)', boxShadow: '0 0 8px rgba(255,255,255,0.3)' }}
-                                    aria-label="Previous item"
-                                  >
-                                    <span className="text-white text-sm font-bold">←</span>
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      try { sfx.play('click', 0.6); } catch {}
-                                      setCurrentMerchIndex(prev => prev < PHYSICAL_ITEMS.length - 1 ? prev + 1 : 0);
-                                    }}
-                                    onMouseEnter={(e) => { e.stopPropagation(); try { sfx.play('hover', 0.3); } catch {} }}
-                                    className="absolute flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-110 transition-all duration-200"
-                                    style={{ right: '-14px', top: '50%', transform: 'translateY(-50%)', boxShadow: '0 0 8px rgba(255,255,255,0.3)' }}
-                                    aria-label="Next item"
-                                  >
-                                    <span className="text-white text-sm font-bold">→</span>
-                                  </button>
-                                </div>
-                                {/* Item index moved near description below */}
-                                
-                                {/* PAY WITH $ button moved to bottom action bar */}
-                              </div>
-                              
-                              {/* Item Details */}
-                              <div className="flex-1 ml-0">
-                                {showHeartCoinPurchase ? (
-                                  /* HeartCoin Purchase Confirmation */
-                                  <div className="text-center">
-                                    {/* User and Cost - Side by Side */}
-                                    <div className="flex justify-between items-start mb-2">
-                                      {/* User Section */}
-                                      <div className="flex flex-col items-center flex-1">
-                                        <div 
-                                          className="font-bold text-white text-lg mb-1"
-                                          style={{
-                                            textShadow: '0 0 4px rgba(255,255,255,0.6)'
-                                          }}
-                                        >
-                                          {profile?.username || 'User'}
-                                        </div>
-                                        
-                                        {/* Current Heart Coins */}
-                                        <div className="flex flex-col items-center space-y-1">
-                                          <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
-                                          <div 
-                                            className="text-xl font-bold"
-                                            style={{ 
-                                              color: '#FFFFFF', 
-                                              textShadow: '0 0 6px rgba(255,255,255,0.8)' 
-                                            }}
-                                          >
-                                            {profile?.id ? heartCoins : 0}
-                                          </div>
-                                        </div>
-                                      </div>
-
-                                      {/* Cost Section */}
-                                      <div className="flex flex-col items-center flex-1">
-                                        <div 
-                                          className="font-bold text-white text-lg mb-1"
-                                          style={{
-                                            textShadow: '0 0 4px rgba(255,255,255,0.6)'
-                                          }}
-                                        >
-                                          Cost
-                                        </div>
-                                        
-                                        <div className="flex flex-col items-center space-y-1">
-                                          <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
-                                          <div 
-                                            className="text-xl font-bold"
-                                            style={{ 
-                                              color: '#FFFFFF', 
-                                              textShadow: '0 0 6px rgba(255,255,255,0.8)' 
-                                            }}
-                                          >
-                                            {selectedItem?.priceHeartCoins}
-                                          </div>
-                                        </div>
+                              {/* Item Title + Image OR User/Cost Display */}
+                              {showHeartCoinPurchase && selectedItem?.slug === PHYSICAL_ITEMS[currentMerchIndex].slug ? (
+                                /* User and Cost Display - Centered */
+                                <div className="flex flex-col items-center justify-center py-4">
+                                  {/* User Section */}
+                                  <div className="flex flex-col items-center mb-6">
+                                    <div 
+                                      className="font-bold text-white text-xl mb-3"
+                                      style={{
+                                        textShadow: '0 0 4px rgba(255,255,255,0.6)'
+                                      }}
+                                    >
+                                      User
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                      <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
+                                      <div 
+                                        className="text-2xl font-bold"
+                                        style={{ 
+                                          color: '#FFFFFF', 
+                                          textShadow: '0 0 6px rgba(255,255,255,0.8)' 
+                                        }}
+                                      >
+                                        {profile?.id ? heartCoins : 0}
                                       </div>
                                     </div>
-
-                                    {/* Status Message and Confirm Button */}
-                                    {(profile?.id ? heartCoins : 0) >= (selectedItem?.priceHeartCoins || 0) ? (
-                                      <>
-                                        <button 
-                                          className="w-full px-4 py-2 rounded border transition-colors"
-                                          style={{ 
-                                            backgroundColor: 'rgba(0,255,0,0.2)',
-                                            borderColor: 'rgba(0,255,0,0.6)',
-                                            color: '#90EE90',
-                                            textShadow: '0 0 4px rgba(144,238,144,0.8)',
-                                            fontWeight: 'bold'
-                                          }}
-                                          onClick={() => {
-                                            if (selectedItem) {
-                                              handlePurchaseWithHeartCoins(selectedItem);
-                                            }
-                                          }}
-                                          disabled={isProcessing}
-                                        >
-                                          {isProcessing ? 'PROCESSING...' : 'CONFIRM'}
-                                        </button>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <div 
-                                          className="text-xs mb-3"
-                                          style={{ 
-                                            color: '#FF6B6B', 
-                                            textShadow: '0 0 4px rgba(255,107,107,0.8)',
-                                            fontSize: '12px',
-                                            whiteSpace: 'nowrap'
-                                          }}
-                                        >
-                                          You do not have enough heart coins
-                                        </div>
-                                        <button 
-                                          className="w-full px-4 py-2 rounded border transition-colors cursor-not-allowed"
-                                          style={{ 
-                                            backgroundColor: 'rgba(255,0,0,0.2)',
-                                            borderColor: 'rgba(255,0,0,0.6)',
-                                            color: '#FF6B6B',
-                                            textShadow: '0 0 4px rgba(255,107,107,0.8)',
-                                            fontWeight: 'bold'
-                                          }}
-                                          disabled
-                                        >
-                                          CONFIRM
-                                        </button>
-                                      </>
-                                    )}
-
                                   </div>
-                                ) : (
-                                  /* Normal Item Details */
-                                  <>
-                                    <div className="mb-1" />
-                                    
-                                    {/* Buy Buttons - removed, now located below counter */}
-                                  </>
-                                )}
-                                
-                                {/* PAY WITH heart coin button moved to bottom action bar */}
-                              </div>
+
+                                  {/* Cost Section */}
+                                  <div className="flex flex-col items-center">
+                                    <div 
+                                      className="font-bold text-white text-xl mb-3"
+                                      style={{
+                                        textShadow: '0 0 4px rgba(255,255,255,0.6)'
+                                      }}
+                                    >
+                                      Cost
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                      <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
+                                      <div 
+                                        className="text-2xl font-bold"
+                                        style={{ 
+                                          color: '#FFFFFF', 
+                                          textShadow: '0 0 6px rgba(255,255,255,0.8)' 
+                                        }}
+                                      >
+                                        {PHYSICAL_ITEMS[currentMerchIndex].priceHeartCoins}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                /* Normal Item Display */
+                                <div className="flex flex-col items-center">
+                                  <div 
+                                    className="text-center text-white font-bold text-lg mb-1"
+                                    style={{ textShadow: '0 0 6px rgba(255,255,255,0.6)' }}
+                                  >
+                                    {PHYSICAL_ITEMS[currentMerchIndex].title.toUpperCase()}
+                                  </div>
+                                  <div 
+                                    className="relative w-28 h-28 -mt-1 flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-200"
+                                    onMouseEnter={() => {
+                                      try { sfx.play('hover', 0.3); } catch {}
+                                    }}
+                                    onClick={() => {
+                                      try { sfx.play('click', 0.8); } catch {}
+                                      setEnlargedMerchItem(PHYSICAL_ITEMS[currentMerchIndex]);
+                                    }}
+                                  >
+                                    <img
+                                      src={PHYSICAL_ITEMS[currentMerchIndex].image}
+                                      alt={PHYSICAL_ITEMS[currentMerchIndex].title}
+                                      className="w-full h-full object-cover rounded"
+                                    />
+                                    {/* Overlay navigation arrows centered on image */}
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        try { sfx.play('click', 0.6); } catch {}
+                                        setCurrentMerchIndex(prev => prev > 0 ? prev - 1 : PHYSICAL_ITEMS.length - 1);
+                                      }}
+                                      onMouseEnter={(e) => { e.stopPropagation(); try { sfx.play('hover', 0.3); } catch {} }}
+                                      className="absolute flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-110 transition-all duration-200"
+                                      style={{ left: '-14px', top: '50%', transform: 'translateY(-50%)', boxShadow: '0 0 8px rgba(255,255,255,0.3)' }}
+                                      aria-label="Previous item"
+                                    >
+                                      <span className="text-white text-sm font-bold">←</span>
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        try { sfx.play('click', 0.6); } catch {}
+                                        setCurrentMerchIndex(prev => prev < PHYSICAL_ITEMS.length - 1 ? prev + 1 : 0);
+                                      }}
+                                      onMouseEnter={(e) => { e.stopPropagation(); try { sfx.play('hover', 0.3); } catch {} }}
+                                      className="absolute flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-110 transition-all duration-200"
+                                      style={{ right: '-14px', top: '50%', transform: 'translateY(-50%)', boxShadow: '0 0 8px rgba(255,255,255,0.3)' }}
+                                      aria-label="Next item"
+                                    >
+                                      <span className="text-white text-sm font-bold">→</span>
+                                    </button>
+                                  </div>
+                                  {/* Item index moved near description below */}
+                                  
+                                  {/* PAY WITH $ button moved to bottom action bar */}
+                                </div>
+                              )}
+                              
+                              {/* Right spacer (kept for layout balance) */}
+                              <div className="flex-1" />
                             </div>
                           </div>
                           )}
@@ -2230,8 +2164,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     </div>
                   )}
 
-                  {/* Bottom description and index above action bar */}
-                  {activeUseTab === 'MERCH' && PHYSICAL_ITEMS[currentMerchIndex] && (
+                  {/* Bottom description and index above action bar - Only show when NOT in heart coin purchase mode */}
+                  {activeUseTab === 'MERCH' && PHYSICAL_ITEMS[currentMerchIndex] && !(showHeartCoinPurchase && selectedItem?.slug === PHYSICAL_ITEMS[currentMerchIndex].slug) && (
                     <div className="absolute left-6 right-6 bottom-16" style={{ lineHeight: '1.3' }}>
                       <div className="text-center text-white/70 text-xs mb-1" style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}>
                         {currentMerchIndex + 1} of {PHYSICAL_ITEMS.length}
@@ -2242,8 +2176,49 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     </div>
                   )}
 
-                  {/* Bottom action bar for MERCH payments */}
-                  {activeUseTab === 'MERCH' && PHYSICAL_ITEMS[currentMerchIndex] && (
+                  {/* CONFIRM button for heart coin purchase */}
+                  {activeUseTab === 'MERCH' && PHYSICAL_ITEMS[currentMerchIndex] && showHeartCoinPurchase && selectedItem?.slug === PHYSICAL_ITEMS[currentMerchIndex].slug && (
+                    <div className="absolute left-6 right-6 bottom-16">
+                      {(profile?.id ? heartCoins : 0) >= (PHYSICAL_ITEMS[currentMerchIndex].priceHeartCoins || 0) ? (
+                        <button 
+                          className="w-full px-4 py-3 rounded border transition-colors text-center font-bold text-lg"
+                          style={{ 
+                            backgroundColor: 'rgba(0,255,0,0.2)',
+                            borderColor: 'rgba(0,255,0,0.6)',
+                            color: '#90EE90',
+                            textShadow: '0 0 4px rgba(144,238,144,0.8)',
+                            boxShadow: '0 0 8px rgba(0,255,0,0.3)'
+                          }}
+                          onClick={() => {
+                            if (selectedItem) {
+                              handlePurchaseWithHeartCoins(selectedItem);
+                            }
+                          }}
+                          onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                          disabled={isProcessing}
+                        >
+                          {isProcessing ? 'PROCESSING...' : 'CONFIRM'}
+                        </button>
+                      ) : (
+                        <button 
+                          className="w-full px-4 py-3 rounded border transition-colors cursor-not-allowed text-center font-bold text-lg"
+                          style={{ 
+                            backgroundColor: 'rgba(255,0,0,0.2)',
+                            borderColor: 'rgba(255,0,0,0.6)',
+                            color: '#FF6B6B',
+                            textShadow: '0 0 4px rgba(255,107,107,0.8)',
+                            boxShadow: '0 0 8px rgba(255,0,0,0.3)'
+                          }}
+                          disabled
+                        >
+                          CONFIRM
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Bottom action bar for MERCH payments - Only show when NOT in heart coin purchase mode */}
+                  {activeUseTab === 'MERCH' && PHYSICAL_ITEMS[currentMerchIndex] && !(showHeartCoinPurchase && selectedItem?.slug === PHYSICAL_ITEMS[currentMerchIndex].slug) && (
                     <div className="absolute left-6 right-6 bottom-4 flex gap-2">
                       <button
                         onClick={() => {
@@ -2294,7 +2269,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             SELECT AN ELEMENT TO VIEW CARDS
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2 justify-center place-items-center mx-auto" style={{ marginTop: '4px' }}>
+                          <div className="grid grid-cols-2 gap-1 justify-center place-items-center mx-auto" style={{ marginTop: '4px' }}>
                             {['lightning', 'darkness', 'water', 'heart'].map((element, index) => {
                               const elementCounts = getElementCardCounts();
                               const count = elementCounts[element] || 0;
@@ -2311,24 +2286,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   }}
                                 >
                                   <div 
-                                    className={`w-full h-20 rounded-lg border-2 border-white/60 hover:border-white/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105`}
-                                    style={{
-                                      boxShadow: '0 0 15px rgba(255,255,255,0.3)',
-                                    }}
+                                    className={`w-full h-20 rounded-lg relative overflow-hidden transition-all duration-300 group-hover:scale-105`}
                                   >
                                     <img
                                       src={`/elements/${element}.webp`}
                                       alt={`${element} Card`}
                                       className="w-full h-full object-cover rounded-lg"
                                       draggable={false}
-                                    />
-                                    {/* Holographic effect */}
-                                    <div 
-                                      className="absolute inset-0 opacity-20"
-                                      style={{
-                                        background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%)',
-                                        animation: 'shimmer 3s ease-in-out infinite'
-                                      }}
                                     />
                                     {/* Show card count for this element */}
                                     <div 

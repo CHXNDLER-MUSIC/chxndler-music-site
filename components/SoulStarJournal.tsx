@@ -1865,10 +1865,9 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               
               {/* Element label - centered below date */}
               <div 
-                className="absolute left-1/2 transform -translate-x-1/2 px-3 py-1 rounded-full text-lg font-semibold uppercase flex items-center gap-2"
+                className="absolute left-1/2 transform -translate-x-1/2 px-3 py-1 text-lg font-semibold uppercase flex items-center gap-2"
                 style={{
                   top: '40px',
-                  background: `${elementTheme.color}20`,
                   color: elementTheme.color,
                   textShadow: 'none'
                 }}

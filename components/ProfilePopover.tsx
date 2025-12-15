@@ -779,13 +779,13 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 {profile?.name || 'Unknown'}
               </div>
 
-              {/* Journey label under name */}
-              <div className="mt-1">
+              {/* Journey label under name with Relics button */}
+              <div className="mt-1 flex items-center gap-3">
                 {(() => {
                   const { label, color } = getJourneyDisplay();
                   return (
                     <div
-                      className="text-sm font-semibold tracking-wide"
+                      className="text-base font-semibold tracking-wide"
                       style={{
                         color,
                         textShadow: `0 0 6px ${color}80`,
@@ -796,6 +796,28 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                     </div>
                   );
                 })()}
+                
+                {/* Relics button next to LOVER */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => { setShowRelicsInline(true); try { sfx.play('click', 0.6); } catch {} }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowRelicsInline(true); try { sfx.play('click', 0.6); } catch {} } }}
+                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                  className="w-16 h-16 transition-transform hover:scale-[1.08] flex items-center justify-center cursor-pointer select-none flex-shrink-0"
+                  style={{ background: 'transparent', backgroundColor: 'transparent', border: 'none', boxShadow: 'none', outline: 'none' }}
+                  title="View your relics"
+                >
+                  <img
+                    src="/elements/relics.webp"
+                    alt="Relics"
+                    className="w-14 h-14 object-contain"
+                    onError={(e) => {
+                      const target = e.currentTarget as HTMLImageElement;
+                      target.style.display = 'none';
+                    }}
+                  />
+                </div>
               </div>
               
               {/* Element */}
@@ -820,7 +842,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   onMouseEnter={() => {
                     try { sfx.play('hover', 0.3); } catch {}
                   }}
-                  className="font-bold transition-all duration-200 hover:scale-105 cursor-pointer flex items-center"
+                  className="font-bold text-base transition-all duration-200 hover:scale-105 cursor-pointer flex items-center"
                   style={{ 
                     color: profile?.element ? getElementInfo(profile.element).color : '#00FFFF', 
                     textShadow: profile?.element ? `0 0 8px ${getElementInfo(profile.element).color}60` : '0 0 8px rgba(0,255,255,0.6)',
@@ -834,12 +856,12 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               </div>
               
               {/* Daily Streak and Heart Coins */}
-              <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-2 items-start">
-                {/* Left column: Daily streak */}
+              <div className="flex flex-col gap-y-1 mt-2">
+                {/* Daily streak - top */}
                 <div className="flex items-center">
-                  <span className="text-white/80 text-xs mr-1">Daily Streak:</span>
+                  <span className="text-white/80 text-sm mr-1">Daily Streak:</span>
                   <span 
-                    className="font-bold text-xs"
+                    className="font-bold text-sm"
                     style={{ 
                       color: '#00FFFF', 
                       textShadow: '0 0 8px rgba(0,255,255,0.6)' 
@@ -848,40 +870,18 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                     {profile?.daily_streak || 0}
                   </span>
                 </div>
-                {/* Right column: Relics button above total heartcoins */}
-                <div className="flex flex-col items-start">
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => { setShowRelicsInline(true); try { sfx.play('click', 0.6); } catch {} }}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowRelicsInline(true); try { sfx.play('click', 0.6); } catch {} } }}
-                    onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-                    className="w-16 h-16 transition-transform mb-1 hover:scale-[1.08] flex items-center justify-center cursor-pointer select-none"
-                    style={{ background: 'transparent', backgroundColor: 'transparent', border: 'none', boxShadow: 'none', outline: 'none' }}
-                    title="View your relics"
+                {/* Total heartcoins - bottom */}
+                <div className="flex items-center">
+                  <span className="text-white/80 text-sm mr-1">Total HeartCoins:</span>
+                  <span 
+                    className="font-bold text-sm"
+                    style={{ 
+                      color: '#00FFFF', 
+                      textShadow: '0 0 8px rgba(0,255,255,0.6)' 
+                    }}
                   >
-                    <img
-                      src="/elements/relics.webp"
-                      alt="Relics"
-                      className="w-14 h-14 object-contain"
-                      onError={(e) => {
-                        const target = e.currentTarget as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
-                    />
-                  </div>
-                  <div className="flex items-center">
-                    <span className="text-white/80 text-xs mr-1">Total HeartCoins:</span>
-                    <span 
-                      className="font-bold text-xs"
-                      style={{ 
-                        color: '#00FFFF', 
-                        textShadow: '0 0 8px rgba(0,255,255,0.6)' 
-                      }}
-                    >
-                      {profile?.heartcoin_total || 0}
-                    </span>
-                  </div>
+                    {profile?.heartcoin_total || 0}
+                  </span>
                 </div>
               </div>
             </div>

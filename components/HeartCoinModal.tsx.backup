@@ -18,9 +18,6 @@ type Props = {
   onOpenJournal?: () => void;
   onOpenWelcomeHome?: () => void;
   initialTab?: 'earn' | 'use' | 'merch' | 'cards';
-  availableCards?: any[];
-  currentCardIndex?: number;
-  onCardNavigation?: (direction: 'prev' | 'next') => void;
 };
 
 type StoreItem = {
@@ -126,7 +123,7 @@ const storeItems: StoreItem[] = [
   }
 ];
 
-export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWelcomeHome, initialTab = 'earn', availableCards = [], currentCardIndex = 0, onCardNavigation }: Props) {
+export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWelcomeHome, initialTab = 'earn' }: Props) {
   const { profile, loading: profileLoading } = useProfile();
   const { bonusQuests, isLoading: questsLoading } = useBonusQuests();
   const { items: merchItems, loading: merchLoading } = useMerchItems('physical');
@@ -317,29 +314,13 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     setCurrentPage(prev => Math.min(totalPages - 1, prev + 1));
   };
 
-  const handlePrevCard = () => {
-    if (availableCards.length > 1 && onCardNavigation) {
-      try { sfx.play('flip.mp3', 0.8); } catch {}
-      onCardNavigation('prev');
-      setIsEnlargedCardFlipped(false);
-    }
-  };
-
-  const handleNextCard = () => {
-    if (availableCards.length > 1 && onCardNavigation) {
-      try { sfx.play('flip.mp3', 0.8); } catch {}
-      onCardNavigation('next');
-      setIsEnlargedCardFlipped(false);
-    }
-  };
-
   return (
     <HeartversePopup 
       isOpen={open} 
       onClose={onClose} 
       title=""
     >
-      <div className="relative">
+      <div className="relative flex flex-col max-h-[70vh] min-h-0">
         {/* Tabs */}
         <div className="flex border-b border-white/20 mb-6">
           <button
@@ -475,10 +456,11 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
             </div>
 
             {/* Quest Content */}
+            <div className="flex-1 min-h-0 flex flex-col">
             {activeEarnTab === 'DAILY QUESTS' ? (
-              <div className="space-y-4">
+              <div className="flex flex-col gap-4 flex-1">
                 {/* Element of the Day Quest */}
-                <div className="bg-black/20 rounded-lg p-4 border border-white/10">
+                <div className="bg-black/20 rounded-lg p-4 border border-white/10 flex-1 flex flex-col">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
@@ -498,7 +480,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 </div>
 
                 {/* Journal Entry Quest */}
-                <div className="bg-black/20 rounded-lg p-4 border border-white/10">
+                <div className="bg-black/20 rounded-lg p-4 border border-white/10 flex-1 flex flex-col">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
@@ -1002,27 +984,27 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
       {/* Enlarged Item Modal */}
       {enlargedItem && (
-        <div 
-          className="fixed inset-0 z-[2147483647] bg-black bg-opacity-90"
-          onClick={() => {
-            setEnlargedItem(null);
-            setEnlargedImageIndex(0);
-          }}
-          style={{
-            backdropFilter: 'blur(8px)',
-          }}
-        >
           <div 
-            className="absolute inset-0 flex items-center justify-center p-4"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[2147483647] bg-black bg-opacity-90"
+            onClick={() => {
+              setEnlargedItem(null);
+              setEnlargedImageIndex(0);
+            }}
+            style={{
+              backdropFilter: 'blur(8px)',
+            }}
           >
-            <div
-              className="relative bg-gray-900 border border-gray-600 rounded-lg p-6 max-w-2xl max-h-[90vh] overflow-hidden"
-              style={{
-                background: 'rgba(17, 24, 39, 0.95)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(75, 85, 99, 0.5)',
-              }}
+            <div 
+              className="absolute inset-0 flex items-center justify-center p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                className="relative bg-gray-900 border border-gray-600 rounded-lg p-6 max-w-2xl max-h-[90vh] overflow-hidden"
+                style={{
+                  background: 'rgba(17, 24, 39, 0.95)',
+                  backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(75, 85, 99, 0.5)',
+                }}
             >
               {/* Close Button */}
               <button
@@ -1103,7 +1085,6 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               </div>
             </div>
           </div>
-        </div>
       )}
 
       {/* Enlarged Card Modal */}
@@ -1184,49 +1165,6 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         }}
                       />
                     </div>
-                    
-                    {/* Navigation arrows - only show if multiple cards */}
-                    {availableCards.length > 1 && (
-                      <>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePrevCard();
-                          }}
-                          className="absolute left-2 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-all duration-200"
-                        >
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                          </svg>
-                        </button>
-                        
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleNextCard();
-                          }}
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-all duration-200"
-                        >
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </button>
-                        
-                        {/* Card indicators */}
-                        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-1">
-                          {availableCards.map((_, index) => (
-                            <div
-                              key={index}
-                              className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                                index === currentCardIndex
-                                  ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]'
-                                  : 'bg-white/30'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      </>
-                    )}
                   </div>
                 </div>
               </div>
