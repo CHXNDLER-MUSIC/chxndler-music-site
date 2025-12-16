@@ -11,9 +11,10 @@ type Props = {
   icon?: React.ReactNode;
   headerContent?: React.ReactNode;
   positioning?: 'default' | 'higher' | 'top-left';
+  onTitleClick?: () => void;
 };
 
-export default function HeartversePopup({ isOpen, onClose, title, children, icon, headerContent, positioning = 'default' }: Props) {
+export default function HeartversePopup({ isOpen, onClose, title, children, icon, headerContent, positioning = 'default', onTitleClick }: Props) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -69,7 +70,10 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
             ×
           </button>
 
-          <h2 className="relative text-xl font-bold tracking-wider text-white drop-shadow mb-1">
+          <h2 
+            className={`relative text-xl font-bold tracking-wider text-white drop-shadow mb-1 ${onTitleClick ? 'cursor-pointer hover:text-[#FC54AF] transition-colors duration-200' : ''}`}
+            onClick={onTitleClick}
+          >
             {icon && <span className="popup-icon">{icon}</span>}
             {title}
             {headerContent && <div className="header-content">{headerContent}</div>}

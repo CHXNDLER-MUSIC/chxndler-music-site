@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useCallback } from 'react';
 import { usePlanetPositions } from '../planet-positions-context';
 import { 
   centerPlanet, 
@@ -10,70 +10,85 @@ import {
   SongPlanet 
 } from '../planet-data';
 import { ElementPlanet } from '../ElementPlanet';
-import { CAMERA_BASE_DISTANCE, CAMERA_ZOOM_LERP } from './assets';
+import { 
+  CAMERA_BASE_DISTANCE, 
+  CAMERA_ZOOM_LERP,
+  getCenterPlanet,
+  getElementPlanets,
+  ACTIVE_SCALE_FACTOR,
+  ACTIVE_GLOW_SCALE,
+  ACTIVE_GLOW_OPACITY,
+  ACTIVE_GLOW_COLOR,
+  SONG_PLANET_RADIUS,
+  SONG_PLANET_SEGMENTS,
+  type PlanetConfig
+} from './assets';
 
-// Import Three.js and R3F hooks dynamically to avoid SSR issues
-let useFrame: any;
-let useThree: any;
-let useTexture: any;
-let THREE: any;
-
-if (typeof window !== 'undefined') {
-  import('@react-three/fiber').then(module => {
-    useFrame = module.useFrame;
-    useThree = module.useThree;
-  });
-  import('@react-three/drei').then(module => {
-    useTexture = module.useTexture;
-  });
-  import('three').then(module => {
-    THREE = module;
-  });
-}
+// Import Three.js and R3F hooks directly since we're now behind Suspense
+import { useFrame, useThree } from '@react-three/fiber';
+import { useTexture } from '@react-three/drei';
+import * as THREE from 'three';
 
 interface PlanetsProps {
   zoomLevel: number;
+  initialActivePlanet?: string;
+  onPlanetSelect?: (planetId: string) => void;
+  worldId?: string;
 }
 
-function CenterPlanet() {
+const CenterPlanet = React.memo(() => {
   const meshRef = useRef<THREE.Mesh>(null);
-  const centerTexture = useTexture('/textures/center-planet.webp');
+  const config = getCenterPlanet();
+  const centerTexture = useTexture(config.texturePath!);
   const { updatePosition, activePlanetId } = usePlanetPositions();
+
+  // Memoize geometry to avoid recreation
+  const geometry = useMemo(() => [config.radius!, config.segments!, config.segments!] as const, [config]);
 
   useFrame(() => {
     if (meshRef.current) {
-      updatePosition(centerPlanet.id, {
-        x: 0,
-        y: 0,
-        z: 0,
+      updatePosition(config.id, {
+        x: config.position!.x,
+        y: config.position!.y,
+        z: config.position!.z,
         data: centerPlanet
       });
     }
   });
 
-  const isActive = activePlanetId === centerPlanet.id;
+  const isActive = activePlanetId === config.id;
+
+  // Memoize emissive color to avoid object creation
+  const emissiveColor = useMemo(() => 
+    isActive ? new THREE.Color(0x444444) : new THREE.Color(0x000000), 
+    [isActive]
+  );
 
   return (
-    <mesh ref={meshRef} position={[0, 0, 0]} scale={isActive ? 1.2 : 1}>
-      <sphereGeometry args={[3.5, 32, 32]} />
+    <mesh 
+      ref={meshRef} 
+      position={[config.position!.x, config.position!.y, config.position!.z]} 
+      scale={isActive ? ACTIVE_SCALE_FACTOR : 1}
+    >
+      <sphereGeometry args={geometry} />
       <meshStandardMaterial 
         map={centerTexture} 
-        emissive={isActive ? new THREE.Color(0x444444) : new THREE.Color(0x000000)}
+        emissive={emissiveColor}
       />
       {isActive && (
-        <mesh scale={1.1}>
-          <sphereGeometry args={[3.5, 32, 32]} />
+        <mesh scale={ACTIVE_GLOW_SCALE}>
+          <sphereGeometry args={geometry} />
           <meshBasicMaterial 
-            color={0x6366f1} 
+            color={ACTIVE_GLOW_COLOR} 
             transparent 
-            opacity={0.3} 
+            opacity={ACTIVE_GLOW_OPACITY} 
             side={THREE.BackSide}
           />
         </mesh>
       )}
     </mesh>
   );
-}
+});
 
 function ElementPlanetMesh({ planet }: { planet: ElementPlanetData }) {
   const groupRef = useRef<THREE.Group>(null);
@@ -103,17 +118,20 @@ function ElementPlanetMesh({ planet }: { planet: ElementPlanetData }) {
     <ElementPlanet
       ref={groupRef}
       texturePath={planet.texturePath}
-      size={4}
-      scale={isActive ? 1.2 : 1}
+      size={planet.texturePath ? 4 : 4} // Keep existing size for now
+      scale={isActive ? ACTIVE_SCALE_FACTOR : 1}
       isActive={isActive}
     />
   );
 }
 
-function SongPlanetMesh({ song }: { song: SongPlanet }) {
+const SongPlanetMesh = React.memo(({ song }: { song: SongPlanet }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const texture = song.texturePath ? useTexture(song.texturePath) : null;
   const { updatePosition, activePlanetId, positions } = usePlanetPositions();
+
+  // Memoize geometry to avoid recreation
+  const geometry = useMemo(() => [SONG_PLANET_RADIUS, SONG_PLANET_SEGMENTS, SONG_PLANET_SEGMENTS] as const, []);
 
   useFrame(({ clock }) => {
     if (meshRef.current) {
@@ -142,32 +160,38 @@ function SongPlanetMesh({ song }: { song: SongPlanet }) {
   const isActive = activePlanetId === song.id;
   const scale = song.released ? (isActive ? 1.3 : 1) : (isActive ? 1.1 : 0.8);
 
+  // Memoize emissive color to avoid object creation
+  const emissiveColor = useMemo(() => 
+    isActive ? new THREE.Color(0x222222) : new THREE.Color(0x000000), 
+    [isActive]
+  );
+
   return (
     <mesh ref={meshRef} scale={scale}>
-      <sphereGeometry args={[1, 16, 16]} />
+      <sphereGeometry args={geometry} />
       <meshStandardMaterial 
         map={texture}
         color={song.released ? 0xffffff : 0x666666}
         opacity={song.released ? 1 : 0.7}
         transparent={!song.released}
-        emissive={isActive ? new THREE.Color(0x222222) : new THREE.Color(0x000000)}
+        emissive={emissiveColor}
       />
       {isActive && (
-        <mesh scale={1.2}>
-          <sphereGeometry args={[1, 16, 16]} />
+        <mesh scale={ACTIVE_GLOW_SCALE}>
+          <sphereGeometry args={geometry} />
           <meshBasicMaterial 
-            color={song.released ? 0x6366f1 : 0x9ca3af} 
+            color={song.released ? ACTIVE_GLOW_COLOR : 0x9ca3af} 
             transparent 
-            opacity={0.3} 
+            opacity={ACTIVE_GLOW_OPACITY} 
             side={THREE.BackSide}
           />
         </mesh>
       )}
     </mesh>
   );
-}
+});
 
-export function Planets({ zoomLevel }: PlanetsProps) {
+export function Planets({ zoomLevel, initialActivePlanet, onPlanetSelect, worldId }: PlanetsProps) {
   const { camera } = useThree();
 
   useFrame(() => {

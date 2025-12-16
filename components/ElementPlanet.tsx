@@ -4,6 +4,7 @@ import React, { forwardRef } from 'react';
 import { Billboard } from '@react-three/drei';
 import { useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
+import { ACTIVE_GLOW_COLOR, ACTIVE_GLOW_OPACITY, ACTIVE_GLOW_SCALE } from './planetarium/assets';
 
 interface ElementPlanetProps {
   texturePath: string;
@@ -38,11 +39,11 @@ export const ElementPlanet = forwardRef<THREE.Group, ElementPlanetProps>(
         </Billboard>
         {isActive && (
           <Billboard>
-            <planeGeometry args={[size * 1.1, size * 1.1]} />
+            <planeGeometry args={[size * ACTIVE_GLOW_SCALE, size * ACTIVE_GLOW_SCALE]} />
             <meshBasicMaterial 
-              color={0x6366f1} 
+              color={ACTIVE_GLOW_COLOR} 
               transparent 
-              opacity={0.3}
+              opacity={ACTIVE_GLOW_OPACITY}
             />
           </Billboard>
         )}

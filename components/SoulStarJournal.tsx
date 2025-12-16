@@ -95,7 +95,7 @@ const ELEMENT_EMOJIS = {
 };
 
 export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJournalCompleted }: SoulStarJournalProps) {
-  const { saveJournalEntry, journalEntries, profile, user, getDailyPrompts, deleteJournalEntry, updateJournalEntry, refreshProfile } = useProfile();
+  const { saveJournalEntry, journalEntries, profile, user, getDailyPrompts, deleteJournalEntry, updateJournalEntry, refreshProfile, loadJournalEntries } = useProfile();
   const { hasPendingReflection, markReflectionComplete } = useDailyReflectionStatus();
   const [showHistory, setShowHistory] = useState(false);
   const [dailyPrompt, setDailyPrompt] = useState<DailyPrompt | null>(null);
@@ -125,6 +125,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const [activeTab, setActiveTab] = useState<'private' | 'public'>('private');
   const [showCardsModal, setShowCardsModal] = useState(false);
   const [showBadgesModal, setShowBadgesModal] = useState(false);
+  const [showFullBadgesModal, setShowFullBadgesModal] = useState(false);
   const [enlargedBadge, setEnlargedBadge] = useState<any>(null);
   const [showIntegratedBinder, setShowIntegratedBinder] = useState(false);
   const [selectedCard, setSelectedCard] = useState<any>(null);
@@ -326,6 +327,11 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
     } catch (error) {
       console.error('Failed to save journal entry:', error);
+      console.error('Full error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        error
+      });
       
       let errorMessage = "Failed to cast your signal. Please try again.";
       
@@ -340,7 +346,17 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         } else if (error.message.includes('network') || error.message.includes('fetch')) {
           errorMessage = "Network error. Please check your connection and try again.";
         } else if (error.message.includes('unique') || error.message.includes('constraint')) {
-          errorMessage = "This entry already exists for today. Try editing the existing entry instead.";
+          console.log('Unique constraint error - checking local journal entries vs database');
+          console.log('Current journalEntries length:', journalEntries.length);
+          console.log('Today entry in local state:', journalEntries.find(entry => 
+            entry.entry_date === getLocalDateString() && entry.element === dailyPrompt?.element
+          ));
+          
+          errorMessage = "Entry may already exist. Refreshing data and please try again.";
+          // Refresh journal entries to sync with database state
+          if (user?.id) {
+            loadJournalEntries(user.id).catch(console.error);
+          }
         } else if (error.message.includes('column') && error.message.includes('does not exist')) {
           errorMessage = "Database schema error. Please contact support to update the database.";
         } else if (error.message.includes('table') && error.message.includes('not found')) {
@@ -585,6 +601,15 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       element: card.element
     });
     setCardOpen(true);
+  };
+
+  // Handle badge click to show enlarged view
+  const handleBadgeClick = (badge: any) => {
+    try { 
+      sfx.play('click', 0.6); 
+    } catch {}
+    
+    setEnlargedBadge(badge);
   };
 
 
@@ -1506,6 +1531,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                     userId={entry.user_id}
                                     embedded={true}
                                     maxBadges={4}
+                                    onBadgeClick={handleBadgeClick}
                                   />
                                 </div>
                               )}
@@ -2275,6 +2301,14 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         />
       )}
 
+      {/* Full Badges Modal - opened when clicking on badge in journal profile section */}
+      {showFullBadgesModal && (
+        <BadgesModal 
+          open={showFullBadgesModal}
+          onClose={() => setShowFullBadgesModal(false)}
+        />
+      )}
+
       {/* Card Popup Modal */}
       {selectedCard && (
         <div 
@@ -2348,6 +2382,66 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         </div>
       )}
 
+      {/* Enlarged Badge Popup Modal */}
+      {enlargedBadge && (
+        <div 
+          className="fixed inset-0 z-[2147483646] flex items-center justify-center p-4 pointer-events-none"
+          onClick={() => {
+            setEnlargedBadge(null);
+          }}
+        >
+          <div 
+            className="relative cursor-pointer pointer-events-auto"
+            style={{
+              width: 'min(300px, 80vw)',
+              height: 'min(300px, 80vh)',
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            <div
+              className="w-full h-full rounded-full overflow-hidden"
+              style={{
+                background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+                border: '3px solid #FF69B4',
+                boxShadow: '0 0 30px #FF69B460, 0 0 60px #FF69B440',
+                animation: 'badgePulse 2s ease-in-out infinite'
+              }}
+            >
+              <img
+                src={enlargedBadge.badge_image_url || '/elements/badges.webp'}
+                alt={enlargedBadge.badge_name || 'Badge'}
+                className="w-full h-full object-cover"
+                draggable={false}
+                onError={(e) => {
+                  e.currentTarget.src = '/elements/badges.webp';
+                }}
+              />
+            </div>
+            
+            {/* Badge Info Overlay */}
+            <div 
+              className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg text-center"
+              style={{
+                background: 'rgba(0, 0, 0, 0.8)',
+                border: '1px solid #FF69B4',
+                boxShadow: '0 0 15px #FF69B440'
+              }}
+            >
+              <div className="text-white font-semibold text-lg">
+                {enlargedBadge.badge_name || 'Badge'}
+              </div>
+              {enlargedBadge.description && (
+                <div className="text-white/70 text-sm mt-1">
+                  {enlargedBadge.description}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Journey Modal */}
       <JourneyModal 
         open={isJourneyModalOpen} 
@@ -2362,6 +2456,16 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           }
           50% { 
             boxShadow: 0 0 40px #00BFFF80, 0 0 80px #00BFFF60, 0 0 120px #00BFFF40;
+            transform: scale(1.02);
+          }
+        }
+        @keyframes badgePulse {
+          0%, 100% { 
+            boxShadow: 0 0 30px #FF69B460, 0 0 60px #FF69B440;
+            transform: scale(1);
+          }
+          50% { 
+            boxShadow: 0 0 40px #FF69B480, 0 0 80px #FF69B460, 0 0 120px #FF69B440;
             transform: scale(1.02);
           }
         }

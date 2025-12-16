@@ -558,10 +558,12 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                   className="flex items-center gap-2 text-pink-300 hover:text-pink-200 transition-colors text-xs"
                   style={{ textShadow: '0 0 4px rgba(255,182,193,0.6)' }}
                 >
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                    <path d="M19 12H5m7-7l-7 7 7 7"/>
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" 
+                       style={{
+                         filter: 'drop-shadow(0 0 5px #ff69b4) drop-shadow(0 0 10px #ff1493) drop-shadow(0 0 15px #ff1493)',
+                       }}>
+                    <path d="M19 12H5m7-7l-7 7 7 7" stroke="currentColor" strokeWidth="2" fill="none"/>
                   </svg>
-                  Back to Elements
                 </button>
               </div>
               

@@ -5,7 +5,17 @@ import { PlanetPositionsProvider } from './planet-positions-context';
 import { PlanetMinimapV2 } from './PlanetMinimapV2';
 import { PlanetScene } from './planetarium/PlanetScene';
 
-export function PlanetSystemV2() {
+interface PlanetSystemV2Props {
+  initialActivePlanet?: string;
+  onPlanetSelect?: (planetId: string) => void;
+  worldId?: string;
+}
+
+export function PlanetSystemV2({ 
+  initialActivePlanet, 
+  onPlanetSelect, 
+  worldId 
+}: PlanetSystemV2Props = {}) {
   const [zoomLevel, setZoomLevel] = React.useState(1);
   const [is3DLoaded, setIs3DLoaded] = React.useState(false);
 
@@ -36,7 +46,12 @@ export function PlanetSystemV2() {
         )}
 
         {is3DLoaded ? (
-          <PlanetScene zoomLevel={zoomLevel} />
+          <PlanetScene 
+            zoomLevel={zoomLevel} 
+            initialActivePlanet={initialActivePlanet}
+            onPlanetSelect={onPlanetSelect}
+            worldId={worldId}
+          />
         ) : (
           <div className="h-[500px] bg-gray-800 rounded flex items-center justify-center text-white">
             Initializing 3D Engine...

@@ -2450,8 +2450,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                 ) : (
                   // Individual Element Card View
                   <>
-                    {/* Back to Elements Button */}
-                    <div className="mb-4">
+                    {/* Back Button and Element Filter */}
+                    <div className="flex items-center gap-3 mb-4">
                       <button
                         onClick={() => {
                           try { sfx.play('click', 0.7); } catch {}
@@ -2463,12 +2463,13 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                         }}
                         className="flex items-center gap-2 text-pink-200 hover:text-white transition-colors duration-200 text-sm"
                       >
-                        <span>←</span> Back to Elements
+                        <span style={{ 
+                          fontSize: '24px', 
+                          textShadow: '0 0 10px #ff69b4, 0 0 20px #ff1493, 0 0 30px #ff1493',
+                          filter: 'drop-shadow(0 0 5px rgba(255, 105, 180, 0.8))'
+                        }}>←</span>
                       </button>
-                    </div>
-
-                    {/* Filter Controls */}
-                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      
                       {/* Element Selector */}
                       <select
                         value={selectedElement || ''}
@@ -2477,30 +2478,12 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           setSelectedElement(e.target.value);
                           setCurrentCardIndex(0);
                         }}
-                        className="bg-gray-800/80 border border-pink-400/50 rounded px-2 py-1 text-pink-200 text-xs"
+                        className="bg-gray-800/80 border border-pink-400/50 rounded px-2 py-1 text-pink-200 text-xs flex-1"
                         style={{ fontSize: '12px' }}
                       >
                         {elements.map(element => (
                           <option key={element} value={element}>{element}</option>
                         ))}
-                      </select>
-
-                      {/* Rarity Filter */}
-                      <select
-                        value={selectedRarity}
-                        onChange={(e) => {
-                          try { sfx.play('click', 0.5); } catch {}
-                          setSelectedRarity(e.target.value);
-                          setCurrentCardIndex(0);
-                        }}
-                        className="bg-gray-800/80 border border-pink-400/50 rounded px-2 py-1 text-pink-200 text-xs"
-                        style={{ fontSize: '12px' }}
-                      >
-                        <option value="All">All Rarities</option>
-                        <option value="Common">Common</option>
-                        <option value="Rare">Rare</option>
-                        <option value="Epic">Epic</option>
-                        <option value="Legendary">Legendary</option>
                       </select>
                     </div>
 

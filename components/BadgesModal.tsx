@@ -355,7 +355,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                       <img
                         src={badge.icon_url}
                         alt={badge.badge_name}
-                        className="w-8 h-8 sm:w-10 sm:h-10 object-cover rounded-full"
+                        className="w-full h-full object-cover rounded-full"
                         draggable={false}
                       />
                     ) : (
@@ -572,7 +572,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           {/* Integrated Badge Display Area */}
           <div className="p-4">
             {/* Horizontal Badge Row - More integrated design */}
-            <div className="flex items-center justify-start gap-2 min-h-[100px] bg-black/30 rounded-xl p-4 border border-white/10">
+            <div className="flex items-center justify-center gap-4 min-h-[100px] bg-black/30 rounded-xl p-4 border border-white/10">
               {userUnlockedBadges.length > 0 ? (
                 <>
                   {userUnlockedBadges.slice(0, 5).map((badge, index) => (
@@ -611,7 +611,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                           <img
                             src={badge.icon_url}
                             alt={badge.badge_name}
-                            className="w-14 h-14 object-cover rounded-full"
+                            className="w-full h-full object-cover rounded-full"
                             draggable={false}
                           />
                         ) : (

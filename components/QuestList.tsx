@@ -6,6 +6,7 @@ import SoulStareModal from "./SoulStareModal";
 import SoulStarJournal from "./SoulStarJournal";
 import { hasAnsweredToday, getTodaysQuestion } from "@/lib/dailyQuestions";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useProfile } from "@/contexts/ProfileContext";
 import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
 import { getBonusQuestsForUser } from "@/lib/bonusQuests";
@@ -378,36 +379,66 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
     setLoading(true);
     setCheckInError("");
     
-    // Use the proper secret phrase redemption API
     try {
-      const response = await fetch('/api/redeem-secret-phrase', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ 
-          context: 'live_show', 
-          phrase: secretPhrase.trim() 
-        })
+      // Get the current session
+      const { data: { session } } = await supabaseBrowser.auth.getSession();
+      
+      if (!session?.user) {
+        setCheckInError("Authentication required");
+        setLoading(false);
+        return;
+      }
+      
+      // Normalize input before sending (trim but keep case as user typed)
+      const normalizedPhrase = secretPhrase.trim();
+      
+      // Call the Supabase RPC directly as specified in requirements
+      const { data, error } = await supabaseBrowser.rpc('redeem_secret_phrase', { 
+        p_user_id: session.user.id, 
+        p_phrase: normalizedPhrase 
       });
       
-      const data = await response.json();
+      if (error) {
+        console.error('RPC error:', error);
+        setCheckInError("Connection error. Please try again.");
+        setTimeout(() => {
+          setCheckInError("");
+          setSecretPhrase("");
+        }, 3000);
+        setLoading(false);
+        return;
+      }
       
-      if (data.status === 'success') {
+      // Use ONLY the RPC response to set UI state (no pre-validation query)
+      if (data.success === true) {
+        // Success case
         console.log('Secret phrase redemption successful:', data);
         setQuestStatus(prev => ({ ...prev, liveShow: true }));
         // Save to localStorage to persist across sessions for today
         const today = new Date().toDateString();
         localStorage.setItem(`quest_liveshow_${today}`, 'true');
-        showCelebration(data.message || "🎵 Live show magic! Secret phrase accepted!");
-        setSecretPhrase("");
+        
+        const successMessage = `Check-in successful +${data.reward || 'reward'}`;
+        showCelebration(successMessage);
+        setSecretPhrase(""); // Clear input
         setShowCheckIn(false);
-        // Trigger HeartCoin celebration animation
-        if (data.rewardHeartCoins > 0) {
-          triggerHeartCoinCelebration(data.rewardHeartCoins);
+        
+        // Update displayed heartcoin balance (optimistically add data.reward OR refetch profile)
+        if (data.reward && data.reward > 0) {
+          triggerHeartCoinCelebration(data.reward);
+          // Refresh profile to update balance
+          await refreshProfile();
         }
+      } else if (data.reason === 'ALREADY_REDEEMED') {
+        // Already redeemed case - show specific message, do NOT show INCORRECT
+        setCheckInError("Already checked in");
+        setTimeout(() => {
+          setCheckInError("");
+          setSecretPhrase("");
+        }, 3000);
       } else {
-        console.error('Secret phrase redemption failed:', data);
-        setCheckInError(data.message || "That signal is not active right now.");
+        // All other failures - show incorrect
+        setCheckInError("Incorrect");
         setTimeout(() => {
           setCheckInError("");
           setSecretPhrase("");
@@ -646,16 +677,19 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                 disabled={questStatus.elementOfDay || loading}
                 className={`w-12 h-12 border-2 rounded-full overflow-hidden transition-all relative ${
                   questStatus.elementOfDay 
-                    ? 'border-green-500/60 cursor-not-allowed' 
+                    ? 'cursor-default' 
                     : `border-pink-500/60 hover:border-pink-400 cursor-pointer`
                 }`}
                 style={{
-                  background: questStatus.elementOfDay 
-                    ? 'rgba(0,255,0,0.1)'
-                    : 'rgba(252,84,175,0.1)',
-                  boxShadow: questStatus.elementOfDay 
-                    ? '0 0 15px rgba(0,255,0,0.3)'
-                    : '0 0 15px rgba(252,84,175,0.3)'
+                  ...(questStatus.elementOfDay ? {
+                    background: 'rgba(0, 255, 0, 0.2)',
+                    borderColor: '#00FF00',
+                    boxShadow: '0 0 30px rgba(0,255,0,0.8), inset 0 0 15px rgba(0,255,0,0.3), 0 0 60px rgba(0,255,0,0.6)',
+                    filter: 'brightness(1.3) saturate(1.2)',
+                  } : {
+                    background: 'rgba(252,84,175,0.1)',
+                    boxShadow: '0 0 15px rgba(252,84,175,0.3)'
+                  })
                 }}
               >
                 <img
@@ -663,10 +697,23 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                   alt="Today's Element"
                   className="w-full h-full object-cover"
                   draggable={false}
+                  style={{
+                    filter: questStatus.elementOfDay 
+                      ? 'brightness(1.4) saturate(1.3) drop-shadow(0 0 8px rgba(0,255,0,0.8))'
+                      : 'none'
+                  }}
                 />
                 {questStatus.elementOfDay && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                    <span className="text-green-400 text-lg">✓</span>
+                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-green-400/20 to-green-500/30">
+                    <span 
+                      className="text-green-400 text-lg font-bold"
+                      style={{
+                        textShadow: '0 0 8px rgba(0,255,0,1), 0 0 15px rgba(0,255,0,0.8)',
+                        filter: 'drop-shadow(0 0 6px rgba(0,255,0,0.9))'
+                      }}
+                    >
+                      ✓
+                    </span>
                   </div>
                 )}
               </button>

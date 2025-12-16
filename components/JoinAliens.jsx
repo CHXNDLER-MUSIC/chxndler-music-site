@@ -311,7 +311,7 @@ export default function JoinAliens({ visible = true } = {}) {
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        minHeight: '30vh',
+        minHeight: '15vh',
         marginBottom: '0px',
         marginTop: '-10px',
         gap: '2px'
@@ -388,7 +388,7 @@ export default function JoinAliens({ visible = true } = {}) {
           style={{ 
             textAlign: 'center', 
             marginBottom: '8px',
-            marginTop: '-20px',
+            marginTop: '-40px',
             color: '#00FFFF',
             fontSize: '16px',
             fontWeight: '600',

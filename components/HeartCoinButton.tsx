@@ -2412,8 +2412,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       ) : (
                         /* Card Detail View */
                         <div>
-                          {/* Navigation Header */}
-                          <div className="flex items-center justify-between mb-4">
+                          {/* Navigation Header with Filter */}
+                          <div className="flex items-center gap-3 mb-2">
                             {/* Back button */}
                             <button
                               onClick={() => {
@@ -2426,13 +2426,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               className="flex items-center text-white hover:text-gray-300 transition-colors"
                               style={{ fontSize: '14px' }}
                             >
-                              <span className="mr-2">←</span>
-                              Back to Elements
+                              <span className="mr-2" style={{ 
+                                fontSize: '24px',
+                                textShadow: '0 0 10px #00ffff, 0 0 20px #00bfff, 0 0 30px #00bfff',
+                                filter: 'drop-shadow(0 0 5px rgba(0, 255, 255, 0.8))'
+                              }}>←</span>
                             </button>
-                          </div>
-
-                          {/* Filter dropdowns */}
-                          <div className="flex gap-2 mb-4">
+                            
+                            {/* Song Filter */}
                             <select 
                               value={selectedSong}
                               onChange={(e) => {
@@ -2442,29 +2443,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               onMouseEnter={() => {
                                 try { sfx.play('hover', 0.3); } catch {}
                               }}
-                              className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-[1.5] hover:scale-105 transition-transform duration-200"
+                              className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1 hover:scale-105 transition-transform duration-200"
                             >
                               {availableSongs.map(song => (
                                 <option key={song} value={song}>{song}</option>
                               ))}
                             </select>
-                            <select 
-                              value={selectedRarity}
-                              onChange={(e) => {
-                                try { sfx.play('change-channel', 0.6); } catch {}
-                                setSelectedRarity(e.target.value);
-                              }}
-                              onMouseEnter={() => {
-                                try { sfx.play('hover', 0.3); } catch {}
-                              }}
-                              className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-[1] hover:scale-105 transition-transform duration-200"
-                            >
-                              <option value="">All Rarities</option>
-                              {availableRarities.map(rarity => (
-                                <option key={rarity} value={rarity}>{rarity}</option>
-                              ))}
-                            </select>
                           </div>
+
 
                           {/* Card display */}
                           {isLoadingCards ? (
@@ -2542,19 +2528,30 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
                                   {/* Single Card Display */}
                             <div key={card.id} className="flex flex-col items-center text-center max-w-full" onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}>
-                              {/* Card Name - Above Image */}
-                              <h2 
-                                className="text-xl font-bold mb-4 text-center"
-                                style={{ 
-                                  color: '#FFD700', 
-                                  textShadow: '0 0 8px rgba(255,215,0,0.8), 0 0 16px rgba(255,215,0,0.6)' 
-                                }}
-                              >
-                                {card.card_name}
-                              </h2>
 
-                              {/* Card Image - Centered */}
-                              <div className="w-48 h-64 rounded-lg border-2 border-yellow-500/80 overflow-hidden relative cursor-pointer hover:border-yellow-400/90 transition-all duration-200 hover:scale-105 mb-4">
+                              {/* Card Image with Navigation Arrows */}
+                              <div className="flex items-center justify-center gap-4 mb-4">
+                                {/* Left Arrow */}
+                                {filteredCards.length > 1 && (
+                                  <button
+                                    onClick={() => {
+                                      try { sfx.play('flip.mp3', 0.8); } catch {}
+                                      setCurrentCardIndex(prev => 
+                                        prev > 0 ? prev - 1 : filteredCards.length - 1
+                                      );
+                                    }}
+                                    className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:text-yellow-400 transition-all duration-200 border-2 border-white/30 hover:border-yellow-400/60"
+                                    style={{
+                                      textShadow: '0 0 10px #00ffff, 0 0 20px #00bfff, 0 0 30px #00bfff',
+                                      filter: 'drop-shadow(0 0 5px rgba(0, 255, 255, 0.8))'
+                                    }}
+                                  >
+                                    <span style={{ fontSize: '20px' }}>←</span>
+                                  </button>
+                                )}
+                                
+                                {/* Card Image */}
+                                <div className="w-40 h-56 rounded-lg border-2 border-yellow-500/80 overflow-hidden relative cursor-pointer hover:border-yellow-400/90 transition-all duration-200 hover:scale-105">
                                 <img
                                   src={card.artwork_url || `/cards/${card.card_name}.webp`}
                                   alt={card.card_name}
@@ -2575,6 +2572,26 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   </div>
                                 )}
                               </div>
+                              
+                              {/* Right Arrow */}
+                              {filteredCards.length > 1 && (
+                                <button
+                                  onClick={() => {
+                                    try { sfx.play('flip.mp3', 0.8); } catch {}
+                                    setCurrentCardIndex(prev => 
+                                      prev < filteredCards.length - 1 ? prev + 1 : 0
+                                    );
+                                  }}
+                                  className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:text-yellow-400 transition-all duration-200 border-2 border-white/30 hover:border-yellow-400/60"
+                                  style={{
+                                    textShadow: '0 0 10px #00ffff, 0 0 20px #00bfff, 0 0 30px #00bfff',
+                                    filter: 'drop-shadow(0 0 5px rgba(0, 255, 255, 0.8))'
+                                  }}
+                                >
+                                  <span style={{ fontSize: '20px' }}>→</span>
+                                </button>
+                              )}
+                            </div>
 
                               {/* Card Details - Below Image */}
                               <div className="w-full max-w-md">

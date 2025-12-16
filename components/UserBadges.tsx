@@ -285,7 +285,7 @@ export default function UserBadges({
       )}
 
       {/* Horizontal Badge Row */}
-      <div className="flex items-center justify-start gap-2 min-h-[60px] bg-black/30 rounded-xl p-3 border border-white/10">
+      <div className="flex items-center justify-center gap-4 min-h-[60px] bg-black/30 rounded-xl p-3 border border-white/10">
         {/* Left arrow button if not on first page */}
         {currentPage > 0 && (
           <button
@@ -347,7 +347,7 @@ export default function UserBadges({
                     <img
                       src={badge.icon_url}
                       alt={badge.badge_name}
-                      className="w-10 h-10 object-cover rounded-full"
+                      className="w-full h-full object-cover rounded-full"
                       draggable={false}
                     />
                   ) : (

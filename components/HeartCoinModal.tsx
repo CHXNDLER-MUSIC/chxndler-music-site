@@ -31,6 +31,7 @@ type StoreItem = {
   description: string;
   cost: number;
   heartCoin: number;
+  merch_item_id: string; // UUID from merch_items table
 };
 
 const storeItems: StoreItem[] = [
@@ -40,7 +41,8 @@ const storeItems: StoreItem[] = [
     stripeUrl: "https://buy.stripe.com/cNi00kfxDeVD3oZ5ST4gg0B",
     description: "A symbol that you belong here with the people who feel deeply, dream big, and find beauty in being different.",
     cost: 4.5,
-    heartCoin: 3
+    heartCoin: 3,
+    merch_item_id: "00000000-0000-0000-0000-000000000001" // Placeholder UUID - should be actual merch_items.id
   },
   {
     name: "PATCH",
@@ -49,7 +51,8 @@ const storeItems: StoreItem[] = [
     stripeUrl: "https://buy.stripe.com/00w5kEgBHdRz1gRgxx4gg0C",
     description: "Stitch this into your world as a quiet reminder that this isn't just music, it's a community.",
     cost: 6,
-    heartCoin: 4
+    heartCoin: 4,
+    merch_item_id: "00000000-0000-0000-0000-000000000002"
   },
   {
     name: "Sticker",
@@ -57,7 +60,8 @@ const storeItems: StoreItem[] = [
     stripeUrl: "https://buy.stripe.com/8x24gA99f9Bj1gR6WX4gg0F",
     description: "A simple reminder that you're part of something bigger. Remember you're not alone in this story.",
     cost: 3,
-    heartCoin: 2
+    heartCoin: 2,
+    merch_item_id: "00000000-0000-0000-0000-000000000003"
   },
   {
     name: "Hat",
@@ -65,7 +69,8 @@ const storeItems: StoreItem[] = [
     stripeUrl: "https://buy.stripe.com/6oU28s717aFn1gR1CD4gg0I",
     description: "A classic you'll wear everywhere. It's lowkey, but it says everything it needs to.",
     cost: 30,
-    heartCoin: 20
+    heartCoin: 20,
+    merch_item_id: "00000000-0000-0000-0000-000000000004"
   },
   {
     name: "Keychain",
@@ -73,7 +78,8 @@ const storeItems: StoreItem[] = [
     stripeUrl: "https://buy.stripe.com/8x214o99faFn0cN5ST4gg0H",
     description: "A small piece of the HEARTVERSE to carry everywhere. A quiet reminder that you're connected, always.",
     cost: 6,
-    heartCoin: 4
+    heartCoin: 4,
+    merch_item_id: "00000000-0000-0000-0000-000000000005"
   },
   {
     name: "House Party Poster",
@@ -81,7 +87,8 @@ const storeItems: StoreItem[] = [
     stripeUrl: "https://buy.stripe.com/dRm8wQetz14N5x71CD4gg0L",
     description: "This poster captures the night the HEARTVERSE came alive. Hang it up and remember when you joined the story.",
     cost: 30,
-    heartCoin: 20
+    heartCoin: 20,
+    merch_item_id: "00000000-0000-0000-0000-000000000006"
   },
   {
     name: "Necklace",
@@ -89,7 +96,8 @@ const storeItems: StoreItem[] = [
     stripeUrl: "https://buy.stripe.com/bJe3cw99f28R5x7epp4gg0K",
     description: "A symbol of love, connection, and everything this world stands for. It's a keepsake for the people who found home here.",
     cost: 18,
-    heartCoin: 12
+    heartCoin: 12,
+    merch_item_id: "00000000-0000-0000-0000-000000000007"
   },
   {
     name: "Beanie",
@@ -98,7 +106,8 @@ const storeItems: StoreItem[] = [
     stripeUrl: "https://buy.stripe.com/dRm8wQetz14N5x71CD4gg0L",
     description: "For the ones who wear their hearts out loud and aren't afraid to stand out.",
     cost: 30,
-    heartCoin: 20
+    heartCoin: 20,
+    merch_item_id: "00000000-0000-0000-0000-000000000008"
   },
   {
     name: "Button",
@@ -106,7 +115,8 @@ const storeItems: StoreItem[] = [
     stripeUrl: "https://buy.stripe.com/6oU14oclr8xfbVvbdd4gg0J",
     description: "A symbol of unity, curiosity, and courage for those who feel deeply and dream beyond the ordinary.",
     cost: 6,
-    heartCoin: 4
+    heartCoin: 4,
+    merch_item_id: "00000000-0000-0000-0000-000000000009"
   },
   {
     name: "Bracelet",
@@ -114,7 +124,8 @@ const storeItems: StoreItem[] = [
     stripeUrl: "https://buy.stripe.com/aFa8wQ2KR8xf6Bbftt4gg0N",
     description: "A reminder you wear on your wrist that you're growing, healing, and finding your place. It's a quiet symbol that you belong here, with the ones who feel deeply and love endlessly.",
     cost: 24,
-    heartCoin: 16
+    heartCoin: 16,
+    merch_item_id: "00000000-0000-0000-0000-000000000010"
   },
   {
     name: "Pick",
@@ -122,12 +133,13 @@ const storeItems: StoreItem[] = [
     stripeUrl: "https://buy.stripe.com/4gM9AUadj9Bj2kVgxx4gg0O",
     description: "Your reminder to follow your passion wherever it leads. A glow in the dark pick made for the dreamers and late night creators who carry music like a heartbeat through the dark.",
     cost: 6,
-    heartCoin: 4
+    heartCoin: 4,
+    merch_item_id: "00000000-0000-0000-0000-000000000011"
   }
 ];
 
 export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWelcomeHome, initialTab = 'earn', availableCards = [], currentCardIndex = 0, onCardNavigation }: Props) {
-  const { profile, loading: profileLoading } = useProfile();
+  const { profile, loading: profileLoading, refreshProfile } = useProfile();
   const { bonusQuests, isLoading: questsLoading } = useBonusQuests();
   const { items: merchItems, loading: merchLoading } = useMerchItems('physical');
   const { purchaseWithHeartCoins, isProcessing } = useMerchPurchase();
@@ -142,9 +154,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
   // Purchase confirmation states
   const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showShippingForm, setShowShippingForm] = useState(false);
-  const [orderPlaced, setOrderPlaced] = useState<any>(null);
   
   // Shipping form states
   const [shippingInfo, setShippingInfo] = useState({
@@ -157,8 +167,14 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     country: 'United States'
   });
 
+  // Form validation state
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
   // Track if user is in USE mode to show MERCH/CARDS sub-tabs
   const [isUseMode, setIsUseMode] = useState(initialTab === 'use' || initialTab === 'merch' || initialTab === 'cards');
+  
+  // Track if showing HeartCoin description
+  const [showHeartCoinDescription, setShowHeartCoinDescription] = useState(false);
 
   // Handle setting the main tab - if USE is selected, default to MERCH
   const handleSetActiveTab = (tab: 'earn' | 'use' | 'merch' | 'cards') => {
@@ -189,6 +205,38 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   // Helper function to check if quest is completed
   const isQuestCompleted = (quest: BonusQuestWithCompletion): boolean => {
     return quest.completion !== null && quest.completion !== undefined;
+  };
+
+  // Form validation function
+  const validateShippingForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!shippingInfo.fullName.trim()) {
+      errors.fullName = 'Full name is required';
+    }
+
+    if (!shippingInfo.addressLine1.trim()) {
+      errors.addressLine1 = 'Address is required';
+    }
+
+    if (!shippingInfo.city.trim()) {
+      errors.city = 'City is required';
+    }
+
+    if (!shippingInfo.state.trim()) {
+      errors.state = 'State is required';
+    }
+
+    if (!shippingInfo.zip.trim()) {
+      errors.zip = 'ZIP code is required';
+    }
+
+    if (!shippingInfo.country.trim()) {
+      errors.country = 'Country is required';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   // Handler for login button in bonus quests
@@ -289,7 +337,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     window.open(stripeUrl, '_blank');
   };
 
-  // Show confirmation modal for HeartCoin purchase
+  // Show shipping form for HeartCoin purchase
   const handleHeartCoinPurchaseConfirm = (item: StoreItem) => {
     if (!profile) {
       setError("Please sign in to make purchases");
@@ -302,72 +350,51 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     }
 
     setSelectedItem(item);
-    setShowConfirmModal(true);
+    setShowShippingForm(true);
     setError(null);
     setMessage(null);
+    setValidationErrors({});
   };
 
-  // Confirm purchase and create order
+  // Confirm purchase and create order with shipping info
   const handleConfirmPurchase = async () => {
     if (!selectedItem || !profile) return;
 
+    // Validate shipping form first
+    if (!validateShippingForm()) {
+      setError('Please fill in all required shipping information');
+      return;
+    }
+
     setModalLoading(true);
     setError(null);
     setMessage(null);
 
     try {
-      // Create order using the physical item purchase function
-      const { data, error } = await supabaseBrowser.rpc('purchase_physical_item_with_heartcoins', {
-        p_user_id: profile.id,
-        p_item_slug: selectedItem.name.toLowerCase().replace(/\s+/g, '_'),
-        p_item_name: selectedItem.name,
-        p_price_heartcoins: selectedItem.heartCoin
+      // Use the API route instead of direct RPC call
+      const response = await fetch('/api/merch/purchase', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          merchItemId: selectedItem.merch_item_id,
+          quantity: 1
+        }),
       });
 
-      if (error) throw error;
+      const result = await response.json();
 
-      setOrderPlaced(data);
-      setShowConfirmModal(false);
-      setShowShippingForm(true);
-      
-    } catch (error: any) {
-      console.error('Purchase error:', error);
-      setError(error?.message || `Failed to purchase ${selectedItem.name}`);
-    } finally {
-      setModalLoading(false);
-    }
-  };
+      if (!response.ok) {
+        console.error('Purchase API error:', result);
+        setError(result.error || 'Purchase failed. Please try again.');
+        return;
+      }
 
-  // Update order with shipping information
-  const handleShippingSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!orderPlaced || !selectedItem) return;
-
-    setModalLoading(true);
-    setError(null);
-
-    try {
-      // Update order with shipping information
-      const { error } = await supabaseBrowser
-        .from('orders')
-        .update({
-          shipping_full_name: shippingInfo.fullName,
-          shipping_address_line1: shippingInfo.addressLine1,
-          shipping_address_line2: shippingInfo.addressLine2,
-          shipping_city: shippingInfo.city,
-          shipping_state: shippingInfo.state,
-          shipping_zip: shippingInfo.zip,
-          shipping_country: shippingInfo.country,
-          status: 'pending_fulfillment'
-        })
-        .eq('id', orderPlaced.id);
-
-      if (error) throw error;
-
-      setMessage(`Successfully purchased ${selectedItem.name}! Your order has been placed and will be processed for shipping.`);
+      // Success! Clear form and show success message
+      setMessage(`Successfully purchased ${selectedItem.name}! Your order has been placed.`);
       setShowShippingForm(false);
       setSelectedItem(null);
-      setOrderPlaced(null);
       setShippingInfo({
         fullName: '',
         addressLine1: '',
@@ -377,16 +404,19 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         zip: '',
         country: 'United States'
       });
+      setValidationErrors({});
       
-      // Refresh profile to update balance
-      window.location.reload();
+      // Refresh profile to update HeartCoin balance
+      await refreshProfile();
+      
     } catch (error: any) {
-      console.error('Shipping update error:', error);
-      setError(error?.message || 'Failed to update shipping information');
+      console.error('Purchase error:', error);
+      setError(error?.message || `Failed to purchase ${selectedItem.name}`);
     } finally {
       setModalLoading(false);
     }
   };
+
 
   const handleHeartCoinPurchase = async (item: StoreItem) => {
     if (!profile) {
@@ -435,6 +465,80 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     }
   };
 
+  // Handle card purchase (digital/physical)
+  const handleCardPurchase = async (cardType: 'digital' | 'physical') => {
+    if (!profile) {
+      setError("Please sign in to make purchases");
+      return;
+    }
+
+    const currentCard = availableCards[currentCardIndex];
+    if (!currentCard) {
+      setError("No card selected");
+      return;
+    }
+
+    // Determine cost based on type
+    const digitalCost = 5; // 5 HeartCoins for digital
+    const physicalCost = 15; // 15 HeartCoins for physical
+    const cost = cardType === 'digital' ? digitalCost : physicalCost;
+
+    if ((profile.heartcoin_balance || 0) < cost) {
+      setError(`Insufficient HeartCoins! You need ${cost} but only have ${profile.heartcoin_balance || 0}`);
+      return;
+    }
+
+    if (cardType === 'physical') {
+      // For physical cards, we need shipping info
+      setSelectedItem({
+        name: `${currentCard.card_name || currentCard.cards?.card_name || 'Card'} (Physical)`,
+        image: currentCard.artwork_url || `/cards/${currentCard.card_name || currentCard.cards?.card_name}.webp`,
+        stripeUrl: '',
+        description: currentCard.card_description || currentCard.cards?.card_description || 'Physical card',
+        cost: 0,
+        heartCoin: physicalCost,
+        merch_item_id: currentCard.id || currentCard.card_id || 'physical-card'
+      });
+      setShowShippingForm(true);
+      setError(null);
+      setMessage(null);
+      setValidationErrors({});
+    } else {
+      // Digital purchase - immediate
+      setModalLoading(true);
+      setError(null);
+      setMessage(null);
+
+      try {
+        const response = await fetch('/api/merch/purchase', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            merchItemId: currentCard.id || currentCard.card_id || 'digital-card',
+            quantity: 1
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Purchase failed');
+        }
+
+        setMessage(`Successfully purchased digital ${currentCard.card_name || currentCard.cards?.card_name || 'card'}!`);
+        // Refresh profile to update balance
+        await refreshProfile();
+      } catch (error: any) {
+        console.error('Card purchase error:', error);
+        setError(error?.message || `Failed to purchase card`);
+      } finally {
+        setModalLoading(false);
+      }
+    }
+  };
+
   const totalPages = Math.ceil(storeItems.length / itemsPerPage);
   const currentItems = storeItems.slice(
     currentPage * itemsPerPage,
@@ -469,7 +573,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     <HeartversePopup 
       isOpen={open} 
       onClose={onClose} 
-      title=""
+      title="HeartCoins"
+      onTitleClick={() => setShowHeartCoinDescription(!showHeartCoinDescription)}
     >
       <div className="relative">
         {/* Top Level Tabs */}
@@ -595,48 +700,51 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
           <div>
             <div className="text-center mb-6">
               <p className="text-white/80 text-sm">
-                HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting and showing up.
+                {showHeartCoinDescription 
+                  ? "HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting and showing up. They represent your engagement with the community and can be used to unlock special content, purchase exclusive items, and access unique experiences within the Heartverse ecosystem."
+                  : "HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting and showing up."
+                }
               </p>
             </div>
 
             {/* Quest Content */}
             {activeEarnTab === 'DAILY QUESTS' ? (
-              <div className="space-y-4">
+              <div className="flex flex-col h-full w-full space-y-4">
                 {/* Element of the Day Quest */}
-                <div className="bg-black/20 rounded-lg p-4 border border-white/10">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
-                        <img src="/elements/earth.webp" alt="Element" className="w-8 h-8" />
+                <div className="w-full bg-black/20 rounded-lg p-10 border border-white/10 flex-1 min-h-[200px]">
+                  <div className="flex items-center justify-between h-full w-full">
+                    <div className="flex items-center gap-8 flex-1 min-w-0">
+                      <div className="w-24 h-24 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center flex-shrink-0">
+                        <img src="/elements/earth.webp" alt="Element" className="w-14 h-14" />
                       </div>
-                      <div>
-                        <h3 className="text-white font-semibold text-sm">1. Tap the Element of the Day</h3>
-                        <p className="text-white/60 text-xs">Receive a random reward: HeartCoins, relics, or binder slot unlocks.</p>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-white font-semibold text-2xl mb-4">1. Tap the Element of the Day</h3>
+                        <p className="text-white/60 text-lg leading-relaxed">Receive a random reward: HeartCoins, relics, or binder slot unlocks.</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[#4ECDC4] text-sm flex items-center">
-                        +1 <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-4 h-4 ml-1" />
+                    <div className="flex items-center gap-2 flex-shrink-0 ml-6">
+                      <span className="text-[#4ECDC4] text-2xl flex items-center font-bold">
+                        +1 <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8 ml-2" />
                       </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Journal Entry Quest */}
-                <div className="bg-black/20 rounded-lg p-4 border border-white/10">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
-                        <svg className="w-6 h-6 text-white/60" fill="currentColor" viewBox="0 0 20 20">
+                <div className="w-full bg-black/20 rounded-lg p-10 border border-white/10 flex-1 min-h-[200px]">
+                  <div className="flex items-center justify-between h-full w-full">
+                    <div className="flex items-center gap-8 flex-1 min-w-0">
+                      <div className="w-24 h-24 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center flex-shrink-0">
+                        <svg className="w-12 h-12 text-white/60" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
                         </svg>
                       </div>
-                      <div>
-                        <h3 className="text-white font-semibold text-sm">2. Journal Entry of the Day</h3>
-                        <p className="text-white/60 text-xs">Answer today's journal prompt to earn one HEART coin.</p>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-white font-semibold text-2xl mb-4">2. Journal Entry of the Day</h3>
+                        <p className="text-white/60 text-lg leading-relaxed">Answer today's journal prompt to earn one HEART coin.</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-8 flex-shrink-0 ml-6">
                       <button
                         onClick={() => {
                           if (onOpenJournal) {
@@ -646,7 +754,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             }, 200); // Slightly longer delay to ensure modal closes completely
                           }
                         }}
-                        className="px-3 py-1 text-xs rounded border transition-colors bg-rgba(255,255,255,0.1) text-white hover:bg-white/20"
+                        className="px-8 py-4 text-lg rounded border transition-colors bg-rgba(255,255,255,0.1) text-white hover:bg-white/20 font-bold"
                         style={{
                           background: 'rgba(255,255,255,0.1)',
                           color: '#FFFFFF',
@@ -656,8 +764,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                       >
                         OPEN JOURNAL
                       </button>
-                      <span className="text-[#4ECDC4] text-sm flex items-center">
-                        +1 <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-4 h-4 ml-1" />
+                      <span className="text-[#4ECDC4] text-2xl flex items-center font-bold">
+                        +1 <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8 ml-2" />
                       </span>
                     </div>
                   </div>
@@ -926,91 +1034,290 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       </div>
     ) : isUseMode && activeTab === 'cards' ? (
       <div>
-        <div className="text-center mb-6">
-          <p className="text-white text-lg font-bold mb-6" style={{
-            textShadow: '0 0 8px rgba(255,255,255,0.6), 0 0 15px rgba(255,255,255,0.4)'
-          }}>
-            SELECT AN ELEMENT TO VIEW CARDS
-          </p>
-        </div>
-
-        {/* Four Element Containers */}
-        <div className="grid grid-cols-2 gap-6 max-w-md mx-auto">
-          {/* Lightning Element */}
-          <div 
-            className="relative group cursor-pointer"
-            onMouseEnter={() => {
-              try { sfx.play('change-channel.mp3', 0.5); } catch {}
-            }}
-          >
-            <div className="w-24 h-24 mx-auto bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 rounded-full border-2 border-yellow-500/40 flex items-center justify-center transition-all duration-300 hover:border-yellow-400 hover:shadow-[0_0_20px_rgba(255,215,0,0.6)] hover:scale-105">
-              <img
-                src="/elements/lightning.webp"
-                alt="Lightning"
-                className="w-12 h-12 object-contain"
-                draggable={false}
-              />
+        {/* Show card view if cards are available */}
+        {availableCards.length > 0 ? (
+          <div className="relative">
+            {/* Top Navigation Bar */}
+            <div className="flex items-center justify-between mb-6">
+              {/* Back Arrow */}
+              <button 
+                className="flex items-center justify-center w-8 h-8 rounded-full text-white/60 hover:text-white transition-colors"
+                onClick={() => {
+                  // This would need to be handled by parent component to reset availableCards
+                  // For now, we'll just show the element selection
+                }}
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              
+              {/* Element Filter Dropdown */}
+              <div className="flex-1 ml-4">
+                <select 
+                  className="w-full bg-black/30 border border-white/20 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-white/40"
+                  defaultValue="LIGHTNING"
+                >
+                  <option value="LIGHTNING">LIGHTNING</option>
+                  <option value="WATER">WATER</option>
+                  <option value="HEART">HEART</option>
+                  <option value="VOID">VOID</option>
+                </select>
+              </div>
             </div>
-            <div className="text-center mt-2">
-              <span className="text-yellow-400 font-bold text-sm">12</span>
+
+            {/* Card Display */}
+            <div className="relative flex items-center justify-center px-20">
+              {/* Left Navigation Arrow */}
+              <button
+                onClick={handlePrevCard}
+                onMouseEnter={() => {
+                  try { sfx.play('hover', 0.3); } catch {}
+                }}
+                disabled={availableCards.length <= 1}
+                className={`absolute left-4 top-1/2 transform -translate-y-1/2 z-10 w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 border-2 ${
+                  availableCards.length <= 1
+                    ? 'bg-gray-600/30 border-gray-500/30 text-gray-500 cursor-not-allowed'
+                    : 'bg-black/70 hover:bg-black/90 border-white/30 hover:border-white/60 text-white/70 hover:text-white hover:scale-110'
+                }`}
+                style={{
+                  backdropFilter: 'blur(8px)'
+                }}
+              >
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+
+              {/* Current Card */}
+              <div className="text-center mx-8">
+                <div 
+                  className="relative w-80 h-96 mx-auto cursor-pointer"
+                  onClick={() => {
+                    setEnlargedCard(availableCards[currentCardIndex]);
+                    setIsEnlargedCardFlipped(false);
+                  }}
+                  style={{
+                    perspective: '1000px'
+                  }}
+                >
+                  <img
+                    src={availableCards[currentCardIndex]?.artwork_url || `/cards/${availableCards[currentCardIndex]?.card_name || availableCards[currentCardIndex]?.cards?.card_name}.webp`}
+                    alt={availableCards[currentCardIndex]?.card_name || availableCards[currentCardIndex]?.cards?.card_name || 'Card'}
+                    className="w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain hover:scale-105 transition-transform duration-300"
+                    style={{
+                      filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))'
+                    }}
+                  />
+                </div>
+                
+                {/* Card Info */}
+                <div className="mt-4 space-y-4">
+                  <p className="text-white/60 text-sm">
+                    {currentCardIndex + 1} of {availableCards.length}
+                  </p>
+                  
+                  {/* Card Description */}
+                  <div className="text-center px-4">
+                    <p className="text-white/80 text-sm leading-relaxed max-w-md mx-auto">
+                      {availableCards[currentCardIndex]?.card_description || 
+                       availableCards[currentCardIndex]?.cards?.card_description ||
+                       "Lightning is the electric jolt of feeling alive. These tracks buzz. You move fast, crash hard, and maybe regret nothing."}
+                    </p>
+                  </div>
+                  
+                  {/* Digital and Physical Buttons */}
+                  <div className="flex justify-center gap-4 mt-6">
+                    <button
+                      onClick={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                        handleCardPurchase('digital');
+                      }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }}
+                      disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < 5}
+                      className={`px-6 py-2 rounded-lg font-bold text-sm transition-all duration-200 ${
+                        modalLoading || !profile || (profile.heartcoin_balance || 0) < 5
+                          ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
+                          : 'bg-gradient-to-r from-[#4ECDC4] to-[#45b7b8] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(78,205,196,0.6)]'
+                      }`}
+                      style={
+                        modalLoading || !profile || (profile.heartcoin_balance || 0) < 5
+                          ? undefined
+                          : {
+                              boxShadow: '0 0 15px rgba(78,205,196,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
+                            }
+                      }
+                    >
+                      DIGITAL (5 ♡)
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                        handleCardPurchase('physical');
+                      }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }}
+                      disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < 15}
+                      className={`px-6 py-2 rounded-lg font-bold text-sm transition-all duration-200 ${
+                        modalLoading || !profile || (profile.heartcoin_balance || 0) < 15
+                          ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
+                          : 'bg-gradient-to-r from-[#FC54AF] to-[#e91e63] text-white hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(252,84,175,0.6)]'
+                      }`}
+                      style={
+                        modalLoading || !profile || (profile.heartcoin_balance || 0) < 15
+                          ? undefined
+                          : {
+                              boxShadow: '0 0 15px rgba(252,84,175,0.4), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -4px 8px rgba(0,0,0,0.2)'
+                            }
+                      }
+                    >
+                      PHYSICAL (15 ♡)
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Navigation Arrow */}
+              <button
+                onClick={handleNextCard}
+                onMouseEnter={() => {
+                  try { sfx.play('hover', 0.3); } catch {}
+                }}
+                disabled={availableCards.length <= 1}
+                className={`absolute right-4 top-1/2 transform -translate-y-1/2 z-10 w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 border-2 ${
+                  availableCards.length <= 1
+                    ? 'bg-gray-600/30 border-gray-500/30 text-gray-500 cursor-not-allowed'
+                    : 'bg-black/70 hover:bg-black/90 border-white/30 hover:border-white/60 text-white/70 hover:text-white hover:scale-110'
+                }`}
+                style={{
+                  backdropFilter: 'blur(8px)'
+                }}
+              >
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Card Navigation Indicators */}
+            {availableCards.length > 1 && (
+              <div className="flex justify-center mt-6 gap-2">
+                {availableCards.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      if (onCardNavigation) {
+                        const direction = index > currentCardIndex ? 'next' : 'prev';
+                        const steps = Math.abs(index - currentCardIndex);
+                        for (let i = 0; i < steps; i++) {
+                          setTimeout(() => onCardNavigation(direction), i * 100);
+                        }
+                      }
+                    }}
+                    className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                      index === currentCardIndex
+                        ? 'bg-[#F2EF1D] shadow-[0_0_8px_rgba(242,239,29,0.8)]'
+                        : 'bg-white/30 hover:bg-white/50'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Element Selection View */
+          <div>
+            <div className="text-center mb-6">
+              <p className="text-white text-lg font-bold mb-6" style={{
+                textShadow: '0 0 8px rgba(255,255,255,0.6), 0 0 15px rgba(255,255,255,0.4)'
+              }}>
+                SELECT AN ELEMENT TO VIEW CARDS
+              </p>
+            </div>
+
+            {/* Four Element Containers */}
+            <div className="grid grid-cols-2 gap-6 max-w-md mx-auto">
+              {/* Lightning Element */}
+              <div 
+                className="relative group cursor-pointer"
+                onMouseEnter={() => {
+                  try { sfx.play('change-channel.mp3', 0.5); } catch {}
+                }}
+              >
+                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 rounded-full border-2 border-yellow-500/40 flex items-center justify-center transition-all duration-300 hover:border-yellow-400 hover:shadow-[0_0_20px_rgba(255,215,0,0.6)] hover:scale-105">
+                  <img
+                    src="/elements/lightning.webp"
+                    alt="Lightning"
+                    className="w-12 h-12 object-contain"
+                    draggable={false}
+                  />
+                </div>
+                <div className="text-center mt-2">
+                  <span className="text-yellow-400 font-bold text-sm">12</span>
+                </div>
+              </div>
+
+              {/* Void/Air Element */}
+              <div 
+                className="relative group cursor-pointer"
+                onMouseEnter={() => {
+                  try { sfx.play('change-channel.mp3', 0.5); } catch {}
+                }}
+              >
+                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-gray-400/20 to-gray-600/20 rounded-full border-2 border-gray-400/40 flex items-center justify-center transition-all duration-300 hover:border-gray-300 hover:shadow-[0_0_20px_rgba(128,128,128,0.6)] hover:scale-105">
+                  <div className="w-12 h-12 rounded-full border-2 border-gray-400 bg-gradient-to-br from-transparent to-gray-500/20" />
+                </div>
+                <div className="text-center mt-2">
+                  <span className="text-gray-400 font-bold text-sm">9</span>
+                </div>
+              </div>
+
+              {/* Water Element */}
+              <div 
+                className="relative group cursor-pointer"
+                onMouseEnter={() => {
+                  try { sfx.play('change-channel.mp3', 0.5); } catch {}
+                }}
+              >
+                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-blue-400/20 to-blue-600/20 rounded-full border-2 border-blue-400/40 flex items-center justify-center transition-all duration-300 hover:border-blue-300 hover:shadow-[0_0_20px_rgba(0,191,255,0.6)] hover:scale-105">
+                  <img
+                    src="/elements/water.webp"
+                    alt="Water"
+                    className="w-12 h-12 object-contain"
+                    draggable={false}
+                  />
+                </div>
+                <div className="text-center mt-2">
+                  <span className="text-blue-400 font-bold text-sm">5</span>
+                </div>
+              </div>
+
+              {/* Heart Element */}
+              <div 
+                className="relative group cursor-pointer"
+                onMouseEnter={() => {
+                  try { sfx.play('change-channel.mp3', 0.5); } catch {}
+                }}
+              >
+                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-pink-500/20 to-pink-600/20 rounded-full border-2 border-pink-500/40 flex items-center justify-center transition-all duration-300 hover:border-pink-400 hover:shadow-[0_0_20px_rgba(255,105,180,0.6)] hover:scale-105">
+                  <img
+                    src="/elements/heart.webp"
+                    alt="Heart"
+                    className="w-12 h-12 object-contain"
+                    draggable={false}
+                  />
+                </div>
+                <div className="text-center mt-2">
+                  <span className="text-pink-400 font-bold text-sm">22</span>
+                </div>
+              </div>
             </div>
           </div>
-
-          {/* Void/Air Element */}
-          <div 
-            className="relative group cursor-pointer"
-            onMouseEnter={() => {
-              try { sfx.play('change-channel.mp3', 0.5); } catch {}
-            }}
-          >
-            <div className="w-24 h-24 mx-auto bg-gradient-to-br from-gray-400/20 to-gray-600/20 rounded-full border-2 border-gray-400/40 flex items-center justify-center transition-all duration-300 hover:border-gray-300 hover:shadow-[0_0_20px_rgba(128,128,128,0.6)] hover:scale-105">
-              <div className="w-12 h-12 rounded-full border-2 border-gray-400 bg-gradient-to-br from-transparent to-gray-500/20" />
-            </div>
-            <div className="text-center mt-2">
-              <span className="text-gray-400 font-bold text-sm">9</span>
-            </div>
-          </div>
-
-          {/* Water Element */}
-          <div 
-            className="relative group cursor-pointer"
-            onMouseEnter={() => {
-              try { sfx.play('change-channel.mp3', 0.5); } catch {}
-            }}
-          >
-            <div className="w-24 h-24 mx-auto bg-gradient-to-br from-blue-400/20 to-blue-600/20 rounded-full border-2 border-blue-400/40 flex items-center justify-center transition-all duration-300 hover:border-blue-300 hover:shadow-[0_0_20px_rgba(0,191,255,0.6)] hover:scale-105">
-              <img
-                src="/elements/water.webp"
-                alt="Water"
-                className="w-12 h-12 object-contain"
-                draggable={false}
-              />
-            </div>
-            <div className="text-center mt-2">
-              <span className="text-blue-400 font-bold text-sm">5</span>
-            </div>
-          </div>
-
-          {/* Heart Element */}
-          <div 
-            className="relative group cursor-pointer"
-            onMouseEnter={() => {
-              try { sfx.play('change-channel.mp3', 0.5); } catch {}
-            }}
-          >
-            <div className="w-24 h-24 mx-auto bg-gradient-to-br from-pink-500/20 to-pink-600/20 rounded-full border-2 border-pink-500/40 flex items-center justify-center transition-all duration-300 hover:border-pink-400 hover:shadow-[0_0_20px_rgba(255,105,180,0.6)] hover:scale-105">
-              <img
-                src="/elements/heart.webp"
-                alt="Heart"
-                className="w-12 h-12 object-contain"
-                draggable={false}
-              />
-            </div>
-            <div className="text-center mt-2">
-              <span className="text-pink-400 font-bold text-sm">22</span>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
     ) : null}
       </div>
@@ -1250,108 +1557,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         </div>
       )}
 
-      {/* Purchase Confirmation Modal */}
-      {showConfirmModal && selectedItem && (
-        <div 
-          className="fixed inset-0 z-[2147483648] bg-black bg-opacity-90"
-          onClick={() => setShowConfirmModal(false)}
-          style={{
-            backdropFilter: 'blur(8px)',
-          }}
-        >
-          <div 
-            className="absolute inset-0 flex items-center justify-center p-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              className="relative bg-gray-900 border border-gray-600 rounded-lg p-6 max-w-md w-full"
-              style={{
-                background: 'rgba(17, 24, 39, 0.95)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(75, 85, 99, 0.5)',
-              }}
-            >
-              {/* Close Button */}
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                className="absolute top-2 right-2 w-8 h-8 bg-gray-700 hover:bg-gray-600 rounded-full flex items-center justify-center text-gray-300 hover:text-white transition-all duration-200 z-10"
-              >
-                ×
-              </button>
-
-              <div className="text-center space-y-6">
-                <h3 className="text-2xl font-bold text-white mb-4">HeartCoins</h3>
-                
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-black/20 rounded-lg p-4 border border-white/10">
-                    <span className="block text-xs font-bold text-white/80 mb-2">USER</span>
-                    <div className="flex items-center justify-center gap-1">
-                      <img
-                        src="/elements/heart-coin.webp"
-                        alt="Heart Coin"
-                        className="w-6 h-6 object-contain"
-                        style={{
-                          filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
-                        }}
-                      />
-                      <span className="text-lg font-bold text-[#F2EF1D]">{profile?.heartcoin_balance || 0}</span>
-                    </div>
-                  </div>
-
-                  <div className="bg-black/20 rounded-lg p-4 border border-white/10">
-                    <span className="block text-xs font-bold text-white/80 mb-2">COST</span>
-                    <div className="flex items-center justify-center gap-1">
-                      <img
-                        src="/elements/heart-coin.webp"
-                        alt="Heart Coin"
-                        className="w-6 h-6 object-contain"
-                        style={{
-                          filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
-                        }}
-                      />
-                      <span className="text-lg font-bold text-[#F2EF1D]">{selectedItem.heartCoin}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleConfirmPurchase}
-                  disabled={modalLoading}
-                  className="w-full py-3 px-6 rounded-lg font-bold text-sm transition-all duration-200 bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-500 disabled:cursor-not-allowed"
-                  style={{
-                    background: modalLoading ? undefined : 'linear-gradient(135deg, #10b981, #059669)',
-                    boxShadow: modalLoading ? undefined : '0 0 15px rgba(16, 185, 129, 0.4)'
-                  }}
-                >
-                  {modalLoading ? 'Processing...' : 'CONFIRM'}
-                </button>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handlePurchase(selectedItem.stripeUrl)}
-                    className="flex-1 py-2 px-3 rounded-lg font-bold text-xs text-gray-300 border border-gray-500 hover:bg-gray-800 transition-all duration-200"
-                  >
-                    PAY WITH ${selectedItem.cost % 1 === 0 ? selectedItem.cost.toFixed(0) : selectedItem.cost.toFixed(1)}
-                  </button>
-                  <button
-                    onClick={handleConfirmPurchase}
-                    disabled={modalLoading}
-                    className="flex-1 py-2 px-3 rounded-lg font-bold text-xs transition-all duration-200 bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] disabled:bg-gray-500 disabled:text-gray-300"
-                    style={{
-                      boxShadow: modalLoading ? undefined : '0 0 15px rgba(242,239,29,0.4)'
-                    }}
-                  >
-                    PAY WITH 💎 {selectedItem.heartCoin}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Shipping Information Form Modal */}
-      {showShippingForm && selectedItem && orderPlaced && (
+      {showShippingForm && selectedItem && (
         <div 
           className="fixed inset-0 z-[2147483648] bg-black bg-opacity-90"
           style={{
@@ -1374,17 +1582,27 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 <h3 className="text-xl font-bold text-white mb-4">Shipping Information</h3>
                 <p className="text-white/80 text-sm">Please provide your shipping details for: <strong>{selectedItem.name}</strong></p>
                 
-                <form onSubmit={handleShippingSubmit} className="space-y-4 text-left">
+                <div className="space-y-4 text-left">
                   <div>
                     <label className="block text-white text-xs font-bold mb-2">Full Name *</label>
                     <input
                       type="text"
                       required
                       value={shippingInfo.fullName}
-                      onChange={(e) => setShippingInfo(prev => ({ ...prev, fullName: e.target.value }))}
-                      className="w-full p-2 rounded bg-black/20 border border-white/20 text-white text-sm focus:border-[#4ECDC4] focus:outline-none"
+                      onChange={(e) => {
+                        setShippingInfo(prev => ({ ...prev, fullName: e.target.value }));
+                        if (validationErrors.fullName) {
+                          setValidationErrors(prev => ({ ...prev, fullName: '' }));
+                        }
+                      }}
+                      className={`w-full p-2 rounded bg-black/20 border text-white text-sm focus:border-[#4ECDC4] focus:outline-none ${
+                        validationErrors.fullName ? 'border-red-500' : 'border-white/20'
+                      }`}
                       placeholder="Enter your full name"
                     />
+                    {validationErrors.fullName && (
+                      <p className="text-red-400 text-xs mt-1">{validationErrors.fullName}</p>
+                    )}
                   </div>
 
                   <div>
@@ -1393,10 +1611,20 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                       type="text"
                       required
                       value={shippingInfo.addressLine1}
-                      onChange={(e) => setShippingInfo(prev => ({ ...prev, addressLine1: e.target.value }))}
-                      className="w-full p-2 rounded bg-black/20 border border-white/20 text-white text-sm focus:border-[#4ECDC4] focus:outline-none"
+                      onChange={(e) => {
+                        setShippingInfo(prev => ({ ...prev, addressLine1: e.target.value }));
+                        if (validationErrors.addressLine1) {
+                          setValidationErrors(prev => ({ ...prev, addressLine1: '' }));
+                        }
+                      }}
+                      className={`w-full p-2 rounded bg-black/20 border text-white text-sm focus:border-[#4ECDC4] focus:outline-none ${
+                        validationErrors.addressLine1 ? 'border-red-500' : 'border-white/20'
+                      }`}
                       placeholder="Street address"
                     />
+                    {validationErrors.addressLine1 && (
+                      <p className="text-red-400 text-xs mt-1">{validationErrors.addressLine1}</p>
+                    )}
                   </div>
 
                   <div>
@@ -1417,10 +1645,20 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         type="text"
                         required
                         value={shippingInfo.city}
-                        onChange={(e) => setShippingInfo(prev => ({ ...prev, city: e.target.value }))}
-                        className="w-full p-2 rounded bg-black/20 border border-white/20 text-white text-sm focus:border-[#4ECDC4] focus:outline-none"
+                        onChange={(e) => {
+                          setShippingInfo(prev => ({ ...prev, city: e.target.value }));
+                          if (validationErrors.city) {
+                            setValidationErrors(prev => ({ ...prev, city: '' }));
+                          }
+                        }}
+                        className={`w-full p-2 rounded bg-black/20 border text-white text-sm focus:border-[#4ECDC4] focus:outline-none ${
+                          validationErrors.city ? 'border-red-500' : 'border-white/20'
+                        }`}
                         placeholder="City"
                       />
+                      {validationErrors.city && (
+                        <p className="text-red-400 text-xs mt-1">{validationErrors.city}</p>
+                      )}
                     </div>
 
                     <div>
@@ -1429,10 +1667,20 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         type="text"
                         required
                         value={shippingInfo.state}
-                        onChange={(e) => setShippingInfo(prev => ({ ...prev, state: e.target.value }))}
-                        className="w-full p-2 rounded bg-black/20 border border-white/20 text-white text-sm focus:border-[#4ECDC4] focus:outline-none"
+                        onChange={(e) => {
+                          setShippingInfo(prev => ({ ...prev, state: e.target.value }));
+                          if (validationErrors.state) {
+                            setValidationErrors(prev => ({ ...prev, state: '' }));
+                          }
+                        }}
+                        className={`w-full p-2 rounded bg-black/20 border text-white text-sm focus:border-[#4ECDC4] focus:outline-none ${
+                          validationErrors.state ? 'border-red-500' : 'border-white/20'
+                        }`}
                         placeholder="State"
                       />
+                      {validationErrors.state && (
+                        <p className="text-red-400 text-xs mt-1">{validationErrors.state}</p>
+                      )}
                     </div>
                   </div>
 
@@ -1443,10 +1691,20 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         type="text"
                         required
                         value={shippingInfo.zip}
-                        onChange={(e) => setShippingInfo(prev => ({ ...prev, zip: e.target.value }))}
-                        className="w-full p-2 rounded bg-black/20 border border-white/20 text-white text-sm focus:border-[#4ECDC4] focus:outline-none"
+                        onChange={(e) => {
+                          setShippingInfo(prev => ({ ...prev, zip: e.target.value }));
+                          if (validationErrors.zip) {
+                            setValidationErrors(prev => ({ ...prev, zip: '' }));
+                          }
+                        }}
+                        className={`w-full p-2 rounded bg-black/20 border text-white text-sm focus:border-[#4ECDC4] focus:outline-none ${
+                          validationErrors.zip ? 'border-red-500' : 'border-white/20'
+                        }`}
                         placeholder="ZIP"
                       />
+                      {validationErrors.zip && (
+                        <p className="text-red-400 text-xs mt-1">{validationErrors.zip}</p>
+                      )}
                     </div>
 
                     <div>
@@ -1473,25 +1731,26 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                       type="button"
                       onClick={() => {
                         setShowShippingForm(false);
-                        setOrderPlaced(null);
                         setSelectedItem(null);
+                        setValidationErrors({});
                       }}
                       className="flex-1 py-2 px-4 rounded-lg font-bold text-sm border border-gray-500 text-gray-300 hover:bg-gray-800 transition-all duration-200"
                     >
                       Cancel
                     </button>
                     <button
-                      type="submit"
+                      type="button"
+                      onClick={handleConfirmPurchase}
                       disabled={modalLoading}
                       className="flex-1 py-2 px-4 rounded-lg font-bold text-sm transition-all duration-200 bg-gradient-to-r from-[#4ECDC4] to-[#45b7b8] text-black hover:scale-[1.02] disabled:bg-gray-500 disabled:text-gray-300"
                       style={{
                         boxShadow: modalLoading ? undefined : '0 0 15px rgba(78, 205, 196, 0.4)'
                       }}
                     >
-                      {modalLoading ? 'Submitting...' : 'Complete Order'}
+                      {modalLoading ? 'Processing...' : 'Confirm Purchase'}
                     </button>
                   </div>
-                </form>
+                </div>
               </div>
             </div>
           </div>

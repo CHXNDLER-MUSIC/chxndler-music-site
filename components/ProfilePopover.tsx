@@ -772,7 +772,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 style={{ 
                   color: '#00FFFF', 
                   textShadow: '0 0 8px rgba(0,255,255,0.6)', 
-                  fontSize: '24px',
+                  fontSize: '28px',
                   fontWeight: 'bold'
                 }}
               >
@@ -785,7 +785,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   const { label, color } = getJourneyDisplay();
                   return (
                     <div
-                      className="text-base font-semibold tracking-wide"
+                      className="text-lg font-semibold tracking-wide"
                       style={{
                         color,
                         textShadow: `0 0 6px ${color}80`,
@@ -820,7 +820,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   onMouseEnter={() => {
                     try { sfx.play('hover', 0.3); } catch {}
                   }}
-                  className="font-bold text-base transition-all duration-200 hover:scale-105 cursor-pointer flex items-center"
+                  className="font-bold text-xl transition-all duration-200 hover:scale-105 cursor-pointer flex items-center"
                   style={{ 
                     color: profile?.element ? getElementInfo(profile.element).color : '#00FFFF', 
                     textShadow: profile?.element ? `0 0 8px ${getElementInfo(profile.element).color}60` : '0 0 8px rgba(0,255,255,0.6)',
