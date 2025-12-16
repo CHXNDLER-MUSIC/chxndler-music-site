@@ -664,6 +664,41 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     }
   }, [open, activeTab, activeUseTab, cards.length, fetchCards]);
 
+  // Keyboard navigation for card cycling
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only handle keys when viewing cards in the CARDS tab
+      if (!open || activeTab !== 'USE' || activeUseTab !== 'CARDS' || !selectedCardElement || filteredCards.length <= 1) {
+        return;
+      }
+
+      switch (event.key) {
+        case 'ArrowLeft':
+          event.preventDefault();
+          try { sfx.play('flip.mp3', 0.8); } catch {}
+          setCurrentCardIndex(prev => 
+            prev > 0 ? prev - 1 : filteredCards.length - 1
+          );
+          break;
+        case 'ArrowRight':
+          event.preventDefault();
+          try { sfx.play('flip.mp3', 0.8); } catch {}
+          setCurrentCardIndex(prev => 
+            prev < filteredCards.length - 1 ? prev + 1 : 0
+          );
+          break;
+      }
+    };
+
+    // Add event listener
+    window.addEventListener('keydown', handleKeyDown);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open, activeTab, activeUseTab, selectedCardElement, filteredCards.length, sfx]);
+
   // Helper function to check if card should be blurred based on release status and user tier
   const shouldBlurCard = (card: Card): boolean => {
     // Treat missing gating fields as visible to prevent accidental full blur
@@ -2410,13 +2445,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               
                               return (
                                 <div className="relative w-full min-h-96">
-                                  {/* Debug Info */}
-                                  <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 text-xs rounded z-50">
-                                    Total Cards: {filteredCards.length}
-                                  </div>
-                                  
-                                  {/* Navigation Arrows - Always show for debugging */}
-                                  {true && (
+                                  {/* Navigation Arrows - Only show if multiple cards */}
+                                  {filteredCards.length > 1 && (
                                     <>
                                       {/* Left Arrow */}
                                       <button
@@ -2426,7 +2456,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                             prev > 0 ? prev - 1 : filteredCards.length - 1
                                           );
                                         }}
-                                        className="absolute left-8 top-64 w-14 h-14 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center text-white transition-all duration-200 z-50 border-4 border-white shadow-2xl"
+                                        className="absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:text-yellow-400 transition-all duration-200 z-50 border-2 border-white/30 hover:border-yellow-400/60 shadow-lg hover:scale-110"
                                       >
                                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -2441,7 +2471,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                             prev < filteredCards.length - 1 ? prev + 1 : 0
                                           );
                                         }}
-                                        className="absolute right-8 top-64 w-14 h-14 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center text-white transition-all duration-200 z-50 border-4 border-white shadow-2xl"
+                                        className="absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:text-yellow-400 transition-all duration-200 z-50 border-2 border-white/30 hover:border-yellow-400/60 shadow-lg hover:scale-110"
                                       >
                                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -2963,7 +2993,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             {/* Purchase buttons - Positioned at bottom */}
                             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-3">
                               <button 
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors text-sm font-semibold hover:scale-105 ${
+                                className={`flex items-center justify-center gap-2 px-8 py-3 rounded-lg border transition-colors text-sm font-semibold hover:scale-105 min-w-32 ${
                                   showDigitalForm 
                                     ? 'border-blue-400/80 bg-blue-400/30' 
                                     : 'border-blue-500/60 bg-blue-500/20 hover:bg-blue-500/30'
@@ -2990,7 +3020,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               </button>
                               
                               <button 
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors text-sm font-semibold hover:scale-105 ${
+                                className={`flex items-center justify-center gap-2 px-8 py-3 rounded-lg border transition-colors text-sm font-semibold hover:scale-105 min-w-32 ${
                                   showPhysicalForm || showPhysicalConfirm 
                                     ? 'border-purple-400/80 bg-purple-400/30' 
                                     : 'border-purple-500/60 bg-purple-500/20 hover:bg-purple-500/30'

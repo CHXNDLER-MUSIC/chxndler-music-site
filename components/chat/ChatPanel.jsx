@@ -1178,18 +1178,16 @@ export default function ChatPanel({ isOpen, onClose }) {
                         title={isVotingPanelCollapsed ? "Show voting" : "Hide voting"}
                       >
                         {/* VOTING label on the left */}
-                        {!isUserPanelCollapsed && (
-                          <p 
-                            className="text-sm font-semibold"
-                            style={{
-                              color: '#F2EF1D',
-                              textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
-                              fontSize: '16px'
-                            }}
-                          >
-                            VOTING
-                          </p>
-                        )}
+                        <p 
+                          className="text-sm font-semibold"
+                          style={{
+                            color: '#F2EF1D',
+                            textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
+                            fontSize: '16px'
+                          }}
+                        >
+                          VOTING
+                        </p>
                         
                         {/* Arrow on the right */}
                         <div 
@@ -1370,8 +1368,12 @@ export default function ChatPanel({ isOpen, onClose }) {
                                       <button
                                         onClick={() => {
                                           try { sfx.play('click', 0.8); } catch {}
-                                          // Trigger binder modal
-                                          window.dispatchEvent(new CustomEvent('openBinderModal'));
+                                          // Toggle inline card collection instead of opening modal
+                                          // Hide badges when showing card collection
+                                          if (!showUserBinder) {
+                                            setShowUserBadges(false);
+                                          }
+                                          setShowUserBinder(!showUserBinder);
                                         }}
                                         onMouseEnter={(e) => {
                                           try { sfx.play('hover.mp3', 0.3); } catch {}
@@ -1388,7 +1390,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                             img.style.filter = 'drop-shadow(0 0 4px rgba(252, 84, 175, 0.6))';
                                           }
                                         }}
-                                        className="w-5 h-5 sm:w-6 sm:h-6 rounded transition-all duration-200 flex-shrink-0"
+                                        className="w-12 h-12 sm:w-14 sm:h-14 rounded transition-all duration-200 flex-shrink-0"
                                         title="Open Binder"
                                       >
                                         <img
@@ -1406,8 +1408,12 @@ export default function ChatPanel({ isOpen, onClose }) {
                                       <button
                                         onClick={() => {
                                           try { sfx.play('click', 0.8); } catch {}
-                                          // Trigger badges modal
-                                          window.dispatchEvent(new CustomEvent('openBadgesModal'));
+                                          // Toggle inline badges display instead of opening modal
+                                          // Hide card collection when showing badges
+                                          if (!showUserBadges) {
+                                            setShowUserBinder(false);
+                                          }
+                                          setShowUserBadges(!showUserBadges);
                                         }}
                                         onMouseEnter={(e) => {
                                           try { sfx.play('hover.mp3', 0.3); } catch {}
@@ -1424,7 +1430,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                             img.style.filter = 'drop-shadow(0 0 4px rgba(255, 215, 0, 0.6))';
                                           }
                                         }}
-                                        className="w-5 h-5 sm:w-6 sm:h-6 rounded transition-all duration-200 flex-shrink-0"
+                                        className="w-12 h-12 sm:w-14 sm:h-14 rounded transition-all duration-200 flex-shrink-0"
                                         title="Open Badges"
                                       >
                                         <img
@@ -1460,7 +1466,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                             img.style.filter = 'drop-shadow(0 0 4px rgba(255, 105, 180, 0.6))';
                                           }
                                         }}
-                                        className="w-5 h-5 sm:w-6 sm:h-6 rounded transition-all duration-200 flex-shrink-0"
+                                        className="w-12 h-12 sm:w-14 sm:h-14 rounded transition-all duration-200 flex-shrink-0"
                                         title="Open Heart Coins"
                                       >
                                         <img
@@ -1482,42 +1488,6 @@ export default function ChatPanel({ isOpen, onClose }) {
                             </div>
                           
                             
-                            {/* Total Heart Coins */}
-                            <div className="flex flex-col items-center space-y-0 flex-shrink-0 relative -top-2">
-                              <div className="flex items-center space-x-2">
-
-                                <div className="flex items-center space-x-1 px-2 py-0.5 rounded bg-black/30">
-                                  <span className="text-sm text-white/80 font-medium">TOTAL</span>
-                                  <div className="flex flex-col items-center">
-                                    <img 
-                                      src="/elements/heart-coin.webp" 
-                                      alt="Total Heart Coins" 
-                                      className="w-7 h-7"
-                                    />
-                                    <div className="text-[11px] leading-tight text-white/70 mt-0.5">
-                                      <span className="text-yellow-400 font-bold">
-                                        {selectedUser.id === 'anonymous' 
-                                          ? 0 
-                                          : (user && profile?.daily_streak !== undefined) 
-                                            ? profile.daily_streak 
-                                            : 0
-                                        }
-                                      </span>
-                                      <span className="ml-1">Days Streak</span>
-                                    </div>
-                                  </div>
-                                  <span className="text-lg text-pink-400 font-bold">
-                                    {selectedUser.id === 'anonymous' 
-                                      ? 0 
-                                      : (user && profile?.heartcoin_balance !== undefined) 
-                                        ? profile.heartcoin_balance 
-                                        : (selectedUser.total_heart_coins || 0)
-                                    }
-                                  </span>
-                                </div>
-                              </div>
-                              
-                            </div>
                           </div>
                         </div>
                         {/* Close button aligned to far right */}
@@ -1553,6 +1523,35 @@ export default function ChatPanel({ isOpen, onClose }) {
                         >
                           ×
                         </button>
+                        
+                        {/* Total Heart Coins positioned directly below X button */}
+                        <div className="absolute right-2 top-12 z-10 flex flex-col items-center space-y-1">
+                          <div className="flex items-center space-x-1 px-2 py-1 rounded bg-black/40 border border-pink-400/30">
+                            <img 
+                              src="/elements/heart-coin.webp" 
+                              alt="Total Heart Coins" 
+                              className="w-6 h-6"
+                            />
+                            <span className="text-lg text-pink-400 font-bold">
+                              {selectedUser.id === 'anonymous' 
+                                ? 0 
+                                : (user && profile?.heartcoin_balance !== undefined) 
+                                  ? profile.heartcoin_balance 
+                                  : (selectedUser.total_heart_coins || 0)
+                              }
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-white/80 text-center bg-black/30 px-1 py-0.5 rounded">
+                            <span className="text-yellow-400 font-bold">
+                              Streak: {selectedUser.id === 'anonymous' 
+                                ? 0 
+                                : (user && profile?.daily_streak !== undefined) 
+                                  ? profile.daily_streak 
+                                  : 0
+                              } Days
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -1655,7 +1654,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                         } catch (error) {
                                           console.log('Click audio creation failed:', error);
                                         }
-                                        setBadgeStartIndex(Math.max(0, badgeStartIndex - 5));
+                                        setBadgeStartIndex(Math.max(0, badgeStartIndex - 4));
                                       }}
                                       disabled={!badgesToShow || badgesToShow.length === 0 || badgeStartIndex === 0}
                                       className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
@@ -1673,9 +1672,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                                       ◀
                                     </button>
 
-                                    {/* Badge Grid - shows 5 slots for own profile */}
-                                    <div className="flex-1 grid grid-cols-5 gap-2">
-                                      {Array.from({ length: 5 }, (_, index) => {
+                                    {/* Badge Grid - shows 4 slots for own profile */}
+                                    <div className="flex-1 grid grid-cols-4 gap-2">
+                                      {Array.from({ length: 4 }, (_, index) => {
                                         const badgeIndex = badgeStartIndex + index;
                                         const badge = badgesToShow?.[badgeIndex];
                                 
@@ -1716,7 +1715,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                       <div 
                                         className="w-12 h-12 rounded-full mb-1 flex items-center justify-center border-2 transition-all duration-300 cursor-pointer hover:scale-110"
                                         style={{
-                                          background: `linear-gradient(135deg, ${colors.bg}, ${colors.border})`,
+                                          background: 'rgba(0, 0, 0, 0.3)',
                                           border: `2px solid ${colors.border}`,
                                           boxShadow: `0 0 15px ${colors.border}60, 0 0 25px ${colors.border}30`
                                         }}
@@ -1811,9 +1810,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                                         } catch (error) {
                                           console.log('Click audio creation failed:', error);
                                         }
-                                        setBadgeStartIndex(Math.min(Math.max(0, (badgesToShow?.length || 0) - 5), badgeStartIndex + 5));
+                                        setBadgeStartIndex(Math.min(Math.max(0, (badgesToShow?.length || 0) - 4), badgeStartIndex + 4));
                                       }}
-                                      disabled={!badgesToShow || badgesToShow.length <= 5 || badgeStartIndex + 5 >= badgesToShow.length}
+                                      disabled={!badgesToShow || badgesToShow.length <= 4 || badgeStartIndex + 4 >= badgesToShow.length}
                                       className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
                                       style={{
                                         textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
@@ -2202,7 +2201,7 @@ export default function ChatPanel({ isOpen, onClose }) {
       {/* Card Popup Modal */}
       {selectedCardPopup && (
         <div
-          className="absolute inset-0 z-[120] flex items-center justify-center p-8"
+          className="absolute inset-0 z-[120] flex items-center justify-center p-4"
           style={{
             background: 'rgba(0, 0, 0, 0.8)'
           }}
@@ -2212,7 +2211,7 @@ export default function ChatPanel({ isOpen, onClose }) {
           }}
         >
           <div
-            className="relative w-48 aspect-[2/3] max-h-[60vh]"
+            className="relative w-64 aspect-[2/3] max-h-[70vh]"
             onClick={(e) => e.stopPropagation()}
             style={{
               perspective: '1000px',
@@ -2346,7 +2345,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                 setSelectedCardPopup(null);
                 setCardFlipped(false);
               }}
-              className="absolute -top-4 -right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 z-10"
+              className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 z-10"
               style={{
                 background: 'rgba(242, 239, 29, 0.2)',
                 border: '1px solid rgba(242, 239, 29, 0.6)',

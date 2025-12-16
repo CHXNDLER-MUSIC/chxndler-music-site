@@ -260,11 +260,15 @@ export default function JoinAliens({ visible = true } = {}) {
       {/* Heart Signal Title - Top */}
       <div style={{ 
         textAlign: 'center', 
-        paddingTop: '20px',
+        paddingTop: '10px',
         paddingBottom: '10px',
-        borderBottom: '1px solid rgba(252, 84, 175, 0.3)'
+        borderBottom: '1px solid rgba(252, 84, 175, 0.3)',
+        position: 'relative',
+        width: '100%',
+        display: 'flex',
+        justifyContent: 'center'
       }}>
-        <div className="flex items-center justify-center mb-3">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
           <h1 
             className="text-xl font-bold whitespace-nowrap"
             style={{
@@ -296,13 +300,13 @@ export default function JoinAliens({ visible = true } = {}) {
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        minHeight: '40vh',
-        marginBottom: '5px',
-        gap: '10px'
+        minHeight: '35vh',
+        marginBottom: '0px',
+        gap: '2px'
       }}>
 
         {/* Neon "Signal Lost" message */}
-        <div style={{ marginBottom: '5px' }}>
+        <div style={{ marginBottom: '2px' }}>
           <h2 
             className="signal-lost-text"
             style={{
@@ -321,7 +325,7 @@ export default function JoinAliens({ visible = true } = {}) {
               fontWeight: 'bold',
               letterSpacing: '0.1em',
               lineHeight: '1.2',
-              marginBottom: '2px'
+              marginBottom: '0px'
             }}
           >
             SIGNAL LOST
@@ -361,7 +365,7 @@ export default function JoinAliens({ visible = true } = {}) {
         width: '100%', 
         height: '1px', 
         background: 'linear-gradient(90deg, transparent, rgba(252, 84, 175, 0.5), transparent)', 
-        margin: '2px 0 4px 0' 
+        margin: '0px 0 0px 0' 
       }} />
 
       {/* Stay Connected Section - Bottom */}
@@ -372,6 +376,7 @@ export default function JoinAliens({ visible = true } = {}) {
           style={{ 
             textAlign: 'center', 
             marginBottom: '8px',
+            marginTop: '-20px',
             color: '#00FFFF',
             fontSize: '16px',
             fontWeight: '600',
