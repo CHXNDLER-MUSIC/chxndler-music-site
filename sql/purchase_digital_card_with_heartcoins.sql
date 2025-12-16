@@ -1,157 +1,125 @@
--- Updated purchase function for digital cards that properly uses user_cards table
--- This function is specifically designed for the BinderModal digital card purchases
-CREATE OR REPLACE FUNCTION purchase_item_with_heartcoins(
-    p_user_id UUID,
-    p_item_id TEXT,
-    p_item_name TEXT,
-    p_price_heartcoins INTEGER
+-- RPC function for purchasing digital cards with heartcoins
+-- This is the canonical function for digital card purchases
+CREATE OR REPLACE FUNCTION purchase_digital_card_with_heartcoins(
+    p_card_id UUID
 )
-RETURNS JSON
+RETURNS UUID
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
+    current_user_id UUID;
     current_balance INTEGER;
+    card_item RECORD;
+    total_cost INTEGER;
     new_balance INTEGER;
-    card_uuid UUID;
-    transaction_id UUID;
-    result JSON;
+    purchase_id UUID;
 BEGIN
-    -- Check if user exists and get current HeartCoin balance
+    -- Get current user ID from auth context
+    current_user_id := auth.uid();
+    
+    IF current_user_id IS NULL THEN
+        RAISE EXCEPTION 'UNAUTHORIZED: User must be logged in';
+    END IF;
+    
+    -- Get card and validate
+    SELECT * INTO card_item
+    FROM public.cards
+    WHERE id = p_card_id AND is_digital = true;
+    
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'ITEM_NOT_FOUND: Card not found or not available for digital purchase';
+    END IF;
+    
+    -- Get total cost (use digital price)
+    total_cost := COALESCE(card_item.price_heartcoins_digital, 5);
+    
+    -- Get user's current balance with row lock
     SELECT heartcoin_balance INTO current_balance
     FROM profiles
-    WHERE id = p_user_id;
+    WHERE id = current_user_id
+    FOR UPDATE;
     
-    -- Handle case where user doesn't exist or balance is null
     IF current_balance IS NULL THEN
-        RAISE EXCEPTION 'User profile not found';
+        RAISE EXCEPTION 'USER_NOT_FOUND: User profile not found';
     END IF;
     
-    -- Find the actual card UUID from the card name
-    -- The p_item_id comes in as something like "chxndler_digital", so we need to extract the card name
-    SELECT id INTO card_uuid
-    FROM cards
-    WHERE LOWER(REPLACE(card_name, ' ', '_')) = LOWER(REPLACE(SPLIT_PART(p_item_id, '_', 1), '_', '_'))
-       OR LOWER(card_name) = LOWER(p_item_name);
-    
-    -- If we can't find by name matching, try to find by similar name
-    IF card_uuid IS NULL THEN
-        SELECT id INTO card_uuid
-        FROM cards
-        WHERE LOWER(card_name) LIKE '%' || LOWER(SPLIT_PART(p_item_name, ' (', 1)) || '%'
-        LIMIT 1;
-    END IF;
-    
-    -- Handle case where card doesn't exist
-    IF card_uuid IS NULL THEN
-        RAISE EXCEPTION 'Card not found for item: % / %', p_item_id, p_item_name;
-    END IF;
-    
-    -- Check if user already owns this card
-    IF EXISTS (
-        SELECT 1 FROM user_cards 
-        WHERE user_id = p_user_id AND card_id = card_uuid
-    ) THEN
-        RAISE EXCEPTION 'Card already owned by user';
-    END IF;
-    
-    -- Check if user has sufficient HeartCoins
-    IF current_balance < p_price_heartcoins THEN
-        RAISE EXCEPTION 'Insufficient HeartCoins: have %, need %', current_balance, p_price_heartcoins;
+    -- Check sufficient funds
+    IF current_balance < total_cost THEN
+        RAISE EXCEPTION 'INSUFFICIENT_FUNDS: Have %, need %', current_balance, total_cost;
     END IF;
     
     -- Calculate new balance
-    new_balance := current_balance - p_price_heartcoins;
+    new_balance := current_balance - total_cost;
     
-    -- Start transaction (implicit in function)
+    -- Start atomic transaction
     
-    -- 1. Deduct HeartCoins from user balance
-    UPDATE profiles 
-    SET heartcoin_balance = new_balance,
-        updated_at = NOW()
-    WHERE id = p_user_id;
-    
-    -- 2. Record the HeartCoin transaction
-    INSERT INTO heartcoin_transactions (
+    -- 1. Create digital card purchase record
+    INSERT INTO public.digital_card_purchases (
         id,
+        user_id,
+        card_id,
+        price_heartcoins,
+        status,
+        created_at,
+        updated_at
+    ) VALUES (
+        gen_random_uuid(),
+        current_user_id,
+        p_card_id,
+        total_cost,
+        'completed',
+        NOW(),
+        NOW()
+    ) RETURNING id INTO purchase_id;
+    
+    -- 2. Record HeartCoin transaction
+    INSERT INTO heartcoin_transactions (
         user_id,
         amount,
         transaction_type,
         description,
+        metadata,
         created_at
     ) VALUES (
-        gen_random_uuid(),
-        p_user_id,
-        -p_price_heartcoins, -- Negative amount for spending
+        current_user_id,
+        -total_cost, -- Negative amount for spending
         'purchase',
-        'Purchased digital card: ' || p_item_name,
+        'Purchased digital card: ' || card_item.card_name,
+        jsonb_build_object(
+            'digital_purchase_id', purchase_id,
+            'card_id', p_card_id,
+            'card_name', card_item.card_name,
+            'purchase_type', 'digital_card',
+            'total_cost', total_cost
+        ),
         NOW()
-    ) RETURNING id INTO transaction_id;
-    
-    -- 3. Add card to user_cards table (the main goal!)
-    INSERT INTO user_cards (
-        id,
-        user_id,
-        card_id,
-        acquired_at,
-        acquisition_source
-    ) VALUES (
-        gen_random_uuid(),
-        p_user_id,
-        card_uuid,
-        NOW(),
-        'heartcoin_purchase'
     );
     
-    -- 4. Keep compatibility with existing user_items table if it exists
-    -- (This is for backward compatibility in case other parts of the app still use user_items)
-    BEGIN
-        INSERT INTO user_items (
-            id,
-            user_id,
-            item_id,
-            item_name,
-            item_type,
-            acquisition_method,
-            acquisition_date,
-            created_at
-        ) VALUES (
-            gen_random_uuid(),
-            p_user_id,
-            p_item_id,
-            p_item_name,
-            'card',
-            'heartcoin_purchase',
-            NOW(),
-            NOW()
-        );
-    EXCEPTION
-        WHEN undefined_table THEN
-            -- user_items table doesn't exist, that's okay
-            NULL;
-    END;
+    -- 3. Deduct HeartCoins from user balance (with bypass)
+    PERFORM set_config('app.allow_balance_update', '1', true);
+    UPDATE profiles 
+    SET heartcoin_balance = new_balance,
+        updated_at = NOW()
+    WHERE id = current_user_id;
+    PERFORM set_config('app.allow_balance_update', '0', true);
     
-    -- Prepare result
-    result := json_build_object(
-        'success', true,
-        'previous_balance', current_balance,
-        'new_balance', new_balance,
-        'amount_spent', p_price_heartcoins,
-        'item_id', p_item_id,
-        'item_name', p_item_name,
-        'card_id', card_uuid,
-        'transaction_id', transaction_id,
-        'message', 'Successfully purchased digital card!'
-    );
+    -- 4. Grant ownership: insert into user_cards with conflict handling
+    INSERT INTO public.user_cards (user_id, card_id, source)
+    VALUES (current_user_id, p_card_id, 'purchase')
+    ON CONFLICT (user_id, card_id) DO NOTHING;
     
-    RETURN result;
+    RETURN purchase_id;
     
 EXCEPTION
     WHEN OTHERS THEN
+        -- Ensure bypass is turned off on error
+        PERFORM set_config('app.allow_balance_update', '0', true);
         -- Re-raise the exception to rollback the transaction
         RAISE;
 END;
 $$;
 
 -- Grant execute permission to authenticated users
-GRANT EXECUTE ON FUNCTION purchase_item_with_heartcoins(UUID, TEXT, TEXT, INTEGER) TO authenticated;
+GRANT EXECUTE ON FUNCTION purchase_digital_card_with_heartcoins(UUID) TO authenticated;

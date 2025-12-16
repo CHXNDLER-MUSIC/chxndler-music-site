@@ -8,6 +8,7 @@ import { Card, CardTier, ProfileTier, isCardLocked, getCardGateState, getTierDis
 import type { CardGateState } from "@/utils/cardGating";
 import PopoutShell from "@/components/PopoutShell";
 import { triggerCardCelebration } from "@/utils/cardCelebration";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 
 // Add keyframes for pulsing animation
 const pulseKeyframes = `
@@ -95,6 +96,18 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
   // Purchase flow state machine
   const [selectedPurchaseType, setSelectedPurchaseType] = useState<'digital' | 'physical' | null>(null);
   const [purchaseState, setPurchaseState] = useState<'idle' | 'insufficient' | 'digital-preview' | 'confirm-digital' | 'confirm-physical' | 'physical-form' | 'success'>('idle');
+  
+  // Shipping form state
+  const [shippingInfo, setShippingInfo] = useState({
+    fullName: '',
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    state: '',
+    zip: '',
+    country: 'United States'
+  });
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // Full song collection data structure
   const songCollection = [
@@ -796,12 +809,12 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
               <div 
                 className="relative flex items-center justify-center"
                 style={{ 
-                  maxHeight: '65%', 
-                  maxWidth: '40%',
-                  minWidth: '240px',
-                  minHeight: '320px',
-                  width: '100%',
-                  height: '100%'
+                  maxHeight: '95%', 
+                  maxWidth: '70%',
+                  minWidth: '320px',
+                  minHeight: '480px',
+                  width: 'auto',
+                  height: 'auto'
                 }}
               >
                 {/* Back arrow - positioned at top left of card */}
@@ -833,8 +846,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                 <div 
                   className="rounded-3xl shadow-2xl cursor-pointer"
                   style={{
-                    width: '240px',
-                    height: '360px',
+                    width: '400px',
+                    height: '600px',
                     aspectRatio: '2/3',
                     boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
                     border: '2px solid rgba(255,255,255,0.1)',
@@ -862,7 +875,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     <img
                       src={selectedCard?.image || "https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910"}
                       alt={selectedCard?.name || "Card"}
-                      className="w-full h-full rounded-3xl object-contain"
+                      className="w-full h-full rounded-3xl object-cover"
                       style={{
                         position: 'absolute',
                         backfaceVisibility: 'hidden',
@@ -876,7 +889,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     <img
                       src="https://ik.imagekit.io/CHXNDLER/card/back.png?updatedAt=1762388351170"
                       alt="Card Back"
-                      className="w-full h-full rounded-3xl object-contain"
+                      className="w-full h-full rounded-3xl object-cover"
                       style={{
                         position: 'absolute',
                         backfaceVisibility: 'hidden',

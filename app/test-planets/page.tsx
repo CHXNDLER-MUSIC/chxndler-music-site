@@ -1,6 +1,13 @@
 'use client';
 
 import { PlanetSystemV2 } from '@/components/PlanetSystemV2';
+import dynamic from 'next/dynamic';
+
+// Dynamic import to prevent SSR issues
+const SimpleThreeTest = dynamic(
+  () => import('@/components/SimpleThreeTest'),
+  { ssr: false }
+);
 
 export default function TestPlanetsPage() {
   return (
@@ -9,6 +16,7 @@ export default function TestPlanetsPage() {
         <h1 className="text-3xl font-bold text-white mb-8">
           PlanetSystemV2 Test Page
         </h1>
+        
         
         <div className="bg-gray-800 rounded-lg p-6">
           <h2 className="text-xl font-semibold text-white mb-4">

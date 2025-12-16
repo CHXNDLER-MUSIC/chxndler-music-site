@@ -772,7 +772,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         .upsert(
           entryData,
           { 
-            onConflict: 'user_id,entry_date,element',
+            onConflict: 'user_id,entry_date',
             ignoreDuplicates: false 
           }
         )

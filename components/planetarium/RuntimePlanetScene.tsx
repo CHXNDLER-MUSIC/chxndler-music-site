@@ -26,6 +26,8 @@ export default function RuntimePlanetScene({
       try {
         if (typeof window === 'undefined') return;
 
+        console.log('RuntimePlanetScene: Starting dynamic imports...');
+        
         // Dynamically import all Three.js dependencies
         const [
           { Canvas },
@@ -33,68 +35,88 @@ export default function RuntimePlanetScene({
           PlanetsModule,
           CameraRigModule,
           LightsModule,
-          React
+          { PlanetPositionsProvider }
         ] = await Promise.all([
           import('@react-three/fiber'),
           import('react-dom/client'),
           import('./Planets'),
           import('./CameraRig'),
           import('./Lights'),
-          import('react')
+          import('../planet-positions-context')
         ]);
+        
+        console.log('RuntimePlanetScene: Dynamic imports completed');
 
-        if (!mounted) return;
+        if (!mounted) {
+          console.log('RuntimePlanetScene: Component unmounted, aborting');
+          return;
+        }
 
         const { Planets } = PlanetsModule;
         const { CameraRig } = CameraRigModule;
         const { Lights } = LightsModule;
+        
+        console.log('RuntimePlanetScene: Destructured components successfully');
 
-        // Create the React element
+        // Create the React element wrapped with PlanetPositionsProvider
         const planetElement = React.createElement(
-          Canvas,
-          {
-            camera: { position: [0, 10, 25], fov: 60 },
-            dpr: [1, 1.5],
-            performance: { min: 0.5 },
-            gl: { 
-              powerPreference: 'high-performance',
-              antialias: false,
-              alpha: false
+          PlanetPositionsProvider,
+          {},
+          React.createElement(
+            Canvas,
+            {
+              camera: { position: [0, 10, 25], fov: 60 },
+              dpr: [1, 1.5],
+              performance: { min: 0.5 },
+              gl: { 
+                powerPreference: 'high-performance',
+                antialias: false,
+                alpha: false
+              },
+              style: { 
+                pointerEvents: 'auto',
+                zIndex: 1,
+                width: '100%',
+                height: '100%'
+              }
             },
-            style: { 
-              pointerEvents: 'auto',
-              zIndex: 1,
-              width: '100%',
-              height: '100%'
-            }
-          },
-          [
-            React.createElement(Lights, { key: 'lights' }),
-            React.createElement(Planets, {
-              key: 'planets',
-              zoomLevel,
-              initialActivePlanet,
-              onPlanetSelect,
-              worldId
-            }),
-            React.createElement(CameraRig, { key: 'camera' })
-          ]
+            [
+              React.createElement(Lights, { key: 'lights' }),
+              React.createElement(Planets, {
+                key: 'planets',
+                zoomLevel,
+                initialActivePlanet,
+                onPlanetSelect,
+                worldId
+              }),
+              React.createElement(CameraRig, { key: 'camera' })
+            ]
+          )
         );
+        
+        console.log('RuntimePlanetScene: Created React element with provider');
 
         // Render using React 18 createRoot
         if (containerRef.current && mounted) {
+          console.log('RuntimePlanetScene: Rendering to DOM');
           const root = createRoot(containerRef.current);
           root.render(planetElement);
           setLoading(false);
+          console.log('RuntimePlanetScene: Successfully rendered!');
 
           // Cleanup function
           return () => {
+            console.log('RuntimePlanetScene: Cleaning up');
             root.unmount();
           };
         }
 
       } catch (error) {
         console.error('Failed to load Three.js scene:', error);
+        console.error('Error details:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined
+        });
         if (mounted) {
           setError(error instanceof Error ? error.message : 'Unknown error');
           setLoading(false);
