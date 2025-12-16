@@ -71,18 +71,18 @@ export default function SoulStarFullLog({ userId }: SoulStarFullLogProps) {
     e.stopPropagation();
     sfx.play('click', 0.6);
     setEditingEntry(entry.entry_id);
-    setEditText(entry.soulStar);
+    setEditText(entry.entryText);
   };
 
   const handleSaveEdit = async (entry: SoulStarLogEntry) => {
     try {
       sfx.play('click', 0.8);
       
-      // For editing, we update the soul_star directly
+      // For editing, we update the entry_text directly
       const { supabaseClient } = await import('@/lib/supabaseClient');
       const { data, error } = await supabaseClient
         .from('soul_journal_entries')
-        .update({ soul_star: editText.trim() })
+        .update({ entry_text: editText.trim() })
         .eq('entry_id', entry.entry_id)
         .select()
         .single();
@@ -91,7 +91,7 @@ export default function SoulStarFullLog({ userId }: SoulStarFullLogProps) {
 
       setEntries(prev => prev.map(e => 
         e.entry_id === entry.entry_id 
-          ? { ...e, soulStar: editText.trim() }
+          ? { ...e, entryText: editText.trim() }
           : e
       ));
       
@@ -232,7 +232,7 @@ export default function SoulStarFullLog({ userId }: SoulStarFullLogProps) {
                   className="text-xs opacity-70 truncate"
                   style={{ color: '#FFFFFF' }}
                 >
-                  {entry.soulStar.substring(0, 50) + (entry.soulStar.length > 50 ? '...' : '')}
+                  {entry.entryText.substring(0, 50) + (entry.entryText.length > 50 ? '...' : '')}
                 </div>
               </div>
               
@@ -391,7 +391,7 @@ export default function SoulStarFullLog({ userId }: SoulStarFullLogProps) {
                         border: `1px solid ${entryColor}20`
                       }}
                     >
-                      {entry.soulStar}
+                      {entry.entryText}
                     </div>
                   )}
                 </div>

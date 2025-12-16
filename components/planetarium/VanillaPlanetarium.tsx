@@ -30,6 +30,8 @@ export default function VanillaPlanetarium({
   const [mounted, setMounted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  console.log('VanillaPlanetarium: Component loading...');
+
   const planetData: PlanetData[] = [
     {
       id: 'CENTER',
@@ -94,6 +96,16 @@ export default function VanillaPlanetarium({
     let animationId: number;
     let textureLoader: THREE.TextureLoader;
 
+    // Camera control variables
+    let isDragging = false;
+    let previousMousePosition = { x: 0, y: 0 };
+    let cameraDistance = 25;
+    let cameraTheta = 0; // horizontal rotation
+    let cameraPhi = Math.PI / 4; // vertical rotation (45 degrees)
+    let targetTheta = 0;
+    let targetPhi = Math.PI / 4;
+    let targetDistance = 25;
+
     try {
       // Scene setup
       scene = new THREE.Scene();
@@ -115,6 +127,12 @@ export default function VanillaPlanetarium({
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      
+      // Ensure canvas can receive pointer events with high z-index
+      renderer.domElement.style.pointerEvents = 'auto';
+      renderer.domElement.style.touchAction = 'none';
+      renderer.domElement.style.position = 'relative';
+      renderer.domElement.style.zIndex = '999';
 
       // Texture loader
       textureLoader = new THREE.TextureLoader();
@@ -203,9 +221,149 @@ export default function VanillaPlanetarium({
       // Add to DOM
       mountRef.current.appendChild(renderer.domElement);
 
+      // Camera control functions
+      const updateCameraPosition = () => {
+        // Smoothly interpolate camera position
+        cameraTheta = THREE.MathUtils.lerp(cameraTheta, targetTheta, 0.05);
+        cameraPhi = THREE.MathUtils.lerp(cameraPhi, targetPhi, 0.05);
+        cameraDistance = THREE.MathUtils.lerp(cameraDistance, targetDistance, 0.05);
+
+        // Apply zoom level
+        const finalDistance = cameraDistance / zoomLevel;
+
+        // Convert spherical coordinates to Cartesian
+        camera.position.x = finalDistance * Math.sin(cameraPhi) * Math.cos(cameraTheta);
+        camera.position.y = finalDistance * Math.cos(cameraPhi);
+        camera.position.z = finalDistance * Math.sin(cameraPhi) * Math.sin(cameraTheta);
+
+        camera.lookAt(0, 0, 0);
+      };
+
+      // Mouse event handlers
+      const onMouseDown = (event: MouseEvent) => {
+        console.log('🚀 MOUSE DOWN DETECTED ON CANVAS!');
+        isDragging = true;
+        previousMousePosition = { x: event.clientX, y: event.clientY };
+        renderer.domElement.style.cursor = 'grabbing';
+        event.preventDefault();
+      };
+
+      const onMouseMove = (event: MouseEvent) => {
+        if (!isDragging) return;
+
+        const deltaX = event.clientX - previousMousePosition.x;
+        const deltaY = event.clientY - previousMousePosition.y;
+
+        // Horizontal rotation (around Y axis)
+        targetTheta -= deltaX * 0.005;
+
+        // Vertical rotation (around X axis) - limit the range
+        targetPhi = THREE.MathUtils.clamp(
+          targetPhi + deltaY * 0.005,
+          0.1, // Don't go completely to the top
+          Math.PI - 0.1 // Don't go completely to the bottom
+        );
+
+        previousMousePosition = { x: event.clientX, y: event.clientY };
+        event.preventDefault();
+      };
+
+      const onMouseUp = () => {
+        isDragging = false;
+        renderer.domElement.style.cursor = 'grab';
+      };
+
+      const onWheel = (event: WheelEvent) => {
+        const delta = event.deltaY * 0.001;
+        targetDistance = THREE.MathUtils.clamp(
+          targetDistance + delta * targetDistance,
+          10, // Minimum distance
+          100 // Maximum distance
+        );
+        event.preventDefault();
+      };
+
+      // Touch event handlers for mobile
+      let touchStart = { x: 0, y: 0 };
+      let touchDistance = 0;
+
+      const onTouchStart = (event: TouchEvent) => {
+        if (event.touches.length === 1) {
+          // Single touch - orbit
+          touchStart = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+          isDragging = true;
+        } else if (event.touches.length === 2) {
+          // Two touches - zoom
+          const touch1 = event.touches[0];
+          const touch2 = event.touches[1];
+          touchDistance = Math.sqrt(
+            Math.pow(touch1.clientX - touch2.clientX, 2) + 
+            Math.pow(touch1.clientY - touch2.clientY, 2)
+          );
+        }
+        event.preventDefault();
+      };
+
+      const onTouchMove = (event: TouchEvent) => {
+        if (event.touches.length === 1 && isDragging) {
+          // Single touch orbit
+          const deltaX = event.touches[0].clientX - touchStart.x;
+          const deltaY = event.touches[0].clientY - touchStart.y;
+
+          targetTheta -= deltaX * 0.005;
+          targetPhi = THREE.MathUtils.clamp(
+            targetPhi + deltaY * 0.005,
+            0.1,
+            Math.PI - 0.1
+          );
+
+          touchStart = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+        } else if (event.touches.length === 2) {
+          // Two touch zoom
+          const touch1 = event.touches[0];
+          const touch2 = event.touches[1];
+          const newDistance = Math.sqrt(
+            Math.pow(touch1.clientX - touch2.clientX, 2) + 
+            Math.pow(touch1.clientY - touch2.clientY, 2)
+          );
+
+          const delta = (touchDistance - newDistance) * 0.01;
+          targetDistance = THREE.MathUtils.clamp(
+            targetDistance + delta,
+            10,
+            100
+          );
+
+          touchDistance = newDistance;
+        }
+        event.preventDefault();
+      };
+
+      const onTouchEnd = (event: TouchEvent) => {
+        isDragging = false;
+        event.preventDefault();
+      };
+
+      // Add event listeners
+      renderer.domElement.addEventListener('mousedown', onMouseDown);
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+      renderer.domElement.addEventListener('wheel', onWheel);
+      
+      // Touch events
+      renderer.domElement.addEventListener('touchstart', onTouchStart);
+      renderer.domElement.addEventListener('touchmove', onTouchMove);
+      renderer.domElement.addEventListener('touchend', onTouchEnd);
+
+      // Set initial cursor
+      renderer.domElement.style.cursor = 'grab';
+
       // Animation loop
       const animate = () => {
         animationId = requestAnimationFrame(animate);
+
+        // Update camera position
+        updateCameraPosition();
 
         // Animate planets
         planets.forEach((planet) => {
@@ -224,14 +382,6 @@ export default function VanillaPlanetarium({
           planet.rotation.y += 0.005;
         });
 
-        // Apply zoom level to camera distance
-        const targetDistance = 25 / zoomLevel;
-        const currentDistance = camera.position.length();
-        const newDistance = THREE.MathUtils.lerp(currentDistance, targetDistance, 0.1);
-        
-        camera.position.normalize().multiplyScalar(newDistance);
-        camera.lookAt(0, 0, 0);
-
         renderer.render(scene, camera);
       };
 
@@ -248,6 +398,17 @@ export default function VanillaPlanetarium({
       if (animationId) {
         cancelAnimationFrame(animationId);
       }
+      
+      // Remove event listeners - check if handlers exist before removing
+      if (renderer && renderer.domElement) {
+        const canvas = renderer.domElement;
+        // Remove all event listeners by cloning the element
+        const newCanvas = canvas.cloneNode(true);
+        if (canvas.parentNode) {
+          canvas.parentNode.replaceChild(newCanvas, canvas);
+        }
+      }
+      
       if (renderer) {
         renderer.dispose();
         if (mountRef.current && renderer.domElement.parentNode === mountRef.current) {
@@ -294,9 +455,9 @@ export default function VanillaPlanetarium({
   }
 
   return (
-    <div className="w-full h-[500px] relative">
-      <div className="absolute top-0 left-0 z-10 bg-purple-500 text-white p-2 text-sm">
-        Planetarium Active - {planetData.length} Planets Orbiting
+    <div className="w-full h-[500px] relative overflow-hidden">
+      <div className="absolute top-0 left-0 z-10 bg-purple-500 text-white p-2 text-sm pointer-events-none">
+        Interactive Planetarium - Drag to orbit • Scroll to zoom • {planetData.length} Planets
       </div>
       <div ref={mountRef} className="w-full h-full" />
     </div>

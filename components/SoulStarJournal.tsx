@@ -24,7 +24,7 @@ interface DailyPrompt {
     element: string;
     prompt_type: string;
   };
-  soul_star: {
+  entry_text: {
     id: string;
     text: string;
     element: string;
@@ -54,7 +54,7 @@ interface JournalEntry {
   reflection?: string; // prompt question text (was 'prompt')
   intention_response?: string;
   reflection_response?: string;
-  soul_star?: string; // user's written reflection text
+  entry_text?: string; // user's written reflection text
   is_private?: boolean;
   is_public?: boolean;
   user_id?: string;
@@ -167,7 +167,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   useEffect(() => {
     if (dailyPrompt) {
       setIntentionText(dailyPrompt.intention?.text || "");
-      setCurrentPromptText(dailyPrompt.soul_star?.text || "");
+      setCurrentPromptText(dailyPrompt.entry_text?.text || "");
     }
   }, [dailyPrompt]);
 
@@ -221,17 +221,17 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       entry.entry_date === today && entry.element === dailyPrompt?.element
     );
     if (todayEntry) {
-      // Check if soul_star contains corrupted prompt text and clear it
-      const soulStarValue = todayEntry.soul_star || "";
+      // Check if entry_text contains corrupted prompt text and clear it
+      const entryTextValue = todayEntry.entry_text || "";
       const isCorruptedWithPromptText = dailyPrompt && 
-        (soulStarValue === dailyPrompt.soul_star?.text || 
-         soulStarValue === currentPromptText);
+        (entryTextValue === dailyPrompt.entry_text?.text || 
+         entryTextValue === currentPromptText);
       
-      setSoulStarText(isCorruptedWithPromptText ? "" : soulStarValue);
+      setSoulStarText(isCorruptedWithPromptText ? "" : entryTextValue);
       setJournalState(prev => ({
         ...prev,
         isPrivate: !(todayEntry.is_public ?? false),
-        isSubmitted: !isCorruptedWithPromptText && !!(soulStarValue && soulStarValue.trim().length > 0),
+        isSubmitted: !isCorruptedWithPromptText && !!(entryTextValue && entryTextValue.trim().length > 0),
       }));
     } else {
       setSoulStarText("");
@@ -297,7 +297,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         element: dailyPrompt.element,
         prompt_id: dailyPrompt?.id || null,
         intention: dailyPrompt?.intention?.text || null,
-        soul_star: soulStarText.trim(),
+        entry_text: soulStarText.trim(),
         is_public: !journalState.isPrivate
       });
 
@@ -398,13 +398,13 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
     e.stopPropagation();
     sfx.play('click', 0.6);
     setEditingEntry(entry.entry_id);
-    setEditResponse(entry.soul_star || "");
+    setEditResponse(entry.entry_text || "");
   };
 
   const handleSaveEdit = async (entryId: string) => {
     try {
       sfx.play('click', 0.8);
-      await updateJournalEntry(entryId, { soul_star: editResponse.trim() });
+      await updateJournalEntry(entryId, { entry_text: editResponse.trim() });
       
       // Refresh profile to ensure both private and public views show updated content
       await refreshProfile();
@@ -1176,7 +1176,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                             />
                           ) : (
                             <div className="text-sm leading-relaxed text-white">
-                              {entry.soul_star || "No soul star response"}
+                              {entry.entry_text || "No entry text"}
                             </div>
                           )}
                         </div>
@@ -1561,7 +1561,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                 </div>
                               </div>
                               <div className="text-sm leading-relaxed text-white">
-                                {entry.soul_star || "No soul star response"}
+                                {entry.entry_text || "No entry text"}
                               </div>
                             </>
                           )}
@@ -1770,7 +1770,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                             />
                           ) : (
                             <div className="text-sm leading-relaxed text-white">
-                              {entry.soul_star || "No soul star response"}
+                              {entry.entry_text || "No entry text"}
                             </div>
                           )}
                         </div>
@@ -2097,11 +2097,11 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     <div 
                       className="text-lg leading-relaxed"
                       style={{ 
-                        color: dailyPrompt.soul_star?.text ? '#FFFFFF' : 'rgba(255, 255, 255, 0.6)', 
+                        color: dailyPrompt.entry_text?.text ? '#FFFFFF' : 'rgba(255, 255, 255, 0.6)', 
                         lineHeight: '1.5' 
                       }}
                     >
-                      {dailyPrompt.soul_star?.text || 'No prompt was generated for this day.'}
+                      {dailyPrompt.entry_text?.text || 'No prompt was generated for this day.'}
                     </div>
                   </div>
                 </div>

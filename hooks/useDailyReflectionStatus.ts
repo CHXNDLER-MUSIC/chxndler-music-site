@@ -39,7 +39,7 @@ export function useDailyReflectionStatus() {
       const todayReflection = journalEntries.find(entry => {
         const dateMatch = entry.entry_date === today || entry.entry_date === yesterdayStr;
         const elementMatch = entry.element === profile.element;
-        const hasContent = (entry.soul_star && entry.soul_star.trim() !== '') || 
+        const hasContent = (entry.entry_text && entry.entry_text.trim() !== '') || 
                           (entry.reflection_response && entry.reflection_response.trim() !== '') ||
                           (entry.intention_response && entry.intention_response.trim() !== '');
         
@@ -53,7 +53,7 @@ export function useDailyReflectionStatus() {
           profileElement: profile.element,
           elementMatch,
           reflection_response: entry.reflection_response,
-          soul_star: entry.soul_star,
+          entry_text: entry.entry_text,
           intention_response: entry.intention_response,
           hasContent,
           shouldMatch: dateMatch && elementMatch && hasContent

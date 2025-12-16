@@ -76,7 +76,7 @@ export default function FullSoulStarLog({ userId }: Props) {
 
   const startEdit = (entry: SoulJournalWithPrompt) => {
     setEditingId(entry.entry_id);
-    setEditValue(entry.soul_star || '');
+    setEditValue(entry.entry_text || '');
   };
 
   const cancelEdit = () => {
@@ -89,10 +89,10 @@ export default function FullSoulStarLog({ userId }: Props) {
       const trimmed = editValue.trim();
       const { error } = await supabaseClient
         .from('soul_journal_entries')
-        .update({ soul_star: trimmed })
+        .update({ entry_text: trimmed })
         .eq('entry_id', id);
       if (error) throw error;
-      setEntries(prev => prev.map(e => e.entry_id === id ? { ...e, soul_star: trimmed } : e));
+      setEntries(prev => prev.map(e => e.entry_id === id ? { ...e, entry_text: trimmed } : e));
       setEditingId(null);
       setEditValue('');
     } catch (e: any) {
@@ -162,7 +162,7 @@ export default function FullSoulStarLog({ userId }: Props) {
             <div>
               <div className="text-xs font-semibold mb-1" style={{ color }}>⭐ Your Soul Star</div>
               {!isEditing ? (
-                <div className="text-sm leading-relaxed whitespace-pre-wrap">{entry.soul_star || '—'}</div>
+                <div className="text-sm leading-relaxed whitespace-pre-wrap">{entry.entry_text || '—'}</div>
               ) : (
                 <textarea
                   value={editValue}

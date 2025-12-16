@@ -1149,7 +1149,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                     </div>
                     
                     {/* Voting Section */}
-                    <div className="border-t border-cyan-400/20">
+                    <div className={`border-t border-cyan-400/20 transition-all duration-300 ${
+                      isUserPanelCollapsed ? 'opacity-0 max-h-0 overflow-hidden' : 'opacity-100'
+                    }`}>
                       <button
                         onClick={() => {
                           try {

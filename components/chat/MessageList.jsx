@@ -139,10 +139,18 @@ function ChatMessage({ message, onUserClick, reactions, onReact, currentUserId, 
     if (reactionTrayTimeoutRef.current) {
       clearTimeout(reactionTrayTimeoutRef.current);
     }
-    setShowReactionTray(true);
+    
+    // Add a small delay before showing to prevent flashing
+    reactionTrayTimeoutRef.current = setTimeout(() => {
+      setShowReactionTray(true);
+    }, 300);
   };
 
   const handleMouseLeave = () => {
+    if (reactionTrayTimeoutRef.current) {
+      clearTimeout(reactionTrayTimeoutRef.current);
+    }
+    
     reactionTrayTimeoutRef.current = setTimeout(() => {
       setShowReactionTray(false);
     }, 200);

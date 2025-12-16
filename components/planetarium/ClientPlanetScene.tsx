@@ -35,11 +35,8 @@ export default function ClientPlanetScene({
   const [use3D, setUse3D] = useState(true);
   const [error, setError] = useState(false);
 
-  useEffect(() => {
-    // Try to load 3D scene, only fallback if there's an actual error
-    // Removing automatic timeout to give 3D more chance to load
-    console.log('ClientPlanetScene: Attempting to load 3D scene...');
-  }, []);
+  // Force 3D to stay enabled - remove fallback logic for now
+  const forceUse3D = true;
 
   // Get the active planet name based on worldId
   const getActivePlanetName = (worldId?: string) => {
@@ -54,8 +51,8 @@ export default function ClientPlanetScene({
 
   const activePlanetName = getActivePlanetName(worldId);
 
-  // Try 3D scene first, fall back to 2D if error
-  if (use3D && !error) {
+  // Force 3D scene to load
+  if (forceUse3D) {
     return (
       <Suspense fallback={
         <div className="h-[500px] bg-gray-800 rounded flex items-center justify-center text-white">

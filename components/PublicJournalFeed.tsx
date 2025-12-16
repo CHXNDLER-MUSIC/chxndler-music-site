@@ -147,7 +147,7 @@ export default function PublicJournalFeed() {
                   border: `1px solid ${theme.color}15`,
                 }}
               >
-                {entry.soul_star}
+                {entry.entry_text}
               </div>
             </div>
           );

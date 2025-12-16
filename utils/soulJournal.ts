@@ -10,7 +10,7 @@ export type SoulJournalRow = {
   reflection: string | null; // prompt question text (was 'prompt')
   intention_response: string | null;
   reflection_response: string | null;
-  soul_star: string | null; // user's written reflection text
+  entry_text: string | null; // user's written reflection text
   is_public: boolean | null;
 };
 
@@ -18,7 +18,7 @@ export type SoulJournalWithPrompt = {
   entry_id: string;
   entry_date: string;
   element: string;
-  soul_star: string | null; // user's written reflection text
+  entry_text: string | null; // user's written reflection text
   is_private: boolean | null;
   reflection: string | null; // prompt question text (was 'prompt')
   intention: string | null;
@@ -37,11 +37,11 @@ export async function saveSoulStarEntry(
     promptId: string | null; // references soul_daily_prompts.id
     intention: string | null; // from daily prompt
     reflection: string | null; // prompt question text (was 'prompt')
-    soulStarText: string; // user's written reflection
+    entryText: string; // user's written reflection
     isPrivate: boolean;
   }
 ): Promise<SoulJournalRow> {
-  const { userId, selectedElement, promptDate, promptId, intention, reflection, soulStarText, isPrivate } = params;
+  const { userId, selectedElement, promptDate, promptId, intention, reflection, entryText, isPrivate } = params;
 
   const payload: Partial<SoulJournalRow> = {
     user_id: userId,
@@ -50,7 +50,7 @@ export async function saveSoulStarEntry(
     prompt_id: promptId ?? null,
     intention: intention ?? null,
     reflection: reflection ?? null, // prompt question text
-    soul_star: soulStarText?.trim() ?? null, // user's written reflection
+    entry_text: entryText?.trim() ?? null, // user's written reflection
     is_public: !isPrivate,
   } as any;
 
@@ -83,7 +83,7 @@ export async function loadSoulStarFullLog(
   const { data, error } = await supabaseClient
     .from('soul_journal_entries')
     .select(
-      `entry_id, entry_date, element, soul_star, is_public,
+      `entry_id, entry_date, element, entry_text, is_public,
        soul_daily_prompts:prompt_id (prompt, intention)`
     )
     .eq('user_id', userId)
@@ -98,7 +98,7 @@ export async function loadSoulStarFullLog(
     entry_id: row.entry_id,
     entry_date: row.entry_date,
     element: row.element,
-    soul_star: row.soul_star ?? null, // user's written reflection text
+    entry_text: row.entry_text ?? null, // user's written reflection text
     is_private: !(row.is_public ?? false),
     reflection: row.soul_daily_prompts?.prompt ?? null, // prompt question text
     intention: row.soul_daily_prompts?.intention ?? null,
@@ -117,7 +117,7 @@ export async function saveSoulStarEntryDefault(
   promptId: string | null,
   intention: string | null,
   reflection: string | null,
-  soulStarText: string,
+  entryText: string,
   isPrivate: boolean
 ) {
   return saveSoulStarEntry(defaultClient, {
@@ -127,7 +127,7 @@ export async function saveSoulStarEntryDefault(
     promptId,
     intention,
     reflection,
-    soulStarText,
+    entryText,
     isPrivate,
   });
 }

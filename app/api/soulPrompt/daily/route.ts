@@ -132,9 +132,9 @@ export async function GET(request: NextRequest) {
           element: dailyPrompt.element,
           prompt_type: 'intention'
         },
-        soul_star: {
+        entry_text: {
           id: dailyPrompt.id,
-          text: dailyPrompt.prompt, // The 'prompt' column serves as soul_star prompt
+          text: dailyPrompt.prompt, // The 'prompt' column serves as entry_text prompt
           element: dailyPrompt.element,
           prompt_type: 'reflection'
         },

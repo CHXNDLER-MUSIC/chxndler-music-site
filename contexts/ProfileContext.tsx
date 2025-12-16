@@ -112,7 +112,7 @@ interface JournalEntry {
   reflection?: string | null;
   intention_response?: string | null;
   reflection_response?: string | null;
-  soul_star?: string | null;
+  entry_text?: string | null;
 }
 
 interface DailyPrompts {
@@ -125,7 +125,7 @@ interface DailyPrompts {
     element: string;
     prompt_type: string;
   };
-  soul_star: {
+  entry_text: {
     id: string;
     text: string;
     element: string;
@@ -168,7 +168,7 @@ interface ProfileContextType {
     entry: Omit<JournalEntry, 'entry_id' | 'user_id' | 'created_at'>,
     options?: { sharePublic?: boolean }
   ) => Promise<JournalEntry | null>;
-  updateJournalEntry: (entryId: string, updates: Partial<Pick<JournalEntry, 'intention' | 'is_public' | 'soul_star'>>) => Promise<void>;
+  updateJournalEntry: (entryId: string, updates: Partial<Pick<JournalEntry, 'intention' | 'is_public' | 'entry_text'>>) => Promise<void>;
   deleteJournalEntry: (entryId: string) => Promise<void>;
   getDailyPrompts: () => Promise<DailyPrompts | null>;
   isJournalOpen: boolean;
@@ -753,8 +753,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       if (entry.intention !== null && entry.intention !== undefined) {
         entryData.intention = entry.intention;
       }
-      if (entry.soul_star !== null && entry.soul_star !== undefined) {
-        entryData.soul_star = entry.soul_star;
+      if (entry.entry_text !== null && entry.entry_text !== undefined) {
+        entryData.entry_text = entry.entry_text;
       }
 
       // Handle is_public field instead of is_private
@@ -835,7 +835,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   }, [profile]);
 
-  const updateJournalEntry = useCallback(async (entryId: string, updates: Partial<Pick<JournalEntry, 'intention' | 'is_public' | 'soul_star'>>) => {
+  const updateJournalEntry = useCallback(async (entryId: string, updates: Partial<Pick<JournalEntry, 'intention' | 'is_public' | 'entry_text'>>) => {
     try {
       const { error } = await supabaseBrowser
         .from('soul_journal_entries')
@@ -895,7 +895,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
       
       // Validate that we received proper data structure
-      if (!data.element || !data.intention || !data.soul_star) {
+      if (!data.element || !data.intention || !data.entry_text) {
         throw new Error('Invalid prompt data received from database');
       }
       

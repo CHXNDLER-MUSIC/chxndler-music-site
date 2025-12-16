@@ -371,60 +371,121 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     setMessage(null);
 
     try {
-      // Use the API route instead of direct RPC call
-      const response = await fetch('/api/merch/purchase', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          merchItemId: selectedItem.merch_item_id,
-          quantity: 1
-        }),
-      });
+      // Check if this is a card purchase (merch_item_id contains 'card' or is a card-like identifier)
+      const isCardPurchase = selectedItem.merch_item_id === 'physical-card' || 
+                            selectedItem.merch_item_id === 'digital-card' || 
+                            selectedItem.name.includes('(Physical)') ||
+                            selectedItem.name.includes('(Digital)');
 
-      const result = await response.json();
+      let result;
 
-      console.log('Purchase API response:', result);
-      console.log('Purchase response status:', response.status);
-      console.log('Purchase response ok:', response.ok);
+      if (isCardPurchase) {
+        // Use HeartCoin purchase API for cards
+        const response = await fetch('/api/purchase-item-with-heartcoins', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            itemId: selectedItem.merch_item_id,
+            itemTitle: selectedItem.name,
+            priceHeartCoins: selectedItem.heartCoin,
+            isPhysical: true // Physical card purchase with shipping
+          }),
+        });
 
-      if (!response.ok) {
-        console.error('Purchase API error:', result);
-        setError(result.error || 'Purchase failed. Please try again.');
-        return;
-      }
+        result = await response.json();
 
-      // Check if we actually got a successful result
-      if (!result.success && !result.order_id) {
-        console.error('Purchase succeeded but no order_id returned:', result);
-        setError('Purchase may have failed. Please check your balance and try again.');
-        return;
-      }
+        if (!response.ok) {
+          console.error('Card purchase API error:', result);
+          setError(result.error || 'Card purchase failed. Please try again.');
+          return;
+        }
 
-      // Send confirmation email
-      if (result.order_id) {
-        try {
-          const emailResponse = await fetch('/api/orders/send-confirmation', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              orderId: result.order_id,
-              shippingInfo: shippingInfo
-            }),
-          });
+        // For card purchases, the order ID is in result.data.id
+        const orderId = result.data?.id;
 
-          const emailResult = await emailResponse.json();
-          if (emailResult.emailSent) {
-            console.log('Order confirmation email sent successfully');
-          } else {
-            console.warn('Order confirmation email failed to send');
+        // Send confirmation email with shipping info
+        if (orderId) {
+          try {
+            const emailResponse = await fetch('/api/orders/send-confirmation', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                orderId: orderId,
+                shippingInfo: shippingInfo
+              }),
+            });
+
+            const emailResult = await emailResponse.json();
+            if (emailResult.emailSent) {
+              console.log('Card order confirmation email sent successfully');
+            } else {
+              console.warn('Card order confirmation email failed to send');
+            }
+          } catch (emailError) {
+            console.error('Failed to send card confirmation email:', emailError);
+            // Don't fail the purchase if email fails
           }
-        } catch (emailError) {
-          console.error('Failed to send confirmation email:', emailError);
-          // Don't fail the purchase if email fails
+        }
+      } else {
+        // Use merch purchase API for regular merch items
+        const response = await fetch('/api/merch/purchase', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            merchItemId: selectedItem.merch_item_id,
+            quantity: 1
+          }),
+        });
+
+        result = await response.json();
+
+        console.log('Purchase API response:', result);
+        console.log('Purchase response status:', response.status);
+        console.log('Purchase response ok:', response.ok);
+
+        if (!response.ok) {
+          console.error('Purchase API error:', result);
+          setError(result.error || 'Purchase failed. Please try again.');
+          return;
+        }
+
+        // Check if we actually got a successful result
+        if (!result.success && !result.order_id) {
+          console.error('Purchase succeeded but no order_id returned:', result);
+          setError('Purchase may have failed. Please check your balance and try again.');
+          return;
+        }
+
+        // Send confirmation email for merch
+        if (result.order_id) {
+          try {
+            const emailResponse = await fetch('/api/orders/send-confirmation', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                orderId: result.order_id,
+                shippingInfo: shippingInfo
+              }),
+            });
+
+            const emailResult = await emailResponse.json();
+            if (emailResult.emailSent) {
+              console.log('Order confirmation email sent successfully');
+            } else {
+              console.warn('Order confirmation email failed to send');
+            }
+          } catch (emailError) {
+            console.error('Failed to send confirmation email:', emailError);
+            // Don't fail the purchase if email fails
+          }
         }
       }
 
@@ -1193,7 +1254,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               {/* Current Card */}
               <div className="text-center mx-8">
                 <div 
-                  className="relative w-80 h-96 mx-auto cursor-pointer"
+                  className="relative w-64 h-80 mx-auto cursor-pointer"
                   onClick={() => {
                     setEnlargedCard(availableCards[currentCardIndex]);
                     setIsEnlargedCardFlipped(false);
@@ -1577,33 +1638,30 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     <div
                       className="relative w-full h-full transition-transform duration-700"
                       style={{
-                        transformStyle: 'preserve-3d',
-                        transform: isEnlargedCardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                        transformStyle: 'preserve-3d'
                       }}
                     >
-                      {/* Front of card */}
-                      <img
-                        src={enlargedCard.artwork_url || `/cards/${enlargedCard.card_name || enlargedCard.cards?.card_name}.webp`}
-                        alt={enlargedCard.card_name || enlargedCard.cards?.card_name || 'Card'}
-                        className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
-                        style={{
-                          animation: 'merchPulse 2.5s ease-in-out infinite',
-                          backfaceVisibility: 'hidden',
-                          transform: 'rotateY(0deg)'
-                        }}
-                      />
-                      
-                      {/* Back of card */}
-                      <img
-                        src="/cards/back.webp"
-                        alt="Card back"
-                        className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
-                        style={{
-                          animation: 'merchPulse 2.5s ease-in-out infinite',
-                          backfaceVisibility: 'hidden',
-                          transform: 'rotateY(180deg)'
-                        }}
-                      />
+                      {!isEnlargedCardFlipped ? (
+                        /* Front of card */
+                        <img
+                          src={enlargedCard.artwork_url || `/cards/${enlargedCard.card_name || enlargedCard.cards?.card_name}.webp`}
+                          alt={enlargedCard.card_name || enlargedCard.cards?.card_name || 'Card'}
+                          className="w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
+                          style={{
+                            animation: 'merchPulse 2.5s ease-in-out infinite'
+                          }}
+                        />
+                      ) : (
+                        /* Back of card */
+                        <img
+                          src="/cards/back.webp"
+                          alt="Card back"
+                          className="w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
+                          style={{
+                            animation: 'merchPulse 2.5s ease-in-out infinite'
+                          }}
+                        />
+                      )}
                     </div>
                     
                     {/* Navigation arrows - only show if multiple cards */}

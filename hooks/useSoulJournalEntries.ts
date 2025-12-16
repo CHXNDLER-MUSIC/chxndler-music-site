@@ -17,7 +17,7 @@ export type SoulJournalEntry = {
   created_at: string;
   entry_date: string;
   element: string;
-  soul_star: string | null;
+  entry_text: string | null;
   profiles?: Profile | null;
 };
 
@@ -48,7 +48,7 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
         .select(`
           entry_id,
           user_id,
-          soul_star,
+          entry_text,
           element,
           entry_date,
           created_at,
@@ -59,8 +59,8 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
             profile_image_url
           )
         `)
-        .not('soul_star', 'is', null)
-        .not('soul_star', 'eq', '')
+        .not('entry_text', 'is', null)
+        .not('entry_text', 'eq', '')
         .order('created_at', { ascending: false });
 
       // Filter by specific user if provided
@@ -89,12 +89,12 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
       const mappedEntries: SoulJournalEntry[] = (data || []).map((entry: any) => ({
         entry_id: entry.entry_id,
         user_id: entry.user_id,
-        content: entry.soul_star || '',
+        content: entry.entry_text || '',
         is_public: entry.is_public ?? false,
         created_at: entry.created_at,
         entry_date: entry.entry_date,
         element: entry.element,
-        soul_star: entry.soul_star,
+        entry_text: entry.entry_text,
         profiles: entry.profiles ? {
           id: entry.profiles.id,
           name: entry.profiles.name,

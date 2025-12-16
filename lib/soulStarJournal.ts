@@ -4,7 +4,7 @@ export type SoulStarLogEntry = {
   entry_id: string;
   entryDate: string;
   element: string;
-  soulStar: string;
+  entryText: string;
   isPrivate: boolean;
   promptDate: string;
   prompt: string;
@@ -16,21 +16,21 @@ export type CurrentPrompt = {
   id: string;
   prompt_date: string;
   element: string;
-  reflection: string; // prompt question text (was 'prompt')
-  intention?: string;
+  entry_text?: { text: string }; // prompt question text from API
+  intention?: { text: string };
 };
 
 export type SaveSoulStarEntryParams = {
   userId: string;
   currentPrompt: CurrentPrompt;
-  soulStarText: string;
+  entryText: string;
   isPrivate: boolean;
 };
 
 export async function saveSoulStarEntry({
   userId,
   currentPrompt,
-  soulStarText,
+  entryText,
   isPrivate
 }: SaveSoulStarEntryParams) {
   const row = {
@@ -38,9 +38,9 @@ export async function saveSoulStarEntry({
     entry_date: currentPrompt.prompt_date,
     element: currentPrompt.element,
     prompt_id: currentPrompt.id,
-    intention: currentPrompt.intention || null,
-    reflection: currentPrompt.reflection || null, // prompt question text
-    soul_star: soulStarText,
+    intention: currentPrompt.intention?.text || null,
+    reflection: currentPrompt.entry_text?.text || null, // prompt question text
+    entry_text: entryText,
     is_public: !isPrivate
   };
 
@@ -64,7 +64,7 @@ export async function loadSoulStarFullLog(userId: string): Promise<SoulStarLogEn
       entry_id,
       entry_date,
       element,
-      soul_star,
+      entry_text,
       is_public,
       created_at,
       prompt_id,
@@ -93,7 +93,7 @@ export async function loadSoulStarFullLog(userId: string): Promise<SoulStarLogEn
     entry_id: entry.entry_id,
     entryDate: entry.entry_date,
     element: entry.element,
-    soulStar: entry.soul_star || '',
+    entryText: entry.entry_text || '',
     isPrivate: !(entry.is_public ?? false),
     promptDate: entry.soul_daily_prompts?.prompt_date || entry.entry_date,
     // Use the reflection column (which stores the prompt text) or fallback to the relationship

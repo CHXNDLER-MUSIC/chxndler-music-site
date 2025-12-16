@@ -6,7 +6,7 @@ export interface JournalEntry {
   entry_date: string;
   intention?: string;
   reflection?: string;
-  soul_star?: string;
+  entry_text?: string;
   created_at?: string;
 }
 
@@ -37,7 +37,7 @@ export async function upsertJournalEntry(
   entry: {
     intention?: string;
     reflection?: string;
-    soul_star?: string;
+    entry_text?: string;
   }
 ): Promise<JournalEntry> {
   const today = new Date().toISOString().split('T')[0];
@@ -49,7 +49,7 @@ export async function upsertJournalEntry(
       entry_date: today,
       intention: entry.intention?.trim() || null,
       reflection: entry.reflection?.trim() || null,
-      soul_star: entry.soul_star?.trim() || null,
+      entry_text: entry.entry_text?.trim() || null,
     }, {
       onConflict: 'user_id,entry_date'
     })
