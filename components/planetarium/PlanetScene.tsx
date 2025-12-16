@@ -1,52 +1,29 @@
 'use client';
 
-import React, { useState } from 'react';
-import { PlanetPositionsProvider } from '../planet-positions-context';
-import { PlanetMinimapV2 } from '../PlanetMinimapV2';
+import React, { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { Planets } from './Planets';
+import { CameraRig } from './CameraRig';
+import { Lights } from './Lights';
 
-export function PlanetScene() {
-  const [zoomLevel, setZoomLevel] = useState(1);
+// Dynamically import Canvas to avoid SSR issues
+const Canvas = dynamic(() => import('@react-three/fiber').then(mod => ({ default: mod.Canvas })), { 
+  ssr: false,
+  loading: () => <div className="h-[500px] bg-gray-800 rounded flex items-center justify-center text-white">Loading 3D Scene...</div>
+});
 
+interface PlanetSceneProps {
+  zoomLevel: number;
+}
+
+export function PlanetScene({ zoomLevel }: PlanetSceneProps) {
   return (
-    <PlanetPositionsProvider>
-      <div className="relative w-full h-[500px]">
-        {/* Zoom controls */}
-        <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
-          <button
-            onClick={() => {
-              console.log('Zoom In clicked, current:', zoomLevel);
-              setZoomLevel((z) => {
-                const newZoom = Math.min(z + 0.2, 2);
-                console.log('New zoom level:', newZoom);
-                return newZoom;
-              });
-            }}
-            className="rounded-xl bg-black/60 px-3 py-1 text-xs text-white backdrop-blur hover:bg-black/70 transition-colors"
-          >
-            Zoom In ({zoomLevel.toFixed(1)})
-          </button>
-          <button
-            onClick={() => {
-              console.log('Zoom Out clicked, current:', zoomLevel);
-              setZoomLevel((z) => {
-                const newZoom = Math.max(z - 0.2, 0.4);
-                console.log('New zoom level:', newZoom);
-                return newZoom;
-              });
-            }}
-            className="rounded-xl bg-black/60 px-3 py-1 text-xs text-white backdrop-blur hover:bg-black/70 transition-colors"
-          >
-            Zoom Out ({zoomLevel.toFixed(1)})
-          </button>
-        </div>
-
-        <Planets zoomLevel={zoomLevel} setZoomLevel={setZoomLevel} />
-      </div>
-
-      <div className="mt-3">
-        <PlanetMinimapV2 />
-      </div>
-    </PlanetPositionsProvider>
+    <Suspense fallback={<div className="h-[500px] bg-gray-800 rounded flex items-center justify-center text-white">Loading 3D Scene...</div>}>
+      <Canvas camera={{ position: [0, 18, 30], fov: 60 }}>
+        <Lights />
+        <Planets zoomLevel={zoomLevel} />
+        <CameraRig />
+      </Canvas>
+    </Suspense>
   );
 }

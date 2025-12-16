@@ -33,7 +33,7 @@
 :root {
   --z-modal: 2147483645;
   --z-modal-overlay: 2147483644;
-  --z-cursor: 2147483647;
+  --z-cursor: 2147483650;
 }
 
 /* Hide default cursor on desktop and use custom JS cursor */

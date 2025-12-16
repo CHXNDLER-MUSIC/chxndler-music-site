@@ -37,3 +37,11 @@ export function getElementLightColor(elementId: string): number {
     default: return 0x888888;
   }
 }
+
+// Orbital constants
+export const ELEMENT_ORBIT_RADIUS = 18;
+export const ELEMENT_ORBIT_SPEED = 0.08;
+
+// Camera constants  
+export const CAMERA_BASE_DISTANCE = 30;
+export const CAMERA_ZOOM_LERP = 0.1;

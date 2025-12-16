@@ -1590,71 +1590,144 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 USE
               </button>
 
-              {/* MERCH (smaller, shorter, less glow) */}
-              <button
-                data-tour-id="heartcoins-merch-tab"
-                onClick={() => { try { sfx.play('click', 0.6); } catch {} ; setActiveTab('USE'); setActiveUseTab('MERCH'); }}
-                className="w-full py-1 text-base rounded border transition-all duration-200"
-                style={{
-                  background: activeTab === 'USE' && activeUseTab === 'MERCH'
-                    ? 'linear-gradient(135deg, rgba(255,105,180,0.45) 0%, rgba(255,182,193,0.6) 100%)'
-                    : 'linear-gradient(135deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
-                  color: '#FFFFFF',
-                  borderColor: activeTab === 'USE' && activeUseTab === 'MERCH' ? 'rgba(255,105,180,0.9)' : 'rgba(255,255,255,0.45)',
-                  textShadow: activeTab === 'USE' && activeUseTab === 'MERCH' ? '0 0 6px rgba(255,255,255,0.9)' : '0 1px 2px rgba(0,0,0,1)',
-                  boxShadow: activeTab === 'USE' && activeUseTab === 'MERCH' ? '0 0 10px rgba(255,105,180,0.5)' : 'none',
-                  fontWeight: 700,
-                  fontSize: '13px'
-                }}
-                onMouseEnter={(e) => {
-                  try { sfx.play('hover', 0.3); } catch {}
-                  if (!(activeTab === 'USE' && activeUseTab === 'MERCH')) {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.3) 100%)';
-                    e.currentTarget.style.color = 'rgba(255,255,255,0.95)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!(activeTab === 'USE' && activeUseTab === 'MERCH')) {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)';
-                    e.currentTarget.style.color = '#FFFFFF';
-                  }
-                }}
-              >
-                MERCH
-              </button>
+              {/* Bottom tabs - conditional based on main tab */}
+              {activeTab === 'USE' ? (
+                <>
+                  {/* MERCH (smaller, shorter, less glow) */}
+                  <button
+                    data-tour-id="heartcoins-merch-tab"
+                    onClick={() => { try { sfx.play('click', 0.6); } catch {} ; setActiveUseTab('MERCH'); }}
+                    className="w-full py-1 text-base rounded border transition-all duration-200"
+                    style={{
+                      background: activeUseTab === 'MERCH'
+                        ? 'linear-gradient(135deg, rgba(255,105,180,0.45) 0%, rgba(255,182,193,0.6) 100%)'
+                        : 'linear-gradient(135deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+                      color: '#FFFFFF',
+                      borderColor: activeUseTab === 'MERCH' ? 'rgba(255,105,180,0.9)' : 'rgba(255,255,255,0.45)',
+                      textShadow: activeUseTab === 'MERCH' ? '0 0 6px rgba(255,255,255,0.9)' : '0 1px 2px rgba(0,0,0,1)',
+                      boxShadow: activeUseTab === 'MERCH' ? '0 0 10px rgba(255,105,180,0.5)' : 'none',
+                      fontWeight: 700,
+                      fontSize: '13px'
+                    }}
+                    onMouseEnter={(e) => {
+                      try { sfx.play('hover', 0.3); } catch {}
+                      if (activeUseTab !== 'MERCH') {
+                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.3) 100%)';
+                        e.currentTarget.style.color = 'rgba(255,255,255,0.95)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (activeUseTab !== 'MERCH') {
+                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)';
+                        e.currentTarget.style.color = '#FFFFFF';
+                      }
+                    }}
+                  >
+                    MERCH
+                  </button>
 
-              {/* CARDS (smaller, shorter, less glow) */}
-              <button
-                data-tour-id="heartcoins-cards-tab"
-                onClick={() => { try { sfx.play('click', 0.6); } catch {} ; setActiveTab('USE'); setActiveUseTab('CARDS'); }}
-                className="w-full py-1 text-base rounded border transition-all duration-200"
-                style={{
-                  background: activeTab === 'USE' && activeUseTab === 'CARDS'
-                    ? 'linear-gradient(135deg, rgba(255,105,180,0.45) 0%, rgba(255,182,193,0.6) 100%)'
-                    : 'linear-gradient(135deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
-                  color: '#FFFFFF',
-                  borderColor: activeTab === 'USE' && activeUseTab === 'CARDS' ? 'rgba(255,105,180,0.9)' : 'rgba(255,255,255,0.45)',
-                  textShadow: activeTab === 'USE' && activeUseTab === 'CARDS' ? '0 0 6px rgba(255,255,255,0.9)' : '0 1px 2px rgba(0,0,0,1)',
-                  boxShadow: activeTab === 'USE' && activeUseTab === 'CARDS' ? '0 0 10px rgba(255,105,180,0.5)' : 'none',
-                  fontWeight: 700,
-                  fontSize: '13px'
-                }}
-                onMouseEnter={(e) => {
-                  try { sfx.play('hover', 0.3); } catch {}
-                  if (!(activeTab === 'USE' && activeUseTab === 'CARDS')) {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.3) 100%)';
-                    e.currentTarget.style.color = 'rgba(255,255,255,0.95)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!(activeTab === 'USE' && activeUseTab === 'CARDS')) {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)';
-                    e.currentTarget.style.color = '#FFFFFF';
-                  }
-                }}
-              >
-                CARDS
-              </button>
+                  {/* CARDS (smaller, shorter, less glow) */}
+                  <button
+                    data-tour-id="heartcoins-cards-tab"
+                    onClick={() => { try { sfx.play('click', 0.6); } catch {} ; setActiveUseTab('CARDS'); }}
+                    className="w-full py-1 text-base rounded border transition-all duration-200"
+                    style={{
+                      background: activeUseTab === 'CARDS'
+                        ? 'linear-gradient(135deg, rgba(255,105,180,0.45) 0%, rgba(255,182,193,0.6) 100%)'
+                        : 'linear-gradient(135deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+                      color: '#FFFFFF',
+                      borderColor: activeUseTab === 'CARDS' ? 'rgba(255,105,180,0.9)' : 'rgba(255,255,255,0.45)',
+                      textShadow: activeUseTab === 'CARDS' ? '0 0 6px rgba(255,255,255,0.9)' : '0 1px 2px rgba(0,0,0,1)',
+                      boxShadow: activeUseTab === 'CARDS' ? '0 0 10px rgba(255,105,180,0.5)' : 'none',
+                      fontWeight: 700,
+                      fontSize: '13px'
+                    }}
+                    onMouseEnter={(e) => {
+                      try { sfx.play('hover', 0.3); } catch {}
+                      if (activeUseTab !== 'CARDS') {
+                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.3) 100%)';
+                        e.currentTarget.style.color = 'rgba(255,255,255,0.95)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (activeUseTab !== 'CARDS') {
+                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)';
+                        e.currentTarget.style.color = '#FFFFFF';
+                      }
+                    }}
+                  >
+                    CARDS
+                  </button>
+                </>
+              ) : (
+                <>
+                  {/* DAILY QUESTS (when EARN is active) */}
+                  <button
+                    data-tour-id="heartcoins-daily-quests-tab"
+                    onClick={() => { try { sfx.play('click', 0.6); } catch {} ; setActiveEarnTab('DAILY QUESTS'); }}
+                    className="w-full py-1 text-base rounded border transition-all duration-200"
+                    style={{
+                      background: activeEarnTab === 'DAILY QUESTS'
+                        ? 'linear-gradient(135deg, rgba(0,255,255,0.35) 0%, rgba(0,255,255,0.5) 100%)'
+                        : 'linear-gradient(135deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+                      color: '#FFFFFF',
+                      borderColor: activeEarnTab === 'DAILY QUESTS' ? 'rgba(0,255,255,0.9)' : 'rgba(255,255,255,0.45)',
+                      textShadow: activeEarnTab === 'DAILY QUESTS' ? '0 0 6px rgba(255,255,255,0.9)' : '0 1px 2px rgba(0,0,0,1)',
+                      boxShadow: activeEarnTab === 'DAILY QUESTS' ? '0 0 10px rgba(0,255,255,0.5)' : 'none',
+                      fontWeight: 700,
+                      fontSize: '11px'
+                    }}
+                    onMouseEnter={(e) => {
+                      try { sfx.play('hover', 0.3); } catch {}
+                      if (activeEarnTab !== 'DAILY QUESTS') {
+                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.3) 100%)';
+                        e.currentTarget.style.color = 'rgba(255,255,255,0.95)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (activeEarnTab !== 'DAILY QUESTS') {
+                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)';
+                        e.currentTarget.style.color = '#FFFFFF';
+                      }
+                    }}
+                  >
+                    DAILY QUESTS
+                  </button>
+
+                  {/* BONUS QUESTS (when EARN is active) */}
+                  <button
+                    data-tour-id="heartcoins-bonus-quests-tab"
+                    onClick={() => { try { sfx.play('click', 0.6); } catch {} ; setActiveEarnTab('BONUS QUESTS'); }}
+                    className="w-full py-1 text-base rounded border transition-all duration-200"
+                    style={{
+                      background: activeEarnTab === 'BONUS QUESTS'
+                        ? 'linear-gradient(135deg, rgba(0,255,255,0.35) 0%, rgba(0,255,255,0.5) 100%)'
+                        : 'linear-gradient(135deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+                      color: '#FFFFFF',
+                      borderColor: activeEarnTab === 'BONUS QUESTS' ? 'rgba(0,255,255,0.9)' : 'rgba(255,255,255,0.45)',
+                      textShadow: activeEarnTab === 'BONUS QUESTS' ? '0 0 6px rgba(255,255,255,0.9)' : '0 1px 2px rgba(0,0,0,1)',
+                      boxShadow: activeEarnTab === 'BONUS QUESTS' ? '0 0 10px rgba(0,255,255,0.5)' : 'none',
+                      fontWeight: 700,
+                      fontSize: '11px'
+                    }}
+                    onMouseEnter={(e) => {
+                      try { sfx.play('hover', 0.3); } catch {}
+                      if (activeEarnTab !== 'BONUS QUESTS') {
+                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.3) 100%)';
+                        e.currentTarget.style.color = 'rgba(255,255,255,0.95)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (activeEarnTab !== 'BONUS QUESTS') {
+                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)';
+                        e.currentTarget.style.color = '#FFFFFF';
+                      }
+                    }}
+                  >
+                    BONUS QUESTS
+                  </button>
+                </>
+              )}
             </div>
             
             {/* Thin pink neon line */}
@@ -1670,46 +1743,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           {/* Tab Content */}
           {activeTab === 'EARN' && (
             <>
-              {/* Earn Sub-tabs */}
-              <div className="flex justify-center mb-3 space-x-3">
-                {(['DAILY QUESTS', 'BONUS QUESTS'] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    data-tour-id={`heartcoins-${tab.toLowerCase().replace(' ', '-')}-tab`}
-                    onClick={() => {
-                      try { sfx.play('click', 0.6); } catch {}
-                      setActiveEarnTab(tab);
-                    }}
-                    className="flex-1 py-1.5 text-sm rounded border transition-all duration-200 whitespace-nowrap"
-                    style={{
-                      background: activeEarnTab === tab 
-                        ? 'linear-gradient(135deg, rgba(0,255,255,0.4) 0%, rgba(0,255,255,0.6) 100%)'
-                        : 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 100%)',
-                      color: activeEarnTab === tab ? '#00FFFF' : 'rgba(255,255,255,0.7)',
-                      borderColor: activeEarnTab === tab ? 'rgba(0,255,255,0.8)' : 'rgba(255,255,255,0.4)',
-                      textShadow: activeEarnTab === tab ? '0 0 6px rgba(0,255,255,0.8)' : 'none',
-                      boxShadow: activeEarnTab === tab ? '0 0 10px rgba(0,255,255,0.5), 0 0 20px rgba(0,255,255,0.3)' : 'none',
-                      fontWeight: 700,
-                      fontSize: '12px'
-                    }}
-                    onMouseEnter={(e) => {
-                      try { sfx.play('hover', 0.3); } catch {}
-                      if (activeEarnTab !== tab) {
-                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.35) 100%)';
-                        e.currentTarget.style.color = 'rgba(255,255,255,0.9)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (activeEarnTab !== tab) {
-                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 100%)';
-                        e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
-                      }
-                    }}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
 
           {/* Show HeartCoins info when title is clicked, otherwise show quests */}
           {showHeartCoinsInfo ? (

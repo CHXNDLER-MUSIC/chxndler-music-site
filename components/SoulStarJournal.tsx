@@ -2168,7 +2168,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3 pb-0 mt-auto -mb-1">
+            <div className="flex gap-3 pb-0 mt-auto -mb-3">
                   {(!user?.id || !profile?.element) ? (
                     <button
                       onClick={() => {

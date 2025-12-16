@@ -140,10 +140,34 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   const [activeTab, setActiveTab] = useState(initialTab);
   const [activeEarnTab, setActiveEarnTab] = useState<'DAILY QUESTS' | 'BONUS QUESTS'>('DAILY QUESTS');
 
+  // Purchase confirmation states
+  const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showShippingForm, setShowShippingForm] = useState(false);
+  const [orderPlaced, setOrderPlaced] = useState<any>(null);
+  
+  // Shipping form states
+  const [shippingInfo, setShippingInfo] = useState({
+    fullName: '',
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    state: '',
+    zip: '',
+    country: 'United States'
+  });
+
+  // Track if user is in USE mode to show MERCH/CARDS sub-tabs
+  const [isUseMode, setIsUseMode] = useState(initialTab === 'use' || initialTab === 'merch' || initialTab === 'cards');
+
   // Handle setting the main tab - if USE is selected, default to MERCH
   const handleSetActiveTab = (tab: 'earn' | 'use' | 'merch' | 'cards') => {
     if (tab === 'use') {
+      setIsUseMode(true);
       setActiveTab('merch'); // Default to MERCH when USE is clicked
+    } else if (tab === 'earn') {
+      setIsUseMode(false);
+      setActiveTab(tab);
     } else {
       setActiveTab(tab);
     }
@@ -156,7 +180,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
   useEffect(() => {
     if (open) {
-      setActiveTab(initialTab);
+      handleSetActiveTab(initialTab);
       // Enable sfx when modal opens
       try { sfx.setEnabled(true); } catch {}
     }
@@ -263,6 +287,105 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
   const handlePurchase = (stripeUrl: string) => {
     window.open(stripeUrl, '_blank');
+  };
+
+  // Show confirmation modal for HeartCoin purchase
+  const handleHeartCoinPurchaseConfirm = (item: StoreItem) => {
+    if (!profile) {
+      setError("Please sign in to make purchases");
+      return;
+    }
+
+    if ((profile.heartcoin_balance || 0) < item.heartCoin) {
+      setError(`Insufficient HeartCoins! You need ${item.heartCoin} but only have ${profile.heartcoin_balance || 0}`);
+      return;
+    }
+
+    setSelectedItem(item);
+    setShowConfirmModal(true);
+    setError(null);
+    setMessage(null);
+  };
+
+  // Confirm purchase and create order
+  const handleConfirmPurchase = async () => {
+    if (!selectedItem || !profile) return;
+
+    setModalLoading(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      // Create order using the physical item purchase function
+      const { data, error } = await supabaseBrowser.rpc('purchase_physical_item_with_heartcoins', {
+        p_user_id: profile.id,
+        p_item_slug: selectedItem.name.toLowerCase().replace(/\s+/g, '_'),
+        p_item_name: selectedItem.name,
+        p_price_heartcoins: selectedItem.heartCoin
+      });
+
+      if (error) throw error;
+
+      setOrderPlaced(data);
+      setShowConfirmModal(false);
+      setShowShippingForm(true);
+      
+    } catch (error: any) {
+      console.error('Purchase error:', error);
+      setError(error?.message || `Failed to purchase ${selectedItem.name}`);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  // Update order with shipping information
+  const handleShippingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!orderPlaced || !selectedItem) return;
+
+    setModalLoading(true);
+    setError(null);
+
+    try {
+      // Update order with shipping information
+      const { error } = await supabaseBrowser
+        .from('orders')
+        .update({
+          shipping_full_name: shippingInfo.fullName,
+          shipping_address_line1: shippingInfo.addressLine1,
+          shipping_address_line2: shippingInfo.addressLine2,
+          shipping_city: shippingInfo.city,
+          shipping_state: shippingInfo.state,
+          shipping_zip: shippingInfo.zip,
+          shipping_country: shippingInfo.country,
+          status: 'pending_fulfillment'
+        })
+        .eq('id', orderPlaced.id);
+
+      if (error) throw error;
+
+      setMessage(`Successfully purchased ${selectedItem.name}! Your order has been placed and will be processed for shipping.`);
+      setShowShippingForm(false);
+      setSelectedItem(null);
+      setOrderPlaced(null);
+      setShippingInfo({
+        fullName: '',
+        addressLine1: '',
+        addressLine2: '',
+        city: '',
+        state: '',
+        zip: '',
+        country: 'United States'
+      });
+      
+      // Refresh profile to update balance
+      window.location.reload();
+    } catch (error: any) {
+      console.error('Shipping update error:', error);
+      setError(error?.message || 'Failed to update shipping information');
+    } finally {
+      setModalLoading(false);
+    }
   };
 
   const handleHeartCoinPurchase = async (item: StoreItem) => {
@@ -383,15 +506,15 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               } catch {}
             }}
             className={`px-4 py-3 font-bold text-sm transition-all duration-200 ${
-              (activeTab === 'merch' || activeTab === 'cards')
+              isUseMode
                 ? 'text-[#4ECDC4] border-b-2 border-[#4ECDC4]'
                 : 'text-white hover:text-white'
             }`}
             style={{
-              textShadow: (activeTab === 'merch' || activeTab === 'cards')
+              textShadow: isUseMode
                 ? '0 0 8px rgba(78,205,196,0.8), 0 0 15px rgba(78,205,196,0.6), 0 2px 4px rgba(0,0,0,0.8)' 
                 : '0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
-              backgroundColor: (activeTab === 'merch' || activeTab === 'cards') ? 'rgba(78,205,196,0.1)' : 'rgba(0,0,0,0.3)',
+              backgroundColor: isUseMode ? 'rgba(78,205,196,0.1)' : 'rgba(0,0,0,0.3)',
               borderRadius: '8px 8px 0 0'
             }}
           >
@@ -431,7 +554,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
           </div>
         )}
 
-        {(activeTab === 'merch' || activeTab === 'cards') && (
+        {isUseMode && (
           <div className="flex border-b border-white/10 mb-4">
             <button
               onClick={() => setActiveTab('merch')}
@@ -615,7 +738,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               </div>
             )}
           </div>
-        ) : activeTab === 'merch' ? (
+        ) : isUseMode && activeTab === 'merch' ? (
           <div>
             {/* Error/Success Messages */}
             {error && (
@@ -718,7 +841,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               
               {/* Add to Collection Button */}
               <button
-                onClick={() => handleHeartCoinPurchase(item)}
+                onClick={() => handleHeartCoinPurchaseConfirm(item)}
                 onMouseEnter={() => {
                   if (!modalLoading && profile && (profile.heartcoin_balance || 0) >= item.heartCoin) {
                     try { sfx.play('hover', 0.3); } catch {}
@@ -800,16 +923,96 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
             </button>
           </div>
         )}
+      </div>
+    ) : isUseMode && activeTab === 'cards' ? (
+      <div>
+        <div className="text-center mb-6">
+          <p className="text-white text-lg font-bold mb-6" style={{
+            textShadow: '0 0 8px rgba(255,255,255,0.6), 0 0 15px rgba(255,255,255,0.4)'
+          }}>
+            SELECT AN ELEMENT TO VIEW CARDS
+          </p>
         </div>
-        ) : activeTab === 'cards' ? (
-          <div>
-            <div className="text-center mb-6">
-              <p className="text-white/80 text-sm">
-                Coming soon! Collect digital cards with HeartCoins.
-              </p>
+
+        {/* Four Element Containers */}
+        <div className="grid grid-cols-2 gap-6 max-w-md mx-auto">
+          {/* Lightning Element */}
+          <div 
+            className="relative group cursor-pointer"
+            onMouseEnter={() => {
+              try { sfx.play('change-channel.mp3', 0.5); } catch {}
+            }}
+          >
+            <div className="w-24 h-24 mx-auto bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 rounded-full border-2 border-yellow-500/40 flex items-center justify-center transition-all duration-300 hover:border-yellow-400 hover:shadow-[0_0_20px_rgba(255,215,0,0.6)] hover:scale-105">
+              <img
+                src="/elements/lightning.webp"
+                alt="Lightning"
+                className="w-12 h-12 object-contain"
+                draggable={false}
+              />
+            </div>
+            <div className="text-center mt-2">
+              <span className="text-yellow-400 font-bold text-sm">12</span>
             </div>
           </div>
-        ) : null}
+
+          {/* Void/Air Element */}
+          <div 
+            className="relative group cursor-pointer"
+            onMouseEnter={() => {
+              try { sfx.play('change-channel.mp3', 0.5); } catch {}
+            }}
+          >
+            <div className="w-24 h-24 mx-auto bg-gradient-to-br from-gray-400/20 to-gray-600/20 rounded-full border-2 border-gray-400/40 flex items-center justify-center transition-all duration-300 hover:border-gray-300 hover:shadow-[0_0_20px_rgba(128,128,128,0.6)] hover:scale-105">
+              <div className="w-12 h-12 rounded-full border-2 border-gray-400 bg-gradient-to-br from-transparent to-gray-500/20" />
+            </div>
+            <div className="text-center mt-2">
+              <span className="text-gray-400 font-bold text-sm">9</span>
+            </div>
+          </div>
+
+          {/* Water Element */}
+          <div 
+            className="relative group cursor-pointer"
+            onMouseEnter={() => {
+              try { sfx.play('change-channel.mp3', 0.5); } catch {}
+            }}
+          >
+            <div className="w-24 h-24 mx-auto bg-gradient-to-br from-blue-400/20 to-blue-600/20 rounded-full border-2 border-blue-400/40 flex items-center justify-center transition-all duration-300 hover:border-blue-300 hover:shadow-[0_0_20px_rgba(0,191,255,0.6)] hover:scale-105">
+              <img
+                src="/elements/water.webp"
+                alt="Water"
+                className="w-12 h-12 object-contain"
+                draggable={false}
+              />
+            </div>
+            <div className="text-center mt-2">
+              <span className="text-blue-400 font-bold text-sm">5</span>
+            </div>
+          </div>
+
+          {/* Heart Element */}
+          <div 
+            className="relative group cursor-pointer"
+            onMouseEnter={() => {
+              try { sfx.play('change-channel.mp3', 0.5); } catch {}
+            }}
+          >
+            <div className="w-24 h-24 mx-auto bg-gradient-to-br from-pink-500/20 to-pink-600/20 rounded-full border-2 border-pink-500/40 flex items-center justify-center transition-all duration-300 hover:border-pink-400 hover:shadow-[0_0_20px_rgba(255,105,180,0.6)] hover:scale-105">
+              <img
+                src="/elements/heart.webp"
+                alt="Heart"
+                className="w-12 h-12 object-contain"
+                draggable={false}
+              />
+            </div>
+            <div className="text-center mt-2">
+              <span className="text-pink-400 font-bold text-sm">22</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    ) : null}
       </div>
 
       {/* Enlarged Item Modal */}
@@ -1041,6 +1244,254 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     )}
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Purchase Confirmation Modal */}
+      {showConfirmModal && selectedItem && (
+        <div 
+          className="fixed inset-0 z-[2147483648] bg-black bg-opacity-90"
+          onClick={() => setShowConfirmModal(false)}
+          style={{
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          <div 
+            className="absolute inset-0 flex items-center justify-center p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="relative bg-gray-900 border border-gray-600 rounded-lg p-6 max-w-md w-full"
+              style={{
+                background: 'rgba(17, 24, 39, 0.95)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(75, 85, 99, 0.5)',
+              }}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="absolute top-2 right-2 w-8 h-8 bg-gray-700 hover:bg-gray-600 rounded-full flex items-center justify-center text-gray-300 hover:text-white transition-all duration-200 z-10"
+              >
+                ×
+              </button>
+
+              <div className="text-center space-y-6">
+                <h3 className="text-2xl font-bold text-white mb-4">HeartCoins</h3>
+                
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-black/20 rounded-lg p-4 border border-white/10">
+                    <span className="block text-xs font-bold text-white/80 mb-2">USER</span>
+                    <div className="flex items-center justify-center gap-1">
+                      <img
+                        src="/elements/heart-coin.webp"
+                        alt="Heart Coin"
+                        className="w-6 h-6 object-contain"
+                        style={{
+                          filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
+                        }}
+                      />
+                      <span className="text-lg font-bold text-[#F2EF1D]">{profile?.heartcoin_balance || 0}</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-black/20 rounded-lg p-4 border border-white/10">
+                    <span className="block text-xs font-bold text-white/80 mb-2">COST</span>
+                    <div className="flex items-center justify-center gap-1">
+                      <img
+                        src="/elements/heart-coin.webp"
+                        alt="Heart Coin"
+                        className="w-6 h-6 object-contain"
+                        style={{
+                          filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
+                        }}
+                      />
+                      <span className="text-lg font-bold text-[#F2EF1D]">{selectedItem.heartCoin}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleConfirmPurchase}
+                  disabled={modalLoading}
+                  className="w-full py-3 px-6 rounded-lg font-bold text-sm transition-all duration-200 bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-500 disabled:cursor-not-allowed"
+                  style={{
+                    background: modalLoading ? undefined : 'linear-gradient(135deg, #10b981, #059669)',
+                    boxShadow: modalLoading ? undefined : '0 0 15px rgba(16, 185, 129, 0.4)'
+                  }}
+                >
+                  {modalLoading ? 'Processing...' : 'CONFIRM'}
+                </button>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handlePurchase(selectedItem.stripeUrl)}
+                    className="flex-1 py-2 px-3 rounded-lg font-bold text-xs text-gray-300 border border-gray-500 hover:bg-gray-800 transition-all duration-200"
+                  >
+                    PAY WITH ${selectedItem.cost % 1 === 0 ? selectedItem.cost.toFixed(0) : selectedItem.cost.toFixed(1)}
+                  </button>
+                  <button
+                    onClick={handleConfirmPurchase}
+                    disabled={modalLoading}
+                    className="flex-1 py-2 px-3 rounded-lg font-bold text-xs transition-all duration-200 bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] disabled:bg-gray-500 disabled:text-gray-300"
+                    style={{
+                      boxShadow: modalLoading ? undefined : '0 0 15px rgba(242,239,29,0.4)'
+                    }}
+                  >
+                    PAY WITH 💎 {selectedItem.heartCoin}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Shipping Information Form Modal */}
+      {showShippingForm && selectedItem && orderPlaced && (
+        <div 
+          className="fixed inset-0 z-[2147483648] bg-black bg-opacity-90"
+          style={{
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          <div 
+            className="absolute inset-0 flex items-center justify-center p-4 overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="relative bg-gray-900 border border-gray-600 rounded-lg p-6 max-w-md w-full my-8"
+              style={{
+                background: 'rgba(17, 24, 39, 0.95)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(75, 85, 99, 0.5)',
+              }}
+            >
+              <div className="text-center space-y-6">
+                <h3 className="text-xl font-bold text-white mb-4">Shipping Information</h3>
+                <p className="text-white/80 text-sm">Please provide your shipping details for: <strong>{selectedItem.name}</strong></p>
+                
+                <form onSubmit={handleShippingSubmit} className="space-y-4 text-left">
+                  <div>
+                    <label className="block text-white text-xs font-bold mb-2">Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={shippingInfo.fullName}
+                      onChange={(e) => setShippingInfo(prev => ({ ...prev, fullName: e.target.value }))}
+                      className="w-full p-2 rounded bg-black/20 border border-white/20 text-white text-sm focus:border-[#4ECDC4] focus:outline-none"
+                      placeholder="Enter your full name"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-white text-xs font-bold mb-2">Address Line 1 *</label>
+                    <input
+                      type="text"
+                      required
+                      value={shippingInfo.addressLine1}
+                      onChange={(e) => setShippingInfo(prev => ({ ...prev, addressLine1: e.target.value }))}
+                      className="w-full p-2 rounded bg-black/20 border border-white/20 text-white text-sm focus:border-[#4ECDC4] focus:outline-none"
+                      placeholder="Street address"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-white text-xs font-bold mb-2">Address Line 2</label>
+                    <input
+                      type="text"
+                      value={shippingInfo.addressLine2}
+                      onChange={(e) => setShippingInfo(prev => ({ ...prev, addressLine2: e.target.value }))}
+                      className="w-full p-2 rounded bg-black/20 border border-white/20 text-white text-sm focus:border-[#4ECDC4] focus:outline-none"
+                      placeholder="Apartment, suite, etc. (optional)"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-white text-xs font-bold mb-2">City *</label>
+                      <input
+                        type="text"
+                        required
+                        value={shippingInfo.city}
+                        onChange={(e) => setShippingInfo(prev => ({ ...prev, city: e.target.value }))}
+                        className="w-full p-2 rounded bg-black/20 border border-white/20 text-white text-sm focus:border-[#4ECDC4] focus:outline-none"
+                        placeholder="City"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-white text-xs font-bold mb-2">State *</label>
+                      <input
+                        type="text"
+                        required
+                        value={shippingInfo.state}
+                        onChange={(e) => setShippingInfo(prev => ({ ...prev, state: e.target.value }))}
+                        className="w-full p-2 rounded bg-black/20 border border-white/20 text-white text-sm focus:border-[#4ECDC4] focus:outline-none"
+                        placeholder="State"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-white text-xs font-bold mb-2">ZIP Code *</label>
+                      <input
+                        type="text"
+                        required
+                        value={shippingInfo.zip}
+                        onChange={(e) => setShippingInfo(prev => ({ ...prev, zip: e.target.value }))}
+                        className="w-full p-2 rounded bg-black/20 border border-white/20 text-white text-sm focus:border-[#4ECDC4] focus:outline-none"
+                        placeholder="ZIP"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-white text-xs font-bold mb-2">Country *</label>
+                      <select
+                        required
+                        value={shippingInfo.country}
+                        onChange={(e) => setShippingInfo(prev => ({ ...prev, country: e.target.value }))}
+                        className="w-full p-2 rounded bg-black/20 border border-white/20 text-white text-sm focus:border-[#4ECDC4] focus:outline-none"
+                      >
+                        <option value="United States">United States</option>
+                        <option value="Canada">Canada</option>
+                        <option value="United Kingdom">United Kingdom</option>
+                        <option value="Australia">Australia</option>
+                        <option value="Germany">Germany</option>
+                        <option value="France">France</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowShippingForm(false);
+                        setOrderPlaced(null);
+                        setSelectedItem(null);
+                      }}
+                      className="flex-1 py-2 px-4 rounded-lg font-bold text-sm border border-gray-500 text-gray-300 hover:bg-gray-800 transition-all duration-200"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={modalLoading}
+                      className="flex-1 py-2 px-4 rounded-lg font-bold text-sm transition-all duration-200 bg-gradient-to-r from-[#4ECDC4] to-[#45b7b8] text-black hover:scale-[1.02] disabled:bg-gray-500 disabled:text-gray-300"
+                      style={{
+                        boxShadow: modalLoading ? undefined : '0 0 15px rgba(78, 205, 196, 0.4)'
+                      }}
+                    >
+                      {modalLoading ? 'Submitting...' : 'Complete Order'}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>

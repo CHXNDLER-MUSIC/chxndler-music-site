@@ -2416,6 +2416,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                             setSelectedCardName('All');
                             setCurrentCardIndex(0);
                           }}
+                          onMouseEnter={() => {
+                            try { sfx.play('change-channel', 0.5); } catch {}
+                          }}
                         >
                           <div 
                             className={`w-full aspect-square rounded-lg relative overflow-hidden transition-all duration-300 group-hover:scale-105`}
@@ -2444,7 +2447,205 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       ))}
                     </div>
                   </>
-                ) : null}
+                ) : (
+                  // Individual Element Card View
+                  <>
+                    {/* Back to Elements Button */}
+                    <div className="mb-4">
+                      <button
+                        onClick={() => {
+                          try { sfx.play('click', 0.7); } catch {}
+                          setSelectedElement(null);
+                          setCurrentCardIndex(0);
+                        }}
+                        onMouseEnter={() => {
+                          try { sfx.play('hover', 0.3); } catch {}
+                        }}
+                        className="flex items-center gap-2 text-pink-200 hover:text-white transition-colors duration-200 text-sm"
+                      >
+                        <span>←</span> Back to Elements
+                      </button>
+                    </div>
+
+                    {/* Filter Controls */}
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      {/* Element Selector */}
+                      <select
+                        value={selectedElement || ''}
+                        onChange={(e) => {
+                          try { sfx.play('click', 0.5); } catch {}
+                          setSelectedElement(e.target.value);
+                          setCurrentCardIndex(0);
+                        }}
+                        className="bg-gray-800/80 border border-pink-400/50 rounded px-2 py-1 text-pink-200 text-xs"
+                        style={{ fontSize: '12px' }}
+                      >
+                        {elements.map(element => (
+                          <option key={element} value={element}>{element}</option>
+                        ))}
+                      </select>
+
+                      {/* Rarity Filter */}
+                      <select
+                        value={selectedRarity}
+                        onChange={(e) => {
+                          try { sfx.play('click', 0.5); } catch {}
+                          setSelectedRarity(e.target.value);
+                          setCurrentCardIndex(0);
+                        }}
+                        className="bg-gray-800/80 border border-pink-400/50 rounded px-2 py-1 text-pink-200 text-xs"
+                        style={{ fontSize: '12px' }}
+                      >
+                        <option value="All">All Rarities</option>
+                        <option value="Common">Common</option>
+                        <option value="Rare">Rare</option>
+                        <option value="Epic">Epic</option>
+                        <option value="Legendary">Legendary</option>
+                      </select>
+                    </div>
+
+                    {/* Card Display Area with Navigation */}
+                    {getFilteredCards().length > 0 && (
+                      <div className="relative flex items-center justify-center">
+                        {/* Left Arrow */}
+                        {getFilteredCards().length > 1 && (
+                          <button
+                            onClick={() => {
+                              try { sfx.play('click', 0.5); } catch {}
+                              setCurrentCardIndex(prev => findNextUnlockedCard(prev, 'prev'));
+                            }}
+                            onMouseEnter={() => {
+                              try { sfx.play('hover', 0.3); } catch {}
+                            }}
+                            className="absolute left-2 top-1/2 transform -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200"
+                          >
+                            ←
+                          </button>
+                        )}
+
+                        {/* Card Display */}
+                        <div className="text-center">
+                          <div
+                            className="relative w-40 h-56 mx-auto mb-2 rounded-lg overflow-hidden cursor-pointer transition-transform duration-300 hover:scale-105"
+                            onClick={() => {
+                              const currentCard = getFilteredCards()[currentCardIndex];
+                              if (currentCard) {
+                                try { sfx.play('card-ding', 0.8); } catch {}
+                                setSelectedCard({
+                                  name: currentCard.name,
+                                  image: `/cards/${currentCard.name.replace(/'/g, '').replace(/\s+/g, '-').toLowerCase()}.webp`,
+                                  rarity: currentCard.rarity,
+                                  element: currentCard.element
+                                });
+                                setCardOpen(true);
+                              }
+                            }}
+                          >
+                            <img
+                              src={`/cards/${getFilteredCards()[currentCardIndex]?.name?.replace(/'/g, '').replace(/\s+/g, '-').toLowerCase()}.webp`}
+                              alt={getFilteredCards()[currentCardIndex]?.name || 'Card'}
+                              className="w-full h-full object-cover rounded-lg"
+                              draggable={false}
+                            />
+                          </div>
+                          
+                          {/* Card Info */}
+                          <div className="text-center mb-4">
+                            <div 
+                              className="text-sm font-bold mb-1"
+                              style={{ 
+                                color: getElementColor(getFilteredCards()[currentCardIndex]?.element || ''),
+                                textShadow: `0 0 8px ${getElementColor(getFilteredCards()[currentCardIndex]?.element || '')}80`
+                              }}
+                            >
+                              Element: {getFilteredCards()[currentCardIndex]?.element}
+                            </div>
+                            <div 
+                              className="text-xs mb-1"
+                              style={{ 
+                                color: getFilteredCards()[currentCardIndex]?.rarity === 'Legendary' ? '#FFD700' :
+                                       getFilteredCards()[currentCardIndex]?.rarity === 'Epic' ? '#9966CC' :
+                                       getFilteredCards()[currentCardIndex]?.rarity === 'Rare' ? '#4169E1' : '#FFB6C1',
+                                textShadow: '0 0 4px rgba(255,182,193,0.6)'
+                              }}
+                            >
+                              ★ {getFilteredCards()[currentCardIndex]?.rarity?.toUpperCase()} ★
+                            </div>
+                            <div className="text-xs text-pink-200 mb-3">
+                              {currentCardIndex + 1} of {getFilteredCards().length}
+                            </div>
+                            
+                            {/* Card Description */}
+                            <div 
+                              className="text-sm text-white/90 px-4 py-2 mb-4"
+                              style={{
+                                background: 'rgba(0,0,0,0.3)',
+                                borderRadius: '8px',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                lineHeight: '1.4'
+                              }}
+                            >
+                              {getCardOneLiner(getFilteredCards()[currentCardIndex]?.name || '')}
+                            </div>
+
+                            {/* Initial Purchase Buttons */}
+                            {purchaseState === 'idle' && (
+                              <div className="space-y-2">
+                                <button
+                                  onClick={() => handlePurchaseClick('digital')}
+                                  onMouseEnter={() => {
+                                    try { sfx.play('hover', 0.3); } catch {}
+                                  }}
+                                  className="w-full py-2 px-4 rounded-lg font-bold text-sm transition-all duration-200 bg-green-600/20 hover:bg-green-600/30 border border-green-500/50 text-green-300 hover:text-green-200"
+                                  style={{
+                                    textShadow: '0 0 4px rgba(34,197,94,0.6)'
+                                  }}
+                                >
+                                  BUY DIGITAL ({digitalCost} HeartCoins)
+                                </button>
+                                <button
+                                  onClick={() => handlePurchaseClick('physical')}
+                                  onMouseEnter={() => {
+                                    try { sfx.play('hover', 0.3); } catch {}
+                                  }}
+                                  className="w-full py-2 px-4 rounded-lg font-bold text-sm transition-all duration-200 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/50 text-purple-300 hover:text-purple-200"
+                                  style={{
+                                    textShadow: '0 0 4px rgba(147,51,234,0.6)'
+                                  }}
+                                >
+                                  BUY PHYSICAL ({physicalCost} HeartCoins)
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Right Arrow */}
+                        {getFilteredCards().length > 1 && (
+                          <button
+                            onClick={() => {
+                              try { sfx.play('click', 0.5); } catch {}
+                              setCurrentCardIndex(prev => findNextUnlockedCard(prev, 'next'));
+                            }}
+                            onMouseEnter={() => {
+                              try { sfx.play('hover', 0.3); } catch {}
+                            }}
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200"
+                          >
+                            →
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* No Cards Message */}
+                    {getFilteredCards().length === 0 && (
+                      <div className="text-center text-pink-300 text-sm">
+                        No cards found for {selectedElement} {selectedRarity !== 'All' ? `(${selectedRarity})` : ''}
+                      </div>
+                    )}
+                  </>
+                )}
               </>
             )}
           </div>

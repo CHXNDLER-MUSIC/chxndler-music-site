@@ -1,25 +1,13 @@
-import * as THREE from 'three';
+'use client';
 
-export function addDefaultLights(scene: THREE.Scene) {
-  // Add lights for better texture visibility
-  const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
-  scene.add(ambientLight);
+import React from 'react';
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-  directionalLight.position.set(10, 15, 10);
-  directionalLight.castShadow = true;
-  scene.add(directionalLight);
-
-  const pointLight = new THREE.PointLight(0xffffff, 0.3);
-  pointLight.position.set(0, 10, 0);
-  scene.add(pointLight);
-
-  // Add additional side lighting for better texture detail
-  const sideLight1 = new THREE.DirectionalLight(0x8888ff, 0.3);
-  sideLight1.position.set(-10, 5, 0);
-  scene.add(sideLight1);
-
-  const sideLight2 = new THREE.DirectionalLight(0xff8888, 0.3);
-  sideLight2.position.set(10, -5, 0);
-  scene.add(sideLight2);
+export function Lights() {
+  return (
+    <>
+      <ambientLight intensity={0.4} />
+      <directionalLight position={[10, 15, 10]} intensity={1} />
+      <pointLight position={[0, 10, 0]} intensity={0.5} />
+    </>
+  );
 }

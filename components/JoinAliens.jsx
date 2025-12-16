@@ -268,7 +268,16 @@ export default function JoinAliens({ visible = true } = {}) {
         display: 'flex',
         justifyContent: 'center'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          width: '100%',
+          position: 'absolute',
+          left: '50%',
+          transform: 'translateX(-50%)'
+        }}>
           <h1 
             className="text-xl font-bold whitespace-nowrap"
             style={{
@@ -276,17 +285,19 @@ export default function JoinAliens({ visible = true } = {}) {
               textShadow: '0 0 10px #FC54AF, 0 0 20px #FC54AF, 0 0 30px #FC54AF',
               letterSpacing: '0.05em',
               fontWeight: 'bold',
-              fontSize: 'clamp(20px, 4vw, 28px)'
+              fontSize: 'clamp(20px, 4vw, 28px)',
+              marginBottom: '8px'
             }}
           >
             HEART SIGNAL
           </h1>
           
-          {/* Extended glow line */}
+          {/* Extended glow line centered */}
           <div 
-            className="flex-1 h-px ml-4 max-w-32"
             style={{
-              background: 'linear-gradient(90deg, rgba(252, 84, 175, 0.6), rgba(252, 84, 175, 0.2), transparent)',
+              width: '60%',
+              height: '1px',
+              background: 'linear-gradient(90deg, transparent, rgba(252, 84, 175, 0.6), rgba(252, 84, 175, 0.6), transparent)',
               boxShadow: '0 0 8px rgba(252, 84, 175, 0.4)'
             }}
           />
@@ -300,8 +311,9 @@ export default function JoinAliens({ visible = true } = {}) {
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        minHeight: '35vh',
+        minHeight: '30vh',
         marginBottom: '0px',
+        marginTop: '-10px',
         gap: '2px'
       }}>
 
