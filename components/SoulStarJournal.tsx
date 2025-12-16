@@ -136,7 +136,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const [isJourneyModalOpen, setIsJourneyModalOpen] = useState(false);
 
   const today = getLocalDateString();
-  const todayFormatted = getDisplayDateString();
+  const todayFormatted = getDisplayDateString(today);
 
   // Load daily prompt when opened
   useEffect(() => {

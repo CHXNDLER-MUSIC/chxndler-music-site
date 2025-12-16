@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { PlanetPositionsProvider } from './planet-positions-context';
 import { PlanetMinimapV2 } from './PlanetMinimapV2';
-import { PlanetScene } from './planetarium/PlanetScene';
 
 interface PlanetSystemV2Props {
   initialActivePlanet?: string;
@@ -11,52 +11,71 @@ interface PlanetSystemV2Props {
   worldId?: string;
 }
 
+// Dynamic import with complete SSR isolation
+const ClientPlanetScene = dynamic(
+  () => import('./planetarium/ClientPlanetScene'),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="h-[500px] bg-gray-800 rounded flex items-center justify-center text-white">
+        Loading 3D Scene...
+      </div>
+    )
+  }
+);
+
 export function PlanetSystemV2({ 
   initialActivePlanet, 
   onPlanetSelect, 
   worldId 
 }: PlanetSystemV2Props = {}) {
-  const [zoomLevel, setZoomLevel] = React.useState(1);
-  const [is3DLoaded, setIs3DLoaded] = React.useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [mounted, setMounted] = useState(false);
 
-  React.useEffect(() => {
-    // Only load 3D components on client side
-    setIs3DLoaded(true);
+  useEffect(() => {
+    setMounted(true);
   }, []);
+
+  if (!mounted) {
+    return (
+      <PlanetPositionsProvider>
+        <div className="relative w-full h-[500px]">
+          <div className="h-[500px] bg-gray-800 rounded flex items-center justify-center text-white">
+            Loading 3D Scene...
+          </div>
+        </div>
+        <div className="mt-3">
+          <PlanetMinimapV2 />
+        </div>
+      </PlanetPositionsProvider>
+    );
+  }
 
   return (
     <PlanetPositionsProvider>
       <div className="relative w-full h-[500px]">
         {/* Zoom controls */}
-        {is3DLoaded && (
-          <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
-            <button
-              onClick={() => setZoomLevel((z) => Math.min(z + 0.2, 2))}
-              className="rounded-xl bg-black/60 px-3 py-1 text-xs text-white backdrop-blur hover:bg-black/70 transition-colors"
-            >
-              Zoom In
-            </button>
-            <button
-              onClick={() => setZoomLevel((z) => Math.max(z - 0.2, 0.4))}
-              className="rounded-xl bg-black/60 px-3 py-1 text-xs text-white backdrop-blur hover:bg-black/70 transition-colors"
-            >
-              Zoom Out
-            </button>
-          </div>
-        )}
+        <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
+          <button
+            onClick={() => setZoomLevel((z) => Math.min(z + 0.2, 2))}
+            className="rounded-xl bg-black/60 px-3 py-1 text-xs text-white backdrop-blur hover:bg-black/70 transition-colors"
+          >
+            Zoom In
+          </button>
+          <button
+            onClick={() => setZoomLevel((z) => Math.max(z - 0.2, 0.4))}
+            className="rounded-xl bg-black/60 px-3 py-1 text-xs text-white backdrop-blur hover:bg-black/70 transition-colors"
+          >
+            Zoom Out
+          </button>
+        </div>
 
-        {is3DLoaded ? (
-          <PlanetScene 
-            zoomLevel={zoomLevel} 
-            initialActivePlanet={initialActivePlanet}
-            onPlanetSelect={onPlanetSelect}
-            worldId={worldId}
-          />
-        ) : (
-          <div className="h-[500px] bg-gray-800 rounded flex items-center justify-center text-white">
-            Initializing 3D Engine...
-          </div>
-        )}
+        <ClientPlanetScene 
+          zoomLevel={zoomLevel} 
+          initialActivePlanet={initialActivePlanet}
+          onPlanetSelect={onPlanetSelect}
+          worldId={worldId}
+        />
       </div>
 
       <div className="mt-3">

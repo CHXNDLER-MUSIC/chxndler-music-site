@@ -2647,7 +2647,25 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       ) : null}
 
 
-      {/* HoloHUD disabled - blue displays removed */}
+      {/* Blue HUD Panel with integrated planetarium */}
+      {mounted && showHUD && (
+        <HUDPanel 
+          showHUD={showHUD}
+          beamEnabled={beamEnabled}
+          joinAlienOpen={joinAlienOpen}
+          onNameSaved={setSavedProfileName}
+          onElementSaved={setSavedProfileElement}
+          onCloseBlueDisplay={() => setShowHUD(false)}
+          onOpenBlueDisplay={() => handleBeamToggle('blue')}
+          beamColor={beamColor}
+          shouldOpenJournal={shouldOpenJournal}
+          onJournalOpened={() => setShouldOpenJournal(false)}
+          onJournalCompleted={handleJournalCompleted}
+          onBeamColorChange={handleBeamToggle}
+          todaysPrompt={todaysPrompt}
+          profileRefreshTrigger={profileRefreshTrigger}
+        />
+      )}
 
 
       {/* Simple Dimming Overlay - ONLY controlled by cockpitVisible */}

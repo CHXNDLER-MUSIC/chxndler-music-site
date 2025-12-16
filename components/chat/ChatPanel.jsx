@@ -955,7 +955,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                   0 0 50px rgba(242, 239, 29, 0.08),
                   inset 0 0 100px rgba(242, 239, 29, 0.01)
                 `,
-                backdropFilter: 'blur(2px)'
+                backdropFilter: 'blur(2px)',
+                userSelect: 'none',
+                WebkitUserSelect: 'none'
               }}
             >
               {/* Header */}
@@ -1204,7 +1206,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                       <div className={`transition-all duration-300 overflow-hidden ${
                         isVotingPanelCollapsed ? 'max-h-0 opacity-0' : 'max-h-[400px] opacity-100'
                       }`}>
-                        {!isVotingPanelCollapsed && !isUserPanelCollapsed && (
+                        {!isVotingPanelCollapsed && (
                           <VotingPanel />
                         )}
                       </div>
@@ -1271,12 +1273,13 @@ export default function ChatPanel({ isOpen, onClose }) {
                             <div className="flex items-center space-x-2 flex-1 min-w-0">
                               {/* User Icon */}
                               {selectedUser.id === 'anonymous' ? (
-                                <img src="/elements/alien.webp" alt="Alien" className="w-14 h-14 flex-shrink-0 relative -top-8" />
+                                <img src="/elements/alien.webp" alt="Alien" className="w-14 h-14 flex-shrink-0 relative -top-8" draggable={false} />
                               ) : selectedUser?.profile_image_url ? (
                                 <img 
                                   src={selectedUser.profile_image_url} 
                                   alt="Profile" 
                                   className="w-14 h-14 rounded-full flex-shrink-0 object-cover relative -top-8"
+                                  draggable={false}
                                   style={{
                                     border: '1px solid rgba(242, 239, 29, 0.5)',
                                     boxShadow: '0 0 8px rgba(242, 239, 29, 0.3)'
@@ -1301,6 +1304,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   src={selectedUser?.element ? `/elements/${String(selectedUser.element).toLowerCase()}.webp` : '/elements/chxndler.webp'}
                                   alt="Element"
                                   className="w-14 h-14 flex-shrink-0 object-cover rounded-full relative -top-8"
+                                  draggable={false}
                                   style={{
                                     border: '1px solid rgba(242, 239, 29, 0.5)',
                                     boxShadow: '0 0 8px rgba(242, 239, 29, 0.3)'
@@ -1397,6 +1401,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                           src="/elements/binder.webp"
                                           alt="Binder"
                                           className="w-full h-full object-cover rounded"
+                                          draggable={false}
                                           style={{
                                             filter: 'drop-shadow(0 0 4px rgba(252, 84, 175, 0.6))'
                                           }}
@@ -1437,6 +1442,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                           src="/elements/badges.webp"
                                           alt="Badges"
                                           className="w-full h-full object-cover rounded"
+                                          draggable={false}
                                           style={{
                                             filter: 'drop-shadow(0 0 4px rgba(255, 215, 0, 0.6))'
                                           }}
@@ -1473,6 +1479,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                           src="/elements/heart-coin.webp"
                                           alt="Heart Coins"
                                           className="w-full h-full object-cover rounded"
+                                          draggable={false}
                                           style={{
                                             filter: 'drop-shadow(0 0 4px rgba(255, 105, 180, 0.6))'
                                           }}
@@ -1531,6 +1538,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                               src="/elements/heart-coin.webp" 
                               alt="Total Heart Coins" 
                               className="w-6 h-6"
+                              draggable={false}
                             />
                             <span className="text-lg text-pink-400 font-bold">
                               {selectedUser.id === 'anonymous' 
@@ -1569,7 +1577,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 filter: 'brightness(1.2)',
                                 WebkitTextStroke: '1px rgba(0,255,255,0.3)'
                               }}>
-                            <img src="/elements/badges.webp" alt="Badges" className="w-4 h-4 mr-2" />
+                            <img src="/elements/badges.webp" alt="Badges" className="w-4 h-4 mr-2" draggable={false} />
                             BADGES UNLOCKED
                           </h4>
                           
@@ -1749,6 +1757,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                               src={badge.icon_url} 
                                               alt={badge.badge_name || 'Badge'}
                                               className="w-6 h-6"
+                                              draggable={false}
                                               style={{ filter: 'drop-shadow(0 0 4px rgba(0,0,0,0.8))' }}
                                               onError={(e) => {
                                                 e.target.style.display = 'none';
@@ -1861,7 +1870,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                       {showUserBinder && (
                         <div className="pt-2 border-t border-white/20">
                           <h4 className="text-base font-semibold mb-3 flex items-center" style={{ color: '#FF69B4' }}>
-                            <img src="/elements/binder.webp" alt="Cards" className="w-4 h-4 mr-2" />
+                            <img src="/elements/binder.webp" alt="Cards" className="w-4 h-4 mr-2" draggable={false} />
                             CARD COLLECTION
                           </h4>
                           <div className="flex items-center space-x-2">
@@ -1968,6 +1977,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                           src={getCardImage(cardSong.name, cardSong.element)}
                                           alt={cardSong.name}
                                           className="w-full h-full object-contain"
+                                          draggable={false}
                                           style={{
                                             boxShadow: '0 0 10px rgba(255,105,180,0.6)',
                                             padding: '2px'
@@ -2063,7 +2073,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                       {showSendHeartCoin && (
                         <div className="pt-2 border-t border-white/20">
                           <h4 className="text-sm font-semibold mb-3 flex items-center" style={{ color: '#FF69B4' }}>
-                            <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-4 h-4 mr-2" />
+                            <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-4 h-4 mr-2" draggable={false} />
                             SEND HEARTCOIN
                           </h4>
                           <div className="flex items-center justify-between p-4 bg-black/20 rounded-lg border border-pink-400/30">
@@ -2075,6 +2085,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   src="/elements/heart-coin.webp" 
                                   alt="Heart Coins" 
                                   className="w-6 h-6"
+                                  draggable={false}
                                 />
                                 <span className="text-lg text-pink-400 font-bold">{profile?.heartcoin_balance || 0}</span>
                               </div>
@@ -2177,6 +2188,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 src="/elements/heart-coin.webp" 
                                 alt="Heart Coin" 
                                 className="w-6 h-6"
+                                draggable={false}
                               />
                               <span className="text-lg font-bold">1</span>
                             </button>
@@ -2264,6 +2276,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                     src={selectedCardPopup.image}
                     alt={selectedCardPopup.name}
                     className="w-full h-full object-cover"
+                    draggable={false}
                     style={{
                       boxShadow: '0 0 30px rgba(255,105,180,0.6)',
                     }}
@@ -2321,6 +2334,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                     src="/cards/BACK.webp"
                     alt="Card Back"
                     className="w-full h-full object-cover"
+                    draggable={false}
                     style={{
                       boxShadow: '0 0 30px rgba(255,105,180,0.6)',
                     }}
@@ -2418,6 +2432,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                           src={selectedBadgePopup.icon_url}
                           alt={selectedBadgePopup.badge_name || 'Badge'}
                           className="w-16 h-16"
+                          draggable={false}
                           style={{ filter: 'drop-shadow(0 0 6px rgba(0,0,0,0.8))' }}
                           onError={(e) => { e.currentTarget.style.display = 'none'; }}
                         />

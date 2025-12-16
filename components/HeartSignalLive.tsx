@@ -268,7 +268,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
       </div>
 
       {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {isLoading ? (
           <div className="text-center text-purple-400 py-8">
             Loading messages...
@@ -320,7 +320,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
       </div>
 
       {/* Heart Signal Section */}
-      <div className="p-4 border-t border-purple-500/30 space-y-3">
+      <div className="px-4 pt-4 pb-0 border-t border-purple-500/30 space-y-2" style={{ marginBottom: '-12px' }}>
         {/* Stay Connected Text */}
         <div className="text-center">
           <div 
@@ -336,7 +336,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
         </div>
 
         {/* Send Heart Signal Button */}
-        <div className="flex justify-center">
+        <div className="flex justify-center" style={{ marginBottom: '-16px' }}>
           <button
             onClick={sendHeartSignal}
             disabled={heartSignalLoading || heartSignalSent}
@@ -389,7 +389,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
       </div>
 
       {/* Message Input */}
-      <div className="p-4 border-t border-purple-500/30">
+      <div className="p-4 border-t border-purple-500/30 mt-4">
         <div className="flex gap-2">
           <input
             type="text"

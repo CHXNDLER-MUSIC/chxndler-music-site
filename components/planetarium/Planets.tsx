@@ -1,6 +1,9 @@
 'use client';
 
-import React, { useRef, useMemo, useCallback } from 'react';
+import React, { useRef, useMemo } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
+import { useTexture } from '@react-three/drei';
+import * as THREE from 'three';
 import { usePlanetPositions } from '../planet-positions-context';
 import { 
   centerPlanet, 
@@ -24,11 +27,6 @@ import {
   type PlanetConfig
 } from './assets';
 
-// Import Three.js and R3F hooks directly since we're now behind Suspense
-import { useFrame, useThree } from '@react-three/fiber';
-import { useTexture } from '@react-three/drei';
-import * as THREE from 'three';
-
 interface PlanetsProps {
   zoomLevel: number;
   initialActivePlanet?: string;
@@ -39,8 +37,9 @@ interface PlanetsProps {
 const CenterPlanet = React.memo(() => {
   const meshRef = useRef<THREE.Mesh>(null);
   const config = getCenterPlanet();
-  const centerTexture = useTexture(config.texturePath!);
   const { updatePosition, activePlanetId } = usePlanetPositions();
+  
+  const centerTexture = useTexture(config.texturePath!);
 
   // Memoize geometry to avoid recreation
   const geometry = useMemo(() => [config.radius!, config.segments!, config.segments!] as const, [config]);
@@ -90,14 +89,14 @@ const CenterPlanet = React.memo(() => {
   );
 });
 
-function ElementPlanetMesh({ planet }: { planet: ElementPlanetData }) {
+function ElementPlanetMesh({ planet, phaseOffset }: { planet: ElementPlanetData; phaseOffset: number }) {
   const groupRef = useRef<THREE.Group>(null);
   const { updatePosition, activePlanetId } = usePlanetPositions();
 
   useFrame(({ clock }) => {
     if (groupRef.current) {
       const time = clock.getElapsedTime();
-      const angle = time * planet.orbitSpeed;
+      const angle = time * planet.orbitSpeed + phaseOffset;
       const x = Math.cos(angle) * planet.orbitRadius;
       const z = Math.sin(angle) * planet.orbitRadius;
       
@@ -121,14 +120,16 @@ function ElementPlanetMesh({ planet }: { planet: ElementPlanetData }) {
       size={planet.texturePath ? 4 : 4} // Keep existing size for now
       scale={isActive ? ACTIVE_SCALE_FACTOR : 1}
       isActive={isActive}
+      elementId={planet.elementId}
     />
   );
 }
 
 const SongPlanetMesh = React.memo(({ song }: { song: SongPlanet }) => {
   const meshRef = useRef<THREE.Mesh>(null);
-  const texture = song.texturePath ? useTexture(song.texturePath) : null;
   const { updatePosition, activePlanetId, positions } = usePlanetPositions();
+  
+  const texture = song.texturePath ? useTexture(song.texturePath) : null;
 
   // Memoize geometry to avoid recreation
   const geometry = useMemo(() => [SONG_PLANET_RADIUS, SONG_PLANET_SEGMENTS, SONG_PLANET_SEGMENTS] as const, []);
@@ -215,8 +216,12 @@ export function Planets({ zoomLevel, initialActivePlanet, onPlanetSelect, worldI
     <group>
       <CenterPlanet />
       
-      {elementPlanets.map((planet) => (
-        <ElementPlanetMesh key={planet.id} planet={planet} />
+      {elementPlanets.map((planet, index) => (
+        <ElementPlanetMesh 
+          key={planet.id} 
+          planet={planet} 
+          phaseOffset={index * (Math.PI * 2) / elementPlanets.length}
+        />
       ))}
       
       {Object.entries(songsByElement).map(([elementId, songs]) =>

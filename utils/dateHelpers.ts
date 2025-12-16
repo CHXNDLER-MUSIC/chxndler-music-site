@@ -22,7 +22,18 @@ export function getLocalDateString(): string {
  * Get formatted date string for display using EST/New York timezone.
  */
 export function getDisplayDateString(dateString?: string): string {
-  const date = dateString ? new Date(dateString) : new Date();
+  if (dateString) {
+    // Parse YYYY-MM-DD format directly to avoid timezone issues
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month is 0-indexed
+    return date.toLocaleDateString('en-US', {
+      month: 'numeric',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  }
+  
+  const date = new Date();
   return date.toLocaleDateString('en-US', {
     timeZone: 'America/New_York',
     month: 'numeric',

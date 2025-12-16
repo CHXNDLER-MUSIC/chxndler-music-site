@@ -385,14 +385,51 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
       const result = await response.json();
 
+      console.log('Purchase API response:', result);
+      console.log('Purchase response status:', response.status);
+      console.log('Purchase response ok:', response.ok);
+
       if (!response.ok) {
         console.error('Purchase API error:', result);
         setError(result.error || 'Purchase failed. Please try again.');
         return;
       }
 
+      // Check if we actually got a successful result
+      if (!result.success && !result.order_id) {
+        console.error('Purchase succeeded but no order_id returned:', result);
+        setError('Purchase may have failed. Please check your balance and try again.');
+        return;
+      }
+
+      // Send confirmation email
+      if (result.order_id) {
+        try {
+          const emailResponse = await fetch('/api/orders/send-confirmation', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              orderId: result.order_id,
+              shippingInfo: shippingInfo
+            }),
+          });
+
+          const emailResult = await emailResponse.json();
+          if (emailResult.emailSent) {
+            console.log('Order confirmation email sent successfully');
+          } else {
+            console.warn('Order confirmation email failed to send');
+          }
+        } catch (emailError) {
+          console.error('Failed to send confirmation email:', emailError);
+          // Don't fail the purchase if email fails
+        }
+      }
+
       // Success! Clear form and show success message
-      setMessage(`Successfully purchased ${selectedItem.name}! Your order has been placed.`);
+      setMessage(`Successfully purchased ${selectedItem.name}! Your order has been placed and a confirmation email has been sent.`);
       setShowShippingForm(false);
       setSelectedItem(null);
       setShippingInfo({
@@ -527,7 +564,32 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
           throw new Error(result.error || 'Purchase failed');
         }
 
-        setMessage(`Successfully purchased digital ${currentCard.card_name || currentCard.cards?.card_name || 'card'}!`);
+        // Send confirmation email for digital card purchase
+        if (result.order_id) {
+          try {
+            const emailResponse = await fetch('/api/orders/send-confirmation', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                orderId: result.order_id
+              }),
+            });
+
+            const emailResult = await emailResponse.json();
+            if (emailResult.emailSent) {
+              console.log('Digital card confirmation email sent successfully');
+            } else {
+              console.warn('Digital card confirmation email failed to send');
+            }
+          } catch (emailError) {
+            console.error('Failed to send digital card confirmation email:', emailError);
+            // Don't fail the purchase if email fails
+          }
+        }
+
+        setMessage(`Successfully purchased digital ${currentCard.card_name || currentCard.cards?.card_name || 'card'}! A confirmation email has been sent.`);
         // Refresh profile to update balance
         await refreshProfile();
       } catch (error: any) {
@@ -539,11 +601,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     }
   };
 
-  const totalPages = Math.ceil(storeItems.length / itemsPerPage);
-  const currentItems = storeItems.slice(
-    currentPage * itemsPerPage,
-    (currentPage + 1) * itemsPerPage
-  );
+  const totalPages = Math.ceil((merchItems.length || 0) / itemsPerPage);
 
   const handlePrevPage = () => {
     setCurrentPage(prev => Math.max(0, prev - 1));
@@ -709,9 +767,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
             {/* Quest Content */}
             {activeEarnTab === 'DAILY QUESTS' ? (
-              <div className="flex flex-col h-full w-full space-y-4">
+              <div className="flex flex-col h-full w-full space-y-3">
                 {/* Element of the Day Quest */}
-                <div className="w-full bg-black/20 rounded-lg p-10 border border-white/10 flex-1 min-h-[200px]">
+                <div className="w-full bg-black/20 rounded-lg p-10 border border-white/10 flex-[2] min-h-[180px]">
                   <div className="flex items-center justify-between h-full w-full">
                     <div className="flex items-center gap-8 flex-1 min-w-0">
                       <div className="w-24 h-24 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center flex-shrink-0">
@@ -731,7 +789,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 </div>
 
                 {/* Journal Entry Quest */}
-                <div className="w-full bg-black/20 rounded-lg p-10 border border-white/10 flex-1 min-h-[200px]">
+                <div className="w-full bg-black/20 rounded-lg p-10 border border-white/10 flex-[3] min-h-[220px]">
                   <div className="flex items-center justify-between h-full w-full">
                     <div className="flex items-center gap-8 flex-1 min-w-0">
                       <div className="w-24 h-24 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center flex-shrink-0">
@@ -862,7 +920,13 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
             
             {/* Store Items Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[60vh] overflow-y-auto pr-2">
-          {currentItems.map((item, index) => (
+          {merchLoading ? (
+            <div className="col-span-full text-center py-8">
+              <div className="w-8 h-8 border-2 border-[#F2EF1D] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+              <p className="text-white/60 text-sm">Loading merch items...</p>
+            </div>
+          ) : merchItems.length > 0 ? (
+            merchItems.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage).map((item, index) => (
             <div key={index} className="text-center space-y-4 p-4 bg-black/20 rounded-lg transition-all duration-300">
               <h3 className="text-lg font-bold text-white tracking-wider">
                 {item.name.toUpperCase()}
@@ -871,23 +935,44 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               {/* Item Images */}
               <div className="relative h-48 w-full flex items-center justify-center">
                 <img
-                  src={item.image}
+                  src={item.image_url || '/store/default.webp'}
                   alt={item.name}
                   className="max-h-full max-w-full object-contain rounded-lg cursor-pointer hover:scale-105 transition-transform duration-300"
                   onClick={() => {
-                    setEnlargedItem(item);
+                    // Convert database item to StoreItem format for modal
+                    const storeItem = {
+                      name: item.name,
+                      image: item.image_url || '/store/default.webp',
+                      image2: item.secondary_image_url,
+                      stripeUrl: item.stripe_url || '',
+                      description: item.description || '',
+                      cost: item.price_usd || 0,
+                      heartCoin: item.price_heartcoins || 0,
+                      merch_item_id: item.id
+                    };
+                    setEnlargedItem(storeItem);
                     setEnlargedImageIndex(0);
                   }}
                 />
-                {item.image2 && (
+                {item.secondary_image_url && (
                   <img
-                    src={item.image2}
+                    src={item.secondary_image_url}
                     alt={`${item.name} alternative view`}
                     className="max-h-full max-w-full object-contain rounded-lg absolute top-0 left-0 opacity-0 hover:opacity-100 transition-opacity duration-300 cursor-pointer"
                     onClick={() => {
-                    setEnlargedItem(item);
-                    setEnlargedImageIndex(0);
-                  }}
+                      const storeItem = {
+                        name: item.name,
+                        image: item.image_url || '/store/default.webp',
+                        image2: item.secondary_image_url,
+                        stripeUrl: item.stripe_url || '',
+                        description: item.description || '',
+                        cost: item.price_usd || 0,
+                        heartCoin: item.price_heartcoins || 0,
+                        merch_item_id: item.id
+                      };
+                      setEnlargedItem(storeItem);
+                      setEnlargedImageIndex(0);
+                    }}
                   />
                 )}
               </div>
@@ -895,7 +980,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               {/* Description - Hidden for cleaner look */}
               {false && (
                 <div className="text-white/80 text-xs leading-relaxed px-2 break-words">
-                  {item.description.toUpperCase()}
+                  {item.description?.toUpperCase()}
                 </div>
               )}
               
@@ -929,40 +1014,55 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
                       }}
                     />
-                    <span className="text-sm font-bold text-[#F2EF1D]">{item.heartCoin}</span>
+                    <span className="text-sm font-bold text-[#F2EF1D]">{item.price_heartcoins || 0}</span>
                   </div>
                 </div>
               </div>
 
               {/* Purchase Button */}
-              <div className="flex justify-center">
-                <button
-                  onClick={() => handlePurchase(item.stripeUrl)}
-                  onMouseEnter={() => {
-                    try { sfx.play('hover', 0.3); } catch {}
-                  }}
-                  className="px-3 py-2 rounded-lg font-bold text-sm text-green-400 hover:bg-green-500/20 hover:scale-105 transition-all duration-200"
-                >
-                  PAY WITH ${item.cost % 1 === 0 ? item.cost.toFixed(0) : item.cost.toFixed(1)}
-                </button>
-              </div>
+              {item.stripe_url && (
+                <div className="flex justify-center">
+                  <button
+                    onClick={() => handlePurchase(item.stripe_url)}
+                    onMouseEnter={() => {
+                      try { sfx.play('hover', 0.3); } catch {}
+                    }}
+                    className="px-3 py-2 rounded-lg font-bold text-sm text-green-400 hover:bg-green-500/20 hover:scale-105 transition-all duration-200"
+                  >
+                    PAY WITH ${item.price_usd ? (item.price_usd % 1 === 0 ? item.price_usd.toFixed(0) : item.price_usd.toFixed(1)) : '0'}
+                  </button>
+                </div>
+              )}
               
               {/* Add to Collection Button */}
               <button
-                onClick={() => handleHeartCoinPurchaseConfirm(item)}
+                onClick={() => {
+                  // Convert database item to StoreItem format
+                  const storeItem = {
+                    name: item.name,
+                    image: item.image_url || '/store/default.webp',
+                    image2: item.secondary_image_url,
+                    stripeUrl: item.stripe_url || '',
+                    description: item.description || '',
+                    cost: item.price_usd || 0,
+                    heartCoin: item.price_heartcoins || 0,
+                    merch_item_id: item.id
+                  };
+                  handleHeartCoinPurchaseConfirm(storeItem);
+                }}
                 onMouseEnter={() => {
-                  if (!modalLoading && profile && (profile.heartcoin_balance || 0) >= item.heartCoin) {
+                  if (!modalLoading && profile && (profile.heartcoin_balance || 0) >= (item.price_heartcoins || 0)) {
                     try { sfx.play('hover', 0.3); } catch {}
                   }
                 }}
-                disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < item.heartCoin}
+                disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < (item.price_heartcoins || 0)}
                 className={`w-full py-2 px-4 rounded-lg font-bold text-xs transition-all duration-200 ${
-                  modalLoading || !profile || (profile.heartcoin_balance || 0) < item.heartCoin
+                  modalLoading || !profile || (profile.heartcoin_balance || 0) < (item.price_heartcoins || 0)
                     ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
                     : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,239,29,0.6)]'
                 }`}
                 style={
-                  modalLoading || !profile || (profile.heartcoin_balance || 0) < item.heartCoin
+                  modalLoading || !profile || (profile.heartcoin_balance || 0) < (item.price_heartcoins || 0)
                     ? undefined
                     : {
                         boxShadow: '0 0 15px rgba(242,239,29,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
@@ -972,7 +1072,12 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 {modalLoading ? 'Purchasing...' : 'Add to Collection'}
               </button>
             </div>
-          ))}
+          ))
+          ) : (
+            <div className="col-span-full text-center py-8">
+              <p className="text-white/60 text-sm">No merch items available</p>
+            </div>
+          )}
         </div>
 
         {/* Navigation Arrows */}
@@ -1074,12 +1179,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 onMouseEnter={() => {
                   try { sfx.play('hover', 0.3); } catch {}
                 }}
-                disabled={availableCards.length <= 1}
-                className={`absolute left-4 top-1/2 transform -translate-y-1/2 z-10 w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 border-2 ${
-                  availableCards.length <= 1
-                    ? 'bg-gray-600/30 border-gray-500/30 text-gray-500 cursor-not-allowed'
-                    : 'bg-black/70 hover:bg-black/90 border-white/30 hover:border-white/60 text-white/70 hover:text-white hover:scale-110'
-                }`}
+                disabled={false}
+                className={`absolute left-4 top-1/2 transform -translate-y-1/2 z-10 w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 border-2 bg-black/70 hover:bg-black/90 border-white/30 hover:border-white/60 text-white/70 hover:text-white hover:scale-110`}
                 style={{
                   backdropFilter: 'blur(8px)'
                 }}
@@ -1112,9 +1213,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 </div>
                 
                 {/* Card Info */}
-                <div className="mt-4 space-y-4">
-                  <p className="text-white/60 text-sm">
-                    {currentCardIndex + 1} of {availableCards.length}
+                <div className="mt-4 space-y-6">
+                  <p className="text-white/60 text-sm text-center">
+                    {currentCardIndex + 1} of 12
                   </p>
                   
                   {/* Card Description */}
@@ -1125,9 +1226,12 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                        "Lightning is the electric jolt of feeling alive. These tracks buzz. You move fast, crash hard, and maybe regret nothing."}
                     </p>
                   </div>
-                  
-                  {/* Digital and Physical Buttons */}
-                  <div className="flex justify-center gap-4 mt-6">
+                </div>
+              </div>
+
+              {/* Digital and Physical Buttons - Moved outside card info */}
+              <div className="mt-8">
+                <div className="flex gap-4 w-full max-w-lg mx-auto">
                     <button
                       onClick={() => {
                         try { sfx.play('hover', 0.3); } catch {}
@@ -1137,7 +1241,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         try { sfx.play('hover', 0.3); } catch {}
                       }}
                       disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < 5}
-                      className={`px-6 py-2 rounded-lg font-bold text-sm transition-all duration-200 ${
+                      className={`flex-1 px-8 py-4 rounded-lg font-bold text-sm transition-all duration-200 ${
                         modalLoading || !profile || (profile.heartcoin_balance || 0) < 5
                           ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
                           : 'bg-gradient-to-r from-[#4ECDC4] to-[#45b7b8] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(78,205,196,0.6)]'
@@ -1162,7 +1266,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         try { sfx.play('hover', 0.3); } catch {}
                       }}
                       disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < 15}
-                      className={`px-6 py-2 rounded-lg font-bold text-sm transition-all duration-200 ${
+                      className={`flex-1 px-8 py-4 rounded-lg font-bold text-sm transition-all duration-200 ${
                         modalLoading || !profile || (profile.heartcoin_balance || 0) < 15
                           ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
                           : 'bg-gradient-to-r from-[#FC54AF] to-[#e91e63] text-white hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(252,84,175,0.6)]'
@@ -1177,7 +1281,6 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     >
                       PHYSICAL (15 ♡)
                     </button>
-                  </div>
                 </div>
               </div>
 
@@ -1187,12 +1290,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 onMouseEnter={() => {
                   try { sfx.play('hover', 0.3); } catch {}
                 }}
-                disabled={availableCards.length <= 1}
-                className={`absolute right-4 top-1/2 transform -translate-y-1/2 z-10 w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 border-2 ${
-                  availableCards.length <= 1
-                    ? 'bg-gray-600/30 border-gray-500/30 text-gray-500 cursor-not-allowed'
-                    : 'bg-black/70 hover:bg-black/90 border-white/30 hover:border-white/60 text-white/70 hover:text-white hover:scale-110'
-                }`}
+                disabled={false}
+                className={`absolute right-4 top-1/2 transform -translate-y-1/2 z-10 w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 border-2 bg-black/70 hover:bg-black/90 border-white/30 hover:border-white/60 text-white/70 hover:text-white hover:scale-110`}
                 style={{
                   backdropFilter: 'blur(8px)'
                 }}
@@ -1204,7 +1303,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
             </div>
 
             {/* Card Navigation Indicators */}
-            {availableCards.length > 1 && (
+            {availableCards.length > 0 && (
               <div className="flex justify-center mt-6 gap-2">
                 {availableCards.map((_, index) => (
                   <button
@@ -1245,7 +1344,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               <div 
                 className="relative group cursor-pointer"
                 onMouseEnter={() => {
-                  try { sfx.play('change-channel.mp3', 0.5); } catch {}
+                  try { sfx.play('change-channel', 0.5); } catch {}
                 }}
               >
                 <div className="w-24 h-24 mx-auto bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 rounded-full border-2 border-yellow-500/40 flex items-center justify-center transition-all duration-300 hover:border-yellow-400 hover:shadow-[0_0_20px_rgba(255,215,0,0.6)] hover:scale-105">
@@ -1265,7 +1364,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               <div 
                 className="relative group cursor-pointer"
                 onMouseEnter={() => {
-                  try { sfx.play('change-channel.mp3', 0.5); } catch {}
+                  try { sfx.play('change-channel', 0.5); } catch {}
                 }}
               >
                 <div className="w-24 h-24 mx-auto bg-gradient-to-br from-gray-400/20 to-gray-600/20 rounded-full border-2 border-gray-400/40 flex items-center justify-center transition-all duration-300 hover:border-gray-300 hover:shadow-[0_0_20px_rgba(128,128,128,0.6)] hover:scale-105">
@@ -1280,7 +1379,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               <div 
                 className="relative group cursor-pointer"
                 onMouseEnter={() => {
-                  try { sfx.play('change-channel.mp3', 0.5); } catch {}
+                  try { sfx.play('change-channel', 0.5); } catch {}
                 }}
               >
                 <div className="w-24 h-24 mx-auto bg-gradient-to-br from-blue-400/20 to-blue-600/20 rounded-full border-2 border-blue-400/40 flex items-center justify-center transition-all duration-300 hover:border-blue-300 hover:shadow-[0_0_20px_rgba(0,191,255,0.6)] hover:scale-105">
@@ -1300,7 +1399,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               <div 
                 className="relative group cursor-pointer"
                 onMouseEnter={() => {
-                  try { sfx.play('change-channel.mp3', 0.5); } catch {}
+                  try { sfx.play('change-channel', 0.5); } catch {}
                 }}
               >
                 <div className="w-24 h-24 mx-auto bg-gradient-to-br from-pink-500/20 to-pink-600/20 rounded-full border-2 border-pink-500/40 flex items-center justify-center transition-all duration-300 hover:border-pink-400 hover:shadow-[0_0_20px_rgba(255,105,180,0.6)] hover:scale-105">

@@ -626,10 +626,12 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
             className="card-anchored"
             style={{
               position: 'fixed',
-              bottom: '42vh', // Slightly higher on screen
+              bottom: '42vh', 
               left: '50%',
               transform: 'translateX(-50%)',
-              pointerEvents: 'auto'
+              pointerEvents: 'auto',
+              maxHeight: 'calc(100vh - 120px)', // Ensure card doesn't exceed screen minus profile bar space
+              overflow: 'visible'
             }}
             onClick={(e)=> e.stopPropagation()}
           >
@@ -779,7 +781,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
               }}
               onMouseOver={(e)=>{ try { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.08)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 28px rgba(25,227,255,1)'; } catch {} }}
               onMouseOut={(e)=>{ try { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.0)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 20px rgba(25,227,255,0.8)'; } catch {} }}
-              className="absolute -top-3 -right-3 rounded-full bg-[#19E3FF] text-black font-bold w-8 h-8 shadow-[0_0_20px_rgba(25,227,255,0.8)] transition-transform"
+              className="absolute -top-1 -right-1 rounded-full bg-[#19E3FF] text-black font-bold w-8 h-8 shadow-[0_0_20px_rgba(25,227,255,0.8)] transition-transform"
               title="Close"
             >×</button>
             </div>
@@ -1152,8 +1154,10 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
           /* Larger pop container */
           width: min(85vw, 400px);
           max-width: 85vw;
+          max-height: calc(100vh - 140px); /* Constrain height to stay below profile bar */
           background: rgba(25,227,255,0.45);
           box-shadow: 0 0 60px rgba(25,227,255,0.45), inset 0 0 0 1px rgba(25,227,255,0.35);
+          overflow: hidden; /* Contain content within bounds */
         }
         @media (max-width: 380px) {
           /* Nudge down more on very narrow devices */

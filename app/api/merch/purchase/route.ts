@@ -216,6 +216,14 @@ export async function POST(request: NextRequest) {
           price_heartcoins: totalPrice,
           status: orderStatus
         });
+
+        // First check if orders table exists and what columns it has
+        const { data: tableInfo, error: tableError } = await supabase
+          .from('orders')
+          .select('*')
+          .limit(1);
+          
+        console.log('[PURCHASE] Orders table check:', { tableInfo, tableError });
         
         const { data: order, error: orderError } = await supabase
           .from('orders')

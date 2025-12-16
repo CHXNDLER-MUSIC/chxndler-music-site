@@ -38,16 +38,8 @@ import SongDropdown from "@/components/SongDropdown";
 import SimpleWaveform from "@/components/SimpleWaveform";
 import WaveformVisualizer, { ELEMENT_COLORS } from "@/components/WaveformVisualizer";
 import DevErrorLogger from "@/components/DevErrorLogger";
-// Lazy-load 3D systems on client only to avoid early evaluation issues
-// Prefer R3F-based system when compatible; otherwise fall back to raw Three.js
-const PlanetSystem = dynamic(() => import("@/components/holo/PlanetSystem").catch(err => {
-  console.warn('PlanetSystem import failed, switching to Raw fallback:', err);
-  return import("@/components/holo/PlanetSystemRaw");
-}), { 
-  ssr: false,
-  loading: () => <div className="flex items-center justify-center h-full text-cyan-400">Loading planets...</div>
-});
-const PlanetSystemRaw = dynamic(() => import("@/components/holo/PlanetSystemRaw"), { 
+// Working 2D planetarium system - no SSR issues
+const PlanetSystemV2 = dynamic(() => import("@/components/PlanetSystemV2").then(mod => ({ default: mod.PlanetSystemV2 })), { 
   ssr: false,
   loading: () => <div className="flex items-center justify-center h-full text-cyan-400">Loading planets...</div>
 });
@@ -2325,9 +2317,12 @@ const HUDPanel = React.memo(function HUDPanel({
                     // Do not disable can3D here; fallback may still work
                   }}
                 >
-                  {/* Show all planets on homepage (no currentId), and focus when a song is selected */}
-                  {/* Temporarily force only the main PlanetSystem to debug duplication */}
-                  <PlanetSystem showAll={showAllPlanets || !currentId} hideUntilPlaying={!!hidePlanetsUntilPlaying} onSongChange={onSongChange} />
+                  {/* Show all planets using working 2D planetarium */}
+                  <PlanetSystemV2 
+                    initialActivePlanet={currentId ? 'HEART' : undefined}
+                    onPlanetSelect={onSongChange}
+                    worldId={currentId ? 'heart' : undefined}
+                  />
                 </ErrorBoundary>
               </div>
           </div>

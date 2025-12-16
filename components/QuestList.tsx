@@ -392,14 +392,20 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
       // Normalize input before sending (trim but keep case as user typed)
       const normalizedPhrase = secretPhrase.trim();
       
-      // Call the Supabase RPC directly as specified in requirements
-      const { data, error } = await supabaseBrowser.rpc('redeem_secret_phrase', { 
-        p_user_id: session.user.id, 
-        p_phrase: normalizedPhrase 
+      // Call the API route for secret phrase redemption
+      const response = await fetch('/api/redeem-secret-phrase', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          context: 'global',
+          phrase: normalizedPhrase
+        })
       });
-      
-      if (error) {
-        console.error('RPC error:', error);
+
+      if (!response.ok) {
+        console.error('API error:', response.status, response.statusText);
         setCheckInError("Connection error. Please try again.");
         setTimeout(() => {
           setCheckInError("");
@@ -408,9 +414,29 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         setLoading(false);
         return;
       }
+
+      const data = await response.json();
       
-      // Use ONLY the RPC response to set UI state (no pre-validation query)
-      if (data.success === true) {
+      // Check for API-level errors
+      if (data.status === 'error') {
+        console.error('API response error:', data);
+        if (data.code === 'ALREADY_REDEEMED') {
+          setCheckInError("Already checked in");
+        } else if (data.code === 'NO_ACTIVE_PHRASE') {
+          setCheckInError("Incorrect");
+        } else {
+          setCheckInError("Connection error. Please try again.");
+        }
+        setTimeout(() => {
+          setCheckInError("");
+          setSecretPhrase("");
+        }, 3000);
+        setLoading(false);
+        return;
+      }
+      
+      // Use API response to set UI state
+      if (data.status === 'success') {
         // Success case
         console.log('Secret phrase redemption successful:', data);
         setQuestStatus(prev => ({ ...prev, liveShow: true }));
@@ -418,27 +444,21 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         const today = new Date().toDateString();
         localStorage.setItem(`quest_liveshow_${today}`, 'true');
         
-        const successMessage = `Check-in successful +${data.reward || 'reward'}`;
+        const successMessage = `Check-in successful +${data.rewardHeartCoins || 'reward'}`;
         showCelebration(successMessage);
         setSecretPhrase(""); // Clear input
         setShowCheckIn(false);
         
-        // Update displayed heartcoin balance (optimistically add data.reward OR refetch profile)
-        if (data.reward && data.reward > 0) {
-          triggerHeartCoinCelebration(data.reward);
+        // Update displayed heartcoin balance (optimistically add data.rewardHeartCoins OR refetch profile)
+        if (data.rewardHeartCoins && data.rewardHeartCoins > 0) {
+          triggerHeartCoinCelebration(data.rewardHeartCoins);
           // Refresh profile to update balance
           await refreshProfile();
         }
-      } else if (data.reason === 'ALREADY_REDEEMED') {
-        // Already redeemed case - show specific message, do NOT show INCORRECT
-        setCheckInError("Already checked in");
-        setTimeout(() => {
-          setCheckInError("");
-          setSecretPhrase("");
-        }, 3000);
       } else {
-        // All other failures - show incorrect
-        setCheckInError("Incorrect");
+        // This case should not be reached due to earlier error handling, but keep as fallback
+        console.error('Unexpected data format:', data);
+        setCheckInError("Connection error. Please try again.");
         setTimeout(() => {
           setCheckInError("");
           setSecretPhrase("");
