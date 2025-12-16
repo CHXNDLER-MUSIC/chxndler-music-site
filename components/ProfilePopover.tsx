@@ -765,7 +765,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
 
             </div>
             
-            {/* Username and Element - Right of image */}
+            {/* Left side - Username, Journey, Element */}
             <div className="flex-1 ml-4">
               <div 
                 className="text-left"
@@ -779,8 +779,8 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 {profile?.name || 'Unknown'}
               </div>
 
-              {/* Journey label under name with Relics button */}
-              <div className="mt-1 flex items-center gap-3">
+              {/* Journey label */}
+              <div className="mt-1">
                 {(() => {
                   const { label, color } = getJourneyDisplay();
                   return (
@@ -796,28 +796,6 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                     </div>
                   );
                 })()}
-                
-                {/* Relics button next to LOVER */}
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => { setShowRelicsInline(true); try { sfx.play('click', 0.6); } catch {} }}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowRelicsInline(true); try { sfx.play('click', 0.6); } catch {} } }}
-                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-                  className="w-16 h-16 transition-transform hover:scale-[1.08] flex items-center justify-center cursor-pointer select-none flex-shrink-0"
-                  style={{ background: 'transparent', backgroundColor: 'transparent', border: 'none', boxShadow: 'none', outline: 'none' }}
-                  title="View your relics"
-                >
-                  <img
-                    src="/elements/relics.webp"
-                    alt="Relics"
-                    className="w-14 h-14 object-contain"
-                    onError={(e) => {
-                      const target = e.currentTarget as HTMLImageElement;
-                      target.style.display = 'none';
-                    }}
-                  />
-                </div>
               </div>
               
               {/* Element */}
@@ -854,10 +832,35 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   {profile?.element ? profile.element.toUpperCase() : 'NONE'}
                 </button>
               </div>
+            </div>
+            
+            {/* Right side - Relics button and stats */}
+            <div className="flex flex-col items-center gap-2">
+              {/* Relics button */}
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => { setShowRelicsInline(true); try { sfx.play('click', 0.6); } catch {} }}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowRelicsInline(true); try { sfx.play('click', 0.6); } catch {} } }}
+                onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                className="w-16 h-16 transition-transform hover:scale-[1.08] flex items-center justify-center cursor-pointer select-none flex-shrink-0"
+                style={{ background: 'transparent', backgroundColor: 'transparent', border: 'none', boxShadow: 'none', outline: 'none' }}
+                title="View your relics"
+              >
+                <img
+                  src="/elements/relics.webp"
+                  alt="Relics"
+                  className="w-14 h-14 object-contain"
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              </div>
               
-              {/* Daily Streak and Heart Coins */}
-              <div className="flex flex-col gap-y-1 mt-2">
-                {/* Daily streak - top */}
+              {/* Daily Streak and Heart Coins under relics */}
+              <div className="flex flex-col gap-y-1 items-center">
+                {/* Daily streak */}
                 <div className="flex items-center">
                   <span className="text-white/80 text-sm mr-1">Daily Streak:</span>
                   <span 
@@ -870,7 +873,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                     {profile?.daily_streak || 0}
                   </span>
                 </div>
-                {/* Total heartcoins - bottom */}
+                {/* Total heartcoins */}
                 <div className="flex items-center">
                   <span className="text-white/80 text-sm mr-1">Total HeartCoins:</span>
                   <span 

@@ -471,8 +471,30 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         if (!isDuplicate) {
           console.error('Error giving star:', error);
           return;
+        } else {
+          // User already starred this entry, don't increment
+          return;
         }
       }
+
+      // Update the stars_count in soul_journal_entries table
+      const { error: updateError } = await supabaseBrowser
+        .from('soul_journal_entries')
+        .update({ 
+          stars_count: supabaseBrowser.raw('COALESCE(stars_count, 0) + 1')
+        })
+        .eq('entry_id', entryId);
+
+      if (updateError) {
+        console.error('Error updating star count:', updateError);
+      }
+
+      // Update local state immediately for instant feedback
+      setPublicEntries(prev => prev.map(entry => 
+        entry.entry_id === entryId 
+          ? { ...entry, stars_count: (entry.stars_count ?? 0) + 1 }
+          : entry
+      ));
 
       // Refresh to reflect updated star counts
       await Promise.all([refreshProfile(), loadPublicEntries()]);
@@ -1219,26 +1241,24 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                             {/* Soul Star Button */}
                             <button
                               type="button"
-                              className="flex items-center gap-1 transition-all duration-200 hover:scale-105 px-3 py-1.5 rounded-full"
+                              className="flex items-center gap-1 transition-all duration-200 hover:scale-105 px-3 py-1.5"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                sfx.play('click', 0.6);
+                                sfx.play('card-ding', 0.45);
                                 handleGiveStar(entry.entry_id);
                               }}
                               onMouseEnter={() => {
                                 try { sfx.play('hover', 0.6); } catch {}
                               }}
                               style={{
-                                background: 'rgba(0, 0, 0, 0.6)',
-                                border: `1px solid ${entryTheme.color}60`,
-                                boxShadow: `0 0 8px ${entryTheme.color}30`
+                                background: 'transparent'
                               }}
                             >
                               <Image
                                 src="/elements/soul-star.webp"
                                 alt="Soul Star"
-                                width={20}
-                                height={20}
+                                width={28}
+                                height={28}
                                 style={{
                                   filter: `drop-shadow(0 0 4px ${entryTheme.color})`
                                 }}
@@ -1373,12 +1393,15 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       try { sfx.play('click', 0.4); } catch {}
+                                      if (showBadgesModal) {
+                                        setShowBadgesModal(false);
+                                      }
                                       setShowIntegratedBinder(!showIntegratedBinder);
                                     }}
                                     onMouseEnter={() => {
                                       try { sfx.play('hover', 0.6); } catch {}
                                     }}
-                                    className="w-16 h-16 rounded-full text-xs font-semibold transition-all duration-200 hover:scale-105 flex items-center justify-center"
+                                    className="w-20 h-20 rounded-full text-xs font-semibold transition-all duration-200 hover:scale-105 flex items-center justify-center"
                                     style={{
                                       background: 'transparent',
                                       color: '#00BFFF',
@@ -1388,7 +1411,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                     <img 
                                       src="/elements/binder.webp" 
                                       alt="Binder" 
-                                      className="w-10 h-10"
+                                      className="w-12 h-12"
                                     />
                                   </button>
 
@@ -1396,12 +1419,15 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       try { sfx.play('click', 0.4); } catch {}
+                                      if (showIntegratedBinder) {
+                                        setShowIntegratedBinder(false);
+                                      }
                                       setShowBadgesModal(!showBadgesModal);
                                     }}
                                     onMouseEnter={() => {
                                       try { sfx.play('hover', 0.6); } catch {}
                                     }}
-                                    className="w-16 h-16 rounded-full text-xs font-semibold transition-all duration-200 hover:scale-105 flex items-center justify-center"
+                                    className="w-20 h-20 rounded-full text-xs font-semibold transition-all duration-200 hover:scale-105 flex items-center justify-center"
                                     style={{
                                       background: 'transparent',
                                       color: '#FF69B4',
@@ -1411,7 +1437,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                     <img 
                                       src="/elements/badges.webp" 
                                       alt="Badges" 
-                                      className="w-10 h-10"
+                                      className="w-12 h-12"
                                     />
                                   </button>
 
@@ -1425,7 +1451,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                     onMouseEnter={() => {
                                       try { sfx.play('hover', 0.6); } catch {}
                                     }}
-                                    className="w-16 h-16 rounded-full text-xs font-semibold transition-all duration-200 hover:scale-105 flex items-center justify-center"
+                                    className="w-20 h-20 rounded-full text-xs font-semibold transition-all duration-200 hover:scale-105 flex items-center justify-center"
                                     style={{
                                       background: 'transparent',
                                       color: '#FF69B4',
@@ -1435,7 +1461,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                     <img 
                                       src="/elements/heart-coin.webp" 
                                       alt="Send Heart Coin" 
-                                      className="w-10 h-10"
+                                      className="w-12 h-12"
                                     />
                                   </button>
                                 </div>
@@ -1567,6 +1593,9 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     try { sfx.play('click', 0.4); } catch {}
+                                    if (showBadgesModal) {
+                                      setShowBadgesModal(false);
+                                    }
                                     setShowIntegratedBinder(!showIntegratedBinder);
                                   }}
                                   className="flex-1 w-10 h-10 rounded-full text-xs font-semibold transition-all duration-200 hover:scale-105 flex items-center justify-center"
@@ -1601,6 +1630,25 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                               </div>
                             </div>
 
+                              {/* Integrated Binder Display - Show when BINDER is clicked */}
+                              {showIntegratedBinder && (
+                                <div 
+                                  className="rounded-lg px-3 py-2 mb-2"
+                                  style={{
+                                    background: 'rgba(255, 105, 180, 0.1)',
+                                    border: `1px solid #FF69B430`,
+                                    boxShadow: `0 0 8px #FF69B420`
+                                  }}
+                                >
+                                  <UserCards
+                                    userId={entry.user_id}
+                                    embedded={true}
+                                    showTitle={true}
+                                    maxCards={4}
+                                    onCardClick={handleCardClick}
+                                  />
+                                </div>
+                              )}
 
                         {/* Soul Star Section with Edit Functionality */}
                         <div 
@@ -1786,7 +1834,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               />
             </div>
 
-
             {/* Header Layout - Date and Element */}
             <div className="relative pb-12">
               {/* FULL LOG on left; Date centered */}
@@ -1867,7 +1914,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               <div 
                 className="absolute left-1/2 transform -translate-x-1/2 px-3 py-1 text-lg font-semibold uppercase flex items-center gap-2"
                 style={{
-                  top: '40px',
+                  top: '25px',
                   color: elementTheme.color,
                   textShadow: 'none'
                 }}
@@ -1949,7 +1996,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                       </div>
                     </div>
                     <div 
-                      className="text-base leading-relaxed"
+                      className="text-lg leading-relaxed"
                       style={{ color: '#FFFFFF', lineHeight: '1.5' }}
                     >
                       {dailyPrompt.intention.text}
@@ -2097,7 +2144,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                       onChange={(e) => setSoulStarText(e.target.value)}
                       onClick={(e) => e.stopPropagation()}
                       placeholder={(!user?.id || !profile?.element) ? "Let your Soul speak..." : "Let your Soul Star speak…"}
-                      className="w-full h-24 p-3 rounded-lg text-white text-lg placeholder-white/50 resize-none focus:outline-none transition-all"
+                      className="w-full h-20 p-3 rounded-lg text-white text-lg placeholder-white/50 resize-none focus:outline-none transition-all"
                       disabled={isSaving || journalState.isSubmitted}
                       style={{
                         background: 'rgba(0,0,0,0.4)',
@@ -2121,7 +2168,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3 pt-4 pb-0 mt-auto -mb-1">
+            <div className="flex gap-3 pb-0 mt-auto -mb-1">
                   {(!user?.id || !profile?.element) ? (
                     <button
                       onClick={() => {
@@ -2240,8 +2287,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           <div 
             className="relative preserve-3d cursor-pointer pointer-events-auto"
             style={{
-              width: '160px',
-              height: '224px',
+              width: 'min(400px, 90vw)',
+              height: 'min(560px, 80vh)',
               transform: isCardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
               transformStyle: 'preserve-3d',
               transition: 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)'

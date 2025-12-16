@@ -21,6 +21,8 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [heartSignalSent, setHeartSignalSent] = useState(false);
+  const [heartSignalLoading, setHeartSignalLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
@@ -158,6 +160,36 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
     }
   };
 
+  // Send a heart signal 
+  const sendHeartSignal = async () => {
+    if (heartSignalLoading) return;
+    
+    setHeartSignalLoading(true);
+    try {
+      const response = await fetch('/api/heart-signal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: 'Heart signal from HeartSignalLive',
+        }),
+      });
+
+      if (response.ok) {
+        setHeartSignalSent(true);
+        // Also send a system message to the chat
+        await sendSystemMessage(`💖 Heart signal sent to the Heartverse!`);
+      } else {
+        console.error('Failed to send heart signal');
+      }
+    } catch (error) {
+      console.error('Heart signal error:', error);
+    } finally {
+      setHeartSignalLoading(false);
+    }
+  };
+
   // Initialize component
   useEffect(() => {
     loadMessages();
@@ -184,24 +216,55 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
   if (!isOpen) return null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -300 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -300 }}
-      transition={{ duration: 0.3 }}
-      className="fixed left-0 top-0 h-full w-80 bg-black/90 border-r border-purple-500/30 z-50 flex flex-col"
-    >
+    <>
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
+      <motion.div
+        initial={{ opacity: 0, x: -300 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -300 }}
+        transition={{ duration: 0.3 }}
+        className="fixed left-0 top-0 h-full w-80 bg-black/90 border-r border-purple-500/30 z-50 flex flex-col"
+      >
       {/* Header */}
-      <div className="p-4 border-b border-purple-500/30 flex items-center justify-between">
-        <h2 className="text-lg font-bold text-white">Heart Signal Live</h2>
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="text-purple-400 hover:text-white transition-colors"
-          >
-            ✕
-          </button>
-        )}
+      <div className="p-4 border-b border-purple-500/30">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center flex-1">
+            <h2 
+              className="text-xl font-bold whitespace-nowrap"
+              style={{
+                color: '#FC54AF !important',
+                textShadow: '0 0 10px #FC54AF, 0 0 20px #FC54AF, 0 0 30px #FC54AF',
+                letterSpacing: '0.05em',
+                fontWeight: 'bold'
+              }}
+            >
+              HEART SIGNAL
+            </h2>
+            
+            {/* Extended glow line */}
+            <div 
+              className="flex-1 h-px ml-4"
+              style={{
+                background: 'linear-gradient(90deg, rgba(252, 84, 175, 0.6), rgba(252, 84, 175, 0.2), transparent)',
+                boxShadow: '0 0 8px rgba(252, 84, 175, 0.4)'
+              }}
+            />
+          </div>
+          
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="text-purple-400 hover:text-white transition-colors ml-4"
+            >
+              ✕
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Messages Container */}
@@ -256,6 +319,75 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Heart Signal Section */}
+      <div className="p-4 border-t border-purple-500/30 space-y-3">
+        {/* Stay Connected Text */}
+        <div className="text-center">
+          <div 
+            style={{ 
+              color: '#00FFFF',
+              fontSize: '16px',
+              fontWeight: '600',
+              textShadow: '0 0 8px rgba(0, 255, 255, 0.6)'
+            }}
+          >
+            Stay connected to the Heartverse.
+          </div>
+        </div>
+
+        {/* Send Heart Signal Button */}
+        <div className="flex justify-center">
+          <button
+            onClick={sendHeartSignal}
+            disabled={heartSignalLoading || heartSignalSent}
+            style={{
+              width: '80%',
+              padding: '12px 24px',
+              background: 'transparent',
+              border: heartSignalSent
+                ? '2px solid #00FF00'
+                : heartSignalLoading 
+                  ? '2px solid rgba(128, 128, 128, 0.3)' 
+                  : '2px solid #00FFFF',
+              borderRadius: '8px',
+              color: heartSignalSent
+                ? '#00FF00'
+                : heartSignalLoading 
+                  ? 'rgba(128, 128, 128, 0.6)' 
+                  : '#00FFFF',
+              fontSize: '16px',
+              fontWeight: '600',
+              cursor: heartSignalLoading || heartSignalSent ? 'not-allowed' : 'pointer',
+              textShadow: heartSignalSent
+                ? '0 0 8px rgba(0, 255, 0, 0.6)'
+                : !heartSignalLoading 
+                  ? '0 0 8px rgba(0, 255, 255, 0.6)' 
+                  : 'none',
+              transition: 'all 0.3s ease',
+              opacity: heartSignalLoading || heartSignalSent ? 0.7 : 1
+            }}
+          >
+            {heartSignalLoading ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <div style={{
+                  width: '16px',
+                  height: '16px',
+                  border: '2px solid transparent',
+                  borderTop: '2px solid currentColor',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }} />
+                Sending...
+              </div>
+            ) : heartSignalSent ? (
+              "Heart signal sent"
+            ) : (
+              "Send Heart Signal"
+            )}
+          </button>
+        </div>
+      </div>
+
       {/* Message Input */}
       <div className="p-4 border-t border-purple-500/30">
         <div className="flex gap-2">
@@ -282,6 +414,61 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
           </p>
         )}
       </div>
-    </motion.div>
+
+      {/* $ Button - positioned in bottom right corner */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '12px',
+          right: '12px',
+          width: '55px',
+          height: '55px',
+          zIndex: 1000,
+          pointerEvents: 'auto'
+        }}
+      >
+        <button
+          onClick={() => {
+            // Add tip functionality here
+            console.log('Tip button clicked in HeartSignalLive');
+          }}
+          style={{
+            width: '100%',
+            height: '100%',
+            background: 'rgba(252, 84, 175, 0.1)',
+            border: '2px solid #FC54AF',
+            borderRadius: '50%',
+            color: '#FC54AF',
+            fontSize: '18px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 300ms ease',
+            outline: 'none',
+            textShadow: '0 0 8px #FC54AF',
+            boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
+            position: 'relative',
+            zIndex: 1001
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.transform = 'scale(1.1)';
+            e.target.style.background = 'rgba(252, 84, 175, 0.2)';
+            e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
+            e.target.style.textShadow = '0 0 15px #FC54AF, 0 0 25px #FC54AF';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.transform = 'scale(1)';
+            e.target.style.background = 'rgba(252, 84, 175, 0.1)';
+            e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
+            e.target.style.textShadow = '0 0 8px #FC54AF';
+          }}
+        >
+          $
+        </button>
+      </div>
+      </motion.div>
+    </>
   );
 }

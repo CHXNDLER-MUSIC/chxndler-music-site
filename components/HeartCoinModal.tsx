@@ -518,7 +518,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             onClose(); // Close the HeartCoin modal first
                             setTimeout(() => {
                               onOpenJournal(); // Then open the journal
-                            }, 150);
+                            }, 200); // Slightly longer delay to ensure modal closes completely
                           }
                         }}
                         className="px-3 py-1 text-xs rounded border transition-colors bg-rgba(255,255,255,0.1) text-white hover:bg-white/20"

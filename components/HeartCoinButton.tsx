@@ -264,6 +264,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [activeEarnTab, setActiveEarnTab] = useState<'DAILY QUESTS' | 'BONUS QUESTS'>('DAILY QUESTS');
   const [selectedCardElement, setSelectedCardElement] = useState<string | null>(null);
   const [selectedSong, setSelectedSong] = useState<string>('');
+  const [currentCardIndex, setCurrentCardIndex] = useState<number>(0);
   const [showPhysicalForm, setShowPhysicalForm] = useState(false);
   const [showPhysicalConfirm, setShowPhysicalConfirm] = useState(false);
   const [showDigitalForm, setShowDigitalForm] = useState(false);
@@ -330,6 +331,27 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     const currentBalance = profile?.heartcoin_balance ?? externalHeartCoins;
     setHeartCoins(currentBalance);
   }, [externalHeartCoins, profile?.heartcoin_balance, profile?.id]);
+
+  // Keyboard navigation for merch items
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only handle navigation when MERCH tab is active and modal is open
+      if (!open || activeTab !== 'USE' || activeUseTab !== 'MERCH') return;
+      
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        try { sfx.play('click', 0.6); } catch {}
+        setCurrentMerchIndex(prev => prev > 0 ? prev - 1 : PHYSICAL_ITEMS.length - 1);
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        try { sfx.play('click', 0.6); } catch {}
+        setCurrentMerchIndex(prev => prev < PHYSICAL_ITEMS.length - 1 ? prev + 1 : 0);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, activeTab, activeUseTab, sfx]);
 
   // Check for initial tab preference from hamburger menu
   const [isFromHamburger, setIsFromHamburger] = useState(false);
@@ -587,6 +609,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       if (selectedRarity && !availableRarities.includes(selectedRarity)) {
         setSelectedRarity('');
       }
+      // Reset card index when element changes
+      setCurrentCardIndex(0);
     }
   }, [selectedCardElement, availableSongs, availableRarities, selectedSong, selectedRarity]);
 
@@ -2046,19 +2070,19 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               
                               {/* Item Title + Image OR User/Cost Display */}
                               {showHeartCoinPurchase && selectedItem?.slug === PHYSICAL_ITEMS[currentMerchIndex].slug ? (
-                                /* User and Cost Display - Centered */
-                                <div className="flex flex-col items-center justify-center py-4">
-                                  {/* User Section */}
-                                  <div className="flex flex-col items-center mb-6">
-                                    <div 
-                                      className="font-bold text-white text-xl mb-3"
-                                      style={{
-                                        textShadow: '0 0 4px rgba(255,255,255,0.6)'
-                                      }}
-                                    >
-                                      User
-                                    </div>
+                                /* User at top, Cost positioned above CONFIRM button */
+                                <div className="flex flex-col items-center h-full">
+                                  {/* User Section - at top */}
+                                  <div className="flex flex-col items-center pt-4">
                                     <div className="flex items-center gap-3">
+                                      <div 
+                                        className="font-bold text-white text-xl"
+                                        style={{
+                                          textShadow: '0 0 4px rgba(255,255,255,0.6)'
+                                        }}
+                                      >
+                                        User
+                                      </div>
                                       <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
                                       <div 
                                         className="text-2xl font-bold"
@@ -2072,17 +2096,20 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     </div>
                                   </div>
 
-                                  {/* Cost Section */}
-                                  <div className="flex flex-col items-center">
-                                    <div 
-                                      className="font-bold text-white text-xl mb-3"
-                                      style={{
-                                        textShadow: '0 0 4px rgba(255,255,255,0.6)'
-                                      }}
-                                    >
-                                      Cost
-                                    </div>
+                                  {/* Spacer to push Cost section down */}
+                                  <div className="flex-1" />
+
+                                  {/* Cost Section - positioned near bottom, above CONFIRM */}
+                                  <div className="flex flex-col items-center pb-8">
                                     <div className="flex items-center gap-3">
+                                      <div 
+                                        className="font-bold text-white text-xl"
+                                        style={{
+                                          textShadow: '0 0 4px rgba(255,255,255,0.6)'
+                                        }}
+                                      >
+                                        Cost
+                                      </div>
                                       <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
                                       <div 
                                         className="text-2xl font-bold"
@@ -2105,22 +2132,24 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   >
                                     {PHYSICAL_ITEMS[currentMerchIndex].title.toUpperCase()}
                                   </div>
-                                  <div 
-                                    className="relative w-28 h-28 -mt-1 flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-200"
-                                    onMouseEnter={() => {
-                                      try { sfx.play('hover', 0.3); } catch {}
-                                    }}
-                                    onClick={() => {
-                                      try { sfx.play('click', 0.8); } catch {}
-                                      setEnlargedMerchItem(PHYSICAL_ITEMS[currentMerchIndex]);
-                                    }}
-                                  >
-                                    <img
-                                      src={PHYSICAL_ITEMS[currentMerchIndex].image}
-                                      alt={PHYSICAL_ITEMS[currentMerchIndex].title}
-                                      className="w-full h-full object-cover rounded"
-                                    />
-                                    {/* Overlay navigation arrows centered on image */}
+                                  <div className="relative flex items-center justify-center">
+                                    <div 
+                                      className="w-28 h-28 -mt-1 flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-200"
+                                      onMouseEnter={() => {
+                                        try { sfx.play('hover', 0.3); } catch {}
+                                      }}
+                                      onClick={() => {
+                                        try { sfx.play('click', 0.8); } catch {}
+                                        setEnlargedMerchItem(PHYSICAL_ITEMS[currentMerchIndex]);
+                                      }}
+                                    >
+                                      <img
+                                        src={PHYSICAL_ITEMS[currentMerchIndex].image}
+                                        alt={PHYSICAL_ITEMS[currentMerchIndex].title}
+                                        className="w-full h-full object-cover rounded"
+                                      />
+                                    </div>
+                                    {/* Navigation arrows - positioned independently */}
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -2129,7 +2158,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       }}
                                       onMouseEnter={(e) => { e.stopPropagation(); try { sfx.play('hover', 0.3); } catch {} }}
                                       className="absolute flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-110 transition-all duration-200"
-                                      style={{ left: '-14px', top: '50%', transform: 'translateY(-50%)', boxShadow: '0 0 8px rgba(255,255,255,0.3)' }}
+                                      style={{ left: '-40px', top: '50%', transform: 'translateY(-50%)', boxShadow: '0 0 8px rgba(255,255,255,0.3)' }}
                                       aria-label="Previous item"
                                     >
                                       <span className="text-white text-sm font-bold">←</span>
@@ -2142,7 +2171,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       }}
                                       onMouseEnter={(e) => { e.stopPropagation(); try { sfx.play('hover', 0.3); } catch {} }}
                                       className="absolute flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-110 transition-all duration-200"
-                                      style={{ right: '-14px', top: '50%', transform: 'translateY(-50%)', boxShadow: '0 0 8px rgba(255,255,255,0.3)' }}
+                                      style={{ right: '-40px', top: '50%', transform: 'translateY(-50%)', boxShadow: '0 0 8px rgba(255,255,255,0.3)' }}
                                       aria-label="Next item"
                                     >
                                       <span className="text-white text-sm font-bold">→</span>
@@ -2217,8 +2246,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     </div>
                   )}
 
-                  {/* Bottom action bar for MERCH payments - Only show when NOT in heart coin purchase mode */}
-                  {activeUseTab === 'MERCH' && PHYSICAL_ITEMS[currentMerchIndex] && !(showHeartCoinPurchase && selectedItem?.slug === PHYSICAL_ITEMS[currentMerchIndex].slug) && (
+                  {/* Bottom action bar for MERCH payments */}
+                  {activeUseTab === 'MERCH' && PHYSICAL_ITEMS[currentMerchIndex] && (
                     <div className="absolute left-6 right-6 bottom-4 flex gap-2">
                       <button
                         onClick={() => {
@@ -2315,14 +2344,16 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       ) : (
                         /* Card Detail View */
                         <div>
-                          {/* Back button */}
-                          <div className="flex items-center mb-4">
+                          {/* Navigation Header */}
+                          <div className="flex items-center justify-between mb-4">
+                            {/* Back button */}
                             <button
                               onClick={() => {
                                 try { sfx.play('close', 0.6); } catch {}
                                 setSelectedCardElement(null);
                                 setSelectedRarity('');
                                 setSelectedSong('');
+                                setCurrentCardIndex(0);
                               }}
                               className="flex items-center text-white hover:text-gray-300 transition-colors"
                               style={{ fontSize: '14px' }}
@@ -2373,10 +2404,94 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           ) : filteredCards.length === 0 ? (
                             <div className="text-center text-white py-4">No cards found for this selection.</div>
                           ) : (
-                            filteredCards.map(card => (
-                            <div key={card.id} className="flex gap-2 max-w-full overflow-hidden" onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}>
-                              {/* Card image */}
-                              <div className="w-20 h-28 rounded-lg border-2 border-yellow-500/80 overflow-hidden flex-shrink-0 relative cursor-pointer hover:border-yellow-400/90 transition-all duration-200 hover:scale-105">
+                            (() => {
+                              const card = filteredCards[currentCardIndex];
+                              if (!card) return null;
+                              
+                              return (
+                                <div className="relative w-full min-h-96">
+                                  {/* Debug Info */}
+                                  <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 text-xs rounded z-50">
+                                    Total Cards: {filteredCards.length}
+                                  </div>
+                                  
+                                  {/* Navigation Arrows - Always show for debugging */}
+                                  {true && (
+                                    <>
+                                      {/* Left Arrow */}
+                                      <button
+                                        onClick={() => {
+                                          try { sfx.play('flip.mp3', 0.8); } catch {}
+                                          setCurrentCardIndex(prev => 
+                                            prev > 0 ? prev - 1 : filteredCards.length - 1
+                                          );
+                                        }}
+                                        className="absolute left-8 top-64 w-14 h-14 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center text-white transition-all duration-200 z-50 border-4 border-white shadow-2xl"
+                                      >
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                        </svg>
+                                      </button>
+                                      
+                                      {/* Right Arrow */}
+                                      <button
+                                        onClick={() => {
+                                          try { sfx.play('flip.mp3', 0.8); } catch {}
+                                          setCurrentCardIndex(prev => 
+                                            prev < filteredCards.length - 1 ? prev + 1 : 0
+                                          );
+                                        }}
+                                        className="absolute right-8 top-64 w-14 h-14 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center text-white transition-all duration-200 z-50 border-4 border-white shadow-2xl"
+                                      >
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                      </button>
+                                      
+                                      {/* Card Indicators */}
+                                      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2 z-50">
+                                        {filteredCards.map((_, index) => (
+                                          <div
+                                            key={index}
+                                            className={`w-3 h-3 rounded-full transition-all duration-200 border ${
+                                              index === currentCardIndex
+                                                ? 'bg-yellow-400 border-yellow-400 shadow-[0_0_12px_rgba(255,255,0,0.8)]'
+                                                : 'bg-white/50 border-white/50'
+                                            }`}
+                                          />
+                                        ))}
+                                      </div>
+                                    </>
+                                  )}
+
+                                  {/* Card Counter */}
+                                  <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 z-50">
+                                    <span 
+                                      className="text-xs px-2 py-1 rounded bg-black/60 border border-white/20"
+                                      style={{ 
+                                        color: '#FFFFFF', 
+                                        textShadow: '0 0 4px rgba(255,255,255,0.6)' 
+                                      }}
+                                    >
+                                      {currentCardIndex + 1} of {filteredCards.length}
+                                    </span>
+                                  </div>
+
+                                  {/* Single Card Display */}
+                            <div key={card.id} className="flex flex-col items-center text-center max-w-full" onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}>
+                              {/* Card Name - Above Image */}
+                              <h2 
+                                className="text-xl font-bold mb-4 text-center"
+                                style={{ 
+                                  color: '#FFD700', 
+                                  textShadow: '0 0 8px rgba(255,215,0,0.8), 0 0 16px rgba(255,215,0,0.6)' 
+                                }}
+                              >
+                                {card.card_name}
+                              </h2>
+
+                              {/* Card Image - Centered */}
+                              <div className="w-48 h-64 rounded-lg border-2 border-yellow-500/80 overflow-hidden relative cursor-pointer hover:border-yellow-400/90 transition-all duration-200 hover:scale-105 mb-4">
                                 <img
                                   src={card.artwork_url || `/cards/${card.card_name}.webp`}
                                   alt={card.card_name}
@@ -2398,35 +2513,26 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 )}
                               </div>
 
-                              {/* Card details */}
-                              <div className="flex-1 min-w-0 overflow-hidden">
+                              {/* Card Details - Below Image */}
+                              <div className="w-full max-w-md">
                                 {!showPhysicalForm && !showDigitalForm ? (
                                   <>
-                                    <h2 
-                                      className="text-base font-bold mb-1 truncate"
-                                      style={{ 
-                                        color: '#FFD700', 
-                                        textShadow: '0 0 6px rgba(255,215,0,0.8)' 
-                                      }}
-                                    >
-                                      {card.card_name}
-                                    </h2>
-                                    
-                                    <div className="flex items-center gap-2 mb-2 flex-wrap text-xs">
+                                    {/* Element and Rarity - Below Image */}
+                                    <div className="flex items-center justify-center gap-4 mb-4 text-sm">
                                       <span 
-                                        className="text-sm"
+                                        className="flex items-center gap-1"
                                         style={{ 
                                           color: '#FFFFFF', 
                                           textShadow: '0 0 4px rgba(255,255,255,0.6)' 
                                         }}
                                       >
-                                        Element: <span style={{ color: '#FFD700' }}>{card.element}</span>
+                                        Element: <span style={{ color: '#FFD700', fontWeight: 'bold' }}>{card.element}</span>
                                       </span>
                                       
                                       <div className="flex items-center gap-1">
                                         <span className="text-blue-400">★</span>
                                         <span 
-                                          className="text-sm font-bold"
+                                          className="font-bold"
                                           style={{ 
                                             color: '#00BFFF', 
                                             textShadow: '0 0 4px rgba(0,191,255,0.8)' 
@@ -2438,8 +2544,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       </div>
                                     </div>
 
+                                    {/* Description - Below Element/Rarity */}
                                     <p 
-                                      className="text-xs mb-2 line-clamp-2"
+                                      className="text-sm mb-6 leading-relaxed text-center max-w-lg mx-auto"
                                       style={{ 
                                         color: '#FFFFFF', 
                                         textShadow: '0 0 4px rgba(255,255,255,0.6)' 
@@ -2850,63 +2957,68 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   </div>
                                 ) : null}
 
-                                {/* Purchase buttons */}
-                                <div className="flex gap-1 mt-2 flex-wrap">
-                                  <button 
-                                    className={`flex items-center gap-1 px-2 py-1 rounded border transition-colors text-sm hover:scale-105 ${
-                                      showDigitalForm 
-                                        ? 'border-blue-400/80 bg-blue-400/30' 
-                                        : 'border-blue-500/60 bg-blue-500/20 hover:bg-blue-500/30'
-                                    }`}
-                                    style={{ 
-                                      color: showDigitalForm ? '#87CEEB' : '#00BFFF', 
-                                      textShadow: showDigitalForm 
-                                        ? '0 0 6px rgba(135,206,235,0.8)' 
-                                        : '0 0 4px rgba(0,191,255,0.8)',
-                                      boxShadow: showDigitalForm ? '0 0 15px rgba(0,191,255,0.4)' : 'none'
-                                    }}
-                                    onMouseEnter={() => {
-                                      try { sfx.play('hover', 0.3); } catch {}
-                                    }}
-                                    onClick={() => {
-                                      try { sfx.play('click', 0.7); } catch {}
-                                      setShowDigitalForm(!showDigitalForm);
-                                      setShowPhysicalForm(false);
-                                      setShowPhysicalConfirm(false);
-                                    }}
-                                  >
-                                    <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-4 h-4" />{card.digitalCost} DIGITAL
-                                  </button>
-                                  
-                                  <button 
-                                    className={`flex items-center gap-1 px-2 py-1 rounded border transition-colors text-sm hover:scale-105 ${
-                                      showPhysicalForm || showPhysicalConfirm 
-                                        ? 'border-purple-400/80 bg-purple-400/30' 
-                                        : 'border-purple-500/60 bg-purple-500/20 hover:bg-purple-500/30'
-                                    }`}
-                                    style={{ 
-                                      color: showPhysicalForm || showPhysicalConfirm ? '#E6E6FA' : '#DA70D6', 
-                                      textShadow: showPhysicalForm || showPhysicalConfirm 
-                                        ? '0 0 6px rgba(230,230,250,0.8)' 
-                                        : '0 0 4px rgba(218,112,214,0.8)',
-                                      boxShadow: showPhysicalForm || showPhysicalConfirm ? '0 0 15px rgba(218,112,214,0.4)' : 'none'
-                                    }}
-                                    onMouseEnter={() => {
-                                      try { sfx.play('hover', 0.3); } catch {}
-                                    }}
-                                    onClick={() => {
-                                      try { sfx.play('click', 0.7); } catch {}
-                                      setShowPhysicalForm(!showPhysicalForm);
-                                      setShowPhysicalConfirm(false);
-                                      setShowDigitalForm(false);
-                                    }}
-                                  >
-                                    <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-4 h-4" />{card.physicalCost} PHYSICAL
-                                  </button>
-                                </div>
                               </div>
                             </div>
-                          ))
+                            
+                            {/* Purchase buttons - Positioned at bottom */}
+                            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-3">
+                              <button 
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors text-sm font-semibold hover:scale-105 ${
+                                  showDigitalForm 
+                                    ? 'border-blue-400/80 bg-blue-400/30' 
+                                    : 'border-blue-500/60 bg-blue-500/20 hover:bg-blue-500/30'
+                                }`}
+                                style={{ 
+                                  color: showDigitalForm ? '#87CEEB' : '#00BFFF', 
+                                  textShadow: showDigitalForm 
+                                    ? '0 0 6px rgba(135,206,235,0.8)' 
+                                    : '0 0 4px rgba(0,191,255,0.8)',
+                                  boxShadow: showDigitalForm ? '0 0 15px rgba(0,191,255,0.4)' : 'none'
+                                }}
+                                onMouseEnter={() => {
+                                  try { sfx.play('hover', 0.3); } catch {}
+                                }}
+                                onClick={() => {
+                                  try { sfx.play('click', 0.7); } catch {}
+                                  setShowDigitalForm(!showDigitalForm);
+                                  setShowPhysicalForm(false);
+                                  setShowPhysicalConfirm(false);
+                                }}
+                              >
+                                <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5" />
+                                {card.digitalCost} DIGITAL
+                              </button>
+                              
+                              <button 
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors text-sm font-semibold hover:scale-105 ${
+                                  showPhysicalForm || showPhysicalConfirm 
+                                    ? 'border-purple-400/80 bg-purple-400/30' 
+                                    : 'border-purple-500/60 bg-purple-500/20 hover:bg-purple-500/30'
+                                }`}
+                                style={{ 
+                                  color: showPhysicalForm || showPhysicalConfirm ? '#E6E6FA' : '#DA70D6', 
+                                  textShadow: showPhysicalForm || showPhysicalConfirm 
+                                    ? '0 0 6px rgba(230,230,250,0.8)' 
+                                    : '0 0 4px rgba(218,112,214,0.8)',
+                                  boxShadow: showPhysicalForm || showPhysicalConfirm ? '0 0 15px rgba(218,112,214,0.4)' : 'none'
+                                }}
+                                onMouseEnter={() => {
+                                  try { sfx.play('hover', 0.3); } catch {}
+                                }}
+                                onClick={() => {
+                                  try { sfx.play('click', 0.7); } catch {}
+                                  setShowPhysicalForm(!showPhysicalForm);
+                                  setShowPhysicalConfirm(false);
+                                  setShowDigitalForm(false);
+                                }}
+                              >
+                                <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5" />
+                                {card.physicalCost} PHYSICAL
+                              </button>
+                            </div>
+                                </div>
+                              );
+                            })()
                           )}
                         </div>
                       )}

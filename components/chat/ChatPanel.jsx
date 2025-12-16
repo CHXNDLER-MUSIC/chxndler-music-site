@@ -978,7 +978,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                       fontWeight: 'bold'
                     }}
                   >
-                    HEART SIGNAL LIVE
+                    HEART SIGNAL CHAT
                   </h2>
                   
                   {/* Extended glow line */}
@@ -1211,110 +1211,6 @@ export default function ChatPanel({ isOpen, onClose }) {
                         )}
                       </div>
 
-                      {/* Centered action icons row across popout */}
-                      <div className="w-full flex items-center justify-center space-x-4 mt-3 pb-1">
-                        <button 
-                          onClick={() => {
-                            try {
-                              const audio = new Audio('/audio/click.mp3');
-                              audio.volume = 0.3;
-                              audio.play().catch(error => {
-                                console.log('Click audio play failed:', error);
-                              });
-                            } catch (error) {
-                              console.log('Click audio creation failed:', error);
-                            }
-                            if (showUserBinder) {
-                              setBinderStartIndex(0);
-                              setShowUserBinder(false);
-                            } else {
-                              setBinderStartIndex(0);
-                              setShowUserBinder(true);
-                              setShowUserBadges(false);
-                              setShowSendHeartCoin(false);
-                              setBadgeStartIndex(0);
-                            }
-                          }}
-                          onMouseEnter={() => {
-                            try { sfx.play('hover', 0.3); } catch {}
-                          }}
-                          className="hover:scale-110 transition-transform"
-                          title="View Cards"
-                        >
-                          <img 
-                            src="/elements/binder.webp" 
-                            alt="Cards" 
-                            className="w-12 h-12 object-contain"
-                          />
-                        </button>
-                        
-                        <button 
-                          onClick={() => {
-                            try {
-                              const audio = new Audio('/audio/click.mp3');
-                              audio.volume = 0.3;
-                              audio.play().catch(error => {
-                                console.log('Click audio play failed:', error);
-                              });
-                            } catch (error) {
-                              console.log('Click audio creation failed:', error);
-                            }
-                            if (showUserBadges) {
-                              setBadgeStartIndex(0);
-                              setShowUserBadges(false);
-                            } else {
-                              setBadgeStartIndex(0);
-                              setShowUserBadges(true);
-                              setShowUserBinder(false);
-                              setShowSendHeartCoin(false);
-                              setBinderStartIndex(0);
-                            }
-                          }}
-                          onMouseEnter={() => {
-                            try { sfx.play('hover', 0.3); } catch {}
-                          }}
-                          className="hover:scale-110 transition-transform"
-                          title="View Badges"
-                        >
-                          <img 
-                            src="/elements/badges.webp" 
-                            alt="Badges" 
-                            className="w-12 h-12 object-contain"
-                          />
-                        </button>
-                        
-                        {selectedUser && selectedUser.id !== 'anonymous' && (
-                          <button 
-                            className="hover:scale-110 transition-transform"
-                            title="Send Heart Coin"
-                            onClick={() => {
-                              try {
-                                const audio = new Audio('/audio/click.mp3');
-                                audio.volume = 0.3;
-                                audio.play().catch(error => {
-                                  console.log('Click audio play failed:', error);
-                                });
-                              } catch (error) {
-                                console.log('Click audio creation failed:', error);
-                              }
-                              setShowSendHeartCoin(true);
-                              setShowUserBadges(false);
-                              setShowUserBinder(false);
-                              setBadgeStartIndex(0);
-                              setBinderStartIndex(0);
-                            }}
-                            onMouseEnter={() => {
-                              try { sfx.play('hover', 0.3); } catch {}
-                            }}
-                          >
-                            <img 
-                              src="/elements/heart-coin.webp" 
-                              alt="Send Heart Coin" 
-                              className="w-12 h-12 object-contain"
-                            />
-                          </button>
-                        )}
-                      </div>
                     </div>
                   </div>
                 </div>

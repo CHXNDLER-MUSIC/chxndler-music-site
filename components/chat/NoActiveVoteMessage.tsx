@@ -2,7 +2,7 @@
 
 export default function NoActiveVoteMessage() {
   return (
-    <div className="text-center pt-4 border-t border-white/10">
+    <div className="text-center pt-2 border-t border-white/10">
       <p 
         className="text-lg font-bold mb-2"
         style={{
@@ -11,9 +11,6 @@ export default function NoActiveVoteMessage() {
         }}
       >
         No Active Vote
-      </p>
-      <p className="text-white/60 text-sm">
-        Check back soon for the next song voting session!
       </p>
     </div>
   );

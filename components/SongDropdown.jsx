@@ -293,8 +293,8 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
           }}
         >
           {/* Element filter row */}
-          <div className="px-2 pt-2 pb-1">
-            <div className="flex items-center gap-1 flex-wrap">
+          <div className="px-1.5 pt-2 pb-1">
+            <div className="flex items-center gap-0.5 flex-wrap">
               {/* ALL filter */}
               <button
                 type="button"
@@ -323,7 +323,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                   try { sfx.play('change', 0.35); } catch {}
                   track('element_filter_selected', { element: 'ALL', active: true });
                 }}
-                className={`filter-pill inline-flex items-center gap-2 px-2 py-1 rounded-md border text-xs font-semibold tracking-wide transition-all duration-200 ${
+                className={`filter-pill inline-flex items-center gap-1.5 px-3 py-2 rounded-md border text-sm font-semibold tracking-wide transition-all duration-200 ${
                   !activeElement
                     ? 'bg-[#19E3FF] text-white border-[#19E3FF]' 
                     : 'border-[#19E3FF]/40 text-[#CFF7FF] hover:bg-cyan-400/10'
@@ -381,9 +381,9 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                       try { sfx.play('change', 0.35); } catch {}
                       track('element_filter_selected', { element: (el || '').toUpperCase(), active: !active });
                     }}
-                    className={`filter-pill inline-flex items-center justify-center p-1.5 rounded-md text-xs font-semibold tracking-wide transition-all duration-200 ${
+                    className={`filter-pill inline-flex items-center justify-center p-1 rounded-full text-xs font-semibold tracking-wide transition-all duration-200 ${
                       active 
-                        ? `${getElementBgColor(el, true)}` 
+                        ? '' 
                         : 'hover:bg-cyan-400/10'
                     }`}
                     aria-pressed={active}
@@ -608,6 +608,23 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
         }
         .filter-pill:hover {
           outline: none;
+        }
+        /* Element-specific neon glows for circular buttons - inset glow */
+        .filter-pill[data-element="heart"]:hover,
+        .filter-pill[data-element="heart"][aria-pressed="true"] {
+          box-shadow: inset 0 0 3px rgba(252, 84, 175, 1), inset 0 0 6px rgba(252, 84, 175, 0.7), inset 0 0 10px rgba(252, 84, 175, 0.4);
+        }
+        .filter-pill[data-element="water"]:hover,
+        .filter-pill[data-element="water"][aria-pressed="true"] {
+          box-shadow: inset 0 0 3px rgba(56, 182, 255, 1), inset 0 0 6px rgba(56, 182, 255, 0.7), inset 0 0 10px rgba(56, 182, 255, 0.4);
+        }
+        .filter-pill[data-element="lightning"]:hover,
+        .filter-pill[data-element="lightning"][aria-pressed="true"] {
+          box-shadow: inset 0 0 3px rgba(255, 199, 0, 1), inset 0 0 6px rgba(255, 199, 0, 0.7), inset 0 0 10px rgba(255, 199, 0, 0.4);
+        }
+        .filter-pill[data-element="darkness"]:hover,
+        .filter-pill[data-element="darkness"][aria-pressed="true"] {
+          box-shadow: inset 0 0 3px rgba(255, 255, 255, 1), inset 0 0 6px rgba(255, 255, 255, 0.7), inset 0 0 10px rgba(255, 255, 255, 0.4);
         }
       `}</style>
     </div>

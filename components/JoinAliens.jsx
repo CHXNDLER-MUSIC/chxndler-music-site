@@ -257,10 +257,52 @@ export default function JoinAliens({ visible = true } = {}) {
         display: 'block'
       }}
     >
-      {/* Countdown Section - Top */}
-      <div style={{ textAlign: 'center', marginBottom: '25px', marginTop: '0px', paddingTop: '12px' }}>
+      {/* Heart Signal Title - Top */}
+      <div style={{ 
+        textAlign: 'center', 
+        paddingTop: '20px',
+        paddingBottom: '10px',
+        borderBottom: '1px solid rgba(252, 84, 175, 0.3)'
+      }}>
+        <div className="flex items-center justify-center mb-3">
+          <h1 
+            className="text-xl font-bold whitespace-nowrap"
+            style={{
+              color: '#FC54AF !important',
+              textShadow: '0 0 10px #FC54AF, 0 0 20px #FC54AF, 0 0 30px #FC54AF',
+              letterSpacing: '0.05em',
+              fontWeight: 'bold',
+              fontSize: 'clamp(20px, 4vw, 28px)'
+            }}
+          >
+            HEART SIGNAL
+          </h1>
+          
+          {/* Extended glow line */}
+          <div 
+            className="flex-1 h-px ml-4 max-w-32"
+            style={{
+              background: 'linear-gradient(90deg, rgba(252, 84, 175, 0.6), rgba(252, 84, 175, 0.2), transparent)',
+              boxShadow: '0 0 8px rgba(252, 84, 175, 0.4)'
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Countdown Section - Middle */}
+      <div style={{ 
+        textAlign: 'center', 
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '40vh',
+        marginBottom: '5px',
+        gap: '10px'
+      }}>
+
         {/* Neon "Signal Lost" message */}
-        <div style={{ marginBottom: '0px' }}>
+        <div style={{ marginBottom: '5px' }}>
           <h2 
             className="signal-lost-text"
             style={{
@@ -279,7 +321,7 @@ export default function JoinAliens({ visible = true } = {}) {
               fontWeight: 'bold',
               letterSpacing: '0.1em',
               lineHeight: '1.2',
-              marginBottom: '8px'
+              marginBottom: '2px'
             }}
           >
             SIGNAL LOST
@@ -323,7 +365,7 @@ export default function JoinAliens({ visible = true } = {}) {
       }} />
 
       {/* Stay Connected Section - Bottom */}
-      <div style={{ marginTop: '40px', paddingBottom: '80px' }}>
+      <div style={{ marginTop: '0px', paddingBottom: '80px' }}>
         {/* Header Text */}
         {showPhoneForm && (
         <div 
@@ -667,10 +709,12 @@ export default function JoinAliens({ visible = true } = {}) {
           try { sfx.play('hover', 0.3); } catch {}
           e.target.style.background = 'rgba(252, 84, 175, 0.2)';
           e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
+          e.target.style.transform = 'scale(1.05)';
         }}
         onMouseLeave={(e) => {
           e.target.style.background = 'rgba(252, 84, 175, 0.1)';
           e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
+          e.target.style.transform = 'scale(1)';
         }}
       >
         $3
@@ -771,10 +815,12 @@ export default function JoinAliens({ visible = true } = {}) {
           try { sfx.play('hover', 0.3); } catch {}
           e.target.style.background = 'rgba(252, 84, 175, 0.2)';
           e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
+          e.target.style.transform = 'scale(1.05)';
         }}
         onMouseLeave={(e) => {
           e.target.style.background = 'rgba(252, 84, 175, 0.1)';
           e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
+          e.target.style.transform = 'scale(1)';
         }}
       >
         $10
@@ -1302,10 +1348,12 @@ export default function JoinAliens({ visible = true } = {}) {
               try { sfx.play('audio/hover.mp3', 0.3); } catch {}
               e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6)';
               e.target.style.background = 'rgba(0, 255, 255, 0.2)';
+              e.target.style.transform = 'scale(1.05)';
             }}
             onMouseLeave={(e) => {
               e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
               e.target.style.background = 'rgba(0, 255, 255, 0.1)';
+              e.target.style.transform = 'scale(1)';
             }}
           >
             <img 
@@ -1349,10 +1397,12 @@ export default function JoinAliens({ visible = true } = {}) {
               try { sfx.play('audio/hover.mp3', 0.3); } catch {}
               e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
               e.target.style.background = 'rgba(252, 84, 175, 0.2)';
+              e.target.style.transform = 'scale(1.05)';
             }}
             onMouseLeave={(e) => {
               e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
               e.target.style.background = 'rgba(252, 84, 175, 0.1)';
+              e.target.style.transform = 'scale(1)';
             }}
           >
             <img 
@@ -1423,10 +1473,12 @@ export default function JoinAliens({ visible = true } = {}) {
               try { sfx.play('audio/hover.mp3', 0.3); } catch {}
               e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6)';
               e.target.style.background = 'rgba(0, 255, 255, 0.2)';
+              e.target.style.transform = 'scale(1.05)';
             }}
             onMouseLeave={(e) => {
               e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
               e.target.style.background = 'rgba(0, 255, 255, 0.1)';
+              e.target.style.transform = 'scale(1)';
             }}
           >
             <img 
@@ -1470,10 +1522,12 @@ export default function JoinAliens({ visible = true } = {}) {
               try { sfx.play('audio/hover.mp3', 0.3); } catch {}
               e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
               e.target.style.background = 'rgba(252, 84, 175, 0.2)';
+              e.target.style.transform = 'scale(1.05)';
             }}
             onMouseLeave={(e) => {
               e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
               e.target.style.background = 'rgba(252, 84, 175, 0.1)';
+              e.target.style.transform = 'scale(1)';
             }}
           >
             <img 
@@ -1541,10 +1595,12 @@ export default function JoinAliens({ visible = true } = {}) {
               try { sfx.play('audio/hover.mp3', 0.3); } catch {}
               e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6)';
               e.target.style.background = 'rgba(0, 255, 255, 0.2)';
+              e.target.style.transform = 'scale(1.05)';
             }}
             onMouseLeave={(e) => {
               e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
               e.target.style.background = 'rgba(0, 255, 255, 0.1)';
+              e.target.style.transform = 'scale(1)';
             }}
           >
             <img 
@@ -1588,10 +1644,12 @@ export default function JoinAliens({ visible = true } = {}) {
               try { sfx.play('audio/hover.mp3', 0.3); } catch {}
               e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
               e.target.style.background = 'rgba(252, 84, 175, 0.2)';
+              e.target.style.transform = 'scale(1.05)';
             }}
             onMouseLeave={(e) => {
               e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
               e.target.style.background = 'rgba(252, 84, 175, 0.1)';
+              e.target.style.transform = 'scale(1)';
             }}
           >
             <img 

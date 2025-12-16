@@ -673,24 +673,28 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
               <button
                 onClick={!questStatus.elementOfDay ? handleElementTap : undefined}
                 disabled={questStatus.elementOfDay || loading}
-                className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 cursor-pointer ${
+                className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 ${
                   questStatus.elementOfDay
-                    ? 'bg-green-500/40 border-2 border-green-400 text-green-300 cursor-not-allowed'
+                    ? 'border-2 text-green-400 cursor-default'
                     : !isAuthenticated
-                      ? 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300'
-                      : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300'
+                      ? 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300 cursor-pointer'
+                      : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300 cursor-pointer'
                 }`}
                 style={{
-                  boxShadow: questStatus.elementOfDay
-                    ? '0 0 20px rgba(0,255,0,0.8), inset 0 0 15px rgba(0,255,0,0.3)'
-                    : !isAuthenticated
-                      ? '0 0 10px rgba(255,255,0,0.3)'
-                      : '0 0 10px rgba(252,84,175,0.3)',
-                  textShadow: questStatus.elementOfDay
-                    ? '0 0 12px rgba(0,255,0,1)'
-                    : !isAuthenticated
-                      ? '0 0 4px rgba(255,255,0,0.6)'
-                      : '0 0 4px rgba(252,84,175,0.6)'
+                  ...(questStatus.elementOfDay ? {
+                    background: 'rgba(0, 255, 0, 0.2)',
+                    borderColor: '#00FF00',
+                    color: '#00FF00',
+                    boxShadow: '0 0 30px rgba(0,255,0,0.8), inset 0 0 15px rgba(0,255,0,0.3), 0 0 60px rgba(0,255,0,0.6)',
+                    textShadow: '0 0 15px rgba(0,255,0,1), 0 0 25px rgba(0,255,0,0.8)',
+                    opacity: 1
+                  } : !isAuthenticated ? {
+                    boxShadow: '0 0 10px rgba(255,255,0,0.3)',
+                    textShadow: '0 0 4px rgba(255,255,0,0.6)'
+                  } : {
+                    boxShadow: '0 0 10px rgba(252,84,175,0.3)',
+                    textShadow: '0 0 4px rgba(252,84,175,0.6)'
+                  })
                 }}
               >
                 {questStatus.elementOfDay 
