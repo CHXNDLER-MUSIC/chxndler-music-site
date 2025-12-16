@@ -97,17 +97,6 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
   const [selectedPurchaseType, setSelectedPurchaseType] = useState<'digital' | 'physical' | null>(null);
   const [purchaseState, setPurchaseState] = useState<'idle' | 'insufficient' | 'digital-preview' | 'confirm-digital' | 'confirm-physical' | 'physical-form' | 'success'>('idle');
   
-  // Shipping form state
-  const [shippingInfo, setShippingInfo] = useState({
-    fullName: '',
-    addressLine1: '',
-    addressLine2: '',
-    city: '',
-    state: '',
-    zip: '',
-    country: 'United States'
-  });
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // Full song collection data structure
   const songCollection = [
@@ -396,6 +385,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
   };
 
 
+
   const handlePurchaseClick = (type: 'digital' | 'physical') => {
     setSelectedPurchaseType(type);
     if (type === 'digital') {
@@ -416,34 +406,52 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     
     if (!currentCard) return;
     
-    // The RPC will handle balance validation
+    const cardId = currentCard.id || currentCard.card_id;
+    if (!cardId) {
+      console.error('Card ID not found for purchase');
+      return;
+    }
     
     try {
-      // Use the proper API endpoint to purchase the card with heart coins
-      const response = await fetch('/api/purchase-item-with-heartcoins', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          itemId: `${currentCard.name.toLowerCase().replace(/\s+/g, '_')}_${selectedPurchaseType}`,
-          itemTitle: `${currentCard.name} (${selectedPurchaseType.toUpperCase()})`,
-          priceHeartCoins: cost
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Purchase failed');
-      }
-
-      // Update the profile with the new balance from the API response
-      if (result.data && result.data.new_balance !== undefined) {
-        await updateProfile({ 
-          heartcoin_balance: result.data.new_balance 
+      let response;
+      
+      if (selectedPurchaseType === 'digital') {
+        // Use new digital card RPC
+        response = await supabaseBrowser.rpc('purchase_digital_card_with_heartcoins', {
+          p_card_id: cardId,
+        });
+      } else {
+        // For physical cards, validate shipping first
+        if (!validateShippingForm()) {
+          return;
+        }
+        
+        // Use new physical card RPC
+        response = await supabaseBrowser.rpc('purchase_physical_card_with_heartcoins', {
+          p_card_id: cardId,
+          p_full_name: shippingForm.fullName,
+          p_address_line1: shippingForm.streetAddress,
+          p_address_line2: shippingForm.apartmentUnit || null,
+          p_city: shippingForm.city,
+          p_state: shippingForm.state,
+          p_zip: shippingForm.zipCode,
+          p_country: shippingForm.country,
         });
       }
+
+      if (response?.error) {
+        const errorMessage = response.error.message || 'Purchase failed';
+        
+        if (errorMessage.includes('INSUFFICIENT_FUNDS')) {
+          setPurchaseState('insufficient');
+          return;
+        } else {
+          throw new Error(errorMessage);
+        }
+      }
+
+      // Refresh profile to update HeartCoin balance
+      await updateProfile({});
       
       setPurchaseState('success');
       try { sfx.play('card-ding', 0.8); } catch {}
@@ -460,7 +468,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       console.error('Purchase failed:', error);
       
       // Check if it's an insufficient funds error
-      if (error instanceof Error && error.message.includes('Insufficient HeartCoins')) {
+      if (error instanceof Error && error.message.includes('INSUFFICIENT_FUNDS')) {
         setPurchaseState('insufficient');
       } else {
         resetPurchaseState();

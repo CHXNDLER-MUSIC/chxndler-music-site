@@ -767,17 +767,36 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
       console.log('Saving journal entry with data:', entryData);
 
-      const { data, error } = await supabaseBrowser
+      // Check if entry already exists for this user and date
+      const { data: existingEntry } = await supabaseBrowser
         .from('soul_journal_entries')
-        .upsert(
-          entryData,
-          { 
-            onConflict: 'user_id,entry_date',
-            ignoreDuplicates: false 
-          }
-        )
-        .select()
+        .select('*')
+        .eq('user_id', entryData.user_id)
+        .eq('entry_date', entryData.entry_date)
         .single();
+
+      let data, error;
+      
+      if (existingEntry) {
+        // Update existing entry
+        const updateResult = await supabaseBrowser
+          .from('soul_journal_entries')
+          .update(entryData)
+          .eq('id', existingEntry.id)
+          .select()
+          .single();
+        data = updateResult.data;
+        error = updateResult.error;
+      } else {
+        // Insert new entry
+        const insertResult = await supabaseBrowser
+          .from('soul_journal_entries')
+          .insert(entryData)
+          .select()
+          .single();
+        data = insertResult.data;
+        error = insertResult.error;
+      }
 
       if (error) {
         console.error('Database error details:', error);
