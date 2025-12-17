@@ -1,6 +1,6 @@
 "use client";
 
-import React, { forwardRef } from "react";
+import React, { forwardRef, useRef } from "react";
 import { useCardTiltSpin } from "@/hooks/useCardTiltSpin";
 
 interface TiltSpinCardProps {
@@ -49,6 +49,16 @@ export const TiltSpinCard = forwardRef<HTMLDivElement, TiltSpinCardProps>(
     },
     ref
   ) => {
+    // Track if onTap already fired to prevent double-calling onClick
+    const tapFiredRef = useRef(false);
+
+    const handleTap = () => {
+      tapFiredRef.current = true;
+      onClick?.();
+      // Reset after a short delay to allow for next interaction
+      setTimeout(() => { tapFiredRef.current = false; }, 100);
+    };
+
     const { style: tiltStyle, handlers, wasDragged } = useCardTiltSpin({
       disabled,
       maxRotateX,
@@ -58,7 +68,7 @@ export const TiltSpinCard = forwardRef<HTMLDivElement, TiltSpinCardProps>(
       enableSpin,
       spinSensitivity,
       onRotationChange,
-      onTap: onClick, // Pass onClick as onTap for reliable tap detection
+      onTap: handleTap, // Pass wrapped handler for reliable tap detection
     });
 
     const combinedStyle: React.CSSProperties = {
@@ -66,9 +76,9 @@ export const TiltSpinCard = forwardRef<HTMLDivElement, TiltSpinCardProps>(
       ...externalStyle,
     };
 
-    // Backup click handler in case onTap doesn't fire
+    // Backup click handler in case onTap doesn't fire (but skip if onTap already handled it)
     const handleClick = () => {
-      if (onClick && !wasDragged()) {
+      if (onClick && !wasDragged() && !tapFiredRef.current) {
         onClick();
       }
     };

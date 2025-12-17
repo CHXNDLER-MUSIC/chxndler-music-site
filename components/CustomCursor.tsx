@@ -62,7 +62,7 @@ export default function CustomCursor() {
           backgroundSize: "contain",
           backgroundRepeat: "no-repeat",
           pointerEvents: "none",
-          zIndex: 2147483649,
+          zIndex: 2147483651,
           transform: "translate3d(0, 0, 0)",
           isolation: "isolate",
           contain: "layout style paint",
