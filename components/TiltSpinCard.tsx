@@ -49,7 +49,7 @@ export const TiltSpinCard = forwardRef<HTMLDivElement, TiltSpinCardProps>(
     },
     ref
   ) => {
-    const { style: tiltStyle, handlers } = useCardTiltSpin({
+    const { style: tiltStyle, handlers, wasDragged } = useCardTiltSpin({
       disabled,
       maxRotateX,
       maxRotateY,
@@ -66,6 +66,13 @@ export const TiltSpinCard = forwardRef<HTMLDivElement, TiltSpinCardProps>(
       ...externalStyle,
     };
 
+    // Backup click handler in case onTap doesn't fire
+    const handleClick = () => {
+      if (onClick && !wasDragged()) {
+        onClick();
+      }
+    };
+
     return (
       <div
         ref={ref}
@@ -74,6 +81,7 @@ export const TiltSpinCard = forwardRef<HTMLDivElement, TiltSpinCardProps>(
         tabIndex={disabled ? -1 : tabIndex}
         role="img"
         aria-label="Interactive card - drag to rotate, arrow keys to nudge, Escape to reset"
+        onClick={handleClick}
         {...handlers}
       >
         {children}

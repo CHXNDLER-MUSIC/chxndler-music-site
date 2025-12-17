@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
 import { PlanetPositionsProvider } from './planet-positions-context';
 import { PlanetMinimapV2 } from './PlanetMinimapV2';
+import ClientPlanetScene from './planetarium/ClientPlanetScene';
 
 interface PlanetSystemV2Props {
   initialActivePlanet?: string;
@@ -11,45 +11,12 @@ interface PlanetSystemV2Props {
   worldId?: string;
 }
 
-// Dynamic import with complete SSR isolation
-const ClientPlanetScene = dynamic(
-  () => import('./planetarium/ClientPlanetScene'),
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="h-[500px] bg-gray-800 rounded flex items-center justify-center text-white">
-        Loading 3D Scene...
-      </div>
-    )
-  }
-);
-
 export function PlanetSystemV2({ 
   initialActivePlanet, 
   onPlanetSelect, 
   worldId 
 }: PlanetSystemV2Props = {}) {
   const [zoomLevel, setZoomLevel] = useState(1);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return (
-      <PlanetPositionsProvider>
-        <div className="relative w-full h-[500px]">
-          <div className="h-[500px] bg-gray-800 rounded flex items-center justify-center text-white">
-            Loading 3D Scene...
-          </div>
-        </div>
-        <div className="mt-3">
-          <PlanetMinimapV2 />
-        </div>
-      </PlanetPositionsProvider>
-    );
-  }
 
   return (
     <PlanetPositionsProvider>

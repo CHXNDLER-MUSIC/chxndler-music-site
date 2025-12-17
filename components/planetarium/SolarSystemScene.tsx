@@ -23,6 +23,7 @@ export const SolarSystemScene = React.memo(({
   onPlanetSelect,
   quality 
 }: SolarSystemSceneProps) => {
+  console.log('🌌 SolarSystemScene rendering with:', { songCount: songs.length, quality });
   const { camera } = useThree();
   const centerPlanetRef = useRef<THREE.Group>(null);
   const elementOrbitRef = useRef<THREE.Group>(null);
@@ -160,28 +161,53 @@ export const SolarSystemScene = React.memo(({
         quality={quality} 
       />
       
+      {/* Simplified test - just render some basic spheres first */}
       {/* Center Planet */}
-      <group ref={centerPlanetRef}>
-        <mesh
-          geometry={geometries.center}
-          material={materials.center}
-          onClick={() => onPlanetSelect?.('center')}
+      <mesh position={[0, 0, 0]} onClick={() => onPlanetSelect?.('center')}>
+        <sphereGeometry args={[3, 32, 32]} />
+        <meshStandardMaterial 
+          color={0xffaa00}
+          emissive={0xffaa00}
+          emissiveIntensity={0.3}
         />
-        
-        {/* Center planet halo */}
-        {quality === 'high' && (
-          <mesh scale={1.2}>
-            <sphereGeometry args={[3, 16, 16]} />
-            <meshBasicMaterial
-              color={0xffaa00}
-              transparent
-              opacity={0.1}
-              blending={THREE.AdditiveBlending}
-              depthWrite={false}
-            />
-          </mesh>
-        )}
-      </group>
+      </mesh>
+      
+      {/* Test planet to make sure something renders */}
+      <mesh position={[0, 0, 18]} onClick={() => onPlanetSelect?.('heart')}>
+        <sphereGeometry args={[2, 24, 24]} />
+        <meshStandardMaterial 
+          color={0xff6b9d}
+          emissive={0xff6b9d}
+          emissiveIntensity={0.3}
+        />
+      </mesh>
+      
+      <mesh position={[18, 0, 0]} onClick={() => onPlanetSelect?.('water')}>
+        <sphereGeometry args={[2, 24, 24]} />
+        <meshStandardMaterial 
+          color={0x4fc3f7}
+          emissive={0x4fc3f7}
+          emissiveIntensity={0.3}
+        />
+      </mesh>
+      
+      <mesh position={[0, 0, -18]} onClick={() => onPlanetSelect?.('lightning')}>
+        <sphereGeometry args={[2, 24, 24]} />
+        <meshStandardMaterial 
+          color={0xffeb3b}
+          emissive={0xffeb3b}
+          emissiveIntensity={0.3}
+        />
+      </mesh>
+      
+      <mesh position={[-18, 0, 0]} onClick={() => onPlanetSelect?.('darkness')}>
+        <sphereGeometry args={[2, 24, 24]} />
+        <meshStandardMaterial 
+          color={0x9c27b0}
+          emissive={0x9c27b0}
+          emissiveIntensity={0.3}
+        />
+      </mesh>
       
       {/* Element Planets with Orbiting Groups */}
       <group ref={elementOrbitRef}>
@@ -189,28 +215,6 @@ export const SolarSystemScene = React.memo(({
           .filter(config => config.type !== 'center')
           .map((config) => (
             <group key={config.id}>
-              {/* Element Planet */}
-              <mesh
-                position={config.position}
-                geometry={geometries.element}
-                material={materials[config.id]}
-                onClick={() => onPlanetSelect?.(config.id)}
-              />
-              
-              {/* Element planet halo */}
-              {quality === 'high' && (
-                <mesh position={config.position} scale={1.3}>
-                  <sphereGeometry args={[2, 12, 12]} />
-                  <meshBasicMaterial
-                    color={config.color}
-                    transparent
-                    opacity={0.15}
-                    blending={THREE.AdditiveBlending}
-                    depthWrite={false}
-                  />
-                </mesh>
-              )}
-              
               {/* Song Orbit Group */}
               <OrbitGroup
                 elementPosition={config.position}

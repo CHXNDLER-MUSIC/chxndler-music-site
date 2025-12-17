@@ -762,6 +762,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [isEnlargedCardFlipped, setIsEnlargedCardFlipped] = useState(false);
   const [cardRotation, setCardRotation] = useState(0); // For 360° spin mode
   const [isAnimatingFlip, setIsAnimatingFlip] = useState(false); // For smooth flip transition
+  const [merchRotation, setMerchRotation] = useState(0); // For merch 360° spin mode
+  const [isMerchAnimatingFlip, setIsMerchAnimatingFlip] = useState(false); // For merch flip transition
   // enlargedMerchItem state is declared earlier for effect ordering
   const [showCheckInSuccess, setShowCheckInSuccess] = useState(false);
   const [isSubmittingPhrase, setIsSubmittingPhrase] = useState(false);
@@ -2377,11 +2379,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 <div
                                   key={element}
                                   className="text-center cursor-pointer group w-20"
+                                  onMouseEnter={() => {
+                                    try { sfx.play('change-channel', 0.5); } catch {}
+                                  }}
                                   onClick={() => {
                                     try { sfx.play('click', 0.7); } catch {}
                                     setSelectedCardElement(element.toUpperCase());
-                                    // Set the song filter to the specific element card (e.g., "LIGHTNING", "WATER", etc.)
-                                    setSelectedSong(element.toUpperCase());
+                                    // Don't set song filter - show ALL cards for this element
+                                    setSelectedSong('');
                                     setSelectedRarity('');
                                   }}
                                 >
@@ -2437,17 +2442,19 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             </button>
                             
                             {/* Song Filter */}
-                            <select 
+                            <select
                               value={selectedSong}
                               onChange={(e) => {
                                 try { sfx.play('change-channel', 0.6); } catch {}
                                 setSelectedSong(e.target.value);
+                                setCurrentCardIndex(0); // Reset to first card when filter changes
                               }}
                               onMouseEnter={() => {
                                 try { sfx.play('hover', 0.3); } catch {}
                               }}
                               className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1 hover:scale-105 transition-transform duration-200"
                             >
+                              <option value="">ALL CARDS</option>
                               {availableSongs.map(song => (
                                 <option key={song} value={song}>{song}</option>
                               ))}
@@ -2534,27 +2541,29 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
                               {/* Card Image with Navigation Arrows */}
                               <div className="flex items-center justify-center gap-4 mb-4">
-                                {/* Left Arrow */}
-                                {filteredCards.length > 1 && (
-                                  <button
-                                    onClick={() => {
-                                      try { sfx.play('flip.mp3', 0.8); } catch {}
-                                      setCurrentCardIndex(prev => 
-                                        prev > 0 ? prev - 1 : filteredCards.length - 1
-                                      );
-                                    }}
-                                    className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:text-yellow-400 transition-all duration-200 border-2 border-white/30 hover:border-yellow-400/60"
-                                    style={{
-                                      textShadow: '0 0 10px #00ffff, 0 0 20px #00bfff, 0 0 30px #00bfff',
-                                      filter: 'drop-shadow(0 0 5px rgba(0, 255, 255, 0.8))'
-                                    }}
-                                  >
-                                    <span style={{ fontSize: '20px' }}>←</span>
-                                  </button>
-                                )}
+                                {/* Left Arrow - Always visible */}
+                                <button
+                                  onClick={() => {
+                                    try { sfx.play('flip.mp3', 0.8); } catch {}
+                                    setCurrentCardIndex(prev =>
+                                      prev > 0 ? prev - 1 : filteredCards.length - 1
+                                    );
+                                  }}
+                                  className={`w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center transition-all duration-200 border-2 ${
+                                    filteredCards.length > 1
+                                      ? 'text-white hover:text-yellow-400 border-white/30 hover:border-yellow-400/60'
+                                      : 'text-white/30 border-white/10 cursor-default'
+                                  }`}
+                                  style={{
+                                    textShadow: filteredCards.length > 1 ? '0 0 10px #00ffff, 0 0 20px #00bfff, 0 0 30px #00bfff' : 'none',
+                                    filter: filteredCards.length > 1 ? 'drop-shadow(0 0 5px rgba(0, 255, 255, 0.8))' : 'none'
+                                  }}
+                                >
+                                  <span style={{ fontSize: '20px' }}>←</span>
+                                </button>
                                 
                                 {/* Card Image */}
-                                <div className="w-40 h-56 rounded-lg border-2 border-yellow-500/80 overflow-hidden relative cursor-pointer hover:border-yellow-400/90 transition-all duration-200 hover:scale-105">
+                                <div className="w-32 h-44 rounded-lg border-2 border-yellow-500/80 overflow-hidden relative cursor-pointer hover:border-yellow-400/90 transition-all duration-200 hover:scale-105">
                                 <img
                                   src={card.artwork_url || `/cards/${card.card_name}.webp`}
                                   alt={card.card_name}
@@ -2576,58 +2585,33 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 )}
                               </div>
                               
-                              {/* Right Arrow */}
-                              {filteredCards.length > 1 && (
-                                <button
-                                  onClick={() => {
-                                    try { sfx.play('flip.mp3', 0.8); } catch {}
-                                    setCurrentCardIndex(prev => 
-                                      prev < filteredCards.length - 1 ? prev + 1 : 0
-                                    );
-                                  }}
-                                  className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:text-yellow-400 transition-all duration-200 border-2 border-white/30 hover:border-yellow-400/60"
-                                  style={{
-                                    textShadow: '0 0 10px #00ffff, 0 0 20px #00bfff, 0 0 30px #00bfff',
-                                    filter: 'drop-shadow(0 0 5px rgba(0, 255, 255, 0.8))'
-                                  }}
-                                >
-                                  <span style={{ fontSize: '20px' }}>→</span>
-                                </button>
-                              )}
+                              {/* Right Arrow - Always visible */}
+                              <button
+                                onClick={() => {
+                                  try { sfx.play('flip.mp3', 0.8); } catch {}
+                                  setCurrentCardIndex(prev =>
+                                    prev < filteredCards.length - 1 ? prev + 1 : 0
+                                  );
+                                }}
+                                className={`w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center transition-all duration-200 border-2 ${
+                                  filteredCards.length > 1
+                                    ? 'text-white hover:text-yellow-400 border-white/30 hover:border-yellow-400/60'
+                                    : 'text-white/30 border-white/10 cursor-default'
+                                }`}
+                                style={{
+                                  textShadow: filteredCards.length > 1 ? '0 0 10px #00ffff, 0 0 20px #00bfff, 0 0 30px #00bfff' : 'none',
+                                  filter: filteredCards.length > 1 ? 'drop-shadow(0 0 5px rgba(0, 255, 255, 0.8))' : 'none'
+                                }}
+                              >
+                                <span style={{ fontSize: '20px' }}>→</span>
+                              </button>
                             </div>
 
                               {/* Card Details - Below Image */}
                               <div className="w-full max-w-md">
                                 {!showPhysicalForm && !showDigitalForm ? (
                                   <>
-                                    {/* Element and Rarity - Below Image */}
-                                    <div className="flex items-center justify-center gap-4 mb-4 text-sm">
-                                      <span 
-                                        className="flex items-center gap-1"
-                                        style={{ 
-                                          color: '#FFFFFF', 
-                                          textShadow: '0 0 4px rgba(255,255,255,0.6)' 
-                                        }}
-                                      >
-                                        Element: <span style={{ color: '#FFD700', fontWeight: 'bold' }}>{card.element}</span>
-                                      </span>
-                                      
-                                      <div className="flex items-center gap-1">
-                                        <span className="text-blue-400">★</span>
-                                        <span 
-                                          className="font-bold"
-                                          style={{ 
-                                            color: '#00BFFF', 
-                                            textShadow: '0 0 4px rgba(0,191,255,0.8)' 
-                                          }}
-                                        >
-                                          {card.rarity}
-                                        </span>
-                                        <span className="text-blue-400">★</span>
-                                      </div>
-                                    </div>
-
-                                    {/* Description - Below Element/Rarity */}
+                                    {/* Description - Below Image */}
                                     <p
                                       className="text-sm mb-3 leading-relaxed text-center max-w-lg mx-auto"
                                       style={{
@@ -3305,7 +3289,18 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   spinSensitivity={0.8}
                   onRotationChange={setCardRotation}
                   onClick={() => {
-                    try { sfx.play('flip.mp3', 0.8); } catch {}
+                    // Play flip sound
+                    try {
+                      sfx.play('flip.mp3', 0.8);
+                    } catch {
+                      // Fallback to native Audio
+                      try {
+                        const audio = new Audio('/audio/flip.mp3');
+                        audio.volume = 0.8;
+                        audio.play();
+                      } catch {}
+                    }
+                    // Animate flip
                     setIsAnimatingFlip(true);
                     setCardRotation(prev => prev + 180);
                     setTimeout(() => setIsAnimatingFlip(false), 500);
@@ -3357,36 +3352,79 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
           {/* Enlarged Merchandise Modal */}
           {enlargedMerchItem && (
-            <div 
+            <div
               className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 rounded-lg"
-              onClick={() => setEnlargedMerchItem(null)}
+              onClick={() => {
+                setEnlargedMerchItem(null);
+                setMerchRotation(0);
+              }}
             >
-              <div 
-                className="relative w-80 mx-4 bg-black/90 rounded-lg border border-white/20 p-6"
+              <div
+                className="relative w-64 mx-4"
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Merchandise Image */}
-                <div className="relative w-full h-80 mb-4">
+                {/* TiltSpinCard wrapper for 3D rotation */}
+                <TiltSpinCard
+                  className="relative w-full h-[320px]"
+                  maxRotateX={10}
+                  sensitivity={0.3}
+                  returnDuration={400}
+                  enableSpin={true}
+                  spinSensitivity={0.8}
+                  onRotationChange={setMerchRotation}
+                  onClick={() => {
+                    // Play flip sound and animate
+                    try {
+                      sfx.play('flip.mp3', 0.8);
+                    } catch {
+                      try {
+                        const audio = new Audio('/audio/flip.mp3');
+                        audio.volume = 0.8;
+                        audio.play();
+                      } catch {}
+                    }
+                    setIsMerchAnimatingFlip(true);
+                    setMerchRotation(prev => prev + 180);
+                    setTimeout(() => setIsMerchAnimatingFlip(false), 500);
+                  }}
+                >
+                  {/* Merchandise Image - Front */}
                   <img
                     src={enlargedMerchItem.image}
                     alt={enlargedMerchItem.title}
-                    className="w-full h-full object-contain rounded-lg border-2 border-white/30"
+                    className="absolute inset-0 w-full h-full object-contain rounded-lg border-2 border-white/30 pointer-events-none"
                     style={{
                       filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.3))',
+                      backfaceVisibility: 'hidden',
+                      transform: `rotateY(${merchRotation}deg)`,
+                      transition: isMerchAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
                     }}
+                    draggable={false}
                   />
-                </div>
-                
-                
-                
+                  {/* Merchandise Image - Back (same image, mirrored) */}
+                  <img
+                    src={enlargedMerchItem.image2 || enlargedMerchItem.image}
+                    alt={`${enlargedMerchItem.title} back`}
+                    className="absolute inset-0 w-full h-full object-contain rounded-lg border-2 border-white/30 pointer-events-none"
+                    style={{
+                      filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.3))',
+                      backfaceVisibility: 'hidden',
+                      transform: `rotateY(${merchRotation + 180}deg)`,
+                      transition: isMerchAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                    }}
+                    draggable={false}
+                  />
+                </TiltSpinCard>
+
                 {/* Close Button */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     try { sfx.play('close', 0.7); } catch {}
                     setEnlargedMerchItem(null);
+                    setMerchRotation(0);
                   }}
-                  className="absolute top-2 right-2 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white text-lg font-bold transition-all duration-200 z-10"
+                  className="absolute top-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white text-sm font-bold transition-all duration-200 z-10"
                 >
                   ×
                 </button>

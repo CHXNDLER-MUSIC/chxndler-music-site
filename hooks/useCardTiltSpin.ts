@@ -58,7 +58,7 @@ export function useCardTiltSpin(options: UseCardTiltSpinOptions = {}): UseCardTi
   const currentTiltRef = useRef<{ rotateX: number; rotateY: number }>({ rotateX: 0, rotateY: 0 });
   const isCapturingRef = useRef(false);
   const wasDraggedRef = useRef(false); // Track if user dragged (to prevent click after drag)
-  const dragThreshold = 10; // Minimum pixels to consider it a drag vs click
+  const dragThreshold = 15; // Minimum pixels to consider it a drag vs click (increased for touch reliability)
   const lastXRef = useRef(0); // Track last X position for spin mode
   const spinRotationRef = useRef(0); // Current spin rotation
 

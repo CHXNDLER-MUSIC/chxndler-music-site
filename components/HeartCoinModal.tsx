@@ -1755,7 +1755,18 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                       spinSensitivity={0.8}
                       onRotationChange={setCardRotation}
                       onClick={() => {
-                        try { sfx.play('flip.mp3', 0.8); } catch {}
+                        // Play flip sound
+                        try {
+                          sfx.play('flip.mp3', 0.8);
+                        } catch {
+                          // Fallback to native Audio
+                          try {
+                            const audio = new Audio('/audio/flip.mp3');
+                            audio.volume = 0.8;
+                            audio.play();
+                          } catch {}
+                        }
+                        // Animate flip
                         setIsAnimatingFlip(true);
                         setCardRotation(prev => prev + 180);
                         setTimeout(() => setIsAnimatingFlip(false), 500);

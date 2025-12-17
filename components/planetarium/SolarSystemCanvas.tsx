@@ -23,6 +23,7 @@ export const SolarSystemCanvas = React.memo(({
   showStats = false,
   quality = 'high'
 }: SolarSystemCanvasProps) => {
+  console.log('🎨 SolarSystemCanvas rendering with:', { songCount: songs.length, quality, showStats });
   return (
     <Canvas
       camera={{ 

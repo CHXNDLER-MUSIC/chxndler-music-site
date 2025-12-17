@@ -1,9 +1,25 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useSongs, type SongWithElement } from '@/hooks/useSongs';
-import { SolarSystemCanvas } from './SolarSystemCanvas';
 import { SolarSystemUI } from './SolarSystemUI';
+
+// Dynamic import to prevent SSR issues with React Three Fiber
+const DynamicSolarSystemCanvas = dynamic(
+  () => import('./SolarSystemCanvas'),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-[500px] bg-gray-800 rounded flex items-center justify-center text-white">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-2" />
+          Loading 3D Heartverse...
+        </div>
+      </div>
+    )
+  }
+);
 
 interface VanillaPlanetariumProps {
   zoomLevel: number;
@@ -29,25 +45,36 @@ export default function VanillaPlanetarium({
   onPlanetSelect, 
   worldId
 }: VanillaPlanetariumProps) {
+  const [isClient, setIsClient] = useState(false);
+  
   // Fetch real songs data
   const { songs, songsByElement, loading: songsLoading, error: songsError } = useSongs();
   
-  // UI state (separate from 3D scene)
-  const [mapCollapsed, setMapCollapsed] = useState(false);
-  const [showStats, setShowStats] = useState(false);
-  const [quality, setQuality] = useState<'low' | 'high'>(() => getDeviceQuality());
-
-
-  // Only render scene after songs are loaded
-  const shouldRender = !songsLoading && songs.length > 0;
-
-  // Loading state
-  if (songsLoading) {
+  useEffect(() => {
+    // Ensure we're in the browser environment
+    if (typeof window !== 'undefined') {
+      setIsClient(true);
+    }
+  }, []);
+  
+  // Loading state - temporarily bypass for testing
+  if (false && songsLoading) {
     return (
       <div className="w-full h-[500px] bg-gray-800 rounded flex items-center justify-center text-white">
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-2" />
           Loading Heartverse Solar System...
+        </div>
+      </div>
+    );
+  }
+  
+  if (!isClient) {
+    return (
+      <div className="w-full h-[500px] bg-gray-800 rounded flex items-center justify-center text-white">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-2" />
+          Loading 3D Heartverse...
         </div>
       </div>
     );
@@ -66,31 +93,26 @@ export default function VanillaPlanetarium({
   }
 
   return (
-    <div className="w-full h-[500px] relative overflow-hidden">
-      {/* UI Layer - Separated from Canvas */}
-      <SolarSystemUI
+    <div className="w-full h-[500px] relative overflow-hidden bg-gray-900 border border-gray-700 rounded">
+      {/* 3D Canvas Layer - Only render on client */}
+      <SolarSystemCanvas
         songs={songs}
         songsByElement={songsByElement}
-        shouldRender={shouldRender}
-        mapCollapsed={mapCollapsed}
-        onMapToggle={() => setMapCollapsed(!mapCollapsed)}
-        showStats={showStats}
-        onStatsToggle={() => setShowStats(!showStats)}
-        quality={quality}
-        onQualityChange={setQuality}
+        zoomLevel={zoomLevel}
+        onPlanetSelect={onPlanetSelect}
+        quality={getDeviceQuality()}
+        showStats={false}
       />
-      
-      {/* 3D Canvas Layer */}
-      {shouldRender && (
-        <SolarSystemCanvas
-          songs={songs}
-          songsByElement={songsByElement}
-          zoomLevel={zoomLevel}
-          onPlanetSelect={onPlanetSelect}
-          showStats={showStats}
-          quality={quality}
-        />
-      )}
+
+      {/* Simple overlay */}
+      <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur rounded-lg px-4 py-2 pointer-events-none">
+        <div className="text-white text-sm font-medium">
+          🌌 3D Heartverse Solar System
+        </div>
+        <div className="text-gray-300 text-xs">
+          Songs: {songs.length} | Zoom: {Math.round(zoomLevel * 100)}%
+        </div>
+      </div>
     </div>
   );
 }
