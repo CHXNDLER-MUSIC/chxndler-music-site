@@ -6,6 +6,7 @@ import { useProfile } from "@/contexts/ProfileContext";
 import BadgeCategoryButton from "@/components/BadgeCategoryButton";
 import PopoutShell from "@/components/PopoutShell";
 import { sfx } from "@/lib/sfx";
+import TiltSpinCard from "@/components/TiltSpinCard";
 import { getBadgeProgressForUser, formatRequirementText } from "@/lib/badgeProgress";
 import { updateBadgeProgressCounters, calculateRealtimeBadgeProgress, manualBadgeCheck } from "@/lib/updateBadgeProgress";
 
@@ -47,6 +48,14 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedBadge, setSelectedBadge] = useState<BadgeDisplay | null>(null);
   const [enlargedBadge, setEnlargedBadge] = useState<BadgeDisplay | null>(null);
+  const [badgeRotation, setBadgeRotation] = useState(0); // For 3D spin
+  const [isBadgeAnimatingFlip, setIsBadgeAnimatingFlip] = useState(false);
+
+  // Reset badge rotation when selected badge changes
+  useEffect(() => {
+    setBadgeRotation(0);
+    setIsBadgeAnimatingFlip(false);
+  }, [selectedBadge?.id]);
 
   // Create badge display objects with unlocked status and progress
   const badgesWithUnlocked: BadgeDisplay[] = allBadges.map(badge => {
@@ -170,7 +179,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   // Badge detail modal
   if (selectedBadge) {
     const badgeDetailContent = (
-      <div className="relative text-center space-y-6">
+      <div className="relative text-center space-y-6 w-full px-4" style={{ touchAction: 'pan-y' }}>
         <button
           onClick={() => {
             sfx.play('click');
@@ -180,28 +189,104 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         >
           ← Back to Badges
         </button>
-        
-        {/* Large badge display */}
+
+        {/* Large badge display with 3D spin */}
         <div className="flex flex-col items-center space-y-3">
-          <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 flex items-center justify-center">
-            <div className={`relative z-10 transition-opacity ${selectedBadge.unlocked ? 'opacity-100' : 'opacity-60'}`}>
-              {selectedBadge.icon_url ? (
-                <img
-                  src={selectedBadge.icon_url}
-                  alt={selectedBadge.badge_name}
-                  className="w-24 h-24 object-cover rounded-full"
-                  draggable={false}
-                />
-              ) : (
-                <div className="text-3xl">🏅</div>
-              )}
-            </div>
-            {/* Locked overlay */}
-            {!selectedBadge.unlocked && (
-              <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
-                <div className="w-4 h-4 bg-white/20 rounded-full" />
+          {/* Touch capture container - prevents scroll from capturing events */}
+          <div
+            className="relative"
+            style={{
+              touchAction: 'none',
+              WebkitUserSelect: 'none',
+              userSelect: 'none',
+            }}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+          >
+            <TiltSpinCard
+              className="relative w-40 h-40 cursor-grab active:cursor-grabbing"
+              style={{
+                touchAction: 'none',
+                perspective: '1000px',
+                zIndex: 50,
+              }}
+              maxRotateX={10}
+              sensitivity={0.3}
+              returnDuration={400}
+              enableSpin={true}
+              spinSensitivity={0.8}
+              onRotationChange={setBadgeRotation}
+              onClick={() => {
+                try {
+                  sfx.play('flip.mp3', 0.8);
+                } catch {
+                  try {
+                    const audio = new Audio('/audio/flip.mp3');
+                    audio.volume = 0.8;
+                    audio.play();
+                  } catch {}
+                }
+                setIsBadgeAnimatingFlip(true);
+                setBadgeRotation(prev => prev + 180);
+                setTimeout(() => setIsBadgeAnimatingFlip(false), 500);
+              }}
+            >
+              {/* 3D container for badge */}
+              <div
+                className="absolute inset-0 w-full h-full"
+                style={{
+                  transformStyle: 'preserve-3d',
+                  transform: `rotateY(${badgeRotation}deg)`,
+                  transition: isBadgeAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                  pointerEvents: 'none',
+                }}
+              >
+                {/* Front of badge */}
+                <div
+                  className="absolute inset-0 w-full h-full rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 flex items-center justify-center"
+                  style={{ backfaceVisibility: 'hidden' }}
+                >
+                  <div className={`relative z-10 transition-opacity ${selectedBadge.unlocked ? 'opacity-100' : 'opacity-60'}`}>
+                    {selectedBadge.icon_url ? (
+                      <img
+                        src={selectedBadge.icon_url}
+                        alt={selectedBadge.badge_name}
+                        className="w-36 h-36 object-cover rounded-full"
+                        draggable={false}
+                      />
+                    ) : (
+                      <div className="text-4xl">🏅</div>
+                    )}
+                  </div>
+                  {/* Locked overlay */}
+                  {!selectedBadge.unlocked && (
+                    <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
+                      <div className="w-4 h-4 bg-white/20 rounded-full" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Back of badge */}
+                <div
+                  className="absolute inset-0 w-full h-full rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 flex items-center justify-center"
+                  style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                >
+                  <div className={`relative z-10 transition-opacity ${selectedBadge.unlocked ? 'opacity-100' : 'opacity-60'}`}>
+                    {selectedBadge.icon_url ? (
+                      <img
+                        src={selectedBadge.icon_url}
+                        alt={selectedBadge.badge_name}
+                        className="w-36 h-36 object-cover rounded-full"
+                        style={{ transform: 'scaleX(-1)' }}
+                        draggable={false}
+                      />
+                    ) : (
+                      <div className="text-4xl">🏅</div>
+                    )}
+                  </div>
+                </div>
               </div>
-            )}
+            </TiltSpinCard>
           </div>
           
           {/* Badge name */}
@@ -719,6 +804,10 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
+          onClick={() => {
+            setEnlargedBadge(null);
+            setBadgeRotation(0);
+          }}
         >
           {/* Backdrop */}
           <motion.div
@@ -727,46 +816,116 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           />
-          
-          {/* Enlarged Badge */}
+
+          {/* Enlarged Badge with TiltSpinCard */}
           <motion.div
-            className="relative z-10 rounded-3xl overflow-hidden"
+            className="relative z-10"
             style={{
               width: '200px',
               height: '200px',
-              boxShadow: '0 0 60px rgba(252,84,175,0.4), 0 0 120px rgba(56,182,255,0.3)'
             }}
             initial={{ scale: 0.5, opacity: 0, y: -20 }}
             animate={{ scale: 1, opacity: 1, y: -20 }}
             exit={{ scale: 0.5, opacity: 0, y: -20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 400 }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-full h-full bg-gradient-to-br from-gray-800/80 to-black/90 border-4 border-white/30 rounded-3xl flex items-center justify-center">
-              {/* Badge content */}
-              <div className={`transition-opacity ${enlargedBadge.unlocked ? 'opacity-100' : 'opacity-40'}`}>
-                {enlargedBadge.icon_url ? (
-                  <img
-                    src={enlargedBadge.icon_url}
-                    alt={enlargedBadge.badge_name}
-                    className="w-32 h-32 object-cover rounded-full"
-                    draggable={false}
-                  />
-                ) : (
-                  <div className="text-6xl">🏅</div>
-                )}
-              </div>
-              
-              {/* Locked overlay */}
-              {!enlargedBadge.unlocked && (
-                <div className="absolute inset-4 bg-black/40 rounded-3xl flex items-center justify-center">
-                  <div className="w-8 h-8 bg-white/20 rounded-full" />
+            <TiltSpinCard
+              className="relative w-full h-full"
+              style={{ perspective: '1000px' }}
+              maxRotateX={10}
+              sensitivity={0.3}
+              returnDuration={400}
+              enableSpin={true}
+              spinSensitivity={0.8}
+              onRotationChange={setBadgeRotation}
+              onClick={() => {
+                // Play flip sound and animate
+                try {
+                  sfx.play('flip.mp3', 0.8);
+                } catch {
+                  try {
+                    const audio = new Audio('/audio/flip.mp3');
+                    audio.volume = 0.8;
+                    audio.play();
+                  } catch {}
+                }
+                setIsBadgeAnimatingFlip(true);
+                setBadgeRotation(prev => prev + 180);
+                setTimeout(() => setIsBadgeAnimatingFlip(false), 500);
+              }}
+            >
+              {/* 3D container for badge - this spins */}
+              <div
+                className="absolute inset-0 w-full h-full"
+                style={{
+                  transformStyle: 'preserve-3d',
+                  transform: `rotateY(${badgeRotation}deg)`,
+                  transition: isBadgeAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                }}
+              >
+                {/* Front of badge */}
+                <div
+                  className="absolute inset-0 w-full h-full bg-gradient-to-br from-gray-800/80 to-black/90 border-4 border-white/30 rounded-3xl flex items-center justify-center"
+                  style={{
+                    backfaceVisibility: 'hidden',
+                    boxShadow: '0 0 60px rgba(252,84,175,0.4), 0 0 120px rgba(56,182,255,0.3)'
+                  }}
+                >
+                  {/* Badge content */}
+                  <div className={`transition-opacity ${enlargedBadge.unlocked ? 'opacity-100' : 'opacity-40'}`}>
+                    {enlargedBadge.icon_url ? (
+                      <img
+                        src={enlargedBadge.icon_url}
+                        alt={enlargedBadge.badge_name}
+                        className="w-32 h-32 object-cover rounded-full"
+                        draggable={false}
+                      />
+                    ) : (
+                      <div className="text-6xl">🏅</div>
+                    )}
+                  </div>
+
+                  {/* Locked overlay */}
+                  {!enlargedBadge.unlocked && (
+                    <div className="absolute inset-4 bg-black/40 rounded-3xl flex items-center justify-center">
+                      <div className="w-8 h-8 bg-white/20 rounded-full" />
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            
-            {/* Badge name overlay */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-              <h3 className="text-white font-bold text-lg text-center">{enlargedBadge.badge_name}</h3>
+
+                {/* Back of badge */}
+                <div
+                  className="absolute inset-0 w-full h-full bg-gradient-to-br from-gray-800/80 to-black/90 border-4 border-white/30 rounded-3xl flex items-center justify-center"
+                  style={{
+                    backfaceVisibility: 'hidden',
+                    transform: 'rotateY(180deg)',
+                    boxShadow: '0 0 60px rgba(252,84,175,0.4), 0 0 120px rgba(56,182,255,0.3)'
+                  }}
+                >
+                  {/* Badge content (same as front) */}
+                  <div className={`transition-opacity ${enlargedBadge.unlocked ? 'opacity-100' : 'opacity-40'}`}>
+                    {enlargedBadge.icon_url ? (
+                      <img
+                        src={enlargedBadge.icon_url}
+                        alt={enlargedBadge.badge_name}
+                        className="w-32 h-32 object-cover rounded-full"
+                        draggable={false}
+                        style={{ transform: 'scaleX(-1)' }}
+                      />
+                    ) : (
+                      <div className="text-6xl">🏅</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </TiltSpinCard>
+
+            {/* Badge name overlay - stays fixed */}
+            <div className="absolute -bottom-12 left-0 right-0 p-4 pointer-events-none">
+              <h3 className="text-white font-bold text-lg text-center" style={{ textShadow: '0 0 10px rgba(0,0,0,0.8)' }}>
+                {enlargedBadge.badge_name}
+              </h3>
             </div>
           </motion.div>
         </motion.div>

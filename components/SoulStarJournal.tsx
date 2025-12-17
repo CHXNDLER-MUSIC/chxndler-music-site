@@ -12,6 +12,7 @@ import BadgesModal from "./BadgesModal";
 import UserBadges from "./UserBadges";
 import UserCards from "./UserCards";
 import JourneyModal from "./JourneyModal";
+import TiltSpinCard from "./TiltSpinCard";
 import Image from 'next/image';
 
 interface DailyPrompt {
@@ -127,6 +128,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const [showBadgesModal, setShowBadgesModal] = useState(false);
   const [showFullBadgesModal, setShowFullBadgesModal] = useState(false);
   const [enlargedBadge, setEnlargedBadge] = useState<any>(null);
+  const [badgeRotation, setBadgeRotation] = useState(0);
+  const [isBadgeAnimatingFlip, setIsBadgeAnimatingFlip] = useState(false);
   const [showIntegratedBinder, setShowIntegratedBinder] = useState(false);
   const [selectedCard, setSelectedCard] = useState<any>(null);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
@@ -2385,59 +2388,145 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
       {/* Enlarged Badge Popup Modal */}
       {enlargedBadge && (
-        <div 
-          className="fixed inset-0 z-[2147483646] flex items-center justify-center p-4 pointer-events-none"
+        <div
+          className="fixed inset-0 z-[2147483646] flex items-center justify-center p-4"
           onClick={() => {
             setEnlargedBadge(null);
+            setBadgeRotation(0);
           }}
         >
-          <div 
-            className="relative cursor-pointer pointer-events-auto"
+          {/* Dark backdrop */}
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+
+          {/* Badge container - fills more of the popout */}
+          <div
+            className="relative flex flex-col items-center justify-center pointer-events-auto"
             style={{
-              width: 'min(300px, 80vw)',
-              height: 'min(300px, 80vh)',
+              width: 'min(85vw, 400px)',
+              maxHeight: '80vh',
             }}
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
+            onClick={(e) => e.stopPropagation()}
           >
+            {/* Touch capture container */}
             <div
-              className="w-full h-full rounded-full overflow-hidden"
+              className="relative"
               style={{
-                background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
-                border: '3px solid #FF69B4',
-                boxShadow: '0 0 30px #FF69B460, 0 0 60px #FF69B440',
-                animation: 'badgePulse 2s ease-in-out infinite'
+                touchAction: 'none',
+                WebkitUserSelect: 'none',
+                userSelect: 'none',
               }}
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
             >
-              <img
-                src={enlargedBadge.badge_image_url || '/elements/badges.webp'}
-                alt={enlargedBadge.badge_name || 'Badge'}
-                className="w-full h-full object-cover"
-                draggable={false}
-                onError={(e) => {
-                  e.currentTarget.src = '/elements/badges.webp';
+              <TiltSpinCard
+                className="relative cursor-grab active:cursor-grabbing"
+                style={{
+                  width: 'min(70vw, 280px)',
+                  height: 'min(70vw, 280px)',
+                  touchAction: 'none',
+                  perspective: '1000px',
                 }}
-              />
+                maxRotateX={10}
+                sensitivity={0.3}
+                returnDuration={400}
+                enableSpin={true}
+                spinSensitivity={0.8}
+                onRotationChange={setBadgeRotation}
+                onClick={() => {
+                  try {
+                    sfx.play('flip.mp3', 0.8);
+                  } catch {
+                    try {
+                      const audio = new Audio('/audio/flip.mp3');
+                      audio.volume = 0.8;
+                      audio.play();
+                    } catch {}
+                  }
+                  setIsBadgeAnimatingFlip(true);
+                  setBadgeRotation(prev => prev + 180);
+                  setTimeout(() => setIsBadgeAnimatingFlip(false), 500);
+                }}
+              >
+                {/* 3D container for badge */}
+                <div
+                  className="absolute inset-0 w-full h-full"
+                  style={{
+                    transformStyle: 'preserve-3d',
+                    transform: `rotateY(${badgeRotation}deg)`,
+                    transition: isBadgeAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {/* Front of badge */}
+                  <div
+                    className="absolute inset-0 w-full h-full rounded-full overflow-hidden"
+                    style={{
+                      backfaceVisibility: 'hidden',
+                      background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+                      border: '3px solid #FF69B4',
+                      boxShadow: '0 0 30px #FF69B460, 0 0 60px #FF69B440',
+                    }}
+                  >
+                    <img
+                      src={enlargedBadge.badge_image_url || '/elements/badges.webp'}
+                      alt={enlargedBadge.badge_name || 'Badge'}
+                      className="w-full h-full object-cover"
+                      draggable={false}
+                      onError={(e) => {
+                        e.currentTarget.src = '/elements/badges.webp';
+                      }}
+                    />
+                  </div>
+
+                  {/* Back of badge */}
+                  <div
+                    className="absolute inset-0 w-full h-full rounded-full overflow-hidden"
+                    style={{
+                      backfaceVisibility: 'hidden',
+                      transform: 'rotateY(180deg)',
+                      background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+                      border: '3px solid #FF69B4',
+                      boxShadow: '0 0 30px #FF69B460, 0 0 60px #FF69B440',
+                    }}
+                  >
+                    <img
+                      src={enlargedBadge.badge_image_url || '/elements/badges.webp'}
+                      alt={enlargedBadge.badge_name || 'Badge'}
+                      className="w-full h-full object-cover"
+                      style={{ transform: 'scaleX(-1)' }}
+                      draggable={false}
+                      onError={(e) => {
+                        e.currentTarget.src = '/elements/badges.webp';
+                      }}
+                    />
+                  </div>
+                </div>
+              </TiltSpinCard>
             </div>
-            
-            {/* Badge Info Overlay */}
-            <div 
-              className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg text-center"
+
+            {/* Badge Info - BELOW the badge */}
+            <div
+              className="mt-6 px-6 py-3 rounded-lg text-center"
               style={{
                 background: 'rgba(0, 0, 0, 0.8)',
                 border: '1px solid #FF69B4',
-                boxShadow: '0 0 15px #FF69B440'
+                boxShadow: '0 0 15px #FF69B440',
+                maxWidth: '90%',
               }}
             >
-              <div className="text-white font-semibold text-lg">
+              <div className="text-white font-semibold text-xl">
                 {enlargedBadge.badge_name || 'Badge'}
               </div>
               {enlargedBadge.description && (
-                <div className="text-white/70 text-sm mt-1">
+                <div className="text-white/70 text-sm mt-2">
                   {enlargedBadge.description}
                 </div>
               )}
+            </div>
+
+            {/* Tap anywhere to close hint */}
+            <div className="mt-4 text-white/40 text-xs">
+              Tap outside to close • Drag badge to spin
             </div>
           </div>
         </div>

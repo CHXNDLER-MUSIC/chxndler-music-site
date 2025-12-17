@@ -1,20 +1,19 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSongs, type SongWithElement } from '@/hooks/useSongs';
-import { SolarSystemUI } from './SolarSystemUI';
+import dynamic from 'next/dynamic';
 
-// Dynamic import to prevent SSR issues with React Three Fiber
-const DynamicSolarSystemCanvas = dynamic(
-  () => import('./SolarSystemCanvas'),
+// Use the working Pure3DPlanets component
+const DynamicPure3DPlanets = dynamic(
+  () => import('./Pure3DPlanets'),
   { 
     ssr: false,
     loading: () => (
-      <div className="w-full h-[500px] bg-gray-800 rounded flex items-center justify-center text-white">
+      <div className="w-full h-full bg-gray-900 flex items-center justify-center text-white">
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-2" />
-          Loading 3D Heartverse...
+          Loading 3D Planets...
         </div>
       </div>
     )
@@ -45,40 +44,15 @@ export default function VanillaPlanetarium({
   onPlanetSelect, 
   worldId
 }: VanillaPlanetariumProps) {
-  const [isClient, setIsClient] = useState(false);
-  
   // Fetch real songs data
   const { songs, songsByElement, loading: songsLoading, error: songsError } = useSongs();
   
-  useEffect(() => {
-    // Ensure we're in the browser environment
-    if (typeof window !== 'undefined') {
-      setIsClient(true);
-    }
-  }, []);
-  
-  // Loading state - temporarily bypass for testing
-  if (false && songsLoading) {
-    return (
-      <div className="w-full h-[500px] bg-gray-800 rounded flex items-center justify-center text-white">
-        <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-2" />
-          Loading Heartverse Solar System...
-        </div>
-      </div>
-    );
-  }
-  
-  if (!isClient) {
-    return (
-      <div className="w-full h-[500px] bg-gray-800 rounded flex items-center justify-center text-white">
-        <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-2" />
-          Loading 3D Heartverse...
-        </div>
-      </div>
-    );
-  }
+  // Debug logs to check state
+  console.log('VanillaPlanetarium render:', { 
+    songsLoading, 
+    songsError, 
+    songsCount: songs.length
+  });
 
   // Error state
   if (songsError) {
@@ -94,23 +68,22 @@ export default function VanillaPlanetarium({
 
   return (
     <div className="w-full h-[500px] relative overflow-hidden bg-gray-900 border border-gray-700 rounded">
-      {/* 3D Canvas Layer - Only render on client */}
-      <SolarSystemCanvas
+      {/* Dynamic 3D Planet System */}
+      <DynamicPure3DPlanets
         songs={songs}
         songsByElement={songsByElement}
         zoomLevel={zoomLevel}
         onPlanetSelect={onPlanetSelect}
         quality={getDeviceQuality()}
-        showStats={false}
       />
 
-      {/* Simple overlay */}
+      {/* Overlay info */}
       <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur rounded-lg px-4 py-2 pointer-events-none">
         <div className="text-white text-sm font-medium">
           🌌 3D Heartverse Solar System
         </div>
         <div className="text-gray-300 text-xs">
-          Songs: {songs.length} | Zoom: {Math.round(zoomLevel * 100)}%
+          Songs: {songs.length} | Zoom: {Math.round(zoomLevel * 100)}% | Drag to orbit • Scroll to zoom • Click planets
         </div>
       </div>
     </div>

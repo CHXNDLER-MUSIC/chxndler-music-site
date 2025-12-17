@@ -9,6 +9,7 @@ interface PopoutShellProps {
   children?: ReactNode;
   overlayContent?: ReactNode;
   backgroundContent?: ReactNode;
+  fullOverlay?: ReactNode; // Content that covers the entire popout including header
   pageIndicator?: string; // Optional, for binder's "1 / 6" display
   compact?: boolean; // Optional, for compact height like badges
   isOpen?: boolean;
@@ -21,7 +22,7 @@ interface PopoutShellProps {
   headerRuleVariant?: 'pink' | 'cyan'; // Optional, choose pink (default) or cyan line
 }
 
-export default function PopoutShell({ title, onClose, children, overlayContent, backgroundContent, pageIndicator, compact = false, isOpen = true, subtitle, minWidth, maxHeight, fitToPowerTop = false, powerGapPx = 12, hideHeaderRule = false, headerRuleVariant = 'pink' }: PopoutShellProps) {
+export default function PopoutShell({ title, onClose, children, overlayContent, backgroundContent, fullOverlay, pageIndicator, compact = false, isOpen = true, subtitle, minWidth, maxHeight, fitToPowerTop = false, powerGapPx = 12, hideHeaderRule = false, headerRuleVariant = 'pink' }: PopoutShellProps) {
   if (!isOpen) return null;
 
   const [computedMaxHeight, setComputedMaxHeight] = useState<string | null>(null);
@@ -208,7 +209,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
           )}
 
           {/* Content container - exact copy from Binder */}
-          <div className="flex-1 relative overflow-hidden z-10" style={{ maxHeight: 'calc(100% - 80px)', display: 'flex', alignItems: compact ? 'flex-start' : 'flex-start', paddingBottom: compact ? '8px' : '20px' }}>
+          <div className="flex-1 relative z-10" style={{ maxHeight: 'calc(100% - 80px)', display: 'flex', flexDirection: 'column', alignItems: 'stretch', paddingBottom: compact ? '8px' : '20px', overflowY: 'auto', overflowX: 'visible' }}>
             {overlayContent || children}
           </div>
 

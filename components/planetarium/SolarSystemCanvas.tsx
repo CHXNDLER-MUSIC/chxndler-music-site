@@ -57,3 +57,5 @@ export const SolarSystemCanvas = React.memo(({
 });
 
 SolarSystemCanvas.displayName = 'SolarSystemCanvas';
+
+export default SolarSystemCanvas;

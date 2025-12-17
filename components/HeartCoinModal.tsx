@@ -1332,8 +1332,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               <div className="flex-1 ml-4">
                 <select 
                   className="w-full bg-black/30 border border-white/20 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-white/40"
-                  defaultValue="LIGHTNING"
+                  defaultValue="ALL CARDS"
                 >
+                  <option value="ALL CARDS">ALL CARDS</option>
                   <option value="LIGHTNING">LIGHTNING</option>
                   <option value="WATER">WATER</option>
                   <option value="HEART">HEART</option>

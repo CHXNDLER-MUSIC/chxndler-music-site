@@ -8,7 +8,6 @@ import { supabaseBrowser } from "@/lib/supabase-browser";
 import { track } from "@/lib/analytics";
 import { useBonusQuests } from '@/hooks/useBonusQuests';
 import { BonusQuestWithCompletion } from '@/types/bonusQuests';
-import { completeSecretPhraseQuest } from '@/lib/bonusQuests';
 import { useMerchItems } from '@/hooks/useMerchItems';
 import { useMerchPurchase } from '@/hooks/useMerchPurchase';
 import { MerchItem } from '@/types/merch';
@@ -781,7 +780,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [phraseValidationResult, setPhraseValidationResult] = useState<'correct' | 'incorrect' | null>(null);
   
   // Bonus quests hook
-  const { quests: bonusQuests, status: bonusQuestsStatus, errorMessage: bonusQuestsError, isLoggedIn, completeQuest } = useBonusQuests();
+  const { quests: bonusQuests, status: bonusQuestsStatus, errorMessage: bonusQuestsError, isLoggedIn, completeQuest, refetchQuests } = useBonusQuests();
   
   // Helper function to check if quest is completed (either from DB or local state)
   const isQuestCompleted = (quest: any) => {
@@ -987,39 +986,83 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       return;
     }
 
+    const phraseTrimmed = secretPhraseValue.trim();
     setSecretPhraseLoading(true);
+
     try {
-      await completeSecretPhraseQuest({
-        supabase: supabaseBrowser,
-        userId: profile?.id || '',
-        bonusQuestId: quest.id,
-        phrase: secretPhraseValue
-      });
+      const { data, error } = await supabaseBrowser.rpc(
+        'redeem_secret_phrase',
+        { p_phrase: phraseTrimmed }
+      );
 
-      // Success - clear input and update UI
-      setSecretPhraseValue('');
-      setSecretPhraseInputVisible(null);
-      setCheckInMessage('Secret phrase accepted! HeartCoins awarded.');
-      setStatusType('success');
-      setShowCheckInSuccess(true);
-      
-      // Refresh quests and profile
-      await Promise.all([
-        completeQuest(quest),  // This will refetch quests
-        refreshProfile()
-      ]);
+      if (error) {
+        console.error('Secret phrase RPC error:', error);
+        setCheckInMessage('Failed to redeem secret phrase');
+        setStatusType('error');
+        setTimeout(() => {
+          setCheckInMessage("");
+          setStatusType('idle');
+        }, 3000);
+        return;
+      }
 
-      setTimeout(() => {
-        setShowCheckInSuccess(false);
-        setCheckInMessage("");
-        setStatusType('idle');
-      }, 3000);
+      // Handle RPC response statuses
+      const status = data?.status;
 
-      try { sfx.play('click', 0.7); } catch {}
+      if (status === 'redeemed') {
+        const reward = data?.reward || 0;
+        setSecretPhraseValue('');
+        setSecretPhraseInputVisible(null);
+        setCheckInMessage(`Secret phrase accepted! +${reward} HeartCoins`);
+        setStatusType('success');
+        setShowCheckInSuccess(true);
+
+        // Refresh profile to update HeartCoins balance
+        await refreshProfile();
+
+        // Also refresh quests to update completion status
+        await refetchQuests();
+
+        setTimeout(() => {
+          setShowCheckInSuccess(false);
+          setCheckInMessage("");
+          setStatusType('idle');
+        }, 3000);
+
+        try { sfx.play('click', 0.7); } catch {}
+      } else if (status === 'already_checked_in') {
+        setCheckInMessage('Already checked in today');
+        setStatusType('error');
+        setTimeout(() => {
+          setCheckInMessage("");
+          setStatusType('idle');
+        }, 3000);
+      } else if (status === 'incorrect') {
+        setCheckInMessage('Incorrect secret phrase');
+        setStatusType('error');
+        setTimeout(() => {
+          setCheckInMessage("");
+          setStatusType('idle');
+        }, 3000);
+      } else if (status === 'not_authenticated') {
+        setCheckInMessage('Please log in to redeem');
+        setStatusType('error');
+        setTimeout(() => {
+          setCheckInMessage("");
+          setStatusType('idle');
+        }, 3000);
+      } else {
+        // Unknown status
+        setCheckInMessage('Failed to redeem secret phrase');
+        setStatusType('error');
+        setTimeout(() => {
+          setCheckInMessage("");
+          setStatusType('idle');
+        }, 3000);
+      }
     } catch (error) {
       console.error('Secret phrase quest error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to redeem secret phrase';
-      setCheckInMessage(errorMessage);
+      setCheckInMessage('Failed to redeem secret phrase');
       setStatusType('error');
       setTimeout(() => {
         setCheckInMessage("");
@@ -3359,13 +3402,28 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 setMerchRotation(0);
               }}
             >
+              {/* Pulsing animation keyframes */}
+              <style jsx>{`
+                @keyframes merchFloat {
+                  0%, 100% {
+                    transform: translateY(0px);
+                  }
+                  50% {
+                    transform: translateY(-8px);
+                  }
+                }
+              `}</style>
               <div
                 className="relative w-64 mx-4"
+                style={{
+                  animation: 'merchFloat 2.5s ease-in-out infinite',
+                }}
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* TiltSpinCard wrapper for 3D rotation */}
+                {/* TiltSpinCard wrapper for 3D rotation - no visible styling */}
                 <TiltSpinCard
                   className="relative w-full h-[320px]"
+                  style={{ perspective: '1000px' }}
                   maxRotateX={10}
                   sensitivity={0.3}
                   returnDuration={400}
@@ -3388,32 +3446,39 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     setTimeout(() => setIsMerchAnimatingFlip(false), 500);
                   }}
                 >
-                  {/* Merchandise Image - Front */}
-                  <img
-                    src={enlargedMerchItem.image}
-                    alt={enlargedMerchItem.title}
-                    className="absolute inset-0 w-full h-full object-contain rounded-lg border-2 border-white/30 pointer-events-none"
+                  {/* 3D container for images - this spins */}
+                  <div
+                    className="absolute inset-0 w-full h-full"
                     style={{
-                      filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.3))',
-                      backfaceVisibility: 'hidden',
+                      transformStyle: 'preserve-3d',
                       transform: `rotateY(${merchRotation}deg)`,
                       transition: isMerchAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
                     }}
-                    draggable={false}
-                  />
-                  {/* Merchandise Image - Back (same image, mirrored) */}
-                  <img
-                    src={enlargedMerchItem.image2 || enlargedMerchItem.image}
-                    alt={`${enlargedMerchItem.title} back`}
-                    className="absolute inset-0 w-full h-full object-contain rounded-lg border-2 border-white/30 pointer-events-none"
-                    style={{
-                      filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.3))',
-                      backfaceVisibility: 'hidden',
-                      transform: `rotateY(${merchRotation + 180}deg)`,
-                      transition: isMerchAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                    }}
-                    draggable={false}
-                  />
+                  >
+                    {/* Merchandise Image - Front */}
+                    <img
+                      src={enlargedMerchItem.image}
+                      alt={enlargedMerchItem.title}
+                      className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+                      style={{
+                        filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.3))',
+                        backfaceVisibility: 'hidden',
+                      }}
+                      draggable={false}
+                    />
+                    {/* Merchandise Image - Back */}
+                    <img
+                      src={enlargedMerchItem.image2 || enlargedMerchItem.image}
+                      alt={`${enlargedMerchItem.title} back`}
+                      className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+                      style={{
+                        filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.3))',
+                        backfaceVisibility: 'hidden',
+                        transform: 'rotateY(180deg)',
+                      }}
+                      draggable={false}
+                    />
+                  </div>
                 </TiltSpinCard>
 
                 {/* Close Button */}
