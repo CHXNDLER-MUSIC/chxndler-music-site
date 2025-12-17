@@ -2625,15 +2625,72 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     </div>
 
                                     {/* Description - Below Element/Rarity */}
-                                    <p 
-                                      className="text-sm mb-6 leading-relaxed text-center max-w-lg mx-auto"
-                                      style={{ 
-                                        color: '#FFFFFF', 
-                                        textShadow: '0 0 4px rgba(255,255,255,0.6)' 
+                                    <p
+                                      className="text-sm mb-3 leading-relaxed text-center max-w-lg mx-auto"
+                                      style={{
+                                        color: '#FFFFFF',
+                                        textShadow: '0 0 4px rgba(255,255,255,0.6)'
                                       }}
                                     >
                                       {card.description}
                                     </p>
+
+                                    {/* Purchase buttons - In normal flow */}
+                                    <div className="flex justify-center gap-4 pb-2">
+                                      <button
+                                        className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg border transition-colors text-sm font-semibold hover:scale-105 whitespace-nowrap flex-1 max-w-[180px] ${
+                                          showDigitalForm
+                                            ? 'border-blue-400/80 bg-blue-400/30'
+                                            : 'border-blue-500/60 bg-blue-500/20 hover:bg-blue-500/30'
+                                        }`}
+                                        style={{
+                                          color: showDigitalForm ? '#87CEEB' : '#00BFFF',
+                                          textShadow: showDigitalForm
+                                            ? '0 0 6px rgba(135,206,235,0.8)'
+                                            : '0 0 4px rgba(0,191,255,0.8)',
+                                          boxShadow: showDigitalForm ? '0 0 15px rgba(0,191,255,0.4)' : 'none'
+                                        }}
+                                        onMouseEnter={() => {
+                                          try { sfx.play('hover', 0.3); } catch {}
+                                        }}
+                                        onClick={() => {
+                                          try { sfx.play('click', 0.7); } catch {}
+                                          setShowDigitalForm(!showDigitalForm);
+                                          setShowPhysicalForm(false);
+                                          setShowPhysicalConfirm(false);
+                                        }}
+                                      >
+                                        <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5 flex-shrink-0" />
+                                        <span>{card.digitalCost} DIGITAL</span>
+                                      </button>
+
+                                      <button
+                                        className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg border transition-colors text-sm font-semibold hover:scale-105 whitespace-nowrap flex-1 max-w-[180px] ${
+                                          showPhysicalForm || showPhysicalConfirm
+                                            ? 'border-purple-400/80 bg-purple-400/30'
+                                            : 'border-purple-500/60 bg-purple-500/20 hover:bg-purple-500/30'
+                                        }`}
+                                        style={{
+                                          color: showPhysicalForm || showPhysicalConfirm ? '#E6E6FA' : '#DA70D6',
+                                          textShadow: showPhysicalForm || showPhysicalConfirm
+                                            ? '0 0 6px rgba(230,230,250,0.8)'
+                                            : '0 0 4px rgba(218,112,214,0.8)',
+                                          boxShadow: showPhysicalForm || showPhysicalConfirm ? '0 0 15px rgba(218,112,214,0.4)' : 'none'
+                                        }}
+                                        onMouseEnter={() => {
+                                          try { sfx.play('hover', 0.3); } catch {}
+                                        }}
+                                        onClick={() => {
+                                          try { sfx.play('click', 0.7); } catch {}
+                                          setShowPhysicalForm(!showPhysicalForm);
+                                          setShowPhysicalConfirm(false);
+                                          setShowDigitalForm(false);
+                                        }}
+                                      >
+                                        <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5 flex-shrink-0" />
+                                        <span>{card.physicalCost} PHYSICAL</span>
+                                      </button>
+                                    </div>
                                   </>
                                 ) : showPhysicalConfirm ? (
                                   /* Physical Purchase Confirmation */
@@ -3041,17 +3098,17 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             </div>
                             
                             {/* Purchase buttons - Positioned at bottom */}
-                            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-3">
-                              <button 
-                                className={`flex items-center justify-center gap-2 px-8 py-3 rounded-lg border transition-colors text-sm font-semibold hover:scale-105 min-w-32 ${
-                                  showDigitalForm 
-                                    ? 'border-blue-400/80 bg-blue-400/30' 
+                            <div className="absolute -bottom-10 left-0 right-0 flex justify-center gap-4 px-4">
+                              <button
+                                className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg border transition-colors text-sm font-semibold hover:scale-105 whitespace-nowrap flex-1 max-w-[180px] ${
+                                  showDigitalForm
+                                    ? 'border-blue-400/80 bg-blue-400/30'
                                     : 'border-blue-500/60 bg-blue-500/20 hover:bg-blue-500/30'
                                 }`}
-                                style={{ 
-                                  color: showDigitalForm ? '#87CEEB' : '#00BFFF', 
-                                  textShadow: showDigitalForm 
-                                    ? '0 0 6px rgba(135,206,235,0.8)' 
+                                style={{
+                                  color: showDigitalForm ? '#87CEEB' : '#00BFFF',
+                                  textShadow: showDigitalForm
+                                    ? '0 0 6px rgba(135,206,235,0.8)'
                                     : '0 0 4px rgba(0,191,255,0.8)',
                                   boxShadow: showDigitalForm ? '0 0 15px rgba(0,191,255,0.4)' : 'none'
                                 }}
@@ -3065,20 +3122,20 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   setShowPhysicalConfirm(false);
                                 }}
                               >
-                                <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5" />
-                                {card.digitalCost} DIGITAL
+                                <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5 flex-shrink-0" />
+                                <span>{card.digitalCost} DIGITAL</span>
                               </button>
-                              
-                              <button 
-                                className={`flex items-center justify-center gap-2 px-8 py-3 rounded-lg border transition-colors text-sm font-semibold hover:scale-105 min-w-32 ${
-                                  showPhysicalForm || showPhysicalConfirm 
-                                    ? 'border-purple-400/80 bg-purple-400/30' 
+
+                              <button
+                                className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg border transition-colors text-sm font-semibold hover:scale-105 whitespace-nowrap flex-1 max-w-[180px] ${
+                                  showPhysicalForm || showPhysicalConfirm
+                                    ? 'border-purple-400/80 bg-purple-400/30'
                                     : 'border-purple-500/60 bg-purple-500/20 hover:bg-purple-500/30'
                                 }`}
-                                style={{ 
-                                  color: showPhysicalForm || showPhysicalConfirm ? '#E6E6FA' : '#DA70D6', 
-                                  textShadow: showPhysicalForm || showPhysicalConfirm 
-                                    ? '0 0 6px rgba(230,230,250,0.8)' 
+                                style={{
+                                  color: showPhysicalForm || showPhysicalConfirm ? '#E6E6FA' : '#DA70D6',
+                                  textShadow: showPhysicalForm || showPhysicalConfirm
+                                    ? '0 0 6px rgba(230,230,250,0.8)'
                                     : '0 0 4px rgba(218,112,214,0.8)',
                                   boxShadow: showPhysicalForm || showPhysicalConfirm ? '0 0 15px rgba(218,112,214,0.4)' : 'none'
                                 }}
@@ -3092,8 +3149,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   setShowDigitalForm(false);
                                 }}
                               >
-                                <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5" />
-                                {card.physicalCost} PHYSICAL
+                                <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5 flex-shrink-0" />
+                                <span>{card.physicalCost} PHYSICAL</span>
                               </button>
                             </div>
                                 </div>
