@@ -797,126 +797,123 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
           try { sfx.play('close', 0.8); } catch {}
           onClose();
         }}
-        pageIndicator={!showFullCollection ? `${binderPage === 'first' ? '1' : 
-         binderPage === 'second' ? '2' : 
-         binderPage === 'third' ? '3' : 
-         binderPage === 'fourth' ? '4' : 
-         binderPage === 'fifth' ? '5' : 
-         binderPage === 'sixth' ? '6' : 
-         binderPage === 'seventh' ? '7' : 
-         binderPage === 'eighth' ? '8' : 
-         binderPage === 'ninth' ? '9' : 
-         binderPage === 'tenth' ? '10' : 
-         binderPage === 'eleventh' ? '11' : 
-         binderPage === 'twelfth' ? '12' : 
+        pageIndicator={!showFullCollection ? `${binderPage === 'first' ? '1' :
+         binderPage === 'second' ? '2' :
+         binderPage === 'third' ? '3' :
+         binderPage === 'fourth' ? '4' :
+         binderPage === 'fifth' ? '5' :
+         binderPage === 'sixth' ? '6' :
+         binderPage === 'seventh' ? '7' :
+         binderPage === 'eighth' ? '8' :
+         binderPage === 'ninth' ? '9' :
+         binderPage === 'tenth' ? '10' :
+         binderPage === 'eleventh' ? '11' :
+         binderPage === 'twelfth' ? '12' :
          binderPage === 'thirteenth' ? '13' : '1'} / 13` : undefined}
         compact
-      >
-
-          {/* Card popup - positioned absolutely within binder bounds, fills entire popout */}
-          {cardOpen && selectedCard && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md z-50" style={{ padding: '8px' }}>
-              {/* Large card display - fills entire container */}
-              <div
-                className="relative flex items-center justify-center w-full h-full"
+        fullOverlay={cardOpen && selectedCard ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md" style={{ padding: '12px' }}>
+            {/* Large card display - fills entire container */}
+            <div
+              className="relative flex items-center justify-center w-full h-full"
+              style={{
+                maxHeight: '100%',
+                maxWidth: '100%',
+              }}
+            >
+              {/* Back arrow - positioned at top left */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  try { sfx.play('close', 0.8); } catch {}
+                  setCardOpen(false);
+                  setIsCardFlipped(false);
+                  setCardRotation(0);
+                  setIsAnimatingFlip(false);
+                }}
+                onMouseEnter={() => {
+                  try { sfx.play('hover', 0.3); } catch {}
+                }}
+                className="absolute top-2 left-2 w-8 h-8 rounded-full flex items-center justify-center text-pink-400 hover:text-pink-200 transition-all duration-200 z-20"
                 style={{
-                  maxHeight: '100%',
-                  maxWidth: '100%',
+                  background: 'rgba(255,105,180,0.1)',
+                  border: '2px solid #FF69B4',
+                  boxShadow: '0 0 20px rgba(255,105,180,0.8), 0 0 30px rgba(255,105,180,0.6), 0 0 40px rgba(255,105,180,0.4)',
+                  textShadow: '0 0 10px rgba(255,105,180,0.8)',
+                  backdropFilter: 'blur(10px)',
                 }}
               >
-                {/* Back arrow - positioned at top left */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    try { sfx.play('close', 0.8); } catch {}
-                    setCardOpen(false);
-                    setIsCardFlipped(false);
-                    setCardRotation(0);
-                    setIsAnimatingFlip(false);
-                  }}
-                  onMouseEnter={() => {
-                    try { sfx.play('hover', 0.3); } catch {}
-                  }}
-                  className="absolute top-0 left-0 w-8 h-8 rounded-full flex items-center justify-center text-pink-400 hover:text-pink-200 transition-all duration-200 z-20"
-                  style={{
-                    background: 'rgba(255,105,180,0.1)',
-                    border: '2px solid #FF69B4',
-                    boxShadow: '0 0 20px rgba(255,105,180,0.8), 0 0 30px rgba(255,105,180,0.6), 0 0 40px rgba(255,105,180,0.4)',
-                    textShadow: '0 0 10px rgba(255,105,180,0.8)',
-                    backdropFilter: 'blur(10px)',
-                  }}
-                >
-                  <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
-                    <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
+                <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+                  <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
 
-                {/* TiltSpinCard wrapper for drag-to-spin interaction */}
-                <div
-                  className="relative"
+              {/* TiltSpinCard wrapper for drag-to-spin interaction */}
+              <div
+                className="relative"
+                style={{
+                  width: 'auto',
+                  height: '100%',
+                  maxHeight: '100%',
+                  aspectRatio: '2/3',
+                }}
+              >
+                <TiltSpinCard
+                  className="relative w-full h-full"
+                  maxRotateX={10}
+                  sensitivity={0.3}
+                  returnDuration={400}
+                  enableSpin={true}
+                  spinSensitivity={0.8}
+                  onRotationChange={setCardRotation}
+                  onClick={() => {
+                    // Play flip sound and animate 180° flip
+                    try { sfx.play('flip', 0.45); } catch {}
+                    setIsAnimatingFlip(true);
+                    setCardRotation(prev => prev + 180);
+                    setTimeout(() => setIsAnimatingFlip(false), 500);
+                  }}
                   style={{
-                    width: 'auto',
-                    height: '100%',
-                    maxHeight: '100%',
-                    aspectRatio: '2/3',
+                    borderRadius: '24px',
                   }}
                 >
-                  <TiltSpinCard
-                    className="relative w-full h-full"
-                    maxRotateX={10}
-                    sensitivity={0.3}
-                    returnDuration={400}
-                    enableSpin={true}
-                    spinSensitivity={0.8}
-                    onRotationChange={setCardRotation}
-                    onClick={() => {
-                      // Play flip sound and animate 180° flip
-                      try { sfx.play('flip', 0.45); } catch {}
-                      setIsAnimatingFlip(true);
-                      setCardRotation(prev => prev + 180);
-                      setTimeout(() => setIsAnimatingFlip(false), 500);
-                    }}
+                  {/* Front of card - rotates with cardRotation */}
+                  <img
+                    src={selectedCard?.image || "https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910"}
+                    alt={selectedCard?.name || "Card"}
+                    className="absolute inset-0 w-full h-full rounded-3xl object-cover pointer-events-none"
                     style={{
-                      borderRadius: '24px',
+                      backfaceVisibility: 'hidden',
+                      WebkitBackfaceVisibility: 'hidden',
+                      transform: `rotateY(${cardRotation}deg)`,
+                      transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                      border: '2px solid rgba(255,255,255,0.1)',
                     }}
-                  >
-                    {/* Front of card - rotates with cardRotation */}
-                    <img
-                      src={selectedCard?.image || "https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910"}
-                      alt={selectedCard?.name || "Card"}
-                      className="absolute inset-0 w-full h-full rounded-3xl object-cover pointer-events-none"
-                      style={{
-                        backfaceVisibility: 'hidden',
-                        WebkitBackfaceVisibility: 'hidden',
-                        transform: `rotateY(${cardRotation}deg)`,
-                        transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                        border: '2px solid rgba(255,255,255,0.1)',
-                      }}
-                      draggable={false}
-                    />
+                    draggable={false}
+                  />
 
-                    {/* Back of card - offset by 180° */}
-                    <img
-                      src="https://ik.imagekit.io/CHXNDLER/card/back.png?updatedAt=1762388351170"
-                      alt="Card Back"
-                      className="absolute inset-0 w-full h-full rounded-3xl object-cover pointer-events-none"
-                      style={{
-                        backfaceVisibility: 'hidden',
-                        WebkitBackfaceVisibility: 'hidden',
-                        transform: `rotateY(${cardRotation + 180}deg)`,
-                        transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                        border: '2px solid rgba(255,255,255,0.1)',
-                      }}
-                      draggable={false}
-                    />
-                  </TiltSpinCard>
-                </div>
+                  {/* Back of card - offset by 180° */}
+                  <img
+                    src="https://ik.imagekit.io/CHXNDLER/card/back.png?updatedAt=1762388351170"
+                    alt="Card Back"
+                    className="absolute inset-0 w-full h-full rounded-3xl object-cover pointer-events-none"
+                    style={{
+                      backfaceVisibility: 'hidden',
+                      WebkitBackfaceVisibility: 'hidden',
+                      transform: `rotateY(${cardRotation + 180}deg)`,
+                      transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                      border: '2px solid rgba(255,255,255,0.1)',
+                    }}
+                    draggable={false}
+                  />
+                </TiltSpinCard>
               </div>
             </div>
-          )}
-
+          </div>
+        ) : undefined}
+      >
           {/* Normal content - hidden but maintains size when card is open */}
           <div style={{ visibility: cardOpen ? 'hidden' : 'visible' }}>
 

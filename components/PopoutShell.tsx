@@ -215,7 +215,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
 
           {/* Page Number Display - exact copy from Binder, only show if provided */}
           {pageIndicator && (
-            <div 
+            <div
               className="absolute left-1/2 transform -translate-x-1/2"
               style={{
                 bottom: '8px',
@@ -228,6 +228,15 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
               }}
             >
               {pageIndicator}
+            </div>
+          )}
+
+          {/* Full overlay - covers entire popout including header */}
+          {fullOverlay && (
+            <div
+              className="absolute inset-0 z-[60] rounded-[14px] overflow-hidden"
+            >
+              {fullOverlay}
             </div>
           )}
         </div>
