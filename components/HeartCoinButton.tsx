@@ -3298,37 +3298,30 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   }}
                 >
                   <div
-                    className="relative w-full h-full transition-transform duration-700"
-                    style={{
-                      transformStyle: 'preserve-3d',
-                      transform: isEnlargedCardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
-                    }}
+                    className="relative w-full h-full"
                   >
-                    {/* Front of card */}
-                    <img
-                      src={enlargedCard.artwork_url || `/cards/${enlargedCard.card_name}.webp`}
-                      alt={enlargedCard.card_name}
-                      className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
-                      style={{
-                        filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
-                        animation: 'cardPulse 3s ease-in-out infinite',
-                        backfaceVisibility: 'hidden',
-                        transform: 'rotateY(0deg)'
-                      }}
-                    />
-                    
-                    {/* Back of card */}
-                    <img
-                      src="/cards/back.webp"
-                      alt="Card back"
-                      className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
-                      style={{
-                        filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
-                        animation: 'cardPulse 3s ease-in-out infinite',
-                        backfaceVisibility: 'hidden',
-                        transform: 'rotateY(180deg)'
-                      }}
-                    />
+                    {/* Show front or back based on flip state */}
+                    {!isEnlargedCardFlipped ? (
+                      <img
+                        src={enlargedCard.artwork_url || `/cards/${enlargedCard.card_name}.webp`}
+                        alt={enlargedCard.card_name}
+                        className="w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
+                        style={{
+                          filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
+                          animation: 'cardPulse 3s ease-in-out infinite'
+                        }}
+                      />
+                    ) : (
+                      <img
+                        src="/cards/BACK.webp"
+                        alt="Card back"
+                        className="w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
+                        style={{
+                          filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
+                          animation: 'cardPulse 3s ease-in-out infinite'
+                        }}
+                      />
+                    )}
                   </div>
                 </div>
                 

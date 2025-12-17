@@ -18,6 +18,7 @@ interface PlanetData {
   distance: number;
   speed: number;
   texture?: string;
+  element: 'center' | 'heart' | 'water' | 'lightning' | 'darkness';
 }
 
 export default function VanillaPlanetarium({ 
@@ -32,6 +33,14 @@ export default function VanillaPlanetarium({
 
   console.log('VanillaPlanetarium: Component loading...');
 
+  // Orbital configuration for two-tier system
+  const elementalOrbitConfig = {
+    heart: { orbitRadius: 8, orbitSpeed: 0.3, startAngle: 0 },
+    water: { orbitRadius: 8, orbitSpeed: 0.3, startAngle: Math.PI / 2 },
+    lightning: { orbitRadius: 8, orbitSpeed: 0.3, startAngle: Math.PI },
+    darkness: { orbitRadius: 8, orbitSpeed: 0.3, startAngle: (3 * Math.PI) / 2 }
+  };
+
   const planetData: PlanetData[] = [
     {
       id: 'CENTER',
@@ -40,7 +49,7 @@ export default function VanillaPlanetarium({
       radius: 3,
       distance: 0,
       speed: 0,
-      texture: '/textures/center-planet.webp'
+      element: 'center'
     },
     {
       id: 'HEART',
@@ -49,7 +58,7 @@ export default function VanillaPlanetarium({
       radius: 2,
       distance: 18,
       speed: 0.008,
-      texture: '/textures/planet_heart.webp'
+      element: 'heart'
     },
     {
       id: 'WATER',
@@ -58,7 +67,7 @@ export default function VanillaPlanetarium({
       radius: 2,
       distance: 18,
       speed: 0.008,
-      texture: '/textures/planet_water.webp'
+      element: 'water'
     },
     {
       id: 'LIGHTNING',
@@ -67,7 +76,7 @@ export default function VanillaPlanetarium({
       radius: 2,
       distance: 18,
       speed: 0.008,
-      texture: '/textures/planet_lightning.webp'
+      element: 'lightning'
     },
     {
       id: 'DARKNESS',
@@ -76,9 +85,168 @@ export default function VanillaPlanetarium({
       radius: 2,
       distance: 18,
       speed: 0.008,
-      texture: '/textures/planet_darkness.webp'
+      element: 'darkness'
     }
   ];
+
+  // Element-specific geometry creation functions
+  const createHeartGeometry = (radius: number): THREE.BufferGeometry => {
+    const heartShape = new THREE.Shape();
+    const scale = radius * 0.6;
+    
+    // Create accurate heart shape matching the texture
+    heartShape.moveTo(0, -scale * 0.3);
+    // Right curve of heart
+    heartShape.bezierCurveTo(scale * 0.4, -scale * 0.8, scale * 0.8, -scale * 0.4, scale * 0.4, 0);
+    // Right side to bottom point
+    heartShape.bezierCurveTo(scale * 0.4, scale * 0.4, 0, scale * 0.8, 0, scale * 0.8);
+    // Left side from bottom point
+    heartShape.bezierCurveTo(0, scale * 0.8, -scale * 0.4, scale * 0.4, -scale * 0.4, 0);
+    // Left curve of heart
+    heartShape.bezierCurveTo(-scale * 0.8, -scale * 0.4, -scale * 0.4, -scale * 0.8, 0, -scale * 0.3);
+    
+    const extrudeSettings = { 
+      depth: radius * 0.5, 
+      bevelEnabled: true, 
+      bevelSize: 0.05, 
+      bevelThickness: 0.02 
+    };
+    return new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
+  };
+
+  const createWaterDropGeometry = (radius: number): THREE.BufferGeometry => {
+    const points = [];
+    const height = radius * 1.6;
+    const baseRadius = radius * 0.8;
+    
+    // Create water droplet using LatheGeometry
+    for (let i = 0; i <= 20; i++) {
+      const t = i / 20;
+      const angle = t * Math.PI;
+      let currentRadius;
+      
+      if (t < 0.7) {
+        // Rounded bottom part
+        currentRadius = baseRadius * Math.sin(angle * 0.7 / 0.7);
+      } else {
+        // Tapering top part
+        const tapering = (1 - t) / 0.3;
+        currentRadius = baseRadius * tapering * 0.5;
+      }
+      
+      const y = height * (t - 0.5);
+      points.push(new THREE.Vector2(currentRadius, y));
+    }
+    
+    return new THREE.LatheGeometry(points, 16);
+  };
+
+  const createLightningGeometry = (radius: number): THREE.BufferGeometry => {
+    const lightningShape = new THREE.Shape();
+    const scale = radius * 0.8;
+    
+    // Create lightning bolt matching the texture - more angular and sharp
+    lightningShape.moveTo(-scale * 0.15, scale * 0.9);  // Top left
+    lightningShape.lineTo(scale * 0.1, scale * 0.9);    // Top right
+    lightningShape.lineTo(scale * 0.25, scale * 0.3);   // Upper right angle
+    lightningShape.lineTo(scale * 0.45, scale * 0.4);   // Right spike
+    lightningShape.lineTo(scale * 0.15, scale * 0.1);   // Back in
+    lightningShape.lineTo(scale * 0.3, -scale * 0.1);   // Middle right
+    lightningShape.lineTo(scale * 0.6, -scale * 0.9);   // Bottom right point
+    lightningShape.lineTo(scale * 0.2, -scale * 0.6);   // Bottom right inner
+    lightningShape.lineTo(scale * 0.05, -scale * 0.7);  // Bottom inner point
+    lightningShape.lineTo(-scale * 0.15, -scale * 0.2); // Bottom left
+    lightningShape.lineTo(-scale * 0.35, -scale * 0.1); // Left spike
+    lightningShape.lineTo(-scale * 0.05, scale * 0.2);  // Back in left
+    lightningShape.lineTo(-scale * 0.15, scale * 0.9);  // Close to top
+    
+    const extrudeSettings = { 
+      depth: radius * 0.25, 
+      bevelEnabled: true, 
+      bevelSize: 0.03, 
+      bevelThickness: 0.01 
+    };
+    return new THREE.ExtrudeGeometry(lightningShape, extrudeSettings);
+  };
+
+  const createCenterPlanetGeometry = (radius: number): THREE.BufferGeometry => {
+    // For now, create a larger, more complex heart shape
+    // In future, we could add antennas as separate meshes
+    const heartShape = new THREE.Shape();
+    const scale = radius * 0.7; // Larger than regular heart
+    
+    // Create heart shape matching center planet texture
+    heartShape.moveTo(0, -scale * 0.2);
+    // Right curve of heart - more pronounced
+    heartShape.bezierCurveTo(scale * 0.5, -scale * 0.9, scale * 0.9, -scale * 0.3, scale * 0.4, 0.1);
+    // Right side to bottom point
+    heartShape.bezierCurveTo(scale * 0.4, scale * 0.5, 0, scale * 0.9, 0, scale * 0.9);
+    // Left side from bottom point
+    heartShape.bezierCurveTo(0, scale * 0.9, -scale * 0.4, scale * 0.5, -scale * 0.4, 0.1);
+    // Left curve of heart - more pronounced
+    heartShape.bezierCurveTo(-scale * 0.9, -scale * 0.3, -scale * 0.5, -scale * 0.9, 0, -scale * 0.2);
+    
+    const extrudeSettings = { 
+      depth: radius * 0.6, 
+      bevelEnabled: true, 
+      bevelSize: 0.08, 
+      bevelThickness: 0.04 
+    };
+    return new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
+  };
+
+  const createElementGeometry = (element: string, radius: number): THREE.BufferGeometry => {
+    switch (element) {
+      case 'heart':
+        return createHeartGeometry(radius);
+      case 'water':
+        return createWaterDropGeometry(radius);
+      case 'lightning':
+        return createLightningGeometry(radius);
+      case 'center':
+        return createCenterPlanetGeometry(radius);
+      case 'darkness':
+      default:
+        // Darkness stays as sphere but with modified material
+        return new THREE.SphereGeometry(radius, 32, 32);
+    }
+  };
+
+  const getElementGlowConfig = (element: string) => {
+    switch (element) {
+      case 'heart':
+        return { color: 0xff69b4, intensity: 1.2, pulseSpeed: 2.5 };
+      case 'water':
+        return { color: 0x00bfff, intensity: 0.8, pulseSpeed: 1.8 };
+      case 'lightning':
+        return { color: 0xffff00, intensity: 1.5, pulseSpeed: 8.0 };
+      case 'darkness':
+        return { color: 0x8a2be2, intensity: 0.4, pulseSpeed: 1.0 };
+      case 'center':
+        return { color: 0xffd700, intensity: 2.0, pulseSpeed: 1.5 };
+      default:
+        return { color: 0xffffff, intensity: 1.0, pulseSpeed: 1.0 };
+    }
+  };
+
+  // Orbital calculation helper functions
+  const calculateOrbitPosition = (time: number, orbitRadius: number, orbitSpeed: number, startAngle: number) => {
+    const angle = startAngle + time * orbitSpeed;
+    return {
+      x: Math.cos(angle) * orbitRadius,
+      z: Math.sin(angle) * orbitRadius,
+      y: 0 // Can be modified for subtle bobbing if needed
+    };
+  };
+
+  const calculateSongOrbitPosition = (time: number, localRadius: number, localSpeed: number, localStartAngle: number) => {
+    const localAngle = localStartAngle + time * localSpeed;
+    return {
+      x: Math.cos(localAngle) * localRadius,
+      z: Math.sin(localAngle) * localRadius,
+      y: 0.2 * Math.sin(time * 2) // Subtle vertical bobbing
+    };
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -93,6 +261,8 @@ export default function VanillaPlanetarium({
     let camera: THREE.PerspectiveCamera;
     let renderer: THREE.WebGLRenderer;
     let planets: THREE.Mesh[] = [];
+    let elementOrbitGroups: { [key: string]: THREE.Group } = {};
+    let centerPlanet: THREE.Mesh;
     let animationId: number;
     let textureLoader: THREE.TextureLoader;
 
@@ -137,50 +307,89 @@ export default function VanillaPlanetarium({
       // Texture loader
       textureLoader = new THREE.TextureLoader();
 
-      // Create planets
+      // Create planets using two-tier orbit system
       planetData.forEach((planetInfo, index) => {
-        const geometry = new THREE.SphereGeometry(planetInfo.radius, 32, 32);
+        // Use element-specific geometry
+        const geometry = createElementGeometry(planetInfo.element, planetInfo.radius);
+        const glowConfig = getElementGlowConfig(planetInfo.element);
         
-        // Create material with or without texture
-        let material: THREE.MeshStandardMaterial;
-        if (planetInfo.texture) {
-          const texture = textureLoader.load(planetInfo.texture);
-          texture.colorSpace = THREE.SRGBColorSpace;
-          material = new THREE.MeshStandardMaterial({ 
-            map: texture,
-            metalness: 0.1,
-            roughness: 0.8
-          });
-        } else {
-          material = new THREE.MeshStandardMaterial({ 
-            color: planetInfo.color,
-            metalness: 0.1,
-            roughness: 0.8
-          });
-        }
+        // Create emissive material for each planet
+        const material = new THREE.MeshStandardMaterial({ 
+          color: planetInfo.color,
+          emissive: new THREE.Color(glowConfig.color),
+          emissiveIntensity: glowConfig.intensity * 0.3,
+          metalness: planetInfo.element === 'water' ? 0.8 : 0.1,
+          roughness: planetInfo.element === 'water' ? 0.1 : 0.8,
+          transparent: planetInfo.element === 'water',
+          opacity: planetInfo.element === 'water' ? 0.9 : 1.0
+        });
 
         const planet = new THREE.Mesh(geometry, material);
         
-        // Position planets
-        if (planetInfo.distance === 0) {
-          // Center planet
-          planet.position.set(0, 0, 0);
-        } else {
-          // Orbiting planets - distribute them evenly around the center
-          const angle = (index - 1) * (Math.PI * 2 / 4); // Skip center planet (index 0)
-          planet.position.set(
-            Math.cos(angle) * planetInfo.distance,
-            0,
-            Math.sin(angle) * planetInfo.distance
-          );
-        }
+        // Create glow effect using additional geometry
+        const glowGeometry = new THREE.SphereGeometry(planetInfo.radius * 1.3, 16, 16);
+        const glowMaterial = new THREE.MeshBasicMaterial({
+          color: glowConfig.color,
+          transparent: true,
+          opacity: 0.3,
+          side: THREE.BackSide
+        });
+        const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
+        
+        // Outer glow
+        const outerGlowGeometry = new THREE.SphereGeometry(planetInfo.radius * 1.6, 16, 16);
+        const outerGlowMaterial = new THREE.MeshBasicMaterial({
+          color: glowConfig.color,
+          transparent: true,
+          opacity: 0.1,
+          side: THREE.BackSide
+        });
+        const outerGlowMesh = new THREE.Mesh(outerGlowGeometry, outerGlowMaterial);
 
         // Store planet data for animation
         (planet as any).planetData = planetInfo;
-        (planet as any).initialAngle = planetInfo.distance === 0 ? 0 : (index - 1) * (Math.PI * 2 / 4);
+        (planet as any).glowMesh = glowMesh;
+        (planet as any).outerGlowMesh = outerGlowMesh;
+        (planet as any).glowConfig = glowConfig;
 
-        planets.push(planet);
-        scene.add(planet);
+        if (planetInfo.element === 'center') {
+          // Tier 0: Center planet fixed at origin
+          planet.position.set(0, 0, 0);
+          glowMesh.position.set(0, 0, 0);
+          outerGlowMesh.position.set(0, 0, 0);
+          
+          centerPlanet = planet;
+          scene.add(planet);
+          scene.add(glowMesh);
+          scene.add(outerGlowMesh);
+        } else {
+          // Tier 1: Elemental planets orbit the center
+          const elementKey = planetInfo.element as keyof typeof elementalOrbitConfig;
+          const orbitConfig = elementalOrbitConfig[elementKey];
+          
+          // Create orbit group for this element
+          const orbitGroup = new THREE.Group();
+          elementOrbitGroups[elementKey] = orbitGroup;
+          
+          // Position planet at local origin within its orbit group
+          planet.position.set(0, 0, 0);
+          glowMesh.position.set(0, 0, 0);
+          outerGlowMesh.position.set(0, 0, 0);
+          
+          // Add planet and glows to the orbit group
+          orbitGroup.add(planet);
+          orbitGroup.add(glowMesh);
+          orbitGroup.add(outerGlowMesh);
+          
+          // Store orbit configuration
+          (orbitGroup as any).orbitConfig = orbitConfig;
+          (orbitGroup as any).elementKey = elementKey;
+          
+          // Add orbit group to scene
+          scene.add(orbitGroup);
+          
+          planets.push(planet);
+        }
       });
 
       // Lighting
@@ -365,22 +574,105 @@ export default function VanillaPlanetarium({
         // Update camera position
         updateCameraPosition();
 
-        // Animate planets
-        planets.forEach((planet) => {
-          const planetInfo = (planet as any).planetData;
-          const initialAngle = (planet as any).initialAngle;
+        const time = Date.now() * 0.001;
 
-          if (planetInfo.distance > 0) {
-            // Orbit animation
-            const time = Date.now() * 0.001;
-            const angle = initialAngle + time * planetInfo.speed;
-            planet.position.x = Math.cos(angle) * planetInfo.distance;
-            planet.position.z = Math.sin(angle) * planetInfo.distance;
+        // Tier 0: Center planet animation (rotation only)
+        if (centerPlanet) {
+          const planetInfo = (centerPlanet as any).planetData;
+          const glowMesh = (centerPlanet as any).glowMesh;
+          const outerGlowMesh = (centerPlanet as any).outerGlowMesh;
+          const glowConfig = (centerPlanet as any).glowConfig;
+
+          // Center planet stays at origin, only rotates
+          centerPlanet.rotation.y += 0.006;
+
+          // Center planet glow effects
+          const pulse = 0.8 + 0.3 * Math.sin(time * glowConfig.pulseSpeed);
+          const emissiveIntensity = glowConfig.intensity * 0.4 * (1.0 + 0.2 * Math.sin(time * glowConfig.pulseSpeed));
+
+          if (glowMesh && outerGlowMesh) {
+            glowMesh.scale.setScalar(pulse);
+            outerGlowMesh.scale.setScalar(pulse * 0.8);
+            
+            if (centerPlanet.material instanceof THREE.MeshStandardMaterial) {
+              centerPlanet.material.emissiveIntensity = emissiveIntensity;
+            }
           }
+        }
 
-          // Rotate planet on its axis
-          planet.rotation.y += 0.005;
+        // Tier 1: Elemental planets orbit around center
+        Object.values(elementOrbitGroups).forEach((orbitGroup) => {
+          const orbitConfig = (orbitGroup as any).orbitConfig;
+          const elementKey = (orbitGroup as any).elementKey;
+
+          // Calculate orbital position
+          const orbitPos = calculateOrbitPosition(time, orbitConfig.orbitRadius, orbitConfig.orbitSpeed, orbitConfig.startAngle);
+          orbitGroup.position.set(orbitPos.x, orbitPos.y, orbitPos.z);
+
+          // Animate the planet within its orbit group
+          const planet = orbitGroup.children.find(child => child instanceof THREE.Mesh && (child as any).planetData) as THREE.Mesh;
+          if (planet) {
+            const planetInfo = (planet as any).planetData;
+            const glowMesh = (planet as any).glowMesh;
+            const outerGlowMesh = (planet as any).outerGlowMesh;
+            const glowConfig = (planet as any).glowConfig;
+
+            // Element-specific animations
+            let pulse = 1.0;
+            let emissiveIntensity = glowConfig.intensity * 0.3;
+            
+            switch (planetInfo.element) {
+              case 'heart':
+                // Pulsing heart effect
+                pulse = 0.9 + 0.2 * Math.sin(time * glowConfig.pulseSpeed);
+                emissiveIntensity = glowConfig.intensity * 0.3 * (1.0 + 0.3 * Math.sin(time * glowConfig.pulseSpeed));
+                planet.rotation.y += 0.003;
+                // Subtle bobbing
+                planet.position.y = 0.1 * Math.sin(time * 2);
+                if (glowMesh) glowMesh.position.y = planet.position.y;
+                if (outerGlowMesh) outerGlowMesh.position.y = planet.position.y;
+                break;
+              case 'lightning':
+                // Quick flicker for lightning
+                pulse = 0.9 + 0.3 * Math.sin(time * glowConfig.pulseSpeed) + 0.2 * Math.sin(time * 12);
+                emissiveIntensity = glowConfig.intensity * 0.3 * (1.0 + 0.5 * Math.sin(time * glowConfig.pulseSpeed));
+                planet.rotation.y += 0.008;
+                planet.rotation.z += 0.002;
+                break;
+              case 'water':
+                // Gentle wave-like movement
+                pulse = 0.85 + 0.25 * Math.sin(time * glowConfig.pulseSpeed);
+                planet.rotation.y += 0.004;
+                planet.position.y = 0.15 * Math.sin(time * 1.5);
+                if (glowMesh) glowMesh.position.y = planet.position.y;
+                if (outerGlowMesh) outerGlowMesh.position.y = planet.position.y;
+                break;
+              case 'darkness':
+                // Subtle, mysterious pulse
+                pulse = 0.95 + 0.1 * Math.sin(time * glowConfig.pulseSpeed);
+                emissiveIntensity = glowConfig.intensity * 0.3 * (0.8 + 0.4 * Math.sin(time * glowConfig.pulseSpeed));
+                planet.rotation.y += 0.002;
+                planet.rotation.x += 0.001;
+                break;
+              default:
+                planet.rotation.y += 0.005;
+            }
+            
+            // Update glow scale and material properties
+            if (glowMesh && outerGlowMesh) {
+              glowMesh.scale.setScalar(pulse);
+              outerGlowMesh.scale.setScalar(pulse * 0.8);
+              
+              // Update emissive intensity
+              if (planet.material instanceof THREE.MeshStandardMaterial) {
+                planet.material.emissiveIntensity = emissiveIntensity;
+              }
+            }
+          }
         });
+
+        // Future: Tier 2 song planets would be animated here
+        // Each song planet orbits within its elemental planet's group
 
         renderer.render(scene, camera);
       };
@@ -456,7 +748,7 @@ export default function VanillaPlanetarium({
 
   return (
     <div className="w-full h-[500px] relative overflow-hidden">
-      <div className="absolute top-0 left-0 z-10 bg-purple-500 text-white p-2 text-sm pointer-events-none">
+      <div className="absolute top-0 left-0 z-10 bg-purple-500 text-white p-2 text-sm pointer-events-none min-w-[320px]">
         Interactive Planetarium - Drag to orbit • Scroll to zoom • {planetData.length} Planets
       </div>
       <div ref={mountRef} className="w-full h-full" />

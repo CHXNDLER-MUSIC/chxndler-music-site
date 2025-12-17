@@ -1642,10 +1642,10 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                       }}
                     >
                       {!isEnlargedCardFlipped ? (
-                        /* Front of card */
+                        /* Front of card - use availableCards[currentCardIndex] to stay in sync with navigation */
                         <img
-                          src={enlargedCard.artwork_url || `/cards/${enlargedCard.card_name || enlargedCard.cards?.card_name}.webp`}
-                          alt={enlargedCard.card_name || enlargedCard.cards?.card_name || 'Card'}
+                          src={availableCards[currentCardIndex]?.artwork_url || `/cards/${availableCards[currentCardIndex]?.card_name || availableCards[currentCardIndex]?.cards?.card_name}.webp`}
+                          alt={availableCards[currentCardIndex]?.card_name || availableCards[currentCardIndex]?.cards?.card_name || 'Card'}
                           className="w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
                           style={{
                             animation: 'merchPulse 2.5s ease-in-out infinite'
@@ -1654,7 +1654,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                       ) : (
                         /* Back of card */
                         <img
-                          src="/cards/back.webp"
+                          src="/cards/BACK.webp"
                           alt="Card back"
                           className="w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
                           style={{
