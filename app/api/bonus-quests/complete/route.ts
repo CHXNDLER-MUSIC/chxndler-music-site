@@ -1,8 +1,9 @@
-import { NextResponse } from 'next/server';
-import { completeBonusQuestLegacy, getBonusQuestsForUser } from '@/lib/bonusQuests';
-import { supabaseClient } from '@/lib/supabaseClient';
+import { NextResponse, NextRequest } from 'next/server';
+import { cookies } from 'next/headers';
+import { completeBonusQuestWithClient, getBonusQuestsForUserWithClient } from '@/lib/bonusQuests';
+import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { questKey } = body;
@@ -14,20 +15,31 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get current session to get user ID
-    const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-    
-    if (sessionError || !session?.user) {
+    // Get auth token from cookies for proper server-side authentication
+    const cookieStore = await cookies();
+    const token = cookieStore.get('sb-access-token')?.value || '';
+
+    if (!token) {
       return NextResponse.json(
         { error: 'Authentication required to complete quests' },
         { status: 401 }
       );
     }
 
-    const userId = session.user.id;
+    const supabase = createSupabaseServerClientWithJwt(token);
+    const { data: userResult, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !userResult?.user) {
+      return NextResponse.json(
+        { error: 'Authentication required to complete quests' },
+        { status: 401 }
+      );
+    }
+
+    const userId = userResult.user.id;
 
     // Get user's bonus quests to find the quest to complete
-    const userQuests = await getBonusQuestsForUser(userId);
+    const userQuests = await getBonusQuestsForUserWithClient(supabase, userId);
     const questToComplete = userQuests.find(quest => quest.quest_key === questKey);
 
     if (!questToComplete) {
@@ -40,8 +52,8 @@ export async function POST(request: Request) {
     // Allow the quest to be attempted even if can_complete is false
     // The completeBonusQuest function will handle daily limits gracefully
 
-    // Complete the quest using the bonus quest system
-    const result = await completeBonusQuestLegacy(userId, questToComplete);
+    // Complete the quest using the bonus quest system with authenticated client
+    const result = await completeBonusQuestWithClient(supabase, userId, questToComplete);
 
     if (!result.success) {
       return NextResponse.json(

@@ -318,7 +318,7 @@ export default function JoinAliens({ visible = true } = {}) {
       }}>
 
         {/* Neon "Signal Lost" message */}
-        <div style={{ marginBottom: '2px', marginTop: '20px' }}>
+        <div style={{ marginBottom: '2px', marginTop: '40px' }}>
           <h2 
             className="signal-lost-text"
             style={{

@@ -4,6 +4,7 @@ export type SongRow = {
   slug: string;
   is_released: boolean;
   created_at: string;
+  element?: string; // Optional in case not all songs have it set
 };
 
 export type ElementType = 'heart' | 'water' | 'lightning' | 'darkness';

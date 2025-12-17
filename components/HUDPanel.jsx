@@ -7220,10 +7220,10 @@ const HUDPanel = React.memo(function HUDPanel({
 
         {/* Song selector and Media Player positioned outside content opacity container to avoid beamOnly blocking */}
         <div className="absolute" style={{ 
-          left: inConsole ? 6 : 8, 
+          left: inConsole ? 4 : 4,
           bottom: 'calc(80px - 24px + 68px)', // Nudge dropdown higher slightly (+12px)
           // Reserve dynamic space to the right so the dropdown never overlaps the cover
-          right: oneLinerRight + 4, // Slightly wider than current (~8px wider)
+          right: oneLinerRight + 2, // Reduced padding to screen edge
           maxWidth: 'none',
           zIndex: 99999,  // Highest z-index to ensure it's above everything
           pointerEvents: 'auto', // Explicitly enable pointer events

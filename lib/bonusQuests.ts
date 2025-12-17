@@ -4,6 +4,132 @@ import { BonusQuestRow, UserBonusQuestRow, BonusQuestWithCompletion, QuestComple
 import { awardHeartCoins } from '@/utils/heartcoins';
 
 /**
+ * Fetches bonus quests with a specific Supabase client (for server-side use).
+ * Always fetches public quests first (no auth required), then if a userId is
+ * provided, fetches that user's completion rows to compute completion state.
+ * Returns up to 3 quests: 1 rotating featured quest + 2 core quests.
+ */
+export async function getBonusQuestsForUserWithClient(client: SupabaseClient, userId?: string | null): Promise<BonusQuestWithCompletion[]> {
+  try {
+    // Fetch all active bonus quests
+    const { data: quests, error: questsError } = await client
+      .from('bonus_quests')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+
+    if (questsError) {
+      console.error('Error fetching bonus quests:', questsError);
+      return [];
+    }
+
+    if (!quests || quests.length === 0) {
+      return [];
+    }
+
+    // Fetch user's completion stats (only if a userId is present)
+    let completions: Pick<UserBonusQuestRow, 'bonus_quest_id' | 'times_completed' | 'last_completed_at'>[] = [];
+    let todayCompletions: { bonus_quest_id: string }[] = [];
+
+    if (userId) {
+      // Fetch total completion counts
+      const { data, error: completionsError } = await client
+        .from('user_bonus_quests')
+        .select('bonus_quest_id, times_completed, last_completed_at')
+        .eq('user_id', userId);
+
+      if (completionsError) {
+        console.error('Error fetching user completions:', completionsError);
+      } else {
+        completions = data || [];
+      }
+
+      // Fetch today's completions using completed_at
+      const today = new Date().toISOString().split('T')[0];
+      const { data: todayData, error: todayError } = await client
+        .from('user_bonus_quest_completions')
+        .select('bonus_quest_id')
+        .eq('user_id', userId)
+        .gte('completed_at', `${today}T00:00:00Z`)
+        .lt('completed_at', `${today}T23:59:59.999Z`);
+
+      if (todayError) {
+        console.error('Error fetching today\'s completions:', todayError);
+      } else {
+        todayCompletions = todayData || [];
+      }
+    }
+
+    // Build completion map
+    const completionMap = new Map<string, { times_completed: number; last_completed_at: string | null }>();
+    completions?.forEach(completion => {
+      completionMap.set(completion.bonus_quest_id, {
+        times_completed: completion.times_completed,
+        last_completed_at: completion.last_completed_at
+      });
+    });
+
+    // Build today's completion map
+    const todayCompletionMap = new Set<string>();
+    todayCompletions.forEach(completion => {
+      todayCompletionMap.add(completion.bonus_quest_id);
+    });
+
+    // Filter out quests that user has reached max_total_completions
+    const eligibleQuests = quests.filter(quest => {
+      const completion = completionMap.get(quest.id);
+      const timesCompleted = completion?.times_completed || 0;
+
+      if (quest.max_total_completions !== null && timesCompleted >= quest.max_total_completions) {
+        return false;
+      }
+
+      return true;
+    });
+
+    // Separate core and non-core quests
+    const coreQuests = eligibleQuests.filter(quest => quest.is_core);
+    const nonCoreQuests = eligibleQuests.filter(quest => !quest.is_core);
+
+    // Select rotating featured quest (first non-core by sort_order)
+    const featuredQuest = nonCoreQuests.length > 0 ? nonCoreQuests[0] : null;
+
+    // Build final quest list: [featured, core1, core2]
+    const finalQuests: BonusQuestRow[] = [];
+
+    if (featuredQuest) {
+      finalQuests.push(featuredQuest);
+    }
+
+    // Add core quests (limited to 2)
+    finalQuests.push(...coreQuests.slice(0, 2));
+
+    // Transform to BonusQuestWithCompletion
+    return finalQuests.map(quest => {
+      const completion = completionMap.get(quest.id);
+      const timesCompleted = completion?.times_completed || 0;
+
+      const completedToday = todayCompletionMap.has(quest.id) ? 1 : 0;
+
+      const hasReachedDailyLimit = completedToday >= quest.max_times_per_day;
+      const hasReachedTotalLimit = quest.max_total_completions !== null && timesCompleted >= quest.max_total_completions;
+      const canComplete = !hasReachedDailyLimit && !hasReachedTotalLimit;
+
+      return {
+        ...quest,
+        times_completed: timesCompleted,
+        can_complete: canComplete,
+        completed_today: completedToday
+      };
+    });
+
+  } catch (error) {
+    console.error('Error in getBonusQuestsForUserWithClient:', error);
+    return [];
+  }
+}
+
+/**
  * Fetches bonus quests, optionally overlaying completion for a user.
  * Always fetches public quests first (no auth required), then if a userId is
  * provided, fetches that user's completion rows to compute completion state.
@@ -344,10 +470,51 @@ export async function completeSecretPhraseQuest(params: {
 }
 
 /**
+ * Completes a bonus quest with a specific Supabase client (for server-side use).
+ * Returns a standardized result object.
+ */
+export async function completeBonusQuestWithClient(
+  supabase: SupabaseClient,
+  userId: string,
+  quest: BonusQuestWithCompletion
+): Promise<QuestCompletionResult> {
+  try {
+    const result = await completeBonusQuest({
+      supabase,
+      userId,
+      bonusQuestId: quest.id
+    });
+
+    if (result.status === 'already_completed_today') {
+      return {
+        success: true,
+        message: 'Quest already completed today!'
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Quest completed successfully!',
+      rewards: {
+        heartcoins: quest.reward_heartcoins > 0 ? quest.reward_heartcoins : undefined,
+        element_card: quest.reward_element_card ? true : undefined
+      }
+    };
+
+  } catch (error) {
+    console.error('Error in completeBonusQuestWithClient:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'An error occurred while completing the quest'
+    };
+  }
+}
+
+/**
  * Legacy function for backward compatibility - converts old signature to new
  */
 export async function completeBonusQuestLegacy(
-  userId: string, 
+  userId: string,
   quest: BonusQuestWithCompletion,
   source?: string,
   onHeartCoinsAwarded?: (amount: number) => void,

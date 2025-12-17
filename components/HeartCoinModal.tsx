@@ -11,6 +11,7 @@ import { BonusQuestWithCompletion } from '@/types/bonusQuests';
 import { useMerchItems } from '@/hooks/useMerchItems';
 import { useMerchPurchase } from '@/hooks/useMerchPurchase';
 import { MerchItem } from '@/types/merch';
+import TiltSpinCard from '@/components/TiltSpinCard';
 
 type Props = {
   open: boolean;
@@ -176,6 +177,11 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   // Track if showing HeartCoin description
   const [showHeartCoinDescription, setShowHeartCoinDescription] = useState(false);
 
+  // Secret phrase redemption states
+  const [secretPhrase, setSecretPhrase] = useState("");
+  const [secretPhraseLoading, setSecretPhraseLoading] = useState(false);
+  const [secretPhraseMessage, setSecretPhraseMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   // Handle setting the main tab - if USE is selected, default to MERCH
   const handleSetActiveTab = (tab: 'earn' | 'use' | 'merch' | 'cards') => {
     if (tab === 'use') {
@@ -192,6 +198,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   const [enlargedImageIndex, setEnlargedImageIndex] = useState(0);
   const [enlargedCard, setEnlargedCard] = useState<any>(null);
   const [isEnlargedCardFlipped, setIsEnlargedCardFlipped] = useState(false);
+  const [cardRotation, setCardRotation] = useState(0); // For 360° spin mode
+  const [isAnimatingFlip, setIsAnimatingFlip] = useState(false); // For smooth flip transition
   const itemsPerPage = 6;
 
   useEffect(() => {
@@ -246,6 +254,54 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       setTimeout(() => {
         onOpenWelcomeHome(); // Then open the welcome home modal
       }, 150);
+    }
+  };
+
+  // Handler for secret phrase redemption
+  const handleRedeemSecretPhrase = async () => {
+    const phraseTrimmed = secretPhrase.trim();
+
+    if (!phraseTrimmed) {
+      setSecretPhraseMessage({ type: 'error', text: 'Please enter a secret phrase' });
+      return;
+    }
+
+    setSecretPhraseLoading(true);
+    setSecretPhraseMessage(null);
+
+    try {
+      // Call the RPC using authenticated browser client
+      const { data, error } = await supabaseBrowser.rpc('redeem_secret_phrase', {
+        p_phrase: phraseTrimmed
+      });
+
+      if (error) {
+        console.error('Secret phrase RPC error:', error);
+        setSecretPhraseMessage({ type: 'error', text: error.message || 'Failed to redeem phrase' });
+        return;
+      }
+
+      // Handle response statuses
+      if (data?.status === 'redeemed') {
+        setSecretPhraseMessage({ type: 'success', text: `+${data.reward} HeartCoins` });
+        setSecretPhrase(''); // Clear input
+        // Refresh profile to update HeartCoin balance
+        await refreshProfile();
+      } else if (data?.status === 'already_checked_in') {
+        setSecretPhraseMessage({ type: 'error', text: 'Already checked in today' });
+      } else if (data?.status === 'incorrect') {
+        setSecretPhraseMessage({ type: 'error', text: 'Incorrect secret phrase' });
+      } else if (data?.status === 'not_authenticated') {
+        setSecretPhraseMessage({ type: 'error', text: 'Please log in to redeem' });
+        handleLoginToComplete();
+      } else {
+        setSecretPhraseMessage({ type: 'error', text: 'Unknown error occurred' });
+      }
+    } catch (err: any) {
+      console.error('Secret phrase redemption error:', err);
+      setSecretPhraseMessage({ type: 'error', text: err?.message || 'Failed to redeem phrase' });
+    } finally {
+      setSecretPhraseLoading(false);
     }
   };
 
@@ -695,7 +751,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       title="HeartCoins"
       onTitleClick={() => setShowHeartCoinDescription(!showHeartCoinDescription)}
     >
-      <div className="relative">
+      <div className="relative h-full flex flex-col" style={{ minHeight: '55vh' }}>
         {/* Top Level Tabs */}
         <div className="flex border-b border-white/20 mb-6">
           <button
@@ -816,10 +872,10 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         )}
 
         {activeTab === 'earn' ? (
-          <div>
-            <div className="text-center mb-6">
+          <div className="flex flex-col flex-1 h-full">
+            <div className="text-center mb-4">
               <p className="text-white/80 text-sm">
-                {showHeartCoinDescription 
+                {showHeartCoinDescription
                   ? "HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting and showing up. They represent your engagement with the community and can be used to unlock special content, purchase exclusive items, and access unique experiences within the Heartverse ecosystem."
                   : "HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting and showing up."
                 }
@@ -828,42 +884,42 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
             {/* Quest Content */}
             {activeEarnTab === 'DAILY QUESTS' ? (
-              <div className="flex flex-col h-full w-full space-y-3">
+              <div className="flex flex-col flex-1 w-full gap-3 h-full">
                 {/* Element of the Day Quest */}
-                <div className="w-full bg-black/20 rounded-lg p-10 border border-white/10 flex-[2] min-h-[180px]">
+                <div className="w-full bg-black/20 rounded-lg p-4 border border-white/10 flex-1">
                   <div className="flex items-center justify-between h-full w-full">
-                    <div className="flex items-center gap-8 flex-1 min-w-0">
-                      <div className="w-24 h-24 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center flex-shrink-0">
-                        <img src="/elements/earth.webp" alt="Element" className="w-14 h-14" />
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center flex-shrink-0">
+                        <img src="/elements/earth.webp" alt="Element" className="w-8 h-8" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-white font-semibold text-2xl mb-4">1. Tap the Element of the Day</h3>
-                        <p className="text-white/60 text-lg leading-relaxed">Receive a random reward: HeartCoins, relics, or binder slot unlocks.</p>
+                        <h3 className="text-white font-semibold text-base mb-1">1. Tap the Element of the Day</h3>
+                        <p className="text-white/60 text-sm leading-relaxed">Receive a random reward: HeartCoins, relics, or binder slot unlocks.</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0 ml-6">
-                      <span className="text-[#4ECDC4] text-2xl flex items-center font-bold">
-                        +1 <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8 ml-2" />
+                    <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+                      <span className="text-[#4ECDC4] text-lg flex items-center font-bold">
+                        +1 <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
                       </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Journal Entry Quest */}
-                <div className="w-full bg-black/20 rounded-lg p-10 border border-white/10 flex-[3] min-h-[220px]">
+                <div className="w-full bg-black/20 rounded-lg p-4 border border-white/10 flex-1">
                   <div className="flex items-center justify-between h-full w-full">
-                    <div className="flex items-center gap-8 flex-1 min-w-0">
-                      <div className="w-24 h-24 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center flex-shrink-0">
-                        <svg className="w-12 h-12 text-white/60" fill="currentColor" viewBox="0 0 20 20">
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center flex-shrink-0">
+                        <svg className="w-7 h-7 text-white/60" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
                         </svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-white font-semibold text-2xl mb-4">2. Journal Entry of the Day</h3>
-                        <p className="text-white/60 text-lg leading-relaxed">Answer today's journal prompt to earn one HEART coin.</p>
+                        <h3 className="text-white font-semibold text-base mb-1">2. Journal Entry of the Day</h3>
+                        <p className="text-white/60 text-sm leading-relaxed">Answer today's journal prompt to earn one HEART coin.</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-8 flex-shrink-0 ml-6">
+                    <div className="flex items-center gap-3 flex-shrink-0 ml-4">
                       <button
                         onClick={() => {
                           if (onOpenJournal) {
@@ -873,7 +929,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             }, 200); // Slightly longer delay to ensure modal closes completely
                           }
                         }}
-                        className="px-8 py-4 text-lg rounded border transition-colors bg-rgba(255,255,255,0.1) text-white hover:bg-white/20 font-bold"
+                        className="px-4 py-2 text-sm rounded border transition-colors bg-rgba(255,255,255,0.1) text-white hover:bg-white/20 font-bold"
                         style={{
                           background: 'rgba(255,255,255,0.1)',
                           color: '#FFFFFF',
@@ -883,8 +939,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                       >
                         OPEN JOURNAL
                       </button>
-                      <span className="text-[#4ECDC4] text-2xl flex items-center font-bold">
-                        +1 <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8 ml-2" />
+                      <span className="text-[#4ECDC4] text-lg flex items-center font-bold">
+                        +1 <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
                       </span>
                     </div>
                   </div>
@@ -962,6 +1018,60 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     <p className="text-white/60 text-sm">No bonus quests available</p>
                   </div>
                 )}
+
+                {/* Secret Phrase Redemption */}
+                <div className="mt-6 p-4 rounded-lg border border-white/20 bg-black/20">
+                  <div className="text-sm font-bold text-white mb-3">Secret Phrase</div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={secretPhrase}
+                      onChange={(e) => {
+                        setSecretPhrase(e.target.value);
+                        setSecretPhraseMessage(null);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !secretPhraseLoading && secretPhrase.trim()) {
+                          handleRedeemSecretPhrase();
+                        }
+                      }}
+                      disabled={secretPhraseLoading || !profile}
+                      placeholder={profile ? "Enter secret phrase..." : "Log in to redeem"}
+                      className="flex-1 px-3 py-2 text-sm rounded bg-black/30 border border-white/20 text-white placeholder-white/40 focus:border-[#4ECDC4] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                    <button
+                      onClick={handleRedeemSecretPhrase}
+                      disabled={secretPhraseLoading || !profile || !secretPhrase.trim()}
+                      className="px-4 py-2 text-xs rounded border transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{
+                        background: secretPhraseLoading || !profile || !secretPhrase.trim()
+                          ? 'rgba(100,100,100,0.3)'
+                          : 'rgba(78,205,196,0.2)',
+                        color: secretPhraseLoading || !profile || !secretPhrase.trim()
+                          ? '#666'
+                          : '#4ECDC4',
+                        borderColor: secretPhraseLoading || !profile || !secretPhrase.trim()
+                          ? 'rgba(100,100,100,0.6)'
+                          : '#4ECDC4',
+                      }}
+                    >
+                      {secretPhraseLoading ? 'CHECKING...' : 'CONFIRM'}
+                    </button>
+                  </div>
+                  {secretPhraseMessage && (
+                    <div className={`mt-2 text-xs font-bold ${
+                      secretPhraseMessage.type === 'success'
+                        ? 'text-[#90EE90]'
+                        : 'text-red-400'
+                    }`} style={{
+                      textShadow: secretPhraseMessage.type === 'success'
+                        ? '0 0 8px #90EE90, 0 0 16px #90EE90'
+                        : 'none'
+                    }}>
+                      {secretPhraseMessage.text}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -1590,17 +1700,18 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
       {/* Enlarged Card Modal */}
       {enlargedCard && (
-        <div 
+        <div
           className="fixed inset-0 z-[2147483647] bg-black bg-opacity-90"
           onClick={() => {
             setEnlargedCard(null);
             setIsEnlargedCardFlipped(false);
+            setCardRotation(0); // Reset rotation when closing
           }}
           style={{
             backdropFilter: 'blur(8px)',
           }}
         >
-          <div 
+          <div
             className="absolute inset-0 flex items-center justify-center p-4"
             onClick={(e) => e.stopPropagation()}
           >
@@ -1617,52 +1728,66 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 onClick={() => {
                   setEnlargedCard(null);
                   setIsEnlargedCardFlipped(false);
+                  setCardRotation(0); // Reset rotation when closing
                 }}
                 className="absolute top-2 right-2 w-8 h-8 bg-gray-700 hover:bg-gray-600 rounded-full flex items-center justify-center text-gray-300 hover:text-white transition-all duration-200 z-10"
               >
                 ×
               </button>
-              
+
               {/* Card Image */}
               <div className="flex items-center justify-center w-full h-full">
                 <div className="relative max-w-full max-h-full">
-                  <div 
-                    className="relative w-full cursor-pointer"
-                    onClick={() => setIsEnlargedCardFlipped(!isEnlargedCardFlipped)}
+                  <div
+                    className="relative w-full"
                     style={{
-                      perspective: '1000px',
                       height: '70vh',
                       maxWidth: '400px'
                     }}
                   >
-                    <div
-                      className="relative w-full h-full transition-transform duration-700"
-                      style={{
-                        transformStyle: 'preserve-3d'
+                    {/* TiltSpinCard wrapper for 360° drag-to-spin interaction */}
+                    <TiltSpinCard
+                      className="relative w-full h-full"
+                      maxRotateX={10}
+                      sensitivity={0.3}
+                      returnDuration={400}
+                      enableSpin={true}
+                      spinSensitivity={0.8}
+                      onRotationChange={setCardRotation}
+                      onClick={() => {
+                        try { sfx.play('flip.mp3', 0.8); } catch {}
+                        setIsAnimatingFlip(true);
+                        setCardRotation(prev => prev + 180);
+                        setTimeout(() => setIsAnimatingFlip(false), 500);
                       }}
                     >
-                      {!isEnlargedCardFlipped ? (
-                        /* Front of card - use availableCards[currentCardIndex] to stay in sync with navigation */
-                        <img
-                          src={availableCards[currentCardIndex]?.artwork_url || `/cards/${availableCards[currentCardIndex]?.card_name || availableCards[currentCardIndex]?.cards?.card_name}.webp`}
-                          alt={availableCards[currentCardIndex]?.card_name || availableCards[currentCardIndex]?.cards?.card_name || 'Card'}
-                          className="w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
-                          style={{
-                            animation: 'merchPulse 2.5s ease-in-out infinite'
-                          }}
-                        />
-                      ) : (
-                        /* Back of card */
-                        <img
-                          src="/cards/BACK.webp"
-                          alt="Card back"
-                          className="w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
-                          style={{
-                            animation: 'merchPulse 2.5s ease-in-out infinite'
-                          }}
-                        />
-                      )}
-                    </div>
+                      {/* Front of card - rotates with cardRotation */}
+                      <img
+                        src={availableCards[currentCardIndex]?.artwork_url || `/cards/${availableCards[currentCardIndex]?.card_name || availableCards[currentCardIndex]?.cards?.card_name}.webp`}
+                        alt={availableCards[currentCardIndex]?.card_name || availableCards[currentCardIndex]?.cards?.card_name || 'Card'}
+                        className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
+                        style={{
+                          filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
+                          backfaceVisibility: 'hidden',
+                          transform: `rotateY(${cardRotation}deg)`,
+                          transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                        }}
+                        draggable={false}
+                      />
+                      {/* Back of card - offset by 180° */}
+                      <img
+                        src="/cards/BACK.webp"
+                        alt="Card back"
+                        className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
+                        style={{
+                          filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
+                          backfaceVisibility: 'hidden',
+                          transform: `rotateY(${cardRotation + 180}deg)`,
+                          transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                        }}
+                        draggable={false}
+                      />
+                    </TiltSpinCard>
                     
                     {/* Navigation arrows - only show if multiple cards */}
                     {availableCards.length > 1 && (

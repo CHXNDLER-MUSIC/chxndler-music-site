@@ -12,6 +12,7 @@ import { completeSecretPhraseQuest } from '@/lib/bonusQuests';
 import { useMerchItems } from '@/hooks/useMerchItems';
 import { useMerchPurchase } from '@/hooks/useMerchPurchase';
 import { MerchItem } from '@/types/merch';
+import TiltSpinCard from '@/components/TiltSpinCard';
 
 // Helper function to convert MerchItem to StoreItem for backward compatibility
 const merchItemToStoreItem = (merchItem: MerchItem): StoreItem => ({
@@ -759,6 +760,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [checkInMessage, setCheckInMessage] = useState("");
   const [enlargedCard, setEnlargedCard] = useState<Card | null>(null);
   const [isEnlargedCardFlipped, setIsEnlargedCardFlipped] = useState(false);
+  const [cardRotation, setCardRotation] = useState(0); // For 360° spin mode
+  const [isAnimatingFlip, setIsAnimatingFlip] = useState(false); // For smooth flip transition
   // enlargedMerchItem state is declared earlier for effect ordering
   const [showCheckInSuccess, setShowCheckInSuccess] = useState(false);
   const [isSubmittingPhrase, setIsSubmittingPhrase] = useState(false);
@@ -1379,7 +1382,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         data-tour-id="heartcoin-button"
         onClick={handleClick} 
         onMouseEnter={onHoverSound}
-        className="flex items-center gap-3 p-2 rounded-lg transition-all duration-200 h-16"
+        className="flex items-center gap-1 p-2 rounded-lg transition-all duration-200 h-16"
         style={{
           transition: 'all 0.3s ease',
           ...restProps.style
@@ -3096,63 +3099,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
                               </div>
                             </div>
-                            
-                            {/* Purchase buttons - Positioned at bottom */}
-                            <div className="absolute -bottom-10 left-0 right-0 flex justify-center gap-4 px-4">
-                              <button
-                                className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg border transition-colors text-sm font-semibold hover:scale-105 whitespace-nowrap flex-1 max-w-[180px] ${
-                                  showDigitalForm
-                                    ? 'border-blue-400/80 bg-blue-400/30'
-                                    : 'border-blue-500/60 bg-blue-500/20 hover:bg-blue-500/30'
-                                }`}
-                                style={{
-                                  color: showDigitalForm ? '#87CEEB' : '#00BFFF',
-                                  textShadow: showDigitalForm
-                                    ? '0 0 6px rgba(135,206,235,0.8)'
-                                    : '0 0 4px rgba(0,191,255,0.8)',
-                                  boxShadow: showDigitalForm ? '0 0 15px rgba(0,191,255,0.4)' : 'none'
-                                }}
-                                onMouseEnter={() => {
-                                  try { sfx.play('hover', 0.3); } catch {}
-                                }}
-                                onClick={() => {
-                                  try { sfx.play('click', 0.7); } catch {}
-                                  setShowDigitalForm(!showDigitalForm);
-                                  setShowPhysicalForm(false);
-                                  setShowPhysicalConfirm(false);
-                                }}
-                              >
-                                <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5 flex-shrink-0" />
-                                <span>{card.digitalCost} DIGITAL</span>
-                              </button>
-
-                              <button
-                                className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg border transition-colors text-sm font-semibold hover:scale-105 whitespace-nowrap flex-1 max-w-[180px] ${
-                                  showPhysicalForm || showPhysicalConfirm
-                                    ? 'border-purple-400/80 bg-purple-400/30'
-                                    : 'border-purple-500/60 bg-purple-500/20 hover:bg-purple-500/30'
-                                }`}
-                                style={{
-                                  color: showPhysicalForm || showPhysicalConfirm ? '#E6E6FA' : '#DA70D6',
-                                  textShadow: showPhysicalForm || showPhysicalConfirm
-                                    ? '0 0 6px rgba(230,230,250,0.8)'
-                                    : '0 0 4px rgba(218,112,214,0.8)',
-                                  boxShadow: showPhysicalForm || showPhysicalConfirm ? '0 0 15px rgba(218,112,214,0.4)' : 'none'
-                                }}
-                                onMouseEnter={() => {
-                                  try { sfx.play('hover', 0.3); } catch {}
-                                }}
-                                onClick={() => {
-                                  try { sfx.play('click', 0.7); } catch {}
-                                  setShowPhysicalForm(!showPhysicalForm);
-                                  setShowPhysicalConfirm(false);
-                                  setShowDigitalForm(false);
-                                }}
-                              >
-                                <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5 flex-shrink-0" />
-                                <span>{card.physicalCost} PHYSICAL</span>
-                              </button>
-                            </div>
                                 </div>
                               );
                             })()
@@ -3338,56 +3284,68 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           
           {/* Enlarged Card Modal - positioned within heart coin modal */}
           {enlargedCard && (
-            <div 
+            <div
               className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 rounded-lg"
-              onClick={() => setEnlargedCard(null)}
+              onClick={() => {
+                setEnlargedCard(null);
+                setCardRotation(0);
+              }}
             >
-              <div 
+              <div
                 className="relative w-56 mx-4"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div 
-                  className="relative w-full cursor-pointer"
-                  onClick={() => setIsEnlargedCardFlipped(!isEnlargedCardFlipped)}
-                  style={{
-                    perspective: '1000px',
-                    height: '320px'
+                {/* TiltSpinCard wrapper for 360° drag-to-spin interaction */}
+                <TiltSpinCard
+                  className="relative w-full h-[320px]"
+                  maxRotateX={10}
+                  sensitivity={0.3}
+                  returnDuration={400}
+                  enableSpin={true}
+                  spinSensitivity={0.8}
+                  onRotationChange={setCardRotation}
+                  onClick={() => {
+                    try { sfx.play('flip.mp3', 0.8); } catch {}
+                    setIsAnimatingFlip(true);
+                    setCardRotation(prev => prev + 180);
+                    setTimeout(() => setIsAnimatingFlip(false), 500);
                   }}
                 >
-                  <div
-                    className="relative w-full h-full"
-                  >
-                    {/* Show front or back based on flip state */}
-                    {!isEnlargedCardFlipped ? (
-                      <img
-                        src={enlargedCard.artwork_url || `/cards/${enlargedCard.card_name}.webp`}
-                        alt={enlargedCard.card_name}
-                        className="w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
-                        style={{
-                          filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
-                          animation: 'cardPulse 3s ease-in-out infinite'
-                        }}
-                      />
-                    ) : (
-                      <img
-                        src="/cards/BACK.webp"
-                        alt="Card back"
-                        className="w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
-                        style={{
-                          filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
-                          animation: 'cardPulse 3s ease-in-out infinite'
-                        }}
-                      />
-                    )}
-                  </div>
-                </div>
-                
+                  {/* Front of card - rotates with cardRotation */}
+                  <img
+                    src={enlargedCard.artwork_url || `/cards/${enlargedCard.card_name}.webp`}
+                    alt={enlargedCard.card_name}
+                    className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
+                    style={{
+                      filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
+                      backfaceVisibility: 'hidden',
+                      transform: `rotateY(${cardRotation}deg)`,
+                      transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                    }}
+                    draggable={false}
+                  />
+                  {/* Back of card - offset by 180° */}
+                  <img
+                    src="/cards/BACK.webp"
+                    alt="Card back"
+                    className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
+                    style={{
+                      filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
+                      backfaceVisibility: 'hidden',
+                      transform: `rotateY(${cardRotation + 180}deg)`,
+                      transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                    }}
+                    draggable={false}
+                  />
+                </TiltSpinCard>
+
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     try { sfx.play('close', 0.7); } catch {}
                     setEnlargedCard(null);
                     setIsEnlargedCardFlipped(false);
+                    setCardRotation(0); // Reset rotation when closing
                   }}
                   className="absolute top-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white text-sm font-bold transition-all duration-200 z-10"
                 >

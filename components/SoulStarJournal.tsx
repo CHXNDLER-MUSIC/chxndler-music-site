@@ -296,6 +296,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         entry_date: entryDate,
         element: dailyPrompt.element,
         prompt_id: dailyPrompt?.id || null,
+        prompt_snapshot: dailyPrompt?.entry_text?.text || null,
         intention: dailyPrompt?.intention?.text || null,
         entry_text: soulStarText.trim(),
         is_public: !journalState.isPrivate
@@ -1079,7 +1080,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                               Prompt
                             </div>
                           </div>
-                          <div className="text-base leading-relaxed text-white/90">{entry.reflection || "No prompt available"}</div>
+                          <div className="text-base leading-relaxed text-white/90">{entry.prompt_snapshot || "No prompt available"}</div>
                         </div>
 
                         {/* Soul Star Section with Edit Functionality */}

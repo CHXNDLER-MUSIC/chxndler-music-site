@@ -102,17 +102,18 @@ interface JournalEntry {
   entry_id: string; // primary key
   user_id: string;
   prompt_id: string | null;
-  entry_date: string;
-  element: string | null;
+  prompt_snapshot: string | null; // denormalized copy of prompt text
+  entry_text: string | null; // user writing
   intention: string | null;
-  is_public: boolean | null;
+  element: string | null;
+  entry_date: string;
   created_at: string;
-  stars_count?: number; // Added for soul star functionality
+  stars_count?: number; // optional
+  is_public?: boolean | null; // may not exist in current schema
   // Optional legacy fields kept for UI compatibility if present
   reflection?: string | null;
   intention_response?: string | null;
   reflection_response?: string | null;
-  entry_text?: string | null;
 }
 
 interface DailyPrompts {
@@ -715,14 +716,14 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         throw new Error('No user session found. Please log in again.');
       }
 
-      // Build entry data with only the core columns that should exist
+      // Build entry data with only the columns that exist in the schema
       const entryData: any = {
         user_id: user.id,
         entry_date: entry.entry_date,
         element: entry.element,
       };
 
-      // Add fields from daily prompt (element, intention, prompt) 
+      // Add prompt_id if provided and valid
       if (entry.prompt_id !== null && entry.prompt_id !== undefined) {
         // Validate that prompt_id is a valid UUID before adding it
         const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(entry.prompt_id);
@@ -740,9 +741,6 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             isValidUUID,
             isProblematicValue
           });
-          // Don't include prompt_id if it's not a valid UUID or contains placeholder text
-          // If the prompt_id is invalid, we should still be able to save the journal entry
-          // The prompt_id column allows NULL values in the database
           
           // If this is a problematic value, throw a specific error to help user understand
           if (isProblematicValue) {
@@ -750,19 +748,21 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           }
         }
       }
-      if (entry.intention !== null && entry.intention !== undefined) {
-        entryData.intention = entry.intention;
+
+      // Add other fields that exist in the schema
+      if (entry.prompt_snapshot !== null && entry.prompt_snapshot !== undefined) {
+        entryData.prompt_snapshot = entry.prompt_snapshot;
       }
       if (entry.entry_text !== null && entry.entry_text !== undefined) {
         entryData.entry_text = entry.entry_text;
       }
+      if (entry.intention !== null && entry.intention !== undefined) {
+        entryData.intention = entry.intention;
+      }
 
-      // Handle is_public field instead of is_private
+      // Handle is_public field (Note: this may not exist in current schema)
       if (entry.is_public !== null && entry.is_public !== undefined) {
         entryData.is_public = entry.is_public;
-      } else {
-        // Default to false (private) if not specified
-        entryData.is_public = false;
       }
 
       console.log('Saving journal entry with data:', entryData);
@@ -782,7 +782,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         const updateResult = await supabaseBrowser
           .from('soul_journal_entries')
           .update(entryData)
-          .eq('id', existingEntry.id)
+          .eq('entry_id', existingEntry.entry_id)
           .select()
           .single();
         data = updateResult.data;
@@ -799,8 +799,14 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
 
       if (error) {
-        console.error('Database error details:', error);
-        console.error('Entry data that failed to save:', entryData);
+        // Defensive logging - log all error details and the payload
+        console.error('Database error details:', {
+          message: error.message,
+          details: error.details,
+          code: error.code,
+          hint: error.hint
+        });
+        console.error('Entry data payload that failed to save:', entryData);
         
         // Provide more specific error messages for common UUID issues
         if (error.message?.includes('invalid input syntax for type uuid')) {

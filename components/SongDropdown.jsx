@@ -235,7 +235,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
       try { sfx.play('join', 0.75); } catch {}; try { const a = clickRef.current; if (a) { a.currentTime = 0; a.volume = 0.75; a.play().catch(()=>{}); } } catch {}; setOpen((v) => { const nv = !v; try { setTimeout(() => playerStore.getState().setHover(nv ? (displayItems[highlight]?.id || null) : null), 0); } catch {}; return nv; }); 
         }}
         onKeyDown={onTriggerKeyDown}
-        className="songs-trigger w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-[10px] border-2 border-[#19E3FF]/80 bg-cyan-400/10 backdrop-blur-xl shadow-[0_0_18px_rgba(25,227,255,0.35)] focus:outline-none focus:ring-2 focus:ring-cyan-400"
+        className="songs-trigger w-full flex items-center justify-between gap-2 px-1.5 py-1.5 rounded-[10px] border-2 border-[#19E3FF]/80 bg-cyan-400/10 backdrop-blur-xl shadow-[0_0_18px_rgba(25,227,255,0.35)] focus:outline-none focus:ring-2 focus:ring-cyan-400 min-w-[240px]"
       >
         <span className="flex items-center gap-2 min-w-0">
           {(() => {
