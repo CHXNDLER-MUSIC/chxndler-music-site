@@ -39,7 +39,7 @@ export async function saveSoulStarEntry({
     element: currentPrompt.element,
     prompt_id: currentPrompt.id,
     intention: currentPrompt.intention?.text || null,
-    reflection: currentPrompt.entry_text?.text || null, // prompt question text
+    prompt: currentPrompt.entry_text?.text || null, // denormalized prompt text
     entry_text: entryText,
     is_public: !isPrivate
   };
@@ -69,7 +69,7 @@ export async function loadSoulStarFullLog(userId: string): Promise<SoulStarLogEn
       created_at,
       prompt_id,
       intention,
-      reflection,
+      prompt,
       soul_daily_prompts (
         id,
         prompt_date,
@@ -96,9 +96,9 @@ export async function loadSoulStarFullLog(userId: string): Promise<SoulStarLogEn
     entryText: entry.entry_text || '',
     isPrivate: !(entry.is_public ?? false),
     promptDate: entry.soul_daily_prompts?.prompt_date || entry.entry_date,
-    // Use the reflection column (which stores the prompt text) or fallback to the relationship
-    prompt: entry.reflection || entry.soul_daily_prompts?.prompt || '', 
-    // Use the intention column (which stores the intention text) or fallback to the relationship
+    // Use the denormalized prompt column or fallback to the relationship
+    prompt: entry.prompt || entry.soul_daily_prompts?.prompt || '',
+    // Use the intention column or fallback to the relationship
     intention: entry.intention || entry.soul_daily_prompts?.intention || null,
     promptId: entry.prompt_id || entry.soul_daily_prompts?.id || null,
   }));

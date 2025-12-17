@@ -675,14 +675,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       switch (event.key) {
         case 'ArrowLeft':
           event.preventDefault();
-          try { sfx.play('flip.mp3', 0.8); } catch {}
+          try { sfx.play('flip', 0.8); } catch {}
           setCurrentCardIndex(prev => 
             prev > 0 ? prev - 1 : filteredCards.length - 1
           );
           break;
         case 'ArrowRight':
           event.preventDefault();
-          try { sfx.play('flip.mp3', 0.8); } catch {}
+          try { sfx.play('flip', 0.8); } catch {}
           setCurrentCardIndex(prev => 
             prev < filteredCards.length - 1 ? prev + 1 : 0
           );
@@ -790,12 +790,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // Validate secret phrase
   const validateSecretPhrase = async (phrase: string): Promise<boolean> => {
     if (!phrase.trim()) return false;
-    
+
     try {
       const { supabaseBrowser } = await import('@/lib/supabase-browser');
       const trimmedPhrase = phrase.trim();
       const today = new Date().toISOString().split('T')[0]; // Get YYYY-MM-DD format
-      
+
+      console.log('Validating phrase:', trimmedPhrase, 'for date:', today);
+
       const { data: secretPhrase, error } = await supabaseBrowser
         .from('secret_phrases')
         .select('*')
@@ -803,9 +805,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         .eq('active_date', today)
         .eq('is_active', true)
         .maybeSingle();
-        
+
+      console.log('Query result:', { secretPhrase, error });
+
       const isValid = !error && !!secretPhrase;
-      
+
       return isValid;
     } catch (error) {
       console.error('Error validating phrase:', error);
@@ -2523,7 +2527,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       {/* Left Arrow */}
                                       <button
                                         onClick={() => {
-                                          try { sfx.play('flip.mp3', 0.8); } catch {}
+                                          try { sfx.play('flip', 0.8); } catch {}
                                           setCurrentCardIndex(prev => 
                                             prev > 0 ? prev - 1 : filteredCards.length - 1
                                           );
@@ -2538,7 +2542,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       {/* Right Arrow */}
                                       <button
                                         onClick={() => {
-                                          try { sfx.play('flip.mp3', 0.8); } catch {}
+                                          try { sfx.play('flip', 0.8); } catch {}
                                           setCurrentCardIndex(prev => 
                                             prev < filteredCards.length - 1 ? prev + 1 : 0
                                           );
@@ -2587,7 +2591,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 {/* Left Arrow - Always visible */}
                                 <button
                                   onClick={() => {
-                                    try { sfx.play('flip.mp3', 0.8); } catch {}
+                                    try { sfx.play('flip', 0.8); } catch {}
                                     setCurrentCardIndex(prev =>
                                       prev > 0 ? prev - 1 : filteredCards.length - 1
                                     );
@@ -2631,7 +2635,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               {/* Right Arrow - Always visible */}
                               <button
                                 onClick={() => {
-                                  try { sfx.play('flip.mp3', 0.8); } catch {}
+                                  try { sfx.play('flip', 0.8); } catch {}
                                   setCurrentCardIndex(prev =>
                                     prev < filteredCards.length - 1 ? prev + 1 : 0
                                   );
@@ -3334,7 +3338,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   onClick={() => {
                     // Play flip sound
                     try {
-                      sfx.play('flip.mp3', 0.8);
+                      sfx.play('flip', 0.8);
                     } catch {
                       // Fallback to native Audio
                       try {
@@ -3432,15 +3436,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   onRotationChange={setMerchRotation}
                   onClick={() => {
                     // Play flip sound and animate
-                    try {
-                      sfx.play('flip.mp3', 0.8);
-                    } catch {
-                      try {
-                        const audio = new Audio('/audio/flip.mp3');
-                        audio.volume = 0.8;
-                        audio.play();
-                      } catch {}
-                    }
+                    sfx.play('flip', 0.8);
                     setIsMerchAnimatingFlip(true);
                     setMerchRotation(prev => prev + 180);
                     setTimeout(() => setIsMerchAnimatingFlip(false), 500);

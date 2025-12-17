@@ -31,9 +31,9 @@
 
 /* CSS Variables for consistent z-index layering */
 :root {
-  --z-modal: 2147483645;
-  --z-modal-overlay: 2147483644;
-  --z-cursor: 2147483651;
+  --z-modal: 99999999;
+  --z-modal-overlay: 99999998;
+  --z-cursor: 2147483647;
 }
 
 /* Hide default cursor on desktop and use custom JS cursor */
@@ -60,7 +60,13 @@
   }
 }
 
-/* Custom cursor element - guaranteed to be on top */
+/* Custom cursor element - ALWAYS on top */
+.custom-cursor-always-top {
+  z-index: 2147483647 !important;
+  position: fixed !important;
+  pointer-events: none !important;
+}
+
 .custom-cursor {
   position: fixed;
   top: 0;

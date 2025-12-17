@@ -200,6 +200,12 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   const [isEnlargedCardFlipped, setIsEnlargedCardFlipped] = useState(false);
   const [cardRotation, setCardRotation] = useState(0); // For 360° spin mode
   const [isAnimatingFlip, setIsAnimatingFlip] = useState(false); // For smooth flip transition
+
+  // Element selection and internal cards state for CARDS tab
+  const [selectedElement, setSelectedElement] = useState<'LIGHTNING' | 'WATER' | 'HEART' | 'VOID' | null>(null);
+  const [allCards, setAllCards] = useState<any[]>([]);
+  const [internalCardIndex, setInternalCardIndex] = useState(0);
+
   const itemsPerPage = 6;
 
   useEffect(() => {
@@ -209,6 +215,65 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       try { sfx.setEnabled(true); } catch {}
     }
   }, [open, initialTab]);
+
+  // Fetch all cards when CARDS tab is active
+  useEffect(() => {
+    if (open && activeTab === 'cards' && allCards.length === 0) {
+      const fetchCards = async () => {
+        const supabase = supabaseBrowser();
+        const { data, error } = await supabase
+          .from('cards')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          setAllCards(data);
+        }
+      };
+      fetchCards();
+    }
+  }, [open, activeTab, allCards.length]);
+
+  // Reset selected element when switching away from CARDS tab
+  useEffect(() => {
+    if (activeTab !== 'cards') {
+      setSelectedElement(null);
+      setInternalCardIndex(0);
+    }
+  }, [activeTab]);
+
+  // Filter cards by selected element
+  const filteredCards = selectedElement
+    ? allCards.filter(card => {
+        const cardElement = (card.element || '').toUpperCase();
+        return cardElement === selectedElement;
+      })
+    : [];
+
+  // Use internal cards when element is selected, otherwise use props
+  const displayCards = selectedElement ? filteredCards : availableCards;
+  const displayCardIndex = selectedElement ? internalCardIndex : currentCardIndex;
+
+  // Handle element selection
+  const handleElementSelect = (element: 'LIGHTNING' | 'WATER' | 'HEART' | 'VOID') => {
+    try { sfx.play('select', 0.5); } catch {}
+    setSelectedElement(element);
+    setInternalCardIndex(0);
+  };
+
+  // Handle dropdown change
+  const handleElementDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value as 'LIGHTNING' | 'WATER' | 'HEART' | 'VOID';
+    setSelectedElement(value);
+    setInternalCardIndex(0);
+  };
+
+  // Handle back to element selection
+  const handleBackToElementSelection = () => {
+    try { sfx.play('close', 0.5); } catch {}
+    setSelectedElement(null);
+    setInternalCardIndex(0);
+  };
 
   // Helper function to check if quest is completed
   const isQuestCompleted = (quest: BonusQuestWithCompletion): boolean => {
@@ -730,7 +795,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
   const handlePrevCard = () => {
     if (availableCards.length > 1 && onCardNavigation) {
-      try { sfx.play('flip.mp3', 0.8); } catch {}
+      try { sfx.play('flip', 0.8); } catch {}
       onCardNavigation('prev');
       setIsEnlargedCardFlipped(false);
     }
@@ -738,7 +803,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
   const handleNextCard = () => {
     if (availableCards.length > 1 && onCardNavigation) {
-      try { sfx.play('flip.mp3', 0.8); } catch {}
+      try { sfx.play('flip', 0.8); } catch {}
       onCardNavigation('next');
       setIsEnlargedCardFlipped(false);
     }
@@ -1310,31 +1375,28 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       </div>
     ) : isUseMode && activeTab === 'cards' ? (
       <div>
-        {/* Show card view if cards are available */}
-        {availableCards.length > 0 ? (
+        {/* Show card view if an element is selected */}
+        {selectedElement !== null ? (
           <div className="relative">
             {/* Top Navigation Bar */}
             <div className="flex items-center justify-between mb-6">
               {/* Back Arrow */}
-              <button 
+              <button
                 className="flex items-center justify-center w-8 h-8 rounded-full text-white/60 hover:text-white transition-colors"
-                onClick={() => {
-                  // This would need to be handled by parent component to reset availableCards
-                  // For now, we'll just show the element selection
-                }}
+                onClick={handleBackToElementSelection}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              
+
               {/* Element Filter Dropdown */}
               <div className="flex-1 ml-4">
-                <select 
+                <select
                   className="w-full bg-black/30 border border-white/20 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-white/40"
-                  defaultValue="ALL CARDS"
+                  value={selectedElement}
+                  onChange={handleElementDropdownChange}
                 >
-                  <option value="ALL CARDS">ALL CARDS</option>
                   <option value="LIGHTNING">LIGHTNING</option>
                   <option value="WATER">WATER</option>
                   <option value="HEART">HEART</option>
@@ -1364,10 +1426,10 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
               {/* Current Card */}
               <div className="text-center mx-8">
-                <div 
+                <div
                   className="relative w-64 h-80 mx-auto cursor-pointer"
                   onClick={() => {
-                    setEnlargedCard(availableCards[currentCardIndex]);
+                    setEnlargedCard(displayCards[displayCardIndex]);
                     setIsEnlargedCardFlipped(false);
                   }}
                   style={{
@@ -1375,26 +1437,26 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   }}
                 >
                   <img
-                    src={availableCards[currentCardIndex]?.artwork_url || `/cards/${availableCards[currentCardIndex]?.card_name || availableCards[currentCardIndex]?.cards?.card_name}.webp`}
-                    alt={availableCards[currentCardIndex]?.card_name || availableCards[currentCardIndex]?.cards?.card_name || 'Card'}
+                    src={displayCards[displayCardIndex]?.artwork_url || `/cards/${displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name}.webp`}
+                    alt={displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name || 'Card'}
                     className="w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain hover:scale-105 transition-transform duration-300"
                     style={{
                       filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))'
                     }}
                   />
                 </div>
-                
+
                 {/* Card Info */}
                 <div className="mt-4 space-y-6">
                   <p className="text-white/60 text-sm text-center">
-                    {currentCardIndex + 1} of 12
+                    {displayCardIndex + 1} of {displayCards.length}
                   </p>
-                  
+
                   {/* Card Description */}
                   <div className="text-center px-4">
                     <p className="text-white/80 text-sm leading-relaxed max-w-md mx-auto">
-                      {availableCards[currentCardIndex]?.card_description || 
-                       availableCards[currentCardIndex]?.cards?.card_description ||
+                      {displayCards[displayCardIndex]?.card_description ||
+                       displayCards[displayCardIndex]?.cards?.card_description ||
                        "Lightning is the electric jolt of feeling alive. These tracks buzz. You move fast, crash hard, and maybe regret nothing."}
                     </p>
                   </div>
@@ -1475,13 +1537,15 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
             </div>
 
             {/* Card Navigation Indicators */}
-            {availableCards.length > 0 && (
+            {displayCards.length > 0 && (
               <div className="flex justify-center mt-6 gap-2">
-                {availableCards.map((_, index) => (
+                {displayCards.map((_, index) => (
                   <button
                     key={index}
                     onClick={() => {
-                      if (onCardNavigation) {
+                      if (selectedElement) {
+                        setInternalCardIndex(index);
+                      } else if (onCardNavigation) {
                         const direction = index > currentCardIndex ? 'next' : 'prev';
                         const steps = Math.abs(index - currentCardIndex);
                         for (let i = 0; i < steps; i++) {
@@ -1490,7 +1554,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                       }
                     }}
                     className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                      index === currentCardIndex
+                      index === displayCardIndex
                         ? 'bg-[#F2EF1D] shadow-[0_0_8px_rgba(242,239,29,0.8)]'
                         : 'bg-white/30 hover:bg-white/50'
                     }`}
@@ -1652,7 +1716,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                           <>
                             <button
                               onClick={() => {
-                                try { sfx.play('flip.mp3', 0.8); } catch {}
+                                try { sfx.play('flip', 0.8); } catch {}
                                 setEnlargedImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
                               }}
                               className="absolute left-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-all duration-200"
@@ -1664,7 +1728,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             
                             <button
                               onClick={() => {
-                                try { sfx.play('flip.mp3', 0.8); } catch {}
+                                try { sfx.play('flip', 0.8); } catch {}
                                 setEnlargedImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
                               }}
                               className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-all duration-200"
@@ -1758,7 +1822,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                       onClick={() => {
                         // Play flip sound
                         try {
-                          sfx.play('flip.mp3', 0.8);
+                          sfx.play('flip', 0.8);
                         } catch {
                           // Fallback to native Audio
                           try {

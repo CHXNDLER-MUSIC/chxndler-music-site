@@ -102,7 +102,7 @@ interface JournalEntry {
   entry_id: string; // primary key
   user_id: string;
   prompt_id: string | null;
-  prompt_snapshot: string | null; // denormalized copy of prompt text
+  prompt: string | null; // denormalized copy of prompt text
   entry_text: string | null; // user writing
   intention: string | null;
   element: string | null;
@@ -750,8 +750,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
 
       // Add other fields that exist in the schema
-      if (entry.prompt_snapshot !== null && entry.prompt_snapshot !== undefined) {
-        entryData.prompt_snapshot = entry.prompt_snapshot;
+      if (entry.prompt !== null && entry.prompt !== undefined) {
+        entryData.prompt = entry.prompt;
       }
       if (entry.entry_text !== null && entry.entry_text !== undefined) {
         entryData.entry_text = entry.entry_text;

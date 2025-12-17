@@ -52,7 +52,8 @@ interface JournalEntry {
   created_at: string;
   element: string;
   intention?: string;
-  reflection?: string; // prompt question text (was 'prompt')
+  prompt?: string; // denormalized prompt text from soul_daily_prompts
+  reflection?: string; // legacy field
   intention_response?: string;
   reflection_response?: string;
   entry_text?: string; // user's written reflection text
@@ -299,7 +300,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         entry_date: entryDate,
         element: dailyPrompt.element,
         prompt_id: dailyPrompt?.id || null,
-        prompt_snapshot: dailyPrompt?.entry_text?.text || null,
+        prompt: dailyPrompt?.entry_text?.text || null,
         intention: dailyPrompt?.intention?.text || null,
         entry_text: soulStarText.trim(),
         is_public: !journalState.isPrivate
@@ -1083,7 +1084,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                               Prompt
                             </div>
                           </div>
-                          <div className="text-base leading-relaxed text-white/90">{entry.prompt_snapshot || "No prompt available"}</div>
+                          <div className="text-base leading-relaxed text-white/90">{entry.prompt || "No prompt available"}</div>
                         </div>
 
                         {/* Soul Star Section with Edit Functionality */}
@@ -2386,24 +2387,30 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         </div>
       )}
 
-      {/* Enlarged Badge Popup Modal */}
+      {/* Enlarged Badge Popup Modal - contained within journal panel area */}
       {enlargedBadge && (
         <div
-          className="fixed inset-0 z-[2147483646] flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-start justify-center"
+          style={{
+            paddingTop: '8vh',
+            paddingBottom: 'calc(var(--buttons-bottom, 10%) + var(--power-size-px, 72px) + 160px)',
+            paddingLeft: '16px',
+            paddingRight: '20px',
+          }}
           onClick={() => {
             setEnlargedBadge(null);
             setBadgeRotation(0);
           }}
         >
-          {/* Dark backdrop */}
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-
-          {/* Badge container - fills more of the popout */}
+          {/* Badge container - matches journal panel dimensions */}
           <div
-            className="relative flex flex-col items-center justify-center pointer-events-auto"
+            className="relative flex flex-col items-center justify-center pointer-events-auto w-full max-w-4xl sm:min-w-[460px] mx-auto h-full"
             style={{
-              width: 'min(85vw, 400px)',
-              maxHeight: '80vh',
+              background: 'rgba(0, 0, 0, 0.9)',
+              border: `1px solid ${elementTheme.color}60`,
+              boxShadow: `0 0 30px ${elementTheme.color}60, 0 0 60px ${elementTheme.color}40`,
+              borderRadius: '14px',
+              backdropFilter: 'blur(12px)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -2434,7 +2441,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 onRotationChange={setBadgeRotation}
                 onClick={() => {
                   try {
-                    sfx.play('flip.mp3', 0.8);
+                    sfx.play('flip', 0.8);
                   } catch {
                     try {
                       const audio = new Audio('/audio/flip.mp3');
@@ -2468,7 +2475,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     }}
                   >
                     <img
-                      src={enlargedBadge.badge_image_url || '/elements/badges.webp'}
+                      src={enlargedBadge.icon_url || enlargedBadge.badge_image_url || '/elements/badges.webp'}
                       alt={enlargedBadge.badge_name || 'Badge'}
                       className="w-full h-full object-cover"
                       draggable={false}
@@ -2490,7 +2497,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     }}
                   >
                     <img
-                      src={enlargedBadge.badge_image_url || '/elements/badges.webp'}
+                      src={enlargedBadge.icon_url || enlargedBadge.badge_image_url || '/elements/badges.webp'}
                       alt={enlargedBadge.badge_name || 'Badge'}
                       className="w-full h-full object-cover"
                       style={{ transform: 'scaleX(-1)' }}
@@ -2524,10 +2531,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               )}
             </div>
 
-            {/* Tap anywhere to close hint */}
-            <div className="mt-4 text-white/40 text-xs">
-              Tap outside to close • Drag badge to spin
-            </div>
           </div>
         </div>
       )}

@@ -101,7 +101,7 @@ export async function redeemSecretPhrase({
       .insert({
         user_id: userId,
         secret_phrase_id: activePhrase.id,
-        heart_coins_awarded: activePhrase.reward
+        heart_coins_awarded: activePhrase.reward_heart_coins
       });
 
     if (insertError) {

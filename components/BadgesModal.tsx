@@ -185,9 +185,9 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             sfx.play('click');
             setSelectedBadge(null);
           }}
-          className="mb-4 text-[#38B6FF] hover:text-[#38B6FF]/80 transition text-sm"
+          className="mb-4 w-12 h-12 rounded-full border-2 border-[#38B6FF]/60 text-[#38B6FF] hover:text-[#38B6FF]/80 hover:border-[#38B6FF]/80 transition-all duration-200 flex items-center justify-center text-xl"
         >
-          ← Back to Badges
+          ←
         </button>
 
         {/* Large badge display with 3D spin */}
@@ -218,7 +218,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
               onRotationChange={setBadgeRotation}
               onClick={() => {
                 try {
-                  sfx.play('flip.mp3', 0.8);
+                  sfx.play('flip', 0.8);
                 } catch {
                   try {
                     const audio = new Audio('/audio/flip.mp3');
@@ -382,7 +382,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     }
 
     return (
-      <PopoutShell title="BADGE DETAILS" onClose={onClose} minWidth={'min(95vw, 420px)'}>
+      <PopoutShell title="BADGE DETAILS" onClose={onClose} minWidth={'min(95vw, 420px)'} topPadding="60px">
         {badgeDetailContent}
       </PopoutShell>
     );
@@ -407,9 +407,9 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             sfx.play('click');
             setSelectedCategory(null);
           }}
-          className="mb-4 text-[#38B6FF] hover:text-[#38B6FF]/80 transition text-sm flex-shrink-0"
+          className="mb-4 w-12 h-12 rounded-full border-2 border-[#38B6FF]/60 text-[#38B6FF] hover:text-[#38B6FF]/80 hover:border-[#38B6FF]/80 transition-all duration-200 flex items-center justify-center text-xl flex-shrink-0"
         >
-          ← Back to Categories
+          ←
         </button>
         
         {/* Badge grid matching binder layout */}
@@ -421,11 +421,6 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                   onClick={() => {
                     sfx.play('click');
                     setEnlargedBadge(badge);
-                    // After a short delay, show the detail view
-                    setTimeout(() => {
-                      setEnlargedBadge(null);
-                      setSelectedBadge(badge);
-                    }, 800);
                   }}
                   onMouseEnter={() => sfx.play('hover')}
                   className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/60 border border-white/20 hover:border-white/40 transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
@@ -506,7 +501,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     }
 
     return (
-      <PopoutShell title={categoryInfo?.displayName || "CATEGORY"} onClose={onClose} compact={true} minWidth={'min(95vw, 420px)'}>
+      <PopoutShell title={categoryInfo?.displayName || "CATEGORY"} onClose={onClose} compact={true} minWidth={'min(95vw, 420px)'} topPadding="60px">
         <div className="relative badges-modal-container" style={{ overflow: 'hidden', height: '100%' }}>
           {/* Hide all navigation elements in badges modal */}
           <style jsx global>{`
@@ -666,11 +661,6 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                       onClick={() => {
                         sfx.play('click');
                         setEnlargedBadge(badge);
-                        // After a short delay, show the detail view if needed
-                        setTimeout(() => {
-                          setEnlargedBadge(null);
-                          setSelectedBadge(badge);
-                        }, 800);
                       }}
                       onMouseEnter={() => sfx.play('hover')}
                       className="relative w-20 h-20 rounded-full flex items-center justify-center group overflow-hidden flex-shrink-0 transition-all duration-200 hover:scale-105"
@@ -842,7 +832,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
               onClick={() => {
                 // Play flip sound and animate
                 try {
-                  sfx.play('flip.mp3', 0.8);
+                  sfx.play('flip', 0.8);
                 } catch {
                   try {
                     const audio = new Audio('/audio/flip.mp3');
@@ -921,11 +911,24 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
               </div>
             </TiltSpinCard>
 
-            {/* Badge name overlay - stays fixed */}
-            <div className="absolute -bottom-12 left-0 right-0 p-4 pointer-events-none">
-              <h3 className="text-white font-bold text-lg text-center" style={{ textShadow: '0 0 10px rgba(0,0,0,0.8)' }}>
+            {/* Badge name and actions overlay - stays fixed */}
+            <div className="absolute -bottom-20 left-0 right-0 p-4 pointer-events-auto">
+              <h3 className="text-white font-bold text-lg text-center mb-2" style={{ textShadow: '0 0 10px rgba(0,0,0,0.8)' }}>
                 {enlargedBadge.badge_name}
               </h3>
+              <div className="flex justify-center">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEnlargedBadge(null);
+                    setSelectedBadge(enlargedBadge);
+                    setBadgeRotation(0);
+                  }}
+                  className="px-4 py-1 text-xs bg-[#38B6FF]/20 border border-[#38B6FF]/50 text-[#38B6FF] hover:bg-[#38B6FF]/30 transition-all rounded-full"
+                >
+                  VIEW DETAILS
+                </button>
+              </div>
             </div>
           </motion.div>
         </motion.div>
@@ -943,7 +946,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   }
 
   return (
-    <PopoutShell title="BADGES" onClose={onClose} compact={true} minWidth={'min(95vw, 420px)'} headerRuleVariant={'cyan'}>
+    <PopoutShell title="BADGES" onClose={onClose} compact={true} minWidth={'min(95vw, 420px)'} headerRuleVariant={'cyan'} topPadding="60px">
       <div className="relative badges-modal-container" style={{ overflow: 'hidden' }}>
         {/* Hide all navigation elements in badges modal */}
         <style jsx global>{`

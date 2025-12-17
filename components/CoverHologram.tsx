@@ -621,16 +621,16 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
             setShowCard(false);
           }}
         >
-          {/* Card modal positioned above light beam */}
+          {/* Card modal positioned below profile bar */}
           <div
             className="card-anchored"
             style={{
               position: 'fixed',
-              bottom: '42vh', 
+              top: '72px', // Below profile bar (64px) + 8px padding
               left: '50%',
               transform: 'translateX(-50%)',
               pointerEvents: 'auto',
-              maxHeight: 'calc(100vh - 120px)', // Ensure card doesn't exceed screen minus profile bar space
+              maxHeight: 'calc(100vh - 180px)', // Leave space for profile bar top and controls at bottom
               overflow: 'visible'
             }}
             onClick={(e)=> e.stopPropagation()}
@@ -1154,10 +1154,14 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
           /* Larger pop container */
           width: min(85vw, 400px);
           max-width: 85vw;
-          max-height: calc(100vh - 140px); /* Constrain height to stay below profile bar */
+          max-height: calc(100vh - 200px); /* Constrain height to fit between profile bar and bottom */
           background: rgba(25,227,255,0.45);
           box-shadow: 0 0 60px rgba(25,227,255,0.45), inset 0 0 0 1px rgba(25,227,255,0.35);
           overflow: hidden; /* Contain content within bounds */
+        }
+        .card-modal .tilt-img {
+          max-height: calc(100vh - 260px); /* Ensure card image fits within available space */
+          object-fit: contain;
         }
         @media (max-width: 380px) {
           /* Nudge down more on very narrow devices */

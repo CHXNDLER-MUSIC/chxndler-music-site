@@ -862,8 +862,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                 className="relative"
                 style={{
                   width: 'auto',
-                  height: '85%',
-                  maxHeight: '85%',
+                  height: '80%',
+                  maxHeight: '80%',
+                  maxWidth: '90%',
                   aspectRatio: '2/3',
                   animation: 'cardPulse 3s ease-in-out infinite',
                 }}

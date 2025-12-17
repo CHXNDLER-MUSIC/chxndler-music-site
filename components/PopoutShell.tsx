@@ -20,9 +20,10 @@ interface PopoutShellProps {
   powerGapPx?: number; // Gap above power button when fitting
   hideHeaderRule?: boolean; // Optional, hide the neon separator line under the title
   headerRuleVariant?: 'pink' | 'cyan'; // Optional, choose pink (default) or cyan line
+  topPadding?: string; // Optional custom top padding (default: '8vh')
 }
 
-export default function PopoutShell({ title, onClose, children, overlayContent, backgroundContent, fullOverlay, pageIndicator, compact = false, isOpen = true, subtitle, minWidth, maxHeight, fitToPowerTop = false, powerGapPx = 12, hideHeaderRule = false, headerRuleVariant = 'pink' }: PopoutShellProps) {
+export default function PopoutShell({ title, onClose, children, overlayContent, backgroundContent, fullOverlay, pageIndicator, compact = false, isOpen = true, subtitle, minWidth, maxHeight, fitToPowerTop = false, powerGapPx = 12, hideHeaderRule = false, headerRuleVariant = 'pink', topPadding = '8vh' }: PopoutShellProps) {
   if (!isOpen) return null;
 
   const [computedMaxHeight, setComputedMaxHeight] = useState<string | null>(null);
@@ -56,17 +57,17 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
   return (
     <>
       {/* Backdrop overlay - no dimming */}
-      <div 
-        className="fixed inset-0 z-[2147483645]"
+      <div
+        className="fixed inset-0 z-[99999998]"
         style={{ cursor: 'pointer' }}
         onClick={onClose}
       />
-      
+
       {/* Main modal container - exact copy from Binder */}
-      <div 
-        className="fixed inset-0 z-[2147483646] flex items-start justify-center"
+      <div
+        className="fixed inset-0 z-[99999999] flex items-start justify-center"
         style={{
-          paddingTop: '8vh'
+          paddingTop: topPadding
         }}
       >
         <div
