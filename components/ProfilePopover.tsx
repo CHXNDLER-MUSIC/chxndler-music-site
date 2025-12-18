@@ -1085,10 +1085,35 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   {getAllElements().map((element) => (
                     <button
                       key={element.name}
-                      onClick={() => {
+                      onClick={async () => {
+                        if (!user) return;
+
+                        // Update local state immediately
                         setSelectedImageUrl(element.url);
                         setShowElementMenu(false);
                         try { sfx.play('flip', 0.6); } catch {}
+
+                        // Save element and profile image to Supabase
+                        try {
+                          const { error } = await supabaseBrowser
+                            .from('profiles')
+                            .update({
+                              element: element.name,
+                              profile_image_url: element.url,
+                              updated_at: new Date().toISOString()
+                            })
+                            .eq('id', user.id);
+
+                          if (error) {
+                            console.error('Error updating element:', error);
+                            return;
+                          }
+
+                          // Refresh profile context
+                          await refreshProfile();
+                        } catch (error) {
+                          console.error('Error saving element:', error);
+                        }
                       }}
                       className={`w-14 h-14 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 ${
                          selectedImageUrl === element.url

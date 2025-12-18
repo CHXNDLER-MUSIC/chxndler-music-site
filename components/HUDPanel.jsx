@@ -2300,7 +2300,7 @@ const HUDPanel = React.memo(function HUDPanel({
               zIndex: 5 // Lower z-index so it doesn't block cover art
             }}
           >
-            <div className="w-full h-full" style={{ pointerEvents: 'auto', minHeight: '300px' }}>
+            <div className="w-full h-full" style={{ pointerEvents: 'none', minHeight: '300px' }}>
                 <ErrorBoundary
                   key={preferRaw3D ? 'raw' : 'r3f'}
                   fallback={<div className="w-full h-full flex items-center justify-center text-red-400">3D Error - Check Console</div>}
@@ -2452,12 +2452,12 @@ const HUDPanel = React.memo(function HUDPanel({
 
           
           {/* Cover section at bottom right corner - using CoverHologram for pop-out functionality */}
-          <div ref={coverRef} className="absolute hud-cover-pos" style={{ 
+          <div ref={coverRef} className="absolute hud-cover-pos" style={{
             // Align flush to the right and sit slightly higher from bottom
-            bottom: 60, 
-            right: 0, 
-            width: 'auto', 
-            display: 'flex', 
+            bottom: 60,
+            right: 0,
+            width: 'auto',
+            display: 'flex',
             flexDirection: 'column',
             alignItems: 'flex-end',
             // Slightly larger gap so the button isn't attached to the cover
@@ -2473,8 +2473,10 @@ const HUDPanel = React.memo(function HUDPanel({
             overflow: 'visible',
             WebkitTransform: 'translateZ(0)',
             transform: 'translateZ(0)',
-            // Ensure this sits above the 3D planet layer
-            zIndex: 5
+            // Ensure this sits above the 3D planet layer (higher z-index)
+            zIndex: 20,
+            // Ensure pointer events work on cover art
+            pointerEvents: 'auto'
           }}>
             {(() => {
               // Derive the display track robustly: prefer prop 'track', then lookup by currentId/active

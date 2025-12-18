@@ -1105,14 +1105,46 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             </div>
           </div>
 
-          {/* Bottom light beam glow strip */}
+          {/* Bottom light beam boundary - glowing edge effect */}
           <div
-            className="w-full h-2 flex-shrink-0"
+            className="w-full flex-shrink-0 relative"
             style={{
-              background: 'linear-gradient(180deg, transparent 0%, rgba(56,182,255,0.3) 50%, rgba(56,182,255,0.6) 100%)',
-              boxShadow: '0 0 15px rgba(56,182,255,0.5), 0 5px 20px rgba(56,182,255,0.4)'
+              height: '12px',
+              background: 'linear-gradient(180deg, transparent 0%, rgba(56,182,255,0.2) 30%, rgba(56,182,255,0.5) 60%, rgba(56,182,255,0.9) 85%, rgba(56,182,255,1) 100%)',
+              boxShadow: '0 0 25px rgba(56,182,255,0.8), 0 5px 35px rgba(56,182,255,0.6), 0 10px 50px rgba(56,182,255,0.4), inset 0 -2px 10px rgba(56,182,255,0.5)',
+              borderBottomLeftRadius: '14px',
+              borderBottomRightRadius: '14px',
             }}
-          />
+          >
+            {/* Animated light beam pulse */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background: 'linear-gradient(90deg, transparent 0%, rgba(56,182,255,0.4) 20%, rgba(56,182,255,0.8) 50%, rgba(56,182,255,0.4) 80%, transparent 100%)',
+                animation: 'beamPulse 2s ease-in-out infinite',
+                borderBottomLeftRadius: '14px',
+                borderBottomRightRadius: '14px',
+              }}
+            />
+            {/* Bright bottom edge line */}
+            <div
+              className="absolute bottom-0 left-0 right-0 h-[2px]"
+              style={{
+                background: 'linear-gradient(90deg, transparent 5%, rgba(56,182,255,0.9) 20%, rgba(255,255,255,0.9) 50%, rgba(56,182,255,0.9) 80%, transparent 95%)',
+                boxShadow: '0 0 8px rgba(56,182,255,1), 0 0 15px rgba(56,182,255,0.8)',
+                borderBottomLeftRadius: '14px',
+                borderBottomRightRadius: '14px',
+              }}
+            />
+          </div>
+
+          {/* CSS animation for beam pulse */}
+          <style jsx>{`
+            @keyframes beamPulse {
+              0%, 100% { opacity: 0.3; }
+              50% { opacity: 0.7; }
+            }
+          `}</style>
         </div>
       </div>
       {enlargedBadgeModal}

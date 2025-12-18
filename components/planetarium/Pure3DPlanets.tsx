@@ -306,7 +306,12 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
   return (
     <div
       ref={containerRef}
-      style={{ width: '100%', height: '100%', minHeight: '400px' }}
+      style={{
+        width: '100%',
+        height: '100%',
+        minHeight: '400px',
+        pointerEvents: 'auto' // Enable clicks on the 3D canvas
+      }}
     />
   );
 }

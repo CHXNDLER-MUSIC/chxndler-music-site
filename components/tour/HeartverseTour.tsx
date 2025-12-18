@@ -582,24 +582,39 @@ function TourOverlay() {
         }`}
         style={
           currentStepData.targetId
-            ? {
-                top: `${tooltipPosition.top}px`,
-                left: `${tooltipPosition.left}px`,
-                right: 'auto',
-                maxWidth: window.innerWidth <= 768 ? '280px' : '384px',
-                transform: currentStepData.position === 'left' ? 'translateX(-100%)' :
-                          currentStepData.position === 'top' ? 'translate(-50%, -100%)' :
-                          currentStepData.position === 'bottom' ? 'translateX(-50%)' :
-                          (currentStepData.position === 'right' && 
-                           (currentStepData.id === 'about' || 
-                            currentStepData.id === 'journey' || 
-                            currentStepData.id === 'journal' || 
-                            currentStepData.id === 'binder' || 
-                            currentStepData.id === 'badges' || 
-                            currentStepData.id === 'signal' ||
-                            currentStepData.id === 'signal-streaming')) ? 'translateY(-50%)' :
-                          'none',
-              }
+            ? (() => {
+                const isMenuStep = currentStepData.id === 'about' ||
+                                   currentStepData.id === 'journey' ||
+                                   currentStepData.id === 'journal' ||
+                                   currentStepData.id === 'binder' ||
+                                   currentStepData.id === 'badges' ||
+                                   currentStepData.id === 'signal';
+                const isMobile = window.innerWidth <= 768;
+
+                // For menu steps on mobile, use right: 8px to constrain width naturally
+                if (isMenuStep && isMobile) {
+                  return {
+                    top: `${tooltipPosition.top}px`,
+                    left: `${tooltipPosition.left}px`,
+                    right: '8px',
+                    maxWidth: 'none',
+                    transform: 'translateY(-50%)',
+                  };
+                }
+
+                return {
+                  top: `${tooltipPosition.top}px`,
+                  left: `${tooltipPosition.left}px`,
+                  right: 'auto',
+                  maxWidth: isMobile ? '280px' : '384px',
+                  transform: currentStepData.position === 'left' ? 'translateX(-100%)' :
+                            currentStepData.position === 'top' ? 'translate(-50%, -100%)' :
+                            currentStepData.position === 'bottom' ? 'translateX(-50%)' :
+                            (currentStepData.position === 'right' &&
+                             (isMenuStep || currentStepData.id === 'signal-streaming')) ? 'translateY(-50%)' :
+                            'none',
+                };
+              })()
             : {}
         }
       >

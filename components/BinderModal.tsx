@@ -1061,20 +1061,6 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                                 );
                               })()}
                             </>
-                          ) : isLockedSlot ? (
-                            <div className="w-full h-full bg-gradient-to-br from-pink-500/5 to-purple-500/5 rounded flex items-center justify-center">
-                              <div 
-                                className="text-xs font-bold text-center"
-                                style={{ 
-                                  color: 'rgba(255,105,180,0.4)', 
-                                  textShadow: '0 0 4px rgba(255,105,180,0.3)',
-                                  fontSize: '10px',
-                                  letterSpacing: '0.5px'
-                                }}
-                              >
-                                LOCKED
-                              </div>
-                            </div>
                           ) : isFirstSlotWithChxndler ? (
                             <>
                               <img
@@ -1089,6 +1075,20 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                                 </svg>
                               </div>
                             </>
+                          ) : isLockedSlot ? (
+                            <div className="w-full h-full bg-gradient-to-br from-pink-500/5 to-purple-500/5 rounded flex items-center justify-center">
+                              <div
+                                className="text-xs font-bold text-center"
+                                style={{
+                                  color: 'rgba(255,105,180,0.4)',
+                                  textShadow: '0 0 4px rgba(255,105,180,0.3)',
+                                  fontSize: '10px',
+                                  letterSpacing: '0.5px'
+                                }}
+                              >
+                                LOCKED
+                              </div>
+                            </div>
                           ) : (
                             <div 
                               className="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded flex items-center justify-center"
