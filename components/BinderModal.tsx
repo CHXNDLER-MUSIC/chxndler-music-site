@@ -375,8 +375,16 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
         const preselectedCardObj = cards.splice(preselectedIndex, 1)[0];
         cards.unshift(preselectedCardObj);
       }
+    } else {
+      // Move the element's representative card (same name as element) to first position
+      // e.g., "DARKNESS" card should be first when viewing DARKNESS element
+      const elementCardIndex = cards.findIndex(card => card.name.toUpperCase() === selectedElement.toUpperCase());
+      if (elementCardIndex > 0) {
+        const elementCard = cards.splice(elementCardIndex, 1)[0];
+        cards.unshift(elementCard);
+      }
     }
-    
+
     return cards;
   };
 
@@ -695,19 +703,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       setShowFullCollection(true);
       // Set to 'All' to show all cards of the selected element
       setSelectedCardName('All');
-      
-      // Find the element's representative card (e.g., "LIGHTNING" card for LIGHTNING element) to start on
-      const elementCards = songCollection.filter(song => song.element === preselectedElement);
-      const representativeCard = elementCards.find(song => song.name === preselectedElement);
-      
-      if (representativeCard) {
-        // Find the index of the representative card in the filtered results
-        const cardIndex = elementCards.findIndex(song => song.name === preselectedElement);
-        setCurrentCardIndex(cardIndex !== -1 ? cardIndex : 0);
-      } else {
-        // If no representative card, start with the first card of that element
-        setCurrentCardIndex(0);
-      }
+      // Element card will be first in getFilteredCards() results
+      setCurrentCardIndex(0);
     }
   }, [open, preselectedElement]);
 
@@ -2447,12 +2444,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                             setShowFullCollection(true);
                             // Set to 'All' to show all cards of this element, not just one specific card
                             setSelectedCardName('All');
-                            // Find the card that matches the element name (e.g., "Lightning" for Lightning element)
-                            const elementCards = songCollection.filter(song => song.element === element);
-                            const matchingCardIndex = elementCards.findIndex(
-                              song => song.name.toLowerCase() === element.toLowerCase()
-                            );
-                            setCurrentCardIndex(matchingCardIndex >= 0 ? matchingCardIndex : 0);
+                            // Element card will be first in getFilteredCards() results
+                            setCurrentCardIndex(0);
                           }}
                           onMouseEnter={() => {
                             try { sfx.play('change-channel', 0.5); } catch {}

@@ -46,6 +46,7 @@ const Pure3DPlanets = dynamic(() => import("@/components/planetarium/Pure3DPlane
 import { DEBUG_MEDIA, dlog, dwarn } from "@/lib/debug";
 import { ElementIcon as OptimizedElementIcon } from "@/lib/elementIcons";
 import { sfx } from "@/lib/sfx";
+import { usePlanetRewardsContext } from "@/components/PlanetRewardsProvider";
 
 // Use system font stack to avoid network font fetches during build
 
@@ -133,7 +134,10 @@ const HUDPanel = React.memo(function HUDPanel({
 }) {
   // Use unified audio system for play/pause controls
   const audioManager = useAudio();
-  
+
+  // Planet rewards system for element planet clicks
+  const planetRewards = usePlanetRewardsContext();
+
   // Temporary kill-switch to disable 3D planets for performance testing
   // Set to true to disable. You can also override at runtime by setting
   // localStorage.DISABLE_3D_PLANETS = '0' and refreshing.
@@ -230,7 +234,37 @@ const HUDPanel = React.memo(function HUDPanel({
   // Saved profile state for HUD display
   const [savedProfileName, setSavedProfileName] = useState('');
   const [savedProfileElement, setSavedProfileElement] = useState('');
-  
+
+  // Planet reward error toast state
+  const [planetRewardError, setPlanetRewardError] = useState(null);
+  const planetRewardErrorTimeoutRef = useRef(null);
+
+  // Handler for planet selection that intercepts element planets for rewards
+  const ELEMENT_PLANETS = ['heart', 'water', 'lightning', 'darkness'];
+  const handlePlanetSelectWithRewards = React.useCallback((planetId) => {
+    // Check if this is an element planet (not center, not a song planet)
+    if (ELEMENT_PLANETS.includes(planetId)) {
+      // Claim the reward (the context handles spam protection internally)
+      if (!planetRewards.isClaimingReward && !planetRewards.cooldownActive) {
+        planetRewards.claimPlanetReward(planetId).then((reward) => {
+          if (!reward && planetRewards.error) {
+            // Show error toast
+            setPlanetRewardError(planetRewards.error);
+            if (planetRewardErrorTimeoutRef.current) {
+              clearTimeout(planetRewardErrorTimeoutRef.current);
+            }
+            planetRewardErrorTimeoutRef.current = setTimeout(() => {
+              setPlanetRewardError(null);
+              planetRewards.clearError();
+            }, 3000);
+          }
+        }).catch(() => {});
+      }
+    }
+    // Always call the original handler for song selection functionality
+    onSongChange?.(planetId);
+  }, [planetRewards, onSongChange]);
+
   // Expose function globally for testing (can be removed later)
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -2324,7 +2358,7 @@ const HUDPanel = React.memo(function HUDPanel({
                     songs={resolvedSongs || []}
                     songsByElement={{}}
                     zoomLevel={1}
-                    onPlanetSelect={onSongChange}
+                    onPlanetSelect={handlePlanetSelectWithRewards}
                     quality="high"
                   />
                 </ErrorBoundary>

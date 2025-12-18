@@ -161,6 +161,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <HeartCoinCelebration />
             <BadgeCelebration />
             <BadgeCelebrationController />
+                  </PlanetRewardsProvider>
                 </TourProvider>
               </MenuStateProvider>
             </AudioProvider>

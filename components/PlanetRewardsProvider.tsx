@@ -90,8 +90,17 @@ export function PlanetRewardsProvider({
 
 export function usePlanetRewardsContext() {
   const context = useContext(PlanetRewardsContext);
+  // Return a no-op implementation if context is not available
+  // This allows components to work even outside the provider
   if (!context) {
-    throw new Error('usePlanetRewardsContext must be used within a PlanetRewardsProvider');
+    return {
+      claimPlanetReward: async () => null,
+      isClaimingReward: false,
+      cooldownActive: false,
+      error: null,
+      clearError: () => {},
+      isAuthenticated: false,
+    };
   }
   return context;
 }
