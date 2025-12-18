@@ -204,7 +204,7 @@
   /* Slightly narrower minimum on mobile */
   --display-width: max(160px, min(420px, calc((100vw - 16px) * 0.8)));
   /* Fixed width for the pink display so it remains constant across breakpoints */
-  --pink-display-width: 360px;
+  --pink-display-width: 260px;
   --display-border-radius: 12px;
 }
 

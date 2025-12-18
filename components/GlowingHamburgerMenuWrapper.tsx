@@ -45,7 +45,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
   // Listen for modal trigger events from chat panel buttons
   useEffect(() => {
     const handleOpenBinderModal = () => {
-      try { onBeamColorChange?.('pink'); } catch {}
+      try { onBeamColorChange?.('pink-modal'); } catch {}
       setBinderOpen(true);
     };
 
@@ -101,7 +101,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
           setJourneyOpen(true);
           break;
         case "BINDER":
-          try { onBeamColorChange?.('pink'); } catch {}
+          try { onBeamColorChange?.('pink-modal'); } catch {}
           setBinderOpen(true);
           break;
         case "JOURNAL":

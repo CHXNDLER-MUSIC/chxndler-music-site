@@ -820,7 +820,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
             <div
               style={{
                 // Fixed width so the pink display stays the same size across viewports
-                width: 'calc(var(--pink-display-width, 320px) + 80px)',
+                width: 'calc(var(--pink-display-width, 260px) + 40px)',
                 height: '100%',
                 borderRadius: 'var(--display-border-radius)',
                 padding: '0px 12px 12px 12px',

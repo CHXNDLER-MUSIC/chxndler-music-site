@@ -1207,6 +1207,16 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           // Cyan beam doesn't open any specific display, just shows the beam
         }, BEAM_SWITCH_DELAY_MS);
       }
+    } else if (color === 'pink-modal') {
+      // Pink beam for modals (binder, etc) - does NOT open livestream/JoinAlien
+      // Just changes beam color without opening any display panel
+      setBeamTransitioning(true);
+      closeAllDisplays();
+      setTimeout(() => {
+        setBeamColor('pink');
+        setBeamEnabled(true);
+        setBeamTransitioning(false);
+      }, BEAM_SWITCH_DELAY_MS);
     }
   }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose]);
 

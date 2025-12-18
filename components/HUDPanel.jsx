@@ -7528,6 +7528,28 @@ const HUDPanel = React.memo(function HUDPanel({
           setShowWelcomeHomeModal(true);
         }}
       />
+
+      {/* Planet Reward Error Toast */}
+      {planetRewardError && (
+        <div
+          className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9998] px-6 py-3 rounded-xl"
+          style={{
+            background: 'rgba(220, 38, 38, 0.9)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255, 100, 100, 0.4)',
+            boxShadow: '0 0 20px rgba(220, 38, 38, 0.4)',
+            animation: 'toastFadeIn 0.3s ease-out',
+          }}
+        >
+          <p className="text-white text-sm font-medium">{planetRewardError}</p>
+          <style jsx>{`
+            @keyframes toastFadeIn {
+              from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+              to { opacity: 1; transform: translateX(-50%) translateY(0); }
+            }
+          `}</style>
+        </div>
+      )}
     </motion.section>
   );
 });
