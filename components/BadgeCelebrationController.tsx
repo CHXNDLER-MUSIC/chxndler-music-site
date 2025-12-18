@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useBadgeCelebrations, type BadgeCelebrationItem } from '@/lib/useBadgeCelebrations';
 import { useAuth } from '@/app/providers/AuthProvider';
+import { useCelebrationLock } from '@/lib/celebrationQueue';
 
 type CelebrationPhase = 'idle' | 'badge' | 'pause' | 'heartcoin';
 
@@ -14,6 +15,7 @@ export default function BadgeCelebrationController() {
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const { next, pop } = useBadgeCelebrations(userId);
+  const { acquire, release, canAcquire } = useCelebrationLock('badge');
 
   const [phase, setPhase] = useState<CelebrationPhase>('idle');
   const [currentItem, setCurrentItem] = useState<BadgeCelebrationItem | null>(null);
@@ -34,15 +36,32 @@ export default function BadgeCelebrationController() {
     }
   }, []);
 
-  // Process next item in queue when idle
+  // Process next item in queue when idle and lock is available
   useEffect(() => {
     if (phase !== 'idle' || !next || processingRef.current) return;
 
-    processingRef.current = true;
-    setCurrentItem(next);
-    setPhase('badge');
-    playSound();
-  }, [next, phase, playSound]);
+    // Try to acquire the celebration lock
+    if (!canAcquire) {
+      // Wait for lock - check again via interval
+      const checkInterval = setInterval(() => {
+        if (acquire()) {
+          clearInterval(checkInterval);
+          processingRef.current = true;
+          setCurrentItem(next);
+          setPhase('badge');
+          playSound();
+        }
+      }, 100);
+      return () => clearInterval(checkInterval);
+    }
+
+    if (acquire()) {
+      processingRef.current = true;
+      setCurrentItem(next);
+      setPhase('badge');
+      playSound();
+    }
+  }, [next, phase, playSound, canAcquire, acquire]);
 
   // Handle phase transitions
   useEffect(() => {
@@ -60,6 +79,7 @@ export default function BadgeCelebrationController() {
           setPhase('idle');
           setCurrentItem(null);
           processingRef.current = false;
+          release(); // Release the celebration lock
           pop();
         }
       }, BADGE_DURATION);
@@ -73,6 +93,7 @@ export default function BadgeCelebrationController() {
         setPhase('idle');
         setCurrentItem(null);
         processingRef.current = false;
+        release(); // Release the celebration lock
         pop();
       }, HEARTCOIN_DURATION);
     }
@@ -80,7 +101,7 @@ export default function BadgeCelebrationController() {
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [phase, currentItem, pop, playSound]);
+  }, [phase, currentItem, pop, playSound, release]);
 
   // Don't render anything if not showing a celebration
   if (phase === 'idle' || phase === 'pause' || !currentItem) return null;

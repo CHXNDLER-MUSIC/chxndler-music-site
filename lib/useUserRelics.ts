@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabaseClient } from './supabaseClient';
 import { RELIC_ICONS, RelicAsset } from '@/config/assets';
 
@@ -23,6 +23,12 @@ export function useUserRelics(userId?: string) {
   const [relics, setRelics] = useState<RelicWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refetchCounter, setRefetchCounter] = useState(0);
+
+  // Refetch function to trigger a data refresh
+  const refetch = useCallback(() => {
+    setRefetchCounter(c => c + 1);
+  }, []);
 
   useEffect(() => {
     if (!userId) {
@@ -109,7 +115,7 @@ export function useUserRelics(userId?: string) {
     return () => {
       mounted = false;
     };
-  }, [userId]);
+  }, [userId, refetchCounter]);
 
   const unlockedRelics = relics.filter(r => r.isUnlocked);
   const lockedRelics = relics.filter(r => r.isLocked);
@@ -121,6 +127,7 @@ export function useUserRelics(userId?: string) {
     loading,
     error,
     unlockedCount: unlockedRelics.length,
-    totalCount: relics.length
+    totalCount: relics.length,
+    refetch
   };
 }

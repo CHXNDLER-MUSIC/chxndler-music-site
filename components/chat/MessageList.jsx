@@ -192,7 +192,7 @@ function ChatMessage({ message, onUserClick, reactions, onReact, currentUserId, 
   }, [longPressTimer]);
 
   // System messages (join/leave/system announcements)
-  if (message.message_type === 'join' || message.message_type === 'leave' || message.user_id === 'system') {
+  if (message.message_type === 'join' || message.message_type === 'leave' || message.user_id === '00000000-0000-0000-0000-000000000000') {
     // Special styling for different system message types
     let systemStyle = {
       background: 'rgba(0, 255, 255, 0.1)',

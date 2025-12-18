@@ -1074,31 +1074,6 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           {/* Content container - scrollable */}
           <div className="flex-1 relative z-10 overflow-y-auto overflow-x-hidden" style={{ padding: '8px 12px 20px 12px' }}>
             <div className="relative badges-modal-container">
-              {/* Hide all navigation elements in badges modal */}
-              <style jsx global>{`
-                /* Hide navigation arrows and pagination */
-                .binder-hologram-container .absolute.-right-1,
-                .binder-hologram-container .absolute.left-2,
-                .binder-hologram-container .absolute[class*="right-1"],
-                .binder-hologram-container .absolute[class*="left-2"],
-                [data-badges-modal] .absolute[class*="right"],
-                [data-badges-modal] .absolute[class*="left"] {
-                  display: none !important;
-                }
-                /* Hide Page text and pagination */
-                .binder-hologram-container [class*="text-center"]:has(*:contains("Page")) {
-                  display: none !important;
-                }
-                /* Hide navigation buttons specifically */
-                .binder-hologram-container button.absolute,
-                [data-badges-modal] button.absolute:not([class*="top-4"]) {
-                  display: none !important;
-                }
-                /* Clean up compact badges modal */
-                .badges-modal-container .binder-hologram-container {
-                  height: fit-content !important;
-                }
-              `}</style>
               <div data-badges-modal>
                 {badgesContent}
               </div>

@@ -154,7 +154,7 @@ export default function ChatBox({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className={`text-sm rounded p-2 ${
-                msg.is_system || msg.user_id === 'system'
+                msg.is_system || msg.user_id === '00000000-0000-0000-0000-000000000000'
                   ? 'bg-purple-900/20 text-purple-300 border-l-2 border-purple-500'
                   : msg.user_id === user?.id
                   ? 'bg-blue-900/20 text-blue-300'
@@ -163,7 +163,7 @@ export default function ChatBox({
             >
               <div className="flex items-center gap-2 mb-1">
                 <span className={`font-medium text-xs ${
-                  msg.is_system || msg.user_id === 'system'
+                  msg.is_system || msg.user_id === '00000000-0000-0000-0000-000000000000'
                     ? 'text-purple-400'
                     : msg.user_id === user?.id
                     ? 'text-blue-400'

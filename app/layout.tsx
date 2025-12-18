@@ -24,6 +24,7 @@ import BadgeCelebration from "@/components/BadgeCelebration";
 import CardCelebration from "@/components/CardCelebration";
 import BadgeCelebrationController from "@/components/BadgeCelebrationController";
 import GlobalKeyboardHandler from "@/components/GlobalKeyboardHandler";
+import { PlanetRewardsProvider } from "@/components/PlanetRewardsProvider";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://chxndler.world"),
@@ -138,6 +139,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <GlobalKeyboardHandler />
               <MenuStateProvider>
                 <TourProvider>
+                  <PlanetRewardsProvider>
             {!analyticsOff && (
               <Suspense fallback={null}>
                 <PageViewTracker />

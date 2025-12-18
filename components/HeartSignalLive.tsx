@@ -266,40 +266,38 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
       });
   };
 
-  // Send a new message
+  // Send a new message via API to bypass RLS
   const sendMessage = async () => {
     if (!newMessage.trim() || isSending) return;
-    
+
     setIsSending(true);
     try {
-      // Get username from profile or fallback to user email
-      const username = profile?.name || user?.email || 'Anonymous';
-      const userId = user?.id;
-
-      if (!userId) {
+      if (!user) {
         console.error('User not authenticated');
         return;
       }
 
-      // Insert message into heart_signal_messages table
-      const { data, error } = await supabaseClient
-        .from('heart_signal_messages')
-        .insert({
-          user_id: userId,
-          username: username,
-          message: newMessage.trim(),
-          is_system: false
-        })
-        .select()
-        .single();
+      const username = profile?.name || user?.email || 'Anonymous';
 
-      if (error) {
-        console.error('Error sending message:', error);
+      const response = await fetch('/api/heart-signal-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: newMessage.trim(),
+          username: username,
+          is_system: false
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('Error sending message:', result.error);
         return;
       }
 
       setNewMessage('');
-      console.log('Message sent successfully:', data);
+      console.log('Message sent successfully:', result.data);
     } catch (error) {
       console.error('Error in sendMessage:', error);
     } finally {
@@ -307,20 +305,21 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
     }
   };
 
-  // Send system message for user connection
+  // Send system message via API
   const sendSystemMessage = async (message: string) => {
     try {
-      const { error } = await supabaseClient
-        .from('heart_signal_messages')
-        .insert({
-          user_id: 'system',
-          username: 'SYSTEM',
+      const response = await fetch('/api/heart-signal-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           message: message,
           is_system: true
-        });
+        }),
+      });
 
-      if (error) {
-        console.error('Error sending system message:', error);
+      if (!response.ok) {
+        const result = await response.json();
+        console.error('Error sending system message:', result.error);
       }
     } catch (error) {
       console.error('Error in sendSystemMessage:', error);
@@ -460,7 +459,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className={`rounded-lg p-3 ${
-                  msg.is_system || msg.user_id === 'system'
+                  msg.is_system || msg.user_id === '00000000-0000-0000-0000-000000000000'
                     ? 'bg-purple-900/30 border-l-4 border-purple-500'
                     : msg.user_id === user?.id
                     ? 'bg-blue-900/30 ml-4'
@@ -469,7 +468,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
               >
                 <div className="flex items-center gap-2 mb-1">
                   <span className={`text-sm font-medium ${
-                    msg.is_system || msg.user_id === 'system'
+                    msg.is_system || msg.user_id === '00000000-0000-0000-0000-000000000000'
                       ? 'text-purple-400'
                       : msg.user_id === user?.id
                       ? 'text-blue-400'
@@ -489,7 +488,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
                 </div>
 
                 {/* Reaction buttons - only show for non-system messages */}
-                {!(msg.is_system || msg.user_id === 'system') && (
+                {!(msg.is_system || msg.user_id === '00000000-0000-0000-0000-000000000000') && (
                   <div className="flex items-center gap-1 mt-2 flex-wrap">
                     {(Object.keys(EMOJI_CONFIG) as EmojiType[]).map((emojiType) => {
                       const config = EMOJI_CONFIG[emojiType];

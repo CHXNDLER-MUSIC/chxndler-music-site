@@ -99,25 +99,27 @@ export default function SignalChat({
       });
   };
 
-  // Send message to global chat
+  // Send message to global chat via API
   const sendGlobalMessage = async () => {
     if (!newMessage.trim() || isSending || !user) return;
-    
+
     setIsSending(true);
     try {
       const username = profile?.name || user?.email || 'Anonymous';
-      
-      // Use the exact insert format as requested
-      const { error } = await supabaseClient
-        .from('heart_signal_messages')
-        .insert({
-          user_id: user.id,
-          username: username,
-          message: newMessage.trim()
-        });
 
-      if (error) {
-        console.error('Error sending global message:', error);
+      const response = await fetch('/api/heart-signal-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: newMessage.trim(),
+          username: username,
+          is_system: false
+        }),
+      });
+
+      if (!response.ok) {
+        const result = await response.json();
+        console.error('Error sending global message:', result.error);
         return;
       }
 
@@ -129,19 +131,24 @@ export default function SignalChat({
     }
   };
 
-  // Send system connection message
+  // Send system connection message via API
   const sendConnectionMessage = async () => {
     if (!user || !profile?.name) return;
 
     try {
-      await supabaseClient
-        .from('heart_signal_messages')
-        .insert({
-          user_id: 'system',
-          username: 'SYSTEM',
+      const response = await fetch('/api/heart-signal-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           message: `${profile.name} connected to the signal`,
           is_system: true
-        });
+        }),
+      });
+
+      if (!response.ok) {
+        const result = await response.json();
+        console.error('Error sending connection message:', result.error);
+      }
     } catch (error) {
       console.error('Error sending connection message:', error);
     }
@@ -232,7 +239,7 @@ export default function SignalChat({
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className={`text-xs rounded p-2 ${
-                      msg.is_system || msg.user_id === 'system'
+                      msg.is_system || msg.user_id === '00000000-0000-0000-0000-000000000000'
                         ? 'bg-purple-900/30 border-l-2 border-purple-500 text-purple-300'
                         : msg.user_id === user?.id
                         ? 'bg-blue-900/30 text-blue-300 ml-2'
@@ -241,7 +248,7 @@ export default function SignalChat({
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`font-medium ${
-                        msg.is_system || msg.user_id === 'system'
+                        msg.is_system || msg.user_id === '00000000-0000-0000-0000-000000000000'
                           ? 'text-purple-400'
                           : msg.user_id === user?.id
                           ? 'text-blue-400'
