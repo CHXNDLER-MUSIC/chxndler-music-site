@@ -1,8 +1,12 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useCelebrationLock } from '@/lib/celebrationQueue';
 import { PlanetReward, BOOST_DESCRIPTIONS } from '@/lib/usePlanetRewards';
+import { useProfile } from '@/contexts/ProfileContext';
+import { supabaseBrowser } from '@/lib/supabase-browser';
+import { getLocalDateString } from '@/utils/dateHelpers';
+import { getElementalPlanetImage } from '@/lib/elementalPlanets';
 
 interface PlanetRewardCelebrationProps {
   reward: PlanetReward | null;
@@ -24,6 +28,8 @@ export default function PlanetRewardCelebration({ reward, onComplete }: PlanetRe
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasStartedRef = useRef(false);
+  const { user } = useProfile();
+  const [intentionText, setIntentionText] = useState<string | null>(null);
 
   // Initialize audio on client
   useEffect(() => {
@@ -79,6 +85,55 @@ export default function PlanetRewardCelebration({ reward, onComplete }: PlanetRe
     };
   }, [reward, canAcquire, acquire, release, onComplete, playSound]);
 
+  // Load intention text for today's entry for this element
+  useEffect(() => {
+    let cancelled = false;
+    async function loadIntention() {
+      if (!reward || !user?.id) {
+        setIntentionText(null);
+        return;
+      }
+      try {
+        const today = getLocalDateString();
+        const { data, error } = await supabaseBrowser
+          .from('soul_journal_entries')
+          .select('intention')
+          .eq('user_id', user.id)
+          .eq('entry_date', today)
+          .eq('element', reward.element)
+          .maybeSingle();
+
+        if (!cancelled) {
+          if (error) {
+            setIntentionText(null);
+          } else {
+            setIntentionText(data?.intention ?? null);
+          }
+        }
+
+        // Fallback: if no personal journal intention found, use daily prompt intention
+        if (!cancelled) {
+          const current = (data?.intention ?? null) as string | null;
+          if (!current) {
+            const { data: daily, error: dailyErr } = await supabaseBrowser
+              .from('soul_daily_prompts')
+              .select('intention')
+              .eq('prompt_date', today)
+              .eq('element', reward.element)
+              .maybeSingle();
+            if (!cancelled) {
+              if (!dailyErr) setIntentionText(daily?.intention ?? null);
+            }
+          }
+        }
+      } catch (e) {
+        if (!cancelled) setIntentionText(null);
+      }
+    }
+    loadIntention();
+    return () => { cancelled = true; };
+  }, [reward, user?.id]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -91,10 +146,22 @@ export default function PlanetRewardCelebration({ reward, onComplete }: PlanetRe
     };
   }, [hasLock, release]);
 
+  const handleClose = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (hasLock) {
+      release();
+    }
+    onComplete();
+  }, [hasLock, release, onComplete]);
+
   // Don't render if no reward or we don't have the lock
   if (!reward || !hasLock) return null;
 
   const colors = ELEMENT_COLORS[reward.element] || ELEMENT_COLORS.heart;
+  const elementImage = getElementalPlanetImage(reward.element);
 
   if (reward.type === 'RELIC') {
     return (
@@ -107,7 +174,7 @@ export default function PlanetRewardCelebration({ reward, onComplete }: PlanetRe
 
         {/* Relic celebration content */}
         <div
-          className="relative flex flex-col items-center px-10 py-8 rounded-2xl max-w-sm mx-4"
+          className="relative flex flex-col items-center px-10 py-8 rounded-2xl max-w-sm mx-4 pointer-events-auto"
           style={{
             background: 'rgba(10, 10, 30, 0.9)',
             boxShadow: `0 0 40px ${colors.glow}, 0 0 80px ${colors.glow.replace('0.5', '0.2')}, inset 0 1px 0 rgba(255, 255, 255, 0.1)`,
@@ -115,6 +182,15 @@ export default function PlanetRewardCelebration({ reward, onComplete }: PlanetRe
             animation: 'planetRewardPopIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
           }}
         >
+          {/* Close button */}
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={handleClose}
+            className="absolute top-2 right-2 z-20 rounded-md p-1 text-white/80 hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
+          >
+            ✕
+          </button>
           {/* Neon glow circle behind image */}
           <div
             className="absolute w-40 h-40 rounded-full blur-2xl opacity-60"
@@ -193,7 +269,7 @@ export default function PlanetRewardCelebration({ reward, onComplete }: PlanetRe
 
       {/* Boost celebration content */}
       <div
-        className="relative flex flex-col items-center px-10 py-8 rounded-2xl max-w-sm mx-4"
+        className="relative flex flex-col items-center px-10 py-8 rounded-2xl max-w-sm mx-4 pointer-events-auto"
         style={{
           background: 'rgba(10, 10, 30, 0.9)',
           boxShadow: `0 0 40px ${colors.glow}, 0 0 80px ${colors.glow.replace('0.5', '0.2')}, inset 0 1px 0 rgba(255, 255, 255, 0.1)`,
@@ -201,31 +277,63 @@ export default function PlanetRewardCelebration({ reward, onComplete }: PlanetRe
           animation: 'boostPopIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
         }}
       >
+        {/* Close button */}
+        <button
+          type="button"
+          aria-label="Close"
+          onClick={handleClose}
+          className="absolute top-2 right-2 z-20 rounded-md p-1 text-white/80 hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
+        >
+          ✕
+        </button>
         {/* Neon glow circle */}
         <div
           className="absolute w-36 h-36 rounded-full blur-2xl opacity-60"
           style={{ background: `radial-gradient(circle, ${colors.glow} 0%, transparent 70%)` }}
         />
 
-        {/* Boost icon - lightning bolt */}
-        <div
-          className="w-24 h-24 relative z-10 flex items-center justify-center text-5xl rounded-full"
-          style={{
-            background: `linear-gradient(135deg, ${colors.primary}20, ${colors.primary}40)`,
-            boxShadow: `0 0 25px ${colors.glow}`,
-            animation: 'boostPulse 1s ease-in-out infinite',
-          }}
-        >
-          ⚡
-        </div>
+        {/* Boost icon - element image from textures */}
+        {elementImage ? (
+          <img
+            src={elementImage}
+            alt={`${reward.element} element`}
+            className="w-24 h-24 relative z-10 rounded-full object-contain"
+            style={{
+              boxShadow: `0 0 25px ${colors.glow}`,
+              animation: 'boostPulse 1s ease-in-out infinite',
+              background: `linear-gradient(135deg, ${colors.primary}10, ${colors.primary}25)`,
+            }}
+          />
+        ) : (
+          <div
+            className="w-24 h-24 relative z-10 flex items-center justify-center text-5xl rounded-full"
+            style={{
+              background: `linear-gradient(135deg, ${colors.primary}20, ${colors.primary}40)`,
+              boxShadow: `0 0 25px ${colors.glow}`,
+              animation: 'boostPulse 1s ease-in-out infinite',
+            }}
+          >
+            ⚡
+          </div>
+        )}
 
-        {/* Title: Signal Boost Unlocked */}
+        {/* Title */}
         <p
           className="text-sm font-semibold tracking-widest uppercase mt-5 relative z-10"
           style={{ color: colors.primary, textShadow: `0 0 10px ${colors.glow}` }}
         >
-          Signal Boost Unlocked
+          ELEMENT OF THE DAY
         </p>
+
+        {/* Intention text from today's soul_journal_entries */}
+        {intentionText && (
+          <p
+            className="text-white/90 text-base mt-2 relative z-10 text-center max-w-xs"
+            style={{ textShadow: '0 0 15px rgba(255, 255, 255, 0.25)' }}
+          >
+            {intentionText}
+          </p>
+        )}
 
         {/* Boost label */}
         <p

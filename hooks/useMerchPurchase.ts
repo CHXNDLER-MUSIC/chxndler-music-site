@@ -30,6 +30,7 @@ export function useMerchPurchase() {
           },
           body: JSON.stringify({
             merchItemId: merchItem.id,
+            merchItemSlug: merchItem.slug,
             quantity
           }),
         });

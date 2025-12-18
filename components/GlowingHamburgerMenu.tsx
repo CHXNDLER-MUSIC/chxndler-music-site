@@ -18,6 +18,7 @@ const getJourneyTitle = (isLoggedIn: boolean) => {
 
 export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMenuToggle }: GlowingHamburgerMenuProps) {
   const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const [hideJournalDot, setHideJournalDot] = useState(false);
   
   // Use external state if provided, otherwise use internal state
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
@@ -27,7 +28,8 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
   
   const journeyTitle = getJourneyTitle(!!user);
   
-  const journalLabel = "JOURNAL";
+  // Show COMPLETED state (and hide pink dot) when no pending entry
+  const journalLabel = hasPendingReflection ? "JOURNAL" : "COMPLETED";
   
   const menuItems = [
     { label: "ABOUT", href: undefined },
@@ -54,6 +56,13 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [externalIsOpen, onMenuToggle]);
+
+  // Listen for journal completion to hide the JOURNAL pink dot immediately for this session
+  useEffect(() => {
+    const onCompleted = () => setHideJournalDot(true);
+    try { window.addEventListener('journalCompleted', onCompleted); } catch {}
+    return () => { try { window.removeEventListener('journalCompleted', onCompleted); } catch {} };
+  }, []);
 
 
   const toggleMenu = () => {
@@ -219,7 +228,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                     `menu-${item.label.toLowerCase().replace(/ /g, '-')}`
                   }
                   className={`w-full px-8 py-3 text-left text-white text-lg font-semibold tracking-wide transition-all duration-200 hover:bg-cyan-500/10 hover:text-cyan-300 relative group ${
-                    item.label === "JOURNAL" && hasPendingReflection 
+                    item.label === "JOURNAL" && hasPendingReflection && !hideJournalDot
                       ? 'bg-gradient-to-r from-pink-500/10 via-transparent to-pink-500/10' 
                       : ''
                   } ${
@@ -228,7 +237,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                       : ''
                   }`}
                   style={{
-                    textShadow: item.label === "JOURNAL" && hasPendingReflection
+                    textShadow: item.label === "JOURNAL" && hasPendingReflection && !hideJournalDot
                       ? "0 0 10px rgba(255, 20, 147, 0.8), 0 0 20px rgba(255, 105, 180, 0.6)"
                       : item.label === "COMPLETED" && !hasPendingReflection
                       ? "0 0 10px rgba(34, 197, 94, 0.8), 0 0 20px rgba(34, 197, 94, 0.6)"
@@ -264,14 +273,14 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                         width={36}
                         height={36}
                         className={`transition-all duration-200 ${
-                          item.label === "JOURNAL" && hasPendingReflection 
+                          item.label === "JOURNAL" && hasPendingReflection && !hideJournalDot
                             ? 'drop-shadow-[0_0_8px_rgba(255,105,180,0.8)]' 
                             : item.label === "COMPLETED"
                             ? 'drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]'
                             : ''
                         }`}
                         style={{
-                          filter: item.label === "JOURNAL" && hasPendingReflection 
+                          filter: item.label === "JOURNAL" && hasPendingReflection && !hideJournalDot
                             ? 'brightness(1.3) drop-shadow(0 0 12px rgba(255,105,180,0.9))'
                             : item.label === "COMPLETED"
                             ? 'brightness(1.3) drop-shadow(0 0 12px rgba(34,197,94,0.9))'
@@ -311,7 +320,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                     )}
                     <div className="relative flex items-center">
                       {item.label}
-                      {item.label === "JOURNAL" && hasPendingReflection && (
+                      {item.label === "JOURNAL" && hasPendingReflection && !hideJournalDot && (
                         <div 
                           className="ml-2 w-2.5 h-2.5 rounded-full"
                           style={{

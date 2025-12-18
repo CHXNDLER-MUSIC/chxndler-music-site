@@ -795,27 +795,27 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     return (quest.times_completed > 0 && quest.max_total_completions === 1) || completedQuests.has(quest.id);
   };
 
-  // Redeem secret phrase via RPC (for ATTEND_LIVESTREAM quest)
+  // Redeem secret phrase via API (for ATTEND_LIVESTREAM quest)
   const redeemAttendLivestreamPhrase = async (phrase: string): Promise<{ status: string; reward?: number }> => {
-    if (!phrase.trim()) {
-      return { status: 'invalid' };
-    }
+    const trimmed = phrase.trim();
+    if (!trimmed) return { status: 'invalid' };
 
     try {
-      const { data, error } = await supabaseBrowser.rpc('redeem_secret_phrase', {
-        p_phrase: phrase.trim()
+      const res = await fetch('/api/redeem-secret-phrase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phrase: trimmed })
       });
 
-      if (error) {
-        console.error('ATTEND_LIVESTREAM RPC error:', error);
+      if (!res.ok) {
+        console.error('ATTEND_LIVESTREAM API error:', res.status, res.statusText);
         return { status: 'error' };
       }
 
-      // Handle RPC response
-      const result = data?.[0] || data;
+      const json = await res.json();
       return {
-        status: result?.status || 'error',
-        reward: result?.awarded || result?.reward || 0
+        status: json?.status || 'error',
+        reward: json?.rewardHeartCoins || json?.reward || json?.awarded || 0
       };
     } catch (error) {
       console.error('Error redeeming ATTEND_LIVESTREAM phrase:', error);

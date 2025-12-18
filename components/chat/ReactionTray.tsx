@@ -41,7 +41,7 @@ export default function ReactionTray({ onReact, userId, disabled = false, classN
 
   return (
     <motion.div
-      className={`flex items-center gap-2 p-2 rounded-lg bg-black/80 backdrop-blur-md border-2 ${className}`}
+      className={`flex items-center gap-1 p-1 rounded-lg bg-black/80 backdrop-blur-md border-2 ${className}`}
       style={{
         borderColor: '#F2EF1D',
         boxShadow: '0 0 20px rgba(242, 239, 29, 0.6), 0 0 40px rgba(242, 239, 29, 0.3)',
@@ -77,7 +77,7 @@ export default function ReactionTray({ onReact, userId, disabled = false, classN
             onMouseLeave={() => setHoveredReaction(null)}
             disabled={disabled || (isSoulStar && !canUseSoul)}
             className={`
-              relative flex items-center justify-center w-16 h-16 rounded-lg
+              relative flex items-center justify-center w-12 h-12 rounded-lg
               transition-all duration-200 transform
               hover:scale-110 active:scale-95
               ${disabled || (isSoulStar && !canUseSoul) 
@@ -85,11 +85,11 @@ export default function ReactionTray({ onReact, userId, disabled = false, classN
                 : 'cursor-pointer hover:bg-white/10'
               }
             `}
-            whileHover={!disabled && canUseSoul ? { scale: 1.15 } : {}}
+            whileHover={!disabled && canUseSoul ? { scale: 1.12 } : {}}
             whileTap={!disabled && canUseSoul ? { scale: 0.95 } : {}}
           >
             <div
-              className="w-14 h-14 relative flex items-center justify-center"
+              className="w-10 h-10 relative flex items-center justify-center"
               style={{ 
                 filter: hoveredReaction === reaction 
                   ? `drop-shadow(0 0 40px ${config.color}) brightness(1.8)` 
@@ -99,8 +99,8 @@ export default function ReactionTray({ onReact, userId, disabled = false, classN
               <Image
                 src={config.image}
                 alt={config.description}
-                width={56}
-                height={56}
+                width={36}
+                height={36}
                 className="object-contain"
                 draggable={false}
               />

@@ -331,6 +331,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       
       // Notify parent that journal was completed
       onJournalCompleted?.();
+      // Broadcast an event so other UI (e.g., hamburger) can clear journal dot immediately
+      try {
+        window.dispatchEvent(new CustomEvent('journalCompleted'));
+      } catch {}
 
     } catch (error) {
       console.error('Failed to save journal entry:', error);
@@ -496,38 +500,52 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
       // Prevent double-clicks while request is in flight
       if (starringEntryId) return;
+
+      // If already starred by this user, do nothing (no toggle off)
+      if (starredByMe.has(entryId)) return;
+
       setStarringEntryId(entryId);
 
-      // Call the RPC to toggle the star
+      // Optimistic update: mark as starred and increment count locally
+      setStarredByMe(prev => new Set(prev).add(entryId));
+      setPublicEntries(prev => prev.map(entry =>
+        entry.entry_id === entryId
+          ? { ...entry, stars_count: (entry.stars_count ?? 0) + 1 }
+          : entry
+      ));
+
+      // Call the RPC to add the star (server is source of truth)
       const { data, error } = await supabaseBrowser
         .rpc('toggle_journal_entry_star', { p_entry_id: entryId });
 
       if (error) {
         console.error('Error toggling star:', error);
+        // Revert optimistic update on failure
+        setStarredByMe(prev => {
+          const next = new Set(prev);
+          next.delete(entryId);
+          return next;
+        });
+        setPublicEntries(prev => prev.map(entry =>
+          entry.entry_id === entryId
+            ? { ...entry, stars_count: Math.max(0, (entry.stars_count ?? 1) - 1) }
+            : entry
+        ));
         setStarringEntryId(null);
         return;
       }
 
-      // Update local state with the returned values
-      const { starred, stars_count } = data;
-
-      // Update starredByMe set
-      setStarredByMe(prev => {
-        const next = new Set(prev);
-        if (starred) {
-          next.add(entryId);
-        } else {
-          next.delete(entryId);
+      // If server returns canonical count, sync to it
+      try {
+        const { stars_count } = data || {};
+        if (typeof stars_count === 'number') {
+          setPublicEntries(prev => prev.map(entry =>
+            entry.entry_id === entryId
+              ? { ...entry, stars_count }
+              : entry
+          ));
         }
-        return next;
-      });
-
-      // Update stars_count in publicEntries
-      setPublicEntries(prev => prev.map(entry =>
-        entry.entry_id === entryId
-          ? { ...entry, stars_count }
-          : entry
-      ));
+      } catch {}
 
       setStarringEntryId(null);
     } catch (error) {
@@ -1032,41 +1050,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                         {/* Expanded content - only show when expanded */}
                         {isExpanded && (
                           <>
-                            {/* Intention Section */}
-                            {entry.intention && (
-                          <div 
-                            className="rounded-lg px-3 py-2 mb-2"
-                            style={{
-                              background: 'rgba(0, 0, 0, 0.3)',
-                              border: `1px solid ${entryTheme.color}30`,
-                              boxShadow: `0 0 8px ${entryTheme.color}10`
-                            }}
-                          >
-                            <div className="flex items-center gap-2 mb-1">
-                              <svg 
-                                width="16" 
-                                height="16" 
-                                viewBox="0 0 24 24" 
-                                fill="none"
-                                style={{
-                                  filter: `drop-shadow(0 0 4px ${entryTheme.color})`
-                                }}
-                              >
-                                <circle cx="12" cy="12" r="9" fill="none" stroke={entryTheme.color} strokeWidth="2" strokeDasharray="3 3"/>
-                                <circle cx="12" cy="12" r="3" fill={entryTheme.color}/>
-                                <path d="M12 3v6m0 6v6m-9-9h6m6 0h6" stroke={entryTheme.color} strokeWidth="2" strokeLinecap="round"/>
-                              </svg>
-                              <div 
-                                className="text-base font-semibold uppercase tracking-wider"
-                                style={{ color: entryTheme.color, textShadow: `0 0 4px ${entryTheme.glow}` }}
-                              >
-                                Intention
-                              </div>
-                            </div>
-                            <div className="text-base leading-relaxed text-white/90">{entry.intention}</div>
-                          </div>
-                        )}
-
                         {/* Prompt Section */}
                         <div 
                           className="rounded-lg px-3 py-2 mb-2"
@@ -1094,7 +1077,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                 className="text-base font-semibold uppercase tracking-wider"
                               style={{ color: entryTheme.color, textShadow: `0 0 4px ${entryTheme.glow}` }}
                             >
-                              Prompt
+                              QUESTION OF THE DAY
                             </div>
                           </div>
                           <div className="text-base leading-relaxed text-white/90">{entry.prompt || "No prompt available"}</div>
@@ -1285,9 +1268,9 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                             <button
                               type="button"
                               className={`flex items-center gap-1 transition-all duration-200 hover:scale-105 px-3 py-1.5 ${
-                                starringEntryId === entry.entry_id ? 'opacity-50 cursor-not-allowed' : ''
+                                (starringEntryId === entry.entry_id || starredByMe.has(entry.entry_id)) ? 'opacity-50 cursor-not-allowed' : ''
                               }`}
-                              disabled={starringEntryId === entry.entry_id}
+                              disabled={starringEntryId === entry.entry_id || starredByMe.has(entry.entry_id)}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 sfx.play('card-ding', 0.45);
@@ -1961,100 +1944,22 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 {journalState.isPrivate ? 'PRIVATE' : 'PUBLIC'}
               </button>
               
-              {/* Element label - centered below date */}
+              {/* Element label - centered below date (icon removed) */}
               <div 
-                className="absolute left-1/2 transform -translate-x-1/2 px-3 py-1 text-lg font-semibold uppercase flex items-center gap-2"
+                className="absolute left-1/2 transform -translate-x-1/2 px-3 py-1 text-lg font-semibold uppercase"
                 style={{
                   top: '25px',
                   color: elementTheme.color,
                   textShadow: 'none'
                 }}
               >
-                <img 
-                  src={getElementIcon(dailyPrompt?.element || null)} 
-                  alt={dailyPrompt?.element || 'element'} 
-                  className="w-5 h-5"
-                />
                 {dailyPrompt?.element?.toUpperCase()}
               </div>
             </div>
 
             {/* Section Cards */}
             {dailyPrompt && (
-              <div className="space-y-0 mt-2">
-                {/* Intention Card */}
-                <div 
-                  className="rounded-lg px-1 pt-0.5 pb-1 -mx-1"
-                  style={{
-                    background: 'rgba(0, 0, 0, 0.4)',
-                    border: `1px solid ${elementTheme.color}60`,
-                    boxShadow: `0 0 15px ${elementTheme.color}60, 0 0 30px ${elementTheme.color}30, inset 0 0 10px ${elementTheme.color}20`
-                  }}
-                >
-                  <div className="space-y-0">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-9 h-9 flex items-center justify-center relative"
-                        style={{
-                          background: `radial-gradient(circle, ${elementTheme.color}30, transparent 70%)`,
-                          filter: `drop-shadow(0 0 4px ${elementTheme.color})`
-                        }}
-                      >
-                        <svg 
-                          width="22" 
-                          height="22" 
-                          viewBox="0 0 24 24" 
-                          fill="none"
-                          style={{
-                            filter: `drop-shadow(0 0 6px ${elementTheme.color}) drop-shadow(0 0 12px ${elementTheme.color}40)`
-                          }}
-                        >
-                          <circle 
-                            cx="12" 
-                            cy="12" 
-                            r="9" 
-                            fill="none"
-                            stroke={elementTheme.color}
-                            strokeWidth="2"
-                            strokeDasharray="3 3"
-                          />
-                          <circle 
-                            cx="12" 
-                            cy="12" 
-                            r="3" 
-                            fill={elementTheme.color}
-                          />
-                          <path 
-                            d="M12 3v6m0 6v6m-9-9h6m6 0h6" 
-                            stroke={elementTheme.color}
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                        <div 
-                          className="absolute inset-0 rounded-full animate-pulse"
-                          style={{
-                            background: `radial-gradient(circle, ${elementTheme.color}20, transparent 60%)`,
-                            animation: 'pulse 2s infinite'
-                          }}
-                        />
-                      </div>
-                      <div 
-                        className="text-lg font-semibold uppercase tracking-wider"
-                        style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
-                      >
-                        Intention
-                      </div>
-                    </div>
-                    <div
-                      className="text-lg leading-tight"
-                      style={{ color: '#FFFFFF', lineHeight: '1.15' }}
-                    >
-                      {dailyPrompt.intention.text}
-                    </div>
-                  </div>
-                </div>
-
+              <div className="space-y-0 mt-14">
                 {/* Prompt Card */}
                 <div 
                   className="rounded-lg px-1 pt-0.5 pb-1 -mx-1"
@@ -2116,7 +2021,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                         className="text-lg font-semibold uppercase tracking-wider"
                         style={{ color: elementTheme.color, textShadow: `0 0 4px ${elementTheme.glow}` }}
                       >
-                        Prompt
+                        QUESTION OF THE DAY
                       </div>
                     </div>
                     <div
@@ -2219,7 +2124,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3 pb-0 mt-auto -mb-3">
+            <div className="flex gap-3 pb-0 mt-auto -mb-6">
                   {(!user?.id || !profile?.element) ? (
                     <button
                       onClick={() => {

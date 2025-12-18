@@ -44,6 +44,7 @@ import { useProfile } from "@/contexts/ProfileContext";
 import { useUIState } from "@/lib/use-ui-state";
 import { supabaseClient } from "@/lib/supabaseClient";
 import GlowingHamburgerMenuWrapper from "@/components/GlowingHamburgerMenuWrapper";
+import { useSongs } from "@/hooks/useSongs";
 
 export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const router = useRouter();
@@ -615,7 +616,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   }, [powerBusy, beamEnabled, showHUD, uiUnlocked]);
 
 
-  function onSongChange(id){
+  function onSongChange(id, options){
     // In-app song change without spotlight/beam/route reloads
     // The id parameter is already the track slug from buildPlanetSongs()
     const slug = String(id || '').toLowerCase();
@@ -629,8 +630,11 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     }
     
     // IMMEDIATELY hide blue display and light beam when song is selected
-    setShowHUD(false);
-    setBeamEnabled(false);
+    // Unless explicitly asked to preserve the blue display (e.g., HUD planet clicks)
+    if (!options || !options.preserveBlueDisplay) {
+      setShowHUD(false);
+      setBeamEnabled(false);
+    }
     
     // First try exact slug match
     let idx = tracks.findIndex(t => (t.slug || '').toLowerCase() === slug);
@@ -801,7 +805,50 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     }
     prevIdxRef.current = channelIdx;
   }, [channelIdx, mounted, userSelected, warpActive, uiUnlocked]);
-  const { hudSongs, holoSongs } = React.useMemo(() => buildPlanetSongs(), []);
+  const { hudSongs: staticHudSongs, holoSongs } = React.useMemo(() => buildPlanetSongs(), []);
+
+  // Fetch database songs to get ALL songs including unreleased
+  const { songs: dbSongs } = useSongs();
+
+  // Element colors for planet display
+  const ELEMENT_COLORS = {
+    heart: "#FC54AF",
+    water: "#38B6FF",
+    lightning: "#F2EF1D",
+    darkness: "#8B5A8B"
+  };
+
+  // Build hudSongs from database (includes ALL songs, released and unreleased)
+  // Use static data to supplement with spotify/apple/youtube links where available
+  const hudSongs = React.useMemo(() => {
+    // If no database songs yet, fallback to static
+    if (!dbSongs || dbSongs.length === 0) return staticHudSongs;
+
+    // Create a map of slug -> static song data for enrichment
+    const staticMap = new Map();
+    staticHudSongs.forEach(song => {
+      staticMap.set(song.id, song);
+    });
+
+    // Build from database songs (includes ALL songs)
+    return dbSongs.map(song => {
+      const staticData = staticMap.get(song.slug) || {};
+      const element = (song.element || 'heart').toLowerCase();
+      return {
+        id: song.slug,
+        title: song.title,
+        icon: element,
+        color: ELEMENT_COLORS[element] || ELEMENT_COLORS.heart,
+        is_released: song.is_released,
+        // Enrich with static data if available
+        spotify: staticData.spotify,
+        apple: staticData.apple,
+        youtube: staticData.youtube,
+        hasLyrics: staticData.hasLyrics
+      };
+    });
+  }, [staticHudSongs, dbSongs]);
+
   // Initialize planet songs as early as possible so the 3D system
   // has data on the very first paint (prevents "only heart" flash).
   React.useLayoutEffect(() => {

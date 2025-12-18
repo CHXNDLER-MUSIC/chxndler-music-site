@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       .select(`
         id,
         item_name,
-        price_heartcoins,
+        total_heartcoins,
         shipping_full_name,
         shipping_address_line1,
         shipping_address_line2,
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
       customerName,
       customerEmail,
       itemName: order.item_name,
-      heartCoinsSpent: order.price_heartcoins || 0,
+      heartCoinsSpent: order.total_heartcoins || 0,
       isPhysicalItem,
       shippingAddress: (isPhysicalItem && (order.shipping_full_name || shippingInfo)) ? {
         fullName: order.shipping_full_name || shippingInfo?.fullName || '',

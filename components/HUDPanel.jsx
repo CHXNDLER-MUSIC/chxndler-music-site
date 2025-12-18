@@ -266,7 +266,8 @@ const HUDPanel = React.memo(function HUDPanel({
       }
     }
     // Always call the original handler for song selection functionality
-    onSongChange?.(planetId);
+    // Preserve the blue display when selection comes from the HUD planetarium
+    onSongChange?.(planetId, { preserveBlueDisplay: true });
   }, [planetRewards, onSongChange]);
 
   // Expose function globally for testing (can be removed later)
@@ -2365,6 +2366,7 @@ const HUDPanel = React.memo(function HUDPanel({
                     onPlanetSelect={handlePlanetSelectWithRewards}
                     quality="high"
                     focusElement={focusElement}
+                    focusSongId={currentId || null}
                   />
                 </ErrorBoundary>
               </div>

@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     // Get user's current profile
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('heart_coins_current, heart_coins_total, journey')
+      .select('heartcoin_balance, heartcoin_total, journey')
       .eq('id', user.id)
       .single();
 
@@ -34,8 +34,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       heartCoins: {
-        current: profile?.heart_coins_current || 0,
-        total: profile?.heart_coins_total || 0
+        current: profile?.heartcoin_balance || 0,
+        total: profile?.heartcoin_total || 0
       },
       journey: profile?.journey
     });

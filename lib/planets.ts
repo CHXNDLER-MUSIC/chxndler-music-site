@@ -864,7 +864,7 @@ function generatePlanetProperties(element: Element, type: PlanetType, baseRadius
 }
 
 // Data shape for HUD list component
-export type HudSong = { id: string; title: string; icon: Element; color: string; spotify?: string; apple?: string; youtube?: string; hasLyrics?: boolean };
+export type HudSong = { id: string; title: string; icon: Element; color: string; spotify?: string; apple?: string; youtube?: string; hasLyrics?: boolean; is_released?: boolean };
 
 // Data shape for hologram 3D system (store/usePlayerStore)
 export type PlanetType = "terrestrial" | "gas_giant" | "ice_world" | "desert" | "ocean" | "volcanic" | "crystal" | "toxic" | "metal";

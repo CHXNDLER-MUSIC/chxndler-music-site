@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
+import { createSupabaseServerClientWithJwt, getSupabaseAdmin } from '@/lib/supabaseServer';
 import type { PurchaseWithHeartcoinsResult } from '@/types/merch';
 
 export async function POST(request: NextRequest) {
   try {
-    const { merchItemId, quantity = 1 } = await request.json();
+    const {
+      merchItemId,
+      quantity = 1,
+      // Optional shipping fields (required for physical items)
+      shippingFullName,
+      shippingAddressLine1,
+      shippingAddressLine2,
+      shippingCity,
+      shippingState,
+      shippingZip,
+      shippingCountry,
+    } = await request.json();
 
     if (!merchItemId) {
       return NextResponse.json(
@@ -41,17 +52,81 @@ export async function POST(request: NextRequest) {
 
     console.log('[PURCHASE] Attempting purchase:', { merch_item_id: merchItemId, qty: quantity, user_id: user.id });
 
-    // Call the secure RPC function - it gets user from auth context
+    // Determine item category to validate shipping as needed
+    // Look up merch item using admin client to avoid RLS surprises during read-only lookup.
+    // Accept either UUID id or slug (optionally provided by client).
+    const admin = getSupabaseAdmin();
+    let merchItem: any = null;
+    let merchLookupError: any = null;
+
+    const {
+      merchItemSlug
+    }: { merchItemSlug?: string } = (await request.clone().json().catch(() => ({}))) as any;
+
+    const { data: byId, error: byIdError } = await admin
+      .from('merch_items')
+      .select('id, name, category, price_heartcoins, slug, is_active')
+      .eq('id', merchItemId)
+      .single();
+    merchItem = byId;
+    merchLookupError = byIdError;
+
+    if (merchLookupError || !merchItem) {
+      console.warn('[PURCHASE] Item lookup by id failed; trying slug fallback', { merchItemId, merchItemSlug });
+      const slugToTry = merchItemSlug || String(merchItemId);
+      const { data: bySlug, error: slugError } = await admin
+        .from('merch_items')
+        .select('id, name, category, price_heartcoins, slug, is_active')
+        .eq('slug', slugToTry)
+        .single();
+      merchItem = bySlug as any;
+      merchLookupError = slugError;
+    }
+
+    if (merchLookupError || !merchItem) {
+      return NextResponse.json(
+        { error: 'Item not found or no longer available.', errorCode: 'ITEM_NOT_FOUND' },
+        { status: 404 }
+      );
+    }
+
+    if (!merchItem?.is_active) {
+      return NextResponse.json(
+        { error: 'Item not found or no longer available.', errorCode: 'ITEM_NOT_FOUND' },
+        { status: 404 }
+      );
+    }
+
+    const isPhysical = merchItem.category === 'physical';
+
+    // If physical, validate shipping fields early
+    if (isPhysical) {
+      if (!shippingFullName || !shippingAddressLine1 || !shippingCity || !shippingState || !shippingZip) {
+        return NextResponse.json(
+          { error: 'Missing shipping address fields', errorCode: 'MISSING_SHIPPING' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Prefer canonical single-item checkout RPC that accepts shipping
     const { data: rpcData, error: rpcError } = await supabase
-      .rpc('purchase_merch_with_heartcoins', {
+      .rpc('checkout_merch_with_heartcoins', {
         p_merch_item_id: merchItemId,
-        p_qty: quantity,
+        p_quantity: quantity,
+        p_full_name: shippingFullName ?? '',
+        p_address_line1: shippingAddressLine1 ?? '',
+        p_address_line2: shippingAddressLine2 ?? null,
+        p_city: shippingCity ?? '',
+        p_state: shippingState ?? '',
+        p_zip: shippingZip ?? '',
+        p_country: shippingCountry ?? 'United States',
       });
 
-    // Handle array return shape from TABLE-returning function
-    const result = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+    // RPC returns the UUID order_id directly
+    const orderIdFromRpc: string | null = rpcData ? String(rpcData) : null;
 
-    console.log('[PURCHASE] RPC response:', { error: rpcError, result });
+    console.log('[PURCHASE] checkout RPC response:', { error: rpcError, orderId: orderIdFromRpc });
 
     if (rpcError) {
       console.error('[PURCHASE] RPC Error:', rpcError);
@@ -103,7 +178,7 @@ export async function POST(request: NextRequest) {
       // Graceful fallback: only if function missing or schema cache issues
       if (
         rpcError.message?.includes('Could not find the function') ||
-        rpcError.message?.includes('purchase_merch_with_heartcoins') ||
+        rpcError.message?.includes('checkout_merch_with_heartcoins') ||
         rpcError.message?.includes('schema cache') ||
         rpcError.message?.toLowerCase?.().includes('function not found') ||
         rpcError.message?.toLowerCase?.().includes('rpc not available')
@@ -111,22 +186,7 @@ export async function POST(request: NextRequest) {
         console.warn('[PURCHASE] RPC purchase_merch_with_heartcoins missing; using manual fallback flow');
 
         // 1) Fetch merch item details and validate availability
-        const { data: merchItem, error: merchError } = await supabase
-          .from('merch_items')
-          .select('id, name, slug, category, is_active, price_heartcoins')
-          .eq('id', merchItemId)
-          .eq('is_active', true)
-          .single();
-
-        if (merchError || !merchItem) {
-          return NextResponse.json(
-            {
-              error: 'Item not found or no longer available.',
-              errorCode: 'ITEM_NOT_FOUND'
-            },
-            { status: 404 }
-          );
-        }
+        // merchItem already fetched above
 
         // 2) Get current user balance
         const { data: profile, error: profileError } = await supabase
@@ -229,36 +289,92 @@ export async function POST(request: NextRequest) {
           
         console.log('[PURCHASE] Orders table check:', { tableInfo, tableError });
         
-        const { data: order, error: orderError } = await supabase
+        let order: { id: string | number } | null = null;
+        let orderError: any = null;
+
+        // Try inserting using the new schema first
+        const { data: orderNew, error: orderNewError } = await supabase
           .from('orders')
           .insert({
             user_id: user.id,
             item_id: merchItem.slug,
             item_name: merchItem.name,
-            price_heartcoins: totalPrice,
+            // use canonical column name per migrations
+            total_heartcoins: totalPrice,
             status: orderStatus,
+            // persist shipping if provided (best-effort)
+            shipping_full_name: shippingFullName ?? null,
+            shipping_address_line1: shippingAddressLine1 ?? null,
+            shipping_address_line2: shippingAddressLine2 ?? null,
+            shipping_city: shippingCity ?? null,
+            shipping_state: shippingState ?? null,
+            shipping_zip: shippingZip ?? null,
+            shipping_country: shippingCountry ?? null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
           .select('id')
           .single();
-          
-        console.log('[PURCHASE] Order creation result:', { order, error: orderError });
+        order = orderNew as any;
+        orderError = orderNewError;
 
+        console.log('[PURCHASE] Order creation (new schema) result:', { order: orderNew, error: orderNewError });
+
+        // If the new schema insert failed (likely due to missing columns in legacy DB),
+        // fall back to inserting with the legacy orders schema.
         if (orderError) {
-          // Attempt to rollback balance
-          await supabase
-            .from('profiles')
-            .update({ heartcoin_balance: currentBalance })
-            .eq('id', user.id);
+          console.warn('[PURCHASE] New schema insert failed, attempting legacy orders insert...');
 
-          return NextResponse.json(
-            {
-              error: `Failed to create order: ${orderError.message}`,
-              errorCode: 'ORDER_FAILED'
-            },
-            { status: 500 }
-          );
+          // Fetch profile for email fallback if needed by legacy schema
+          const { data: profileForEmail } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('id', user.id)
+            .single();
+
+          const legacyPayload = {
+            user_id: user.id,
+            card_title: merchItem.name,
+            heart_coins_spent: totalPrice,
+            full_name: shippingFullName ?? '',
+            street_address: shippingAddressLine1 ?? '',
+            apartment: shippingAddressLine2 ?? null,
+            city: shippingCity ?? '',
+            state_region: shippingState ?? '',
+            zip_postal: shippingZip ?? '',
+            country: shippingCountry ?? 'United States',
+            email: profileForEmail?.email || user.email || '',
+            phone: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+
+          const { data: orderLegacy, error: orderLegacyError } = await supabase
+            .from('orders')
+            .insert(legacyPayload)
+            .select('id')
+            .single();
+
+          console.log('[PURCHASE] Order creation (legacy schema) result:', { orderLegacy, error: orderLegacyError });
+
+          order = orderLegacy as any;
+          orderError = orderLegacyError;
+
+          if (orderError) {
+            // Attempt to rollback balance
+            await supabase
+              .from('profiles')
+              .update({ heartcoin_balance: currentBalance })
+              .eq('id', user.id);
+
+            return NextResponse.json(
+              {
+                error: `Failed to create order: ${orderError.message}`,
+                errorCode: 'ORDER_FAILED'
+              },
+              { status: 500 }
+            );
+          }
         }
 
         // 6) For digital items, record in user_items
@@ -313,64 +429,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Normalize RPC result (support JSON or TABLE return shapes)
-    // Preferred TABLE overload returns fields directly; some environments may return JSON
-    const normalized: PurchaseWithHeartcoinsResult = (() => {
-      if (!result) {
-        return {
-          success: false,
-          message: 'Unknown purchase result',
-          order_id: null,
-          user_id: null,
-          heartcoins_before: null,
-          heartcoins_after: null,
-          amount_spent: 0,
-        };
-      }
-      // If the function returns JSON, unwrap it
-      const r: any = typeof result === 'object' ? result : {};
-      const maybeJson = r.success !== undefined && (r.order_id !== undefined || r.amount_spent !== undefined);
-      if (maybeJson) {
-        return {
-          success: Boolean(r.success),
-          message: String(r.message ?? 'Purchase completed'),
-          order_id: r.order_id != null ? String(r.order_id) : null,
-          user_id: r.user_id != null ? String(r.user_id) : null,
-          heartcoins_before: r.previous_balance ?? r.heartcoins_before ?? null,
-          heartcoins_after: r.new_balance ?? r.heartcoins_after ?? null,
-          amount_spent: Number(r.amount_spent ?? 0),
-        };
-      }
-      // TABLE overload - expect exact fields
-      return {
-        success: Boolean((r as any).success),
-        message: String((r as any).message ?? 'Purchase completed'),
-        order_id: (r as any).order_id != null ? String((r as any).order_id) : null,
-        user_id: (r as any).user_id != null ? String((r as any).user_id) : null,
-        heartcoins_before: (r as any).heartcoins_before ?? null,
-        heartcoins_after: (r as any).heartcoins_after ?? null,
-        amount_spent: Number((r as any).amount_spent ?? 0),
+    // If checkout RPC succeeded
+    if (orderIdFromRpc) {
+      const normalized: PurchaseWithHeartcoinsResult = {
+        success: true,
+        message: 'Purchase completed',
+        order_id: orderIdFromRpc,
+        user_id: String(user.id),
+        heartcoins_before: null,
+        heartcoins_after: null,
+        amount_spent: Number(merchItem.price_heartcoins || 0) * Number(quantity || 1),
       };
-    })();
-
-    console.log('[PURCHASE] Normalized result:', normalized);
-
-    // If the RPC returned success: false, treat as an error
-    if (!normalized.success) {
-      console.error('[PURCHASE] RPC returned failure:', normalized);
-      return NextResponse.json(
-        {
-          error: normalized.message || 'Purchase failed',
-          errorCode: 'PURCHASE_FAILED',
-          ...normalized
-        },
-        { status: 400 }
-      );
+      console.log(`[PURCHASE] Success - Order ${normalized.order_id} created for user ${user.id}`);
+      return NextResponse.json(normalized);
     }
-
-    console.log(`[PURCHASE] Success - Order ${normalized.order_id} created for user ${user.id}`);
-
-    return NextResponse.json(normalized);
 
   } catch (error) {
     console.error('[PURCHASE] Unexpected error:', error);

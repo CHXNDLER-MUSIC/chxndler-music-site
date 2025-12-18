@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
 
 export interface OrderConfirmationData {
   orderId: string;
@@ -29,25 +29,31 @@ export interface ShippingNotificationData {
 }
 
 class EmailService {
-  private transporter: nodemailer.Transporter;
+  private transporter: Transporter | null = null;
 
-  constructor() {
-    this.transporter = nodemailer.createTransporter({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+  private async getTransporter(): Promise<Transporter> {
+    if (!this.transporter) {
+      // Dynamically import nodemailer to avoid build-time issues
+      const nodemailer = await import('nodemailer');
+      this.transporter = nodemailer.default.createTransport({
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.SMTP_PORT || '587'),
+        secure: false, // true for 465, false for other ports
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+    }
+    return this.transporter;
   }
 
   async sendOrderConfirmation(orderData: OrderConfirmationData): Promise<boolean> {
     try {
       const { subject, html } = this.generateOrderConfirmationEmail(orderData);
+      const transporter = await this.getTransporter();
 
-      await this.transporter.sendMail({
+      await transporter.sendMail({
         from: `"HEARTVERSE Store" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
         to: orderData.customerEmail,
         subject,
@@ -65,8 +71,9 @@ class EmailService {
   async sendShippingNotification(shippingData: ShippingNotificationData): Promise<boolean> {
     try {
       const { subject, html } = this.generateShippingNotificationEmail(shippingData);
+      const transporter = await this.getTransporter();
 
-      await this.transporter.sendMail({
+      await transporter.sendMail({
         from: `"HEARTVERSE Store" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
         to: shippingData.customerEmail,
         subject,

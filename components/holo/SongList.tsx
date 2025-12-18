@@ -80,8 +80,16 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
           } catch {}
           audioManager?.togglePlayPause();
         } else {
-          // Delegate selection to parent to run the global warp sequence
-          if (onSongChange) onSongChange(id);
+          // Prefer parent sequencing if provided; otherwise, focus planet directly
+          if (onSongChange) {
+            onSongChange(id);
+          } else {
+            try {
+              playerStore.getState().setMain(id);
+              playerStore.getState().setPlanetDisplayMode('single');
+              playerStore.getState().setPlanetsVisible(true);
+            } catch {}
+          }
         }
       }
       return;
@@ -200,7 +208,16 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
                 audioManager?.togglePlayPause();
               } else {
                 // Delegate selection to parent to run the global warp + playback flow
-                if (onSongChange) onSongChange(s.id);
+                if (onSongChange) {
+                  onSongChange(s.id);
+                } else {
+                  // Fallback: focus the selected planet immediately
+                  try {
+                    playerStore.getState().setMain(s.id);
+                    playerStore.getState().setPlanetDisplayMode('single');
+                    playerStore.getState().setPlanetsVisible(true);
+                  } catch {}
+                }
               }
             }}
             style={{ 

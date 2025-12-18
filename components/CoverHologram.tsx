@@ -614,7 +614,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
       
       {showCard && mounted ? createPortal(
         <div
-          className="fixed inset-0 z-[9999] bg-black/60"
+          className="fixed inset-0 z-[9999] bg-transparent"
           style={{ padding: 0 }}
           onClick={() => {
             try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
@@ -1155,21 +1155,22 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
         
         
         .card-modal{
-          /* Larger pop container - fills available space between profile bar and light beam */
-          width: min(85vw, 400px);
-          max-width: 85vw;
+          /* Smaller pop container to reduce image size */
+          width: min(70vw, 280px);
+          max-width: 70vw;
           max-height: 100%; /* Fill available vertical space */
           background: rgba(25,227,255,0.45);
           box-shadow: 0 0 60px rgba(25,227,255,0.45), inset 0 0 0 1px rgba(25,227,255,0.35);
           overflow: hidden; /* Contain content within bounds */
         }
         .card-modal .tilt-img {
-          max-height: 65vh; /* Ensure card image fits within available space between profile bar and light beam */
+          /* Reduce max height so card appears smaller */
+          max-height: 45vh;
           object-fit: contain;
         }
         @media (max-width: 380px) {
-          /* Nudge down more on very narrow devices */
-          .card-modal{ width: min(88vw, 320px); }
+          /* Keep smaller on very narrow devices */
+          .card-modal{ width: min(90vw, 260px); }
         }
         .tilt-wrap{ perspective: 1200px; transform-style: preserve-3d; }
         .card-frame{
@@ -1327,7 +1328,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
           }
           
           .card-modal {
-            width: min(90vw, 300px) !important;
+            width: min(90vw, 260px) !important;
           }
         }
         /* ELEMENT button icon styles */

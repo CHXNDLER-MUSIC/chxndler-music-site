@@ -205,6 +205,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   const [selectedElement, setSelectedElement] = useState<'LIGHTNING' | 'WATER' | 'HEART' | 'VOID' | null>(null);
   const [allCards, setAllCards] = useState<any[]>([]);
   const [internalCardIndex, setInternalCardIndex] = useState(0);
+  // Ensure we only snap to the element's namesake card once per selection
+  const [didInitElementIndex, setDidInitElementIndex] = useState(false);
 
   const itemsPerPage = 6;
 
@@ -239,6 +241,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     if (activeTab !== 'cards') {
       setSelectedElement(null);
       setInternalCardIndex(0);
+      setDidInitElementIndex(false);
     }
   }, [activeTab]);
 
@@ -254,19 +257,60 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   const displayCards = selectedElement ? filteredCards : availableCards;
   const displayCardIndex = selectedElement ? internalCardIndex : currentCardIndex;
 
+  // Helper: find the index of the primary element card (e.g. WATER) within the filtered list
+  const getPrimaryElementCardIndex = (element: 'LIGHTNING' | 'WATER' | 'HEART' | 'VOID') => {
+    const normalize = (s: string) => (s || '').toUpperCase().trim().replace(/[^A-Z]/g, '');
+    const elementNorm = normalize(element);
+    const elementUpper = element.toUpperCase();
+    const cardsForElement = allCards.filter(card => (card.element || '').toUpperCase() === elementUpper);
+    if (cardsForElement.length === 0) return 0;
+
+    // Prefer exact normalized match (e.g., 'WATER', 'HEART')
+    let idx = cardsForElement.findIndex(card => normalize(card.card_name || card.cards?.card_name || '') === elementNorm);
+    if (idx >= 0) return idx;
+
+    // Next, prefer names that contain the element label (e.g., '💧 WATER')
+    idx = cardsForElement.findIndex(card => normalize(card.card_name || card.cards?.card_name || '').includes(elementNorm));
+    return idx >= 0 ? idx : 0;
+  };
+
   // Handle element selection
   const handleElementSelect = (element: 'LIGHTNING' | 'WATER' | 'HEART' | 'VOID') => {
     try { sfx.play('select', 0.5); } catch {}
     setSelectedElement(element);
-    setInternalCardIndex(0);
+    // Reset init flag so once cards are (re)loaded we snap correctly
+    setDidInitElementIndex(false);
+    // Prefer showing the element's namesake card first if it exists (works if cards are already loaded)
+    setInternalCardIndex(getPrimaryElementCardIndex(element));
   };
 
   // Handle dropdown change
   const handleElementDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value as 'LIGHTNING' | 'WATER' | 'HEART' | 'VOID';
     setSelectedElement(value);
-    setInternalCardIndex(0);
+    setDidInitElementIndex(false);
+    // Prefer showing the element's namesake card first if it exists (works if cards are already loaded)
+    setInternalCardIndex(getPrimaryElementCardIndex(value));
   };
+
+  // After cards load for the selected element, snap to the element's namesake card once
+  useEffect(() => {
+    if (!selectedElement) return;
+    if (didInitElementIndex) return;
+    if (filteredCards.length === 0) return;
+
+    const normalize = (s: string) => (s || '').toUpperCase().trim().replace(/[^A-Z]/g, '');
+    const elementNorm = normalize(selectedElement);
+    let idx = filteredCards.findIndex(card => normalize(card.card_name || card.cards?.card_name || '') === elementNorm);
+    if (idx < 0) {
+      idx = filteredCards.findIndex(card => normalize(card.card_name || card.cards?.card_name || '').includes(elementNorm));
+    }
+    const targetIndex = idx >= 0 ? idx : 0;
+    if (internalCardIndex !== targetIndex) {
+      setInternalCardIndex(targetIndex);
+    }
+    setDidInitElementIndex(true);
+  }, [selectedElement, filteredCards.length]);
 
   // Handle back to element selection
   const handleBackToElementSelection = () => {
@@ -577,7 +621,15 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
           },
           body: JSON.stringify({
             merchItemId: selectedItem.merch_item_id,
-            quantity: 1
+            quantity: 1,
+            // Pass shipping details for physical items
+            shippingFullName: shippingInfo.fullName,
+            shippingAddressLine1: shippingInfo.addressLine1,
+            shippingAddressLine2: shippingInfo.addressLine2,
+            shippingCity: shippingInfo.city,
+            shippingState: shippingInfo.state,
+            shippingZip: shippingInfo.zip,
+            shippingCountry: shippingInfo.country
           }),
         });
 
@@ -1214,7 +1266,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
             </div>
           ) : merchItems.length > 0 ? (
             merchItems.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage).map((item, index) => (
-            <div key={index} className="text-center space-y-4 p-4 bg-black/20 rounded-lg transition-all duration-300">
+            <div key={index} className="text-center space-y-4 pt-4 px-4 pb-0 bg-black/20 rounded-lg transition-all duration-300">
               <h3 className="text-lg font-bold text-white tracking-wider">
                 {item.name.toUpperCase()}
               </h3>

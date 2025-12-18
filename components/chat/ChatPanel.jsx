@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { chatService } from '@/lib/supabase/chat';
+import { supabaseClient } from '@/lib/supabaseClient';
 import { useProfile } from '@/contexts/ProfileContext';
 import { sfx } from '@/lib/sfx';
 // import { useLiveStatus } from '@/hooks/useLiveStatus'; // Removed since chat is always available
@@ -443,9 +444,31 @@ export default function ChatPanel({ isOpen, onClose }) {
     try {
       setLoading(true);
 
-      // Load recent messages
-      const recentMessages = await chatService.loadRecentMessages(50);
-      setMessages(recentMessages);
+      // Load recent messages from heart_signal_messages table via API
+      try {
+        const response = await fetch('/api/heart-signal-messages?limit=50');
+        const result = await response.json();
+        if (result.success && result.messages) {
+          // Transform messages to match expected format
+          const transformedMessages = result.messages.map(msg => ({
+            id: msg.id,
+            user_id: msg.user_id,
+            message: msg.message,
+            message_type: msg.is_system ? 'join' : 'message',
+            created_at: msg.created_at,
+            user_profile: {
+              name: msg.username,
+              element: null,
+              avatar_badge_id: null,
+              profile_image_url: null
+            }
+          }));
+          setMessages(transformedMessages);
+        }
+      } catch (error) {
+        console.error('Error loading heart signal messages:', error);
+        setMessages([]);
+      }
 
       // Load current chat users from database
       const databaseUsers = await chatService.getChatUsers();
@@ -479,52 +502,76 @@ export default function ChatPanel({ isOpen, onClose }) {
         setChatUsers(databaseUsers);
       }
 
-      // Subscribe to new messages
-      channelRef.current = await chatService.subscribeToChat(
-        (newMessage) => {
-          setMessages(prev => [...prev, newMessage]);
-          
-          // Play notification sound for new messages (not our own)
-          if (newMessage.user_id !== 'anonymous' && newMessage.message_type === 'message') {
-            try {
-              const audio = new Audio('/notification.mp3');
-              audio.volume = 0.3;
-              audio.play().catch(error => {
-                console.log('Notification sound failed:', error);
+      // Subscribe to heart_signal_messages table directly
+      channelRef.current = supabaseClient
+        .channel('heart-signal-chat-panel')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'heart_signal_messages' },
+          (payload) => {
+            DEBUG && console.log('🔥 Heart Signal realtime message:', payload);
+            const msg = payload.new;
+            const newMessage = {
+              id: msg.id,
+              user_id: msg.user_id,
+              message: msg.message,
+              message_type: msg.is_system ? 'join' : 'message',
+              created_at: msg.created_at,
+              user_profile: {
+                name: msg.username,
+                element: null,
+                avatar_badge_id: null,
+                profile_image_url: null
+              }
+            };
+
+            // Replace any optimistic temp message that matches this one
+            setMessages(prev => {
+              const withoutTempDupes = prev.filter(m => {
+                const isTemp = typeof m.id === 'string' && m.id.startsWith('temp-');
+                if (!isTemp) return true;
+                return !(m.user_id === newMessage.user_id && m.message === newMessage.message);
               });
-            } catch (error) {
-              console.log('Audio creation failed:', error);
+              return [...withoutTempDupes, newMessage];
+            });
+
+            // Play notification sound for new messages (not our own)
+            if (msg.user_id !== 'anonymous' && !msg.is_system) {
+              try {
+                const audio = new Audio('/notification.mp3');
+                audio.volume = 0.3;
+                audio.play().catch(error => {
+                  console.log('Notification sound failed:', error);
+                });
+              } catch (error) {
+                console.log('Audio creation failed:', error);
+              }
             }
-          }
-          
-          // Update user list if it's a join message
-          if (newMessage.message_type === 'join' || newMessage.message_type === 'message') {
+
+            // Update user list
             setChatUsers(prev => {
-              const existingUser = prev.find(u => u.id === newMessage.user_id);
+              const existingUser = prev.find(u => u.id === msg.user_id);
               if (existingUser) {
-                return prev.map(u => 
-                  u.id === newMessage.user_id 
-                    ? { ...u, last_seen: newMessage.created_at }
+                return prev.map(u =>
+                  u.id === msg.user_id
+                    ? { ...u, last_seen: msg.created_at }
                     : u
                 );
-              } else if (newMessage.user_profile) {
+              } else {
                 return [...prev, {
-                  id: newMessage.user_id,
-                  name: newMessage.user_profile.name,
-                  element: newMessage.user_profile.element,
-                  avatar_badge_id: newMessage.user_profile.avatar_badge_id,
-                  profile_image_url: newMessage.user_profile.profile_image_url,
-                  last_seen: newMessage.created_at
+                  id: msg.user_id,
+                  name: msg.username,
+                  element: null,
+                  avatar_badge_id: null,
+                  profile_image_url: null,
+                  last_seen: msg.created_at
                 }];
               }
-              return prev;
             });
           }
-        },
-        (error) => {
-          console.error('Chat subscription error:', error);
-        },
-        (typingData) => {
+        )
+        .on('broadcast', { event: 'typing' }, (payload) => {
+          const typingData = payload.payload;
           DEBUG && console.log('🔥 Typing event:', typingData);
           // Update typing users
           setTypingUsers(prev => {
@@ -534,62 +581,46 @@ export default function ChatPanel({ isOpen, onClose }) {
             }
             return filtered;
           });
-        }
-      );
+        })
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            DEBUG && console.log('✅ Heart Signal chat subscription active');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('❌ Heart Signal chat subscription error');
+          }
+        });
 
       // Send sync message if not already joined
       if (!hasJoined) {
         const displayName = getDisplayName();
         DEBUG && console.log('🔥 Joining chat with name:', displayName);
-        
-        // Trigger first-time connection check for authenticated users
-        if (user && profile?.name) {
-          await chatService.handleFirstTimeConnection(user.id, profile.name);
+
+        // Send connection message via heart-signal-messages API
+        try {
+          const response = await fetch('/api/heart-signal-messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: `${displayName} connected to the signal`,
+              username: displayName,
+              is_system: true
+            }),
+          });
+          const result = await response.json();
+          DEBUG && console.log('🔥 Sync message result:', result);
+        } catch (error) {
+          DEBUG && console.log('🔥 Sync message failed:', error);
         }
         
-        const syncMessage = await chatService.sendSyncMessage(displayName);
-        DEBUG && console.log('🔥 Sync message result:', syncMessage);
-        
-        // For anonymous users, add the message locally and add to user list
-        if (!user && syncMessage) {
-          DEBUG && console.log('🔥 Adding anonymous message locally:', syncMessage);
-          setMessages(prev => {
-            const newMessages = [...prev, syncMessage];
-            DEBUG && console.log('🔥 Updated messages:', newMessages);
-            return newMessages;
-          });
-          
-          // Add anonymous user to chat users list if not already present
-          setChatUsers(prev => {
-            const existingAnonymous = prev.find(u => u.id === 'anonymous');
-            if (existingAnonymous) {
-              // Update existing anonymous user
-              return prev.map(u => 
-                u.id === 'anonymous' 
-                  ? { ...u, name: displayName, last_seen: new Date().toISOString() }
-                  : u
-              );
-            } else {
-              // Add new anonymous user
-              return [...prev, {
-                id: 'anonymous',
-                name: displayName,
-                element: null,
-                avatar_badge_id: null,
-                last_seen: new Date().toISOString()
-              }];
-            }
-          });
-        } else if (!user) {
-          // Fallback: ensure anonymous user is in list even if sync message fails
-          const displayName = getDisplayName();
+        // For anonymous users, ensure they're in the user list
+        if (!user) {
           setChatUsers(prev => {
             const existingAnonymous = prev.find(u => u.id === 'anonymous');
             if (!existingAnonymous) {
               return [...prev, {
                 id: 'anonymous',
                 name: displayName,
-                element: null,
+                element: 'alien',
                 avatar_badge_id: null,
                 last_seen: new Date().toISOString()
               }];
@@ -646,34 +677,48 @@ export default function ChatPanel({ isOpen, onClose }) {
       shouldUseProfileName: user && profile?.name
     });
     
-    // For authenticated users with complete profiles, send via service
+    // For authenticated users with complete profiles, record via heart-signal API (which writes to heart_signal_messages)
     if (user && profile?.name) {
-      // Add message locally immediately for instant feedback
-      const authenticatedMessage = {
-        id: `auth-${user.id}-${Date.now()}`,
-        user_id: user.id,
-        message: messageText.trim(),
-        message_type: 'message',
-        created_at: new Date().toISOString(),
-        user_profile: {
-          name: profile.name,
-          element: profile.element || null,
-          avatar_badge_id: profile.avatar_badge_id || null
-        }
-      };
-      
-      DEBUG && console.log('🔥 Adding authenticated message locally:', authenticatedMessage);
-      setMessages(prev => [...prev, authenticatedMessage]);
-      
       try {
-        const message = await chatService.sendMessage(messageText, 'message', displayName);
-        DEBUG && console.log('🔥 Authenticated user message result:', message);
-        
-        if (!message) {
-          console.error('Failed to send message for authenticated user');
+        // Optimistic UI: show the message immediately
+        const optimistic = {
+          id: `temp-${user.id}-${Date.now()}`,
+          user_id: user.id,
+          message: messageText.trim(),
+          message_type: 'message',
+          created_at: new Date().toISOString(),
+          user_profile: {
+            name: displayName,
+            element: profile.element || null,
+            avatar_badge_id: profile.avatar_badge_id || null,
+            profile_image_url: profile.profile_image_url || null,
+          },
+        };
+        setMessages(prev => [...prev, optimistic]);
+
+        const response = await fetch('/api/heart-signal-messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: messageText.trim(),
+            username: displayName,
+            is_system: false,
+          }),
+        });
+
+        const result = await response.json();
+        DEBUG && console.log('🔥 Authenticated heart-signal POST result:', result);
+
+        if (!response.ok) {
+          console.error('Failed to send heart signal message:', result?.error || 'Unknown error');
+          // On failure, remove the optimistic message
+          setMessages(prev => prev.filter(m => m.id !== optimistic.id));
         }
+        // On success, realtime INSERT will replace the optimistic one
       } catch (error) {
-        console.error('Error sending message for authenticated user:', error);
+        console.error('Error sending heart signal message:', error);
+        // Remove optimistic on error
+        setMessages(prev => prev.filter(m => !(typeof m.id === 'string' && m.id.startsWith('temp-') && m.message === messageText.trim() && m.user_id === (user?.id || ''))));
       }
       return; // Exit early for authenticated users
     }
@@ -715,12 +760,27 @@ export default function ChatPanel({ isOpen, onClose }) {
       return prev;
     });
     
-    // Try to send to service in background (optional)
+    // Try to persist in background
     try {
-      const message = await chatService.sendMessage(messageText, 'message', displayName);
-      DEBUG && console.log('🔥 Background service result:', message);
+      // Prefer API that writes to heart_signal_messages; will 401 if not authenticated
+      const response = await fetch('/api/heart-signal-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: messageText.trim(),
+          username: displayName,
+          is_system: false,
+        }),
+      });
+      if (!response.ok) {
+        // Fallback to legacy chat service for environments where API is unavailable
+        const msg = await chatService.sendMessage(messageText, 'message', displayName);
+        DEBUG && console.log('🔥 Fallback background service result:', msg);
+      } else {
+        DEBUG && console.log('🔥 Background API persisted anonymous/auth-lite message');
+      }
     } catch (error) {
-      DEBUG && console.log('🔥 Background service failed (expected for anonymous):', error);
+      DEBUG && console.log('🔥 Background persistence failed (expected for true anonymous):', error);
     }
   };
 

@@ -13,13 +13,17 @@ export interface Pure3DPlanetsProps {
   onPlanetSelect?: (planetId: string) => void;
   quality: 'low' | 'high';
   focusElement?: ElementType | null;
+  // New: focus camera on a specific song's planet (by slug/id)
+  focusSongId?: string | null;
 }
 
-export default function Pure3DPlanets({ songs, songsByElement: propSongsByElement, quality, onPlanetSelect, focusElement }: Pure3DPlanetsProps) {
+export default function Pure3DPlanets({ songs, songsByElement: propSongsByElement, quality, onPlanetSelect, focusElement, focusSongId }: Pure3DPlanetsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isClient, setIsClient] = useState(false);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
+  // Keep references to song meshes by slug/id for camera focusing
+  const songMeshMapRef = useRef<Map<string, THREE.Object3D>>(new Map());
 
   useEffect(() => {
     setIsClient(true);
@@ -71,7 +75,7 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
     // Controls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enablePan = false;
-    controls.minDistance = 15;
+    controls.minDistance = 6; // allow closer focus on planets
     controls.maxDistance = 100;
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.1;
@@ -181,6 +185,11 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
 
           console.log(`Adding song sphere: ${song.title} (${songSlug}) orbiting ${p.id} - ${isReleased ? 'released' : 'unreleased'}`);
           const songSphere = createSongSphere(sphereColor, 1.2, [songX, 0, songZ]);
+          // Tag mesh for identification and store a reference for focusing
+          try {
+            (songSphere as any).userData = { slug: songSlug, element: p.id };
+            songMeshMapRef.current.set(String(songSlug).toLowerCase(), songSphere);
+          } catch {}
           songGroup.add(songSphere);
         });
 
@@ -296,6 +305,8 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
+      // Clear song mesh map on teardown
+      try { songMeshMapRef.current.clear(); } catch {}
     };
   // Only rebuild when songs are first loaded (length changes from 0)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -308,41 +319,46 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
     const camera = cameraRef.current;
     const controls = controlsRef.current;
 
-    // Element planet positions (relative to sun at y=12, orbit radius 18)
+    // Element planet positions (world coordinates - planets orbit at y=12, radius=18)
     const sunY = 12;
     const orbitRadius = 18;
-    const elementPositions: Record<ElementType, THREE.Vector3> = {
-      heart: new THREE.Vector3(orbitRadius, sunY, 0),
-      water: new THREE.Vector3(0, sunY, orbitRadius),
-      lightning: new THREE.Vector3(-orbitRadius, sunY, 0),
-      darkness: new THREE.Vector3(0, sunY, -orbitRadius),
+
+    // Define target positions (where the element planets are)
+    const elementTargets: Record<ElementType, THREE.Vector3> = {
+      heart: new THREE.Vector3(orbitRadius, sunY, 0),       // +X axis
+      water: new THREE.Vector3(0, sunY, orbitRadius),       // +Z axis
+      lightning: new THREE.Vector3(-orbitRadius, sunY, 0),  // -X axis
+      darkness: new THREE.Vector3(0, sunY, -orbitRadius),   // -Z axis
     };
 
-    const targetPosition = elementPositions[focusElement];
-    if (!targetPosition) return;
+    // Define optimal camera positions for viewing each element
+    // Camera is positioned behind and above the element, looking toward center
+    const elementCameraPositions: Record<ElementType, THREE.Vector3> = {
+      heart: new THREE.Vector3(35, 25, 15),       // Behind +X, slightly offset in Z
+      water: new THREE.Vector3(15, 25, 35),       // Behind +Z, slightly offset in X
+      lightning: new THREE.Vector3(-35, 25, 15),  // Behind -X, slightly offset in Z
+      darkness: new THREE.Vector3(15, 25, -35),   // Behind -Z, slightly offset in X
+    };
 
-    // Calculate camera position to look at the target element
-    // Position camera at an offset from the target, looking toward it
-    const cameraDistance = 35;
-    const cameraOffset = targetPosition.clone().normalize().multiplyScalar(cameraDistance);
-    const newCameraPosition = new THREE.Vector3(
-      targetPosition.x + cameraOffset.x * 0.8,
-      sunY + 15, // Keep camera above the orbital plane
-      targetPosition.z + cameraOffset.z * 0.8
-    );
+    const targetPosition = elementTargets[focusElement];
+    const newCameraPosition = elementCameraPositions[focusElement];
+
+    if (!targetPosition || !newCameraPosition) return;
+
+    console.log(`Starting camera focus on ${focusElement} planet at`, targetPosition.toArray());
+    console.log(`Camera will move to`, newCameraPosition.toArray());
 
     // Animate camera to new position
     const startPosition = camera.position.clone();
     const startTarget = controls.target.clone();
     const endTarget = targetPosition.clone();
 
-    let progress = 0;
     const duration = 2000; // 2 seconds
     const startTime = performance.now();
 
     const animateCamera = () => {
       const elapsed = performance.now() - startTime;
-      progress = Math.min(elapsed / duration, 1);
+      const progress = Math.min(elapsed / duration, 1);
 
       // Easing function (ease-out cubic)
       const eased = 1 - Math.pow(1 - progress, 3);
@@ -357,7 +373,7 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
       if (progress < 1) {
         requestAnimationFrame(animateCamera);
       } else {
-        console.log(`Camera focused on ${focusElement} planet`);
+        console.log(`Camera focused on ${focusElement} planet at`, targetPosition.toArray());
       }
     };
 
@@ -368,6 +384,63 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
 
     return () => clearTimeout(timeoutId);
   }, [focusElement]);
+
+  // Focus camera on a specific song's planet when requested
+  useEffect(() => {
+    if (!focusSongId || !cameraRef.current || !controlsRef.current) return;
+
+    const key = String(focusSongId).toLowerCase();
+    const mesh = songMeshMapRef.current.get(key);
+    if (!mesh) {
+      // Try fallback: some items may use ids without dashes or with slight variations
+      const alt = key.replace(/'/g, '');
+      const altMesh = songMeshMapRef.current.get(alt);
+      if (!altMesh) return;
+      // Use alt match
+      const target = new THREE.Vector3();
+      altMesh.getWorldPosition(target);
+      focusCameraOn(target);
+      return;
+    }
+
+    const target = new THREE.Vector3();
+    mesh.getWorldPosition(target);
+    focusCameraOn(target);
+
+    function focusCameraOn(targetPos: THREE.Vector3) {
+      const camera = cameraRef.current!;
+      const controls = controlsRef.current!;
+
+      // Compute a camera end position offset from the target, keeping a sensible viewing distance
+      const currentPos = camera.position.clone();
+      const startTarget = controls.target.clone();
+
+      // Offset: back away from the target along the vector from center to target, and a bit up
+      const center = new THREE.Vector3(0, 12, 0);
+      const dir = targetPos.clone().sub(center).normalize();
+      const distance = 10; // closer distance from the song planet
+      const endCamPos = targetPos.clone().add(dir.clone().multiplyScalar( distance )).add(new THREE.Vector3(0, 4, 0));
+
+      const endTarget = targetPos.clone();
+
+      const duration = 1300; // ~1.3s
+      const startTime = performance.now();
+
+      const animate = () => {
+        const elapsed = performance.now() - startTime;
+        const t = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - t, 3);
+
+        camera.position.lerpVectors(currentPos, endCamPos, eased);
+        controls.target.lerpVectors(startTarget, endTarget, eased);
+        controls.update();
+
+        if (t < 1) requestAnimationFrame(animate);
+      };
+
+      requestAnimationFrame(animate);
+    }
+  }, [focusSongId]);
 
   if (!isClient) {
     return (

@@ -186,7 +186,7 @@ export default function YourBook({ isOpen, onClose }) {
               >
                 {/* Backdrop */}
                 <motion.div
-                  className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                  className="absolute inset-0 bg-transparent"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -209,7 +209,7 @@ export default function YourBook({ isOpen, onClose }) {
                   <img
                     src={enlargedCard.src}
                     alt={enlargedCard.label}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
                   <div className="absolute inset-0 rounded-3xl border-2 border-white/20" />
                   

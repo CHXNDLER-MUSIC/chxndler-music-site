@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     // Get user's current profile
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('heart_coins_current, heart_coins_total, journey')
+      .select('heartcoin_balance, heartcoin_total, journey')
       .eq('id', user.id)
       .single();
 
@@ -39,8 +39,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch user profile' }, { status: 500 });
     }
 
-    const currentCoins = profile?.heart_coins_current || 0;
-    const totalCoins = profile?.heart_coins_total || 0;
+    const currentCoins = profile?.heartcoin_balance || 0;
+    const totalCoins = profile?.heartcoin_total || 0;
     
     const newCurrentCoins = currentCoins + heartCoinsToAdd;
     const newTotalCoins = totalCoins + heartCoinsToAdd;
@@ -49,12 +49,12 @@ export async function POST(req: NextRequest) {
     const { data: updatedProfile, error: updateError } = await supabase
       .from('profiles')
       .update({ 
-        heart_coins_current: newCurrentCoins,
-        heart_coins_total: newTotalCoins,
+        heartcoin_balance: newCurrentCoins,
+        heartcoin_total: newTotalCoins,
         updated_at: new Date().toISOString()
       })
       .eq('id', user.id)
-      .select('heart_coins_current, heart_coins_total, journey')
+      .select('heartcoin_balance, heartcoin_total, journey')
       .single();
 
     if (updateError) {
@@ -65,8 +65,8 @@ export async function POST(req: NextRequest) {
       success: true,
       message: 'Heart coins updated successfully',
       heartCoinsAdded: heartCoinsToAdd,
-      currentHeartCoins: updatedProfile.heart_coins_current,
-      totalHeartCoins: updatedProfile.heart_coins_total,
+      currentHeartCoins: updatedProfile.heartcoin_balance,
+      totalHeartCoins: updatedProfile.heartcoin_total,
       journey: updatedProfile.journey
     });
 

@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
             user_id: user.id,
             item_id: itemId,
             item_name: itemTitle,
-            price_heartcoins: priceHeartCoins,
+            total_heartcoins: priceHeartCoins,
             status: 'paid',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
