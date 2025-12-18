@@ -1382,7 +1382,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                           setShowUserBinder(!showUserBinder);
                                         }}
                                         onMouseEnter={(e) => {
-                                          try { sfx.play('hover.mp3', 0.3); } catch {}
+                                          try { sfx.play('hover', 0.3); } catch {}
                                           e.currentTarget.style.transform = 'scale(1.1)';
                                           const img = e.currentTarget.querySelector('img');
                                           if (img) {
@@ -1423,7 +1423,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                           setShowUserBadges(!showUserBadges);
                                         }}
                                         onMouseEnter={(e) => {
-                                          try { sfx.play('hover.mp3', 0.3); } catch {}
+                                          try { sfx.play('hover', 0.3); } catch {}
                                           e.currentTarget.style.transform = 'scale(1.1)';
                                           const img = e.currentTarget.querySelector('img');
                                           if (img) {
@@ -1460,7 +1460,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                           window.dispatchEvent(new CustomEvent('openHeartCoinModal'));
                                         }}
                                         onMouseEnter={(e) => {
-                                          try { sfx.play('hover.mp3', 0.3); } catch {}
+                                          try { sfx.play('hover', 0.3); } catch {}
                                           e.currentTarget.style.transform = 'scale(1.1)';
                                           const img = e.currentTarget.querySelector('img');
                                           if (img) {

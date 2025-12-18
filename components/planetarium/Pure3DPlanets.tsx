@@ -64,38 +64,70 @@ export default function Pure3DPlanets({ quality, onPlanetSelect }: Pure3DPlanets
     directionalLight.position.set(-10, -10, -10);
     scene.add(directionalLight);
 
-    // Create planet function
-    const createPlanet = (color: number, emissive: number, size: number, position: [number, number, number]) => {
-      const geometry = new THREE.SphereGeometry(size, 32, 32);
-      const material = new THREE.MeshStandardMaterial({
-        color,
-        emissive,
-        emissiveIntensity: 0.3,
-        metalness: 0.2,
-        roughness: 0.6
+    // Texture loader
+    const textureLoader = new THREE.TextureLoader();
+
+    // Create element as a sprite showing the full image with transparency and glow
+    const createElementSprite = (texturePath: string, scale: number, position: [number, number, number], glowColor: number) => {
+      const group = new THREE.Group();
+      group.position.set(...position);
+
+      // Main sprite
+      const texture = textureLoader.load(texturePath);
+      texture.colorSpace = THREE.SRGBColorSpace;
+
+      const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthWrite: false,
+        depthTest: true,
+        sizeAttenuation: true
       });
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.position.set(...position);
-      return mesh;
+
+      const sprite = new THREE.Sprite(material);
+      sprite.scale.set(scale * 5, scale * 5, 1);
+      group.add(sprite);
+
+      // Glow effect - larger semi-transparent sprite behind
+      const glowGeometry = new THREE.SphereGeometry(scale * 3, 32, 32);
+      const glowMaterial = new THREE.MeshBasicMaterial({
+        color: glowColor,
+        transparent: true,
+        opacity: 0.3,
+        side: THREE.BackSide
+      });
+      const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
+      group.add(glowMesh);
+
+      // Point light for additional glow
+      const light = new THREE.PointLight(glowColor, 0.8, 20);
+      group.add(light);
+
+      return group;
     };
 
-    // Central Sun
-    const sun = createPlanet(0xffaa00, 0xff6600, 4, [0, 0, 0]);
+    // Central Sun - positioned higher up as sprite
+    const sunY = 12;
+    const sun = createElementSprite('/textures/center-planet.webp', 2.5, [0, sunY, 0]);
     scene.add(sun);
 
-    // Orbiting planets with their orbit groups
+    // Orbiting planets evenly spaced (90 degrees apart) around the sun
+    const orbitRadius = 18;
     const planets = [
-      { color: 0xff6b9d, emissive: 0xff1166, pos: [20, 0, 0] as [number, number, number], speed: 0.3, id: 'heart' },
-      { color: 0x4fc3f7, emissive: 0x0099cc, pos: [0, 0, 20] as [number, number, number], speed: 0.25, id: 'water' },
-      { color: 0xffeb3b, emissive: 0xffcc00, pos: [-20, 0, 0] as [number, number, number], speed: 0.35, id: 'lightning' },
-      { color: 0x9c27b0, emissive: 0x660099, pos: [0, 0, -20] as [number, number, number], speed: 0.2, id: 'darkness' }
+      { id: 'heart', texture: '/textures/planet_heart.webp', pos: [orbitRadius, 0, 0] as [number, number, number], speed: 0.3 },           // 0°
+      { id: 'water', texture: '/textures/planet_water.webp', pos: [0, 0, orbitRadius] as [number, number, number], speed: 0.3 },           // 90°
+      { id: 'lightning', texture: '/textures/planet_lightning.webp', pos: [-orbitRadius, 0, 0] as [number, number, number], speed: 0.3 },  // 180°
+      { id: 'darkness', texture: '/textures/planet_darkness.webp', pos: [0, 0, -orbitRadius] as [number, number, number], speed: 0.3 }     // 270°
     ];
 
     const orbitGroups: { group: THREE.Group; speed: number }[] = [];
 
     planets.forEach(p => {
       const group = new THREE.Group();
-      const planet = createPlanet(p.color, p.emissive, 2.5, p.pos);
+      // Position group at sun's location so planets orbit around the sun
+      group.position.set(0, sunY, 0);
+      // Create sprite showing full texture image
+      const planet = createElementSprite(p.texture, 1.8, p.pos);
       group.add(planet);
       scene.add(group);
       orbitGroups.push({ group, speed: p.speed });

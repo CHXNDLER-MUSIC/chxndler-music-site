@@ -5,6 +5,7 @@ import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
 import { getBadgeIcon } from "@/config/assets";
 import { getBadgeProgressForUser, formatRequirementText } from "@/lib/badgeProgress";
+import TiltSpinCard from "@/components/TiltSpinCard";
 
 type BadgeWithProgress = {
   id: string;
@@ -43,6 +44,8 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
   const [selectedBadge, setSelectedBadge] = useState<BadgeWithProgress | null>(null);
   const [elementFilter, setElementFilter] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const [badgeRotation, setBadgeRotation] = useState(0);
+  const [isBadgeAnimatingFlip, setIsBadgeAnimatingFlip] = useState(false);
   
   // Use ProfileContext data
   const { allBadges, userBadges, badgesLoading: loading, badgesError: error, profile } = useProfile();
@@ -81,6 +84,12 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       requirement: formatRequirementText(normalizedBadge),
     };
   });
+
+  // Reset badge rotation when selected badge changes
+  useEffect(() => {
+    setBadgeRotation(0);
+    setIsBadgeAnimatingFlip(false);
+  }, [selectedBadge?.id]);
 
   // Create badge categories with all badges (same categories as BadgesModal)
   const badgeCategories = [
@@ -494,64 +503,164 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     }}
                     onMouseEnter={(e) => {
                       sfx.play('hover', 0.4);
-                      e.currentTarget.style.transform = 'scale(1.05)';
-                      e.currentTarget.style.boxShadow = '0 0 15px rgba(0,191,255,0.6)';
+                      e.currentTarget.style.transform = 'scale(1.15)';
+                      e.currentTarget.style.boxShadow = '0 0 20px rgba(0,191,255,0.8), 0 0 35px rgba(0,191,255,0.5)';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = 'scale(1)';
-                      e.currentTarget.style.boxShadow = '0 0 8px rgba(0,191,255,0.3)';
+                      e.currentTarget.style.boxShadow = '0 0 15px rgba(0,191,255,0.6), 0 0 25px rgba(0,191,255,0.4)';
                     }}
-                    className="absolute top-4 left-4 px-3 py-1.5 text-[11px] font-bold rounded border border-cyan-400/60 hover:border-cyan-400/80"
+                    className="absolute top-4 left-4 w-10 h-10 rounded-full border border-cyan-400/60 hover:border-cyan-400/80 flex items-center justify-center text-cyan-400 hover:text-cyan-200"
                     style={{
                       background: 'rgba(0,191,255,0.1)',
-                      color: '#00BFFF',
-                      textShadow: '0 0 4px rgba(0,191,255,0.8)',
-                      boxShadow: '0 0 8px rgba(0,191,255,0.3)',
+                      boxShadow: '0 0 15px rgba(0,191,255,0.6), 0 0 25px rgba(0,191,255,0.4)',
+                      backdropFilter: 'blur(2px)',
                       transition: 'transform 200ms ease, box-shadow 200ms ease',
                       zIndex: 30
                     }}
                   >
-                    ← BACK TO BADGES
+                    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden>
+                      <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                    </svg>
                   </button>
 
                   <div className="w-full h-full flex items-center justify-center">
                     <div className="w-full max-w-sm mx-4 p-6 text-center space-y-4">
-                      {/* Badge display */}
+                      {/* Badge display with TiltSpinCard */}
                     <div className="flex flex-col items-center space-y-4">
-                      <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-cyan-400/60 flex items-center justify-center overflow-hidden transform transition-all duration-300"
-                           style={{
-                             animation: 'pulse 2s ease-in-out infinite',
-                             boxShadow: '0 0 25px rgba(0,191,255,0.6), 0 0 50px rgba(0,191,255,0.3)',
-                           }}>
-                        {selectedBadge.icon_url ? (
-                          <img
-                            src={selectedBadge.icon_url}
-                            alt={selectedBadge.badge_name}
-                            className="w-full h-full object-cover rounded-full"
+                      {/* Unlocked status - only show above badge when unlocked */}
+                      {isUnlocked(selectedBadge) && (
+                        <div className="text-sm font-bold text-green-400">
+                          ✅ UNLOCKED
+                        </div>
+                      )}
+
+                      <div
+                        className="relative"
+                        style={{
+                          touchAction: 'none',
+                          WebkitUserSelect: 'none',
+                          userSelect: 'none',
+                        }}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        onTouchMove={(e) => e.stopPropagation()}
+                      >
+                        <TiltSpinCard
+                          className="relative w-32 h-32 cursor-grab active:cursor-grabbing"
+                          style={{
+                            touchAction: 'none',
+                            perspective: '1000px',
+                            zIndex: 50,
+                          }}
+                          maxRotateX={10}
+                          sensitivity={0.3}
+                          returnDuration={400}
+                          enableSpin={true}
+                          spinSensitivity={0.8}
+                          onRotationChange={setBadgeRotation}
+                          onClick={() => {
+                            sfx.play('flip', 0.8);
+                            setIsBadgeAnimatingFlip(true);
+                            setBadgeRotation(prev => prev + 180);
+                            setTimeout(() => setIsBadgeAnimatingFlip(false), 500);
+                          }}
+                        >
+                          {/* 3D container for badge */}
+                          <div
+                            className="absolute inset-0 w-full h-full"
                             style={{
-                              opacity: isUnlocked(selectedBadge) ? 1 : 0.4
+                              transformStyle: 'preserve-3d',
+                              transform: `rotateY(${badgeRotation}deg)`,
+                              transition: isBadgeAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                              pointerEvents: 'none',
                             }}
-                            draggable={false}
-                          />
-                        ) : (
-                          <div className="relative z-10 text-2xl opacity-60">
-                            {getBadgeDisplayIcon(selectedBadge, selectedCategory || '')}
+                          >
+                            {/* Front of badge */}
+                            <div
+                              className="absolute inset-0 w-full h-full rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-cyan-400/60 flex items-center justify-center"
+                              style={{
+                                backfaceVisibility: 'hidden',
+                                boxShadow: '0 0 25px rgba(0,191,255,0.6), 0 0 50px rgba(0,191,255,0.3)',
+                              }}
+                            >
+                              <div
+                                className="relative z-10"
+                                style={{
+                                  filter: isUnlocked(selectedBadge) ? 'none' : 'blur(3px) grayscale(30%)',
+                                  opacity: isUnlocked(selectedBadge) ? 1 : 0.6,
+                                  transition: 'filter 300ms ease, opacity 300ms ease'
+                                }}
+                              >
+                                {selectedBadge.icon_url ? (
+                                  <img
+                                    src={selectedBadge.icon_url}
+                                    alt={selectedBadge.badge_name}
+                                    className="w-28 h-28 object-cover rounded-full"
+                                    draggable={false}
+                                  />
+                                ) : (
+                                  <div className="text-3xl">
+                                    {getBadgeDisplayIcon(selectedBadge, selectedCategory || '')}
+                                  </div>
+                                )}
+                              </div>
+                              {/* Locked overlay with text */}
+                              {!isUnlocked(selectedBadge) && (
+                                <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center">
+                                  <div className="text-white/90 text-sm font-bold flex items-center gap-1" style={{ textShadow: '0 0 10px rgba(0,0,0,0.8)' }}>
+                                    🔒 LOCKED
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Back of badge */}
+                            <div
+                              className="absolute inset-0 w-full h-full rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-cyan-400/60 flex items-center justify-center"
+                              style={{
+                                backfaceVisibility: 'hidden',
+                                transform: 'rotateY(180deg)',
+                                boxShadow: '0 0 25px rgba(0,191,255,0.6), 0 0 50px rgba(0,191,255,0.3)',
+                              }}
+                            >
+                              <div
+                                className="relative z-10"
+                                style={{
+                                  filter: isUnlocked(selectedBadge) ? 'none' : 'blur(3px) grayscale(30%)',
+                                  opacity: isUnlocked(selectedBadge) ? 1 : 0.6,
+                                  transition: 'filter 300ms ease, opacity 300ms ease'
+                                }}
+                              >
+                                {selectedBadge.icon_url ? (
+                                  <img
+                                    src={selectedBadge.icon_url}
+                                    alt={selectedBadge.badge_name}
+                                    className="w-28 h-28 object-cover rounded-full"
+                                    style={{ transform: 'scaleX(-1)' }}
+                                    draggable={false}
+                                  />
+                                ) : (
+                                  <div className="text-3xl">
+                                    {getBadgeDisplayIcon(selectedBadge, selectedCategory || '')}
+                                  </div>
+                                )}
+                              </div>
+                              {/* Locked overlay with text */}
+                              {!isUnlocked(selectedBadge) && (
+                                <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center">
+                                  <div className="text-white/90 text-sm font-bold flex items-center gap-1" style={{ textShadow: '0 0 10px rgba(0,0,0,0.8)', transform: 'scaleX(-1)' }}>
+                                    🔒 LOCKED
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        )}
-                        {!isUnlocked(selectedBadge) && (
-                          <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
-                            <div className="w-3 h-3 bg-white/20 rounded-full" />
-                          </div>
-                        )}
+                        </TiltSpinCard>
                       </div>
                       
                       <h2 className="text-white font-bold text-lg text-center">
                         {selectedBadge.badge_name}
                       </h2>
-                      
-                      <div className={`text-sm font-bold ${isUnlocked(selectedBadge) ? 'text-green-400' : 'text-white/40'}`}>
-                        {isUnlocked(selectedBadge) ? '✅ UNLOCKED' : '🔒 LOCKED'}
-                      </div>
 
                       {selectedBadge.description && (
                         <p className="text-white/80 text-sm text-center">

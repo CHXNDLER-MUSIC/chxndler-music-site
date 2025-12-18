@@ -805,18 +805,30 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   };
 
   const handlePrevCard = () => {
-    if (availableCards.length > 1 && onCardNavigation) {
-      try { sfx.play('flip', 0.8); } catch {}
+    try { sfx.play('flip', 0.8); } catch {}
+    setIsEnlargedCardFlipped(false);
+
+    // If element is selected, use internal navigation
+    if (selectedElement && filteredCards.length > 0) {
+      setInternalCardIndex(prev =>
+        prev <= 0 ? filteredCards.length - 1 : prev - 1
+      );
+    } else if (availableCards.length > 1 && onCardNavigation) {
       onCardNavigation('prev');
-      setIsEnlargedCardFlipped(false);
     }
   };
 
   const handleNextCard = () => {
-    if (availableCards.length > 1 && onCardNavigation) {
-      try { sfx.play('flip', 0.8); } catch {}
+    try { sfx.play('flip', 0.8); } catch {}
+    setIsEnlargedCardFlipped(false);
+
+    // If element is selected, use internal navigation
+    if (selectedElement && filteredCards.length > 0) {
+      setInternalCardIndex(prev =>
+        prev >= filteredCards.length - 1 ? 0 : prev + 1
+      );
+    } else if (availableCards.length > 1 && onCardNavigation) {
       onCardNavigation('next');
-      setIsEnlargedCardFlipped(false);
     }
   };
 
@@ -1588,8 +1600,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
             {/* Four Element Containers */}
             <div className="grid grid-cols-2 gap-6 max-w-md mx-auto">
               {/* Lightning Element */}
-              <div 
+              <div
                 className="relative group cursor-pointer"
+                onClick={() => handleElementSelect('LIGHTNING')}
                 onMouseEnter={() => {
                   try { sfx.play('change-channel', 0.5); } catch {}
                 }}
@@ -1608,8 +1621,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               </div>
 
               {/* Void/Air Element */}
-              <div 
+              <div
                 className="relative group cursor-pointer"
+                onClick={() => handleElementSelect('VOID')}
                 onMouseEnter={() => {
                   try { sfx.play('change-channel', 0.5); } catch {}
                 }}
@@ -1623,8 +1637,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               </div>
 
               {/* Water Element */}
-              <div 
+              <div
                 className="relative group cursor-pointer"
+                onClick={() => handleElementSelect('WATER')}
                 onMouseEnter={() => {
                   try { sfx.play('change-channel', 0.5); } catch {}
                 }}
@@ -1643,8 +1658,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               </div>
 
               {/* Heart Element */}
-              <div 
+              <div
                 className="relative group cursor-pointer"
+                onClick={() => handleElementSelect('HEART')}
                 onMouseEnter={() => {
                   try { sfx.play('change-channel', 0.5); } catch {}
                 }}

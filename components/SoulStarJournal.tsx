@@ -1812,8 +1812,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           }}
         >
           {/* Main Entry Card Container */}
-          <div 
-            className="rounded-lg px-1 pt-2 pb-0 space-y-3 h-full flex flex-col"
+          <div
+            className="rounded-lg px-1 pt-2 pb-0 space-y-1 h-full flex flex-col"
             style={{
               background: 'rgba(0, 0, 0, 0.7)',
               border: `1px solid ${elementTheme.color}60`,
@@ -1842,8 +1842,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               </button>
 
               {/* SOUL STAR JOURNAL Title */}
-              <div 
-                className="text-2xl font-bold tracking-wider mt-0.5 mb-3"
+              <div
+                className="text-2xl font-bold tracking-wider mt-0.5 mb-0.5"
                 style={{
                   color: elementTheme.color,
                   textShadow: `0 0 15px ${elementTheme.glow}, 0 0 30px ${elementTheme.glow}`,
@@ -1971,9 +1971,9 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     boxShadow: `0 0 15px ${elementTheme.color}60, 0 0 30px ${elementTheme.color}30, inset 0 0 10px ${elementTheme.color}20`
                   }}
                 >
-                  <div className="space-y-1">
+                  <div className="space-y-0">
                     <div className="flex items-center gap-2">
-                      <div 
+                      <div
                         className="w-9 h-9 flex items-center justify-center relative"
                         style={{
                           background: `radial-gradient(circle, ${elementTheme.color}30, transparent 70%)`,
@@ -2026,9 +2026,9 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                         Intention
                       </div>
                     </div>
-                    <div 
-                      className="text-lg leading-relaxed"
-                      style={{ color: '#FFFFFF', lineHeight: '1.5' }}
+                    <div
+                      className="text-lg leading-snug"
+                      style={{ color: '#FFFFFF', lineHeight: '1.3' }}
                     >
                       {dailyPrompt.intention.text}
                     </div>
@@ -2044,47 +2044,47 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     boxShadow: `0 0 15px ${elementTheme.color}60, 0 0 30px ${elementTheme.color}30, inset 0 0 10px ${elementTheme.color}20`
                   }}
                 >
-                  <div className="space-y-1">
+                  <div className="space-y-0">
                     <div className="flex items-center gap-2">
-                      <div 
+                      <div
                         className="w-8 h-8 flex items-center justify-center relative"
                         style={{
                           background: `radial-gradient(circle, ${elementTheme.color}30, transparent 70%)`,
                           filter: `drop-shadow(0 0 4px ${elementTheme.color})`
                         }}
                       >
-                        <svg 
-                          width="20" 
-                          height="20" 
-                          viewBox="0 0 24 24" 
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
                           fill="none"
                           style={{
                             filter: `drop-shadow(0 0 6px ${elementTheme.color}) drop-shadow(0 0 12px ${elementTheme.color}40)`
                           }}
                         >
-                          <path 
-                            d="M8 9h8M8 12h8M8 15h6" 
+                          <path
+                            d="M8 9h8M8 12h8M8 15h6"
                             stroke={elementTheme.color}
                             strokeWidth="2"
                             strokeLinecap="round"
                           />
-                          <path 
-                            d="M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" 
+                          <path
+                            d="M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"
                             stroke={elementTheme.color}
                             strokeWidth="1.5"
                             fill="none"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                           />
-                          <circle 
-                            cx="19" 
-                            cy="8" 
-                            r="2" 
+                          <circle
+                            cx="19"
+                            cy="8"
+                            r="2"
                             fill={elementTheme.color}
                             opacity="0.8"
                           />
                         </svg>
-                        <div 
+                        <div
                           className="absolute inset-0 rounded-full animate-pulse"
                           style={{
                             background: `radial-gradient(circle, ${elementTheme.color}20, transparent 60%)`,
@@ -2099,11 +2099,11 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                         Prompt
                       </div>
                     </div>
-                    <div 
-                      className="text-lg leading-relaxed"
-                      style={{ 
-                        color: dailyPrompt.entry_text?.text ? '#FFFFFF' : 'rgba(255, 255, 255, 0.6)', 
-                        lineHeight: '1.5' 
+                    <div
+                      className="text-lg leading-snug"
+                      style={{
+                        color: dailyPrompt.entry_text?.text ? '#FFFFFF' : 'rgba(255, 255, 255, 0.6)',
+                        lineHeight: '1.3'
                       }}
                     >
                       {dailyPrompt.entry_text?.text || 'No prompt was generated for this day.'}
@@ -2175,7 +2175,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                       onChange={(e) => setSoulStarText(e.target.value)}
                       onClick={(e) => e.stopPropagation()}
                       placeholder={(!user?.id || !profile?.element) ? "Let your Soul speak..." : "Let your Soul Star speak…"}
-                      className="w-full h-20 p-3 rounded-lg text-white text-lg placeholder-white/50 resize-none focus:outline-none transition-all"
+                      className="w-full h-16 p-2 rounded-lg text-white text-lg placeholder-white/50 resize-none focus:outline-none transition-all"
                       disabled={isSaving || journalState.isSubmitted}
                       style={{
                         background: 'rgba(0,0,0,0.4)',
@@ -2183,7 +2183,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                         boxShadow: `0 0 8px ${elementTheme.color}15`,
                         opacity: (isSaving || journalState.isSubmitted) ? 0.7 : 1,
                         pointerEvents: (isSaving || journalState.isSubmitted) ? 'none' as any : 'auto',
-                        lineHeight: '1.5'
+                        lineHeight: '1.2'
                       }}
                       onFocus={(e) => {
                         if (journalState.isSubmitted) return;
@@ -2351,8 +2351,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               }}
             >
               <img
-                src={`/cards/${selectedCard.card_name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/--+/g, '-').replace(/^-|-$/g, '')}.webp`}
-                alt={selectedCard.card_name}
+                src={selectedCard.image}
+                alt={selectedCard.name}
                 className="w-full h-full object-cover"
                 draggable={false}
                 onError={(e) => {
