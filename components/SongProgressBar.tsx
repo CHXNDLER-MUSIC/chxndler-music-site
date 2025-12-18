@@ -62,14 +62,17 @@ const SongProgressBar: React.FC<SongProgressBarProps> = ({
 
   return (
     <div className="mt-3 w-full">
-      <div 
+      {/* Larger click target area */}
+      <div
         ref={progressBarRef}
-        className="relative w-full h-1.5 bg-white/10 rounded-full overflow-hidden cursor-pointer group"
+        className="relative w-full py-3 cursor-pointer group"
         onMouseMove={handleMouseMove}
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
         onClick={handleClick}
       >
+        {/* Visual track bar - thinner but with larger click area above */}
+        <div className="relative w-full h-2 bg-white/10 rounded-full overflow-visible">
         {/* Background track */}
         <div className="absolute inset-0 bg-gray-600/30 rounded-full" />
         
@@ -103,9 +106,9 @@ const SongProgressBar: React.FC<SongProgressBarProps> = ({
               }}
             />
             {/* Hover timestamp */}
-            <div 
+            <div
               className="absolute -top-10 px-2 py-1 bg-black/80 text-white text-xs rounded backdrop-blur-sm pointer-events-none"
-              style={{ 
+              style={{
                 left: `${hoverPosition}%`,
                 transform: 'translateX(-50%)',
               }}
@@ -114,6 +117,7 @@ const SongProgressBar: React.FC<SongProgressBarProps> = ({
             </div>
           </>
         )}
+        </div>
       </div>
     </div>
   );

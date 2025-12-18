@@ -16,11 +16,12 @@ export default function MessageList({ messages, onUserClick, loading, messageRea
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const [isNearBottom, setIsNearBottom] = useState(true);
+  const isInitialMount = useRef(true);
 
   // Check if user is near bottom of chat
   const checkIfNearBottom = () => {
     if (!scrollContainerRef.current) return true;
-    
+
     const container = scrollContainerRef.current;
     const threshold = 100; // pixels from bottom
     const isNear = container.scrollTop + container.clientHeight >= container.scrollHeight - threshold;
@@ -31,19 +32,26 @@ export default function MessageList({ messages, onUserClick, loading, messageRea
   // Always auto-scroll to the newest message
   useEffect(() => {
     if (messages.length === 0) return;
-    scrollToBottom();
+
+    // Use instant scroll on initial load, smooth scroll for new messages
+    const shouldUseInstant = isInitialMount.current;
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+    }
+
+    scrollToBottom(shouldUseInstant ? 'instant' : 'smooth');
   }, [messages]);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = (behavior = 'smooth') => {
     // Prefer scrolling the container to avoid layout shift
     const container = scrollContainerRef.current;
     if (container) {
       // Use requestAnimationFrame to ensure layout is updated before scrolling
       requestAnimationFrame(() => {
-        container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+        container.scrollTo({ top: container.scrollHeight, behavior });
       });
     } else {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current?.scrollIntoView({ behavior });
     }
   };
 
@@ -61,12 +69,13 @@ export default function MessageList({ messages, onUserClick, loading, messageRea
   }
 
   return (
-    <div 
+    <div
       ref={scrollContainerRef}
       className="flex-1 overflow-y-auto p-3 space-y-1 min-h-0"
       style={{
         scrollbarWidth: 'thin',
-        scrollbarColor: 'rgba(0, 255, 255, 0.3) transparent'
+        scrollbarColor: 'rgba(0, 255, 255, 0.3) transparent',
+        overscrollBehavior: 'contain'
       }}
       onScroll={checkIfNearBottom}
     >

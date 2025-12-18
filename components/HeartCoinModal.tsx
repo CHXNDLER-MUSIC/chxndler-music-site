@@ -366,6 +366,10 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     // Build & set ordered element cards immediately if available
     // buildOrderedElementCards puts the namesake card first (index 0)
     const orderedNow = buildOrderedElementCards(element, allCards);
+    try {
+      console.log('[Cards] element selected:', element, 'ordered count:', orderedNow.length, 'first:', orderedNow[0]?.card_name || orderedNow[0]?.cards?.card_name);
+      console.log('[Cards] ordered list:', orderedNow.map((c:any)=> c.card_name || c.cards?.card_name));
+    } catch {}
     setElementCards(orderedNow);
     setDidInitElementIndex(false);
     // Set to index 0 since buildOrderedElementCards puts namesake first
@@ -391,6 +395,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     // Rebuild ordered list when cards first load/change
     // buildOrderedElementCards puts the namesake card first (index 0)
     const ordered = buildOrderedElementCards(selectedElement, allCards);
+    try {
+      console.log('[Cards] post-load build for element:', selectedElement, 'count:', ordered.length, 'first:', ordered[0]?.card_name || ordered[0]?.cards?.card_name);
+    } catch {}
     setElementCards(ordered);
     if (ordered.length === 0) return;
 
@@ -998,7 +1005,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       title="HeartCoins"
       onTitleClick={() => setShowHeartCoinDescription(!showHeartCoinDescription)}
     >
-      <div className="relative h-full flex flex-col" style={{ minHeight: '55vh' }}>
+      <div className="relative flex flex-col flex-1 h-full">
         {/* Top Level Tabs */}
         <div className="flex border-b border-white/20 mb-6">
           <button
@@ -1119,7 +1126,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         )}
 
         {activeTab === 'earn' ? (
-          <div className="flex flex-col flex-1 min-h-0">
+          <div className="flex flex-col flex-1 min-h-0 h-full">
             <div className="text-center mb-4">
               {showHeartCoinDescription ? (
                 <div className="text-white/80 text-sm leading-relaxed space-y-2">
@@ -1134,9 +1141,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
             {/* Quest Content */}
             {activeEarnTab === 'DAILY QUESTS' ? (
-              <div className="flex flex-col flex-1 w-full gap-3 min-h-0">
+              <div className="flex flex-col flex-1 w-full gap-3 min-h-0 h-full">
                 {/* Element of the Day Quest */}
-                <div className="w-full bg-black/20 rounded-lg p-4 border border-white/10 flex-shrink-0">
+                <div className="w-full bg-black/20 rounded-lg p-4 border border-white/10 flex-1">
                   <div className="flex items-center justify-between w-full">
                     <div className="flex items-center gap-4 flex-1 min-w-0">
                       <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center flex-shrink-0">
@@ -1600,12 +1607,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     try { sfx.play('hover', 0.3); } catch {}
                   }
                 }}
-                disabled={displayCards.length <= 1}
-                className={`absolute left-4 top-1/2 transform -translate-y-1/2 z-20 w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 border-2 ${
-                  displayCards.length > 1
-                    ? 'bg-black/70 hover:bg-black/90 border-white/50 hover:border-white/80 text-white hover:text-white hover:scale-110 cursor-pointer'
-                    : 'bg-black/40 border-white/20 text-white/30 cursor-not-allowed'
-                }`}
+                disabled={false}
+                className={`absolute left-4 top-1/2 transform -translate-y-1/2 z-20 w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 border-2 bg-black/70 hover:bg-black/90 border-white/50 hover:border-white/80 text-white hover:text-white hover:scale-110 cursor-pointer`}
                 style={{
                   backdropFilter: 'blur(8px)'
                 }}
@@ -1717,12 +1720,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     try { sfx.play('hover', 0.3); } catch {}
                   }
                 }}
-                disabled={displayCards.length <= 1}
-                className={`absolute right-4 top-1/2 transform -translate-y-1/2 z-20 w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 border-2 ${
-                  displayCards.length > 1
-                    ? 'bg-black/70 hover:bg-black/90 border-white/50 hover:border-white/80 text-white hover:text-white hover:scale-110 cursor-pointer'
-                    : 'bg-black/40 border-white/20 text-white/30 cursor-not-allowed'
-                }`}
+                disabled={false}
+                className={`absolute right-4 top-1/2 transform -translate-y-1/2 z-20 w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 border-2 bg-black/70 hover:bg-black/90 border-white/50 hover:border-white/80 text-white hover:text-white hover:scale-110 cursor-pointer`}
                 style={{
                   backdropFilter: 'blur(8px)'
                 }}

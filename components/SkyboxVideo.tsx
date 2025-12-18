@@ -149,26 +149,39 @@ export default function SkyboxVideo({
       warpSfxEndCalledRef.current = false;
       const v = lsRef.current;
       if (v) { try { v.currentTime = 0; } catch {} void v.play().catch(()=>{}); }
-      // Delay warp SFX slightly to sync with lightspeed video, and notify when it ends
-      setTimeout(() => {
-        try {
-          warpSoundPlayingRef.current = true;
-          sfx.playAndWait('warp', 0.7).then(() => {
-            warpSoundPlayingRef.current = false;
-            // Mark audio as finished and check if we can fire onWarpSfxEnd
-            warpAudioFinishedRef.current = true;
-            maybeFireWarpSfxEnd();
-          }).catch(() => {
-            warpSoundPlayingRef.current = false;
-            warpAudioFinishedRef.current = true;
-            maybeFireWarpSfxEnd();
-          });
-        } catch {
+      // Check if warp sound was already played externally (e.g., by Start button)
+      const warpAlreadyPlayed = typeof window !== 'undefined' && (window as any).__WARP_SOUND_PLAYED;
+      if (warpAlreadyPlayed) {
+        // Clear the flag for next warp
+        (window as any).__WARP_SOUND_PLAYED = false;
+        // Warp was already played - just wait for its duration (~2.5s) then mark as finished
+        warpSoundPlayingRef.current = true;
+        setTimeout(() => {
           warpSoundPlayingRef.current = false;
           warpAudioFinishedRef.current = true;
           maybeFireWarpSfxEnd();
-        }
-      }, 100);
+        }, 2500); // Approximate warp.mp3 duration
+      } else {
+        // Play warp sound normally with slight delay to sync with lightspeed video
+        setTimeout(() => {
+          try {
+            warpSoundPlayingRef.current = true;
+            sfx.playAndWait('warp', 0.7).then(() => {
+              warpSoundPlayingRef.current = false;
+              warpAudioFinishedRef.current = true;
+              maybeFireWarpSfxEnd();
+            }).catch(() => {
+              warpSoundPlayingRef.current = false;
+              warpAudioFinishedRef.current = true;
+              maybeFireWarpSfxEnd();
+            });
+          } catch {
+            warpSoundPlayingRef.current = false;
+            warpAudioFinishedRef.current = true;
+            maybeFireWarpSfxEnd();
+          }
+        }, 100);
+      }
       flyEndCalledRef.current = false;
       if (onFlyStart) try { onFlyStart(); } catch {}
       if (!holdLightspeed) {
@@ -210,26 +223,39 @@ export default function SkyboxVideo({
         const v = lsRef.current;
         if (v) { try { v.currentTime = 0; } catch {} void v.play().catch(()=>{}); }
       }
-      // Delay warp SFX slightly to sync with lightspeed video, and notify when it ends
-      setTimeout(() => {
-        try {
-          warpSoundPlayingRef.current = true;
-          sfx.playAndWait('warp', 0.7).then(() => {
-            warpSoundPlayingRef.current = false;
-            // Mark audio as finished and check if we can fire onWarpSfxEnd
-            warpAudioFinishedRef.current = true;
-            maybeFireWarpSfxEnd();
-          }).catch(() => {
-            warpSoundPlayingRef.current = false;
-            warpAudioFinishedRef.current = true;
-            maybeFireWarpSfxEnd();
-          });
-        } catch {
+      // Check if warp sound was already played externally (e.g., by Start button)
+      const warpAlreadyPlayed2 = typeof window !== 'undefined' && (window as any).__WARP_SOUND_PLAYED;
+      if (warpAlreadyPlayed2) {
+        // Clear the flag for next warp
+        (window as any).__WARP_SOUND_PLAYED = false;
+        // Warp was already played - just wait for its duration (~2.5s) then mark as finished
+        warpSoundPlayingRef.current = true;
+        setTimeout(() => {
           warpSoundPlayingRef.current = false;
           warpAudioFinishedRef.current = true;
           maybeFireWarpSfxEnd();
-        }
-      }, 100);
+        }, 2500); // Approximate warp.mp3 duration
+      } else {
+        // Play warp sound normally with slight delay to sync with lightspeed video
+        setTimeout(() => {
+          try {
+            warpSoundPlayingRef.current = true;
+            sfx.playAndWait('warp', 0.7).then(() => {
+              warpSoundPlayingRef.current = false;
+              warpAudioFinishedRef.current = true;
+              maybeFireWarpSfxEnd();
+            }).catch(() => {
+              warpSoundPlayingRef.current = false;
+              warpAudioFinishedRef.current = true;
+              maybeFireWarpSfxEnd();
+            });
+          } catch {
+            warpSoundPlayingRef.current = false;
+            warpAudioFinishedRef.current = true;
+            maybeFireWarpSfxEnd();
+          }
+        }, 100);
+      }
       if (!holdLightspeed) {
         if (lsTimerRef.current !== undefined) window.clearTimeout(lsTimerRef.current);
         lsTimerRef.current = window.setTimeout(() => {

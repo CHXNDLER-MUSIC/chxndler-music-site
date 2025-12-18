@@ -16,8 +16,6 @@ import { sfx } from "@/lib/sfx";
 import NeonWaveform from "@/components/NeonWaveform";
 import SharedModal from "@/components/SharedModal";
 import AnimatedLyrics from "@/components/AnimatedLyrics";
-import SongProgressBar from "@/components/SongProgressBar";
-import TrackProgressBar from "@/components/TrackProgressBar";
 
 type Props = {
   onSkyChange: (webm: string, mp4: string, key: string) => void;
@@ -1384,13 +1382,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               />
             </button>
           </div>
-        
-        {/* Track Progress Bar - moved below lyrics */}
-        <div className="relative w-full" style={{ marginBottom: '8px', marginTop: '6px' }}>
-          <TrackProgressBar 
-            selectedSong={cur}
-          />
-        </div>
 
         {/* Waveform section - moved below controls */}
         <div className="waveform-wrapper">
@@ -1808,16 +1799,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             </div>
           </div>
 
-        </div>
-
-        {/* Element-based glowing progress bar below controls */}
-        <div className="progress-bar-container">
-          <SongProgressBar
-            currentTime={currentTime}
-            duration={liveDuration}
-            onSeek={handleSeek}
-            element={currentElement.toUpperCase() as "HEART" | "WATER" | "LIGHTNING" | "DARKNESS"}
-          />
         </div>
       </div>
 
@@ -2744,13 +2725,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           box-shadow: 0 0 12px rgba(25,227,255,0.25);
           margin: 0 2px;
           transform: translateY(10px); /* nudge buttons slightly lower */
-        }
-
-        .progress-bar-container {
-          order: 4 !important; /* Below controls */
-          width: 100%;
-          padding: 0 4px;
-          margin-top: 8px;
         }
 
         .play-pause-btn {

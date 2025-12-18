@@ -1316,6 +1316,15 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // Enable SFX immediately so warp sound can play
     try { sfx.setEnabled(true); } catch {}
 
+    // Play warp.mp3 IMMEDIATELY on Start button click (don't wait for SkyboxVideo)
+    try {
+      sfx.play('warp', 0.7);
+      // Set global flag so SkyboxVideo doesn't play warp again
+      if (typeof window !== 'undefined') {
+        (window).__WARP_SOUND_PLAYED = true;
+      }
+    } catch {}
+
     // Enter warp phase immediately
     setUiPhase("warping");
     // Prevent any UI reveals until button.mp3 completes
@@ -1357,12 +1366,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       console.error("Error stopping audio (non-critical):", e);
     }
 
-    // Trigger the unified audio start sequence (warp + welcome + space music)
-    try {
-      audioManager.playStartSequence(false).catch(console.error);
-    } catch (e) {
-      console.error("Error starting audio sequence (non-critical):", e);
-    }
+    // NOTE: Audio sequence is handled by SkyboxVideo (warp.mp3) and onWarpSfxEnd (button.mp3)
+    // Do NOT call audioManager.playStartSequence here as it would duplicate the sounds
 
     // When warp finishes, move to landed phase
     // NOTE: The beam and HUD are now enabled in onWarpSfxEnd AFTER button.mp3 plays

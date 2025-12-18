@@ -49,7 +49,7 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
           userSelect: 'none'
         }}
       >
-        <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-[#FC54AF]/60 bg-white/5 shadow-[0_0_26px_rgba(56,182,255,0.35)] max-h-[85vh] overflow-hidden flex flex-col">
+        <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-[#FC54AF]/60 bg-white/5 shadow-[0_0_26px_rgba(56,182,255,0.35)] h-[70vh] max-h-[85vh] overflow-hidden flex flex-col">
           <div
             className="absolute inset-0 rounded-2xl pointer-events-none"
             style={{

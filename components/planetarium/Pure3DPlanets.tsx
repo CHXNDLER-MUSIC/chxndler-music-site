@@ -15,9 +15,27 @@ export interface Pure3DPlanetsProps {
   focusElement?: ElementType | null;
   // New: focus camera on a specific song's planet (by slug/id)
   focusSongId?: string | null;
+  // Element of the Day props
+  glowingElement?: ElementType | null;
+  glowActive?: boolean;
+  hasClaimedElementOfDay?: boolean;
+  isClaimingReward?: boolean;
+  onDailyPlanetClick?: (element: ElementType) => Promise<any>;
 }
 
-export default function Pure3DPlanets({ songs, songsByElement: propSongsByElement, quality, onPlanetSelect, focusElement, focusSongId, glowingElement = null, glowActive = false }: Pure3DPlanetsProps) {
+export default function Pure3DPlanets({
+  songs,
+  songsByElement: propSongsByElement,
+  quality,
+  onPlanetSelect,
+  focusElement,
+  focusSongId,
+  glowingElement = null,
+  glowActive = false,
+  hasClaimedElementOfDay = false,
+  isClaimingReward = false,
+  onDailyPlanetClick
+}: Pure3DPlanetsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isClient, setIsClient] = useState(false);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -26,10 +44,27 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
   const songMeshMapRef = useRef<Map<string, THREE.Object3D>>(new Map());
   // Keep references to glow sprites for element planets so we can toggle visibility
   const glowSpriteMapRef = useRef<Map<string, THREE.Sprite>>(new Map());
+  // Keep references to element planet sprites for hover detection
+  const elementSpriteMapRef = useRef<Map<string, THREE.Sprite>>(new Map());
+
+  // Element of Day state
+  const [hoveredElement, setHoveredElement] = useState<ElementType | null>(null);
+  const [isCinematic, setIsCinematic] = useState(false);
+  const isCinematicRef = useRef(false); // Ref version for animation loop access
+  const restCameraPositionRef = useRef<THREE.Vector3 | null>(null);
+  const restCameraTargetRef = useRef<THREE.Vector3 | null>(null);
+  const desiredCameraPosRef = useRef<THREE.Vector3 | null>(null);
+  const desiredLookAtRef = useRef<THREE.Vector3 | null>(null);
+  const initialBiasDoneRef = useRef(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // Sync isCinematic ref with state for animation loop access
+  useEffect(() => {
+    isCinematicRef.current = isCinematic;
+  }, [isCinematic]);
 
   // Compute songsByElement from songs if not provided
   const songsByElement = React.useMemo(() => {
@@ -180,9 +215,14 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
       group.position.set(0, sunY, 0);
       // Planet sprite
       const planet = createElementSprite(p.texture, 1.8, p.pos, p.glow);
+      // Tag the planet sprite with its element id for raycasting
+      (planet as any).userData = { elementId: p.id };
+      try { elementSpriteMapRef.current.set(p.id, planet); } catch {}
       // Optional glow sprite (controlled by props)
       const glowSprite = createGlowSprite(p.texture, 1.8, p.pos);
-      glowSprite.visible = (glowActive && glowingElement === p.id);
+      // Daily element glow is visible only if glowActive and it's the daily element and not claimed
+      const isDailyElement = glowingElement === p.id;
+      glowSprite.visible = !!(glowActive && isDailyElement && !hasClaimedElementOfDay);
       try { glowSpriteMapRef.current.set(p.id, glowSprite); } catch {}
       group.add(glowSprite);
       group.add(planet);
@@ -228,7 +268,7 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
 
     // Starfield
     const starGeometry = new THREE.BufferGeometry();
-    const starPositions = [];
+    const starPositions: number[] = [];
     for (let i = 0; i < 200; i++) {
       const seed = i * 137.508;
       starPositions.push(
@@ -242,11 +282,37 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
     const stars = new THREE.Points(starGeometry, starMaterial);
     scene.add(stars);
 
-    // Raycaster for click detection
+    // Raycaster for click and hover detection
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
-    const handleClick = (event: MouseEvent) => {
+    // Element planet world positions (computed dynamically due to orbit)
+    const getElementWorldPosition = (elementId: string): THREE.Vector3 | null => {
+      const sprite = elementSpriteMapRef.current.get(elementId);
+      if (!sprite) return null;
+      const worldPos = new THREE.Vector3();
+      sprite.getWorldPosition(worldPos);
+      return worldPos;
+    };
+
+    // Camera target positions for cinematic focus (offset from planet position)
+    const getCinematicCameraTarget = (elementPos: THREE.Vector3): { camPos: THREE.Vector3; lookAt: THREE.Vector3 } => {
+      // Position camera looking at the planet from a closer distance
+      const dirFromCenter = elementPos.clone().sub(new THREE.Vector3(0, sunY, 0)).normalize();
+      const cameraDistance = 15; // Close enough to see the planet clearly
+      const camPos = elementPos.clone().add(dirFromCenter.multiplyScalar(cameraDistance)).add(new THREE.Vector3(0, 5, 0));
+      return { camPos, lookAt: elementPos.clone() };
+    };
+
+    // Hover bias: very subtle camera nudge toward hovered element
+    const getHoverBias = (elementPos: THREE.Vector3, restPos: THREE.Vector3): THREE.Vector3 => {
+      const dir = elementPos.clone().sub(restPos).normalize();
+      const biasStrength = 2; // Very subtle - just 2 units toward the planet
+      return restPos.clone().add(dir.multiplyScalar(biasStrength));
+    };
+
+    // Click handler
+    const handleClick = async (event: MouseEvent) => {
       // Stop event from bubbling up to parent elements (prevents HUD toggle)
       event.stopPropagation();
       event.preventDefault();
@@ -259,17 +325,122 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
       const intersects = raycaster.intersectObjects(scene.children, true);
 
       if (intersects.length > 0) {
-        const obj = intersects[0].object;
+        const obj = intersects[0].object as any;
+
         if (obj === sun) {
           onPlanetSelect?.('center');
-        } else {
-          // Check which planet was clicked
-          orbitGroups.forEach((og, idx) => {
-            if (og.group.children.includes(obj)) {
-              onPlanetSelect?.(planets[idx].id);
-            }
-          });
+          return;
         }
+
+        // Check if this is an element planet
+        const elementId = obj.userData?.elementId as ElementType | undefined;
+        if (elementId) {
+          // Only allow clicking the element of the day for rewards
+          if (elementId === glowingElement && !hasClaimedElementOfDay && !isClaimingReward && !isCinematicRef.current && onDailyPlanetClick) {
+            // Start cinematic sequence
+            isCinematicRef.current = true;
+            setIsCinematic(true);
+
+            // Get planet world position
+            const planetPos = getElementWorldPosition(elementId);
+            if (planetPos) {
+              const { camPos, lookAt } = getCinematicCameraTarget(planetPos);
+              desiredCameraPosRef.current = camPos;
+              desiredLookAtRef.current = lookAt;
+            }
+
+            try {
+              // Call the reward claim function
+              await onDailyPlanetClick(elementId);
+            } catch (err) {
+              console.error('Error claiming element of day reward:', err);
+            }
+
+            // After a short beat, return camera to rest position
+            setTimeout(() => {
+              if (restCameraPositionRef.current && restCameraTargetRef.current) {
+                desiredCameraPosRef.current = restCameraPositionRef.current.clone();
+                desiredLookAtRef.current = restCameraTargetRef.current.clone();
+              }
+              setTimeout(() => {
+                isCinematicRef.current = false;
+                setIsCinematic(false);
+              }, 800);
+            }, 700);
+
+            return;
+          }
+
+          // Non-daily elements: call onPlanetSelect but no reward
+          onPlanetSelect?.(elementId);
+          return;
+        }
+
+        // Check for song planets
+        const songSlug = obj.userData?.slug;
+        if (songSlug) {
+          onPlanetSelect?.(songSlug);
+          return;
+        }
+
+        // Fallback: check orbit groups for element click
+        orbitGroups.forEach((og, idx) => {
+          if (og.group.children.includes(obj)) {
+            onPlanetSelect?.(planets[idx].id);
+          }
+        });
+      }
+    };
+
+    // Hover handler for element planets
+    const handleMouseMove = (event: MouseEvent) => {
+      const rect = container.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(scene.children, true);
+
+      let foundHover: ElementType | null = null;
+
+      for (const hit of intersects) {
+        const obj = hit.object as any;
+        const elementId = obj.userData?.elementId as ElementType | undefined;
+        if (elementId && elementId === glowingElement && !hasClaimedElementOfDay) {
+          foundHover = elementId;
+          break;
+        }
+      }
+
+      setHoveredElement(foundHover);
+
+      // Update cursor style
+      container.style.cursor = foundHover ? 'pointer' : 'default';
+
+      // Update desired camera position for hover bias
+      if (!isCinematicRef.current && restCameraPositionRef.current && restCameraTargetRef.current) {
+        if (foundHover) {
+          const planetPos = getElementWorldPosition(foundHover);
+          if (planetPos) {
+            desiredCameraPosRef.current = getHoverBias(planetPos, restCameraPositionRef.current);
+            desiredLookAtRef.current = restCameraTargetRef.current.clone();
+          }
+        } else {
+          // Return to rest position
+          desiredCameraPosRef.current = restCameraPositionRef.current.clone();
+          desiredLookAtRef.current = restCameraTargetRef.current.clone();
+        }
+      }
+    };
+
+    const handleMouseLeave = () => {
+      setHoveredElement(null);
+      container.style.cursor = 'default';
+
+      // Return camera to rest position
+      if (!isCinematicRef.current && restCameraPositionRef.current && restCameraTargetRef.current) {
+        desiredCameraPosRef.current = restCameraPositionRef.current.clone();
+        desiredLookAtRef.current = restCameraTargetRef.current.clone();
       }
     };
 
@@ -280,10 +451,20 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
 
     container.addEventListener('click', handleClick);
     container.addEventListener('mousedown', handleMouseDown);
+    container.addEventListener('mousemove', handleMouseMove);
+    container.addEventListener('mouseleave', handleMouseLeave);
 
     // Animation loop
     let animationId: number;
     const clock = new THREE.Clock();
+
+    // Save rest camera position after initial setup
+    if (!restCameraPositionRef.current) {
+      restCameraPositionRef.current = camera.position.clone();
+      restCameraTargetRef.current = controls.target.clone();
+      desiredCameraPosRef.current = camera.position.clone();
+      desiredLookAtRef.current = controls.target.clone();
+    }
 
     const animate = () => {
       animationId = requestAnimationFrame(animate);
@@ -301,6 +482,33 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
       songOrbitGroups.forEach(sg => {
         sg.group.rotation.y = elapsed * sg.speed;
       });
+
+      // Pulse animation for the daily element glow (only when not claimed)
+      if (glowingElement && !hasClaimedElementOfDay) {
+        const glowSprite = glowSpriteMapRef.current.get(glowingElement);
+        if (glowSprite && glowSprite.material) {
+          // Pulse opacity using sine wave: 0.3 to 0.6 range for subtle effect
+          const pulseValue = 0.35 + Math.sin(elapsed * 3) * 0.15;
+          (glowSprite.material as THREE.SpriteMaterial).opacity = pulseValue;
+
+          // Pulse scale slightly: 6.0 to 6.5 range
+          const scaleValue = 6.0 + Math.sin(elapsed * 2) * 0.3;
+          glowSprite.scale.set(scaleValue, scaleValue, 1);
+        }
+      }
+
+      // Camera lerp for smooth easing (hover bias and cinematic focus)
+      const lerpSpeed = isCinematicRef.current ? 0.04 : 0.08; // Slower during cinematic for dramatic effect
+      if (desiredCameraPosRef.current && desiredLookAtRef.current) {
+        camera.position.lerp(desiredCameraPosRef.current, lerpSpeed);
+        controls.target.lerp(desiredLookAtRef.current, lerpSpeed);
+      }
+
+      // Initial camera bias toward daily element on scene load (first 2 seconds)
+      if (!initialBiasDoneRef.current && glowingElement && elapsed > 0.5 && elapsed < 2.5) {
+        // Already handled by focusElement prop, but mark as done
+        initialBiasDoneRef.current = true;
+      }
 
       controls.update();
       renderer.render(scene, camera);
@@ -325,14 +533,17 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
       window.removeEventListener('resize', handleResize);
       container.removeEventListener('click', handleClick);
       container.removeEventListener('mousedown', handleMouseDown);
+      container.removeEventListener('mousemove', handleMouseMove);
+      container.removeEventListener('mouseleave', handleMouseLeave);
       controls.dispose();
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
-      // Clear song mesh map on teardown
+      // Clear maps on teardown
       try { songMeshMapRef.current.clear(); } catch {}
       try { glowSpriteMapRef.current.clear(); } catch {}
+      try { elementSpriteMapRef.current.clear(); } catch {}
     };
   // Only rebuild when songs are first loaded (length changes from 0)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -342,10 +553,11 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
   useEffect(() => {
     try {
       glowSpriteMapRef.current.forEach((sprite, id) => {
-        sprite.visible = !!(glowActive && glowingElement === id);
+        // Only show glow for the daily element when not claimed
+        sprite.visible = !!(glowActive && glowingElement === id && !hasClaimedElementOfDay);
       });
     } catch {}
-  }, [glowingElement, glowActive]);
+  }, [glowingElement, glowActive, hasClaimedElementOfDay]);
 
   // Camera focus effect - animate camera to focus on the element of the day
   useEffect(() => {

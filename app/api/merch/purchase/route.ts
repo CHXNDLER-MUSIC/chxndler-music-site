@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createSupabaseServerClientWithJwt, getSupabaseAdmin } from '@/lib/supabaseServer';
+import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
 import type { PurchaseWithHeartcoinsResult } from '@/types/merch';
 
 export async function POST(request: NextRequest) {
@@ -54,33 +54,41 @@ export async function POST(request: NextRequest) {
 
     console.log('[PURCHASE] Attempting purchase:', { merch_item_id: merchItemId, qty: quantity, user_id: user.id });
 
-    // Look up merch item using admin (service role) client by ID only to avoid RLS and slug reliance
-    const admin = getSupabaseAdmin();
-    let merchItem: any = null;
-    let merchLookupError: any = null;
+    // Debug: confirm which Supabase URL the server is using
+    console.log('SUPABASE_URL(server):', process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL);
 
-    const { data: byId, error: byIdError } = await admin
+    // Look up merch item using user-scoped Supabase client by ID only
+    const { data: item, error: itemErr } = await supabase
       .from('merch_items')
-      .select('id, name, category, price_heartcoins, is_active')
+      .select('id, merch_item_id, name, price_heartcoins, is_active')
       .eq('id', merchItemId)
       .single();
-    merchItem = byId;
-    merchLookupError = byIdError;
 
-    if (merchLookupError || !merchItem) {
+    console.log('Merch lookup result:', { merchItemId, itemFound: !!item, itemErr: itemErr?.message });
+
+    if (itemErr) {
       return NextResponse.json(
-        { error: 'Item not found or no longer available.', errorCode: 'ITEM_NOT_FOUND' },
+        { errorCode: 'MERCH_LOOKUP_FAILED', details: itemErr.message },
+        { status: 500 }
+      );
+    }
+
+    if (!item) {
+      return NextResponse.json(
+        { errorCode: 'ITEM_NOT_FOUND', merchItemId },
         { status: 404 }
       );
     }
 
-    if (!merchItem?.is_active) {
-      console.warn('[PURCHASE] Item filtered out due to is_active=false', { merch_item_id: merchItemId });
+    if (item.is_active !== true) {
       return NextResponse.json(
-        { error: 'Item not found or no longer available.', errorCode: 'ITEM_NOT_FOUND' },
+        { errorCode: 'ITEM_NOT_AVAILABLE', merchItemId },
         { status: 404 }
       );
     }
+
+    // Preserve original variable name for downstream logic
+    const merchItem: any = item;
 
     const isPhysical = merchItem.category === 'physical';
 

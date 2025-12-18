@@ -1816,6 +1816,8 @@ const HUDPanel = React.memo(function HUDPanel({
   const [hudPopoverPos, setHudPopoverPos] = useState(null);
   // Direct ref to the currently tracked audio element for live reads during render
   const liveAudioRef = useRef(null);
+  // Progress bar ref for seeking
+  const progressBarRef = useRef(null);
   useEffect(() => {
     if (typeof beamEnabled === 'boolean') {
       const t = setTimeout(() => setBeamOpacity(beamEnabled ? 1 : 0), 10);
@@ -2371,6 +2373,9 @@ const HUDPanel = React.memo(function HUDPanel({
                     focusSongId={currentId || null}
                     glowingElement={planetRewards.elementOfDay || null}
                     glowActive={!planetRewards.claimedToday}
+                    hasClaimedElementOfDay={planetRewards.claimedToday}
+                    isClaimingReward={planetRewards.isClaimingReward}
+                    onDailyPlanetClick={planetRewards.claimPlanetReward}
                   />
                 </ErrorBoundary>
               </div>
@@ -2434,31 +2439,31 @@ const HUDPanel = React.memo(function HUDPanel({
               const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
               const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
               const pct = liveDur ? (liveTime / liveDur) * 100 : 0;
-              const seekAtClientX = (clientX) => {
-                if (!a || !liveDur) return;
-                const rect = barRef?.current?.getBoundingClientRect?.();
-                if (!rect) return;
+
+              const handleSeek = (clientX) => {
+                const audioEl = liveAudioRef?.current;
+                const bar = progressBarRef?.current;
+                if (!audioEl || !bar || !liveDur) return;
+                const rect = bar.getBoundingClientRect();
                 const clickX = clientX - rect.left;
                 const ratio = Math.min(Math.max(clickX / rect.width, 0), 1);
                 const newTime = ratio * liveDur;
-                try { a.currentTime = newTime; } catch {}
+                try { audioEl.currentTime = newTime; } catch {}
                 try { setProgress(newTime); } catch {}
               };
-              const onSeek = (event) => {
-                if (!a || !liveDur) return;
-                const rect = event.currentTarget.getBoundingClientRect();
-                const clickX = event.clientX - rect.left;
-                const ratio = Math.min(Math.max(clickX / rect.width, 0), 1);
-                const newTime = ratio * liveDur;
-                try { a.currentTime = newTime; } catch {}
-                try { setProgress(newTime); } catch {}
+
+              const onBarClick = (e) => {
+                handleSeek(e.clientX);
               };
+
               const onPointerDown = (e) => {
-                try { e.preventDefault(); } catch {}
-                seekAtClientX(e.clientX || (e.touches && e.touches[0]?.clientX) || 0);
+                e.preventDefault();
+                e.stopPropagation();
+                handleSeek(e.clientX || (e.touches?.[0]?.clientX) || 0);
+
                 const onMove = (me) => {
-                  const cx = me.clientX || (me.touches && me.touches[0]?.clientX) || 0;
-                  seekAtClientX(cx);
+                  const cx = me.clientX || (me.touches?.[0]?.clientX) || 0;
+                  handleSeek(cx);
                 };
                 const onUp = () => {
                   window.removeEventListener('mousemove', onMove);
@@ -2471,27 +2476,30 @@ const HUDPanel = React.memo(function HUDPanel({
                 window.addEventListener('mouseup', onUp, { passive: true });
                 window.addEventListener('touchend', onUp, { passive: true });
               };
-              const barRef = React.useRef(null);
+
               return (
-                <div className="absolute left-2 right-2 bottom-2" style={{ zIndex: 5, pointerEvents: 'auto' }}>
+                <div
+                  className="absolute left-2 right-2 bottom-2"
+                  style={{ zIndex: 100, pointerEvents: 'auto' }}
+                >
                   <div
-                    ref={barRef}
-                    className="relative w-full h-3 rounded-full bg-white/10 overflow-hidden cursor-pointer"
-                    onClick={onSeek}
+                    ref={progressBarRef}
+                    className="relative w-full h-4 rounded-full bg-white/10 cursor-pointer"
+                    onClick={onBarClick}
                     onMouseDown={onPointerDown}
                     onTouchStart={onPointerDown}
                     style={{ touchAction: 'none' }}
                   >
-                    <div className="absolute inset-0 opacity-40 bg-white/20" />
+                    <div className="absolute inset-0 opacity-40 bg-white/20 rounded-full" />
                     <div
-                      className="absolute inset-y-0 left-0 bg-[#FC54AF]/80 shadow-[0_0_12px_rgba(252,84,175,0.8)]"
-                      style={{ width: `${pct}%` }}
+                      className="absolute inset-y-0 left-0 bg-[#FC54AF] rounded-full shadow-[0_0_12px_rgba(252,84,175,0.8)]"
+                      style={{ width: `${pct}%`, pointerEvents: 'none' }}
                     />
                     <div
-                      className="absolute top-1/2 -translate-y-1/2"
+                      className="absolute top-1/2 -translate-y-1/2 pointer-events-none"
                       style={{ left: `calc(${pct}% - 6px)` }}
                     >
-                      <div className="w-3 h-3 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)] pointer-events-none" />
+                      <div className="w-3 h-3 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)]" />
                     </div>
                   </div>
                 </div>

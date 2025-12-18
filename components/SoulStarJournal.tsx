@@ -800,24 +800,12 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   `
                 }}
               >
-                <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
-                  <h3 className="text-2xl font-bold mb-4" style={{ color: '#FFFFFF' }}>
-                    {selectedCard.name}
-                  </h3>
-                  <div className="mb-2">
-                    <span className="text-sm uppercase tracking-wider font-semibold" style={{ color: '#CCCCCC' }}>
-                      Element: {selectedCard.element}
-                    </span>
-                  </div>
-                  <div className="mb-4">
-                    <span className="text-sm uppercase tracking-wider font-semibold" style={{ color: '#CCCCCC' }}>
-                      Rarity: {selectedCard.rarity}
-                    </span>
-                  </div>
-                  <div className="text-xs text-white/60 mt-4">
-                    Click to flip back
-                  </div>
-                </div>
+                <img
+                  src="/cards/BACK.webp"
+                  alt="Card Back"
+                  className="w-full h-full object-cover"
+                  draggable={false}
+                />
               </div>
             </div>
           </div>
@@ -2314,78 +2302,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         />
       )}
 
-      {/* Card Popup Modal */}
-      {selectedCard && (
-        <div 
-          className="fixed inset-0 z-[2147483645] flex items-center justify-center p-4 pointer-events-none"
-          onClick={() => {
-            setSelectedCard(null);
-            setIsCardFlipped(false);
-          }}
-        >
-          <div 
-            className="relative preserve-3d cursor-pointer pointer-events-auto"
-            style={{
-              width: 'min(400px, 90vw)',
-              height: 'min(560px, 80vh)',
-              transform: isCardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-              transformStyle: 'preserve-3d',
-              transition: 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              try { sfx.play('click', 0.8); } catch {}
-              setIsCardFlipped(!isCardFlipped);
-            }}
-          >
-            {/* Card Front */}
-            <div
-              className="absolute inset-0 rounded-xl overflow-hidden backface-hidden"
-              style={{
-                backfaceVisibility: 'hidden',
-                background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
-                border: '3px solid #00BFFF',
-                boxShadow: '0 0 30px #00BFFF60, 0 0 60px #00BFFF40',
-                animation: 'cardPulse 2s ease-in-out infinite'
-              }}
-            >
-              <img
-                src={selectedCard.image}
-                alt={selectedCard.name}
-                className="w-full h-full object-cover"
-                draggable={false}
-                onError={(e) => {
-                  e.currentTarget.src = '/cards/default-card.webp';
-                }}
-              />
-            </div>
-
-            {/* Card Back */}
-            <div
-              className="absolute inset-0 rounded-xl overflow-hidden backface-hidden"
-              style={{
-                backfaceVisibility: 'hidden',
-                transform: 'rotateY(180deg)',
-                background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
-                border: '3px solid #00BFFF',
-                boxShadow: '0 0 30px #00BFFF60, 0 0 60px #00BFFF40',
-                animation: 'cardPulse 2s ease-in-out infinite'
-              }}
-            >
-              <img
-                src="/cards/back.webp"
-                alt="Card Back"
-                className="w-full h-full object-cover"
-                draggable={false}
-                onError={(e) => {
-                  e.currentTarget.src = '/cards/default-back.webp';
-                }}
-              />
-            </div>
-          </div>
-
-        </div>
-      )}
 
       {/* Enlarged Badge Popup Modal - contained within journal panel area */}
       {enlargedBadge && (

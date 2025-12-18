@@ -21,6 +21,7 @@ interface BadgeDisplay {
   requirement_type: string;
   requirement_count: number;
   unlocked: boolean;
+  earned_at?: string | null;
   progress?: {
     current: number;
     target: number;
@@ -42,6 +43,16 @@ type Props = {
   embedded?: boolean;
 };
 
+// Format date for badge display (M/DD/YYYY)
+function formatClaimedDate(dateString: string | null | undefined): string {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const year = date.getFullYear();
+  return `${month}/${day}/${year}`;
+}
+
 export default function BadgesModal({ open, onClose, embedded = false }: Props) {
   const { profile, allBadges, userBadges, badgesLoading, badgesError, user } = useProfile();
   
@@ -59,8 +70,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
 
   // Create badge display objects with unlocked status and progress
   const badgesWithUnlocked: BadgeDisplay[] = allBadges.map(badge => {
-    const userBadgeIds = new Set(userBadges.map(ub => ub.badge_id));
-    const isUnlocked = userBadgeIds.has(badge.id);
+    const userBadge = userBadges.find(ub => ub.badge_id === badge.id);
+    const isUnlocked = !!userBadge;
     
     // Calculate progress for this badge
     let progress;
@@ -106,6 +117,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       requirement_type: badge.requirement_type,
       requirement_count: badge.requirement_count,
       unlocked: isUnlocked,
+      earned_at: userBadge?.earned_at || null,
       progress
     };
   });
@@ -271,19 +283,37 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                   className="absolute inset-0 w-full h-full rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 flex items-center justify-center"
                   style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
                 >
-                  <div className={`relative z-10 transition-opacity ${selectedBadge.unlocked ? 'opacity-100' : 'opacity-60'}`}>
-                    {selectedBadge.icon_url ? (
-                      <img
-                        src={selectedBadge.icon_url}
-                        alt={selectedBadge.badge_name}
-                        className="w-36 h-36 object-cover rounded-full"
-                        style={{ transform: 'scaleX(-1)' }}
-                        draggable={false}
-                      />
-                    ) : (
-                      <div className="text-4xl">🏅</div>
-                    )}
-                  </div>
+                  {/* Show user name and claimed date for unlocked badges */}
+                  {selectedBadge.unlocked ? (
+                    <div className="flex flex-col items-center justify-center text-center px-3 space-y-1">
+                      <div
+                        className="text-white font-bold text-xs uppercase tracking-wider"
+                        style={{ textShadow: '0 0 8px rgba(56,182,255,0.8)' }}
+                      >
+                        {profile?.display_name || profile?.name || 'Anonymous'}
+                      </div>
+                      <div
+                        className="text-cyan-400 text-[10px] uppercase tracking-wide"
+                        style={{ textShadow: '0 0 6px rgba(56,182,255,0.6)' }}
+                      >
+                        CLAIMED {formatClaimedDate(selectedBadge.earned_at)}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative z-10 transition-opacity opacity-60">
+                      {selectedBadge.icon_url ? (
+                        <img
+                          src={selectedBadge.icon_url}
+                          alt={selectedBadge.badge_name}
+                          className="w-36 h-36 object-cover rounded-full"
+                          style={{ transform: 'scaleX(-1)' }}
+                          draggable={false}
+                        />
+                      ) : (
+                        <div className="text-4xl">🏅</div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </TiltSpinCard>
@@ -900,20 +930,37 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                     boxShadow: '0 0 60px rgba(252,84,175,0.4), 0 0 120px rgba(56,182,255,0.3)'
                   }}
                 >
-                  {/* Badge content (same as front) */}
-                  <div className={`transition-opacity ${enlargedBadge.unlocked ? 'opacity-100' : 'opacity-40'}`}>
-                    {enlargedBadge.icon_url ? (
-                      <img
-                        src={enlargedBadge.icon_url}
-                        alt={enlargedBadge.badge_name}
-                        className="w-32 h-32 object-cover rounded-full"
-                        draggable={false}
-                        style={{ transform: 'scaleX(-1)' }}
-                      />
-                    ) : (
-                      <div className="text-6xl">🏅</div>
-                    )}
-                  </div>
+                  {/* Show user name and claimed date for unlocked badges */}
+                  {enlargedBadge.unlocked ? (
+                    <div className="flex flex-col items-center justify-center text-center px-4 space-y-2">
+                      <div
+                        className="text-white font-bold text-sm uppercase tracking-wider"
+                        style={{ textShadow: '0 0 8px rgba(56,182,255,0.8)' }}
+                      >
+                        {profile?.display_name || profile?.name || 'Anonymous'}
+                      </div>
+                      <div
+                        className="text-cyan-400 text-xs uppercase tracking-wide"
+                        style={{ textShadow: '0 0 6px rgba(56,182,255,0.6)' }}
+                      >
+                        CLAIMED {formatClaimedDate(enlargedBadge.earned_at)}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="transition-opacity opacity-40">
+                      {enlargedBadge.icon_url ? (
+                        <img
+                          src={enlargedBadge.icon_url}
+                          alt={enlargedBadge.badge_name}
+                          className="w-32 h-32 object-cover rounded-full"
+                          draggable={false}
+                          style={{ transform: 'scaleX(-1)' }}
+                        />
+                      ) : (
+                        <div className="text-6xl">🏅</div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </TiltSpinCard>

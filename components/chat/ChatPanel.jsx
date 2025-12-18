@@ -1104,7 +1104,7 @@ export default function ChatPanel({ isOpen, onClose }) {
               className="w-full h-full flex flex-col overflow-hidden"
               style={{
                 background: `
-                  linear-gradient(135deg, 
+                  linear-gradient(135deg,
                     rgba(0, 0, 0, 0.05) 0%,
                     rgba(0, 20, 40, 0.03) 50%,
                     rgba(0, 0, 0, 0.05) 100%
@@ -1116,7 +1116,8 @@ export default function ChatPanel({ isOpen, onClose }) {
                 `,
                 backdropFilter: 'blur(2px)',
                 userSelect: 'none',
-                WebkitUserSelect: 'none'
+                WebkitUserSelect: 'none',
+                overscrollBehavior: 'contain'
               }}
             >
               {/* Header */}
@@ -1178,7 +1179,7 @@ export default function ChatPanel({ isOpen, onClose }) {
               </div>
 
               {/* Content Area */}
-              <div className="flex-1 flex min-h-0 overflow-hidden">
+              <div className="flex-1 flex min-h-0 overflow-hidden" style={{ overscrollBehavior: 'contain' }}>
                 {/* User List */}
                 <div 
                   className={`border-r border-cyan-400/20 transition-all duration-300 ease-in-out flex-shrink-0 ${
@@ -2570,6 +2571,17 @@ export default function ChatPanel({ isOpen, onClose }) {
                 }
                 setSelectedBadgePopup(null);
                 setBadgeRotation(0); // Reset rotation when closing
+              }}
+              onMouseEnter={() => {
+                try {
+                  const audio = new Audio('/audio/hover.mp3');
+                  audio.volume = 0.3;
+                  audio.play().catch(error => {
+                    console.log('Hover audio play failed:', error);
+                  });
+                } catch (error) {
+                  console.log('Hover audio creation failed:', error);
+                }
               }}
               className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 z-10"
               style={{
