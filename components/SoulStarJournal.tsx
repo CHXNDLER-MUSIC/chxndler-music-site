@@ -729,7 +729,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       {cardOpen && selectedCard && (
         <div
           className="absolute inset-0 flex items-start justify-center z-50"
-          style={{ paddingLeft: '16px', paddingRight: '20px' }}
+          style={{ paddingTop: '56px', paddingLeft: '16px', paddingRight: '20px' }}
           onClick={() => {
             try { sfx.play('close', 0.8); } catch {}
             setCardOpen(false);
@@ -746,7 +746,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               border: `1px solid ${elementTheme.color}60`,
               boxShadow: `0 0 30px ${elementTheme.color}60, 0 0 60px ${elementTheme.color}40`,
               borderRadius: '14px',
-              backdropFilter: 'blur(12px)'
+              backdropFilter: 'blur(12px)',
+              overflow: 'hidden'
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1458,17 +1459,23 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                         })()}
                                       </button>
                                       
-                                      {/* Element Badge directly below journey */}
-                                      <div 
-                                        className="text-sm font-medium uppercase tracking-wider flex items-center gap-1 px-3 py-1.5 rounded-full mt-2"
-                                        style={{ 
-                                          color: entryTheme.color,
-                                          background: `${entryTheme.color}20`,
-                                          border: `1px solid ${entryTheme.color}40`
-                                        }}
-                                      >
-                                        {(((entry as any).profiles?.element || entry.element)?.toUpperCase()) || 'Unknown Element'}
-                                      </div>
+                                      {/* Element label below journey (no border/gradient) */}
+                                      {(() => {
+                                        const displayElement = (((entry as any).profiles?.element || entry.element) || '').toString().toLowerCase();
+                                        const displayTheme = (ELEMENT_COLORS as any)[displayElement] || ELEMENT_COLORS.heart;
+                                        return (
+                                          <div 
+                                            className="text-sm font-medium uppercase tracking-wider flex items-center gap-1 mt-2"
+                                            style={{ 
+                                              color: displayTheme.color,
+                                              background: 'transparent',
+                                              border: 'none'
+                                            }}
+                                          >
+                                            {displayElement ? displayElement.toUpperCase() : 'UNKNOWN ELEMENT'}
+                                          </div>
+                                        );
+                                      })()}
                                     </div>
                                   </div>
                                   
@@ -2044,7 +2051,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
             {/* Section Cards */}
             {dailyPrompt && (
-              <div className="flex flex-col flex-1 mt-28">
+              <div className="flex flex-col flex-1 mt-16">
                 {/* Prompt Card */}
                 <div
                   className="rounded-lg px-2 pt-2 pb-3 -mx-1"
@@ -2330,7 +2337,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       {enlargedBadge && (
         <div
           className="absolute inset-0 flex items-start justify-center z-50"
-          style={{ paddingLeft: '16px', paddingRight: '20px' }}
+          style={{ paddingTop: '56px', paddingLeft: '16px', paddingRight: '20px' }}
           onClick={() => {
             setEnlargedBadge(null);
             setEnlargedBadgeMeta(null);
@@ -2345,7 +2352,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               border: `1px solid ${elementTheme.color}60`,
               boxShadow: `0 0 30px ${elementTheme.color}60, 0 0 60px ${elementTheme.color}40`,
               borderRadius: '14px',
-              backdropFilter: 'blur(12px)'
+              backdropFilter: 'blur(12px)',
+              overflow: 'hidden'
             }}
             onClick={(e) => e.stopPropagation()}
           >

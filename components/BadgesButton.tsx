@@ -149,8 +149,8 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
     if (!e.defaultPrevented) {
       e.preventDefault();
       try { sfx.play('click', 0.8); } catch {}
-      // Trigger yellow light beam
-      try { onBeamColorChange?.('yellow'); } catch {}
+      // Trigger blue light beam when opening badges
+      try { onBeamColorChange?.('blue'); } catch {}
       // Close blue display first
       try { onCloseBlueDisplay?.(); } catch {}
       // Panel open/close is now handled by parent

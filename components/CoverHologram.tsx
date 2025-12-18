@@ -8,6 +8,7 @@ import { track } from "@/lib/analytics";
 import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
 import { ELEMENT_COLORS, type Element } from "@/lib/planets";
+import TiltSpinCard from "@/components/TiltSpinCard";
 import { useAudio } from "@/app/providers/AudioProvider";
 
 // Helper function to determine element from title/slug
@@ -176,7 +177,10 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
     'pokemon': 'https://ik.imagekit.io/CHXNDLER/card/pokemon.png?updatedAt=1762388341960',
   };
   const [showCard, setShowCard] = useState(false);
-  const [cardFlipped, setCardFlipped] = useState(false);
+  const [cardFlipped, setCardFlipped] = useState(false); // legacy flag, kept for compatibility
+  // Drag-to-rotate state like HeartCoin cards tab
+  const [cardRotation, setCardRotation] = useState(0);
+  const [isAnimatingFlip, setIsAnimatingFlip] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [hasRealCard, setHasRealCard] = useState(false);
@@ -645,70 +649,71 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
             >
             <div className="tilt-wrap">
               <div className="card-frame">
-                <div 
-                  className="card-flip-container"
-                  style={{
-                    position: 'relative',
-                    cursor: 'pointer'
-                  }}
-                  onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
-                  onClick={() => { 
-                    // Flip the card and play flip sound regardless of card availability;
-                    // the front image already falls back to cover if a card image is missing.
-                    try { const a = flipCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.45; a.play().catch(()=>{}); } } catch {}
-                    setCardFlipped((v) => !v); 
+                {/* Drag-to-rotate container (mirrors HeartCoin cards tab) */}
+                <TiltSpinCard
+                  className="card-flip-container relative w-full h-full"
+                  maxRotateX={10}
+                  sensitivity={0.3}
+                  returnDuration={400}
+                  enableSpin={true}
+                  spinSensitivity={0.8}
+                  onRotationChange={setCardRotation}
+                  onClick={() => {
+                    // Click-to-flip using rotation increments for smoothness
+                    try {
+                      const a = flipCoverRef.current as HTMLAudioElement | null;
+                      if (a && a.readyState >= 2) {
+                        a.currentTime = 0;
+                        a.volume = 0.45;
+                        a.play().catch(() => {});
+                      }
+                    } catch {}
+                    setIsAnimatingFlip(true);
+                    setCardRotation(prev => prev + 180);
+                    // Maintain legacy flipped flag for any dependent styles
+                    setCardFlipped(v => !v);
+                    setTimeout(() => setIsAnimatingFlip(false), 500);
                   }}
                 >
-                  <div 
-                    className="card-flip-inner"
+                  {/* Front side - rotates with cardRotation */}
+                  <img
+                    src={explicitCardSrc || computedCardSrc}
+                    alt={title}
+                    className="tilt-img absolute inset-0 w-full h-full object-contain pointer-events-none"
                     style={{
-                      transition: 'transform 0.7s ease-in-out',
-                      transformStyle: 'preserve-3d',
-                      transform: cardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                      backfaceVisibility: 'hidden',
+                      transform: `rotateY(${cardRotation}deg)`,
+                      transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
                     }}
-                  >
-                    {/* Front side shows the CARD image (not cover) */}
-                    <div style={{ backfaceVisibility: 'hidden', transform: 'rotateY(0deg)' }}>
-                      <img
-                        src={explicitCardSrc || computedCardSrc}
-                        alt={title}
-                        className="tilt-img"
-                        onError={(e)=>{
-                          // If card not found, try swapping covers->cards, then fallback to card back
-                          const fallback = src.replace('/covers/', '/cards/');
-                          if (fallback && fallback !== src) {
-                            e.currentTarget.onerror = () => { e.currentTarget.src = CARD_URLS['back'] || '/cards/BACK.webp'; };
-                            e.currentTarget.src = fallback;
-                          } else {
-                            e.currentTarget.src = CARD_URLS['back'] || '/cards/BACK.webp';
-                          }
-                        }}
-                      />
-                    </div>
-                    {/* Back side shows the card BACK image */}
-                    <div 
-                      style={{ 
-                        position: 'absolute', 
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        backfaceVisibility: 'hidden',
-                        transform: 'rotateY(180deg)'
-                      }}
-                    >
-                      <img
-                        src={'/cards/BACK.webp'}
-                        alt={`${title} card back`}
-                        className="tilt-img"
-                        onError={(e)=>{
-                          // If back image missing, fall back to brand logo
-                          e.currentTarget.src = "/logo/CHXNDLER_Logo.png";
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
+                    onError={(e)=>{
+                      // If card not found, try swapping covers->cards, then fallback to card back
+                      const fallback = src.replace('/covers/', '/cards/');
+                      if (fallback && fallback !== src) {
+                        (e.currentTarget as HTMLImageElement).onerror = () => { (e.currentTarget as HTMLImageElement).src = CARD_URLS['back'] || '/cards/BACK.webp'; };
+                        (e.currentTarget as HTMLImageElement).src = fallback;
+                      } else {
+                        (e.currentTarget as HTMLImageElement).src = CARD_URLS['back'] || '/cards/BACK.webp';
+                      }
+                    }}
+                    draggable={false}
+                  />
+                  {/* Back side - offset 180° */}
+                  <img
+                    src={'/cards/BACK.webp'}
+                    alt={`${title} card back`}
+                    className="tilt-img absolute inset-0 w-full h-full object-contain pointer-events-none"
+                    style={{
+                      backfaceVisibility: 'hidden',
+                      transform: `rotateY(${cardRotation + 180}deg)`,
+                      transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                    }}
+                    onError={(e)=>{
+                      // If back image missing, fall back to brand logo
+                      (e.currentTarget as HTMLImageElement).src = "/logo/CHXNDLER_Logo.png";
+                    }}
+                    draggable={false}
+                  />
+                </TiltSpinCard>
                 <span className="frame-sheen" aria-hidden />
               </div>
             </div>

@@ -49,7 +49,8 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
     };
 
     const handleOpenBadgesModal = () => {
-      try { onBeamColorChange?.('yellow'); } catch {}
+      // Ensure badges popout uses the blue light beam
+      try { onBeamColorChange?.('blue'); } catch {}
       setBadgesOpen(true);
     };
 
@@ -128,6 +129,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
         case "BADGES":
           // Only open badges if we specifically clicked badges
           if (label === "BADGES") {
+            try { onBeamColorChange?.('blue'); } catch {}
             setBadgesOpen(true);
           }
           break;

@@ -1703,60 +1703,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 </div>
               </div>
 
-              {/* Digital and Physical Buttons - Moved outside card info */}
-              <div className="mt-8">
-                <div className="flex gap-4 w-full max-w-lg mx-auto">
-                    <button
-                      onClick={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                        setSelectedPurchaseType(prev => prev === 'digital' ? null : 'digital');
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < 5}
-                      className={`flex-1 px-8 py-4 rounded-lg font-bold text-sm transition-all duration-200 ${
-                        modalLoading || !profile || (profile.heartcoin_balance || 0) < 5
-                          ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
-                          : 'bg-gradient-to-r from-[#4ECDC4] to-[#45b7b8] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(78,205,196,0.6)]'
-                      }`}
-                      style={
-                        modalLoading || !profile || (profile.heartcoin_balance || 0) < 5
-                          ? undefined
-                          : {
-                              boxShadow: '0 0 15px rgba(78,205,196,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
-                            }
-                      }
-                    >
-                      DIGITAL (5 ♡)
-                    </button>
-                    
-                    <button
-                      onClick={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                        setSelectedPurchaseType(prev => prev === 'physical' ? null : 'physical');
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < 15}
-                      className={`flex-1 px-8 py-4 rounded-lg font-bold text-sm transition-all duration-200 ${
-                        modalLoading || !profile || (profile.heartcoin_balance || 0) < 15
-                          ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
-                          : 'bg-gradient-to-r from-[#FC54AF] to-[#e91e63] text-white hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(252,84,175,0.6)]'
-                      }`}
-                      style={
-                        modalLoading || !profile || (profile.heartcoin_balance || 0) < 15
-                          ? undefined
-                          : {
-                              boxShadow: '0 0 15px rgba(252,84,175,0.4), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -4px 8px rgba(0,0,0,0.2)'
-                            }
-                      }
-                    >
-                      PHYSICAL (15 ♡)
-                    </button>
-                </div>
-              </div>
+              {/* Buttons moved below the card area for consistent layout */}
 
               {/* Right Navigation Arrow */}
               <button
@@ -1776,6 +1723,61 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
+            </div>
+
+            {/* Digital and Physical Buttons under the card */}
+            <div className="mt-6">
+              <div className="flex gap-4 w-full max-w-lg mx-auto">
+                  <button
+                    onClick={() => {
+                      try { sfx.play('hover', 0.3); } catch {}
+                      setSelectedPurchaseType(prev => prev === 'digital' ? null : 'digital');
+                    }}
+                    onMouseEnter={() => {
+                      try { sfx.play('hover', 0.3); } catch {}
+                    }}
+                    disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < 5}
+                    className={`flex-1 px-8 py-4 rounded-lg font-bold text-sm transition-all duration-200 ${
+                      modalLoading || !profile || (profile.heartcoin_balance || 0) < 5
+                        ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
+                        : 'bg-gradient-to-r from-[#4ECDC4] to-[#45b7b8] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(78,205,196,0.6)]'
+                    }`}
+                    style={
+                      modalLoading || !profile || (profile.heartcoin_balance || 0) < 5
+                        ? undefined
+                        : {
+                            boxShadow: '0 0 15px rgba(78,205,196,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
+                          }
+                    }
+                  >
+                    DIGITAL (5 ♡)
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      try { sfx.play('hover', 0.3); } catch {}
+                      setSelectedPurchaseType(prev => prev === 'physical' ? null : 'physical');
+                    }}
+                    onMouseEnter={() => {
+                      try { sfx.play('hover', 0.3); } catch {}
+                    }}
+                    disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < 15}
+                    className={`flex-1 px-8 py-4 rounded-lg font-bold text-sm transition-all duration-200 ${
+                      modalLoading || !profile || (profile.heartcoin_balance || 0) < 15
+                        ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
+                        : 'bg-gradient-to-r from-[#FC54AF] to-[#e91e63] text-white hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(252,84,175,0.6)]'
+                    }`}
+                    style={
+                      modalLoading || !profile || (profile.heartcoin_balance || 0) < 15
+                        ? undefined
+                        : {
+                            boxShadow: '0 0 15px rgba(252,84,175,0.4), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -4px 8px rgba(0,0,0,0.2)'
+                          }
+                    }
+                  >
+                    PHYSICAL (15 ♡)
+                  </button>
+              </div>
             </div>
 
             {/* Card Navigation Indicators */}
