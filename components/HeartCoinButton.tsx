@@ -600,12 +600,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // Reset song and rarity filters when element changes
   useEffect(() => {
     if (selectedCardElement && selectedCardElement !== 'all') {
-      // Reset song if it's not available in the selected element
+      // If a song is selected but not available in this element, reset to show all
       if (selectedSong && !availableSongs.includes(selectedSong)) {
         setSelectedSong('');
       }
-      
-      // Reset rarity if it's not available in the selected element  
+
+      // Reset rarity if it's not available in the selected element
       if (selectedRarity && !availableRarities.includes(selectedRarity)) {
         setSelectedRarity('');
       }
@@ -639,16 +639,18 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       );
     }
     
-    // Sort cards to show selected element cards first
+    // Sort cards to show element cards first (cards whose name matches the element)
     if (selectedCardElement && selectedCardElement !== 'all') {
       filtered.sort((a, b) => {
-        const aIsSelectedElement = a.element?.toLowerCase() === selectedCardElement.toLowerCase();
-        const bIsSelectedElement = b.element?.toLowerCase() === selectedCardElement.toLowerCase();
-        
-        // If a matches selected element but b doesn't, a comes first
-        if (aIsSelectedElement && !bIsSelectedElement) return -1;
-        // If b matches selected element but a doesn't, b comes first
-        if (!aIsSelectedElement && bIsSelectedElement) return 1;
+        // Element card names: "Lightning", "Water", "Heart", "Darkness"
+        const elementName = selectedCardElement.charAt(0).toUpperCase() + selectedCardElement.slice(1).toLowerCase();
+        const aIsElementCard = a.card_name?.toLowerCase() === elementName.toLowerCase();
+        const bIsElementCard = b.card_name?.toLowerCase() === elementName.toLowerCase();
+
+        // If a is the element card but b isn't, a comes first
+        if (aIsElementCard && !bIsElementCard) return -1;
+        // If b is the element card but a isn't, b comes first
+        if (!aIsElementCard && bIsElementCard) return 1;
         // Otherwise, maintain current order
         return 0;
       });
@@ -2432,9 +2434,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   onClick={() => {
                                     try { sfx.play('click', 0.7); } catch {}
                                     setSelectedCardElement(element.toUpperCase());
-                                    // Don't set song filter - show ALL cards for this element
+                                    // Show all cards for this element (element card will be sorted first)
                                     setSelectedSong('');
                                     setSelectedRarity('');
+                                    setCurrentCardIndex(0);
                                   }}
                                 >
                                   <div 
@@ -2499,9 +2502,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               onMouseEnter={() => {
                                 try { sfx.play('hover', 0.3); } catch {}
                               }}
+                              onKeyDown={(e) => {
+                                // Play hover sound when cycling through options with arrow keys
+                                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                                  try { sfx.play('hover', 0.3); } catch {}
+                                }
+                              }}
                               className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1 hover:scale-105 transition-transform duration-200"
                             >
-                              <option value="">ALL CARDS</option>
+                              <option value="">{selectedCardElement} CARDS</option>
                               {availableSongs.map(song => (
                                 <option key={song} value={song}>{song}</option>
                               ))}

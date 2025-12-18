@@ -739,7 +739,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                   <button
                     key={category.id}
                     onClick={() => handleCategoryClick(category.id)}
-                    onMouseEnter={() => sfx.play('hover')}
+                    onMouseEnter={() => sfx.play('change-channel')}
                     className="group relative flex flex-col items-center space-y-3 p-4 rounded-xl bg-black/40 border border-white/20 hover:border-white/40 transition-all duration-200 hover:scale-105"
                     style={{
                       background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(40,40,40,0.8) 100%)',

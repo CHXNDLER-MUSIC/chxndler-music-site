@@ -1071,7 +1071,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                             handleCheckInSubmit();
                           }
                         }}
-                        placeholder="ENTER SECRET PHRASE"
+                        placeholder="ENTER PASSWORD"
                         className={`w-full rounded-md border px-3 py-2 text-sm text-white placeholder-white/60 shadow-sm focus:outline-none transition-all ${
                           secretPhrase.trim() 
                             ? 'border-yellow-400/60 bg-yellow-600/10 focus:border-yellow-400' 

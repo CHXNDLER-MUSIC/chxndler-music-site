@@ -40,14 +40,14 @@ export async function redeemSecretPhrase({
 
     const now = new Date().toISOString();
 
-    // Query for active secret phrases (case insensitive, active today)
-    const today = now.split('T')[0]; // Get YYYY-MM-DD format
+    // Query for active secret phrases (case insensitive, within active time range)
     const { data: phrases, error: phrasesError } = await supabase
       .from('secret_phrases')
       .select('*')
       .ilike('secret_phrase', trimmedPhrase)
-      .eq('active_date', today)
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .lte('active_from', now)
+      .gte('active_to', now);
 
     if (phrasesError) {
       console.error('Error fetching secret phrases:', phrasesError);
@@ -141,7 +141,7 @@ export async function redeemSecretPhrase({
 
       const currentCoins = profile?.heart_coins_current || 0;
       const totalCoins = profile?.heart_coins_total || 0;
-      
+
       const newCurrentCoins = currentCoins + activePhrase.reward;
       const newTotalCoins = totalCoins + activePhrase.reward;
 

@@ -608,6 +608,9 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                             setSelectedCategory(category.id);
                             setCurrentPage(0);
                           }}
+                          onMouseEnter={() => {
+                            try { sfx.play('change-channel'); } catch {}
+                          }}
                         >
                           <div 
                             className="w-20 h-20 rounded-full border-2 border-cyan-400/60 hover:border-cyan-400/80 relative overflow-hidden transition-all duration-300 group-hover:scale-105 flex items-center justify-center"

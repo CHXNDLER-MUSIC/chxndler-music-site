@@ -2,6 +2,23 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useSongs, type SongWithElement } from '@/hooks/useSongs';
+import dynamic from 'next/dynamic';
+
+// Use the working Pure3DPlanets with proper dynamic import
+const DynamicPure3DPlanets = dynamic(
+  () => import('./Pure3DPlanets'),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full bg-gray-900 flex items-center justify-center text-white">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-2" />
+          Loading 3D Planets...
+        </div>
+      </div>
+    )
+  }
+);
 
 interface VanillaPlanetariumProps {
   zoomLevel: number;
@@ -191,11 +208,13 @@ export default function VanillaPlanetarium({
 
   return (
     <div className="w-full h-[500px] relative overflow-hidden bg-gray-900 border border-gray-700 rounded">
-      {/* Animated 3D-style Solar System */}
-      <AnimatedSolarSystem
-        onPlanetSelect={onPlanetSelect}
+      {/* 3D Planets System */}
+      <DynamicPure3DPlanets
         songs={songs}
+        songsByElement={songsByElement}
         zoomLevel={zoomLevel}
+        onPlanetSelect={onPlanetSelect}
+        quality={getDeviceQuality()}
       />
 
       {/* Overlay info */}
