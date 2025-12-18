@@ -2203,10 +2203,11 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   {(!user?.id || !profile?.element) ? (
                     <button
                       onClick={() => {
-                        sfx.play('button', 0.8);
                         if (!hasClickedInitialButton) {
+                          sfx.play('pause', 0.8);
                           setHasClickedInitialButton(true);
                         } else {
+                          sfx.play('button', 0.8);
                           // Close journal and open welcome home immediately
                           onClose();
                           setTimeout(() => {

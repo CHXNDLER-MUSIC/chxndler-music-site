@@ -946,38 +946,176 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   }
 
   return (
-    <PopoutShell title="BADGES" onClose={onClose} compact={true} minWidth={'min(95vw, 420px)'} headerRuleVariant={'cyan'} topPadding="60px">
-      <div className="relative badges-modal-container" style={{ overflow: 'hidden' }}>
-        {/* Hide all navigation elements in badges modal */}
-        <style jsx global>{`
-          /* Hide navigation arrows and pagination */
-          .binder-hologram-container .absolute.-right-1,
-          .binder-hologram-container .absolute.left-2,
-          .binder-hologram-container .absolute[class*="right-1"],
-          .binder-hologram-container .absolute[class*="left-2"],
-          [data-badges-modal] .absolute[class*="right"],
-          [data-badges-modal] .absolute[class*="left"] {
-            display: none !important;
-          }
-          /* Hide Page text and pagination */
-          .binder-hologram-container [class*="text-center"]:has(*:contains("Page")) {
-            display: none !important;
-          }
-          /* Hide navigation buttons specifically */
-          .binder-hologram-container button.absolute,
-          [data-badges-modal] button.absolute:not([class*="top-4"]) {
-            display: none !important;
-          }
-          /* Clean up compact badges modal */
-          .badges-modal-container .binder-hologram-container {
-            height: fit-content !important;
-          }
-        `}</style>
-        <div data-badges-modal>
-          {badgesContent}
+    <>
+      {/* Backdrop overlay */}
+      <div
+        className="fixed inset-0 z-[99999998]"
+        style={{ cursor: 'pointer' }}
+        onClick={onClose}
+      />
+
+      {/* Main badges container - spans from profile bar to light beam */}
+      <div
+        className="fixed z-[99999999] flex justify-center"
+        style={{
+          top: 'var(--profile-bar-boundary, 64px)',
+          bottom: 'var(--display-touch-top, 36%)',
+          left: 0,
+          right: 0,
+          padding: '0 8px',
+        }}
+      >
+        <div
+          className="binder-hologram-container w-full"
+          style={{
+            width: 'min(95vw, 600px)',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '0px',
+            borderRadius: 14,
+            background: 'rgba(0,0,0,0.6)',
+            border: '1px solid rgba(56,182,255,0.55)',
+            boxShadow: '0 -8px 25px rgba(56,182,255,0.4), 0 -4px 15px rgba(56,182,255,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(56,182,255,0.45)',
+            backdropFilter: 'blur(12px) saturate(140%)',
+            color: '#38B6FF',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+
+          {/* Soft bottom glow - light beam effect */}
+          <div
+            className="absolute"
+            style={{
+              bottom: '-15px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '120%',
+              height: '40px',
+              background: 'radial-gradient(ellipse 60% 100% at 50% 0%, rgba(56,182,255,0.7) 0%, rgba(56,182,255,0.4) 40%, transparent 80%)',
+              filter: 'blur(30px)',
+              pointerEvents: 'none',
+              zIndex: -1
+            }}
+          />
+
+          {/* Top bloom glow */}
+          <div
+            className="absolute"
+            style={{
+              top: '-10px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '80%',
+              height: '20px',
+              background: 'radial-gradient(ellipse 70% 100% at 50% 100%, rgba(56,182,255,0.4) 0%, rgba(56,182,255,0.2) 50%, transparent 100%)',
+              filter: 'blur(25px)',
+              pointerEvents: 'none',
+              zIndex: -1
+            }}
+          />
+
+          {/* Close button */}
+          <button
+            onClick={() => {
+              try { sfx.play('close', 0.8); } catch {}
+              onClose();
+            }}
+            onMouseEnter={(e) => {
+              sfx.play('hover', 0.6);
+              e.currentTarget.style.transform = 'scale(1.15)';
+              e.currentTarget.style.boxShadow = '0 0 20px rgba(56,182,255,1), 0 0 35px rgba(56,182,255,0.7), 0 0 50px rgba(56,182,255,0.5)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = '0 0 15px rgba(56,182,255,0.8), 0 0 25px rgba(56,182,255,0.5), 0 0 35px rgba(56,182,255,0.3)';
+            }}
+            className="absolute top-4 right-3 text-cyan-400 hover:text-cyan-200 cursor-pointer w-10 h-10 rounded-full border border-cyan-400/80 flex items-center justify-center"
+            style={{
+              fontSize: '16px',
+              boxShadow: '0 0 15px rgba(56,182,255,0.8), 0 0 25px rgba(56,182,255,0.5), 0 0 35px rgba(56,182,255,0.3)',
+              textShadow: '0 0 8px rgba(56,182,255,0.8), 0 0 15px rgba(56,182,255,0.6)',
+              background: 'rgba(56,182,255,0.1)',
+              backdropFilter: 'blur(2px)',
+              zIndex: 10,
+              transition: 'transform 200ms ease, box-shadow 200ms ease'
+            }}
+          >
+            <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden>
+              <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+          </button>
+
+          {/* Header */}
+          <div className="flex justify-center items-center flex-shrink-0" style={{ padding: '10px 14px 0px 14px' }}>
+            <div
+              style={{
+                color: '#38B6FF',
+                textShadow: '0 0 8px rgba(56,182,255,0.6)',
+                fontSize: '24px',
+                fontWeight: 'bold'
+              }}
+            >
+              BADGES
+            </div>
+          </div>
+
+          {/* Thin cyan neon line */}
+          <div
+            className="w-full h-px flex-shrink-0"
+            style={{
+              background: 'linear-gradient(90deg, transparent, rgba(56,182,255,0.8) 20%, rgba(56,182,255,1) 50%, rgba(56,182,255,0.8) 80%, transparent)',
+              boxShadow: '0 0 4px rgba(56,182,255,0.6)'
+            }}
+          />
+
+          {/* Content container - scrollable */}
+          <div className="flex-1 relative z-10 overflow-y-auto overflow-x-hidden" style={{ padding: '8px 12px 20px 12px' }}>
+            <div className="relative badges-modal-container">
+              {/* Hide all navigation elements in badges modal */}
+              <style jsx global>{`
+                /* Hide navigation arrows and pagination */
+                .binder-hologram-container .absolute.-right-1,
+                .binder-hologram-container .absolute.left-2,
+                .binder-hologram-container .absolute[class*="right-1"],
+                .binder-hologram-container .absolute[class*="left-2"],
+                [data-badges-modal] .absolute[class*="right"],
+                [data-badges-modal] .absolute[class*="left"] {
+                  display: none !important;
+                }
+                /* Hide Page text and pagination */
+                .binder-hologram-container [class*="text-center"]:has(*:contains("Page")) {
+                  display: none !important;
+                }
+                /* Hide navigation buttons specifically */
+                .binder-hologram-container button.absolute,
+                [data-badges-modal] button.absolute:not([class*="top-4"]) {
+                  display: none !important;
+                }
+                /* Clean up compact badges modal */
+                .badges-modal-container .binder-hologram-container {
+                  height: fit-content !important;
+                }
+              `}</style>
+              <div data-badges-modal>
+                {badgesContent}
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom light beam glow strip */}
+          <div
+            className="w-full h-2 flex-shrink-0"
+            style={{
+              background: 'linear-gradient(180deg, transparent 0%, rgba(56,182,255,0.3) 50%, rgba(56,182,255,0.6) 100%)',
+              boxShadow: '0 0 15px rgba(56,182,255,0.5), 0 5px 20px rgba(56,182,255,0.4)'
+            }}
+          />
         </div>
       </div>
       {enlargedBadgeModal}
-    </PopoutShell>
+    </>
   );
 }

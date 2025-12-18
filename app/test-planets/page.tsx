@@ -1,37 +1,43 @@
 'use client';
 
-import { PlanetSystemV2 } from '@/components/PlanetSystemV2';
 import dynamic from 'next/dynamic';
 
-// Dynamic import to prevent SSR issues
-const SimpleThreeTest = dynamic(
-  () => import('@/components/SimpleThreeTest'),
-  { ssr: false }
-);
+// Dynamically import 3D planets to avoid SSR issues with Three.js
+const Pure3DPlanets = dynamic(() => import('@/components/planetarium/Pure3DPlanets'), {
+  ssr: false,
+  loading: () => <div className="h-[500px] flex items-center justify-center text-cyan-400">Loading 3D planets...</div>
+});
 
 export default function TestPlanetsPage() {
   return (
     <div className="min-h-screen bg-gray-900 p-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-white mb-8">
-          PlanetSystemV2 Test Page
+          3D Planets Test Page
         </h1>
-        
-        
+
         <div className="bg-gray-800 rounded-lg p-6">
           <h2 className="text-xl font-semibold text-white mb-4">
-            3D Planet System with Linked Minimap
+            3D Planet Solar System
           </h2>
-          
-          <PlanetSystemV2 />
-          
+
+          <div className="h-[500px] w-full">
+            <Pure3DPlanets
+              songs={[]}
+              songsByElement={{}}
+              zoomLevel={1}
+              onPlanetSelect={(planetId) => console.log('Selected planet:', planetId)}
+              quality="high"
+            />
+          </div>
+
           <div className="mt-6 text-sm text-gray-400">
             <p><strong>Controls:</strong></p>
             <ul className="list-disc ml-6 mt-2">
               <li>Drag to orbit the camera around the planets</li>
               <li>Scroll wheel to zoom in/out</li>
-              <li>Use zoom buttons for fine control</li>
-              <li>Hover over planets in the minimap to highlight them in 3D</li>
+              <li>Click on planets to select them</li>
+              <li>Auto-rotation is enabled</li>
             </ul>
           </div>
         </div>

@@ -410,13 +410,23 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                 setElementFilter(null);
                 try { onOpenBlueDisplay?.(); } catch {}
               }}
+              onMouseEnter={(e) => {
+                sfx.play('hover', 0.6);
+                e.currentTarget.style.transform = 'scale(1.15)';
+                e.currentTarget.style.boxShadow = '0 0 20px rgba(0,191,255,1), 0 0 35px rgba(0,191,255,0.7), 0 0 50px rgba(0,191,255,0.5)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.boxShadow = '0 0 15px rgba(0,191,255,0.8), 0 0 25px rgba(0,191,255,0.5), 0 0 35px rgba(0,191,255,0.3)';
+              }}
               className="absolute top-2 right-4 text-cyan-400 hover:text-cyan-200 cursor-pointer w-8 h-8 rounded-full border border-cyan-400/80 flex items-center justify-center"
-              style={{ 
+              style={{
                 fontSize: '16px',
                 boxShadow: '0 0 15px rgba(0,191,255,0.8), 0 0 25px rgba(0,191,255,0.5), 0 0 35px rgba(0,191,255,0.3)',
                 textShadow: '0 0 8px rgba(0,191,255,0.8), 0 0 15px rgba(0,191,255,0.6)',
                 background: 'rgba(0,191,255,0.1)',
-                backdropFilter: 'blur(2px)'
+                backdropFilter: 'blur(2px)',
+                transition: 'transform 200ms ease, box-shadow 200ms ease'
               }}
             >
               <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
@@ -475,26 +485,38 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
             <div className="relative mt-1 flex-1 overflow-auto">
               {/* Badge Detail Overlay */}
               {selectedBadge && (
-                <div className="absolute inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-20 rounded-lg">
-                  <div className="w-full max-w-sm mx-4 p-6 text-center space-y-4">
-                    {/* Back button */}
-                    <button
-                      onClick={() => {
-                        try { sfx.play('close', 0.6); } catch {}
-                        setSelectedBadge(null);
-                      }}
-                      className="mb-4 px-3 py-1 text-[10px] font-bold rounded border border-cyan-400/60 hover:border-cyan-400/80 transition-all duration-200"
-                      style={{
-                        background: 'rgba(0,191,255,0.1)',
-                        color: '#00BFFF',
-                        textShadow: '0 0 4px rgba(0,191,255,0.8)',
-                        boxShadow: '0 0 8px rgba(0,191,255,0.3)',
-                      }}
-                    >
-                      ← BACK TO BADGES
-                    </button>
+                <div className="absolute inset-0 bg-black/90 backdrop-blur-md z-20 rounded-lg">
+                  {/* Back button - top left */}
+                  <button
+                    onClick={() => {
+                      try { sfx.play('close', 0.6); } catch {}
+                      setSelectedBadge(null);
+                    }}
+                    onMouseEnter={(e) => {
+                      sfx.play('hover', 0.4);
+                      e.currentTarget.style.transform = 'scale(1.05)';
+                      e.currentTarget.style.boxShadow = '0 0 15px rgba(0,191,255,0.6)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.boxShadow = '0 0 8px rgba(0,191,255,0.3)';
+                    }}
+                    className="absolute top-4 left-4 px-3 py-1.5 text-[11px] font-bold rounded border border-cyan-400/60 hover:border-cyan-400/80"
+                    style={{
+                      background: 'rgba(0,191,255,0.1)',
+                      color: '#00BFFF',
+                      textShadow: '0 0 4px rgba(0,191,255,0.8)',
+                      boxShadow: '0 0 8px rgba(0,191,255,0.3)',
+                      transition: 'transform 200ms ease, box-shadow 200ms ease',
+                      zIndex: 30
+                    }}
+                  >
+                    ← BACK TO BADGES
+                  </button>
 
-                    {/* Badge display */}
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="w-full max-w-sm mx-4 p-6 text-center space-y-4">
+                      {/* Badge display */}
                     <div className="flex flex-col items-center space-y-4">
                       <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-cyan-400/60 flex items-center justify-center overflow-hidden transform transition-all duration-300"
                            style={{
@@ -569,6 +591,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                           </div>
                         </div>
                       )}
+                    </div>
                     </div>
                   </div>
                 </div>

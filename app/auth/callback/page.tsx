@@ -132,13 +132,36 @@ export default function AuthCallbackPage() {
           fullSearch: window.location.search
         });
 
-        // Handle OAuth code flow (e.g., Google)
+        // Handle code flow (OAuth like Google, or PKCE magic links)
         if (oauthCode) {
-          console.log('🔄 Found OAuth code, exchanging for session...');
+          console.log('🔄 Found auth code, exchanging for session...');
           const { data: exchangeData, error: exchangeError } = await supabaseClient.auth.exchangeCodeForSession(oauthCode);
 
           if (exchangeError) {
             console.error('❌ Error exchanging code for session:', exchangeError);
+
+            // Check if this is a PKCE verifier error (magic link opened in wrong browser)
+            if (exchangeError.message?.includes('code verifier') ||
+                exchangeError.message?.includes('PKCE') ||
+                exchangeError.message?.includes('code_verifier')) {
+              clearTimeout(timeoutId);
+              router.replace('/?error=wrong_browser');
+              return;
+            }
+
+            // Check if the code is expired or already used
+            if (exchangeError.message?.includes('expired') ||
+                exchangeError.message?.includes('invalid') ||
+                exchangeError.message?.includes('already used')) {
+              clearTimeout(timeoutId);
+              router.replace('/?error=link_expired');
+              return;
+            }
+
+            // Generic code exchange error
+            clearTimeout(timeoutId);
+            router.replace(`/?error=code_exchange&details=${encodeURIComponent(exchangeError.message || 'Unknown error')}`);
+            return;
           } else if (exchangeData?.session?.user) {
             console.log('✅ Successfully exchanged code for session');
             clearTimeout(timeoutId);

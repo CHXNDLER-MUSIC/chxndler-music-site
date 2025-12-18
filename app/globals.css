@@ -138,6 +138,48 @@
   /* Calculated beam boundaries (legacy vars retained for reference) */
   --beam-bottom: var(--beam-bottom-base);
   --beam-top: calc(var(--beam-bottom-base) + var(--beam-height));
+
+  /* ============================================================
+     UI BOUNDARY SYSTEM
+     ============================================================
+     Fixed reference points for positioning elements in the UI.
+     These boundaries are stable across screen sizes.
+     ============================================================ */
+
+  /* PROFILE BAR BOUNDARY (top of screen)
+     The bottom edge of the profile bar - 64px from top (h-16)
+
+     Examples:
+     - Position element below profile bar:
+       top: var(--profile-bar-boundary);
+
+     - Set height from profile bar to bottom:
+       height: calc(100vh - var(--profile-bar-boundary));
+
+     - Extend pop-out down FROM profile bar:
+       top: var(--profile-bar-boundary);
+       bottom: var(--light-beam-boundary);
+     ============================================================ */
+  --profile-bar-boundary: 64px;
+
+  /* LIGHT BEAM BOUNDARY (bottom of screen)
+     The bottom edge of the light beam element.
+
+     Examples:
+     - Extend element down TO light beam:
+       bottom: var(--light-beam-boundary);
+
+     - Set height from top to light beam:
+       height: calc(100vh - var(--light-beam-boundary));
+
+     - Position something just above the light beam:
+       bottom: calc(var(--light-beam-boundary) + 10px);
+
+     - Extend pop-out from profile bar DOWN TO light beam:
+       top: var(--profile-bar-boundary);
+       bottom: var(--light-beam-boundary);
+     ============================================================ */
+  --light-beam-boundary: calc(var(--display-touch-top) - var(--beam-height) + 60px);
   
   /* Display touch points - align to blue button baseline dynamically */
   /* Position the light beam closer to the blue button using a separate gap var */

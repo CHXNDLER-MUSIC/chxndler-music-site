@@ -30,8 +30,8 @@
     "hooks:enable": "git config core.hooksPath .githooks && chmod +x .githooks/pre-commit scripts/secret-scan.sh"
   },
   "dependencies": {
-    "@react-three/drei": "^9.88.13",
-    "@react-three/fiber": "^8.15.12",
+    "@react-three/drei": "^9.117.3",
+    "@react-three/fiber": "^8.17.10",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.86.0",
     "@types/nodemailer": "^7.0.4",

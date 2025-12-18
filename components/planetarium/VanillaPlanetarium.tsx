@@ -2,23 +2,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useSongs, type SongWithElement } from '@/hooks/useSongs';
-import dynamic from 'next/dynamic';
-
-// Use the working Pure3DPlanets with proper dynamic import
-const DynamicPure3DPlanets = dynamic(
-  () => import('./Pure3DPlanets'),
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="w-full h-full bg-gray-900 flex items-center justify-center text-white">
-        <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-2" />
-          Loading 3D Planets...
-        </div>
-      </div>
-    )
-  }
-);
 
 interface VanillaPlanetariumProps {
   zoomLevel: number;
@@ -194,6 +177,20 @@ export default function VanillaPlanetarium({
   worldId
 }: VanillaPlanetariumProps) {
   const { songs, songsByElement, loading: songsLoading, error: songsError } = useSongs();
+  const [quality] = useState<'low' | 'high'>(getDeviceQuality());
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    console.log('VanillaPlanetarium mounted on client');
+  }, []);
+
+  console.log('VanillaPlanetarium render:', { 
+    songsLoading, 
+    songsError: songsError?.slice(0, 50), 
+    songsCount: songs.length,
+    isClient
+  });
 
   if (songsError) {
     return (
@@ -208,22 +205,20 @@ export default function VanillaPlanetarium({
 
   return (
     <div className="w-full h-[500px] relative overflow-hidden bg-gray-900 border border-gray-700 rounded">
-      {/* 3D Planets System */}
-      <DynamicPure3DPlanets
-        songs={songs}
-        songsByElement={songsByElement}
-        zoomLevel={zoomLevel}
+      {/* Animated Solar System */}
+      <AnimatedSolarSystem
         onPlanetSelect={onPlanetSelect}
-        quality={getDeviceQuality()}
+        songs={songs}
+        zoomLevel={zoomLevel}
       />
 
       {/* Overlay info */}
       <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur rounded-lg px-4 py-2 pointer-events-none">
         <div className="text-white text-sm font-medium">
-          🌌 3D Heartverse Solar System
+          🌌 Heartverse Solar System
         </div>
         <div className="text-gray-300 text-xs">
-          Songs: {songs.length} | Zoom: {Math.round(zoomLevel * 100)}% | Click planets • Animated orbits
+          Songs: {songs.length} | Zoom: {Math.round(zoomLevel * 100)}% | Quality: {quality.toUpperCase()}
         </div>
       </div>
     </div>

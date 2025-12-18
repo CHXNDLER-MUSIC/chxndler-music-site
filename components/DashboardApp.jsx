@@ -79,6 +79,16 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         case 'unexpected':
           errorMessage = 'An unexpected error occurred during sign in. Please try again.';
           break;
+        case 'wrong_browser':
+          errorMessage = 'Please open the magic link in the same browser where you requested it.';
+          break;
+        case 'link_expired':
+          errorMessage = 'This link has expired or already been used. Please request a new magic link.';
+          break;
+        case 'code_exchange':
+          const codeDetails = searchParams.get('details');
+          errorMessage = `Sign in failed${codeDetails ? `: ${codeDetails}` : '. Please try again.'}`;
+          break;
         default:
           errorMessage = 'Authentication error. Please try signing in again.';
       }
@@ -1641,11 +1651,11 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   }), [cardModalOpen, warpActive]);
 
   const lightBeamStyle = useMemo(() => {
-    // Position the light beam lower to align with the moved display
-    // Move beam down by 30px to match the display adjustment
+    // Position the light beam at the fixed UI boundary
+    // The --light-beam-boundary variable is the source of truth for this position
     return {
       left: '50%',
-      bottom: 'calc(var(--display-touch-top) - var(--beam-height) + 60px)',
+      bottom: 'var(--light-beam-boundary)',
       height: 'var(--beam-height)',
       width: 'var(--display-width)',
       transform: 'translate3d(-50%,0,0)',

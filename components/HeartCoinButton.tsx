@@ -600,9 +600,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // Reset song and rarity filters when element changes
   useEffect(() => {
     if (selectedCardElement && selectedCardElement !== 'all') {
-      // If a song is selected but not available in this element, reset to show all
-      if (selectedSong && !availableSongs.includes(selectedSong)) {
-        setSelectedSong('');
+      // If no song selected or song not available, select element card or first available song
+      if (!selectedSong || !availableSongs.includes(selectedSong)) {
+        const elementName = selectedCardElement.charAt(0).toUpperCase() + selectedCardElement.slice(1).toLowerCase();
+        // Try to select the element card first, otherwise select first available song
+        if (availableSongs.includes(elementName)) {
+          setSelectedSong(elementName);
+        } else if (availableSongs.length > 0) {
+          setSelectedSong(availableSongs[0]);
+        }
       }
 
       // Reset rarity if it's not available in the selected element
@@ -789,33 +795,31 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     return (quest.times_completed > 0 && quest.max_total_completions === 1) || completedQuests.has(quest.id);
   };
 
-  // Validate secret phrase
-  const validateSecretPhrase = async (phrase: string): Promise<boolean> => {
-    if (!phrase.trim()) return false;
+  // Redeem secret phrase via RPC (for ATTEND_LIVESTREAM quest)
+  const redeemAttendLivestreamPhrase = async (phrase: string): Promise<{ status: string; reward?: number }> => {
+    if (!phrase.trim()) {
+      return { status: 'invalid' };
+    }
 
     try {
-      const { supabaseBrowser } = await import('@/lib/supabase-browser');
-      const trimmedPhrase = phrase.trim();
-      const today = new Date().toISOString().split('T')[0]; // Get YYYY-MM-DD format
+      const { data, error } = await supabaseBrowser.rpc('redeem_secret_phrase', {
+        p_phrase: phrase.trim()
+      });
 
-      console.log('Validating phrase:', trimmedPhrase, 'for date:', today);
+      if (error) {
+        console.error('ATTEND_LIVESTREAM RPC error:', error);
+        return { status: 'error' };
+      }
 
-      const { data: secretPhrase, error } = await supabaseBrowser
-        .from('secret_phrases')
-        .select('*')
-        .ilike('secret_phrase', trimmedPhrase)
-        .eq('active_date', today)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      console.log('Query result:', { secretPhrase, error });
-
-      const isValid = !error && !!secretPhrase;
-
-      return isValid;
+      // Handle RPC response
+      const result = data?.[0] || data;
+      return {
+        status: result?.status || 'error',
+        reward: result?.awarded || result?.reward || 0
+      };
     } catch (error) {
-      console.error('Error validating phrase:', error);
-      return false;
+      console.error('Error redeeming ATTEND_LIVESTREAM phrase:', error);
+      return { status: 'error' };
     }
   };
 
@@ -1973,20 +1977,81 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 setAttendLivestreamConfirming(false);
                                 setPhraseValidationResult(null);
                               } else {
-                                // Validate the secret phrase
-                                validateSecretPhrase(autoTextValue).then(isValid => {
-                                  setPhraseValidationResult(isValid ? 'correct' : 'incorrect');
-                                  
-                                  if (!isValid) {
-                                    // Play incorrect sound
+                                // Redeem the secret phrase via RPC
+                                setSecretPhraseLoading(true);
+                                redeemAttendLivestreamPhrase(autoTextValue).then(async (result) => {
+                                  const status = result.status;
+
+                                  if (status === 'success' || status === 'redeemed') {
+                                    // Success - phrase accepted and coins awarded
+                                    setPhraseValidationResult('correct');
+                                    try { sfx.play('click', 0.7); } catch {}
+                                    setCheckInMessage(`Secret phrase accepted! +${result.reward || 0} HeartCoins`);
+                                    setStatusType('success');
+                                    setShowCheckInSuccess(true);
+
+                                    // Refresh profile to update HeartCoin balance
+                                    await refreshProfile();
+                                    await refetchQuests();
+
+                                    // Clear UI after success
+                                    setTimeout(() => {
+                                      setShowAutoTextBox(false);
+                                      setAutoTextValue("");
+                                      setAttendLivestreamConfirming(false);
+                                      setShowCheckInSuccess(false);
+                                      setCheckInMessage("");
+                                      setStatusType('idle');
+                                    }, 3000);
+                                  } else if (status === 'already_redeemed' || status === 'already_checked_in') {
+                                    // Already redeemed - show "Already checked in"
+                                    setPhraseValidationResult('incorrect');
                                     try { sfx.play('change-channel', 0.6); } catch {}
-                                    
-                                    // Return to text box after 2 seconds
+                                    setCheckInMessage('Already checked in');
+                                    setStatusType('error');
                                     setTimeout(() => {
                                       setPhraseValidationResult(null);
-                                      setAutoTextValue(""); // Clear the text box
+                                      setAutoTextValue("");
+                                      setCheckInMessage("");
+                                      setStatusType('idle');
+                                    }, 2500);
+                                  } else if (status === 'invalid' || status === 'incorrect') {
+                                    // Invalid phrase
+                                    setPhraseValidationResult('incorrect');
+                                    try { sfx.play('change-channel', 0.6); } catch {}
+                                    setCheckInMessage('Incorrect phrase');
+                                    setStatusType('error');
+                                    setTimeout(() => {
+                                      setPhraseValidationResult(null);
+                                      setAutoTextValue("");
+                                      setCheckInMessage("");
+                                      setStatusType('idle');
                                     }, 2000);
+                                  } else if (status === 'not_authenticated') {
+                                    // Not logged in
+                                    setPhraseValidationResult('incorrect');
+                                    setCheckInMessage('Please log in');
+                                    setStatusType('error');
+                                    setTimeout(() => {
+                                      setPhraseValidationResult(null);
+                                      setCheckInMessage("");
+                                      setStatusType('idle');
+                                    }, 2500);
+                                  } else {
+                                    // Unknown error
+                                    setPhraseValidationResult('incorrect');
+                                    try { sfx.play('change-channel', 0.6); } catch {}
+                                    setCheckInMessage('Something went wrong');
+                                    setStatusType('error');
+                                    setTimeout(() => {
+                                      setPhraseValidationResult(null);
+                                      setAutoTextValue("");
+                                      setCheckInMessage("");
+                                      setStatusType('idle');
+                                    }, 2500);
                                   }
+                                }).finally(() => {
+                                  setSecretPhraseLoading(false);
                                 });
                               }
                             } else {
@@ -2434,8 +2499,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   onClick={() => {
                                     try { sfx.play('click', 0.7); } catch {}
                                     setSelectedCardElement(element.toUpperCase());
-                                    // Show all cards for this element (element card will be sorted first)
-                                    setSelectedSong('');
+                                    // Filter to show the element card (e.g., "Lightning" card for lightning element)
+                                    const elementCardName = element.charAt(0).toUpperCase() + element.slice(1).toLowerCase();
+                                    setSelectedSong(elementCardName);
                                     setSelectedRarity('');
                                     setCurrentCardIndex(0);
                                   }}
@@ -2502,6 +2568,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               onMouseEnter={() => {
                                 try { sfx.play('hover', 0.3); } catch {}
                               }}
+                              onInput={() => {
+                                // Play hover sound when cycling through options
+                                try { sfx.play('hover', 0.3); } catch {}
+                              }}
                               onKeyDown={(e) => {
                                 // Play hover sound when cycling through options with arrow keys
                                 if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
@@ -2510,7 +2580,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               }}
                               className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1 hover:scale-105 transition-transform duration-200"
                             >
-                              <option value="">{selectedCardElement} CARDS</option>
                               {availableSongs.map(song => (
                                 <option key={song} value={song}>{song}</option>
                               ))}
@@ -2529,69 +2598,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               if (!card) return null;
                               
                               return (
-                                <div className="relative w-full min-h-96">
-                                  {/* Navigation Arrows - Only show if multiple cards */}
-                                  {filteredCards.length > 1 && (
-                                    <>
-                                      {/* Left Arrow */}
-                                      <button
-                                        onClick={() => {
-                                          try { sfx.play('flip', 0.8); } catch {}
-                                          setCurrentCardIndex(prev => 
-                                            prev > 0 ? prev - 1 : filteredCards.length - 1
-                                          );
-                                        }}
-                                        className="absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:text-yellow-400 transition-all duration-200 z-50 border-2 border-white/30 hover:border-yellow-400/60 shadow-lg hover:scale-110"
-                                      >
-                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                        </svg>
-                                      </button>
-                                      
-                                      {/* Right Arrow */}
-                                      <button
-                                        onClick={() => {
-                                          try { sfx.play('flip', 0.8); } catch {}
-                                          setCurrentCardIndex(prev => 
-                                            prev < filteredCards.length - 1 ? prev + 1 : 0
-                                          );
-                                        }}
-                                        className="absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:text-yellow-400 transition-all duration-200 z-50 border-2 border-white/30 hover:border-yellow-400/60 shadow-lg hover:scale-110"
-                                      >
-                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                        </svg>
-                                      </button>
-                                      
-                                      {/* Card Indicators */}
-                                      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2 z-50">
-                                        {filteredCards.map((_, index) => (
-                                          <div
-                                            key={index}
-                                            className={`w-3 h-3 rounded-full transition-all duration-200 border ${
-                                              index === currentCardIndex
-                                                ? 'bg-yellow-400 border-yellow-400 shadow-[0_0_12px_rgba(255,255,0,0.8)]'
-                                                : 'bg-white/50 border-white/50'
-                                            }`}
-                                          />
-                                        ))}
-                                      </div>
-                                    </>
-                                  )}
-
-                                  {/* Card Counter */}
-                                  <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 z-50">
-                                    <span 
-                                      className="text-xs px-2 py-1 rounded bg-black/60 border border-white/20"
-                                      style={{ 
-                                        color: '#FFFFFF', 
-                                        textShadow: '0 0 4px rgba(255,255,255,0.6)' 
-                                      }}
-                                    >
-                                      {currentCardIndex + 1} of {filteredCards.length}
-                                    </span>
-                                  </div>
-
+                                <div className="relative w-full">
                                   {/* Single Card Display */}
                             <div key={card.id} className="flex flex-col items-center text-center max-w-full" onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}>
 

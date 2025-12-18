@@ -38,10 +38,10 @@ import SongDropdown from "@/components/SongDropdown";
 import SimpleWaveform from "@/components/SimpleWaveform";
 import WaveformVisualizer, { ELEMENT_COLORS } from "@/components/WaveformVisualizer";
 import DevErrorLogger from "@/components/DevErrorLogger";
-// Working 2D planetarium system - no SSR issues
-const PlanetSystemV2 = dynamic(() => import("@/components/PlanetSystemV2").then(mod => ({ default: mod.PlanetSystemV2 })), { 
+// 3D Planetarium system with Three.js
+const Pure3DPlanets = dynamic(() => import("@/components/planetarium/Pure3DPlanets"), {
   ssr: false,
-  loading: () => <div className="flex items-center justify-center h-full text-cyan-400">Loading planets...</div>
+  loading: () => <div className="flex items-center justify-center h-full text-cyan-400">Loading 3D planets...</div>
 });
 import { DEBUG_MEDIA, dlog, dwarn } from "@/lib/debug";
 import { ElementIcon as OptimizedElementIcon } from "@/lib/elementIcons";
@@ -2290,38 +2290,42 @@ const HUDPanel = React.memo(function HUDPanel({
             ref={planetRef}
             className="absolute inset-x-0"
             // Position 3D display higher within blue HUD area; allow only top bleed on homepage
-            style={{ 
+            style={{
               // Fade only the 3D layer when beam-only mode is active
               opacity: contentOpacity,
               // Move the 3D planet system higher
-              top: `calc(-110px)`, 
-              bottom: planetBottom,
-              pointerEvents: 'auto' // FIXED: Allow mouse interactions with 3D system
+              top: 0,
+              height: '400px',
+              pointerEvents: 'auto', // FIXED: Allow mouse interactions with 3D system
+              zIndex: 10 // Ensure planets render above other elements
             }}
           >
-            <div className="w-full h-full" style={{ pointerEvents: 'auto' }}>
-                <ErrorBoundary 
+            <div className="w-full h-full" style={{ pointerEvents: 'auto', minHeight: '400px' }}>
+                <ErrorBoundary
                   key={preferRaw3D ? 'raw' : 'r3f'}
-                  fallback={null} 
-                  onError={(e)=>{ 
+                  fallback={<div className="w-full h-full flex items-center justify-center text-red-400">3D Error - Check Console</div>}
+                  onError={(e)=>{
                     const emsg = String((e && (e.message||e.name)) || '');
-                    if (String(e?.name||'').includes('IndexSizeError')) { 
-                      try { if (DEBUG_MEDIA) dwarn('Disabling 3D due to IndexSizeError'); } catch {} 
+                    console.error('Pure3DPlanets Error:', emsg, e);
+                    if (String(e?.name||'').includes('IndexSizeError')) {
+                      try { if (DEBUG_MEDIA) dwarn('Disabling 3D due to IndexSizeError'); } catch {}
                     }
                     if (emsg.includes('ReactCurrentOwner') || emsg.includes('Cannot read properties of undefined')) {
                       // Switch to raw 3D fallback; keep 3D enabled
                       setPreferRaw3D(true);
                       console.warn('Switched to Raw3D due to React compatibility issue:', emsg);
                     }
-                    setThreeFailed(emsg || 'Render error'); 
+                    setThreeFailed(emsg || 'Render error');
                     // Do not disable can3D here; fallback may still work
                   }}
                 >
-                  {/* Show all planets using working 2D planetarium */}
-                  <PlanetSystemV2 
-                    initialActivePlanet={currentId ? 'HEART' : undefined}
+                  {/* Show 3D planets using Three.js */}
+                  <Pure3DPlanets
+                    songs={resolvedSongs || []}
+                    songsByElement={{}}
+                    zoomLevel={1}
                     onPlanetSelect={onSongChange}
-                    worldId={currentId ? 'heart' : undefined}
+                    quality="high"
                   />
                 </ErrorBoundary>
               </div>

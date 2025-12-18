@@ -805,7 +805,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
               position: "fixed",
               // Position from top instead to ensure it touches profile bar
               top: '64px',
-              bottom: 'calc(var(--buttons-bottom, 36%) + 60px)',
+              bottom: 'var(--light-beam-boundary)',
               // Center horizontally in the viewport (always centered)
               left: '50%',
               transform: 'translateX(-50%)',

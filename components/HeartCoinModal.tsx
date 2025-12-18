@@ -347,20 +347,31 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       }
 
       // Handle response statuses
-      if (data?.status === 'redeemed') {
-        setSecretPhraseMessage({ type: 'success', text: `+${data.reward} HeartCoins` });
+      // Handle RPC response - may return single object or array
+      const result = data?.[0] || data;
+      const status = result?.status;
+
+      if (status === 'success' || status === 'redeemed') {
+        // Success - phrase accepted and coins awarded
+        const reward = result?.awarded || result?.reward || 0;
+        setSecretPhraseMessage({ type: 'success', text: `+${reward} HeartCoins` });
         setSecretPhrase(''); // Clear input
         // Refresh profile to update HeartCoin balance
         await refreshProfile();
-      } else if (data?.status === 'already_checked_in') {
-        setSecretPhraseMessage({ type: 'error', text: 'Already checked in today' });
-      } else if (data?.status === 'incorrect') {
-        setSecretPhraseMessage({ type: 'error', text: 'Incorrect secret phrase' });
-      } else if (data?.status === 'not_authenticated') {
+      } else if (status === 'already_redeemed' || status === 'already_checked_in') {
+        // Already redeemed - show "Already checked in" (NOT "incorrect")
+        setSecretPhraseMessage({ type: 'error', text: 'Already checked in' });
+      } else if (status === 'invalid' || status === 'incorrect') {
+        // Invalid phrase
+        setSecretPhraseMessage({ type: 'error', text: 'Incorrect phrase' });
+      } else if (status === 'not_authenticated') {
+        // Not logged in
         setSecretPhraseMessage({ type: 'error', text: 'Please log in to redeem' });
         handleLoginToComplete();
       } else {
-        setSecretPhraseMessage({ type: 'error', text: 'Unknown error occurred' });
+        // Unknown error
+        console.error('Unknown RPC status:', result);
+        setSecretPhraseMessage({ type: 'error', text: 'Something went wrong' });
       }
     } catch (err: any) {
       console.error('Secret phrase redemption error:', err);

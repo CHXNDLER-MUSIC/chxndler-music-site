@@ -371,102 +371,29 @@ export async function completeBonusQuest(params: {
 }
 
 /**
- * Completes a secret phrase quest with phrase validation
+ * @deprecated This function is DEPRECATED and should not be used.
+ *
+ * Secret phrase redemption now uses the `redeem_secret_phrase` RPC function
+ * which handles all validation, redemption tracking, and coin awarding securely
+ * on the database side. The secret_phrases table is locked down with RLS and
+ * cannot be queried directly from the client.
+ *
+ * For frontend usage, call the RPC directly:
+ *   supabase.rpc('redeem_secret_phrase', { p_phrase: trimmedPhrase })
+ *
+ * The RPC returns: { status, awarded, phrase_id }
+ * Status values: 'success', 'already_redeemed', 'invalid', 'not_authenticated'
  */
-export async function completeSecretPhraseQuest(params: {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function completeSecretPhraseQuest(_params: {
   supabase: SupabaseClient;
   userId: string;
   bonusQuestId: string;
   phrase: string;
 }): Promise<void> {
-  const { supabase, userId, bonusQuestId, phrase } = params;
-
-  if (!phrase || !phrase.trim()) {
-    throw new Error('Secret phrase is required');
-  }
-
-  const trimmedPhrase = phrase.trim();
-
-  try {
-    // Look up the secret phrase (case insensitive, active today)
-    const today = new Date().toISOString().split('T')[0];
-    const { data: secretPhrase, error: phraseError } = await supabase
-      .from('secret_phrases')
-      .select('*')
-      .ilike('secret_phrase', trimmedPhrase)
-      .eq('active_date', today)
-      .eq('is_active', true)
-      .maybeSingle();
-
-    if (phraseError) {
-      console.error('Error looking up secret phrase:', phraseError);
-      throw new Error('Error validating secret phrase');
-    }
-
-    if (!secretPhrase) {
-      throw new Error('Invalid secret phrase');
-    }
-
-    // Check if user already redeemed this phrase
-    const { data: existingRedemption } = await supabase
-      .from('secret_phrase_redemptions')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('secret_phrase_id', secretPhrase.id)
-      .maybeSingle();
-
-    if (existingRedemption) {
-      throw new Error('Secret phrase already redeemed');
-    }
-
-    // Award HeartCoins from the secret phrase reward
-    if (secretPhrase.reward && secretPhrase.reward > 0) {
-      await awardHeartCoins(
-        supabase,
-        userId,
-        secretPhrase.reward,
-        `Secret Phrase: ${secretPhrase.secret_phrase}`,
-        { secret_phrase_id: secretPhrase.id }
-      );
-    }
-
-    // Insert redemption record
-    const { error: redemptionError } = await supabase
-      .from('secret_phrase_redemptions')
-      .insert({
-        user_id: userId,
-        secret_phrase_id: secretPhrase.id,
-        redeemed_at: new Date().toISOString()
-      });
-
-    if (redemptionError) {
-      console.error('Failed to insert secret phrase redemption:', redemptionError);
-      throw new Error('Failed to record redemption');
-    }
-
-    // Complete the bonus quest
-    await completeBonusQuest({
-      supabase,
-      userId,
-      bonusQuestId
-    });
-
-    console.log('Successfully completed secret phrase quest:', {
-      userId,
-      phrase: secretPhrase.secret_phrase,
-      reward: secretPhrase.reward,
-      bonusQuestId
-    });
-
-  } catch (error) {
-    console.error('Error in completeSecretPhraseQuest:', {
-      userId,
-      bonusQuestId,
-      phrase: trimmedPhrase,
-      error
-    });
-    throw error;
-  }
+  throw new Error(
+    'completeSecretPhraseQuest is deprecated. Use the redeem_secret_phrase RPC directly.'
+  );
 }
 
 /**

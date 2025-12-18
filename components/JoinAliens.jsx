@@ -232,12 +232,12 @@ export default function JoinAliens({ visible = true } = {}) {
   }
 
   return (
-    <div 
-      className={`signal-lost-container ${visible ? 'pointer-events-auto' : 'pointer-events-none'}`} 
-      style={{ 
-        zIndex: 130, 
-        position: 'relative', 
-        pointerEvents: visible ? 'auto' : 'none', 
+    <div
+      className={`signal-lost-container ${visible ? 'pointer-events-auto' : 'pointer-events-none'}`}
+      style={{
+        zIndex: 130,
+        position: 'relative',
+        pointerEvents: visible ? 'auto' : 'none',
         width: '100%',
         height: '100%',
         minHeight: 'fit-content',
@@ -384,11 +384,11 @@ export default function JoinAliens({ visible = true } = {}) {
       <div style={{ marginTop: '0px', paddingBottom: '80px' }}>
         {/* Header Text */}
         {showPhoneForm && (
-        <div 
-          style={{ 
-            textAlign: 'center', 
+        <div
+          style={{
+            textAlign: 'center',
             marginBottom: '8px',
-            marginTop: '-40px',
+            marginTop: '40px',
             color: '#00FFFF',
             fontSize: '16px',
             fontWeight: '600',

@@ -320,7 +320,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
       </div>
 
       {/* Heart Signal Section */}
-      <div className="px-4 pt-4 pb-0 border-t border-purple-500/30 space-y-2" style={{ marginBottom: '-12px' }}>
+      <div className="px-4 pt-1 pb-0 border-t border-purple-500/30 space-y-1" style={{ marginBottom: '-12px' }}>
         {/* Stay Connected Text */}
         <div className="text-center">
           <div 

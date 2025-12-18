@@ -1,200 +1,212 @@
 'use client';
 
-import React, { Suspense, useEffect, useState } from 'react';
-import type { SongWithElement } from '@/hooks/useSongs';
+import React, { useRef, useEffect, useState } from 'react';
+import * as THREE from 'three';
+import { OrbitControls } from 'three-stdlib';
 
 export interface Pure3DPlanetsProps {
-  songs: SongWithElement[];
-  songsByElement: Record<string, SongWithElement[]>;
+  songs: any[];
+  songsByElement: Record<string, any[]>;
   zoomLevel: number;
   onPlanetSelect?: (planetId: string) => void;
   quality: 'low' | 'high';
 }
 
-export default function Pure3DPlanets({ quality, onPlanetSelect, songs, songsByElement, zoomLevel }: Pure3DPlanetsProps) {
-  const [ThreeComponents, setThreeComponents] = useState<any>(null);
+export default function Pure3DPlanets({ quality, onPlanetSelect }: Pure3DPlanetsProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isClient, setIsClient] = useState(false);
-
-  console.log('Pure3DPlanets render:', { quality, songsCount: songs?.length || 0, zoomLevel, isClient, hasComponents: !!ThreeComponents });
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
   useEffect(() => {
-    if (!isClient) return;
+    if (!isClient || !containerRef.current) return;
 
-    let isMounted = true;
+    const container = containerRef.current;
+    const width = container.clientWidth || 500;
+    const height = container.clientHeight || 400;
 
-    const loadThree = async () => {
-      try {
-        console.log('Pure3DPlanets: Loading React Three Fiber...');
-        
-        const [
-          { Canvas },
-          { OrbitControls }
-        ] = await Promise.all([
-          import('@react-three/fiber'),
-          import('@react-three/drei')
-        ]);
-        
-        if (!isMounted) return;
-        
-        console.log('Pure3DPlanets: React Three Fiber loaded successfully');
+    // Scene setup
+    const scene = new THREE.Scene();
 
-        const PlanetSystem = ({ onPlanetSelect }: { onPlanetSelect?: (planetId: string) => void }) => (
-          <>
-            {/* Lighting */}
-            <ambientLight intensity={0.4} />
-            <pointLight position={[10, 10, 10]} intensity={1.2} />
-            <directionalLight position={[-10, -10, -10]} intensity={0.8} />
+    // Camera
+    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+    camera.position.set(0, 20, 40);
 
-            {/* Controls */}
-            <OrbitControls
-              enablePan={false}
-              minDistance={20}
-              maxDistance={80}
-              autoRotate
-              autoRotateSpeed={0.5}
-            />
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({
+      antialias: quality === 'high',
+      alpha: true
+    });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(quality === 'high' ? Math.min(window.devicePixelRatio, 2) : 1);
+    renderer.setClearColor(0x000000, 0);
+    container.appendChild(renderer.domElement);
 
-            {/* Center Planet - Sun-like */}
-            <mesh position={[0, 0, 0]} onClick={() => onPlanetSelect?.('center')}>
-              <sphereGeometry args={[4, 64, 64]} />
-              <meshStandardMaterial
-                color="#ffaa00"
-                emissive="#ff6600"
-                emissiveIntensity={0.3}
-                metalness={0.1}
-                roughness={0.4}
-              />
-            </mesh>
+    // Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enablePan = false;
+    controls.minDistance = 15;
+    controls.maxDistance = 100;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.3;
 
-            {/* Heart Planet */}
-            <group rotation={[0, 0, 0]}>
-              <mesh position={[20, 0, 0]} onClick={() => onPlanetSelect?.('heart')}>
-                <sphereGeometry args={[2.5, 32, 32]} />
-                <meshStandardMaterial
-                  color="#ff6b9d"
-                  emissive="#ff1166"
-                  emissiveIntensity={0.2}
-                  metalness={0.2}
-                  roughness={0.6}
-                />
-              </mesh>
-            </group>
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambientLight);
 
-            {/* Water Planet */}
-            <group rotation={[0, Math.PI / 2, 0]}>
-              <mesh position={[20, 0, 0]} onClick={() => onPlanetSelect?.('water')}>
-                <sphereGeometry args={[2.5, 32, 32]} />
-                <meshStandardMaterial
-                  color="#4fc3f7"
-                  emissive="#0099cc"
-                  emissiveIntensity={0.2}
-                  metalness={0.7}
-                  roughness={0.2}
-                  transparent
-                  opacity={0.9}
-                />
-              </mesh>
-            </group>
+    const pointLight = new THREE.PointLight(0xffffff, 1.2);
+    pointLight.position.set(10, 10, 10);
+    scene.add(pointLight);
 
-            {/* Lightning Planet */}
-            <group rotation={[0, Math.PI, 0]}>
-              <mesh position={[20, 0, 0]} onClick={() => onPlanetSelect?.('lightning')}>
-                <sphereGeometry args={[2.5, 32, 32]} />
-                <meshStandardMaterial
-                  color="#ffeb3b"
-                  emissive="#ffcc00"
-                  emissiveIntensity={0.4}
-                  metalness={0.3}
-                  roughness={0.3}
-                />
-              </mesh>
-            </group>
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(-10, -10, -10);
+    scene.add(directionalLight);
 
-            {/* Darkness Planet */}
-            <group rotation={[0, -Math.PI / 2, 0]}>
-              <mesh position={[20, 0, 0]} onClick={() => onPlanetSelect?.('darkness')}>
-                <sphereGeometry args={[2.5, 32, 32]} />
-                <meshStandardMaterial
-                  color="#9c27b0"
-                  emissive="#660099"
-                  emissiveIntensity={0.3}
-                  metalness={0.4}
-                  roughness={0.7}
-                />
-              </mesh>
-            </group>
+    // Create planet function
+    const createPlanet = (color: number, emissive: number, size: number, position: [number, number, number]) => {
+      const geometry = new THREE.SphereGeometry(size, 32, 32);
+      const material = new THREE.MeshStandardMaterial({
+        color,
+        emissive,
+        emissiveIntensity: 0.3,
+        metalness: 0.2,
+        roughness: 0.6
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(...position);
+      return mesh;
+    };
 
-            {/* Stars */}
-            {[...Array(100)].map((_, i) => {
-              const seed = i * 137.508;
-              const x = (Math.sin(seed) * 100);
-              const y = (Math.cos(seed * 2.3) * 100);
-              const z = (Math.sin(seed * 1.7) * 100);
-              return (
-                <mesh key={i} position={[x, y, z]}>
-                  <sphereGeometry args={[0.1, 4, 4]} />
-                  <meshBasicMaterial color="white" />
-                </mesh>
-              );
-            })}
-          </>
-        );
+    // Central Sun
+    const sun = createPlanet(0xffaa00, 0xff6600, 4, [0, 0, 0]);
+    scene.add(sun);
 
-        const ThreeScene = () => (
-          <Canvas
-            camera={{ position: [0, 15, 35], fov: 60 }}
-            style={{ background: 'transparent', width: '100%', height: '100%' }}
-            dpr={quality === 'high' ? 2 : 1}
-            gl={{
-              antialias: quality === 'high',
-              alpha: true,
-              preserveDrawingBuffer: false,
-            }}
-          >
-            <Suspense fallback={null}>
-              <PlanetSystem onPlanetSelect={onPlanetSelect} />
-            </Suspense>
-          </Canvas>
-        );
+    // Orbiting planets with their orbit groups
+    const planets = [
+      { color: 0xff6b9d, emissive: 0xff1166, pos: [20, 0, 0] as [number, number, number], speed: 0.3, id: 'heart' },
+      { color: 0x4fc3f7, emissive: 0x0099cc, pos: [0, 0, 20] as [number, number, number], speed: 0.25, id: 'water' },
+      { color: 0xffeb3b, emissive: 0xffcc00, pos: [-20, 0, 0] as [number, number, number], speed: 0.35, id: 'lightning' },
+      { color: 0x9c27b0, emissive: 0x660099, pos: [0, 0, -20] as [number, number, number], speed: 0.2, id: 'darkness' }
+    ];
 
-        setThreeComponents(() => ThreeScene);
-      } catch (error) {
-        console.error('Pure3DPlanets: Failed to load React Three Fiber:', error);
+    const orbitGroups: { group: THREE.Group; speed: number }[] = [];
+
+    planets.forEach(p => {
+      const group = new THREE.Group();
+      const planet = createPlanet(p.color, p.emissive, 2.5, p.pos);
+      group.add(planet);
+      scene.add(group);
+      orbitGroups.push({ group, speed: p.speed });
+    });
+
+    // Starfield
+    const starGeometry = new THREE.BufferGeometry();
+    const starPositions = [];
+    for (let i = 0; i < 200; i++) {
+      const seed = i * 137.508;
+      starPositions.push(
+        Math.sin(seed) * 150,
+        Math.cos(seed * 2.3) * 150,
+        Math.sin(seed * 1.7) * 150
+      );
+    }
+    starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
+    const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.5 });
+    const stars = new THREE.Points(starGeometry, starMaterial);
+    scene.add(stars);
+
+    // Raycaster for click detection
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    const handleClick = (event: MouseEvent) => {
+      const rect = container.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(scene.children, true);
+
+      if (intersects.length > 0) {
+        const obj = intersects[0].object;
+        if (obj === sun) {
+          onPlanetSelect?.('center');
+        } else {
+          // Check which planet was clicked
+          orbitGroups.forEach((og, idx) => {
+            if (og.group.children.includes(obj)) {
+              onPlanetSelect?.(planets[idx].id);
+            }
+          });
+        }
       }
     };
 
-    loadThree();
+    container.addEventListener('click', handleClick);
 
+    // Animation loop
+    let animationId: number;
+    const clock = new THREE.Clock();
+
+    const animate = () => {
+      animationId = requestAnimationFrame(animate);
+      const elapsed = clock.getElapsedTime();
+
+      // Rotate sun
+      sun.rotation.y = elapsed * 0.5;
+
+      // Orbit planets
+      orbitGroups.forEach(og => {
+        og.group.rotation.y = elapsed * og.speed;
+      });
+
+      controls.update();
+      renderer.render(scene, camera);
+    };
+
+    animate();
+
+    // Handle resize
+    const handleResize = () => {
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup
     return () => {
-      isMounted = false;
+      cancelAnimationFrame(animationId);
+      window.removeEventListener('resize', handleResize);
+      container.removeEventListener('click', handleClick);
+      controls.dispose();
+      renderer.dispose();
+      if (container.contains(renderer.domElement)) {
+        container.removeChild(renderer.domElement);
+      }
     };
   }, [isClient, quality, onPlanetSelect]);
 
   if (!isClient) {
     return (
-      <div className="w-full h-full bg-gray-900 flex items-center justify-center text-white">
+      <div className="w-full h-full min-h-[400px] flex items-center justify-center text-white">
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-2" />
-          Initializing...
+          Loading 3D Planets...
         </div>
       </div>
     );
   }
 
-  if (!ThreeComponents) {
-    return (
-      <div className="w-full h-full bg-gray-900 flex items-center justify-center text-white">
-        <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-2" />
-          Loading 3D Engine...
-        </div>
-      </div>
-    );
-  }
-
-  return <ThreeComponents />;
+  return (
+    <div
+      ref={containerRef}
+      style={{ width: '100%', height: '100%', minHeight: '400px' }}
+    />
+  );
 }

@@ -53,9 +53,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           // Set initial cookies if session exists
           if (session?.access_token) {
-            document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=3600; SameSite=Lax; Secure=${window.location.protocol === 'https:'}`;
+            const isSecure = window.location.protocol === 'https:';
+            const secureFlag = isSecure ? '; Secure' : '';
+            document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=3600; SameSite=Lax${secureFlag}`;
             if (session.refresh_token) {
-              document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=604800; SameSite=Lax; Secure=${window.location.protocol === 'https:'}`;
+              document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=604800; SameSite=Lax${secureFlag}`;
             }
           }
         }
@@ -81,9 +83,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // Sync session tokens to cookies for API routes
         if (session?.access_token) {
-          document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=3600; SameSite=Lax; Secure=${window.location.protocol === 'https:'}`;
+          const isSecure = window.location.protocol === 'https:';
+          const secureFlag = isSecure ? '; Secure' : '';
+          document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=3600; SameSite=Lax${secureFlag}`;
           if (session.refresh_token) {
-            document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=604800; SameSite=Lax; Secure=${window.location.protocol === 'https:'}`;
+            document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=604800; SameSite=Lax${secureFlag}`;
           }
         } else {
           // Clear cookies when no session

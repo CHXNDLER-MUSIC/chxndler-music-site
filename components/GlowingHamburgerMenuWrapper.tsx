@@ -101,6 +101,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
           setJourneyOpen(true);
           break;
         case "BINDER":
+          try { onBeamColorChange?.('pink'); } catch {}
           setBinderOpen(true);
           break;
         case "JOURNAL":

@@ -131,7 +131,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
               onClose();
             }}
             onMouseEnter={(e) => {
-              try { sfx.play('hover.mp3', 0.3); } catch {}
+              try { sfx.play('hover', 0.3); } catch {}
               e.currentTarget.style.transform = 'scale(1.1)';
             }}
             onMouseLeave={(e) => {

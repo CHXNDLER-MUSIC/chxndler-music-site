@@ -259,8 +259,8 @@ export default function HoloHubMenu({
   const joinRef = useRef<HTMLAudioElement | null>(null);
 
   // Position yellow panel using unified touch point system
-  // Bottom of display shifted down to align with blue power button and pink live stream button
-  const beamBottomCss = 'calc(var(--display-touch-top) + 400px)';
+  // Bottom of display should sit on top of the light beam (at beam's top edge)
+  const beamBottomCss = 'calc(var(--light-beam-boundary) + var(--beam-height))';
   // Panel height fixed - yellow display should never change height
   const panelHeight = 104; // Fixed height (80px itemSize + 24px padding)
 

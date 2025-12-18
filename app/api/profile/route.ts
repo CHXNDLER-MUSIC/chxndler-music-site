@@ -51,3 +51,41 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(data, { status: 200 });
 }
 
+export async function PATCH(req: NextRequest) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('sb-access-token')?.value || '';
+  if (!token) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const supabase = createSupabaseServerClientWithJwt(token);
+  const { data: userResult, error: userError } = await supabase.auth.getUser();
+  if (userError || !userResult?.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const user = userResult.user;
+
+  let body: { name?: string; avatar_url?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (body.name !== undefined) updates.name = body.name;
+  if (body.avatar_url !== undefined) updates.avatar_url = body.avatar_url;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(updates)
+    .eq('id', user.id)
+    .select()
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: (error as any).message || 'Update failed' }, { status: 400 });
+  }
+  return NextResponse.json(data, { status: 200 });
+}
+
