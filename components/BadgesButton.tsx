@@ -371,9 +371,12 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       
       {/* Badges Modal */}
       {isActive && (
-        <div 
-          className="fixed inset-0 z-[2147483647] flex items-start justify-center relative"
-          style={{ paddingTop: '8vh' }}
+        <div
+          className="fixed left-0 right-0 z-[2147483647] flex items-center justify-center"
+          style={{
+            top: 'var(--profile-bar-boundary, 64px)',
+            bottom: 'calc(var(--display-touch-top) + 60px)'
+          }}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               try { sfx.play('close', 0.8); } catch {}
@@ -391,9 +394,9 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
               width: 'min(95vw, 740px)',
               maxWidth: '700px',
               minHeight: '350px',
-              // Leave extra safety gap above the power button
-              height: 'calc(100vh - 8vh - (var(--power-size-px, 72px) + 16px))',
-              maxHeight: 'calc(100vh - 8vh - (var(--power-size-px, 72px) + 16px))',
+              // Height fills the bounded area (profile bar to light beam)
+              height: '100%',
+              maxHeight: '100%',
               padding: '10px 14px 10px 14px',
               borderRadius: 18,
               background: 'linear-gradient(135deg, rgba(0,191,255,0.10), rgba(0,0,0,0.60))',
@@ -455,15 +458,26 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                     setElementFilter(null);
                     setCurrentPage(0);
                   }}
-                  className="px-3 py-1 text-[10px] font-bold rounded border border-cyan-400/60 hover:border-cyan-400/80 transition-all duration-200"
+                  onMouseEnter={(e) => {
+                    sfx.play('hover', 0.4);
+                    e.currentTarget.style.transform = 'scale(1.15)';
+                    e.currentTarget.style.boxShadow = '0 0 20px rgba(0,191,255,0.8), 0 0 35px rgba(0,191,255,0.5)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = '0 0 15px rgba(0,191,255,0.6), 0 0 25px rgba(0,191,255,0.4)';
+                  }}
+                  className="w-10 h-10 rounded-full border border-cyan-400/60 hover:border-cyan-400/80 flex items-center justify-center text-cyan-400 hover:text-cyan-200"
                   style={{
                     background: 'rgba(0,191,255,0.1)',
-                    color: '#00BFFF',
-                    textShadow: '0 0 4px rgba(0,191,255,0.8)',
-                    boxShadow: '0 0 8px rgba(0,191,255,0.3)',
+                    boxShadow: '0 0 15px rgba(0,191,255,0.6), 0 0 25px rgba(0,191,255,0.4)',
+                    backdropFilter: 'blur(2px)',
+                    transition: 'transform 200ms ease, box-shadow 200ms ease',
                   }}
                 >
-                  ← BACK TO CATEGORIES
+                  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden>
+                    <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  </svg>
                 </button>
               )}
               <div 
@@ -490,228 +504,247 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
               }}
             />
 
-            {/* Content */}
-            <div className="relative mt-1 flex-1 overflow-auto">
-              {/* Badge Detail Overlay */}
-              {selectedBadge && (
-                <div className="absolute inset-0 bg-black/90 backdrop-blur-md z-20 rounded-lg">
-                  {/* Back button - top left */}
-                  <button
-                    onClick={() => {
-                      try { sfx.play('close', 0.6); } catch {}
-                      setSelectedBadge(null);
-                    }}
-                    onMouseEnter={(e) => {
-                      sfx.play('hover', 0.4);
-                      e.currentTarget.style.transform = 'scale(1.15)';
-                      e.currentTarget.style.boxShadow = '0 0 20px rgba(0,191,255,0.8), 0 0 35px rgba(0,191,255,0.5)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'scale(1)';
-                      e.currentTarget.style.boxShadow = '0 0 15px rgba(0,191,255,0.6), 0 0 25px rgba(0,191,255,0.4)';
-                    }}
-                    className="absolute top-4 left-4 w-10 h-10 rounded-full border border-cyan-400/60 hover:border-cyan-400/80 flex items-center justify-center text-cyan-400 hover:text-cyan-200"
-                    style={{
-                      background: 'rgba(0,191,255,0.1)',
-                      boxShadow: '0 0 15px rgba(0,191,255,0.6), 0 0 25px rgba(0,191,255,0.4)',
-                      backdropFilter: 'blur(2px)',
-                      transition: 'transform 200ms ease, box-shadow 200ms ease',
-                      zIndex: 30
-                    }}
-                  >
-                    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden>
-                      <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                    </svg>
-                  </button>
+            {/* Badge Detail Overlay - Full container */}
+            {selectedBadge && (
+              <div className="absolute inset-0 bg-black/90 backdrop-blur-md z-20 rounded-[18px]">
+                {/* Back button - top left */}
+                <button
+                  onClick={() => {
+                    try { sfx.play('close', 0.6); } catch {}
+                    setSelectedBadge(null);
+                  }}
+                  onMouseEnter={(e) => {
+                    sfx.play('hover', 0.4);
+                    e.currentTarget.style.transform = 'scale(1.15)';
+                    e.currentTarget.style.boxShadow = '0 0 20px rgba(0,191,255,0.8), 0 0 35px rgba(0,191,255,0.5)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = '0 0 15px rgba(0,191,255,0.6), 0 0 25px rgba(0,191,255,0.4)';
+                  }}
+                  className="absolute top-4 left-4 w-10 h-10 rounded-full border border-cyan-400/60 hover:border-cyan-400/80 flex items-center justify-center text-cyan-400 hover:text-cyan-200"
+                  style={{
+                    background: 'rgba(0,191,255,0.1)',
+                    boxShadow: '0 0 15px rgba(0,191,255,0.6), 0 0 25px rgba(0,191,255,0.4)',
+                    backdropFilter: 'blur(2px)',
+                    transition: 'transform 200ms ease, box-shadow 200ms ease',
+                    zIndex: 30
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden>
+                    <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  </svg>
+                </button>
 
-                  <div className="w-full h-full flex items-center justify-center">
-                    <div className="w-full max-w-sm mx-4 p-6 text-center space-y-4">
-                      {/* Badge display with TiltSpinCard */}
-                    <div className="flex flex-col items-center space-y-4">
-                      {/* Unlocked status - only show above badge when unlocked */}
-                      {isUnlocked(selectedBadge) && (
-                        <div className="text-sm font-bold text-green-400">
-                          ✅ UNLOCKED
-                        </div>
-                      )}
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="w-full max-w-sm mx-4 p-6 text-center space-y-4">
+                    {/* Badge display with TiltSpinCard */}
+                  <div className="flex flex-col items-center space-y-4">
+                    {/* Unlocked status - only show above badge when unlocked */}
+                    {isUnlocked(selectedBadge) && (
+                      <div className="text-sm font-bold text-green-400">
+                        CLAIMED
+                      </div>
+                    )}
 
-                      <div
-                        className="relative"
+                    <div
+                      className="relative"
+                      style={{
+                        touchAction: 'none',
+                        WebkitUserSelect: 'none',
+                        userSelect: 'none',
+                      }}
+                      onTouchStart={(e) => e.stopPropagation()}
+                      onTouchMove={(e) => e.stopPropagation()}
+                    >
+                      <TiltSpinCard
+                        className="relative w-32 h-32 cursor-grab active:cursor-grabbing"
                         style={{
                           touchAction: 'none',
-                          WebkitUserSelect: 'none',
-                          userSelect: 'none',
+                          perspective: '1000px',
+                          zIndex: 50,
                         }}
-                        onTouchStart={(e) => e.stopPropagation()}
-                        onTouchMove={(e) => e.stopPropagation()}
+                        maxRotateX={10}
+                        sensitivity={0.3}
+                        returnDuration={400}
+                        enableSpin={true}
+                        spinSensitivity={0.8}
+                        onRotationChange={setBadgeRotation}
+                        onClick={() => {
+                          sfx.play('flip', 0.8);
+                          setIsBadgeAnimatingFlip(true);
+                          setBadgeRotation(prev => prev + 180);
+                          setTimeout(() => setIsBadgeAnimatingFlip(false), 500);
+                        }}
                       >
-                        <TiltSpinCard
-                          className="relative w-32 h-32 cursor-grab active:cursor-grabbing"
+                        {/* 3D container for badge */}
+                        <div
+                          className="absolute inset-0 w-full h-full"
                           style={{
-                            touchAction: 'none',
-                            perspective: '1000px',
-                            zIndex: 50,
-                          }}
-                          maxRotateX={10}
-                          sensitivity={0.3}
-                          returnDuration={400}
-                          enableSpin={true}
-                          spinSensitivity={0.8}
-                          onRotationChange={setBadgeRotation}
-                          onClick={() => {
-                            sfx.play('flip', 0.8);
-                            setIsBadgeAnimatingFlip(true);
-                            setBadgeRotation(prev => prev + 180);
-                            setTimeout(() => setIsBadgeAnimatingFlip(false), 500);
+                            transformStyle: 'preserve-3d',
+                            transform: `rotateY(${badgeRotation}deg)`,
+                            transition: isBadgeAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                            pointerEvents: 'none',
                           }}
                         >
-                          {/* 3D container for badge */}
+                          {/* Front of badge */}
                           <div
-                            className="absolute inset-0 w-full h-full"
+                            className="absolute inset-0 w-full h-full rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-cyan-400/60 flex items-center justify-center"
                             style={{
-                              transformStyle: 'preserve-3d',
-                              transform: `rotateY(${badgeRotation}deg)`,
-                              transition: isBadgeAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                              pointerEvents: 'none',
+                              backfaceVisibility: 'hidden',
+                              boxShadow: '0 0 25px rgba(0,191,255,0.6), 0 0 50px rgba(0,191,255,0.3)',
                             }}
                           >
-                            {/* Front of badge */}
                             <div
-                              className="absolute inset-0 w-full h-full rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-cyan-400/60 flex items-center justify-center"
+                              className="relative z-10"
                               style={{
-                                backfaceVisibility: 'hidden',
-                                boxShadow: '0 0 25px rgba(0,191,255,0.6), 0 0 50px rgba(0,191,255,0.3)',
+                                filter: isUnlocked(selectedBadge) ? 'none' : 'blur(3px) grayscale(30%)',
+                                opacity: isUnlocked(selectedBadge) ? 1 : 0.6,
+                                transition: 'filter 300ms ease, opacity 300ms ease'
                               }}
                             >
-                              <div
-                                className="relative z-10"
-                                style={{
-                                  filter: isUnlocked(selectedBadge) ? 'none' : 'blur(3px) grayscale(30%)',
-                                  opacity: isUnlocked(selectedBadge) ? 1 : 0.6,
-                                  transition: 'filter 300ms ease, opacity 300ms ease'
-                                }}
-                              >
-                                {selectedBadge.icon_url ? (
-                                  <img
-                                    src={selectedBadge.icon_url}
-                                    alt={selectedBadge.badge_name}
-                                    className="w-28 h-28 object-cover rounded-full"
-                                    draggable={false}
-                                  />
-                                ) : (
-                                  <div className="text-3xl">
-                                    {getBadgeDisplayIcon(selectedBadge, selectedCategory || '')}
-                                  </div>
-                                )}
+                              {selectedBadge.icon_url ? (
+                                <img
+                                  src={selectedBadge.icon_url}
+                                  alt={selectedBadge.badge_name}
+                                  className="w-28 h-28 object-cover rounded-full"
+                                  draggable={false}
+                                />
+                              ) : (
+                                <div className="text-3xl">
+                                  {getBadgeDisplayIcon(selectedBadge, selectedCategory || '')}
+                                </div>
+                              )}
+                            </div>
+                            {/* Locked overlay with text */}
+                            {!isUnlocked(selectedBadge) && (
+                              <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center">
+                                <div className="text-white/90 text-sm font-bold flex items-center gap-1" style={{ textShadow: '0 0 10px rgba(0,0,0,0.8)' }}>
+                                  🔒 LOCKED
+                                </div>
                               </div>
-                              {/* Locked overlay with text */}
-                              {!isUnlocked(selectedBadge) && (
+                            )}
+                          </div>
+
+                          {/* Back of badge */}
+                          <div
+                            className="absolute inset-0 w-full h-full rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-cyan-400/60 flex items-center justify-center"
+                            style={{
+                              backfaceVisibility: 'hidden',
+                              transform: 'rotateY(180deg)',
+                              boxShadow: '0 0 25px rgba(0,191,255,0.6), 0 0 50px rgba(0,191,255,0.3)',
+                            }}
+                          >
+                            {isUnlocked(selectedBadge) ? (
+                              // Claimed badge back - show user name and date
+                              <div className="flex flex-col items-center justify-center text-center px-2">
+                                <div className="text-white font-bold text-sm truncate max-w-[100px]" style={{ textShadow: '0 0 8px rgba(0,191,255,0.8)' }}>
+                                  {profile?.name || 'You'}
+                                </div>
+                                <div className="text-cyan-400 text-[10px] font-semibold mt-1">CLAIMED</div>
+                                <div className="text-white/80 text-[10px] mt-0.5">
+                                  {(() => {
+                                    const userBadge = userBadges.find(ub => ub.badge_id === selectedBadge.id);
+                                    if (userBadge?.earned_at) {
+                                      const date = new Date(userBadge.earned_at);
+                                      return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+                                    }
+                                    return '';
+                                  })()}
+                                </div>
+                              </div>
+                            ) : (
+                              // Locked badge back
+                              <>
+                                <div
+                                  className="relative z-10"
+                                  style={{
+                                    filter: 'blur(3px) grayscale(30%)',
+                                    opacity: 0.6,
+                                    transition: 'filter 300ms ease, opacity 300ms ease'
+                                  }}
+                                >
+                                  {selectedBadge.icon_url ? (
+                                    <img
+                                      src={selectedBadge.icon_url}
+                                      alt={selectedBadge.badge_name}
+                                      className="w-28 h-28 object-cover rounded-full"
+                                      draggable={false}
+                                    />
+                                  ) : (
+                                    <div className="text-3xl">
+                                      {getBadgeDisplayIcon(selectedBadge, selectedCategory || '')}
+                                    </div>
+                                  )}
+                                </div>
                                 <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center">
                                   <div className="text-white/90 text-sm font-bold flex items-center gap-1" style={{ textShadow: '0 0 10px rgba(0,0,0,0.8)' }}>
                                     🔒 LOCKED
                                   </div>
                                 </div>
-                              )}
-                            </div>
-
-                            {/* Back of badge */}
-                            <div
-                              className="absolute inset-0 w-full h-full rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-cyan-400/60 flex items-center justify-center"
-                              style={{
-                                backfaceVisibility: 'hidden',
-                                transform: 'rotateY(180deg)',
-                                boxShadow: '0 0 25px rgba(0,191,255,0.6), 0 0 50px rgba(0,191,255,0.3)',
-                              }}
-                            >
-                              <div
-                                className="relative z-10"
-                                style={{
-                                  filter: isUnlocked(selectedBadge) ? 'none' : 'blur(3px) grayscale(30%)',
-                                  opacity: isUnlocked(selectedBadge) ? 1 : 0.6,
-                                  transition: 'filter 300ms ease, opacity 300ms ease'
-                                }}
-                              >
-                                {selectedBadge.icon_url ? (
-                                  <img
-                                    src={selectedBadge.icon_url}
-                                    alt={selectedBadge.badge_name}
-                                    className="w-28 h-28 object-cover rounded-full"
-                                    style={{ transform: 'scaleX(-1)' }}
-                                    draggable={false}
-                                  />
-                                ) : (
-                                  <div className="text-3xl">
-                                    {getBadgeDisplayIcon(selectedBadge, selectedCategory || '')}
-                                  </div>
-                                )}
-                              </div>
-                              {/* Locked overlay with text */}
-                              {!isUnlocked(selectedBadge) && (
-                                <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center">
-                                  <div className="text-white/90 text-sm font-bold flex items-center gap-1" style={{ textShadow: '0 0 10px rgba(0,0,0,0.8)', transform: 'scaleX(-1)' }}>
-                                    🔒 LOCKED
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </TiltSpinCard>
-                      </div>
-                      
-                      <h2 className="text-white font-bold text-lg text-center">
-                        {selectedBadge.badge_name}
-                      </h2>
-
-                      {selectedBadge.description && (
-                        <p className="text-white/80 text-sm text-center">
-                          {selectedBadge.description}
-                        </p>
-                      )}
-                      
-                      <div className="space-y-2 text-center">
-                        <div className="text-cyan-400 text-xs font-semibold uppercase tracking-wider">
-                          REQUIREMENT
-                        </div>
-                        <p className="text-white/70 text-xs">
-                          {selectedBadge.requirement || selectedBadge.description || 'Complete the required action to earn this badge'}
-                        </p>
-                      </div>
-
-                      {selectedBadge.progress !== undefined && (
-                        <div className="space-y-2 w-full">
-                          <div className="flex justify-between text-xs">
-                            <span className="text-white/70">Progress</span>
-                            <span className="text-white/70">{selectedBadge.current || 0} / {selectedBadge.total || 0}</span>
-                          </div>
-                          <div className="w-full bg-white/20 rounded-full h-2">
-                            <div 
-                              className={`h-2 rounded-full transition-all duration-300 ${
-                                isUnlocked(selectedBadge) ? 'bg-green-500' : 'bg-cyan-500'
-                              }`}
-                              style={{ width: `${selectedBadge.progress || 0}%` }}
-                            />
-                          </div>
-                          <div className="text-center">
-                            <span className={`text-xs font-bold ${
-                              isUnlocked(selectedBadge) ? 'text-green-400' : 'text-cyan-400'
-                            }`}>
-                              {selectedBadge.progress || 0}% Complete
-                            </span>
+                              </>
+                            )}
                           </div>
                         </div>
-                      )}
+                      </TiltSpinCard>
                     </div>
+
+                    <h2 className="text-white font-bold text-lg text-center">
+                      {selectedBadge.badge_name}
+                    </h2>
+
+                    {selectedBadge.description && (
+                      <p className="text-white/80 text-sm text-center">
+                        {selectedBadge.description}
+                      </p>
+                    )}
+
+                    <div className="space-y-2 text-center">
+                      <div className="text-cyan-400 text-xs font-semibold uppercase tracking-wider">
+                        REQUIREMENT
+                      </div>
+                      <p className="text-white/70 text-xs">
+                        {selectedBadge.requirement || selectedBadge.description || 'Complete the required action to earn this badge'}
+                      </p>
                     </div>
+
+                    {selectedBadge.progress !== undefined && (
+                      <div className="space-y-2 w-full">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-white/70">Progress</span>
+                          <span className="text-white/70">{selectedBadge.current || 0} / {selectedBadge.total || 0}</span>
+                        </div>
+                        <div className="w-full bg-white/20 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              isUnlocked(selectedBadge) ? 'bg-green-500' : 'bg-cyan-500'
+                            }`}
+                            style={{ width: `${selectedBadge.progress || 0}%` }}
+                          />
+                        </div>
+                        <div className="text-center">
+                          <span className={`text-xs font-bold ${
+                            isUnlocked(selectedBadge) ? 'text-green-400' : 'text-cyan-400'
+                          }`}>
+                            {selectedBadge.progress || 0}% Complete
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
+            {/* Content */}
+            <div className="relative mt-1 flex-1 overflow-auto">
               {!selectedCategory && !selectedBadge ? (
                 // Main Categories View
                 <>
                   <div className="text-center mb-2">
                     <span className="text-cyan-300 text-base font-bold uppercase tracking-wider">
-                      BADGES UNLOCKED: {profile?.badges_unlocked || badgesWithUnlocked.filter(badge => badge.unlocked).length}
+                      BADGES CLAIMED: {profile?.badges_unlocked || badgesWithUnlocked.filter(badge => badge.unlocked).length}
                     </span>
                   </div>
                   <div 

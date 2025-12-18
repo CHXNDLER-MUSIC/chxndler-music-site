@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
 import TiltSpinCard from "./TiltSpinCard";
@@ -8,6 +8,7 @@ import TiltSpinCard from "./TiltSpinCard";
 interface JourneyModalProps {
   open: boolean;
   onClose: () => void;
+  onBeamColorChange?: (color: 'blue' | 'yellow' | 'pink' | 'off') => void;
 }
 
 type TierType = 'wanderer' | 'dreamer' | 'lover';
@@ -70,15 +71,29 @@ function getUserTier(cumulativeHeartCoins: number): TierType {
   return 'wanderer';
 }
 
-export default function JourneyModal({ open, onClose }: JourneyModalProps) {
+export default function JourneyModal({ open, onClose, onBeamColorChange }: JourneyModalProps) {
   const [flippedTier, setFlippedTier] = useState<TierType | null>(null);
   const { profile, user } = useProfile();
-  
+
   const cumulativeHeartCoins = profile?.heartcoin_total || 0;
   const currentTier = getUserTier(cumulativeHeartCoins);
-  
+
   // For non-logged-in users, force display to show WANDERER
   const displayTier = user ? currentTier : 'wanderer';
+
+  // Change light beam color based on user tier when modal opens
+  useEffect(() => {
+    if (open && onBeamColorChange) {
+      // LOVER = pink, DREAMER = yellow, WANDERER = blue (default)
+      if (displayTier === 'lover') {
+        onBeamColorChange('pink');
+      } else if (displayTier === 'dreamer') {
+        onBeamColorChange('yellow');
+      } else {
+        onBeamColorChange('blue');
+      }
+    }
+  }, [open, displayTier, onBeamColorChange]);
 
   const handleTierClick = (tier: TierType) => {
     try { sfx.play('click', 0.8); } catch {}
@@ -88,6 +103,8 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
   const handleClose = () => {
     try { sfx.play('close', 0.8); } catch {}
     setFlippedTier(null);
+    // Turn off beam when modal closes
+    try { onBeamColorChange?.('off'); } catch {}
     onClose();
   };
 

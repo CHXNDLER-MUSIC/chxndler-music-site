@@ -138,10 +138,7 @@ function UserListItem({ user, onClick, currentUserProfile }) {
               src={user.profile_image_url} 
               alt="Profile" 
               className="w-5 h-5 rounded-full flex-shrink-0 object-cover"
-              style={{
-                border: '2px solid rgba(242, 239, 29, 0.8)',
-                boxShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
-              }}
+              style={{}}
               onError={(e) => {
                 const target = e.target;
                 if (target && target.parentElement) {
@@ -160,10 +157,7 @@ function UserListItem({ user, onClick, currentUserProfile }) {
               src={user?.element ? `/elements/${String(user.element).toLowerCase()}.webp` : '/elements/chxndler.webp'}
               alt="Element"
               className="w-5 h-5 flex-shrink-0 object-cover rounded-full"
-              style={{
-                border: '2px solid rgba(242, 239, 29, 0.8)',
-                boxShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
-              }}
+              style={{}}
             />
           )}
           
@@ -171,9 +165,7 @@ function UserListItem({ user, onClick, currentUserProfile }) {
             className="text-base font-bold leading-tight truncate"
             style={{
               color: elementColor,
-              textShadow: `0 0 12px ${elementColor}FF, 0 0 6px ${elementColor}AA`,
-              maxWidth: '90px',
-              filter: 'brightness(1.3)'
+              maxWidth: '90px'
             }}
           >
             {displayName.length > 14 ? displayName.slice(0, 13) + '…' : displayName}

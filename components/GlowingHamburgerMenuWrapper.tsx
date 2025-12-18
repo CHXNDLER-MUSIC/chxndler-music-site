@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useLogOnChange } from "@/lib/useLogOnChange";
 import GlowingHamburgerMenu from "./GlowingHamburgerMenu";
 import CodeButton from "./CodeButton";
 import ChxndlerButton from "./ChxndlerButton";
@@ -35,9 +36,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
   const tour = useTour();
   const { isMenuOpen, setMenuOpen } = useMenuState();
 
-  useEffect(() => {
-    console.log('codeOpen state changed to:', codeOpen);
-  }, [codeOpen]);
+  useLogOnChange('codeOpen state changed:', { codeOpen });
 
   // Welcome Home modal now opens only from explicit triggers (Start flow or specific actions)
   // Avoid auto-opening on initial load or generic "entered" events to prevent early popups.
@@ -71,7 +70,6 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
   }, [onBeamColorChange]);
 
   const handleItemClick = (label: string) => {
-    console.log(`🍔 Hamburger menu item clicked: ${label}`);
     setLastClickedItem(label);
     // Do not close the hamburger menu immediately here.
     // GlowingHamburgerMenu already closes itself after a short delay
@@ -106,8 +104,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
           break;
         case "JOURNAL":
         case "COMPLETED": {
-          console.log(`🔔 Opening journal modal from hamburger menu...`);
-          console.log(`🔔 Current journalOpen state:`, journalOpen);
+          // Logging handled by modal state debug hook
           // Ensure no other displays (e.g., livestream) open when Journal opens
           try { onBeamColorChange?.('off'); } catch {}
           // Open the journal on pointerup to avoid any chance of click-through
@@ -119,8 +116,6 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
             try { window.removeEventListener('pointerup', openJournal, true); } catch {}
             try { window.removeEventListener('mouseup', openJournal, true); } catch {}
             setJournalOpen(true);
-            console.log(`✅ Journal modal opened on pointerup`);
-            setTimeout(() => { console.log(`🔔 Journal modal state after timeout:`, journalOpen); }, 100);
           };
           try {
             window.addEventListener('pointerup', openJournal, true);
@@ -131,7 +126,6 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
           break;
         }
         case "BADGES":
-          console.log(`🏅 Opening badges modal...`);
           // Only open badges if we specifically clicked badges
           if (label === "BADGES") {
             setBadgesOpen(true);
@@ -158,34 +152,29 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
           break;
         case "SIGNAL":
           // Handle Signal functionality
-          console.log('Signal functionality not yet implemented');
           break;
         default:
-          console.log(`No handler for menu item: ${label}`);
+          // No handler for this menu item
       }
     }, 10);
   };
 
-  // Debug logging for Chrome issue
-  useEffect(() => {
-    console.log("🍔 HAMBURGER WRAPPER:", { 
-      hidden, 
-      shouldShow: !hidden,
-      browser: navigator.userAgent.includes('Chrome') ? 'Chrome' : 'Other'
-    });
-  }, [hidden]);
+  // Debug logging for wrapper environment when values change
+  useLogOnChange("🍔 HAMBURGER WRAPPER:", { 
+    hidden, 
+    shouldShow: !hidden,
+    browser: typeof navigator !== 'undefined' && navigator.userAgent.includes('Chrome') ? 'Chrome' : 'Other'
+  });
 
-  // Debug logging for modal states
-  useEffect(() => {
-    console.log("🔔 Modal states changed:", { 
-      journalOpen, 
-      badgesOpen, 
-      binderOpen, 
-      heartCoinOpen,
-      chxndlerOpen,
-      journeyOpen 
-    });
-  }, [journalOpen, badgesOpen, binderOpen, heartCoinOpen, chxndlerOpen, journeyOpen]);
+  // Debug logging for modal states when values change
+  useLogOnChange("🔔 Modal states:", { 
+    journalOpen, 
+    badgesOpen, 
+    binderOpen, 
+    heartCoinOpen,
+    chxndlerOpen,
+    codeOpen
+  });
 
   return (
     <>
@@ -315,9 +304,10 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
         </div>
       )}
       {/* JourneyModal for MY JOURNEY functionality */}
-      <JourneyModal 
-        open={journeyOpen} 
-        onClose={() => setJourneyOpen(false)} 
+      <JourneyModal
+        open={journeyOpen}
+        onClose={() => setJourneyOpen(false)}
+        onBeamColorChange={onBeamColorChange}
       />
       {/* Hidden ChxndlerButton to handle the modal functionality */}
       <ChxndlerButton

@@ -279,7 +279,7 @@ export default function UserBadges({
             className="w-5 h-5"
           />
           <h3 className="text-sm font-bold uppercase tracking-wider animate-pulse text-cyan-300">
-            BADGES UNLOCKED
+            BADGES CLAIMED
           </h3>
         </div>
       )}

@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { chatService, getElementColor } from '@/lib/supabase/chat';
 import { ElementIcon } from '@/lib/elementIcons';
+import TiltSpinCard from '@/components/TiltSpinCard';
+import { sfx } from '@/lib/sfx';
 
 /**
  * ProfileModal Component
@@ -20,6 +22,8 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
   const [activeTab, setActiveTab] = useState('cards'); // 'cards' or 'badges'
   const [enlargedCard, setEnlargedCard] = useState(null);
   const [isEnlargedCardFlipped, setIsEnlargedCardFlipped] = useState(false);
+  const [cardRotation, setCardRotation] = useState(0); // For 360° spin mode
+  const [isAnimatingFlip, setIsAnimatingFlip] = useState(false); // For smooth flip transition
 
   // Inject card animation keyframes when enlarged card is shown
   useEffect(() => {
@@ -467,59 +471,99 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
 
           {/* Enlarged Card Modal */}
           {enlargedCard && (
-            <div 
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 rounded-lg"
+            <div
+              className="absolute inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 rounded-lg"
               onClick={() => {
                 setEnlargedCard(null);
                 setIsEnlargedCardFlipped(false);
+                setCardRotation(0);
               }}
             >
-              <div 
-                className="relative w-20 mx-4"
-                onClick={(e) => e.stopPropagation()}
+              {/* Close button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEnlargedCard(null);
+                  setIsEnlargedCardFlipped(false);
+                  setCardRotation(0);
+                }}
+                className="absolute top-4 right-4 w-10 h-10 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white text-xl font-bold transition-all duration-200 z-20 border border-white/30"
               >
+                ×
+              </button>
+
+              {/* Card container */}
+              <div className="flex flex-col items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                {/* Card wrapper with explicit dimensions */}
                 <div
-                  className="relative w-full h-30 cursor-pointer"
+                  className="relative"
                   style={{
-                    perspective: '1000px'
+                    width: 'min(280px, 70vw)',
+                    height: 'min(373px, 50vh)',
                   }}
-                  onClick={() => setIsEnlargedCardFlipped(!isEnlargedCardFlipped)}
                 >
-                  {isEnlargedCardFlipped ? (
-                    /* Back of card - show only when flipped */
+                  {/* TiltSpinCard wrapper for 360° drag-to-spin interaction */}
+                  <TiltSpinCard
+                    className="relative w-full h-full cursor-grab active:cursor-grabbing"
+                    maxRotateX={10}
+                    sensitivity={0.3}
+                    returnDuration={400}
+                    enableSpin={true}
+                    spinSensitivity={0.8}
+                    onRotationChange={setCardRotation}
+                    onClick={() => {
+                      // Play flip sound
+                      try {
+                        sfx.play('flip', 0.8);
+                      } catch {
+                        try {
+                          const audio = new Audio('/audio/flip.mp3');
+                          audio.volume = 0.8;
+                          audio.play();
+                        } catch {}
+                      }
+                      // Animate flip by 180 degrees
+                      setIsAnimatingFlip(true);
+                      setCardRotation(prev => prev + 180);
+                      setTimeout(() => setIsAnimatingFlip(false), 500);
+                    }}
+                  >
+                    {/* Front of card */}
+                    <img
+                      src={enlargedCard.image_url || enlargedCard.artwork_url || '/cards/CHXNDLER.webp'}
+                      alt={enlargedCard.card_name}
+                      className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
+                      style={{
+                        filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
+                        backfaceVisibility: 'hidden',
+                        transform: `rotateY(${cardRotation}deg)`,
+                        transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                      }}
+                      draggable={false}
+                    />
+                    {/* Back of card */}
                     <img
                       src="/cards/BACK.webp"
                       alt="Card back"
-                      className="w-full h-full rounded-lg border-4 border-cyan-500/80 shadow-2xl object-cover"
-                      style={{
-                        filter: 'drop-shadow(0 0 15px rgba(0, 255, 255, 0.6))',
-                        animation: 'cardPulse 3s ease-in-out infinite'
-                      }}
-                    />
-                  ) : (
-                    /* Front of card - show only when not flipped */
-                    <img
-                      src={enlargedCard.image_url || '/cards/CHXNDLER.webp'}
-                      alt={enlargedCard.card_name}
-                      className="w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain"
+                      className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
                       style={{
                         filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
-                        animation: 'cardPulse 3s ease-in-out infinite'
+                        backfaceVisibility: 'hidden',
+                        transform: `rotateY(${cardRotation + 180}deg)`,
+                        transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
                       }}
+                      draggable={false}
                     />
-                  )}
+                  </TiltSpinCard>
                 </div>
-                
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEnlargedCard(null);
-                    setIsEnlargedCardFlipped(false);
-                  }}
-                  className="absolute top-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white text-sm font-bold transition-all duration-200 z-10"
+
+                {/* Card name */}
+                <div
+                  className="mt-4 text-center text-white font-bold text-lg"
+                  style={{ textShadow: '0 0 10px rgba(255, 215, 0, 0.6)' }}
                 >
-                  ×
-                </button>
+                  {enlargedCard.card_name}
+                </div>
               </div>
             </div>
           )}

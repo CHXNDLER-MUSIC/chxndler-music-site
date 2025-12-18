@@ -362,10 +362,6 @@ function ChatMessage({ message, onUserClick, reactions, onReact, currentUserId, 
               <button
                 onClick={() => onUserClick(message.user_id)}
                 className="font-semibold text-sm hover:underline transition-colors duration-200"
-                style={{
-                  color: elementColor,
-                  textShadow: `0 0 8px ${elementColor}60`
-                }}
               >
                 {displayName}
               </button>
@@ -378,10 +374,6 @@ function ChatMessage({ message, onUserClick, reactions, onReact, currentUserId, 
           {/* Message text */}
           <div 
             className="text-sm leading-relaxed break-words"
-            style={{ 
-              color: textColor,
-              textShadow: `0 0 4px ${textColor}40`
-            }}
             dangerouslySetInnerHTML={{
               __html: formatMessageText(sanitizedMessage, textColor)
             }}

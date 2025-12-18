@@ -1,5 +1,6 @@
 // Badge progress calculation utility
 import { Badge, BadgeProgress } from '@/types/badges';
+import { log, warn } from '@/lib/logger';
 
 // Allow any profile shape since we may get different Profile interfaces
 type AnyProfile = any;
@@ -31,7 +32,7 @@ export function getBadgeProgressForUser(
     case 'reflections':
       // For reflection badges, count actual journal entries if available
       current = profile.total_reflections || 0;
-      console.log(`Badge ${badge.slug || badge.badge_name}: reflections current=${current}, target=${target}`);
+      log(`Badge ${badge.slug || badge.badge_name}: reflections current=${current}, target=${target}`);
       break;
       
     case 'livestreams_watched':
@@ -57,7 +58,7 @@ export function getBadgeProgressForUser(
     case 'heart_coins':
       // Current HeartCoin total for badges requiring HeartCoin balance
       current = profile.heartcoin_balance || 0;
-      console.log(`Badge ${badge.slug || badge.badge_name}: heart_coins current=${current}, target=${target}`);
+      log(`Badge ${badge.slug || badge.badge_name}: heart_coins current=${current}, target=${target}`);
       break;
       
     case 'heart_transfers':
@@ -67,7 +68,7 @@ export function getBadgeProgressForUser(
     case 'listen':
       // Use unique songs count for listen-based badges (e.g. Deep Listener)
       current = profile.unique_songs_count || 0;
-      console.log(`Badge ${badge.slug || badge.badge_name}: listen current=${current}, target=${target}`);
+      log(`Badge ${badge.slug || badge.badge_name}: listen current=${current}, target=${target}`);
       break;
       
     case 'streak':
@@ -80,7 +81,7 @@ export function getBadgeProgressForUser(
     case 'heartcoins':
     case 'heartcoins_earned':
       current = profile.total_heartcoins_earned || profile.heartcoin_total || 0;
-      console.log(`Badge ${badge.slug || badge.badge_name}: heartcoins current=${current}, target=${target}`);
+      log(`Badge ${badge.slug || badge.badge_name}: heartcoins current=${current}, target=${target}`);
       break;
       
     case 'listening_time':
@@ -131,7 +132,7 @@ export function getBadgeProgressForUser(
       
     default:
       // TODO: Add support for new requirement types as they are added
-      console.warn(`Unknown requirement type: ${badge.requirement_type} for badge: ${badge.slug || badge.badge_name || badge.id}`);
+      warn(`Unknown requirement type: ${badge.requirement_type} for badge: ${badge.slug || badge.badge_name || badge.id}`);
       current = 0;
   }
 

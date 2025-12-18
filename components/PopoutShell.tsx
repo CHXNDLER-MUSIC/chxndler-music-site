@@ -85,7 +85,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
             background: 'rgba(0,0,0,0.6)',
             border: '1px solid rgba(255,105,180,0.55)',
             boxShadow: '0 -8px 25px rgba(255,105,180,0.4), 0 -4px 15px rgba(255,105,180,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(255,105,180,0.45)',
-            backdropFilter: 'blur(12px) saturate(140%)',
+            backdropFilter: 'saturate(140%)',
             color: '#FF69B4',
             position: 'relative',
             overflow: 'visible'

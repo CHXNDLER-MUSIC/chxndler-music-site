@@ -15,6 +15,7 @@ import VotingPanel from './VotingPanel';
 import ReactionTray from './ReactionTray';
 import FloatingRoomReactions from './FloatingRoomReactions';
 import { RATE_LIMITS, markSoulStarUsed } from '@/lib/reactions';
+import { useLogOnChange } from '@/lib/useLogOnChange';
 import { TiltSpinCard } from '@/components/TiltSpinCard';
 
 // Debug flag to control console logging
@@ -58,14 +59,13 @@ const getGlobalAlienName = () => {
  * Slides in from the left side when live streaming is active
  */
 export default function ChatPanel({ isOpen, onClose }) {
-  const { profile, user, unlockedBadges, badgesLoading, badgesError } = useProfile();
+  const { profile, user, unlockedBadges, badgesLoading, badgesError, userBadges } = useProfile();
   
-  // Debug logging for badges
-  DEBUG && console.log('🔥 ChatPanel badges debug:', { 
-    unlockedBadges, 
-    badgesLoading, 
-    badgesError,
-    unlockedBadgesLength: unlockedBadges?.length 
+  // Log badges debug only when values change
+  useLogOnChange('🔥 ChatPanel badges debug:', {
+    unlockedBadgesLength: unlockedBadges?.length ?? 0,
+    badgesLoading,
+    badgesError: badgesError?.message ?? null,
   });
   
   // Real song collection data from BinderModal - exact match
@@ -223,8 +223,8 @@ export default function ChatPanel({ isOpen, onClose }) {
     return elementImages[element] || elementImages['HEART'];
   };
   
-  // Debug logging
-  DEBUG && console.log('🔥 ChatPanel render:', { isOpen, profile: !!profile, user: !!user });
+  // Log render state only when values change
+  useLogOnChange('🔥 ChatPanel render:', { isOpen, profile: !!profile, user: !!user });
 
   // Use the global alien name function
   const alienName = getGlobalAlienName();
@@ -280,8 +280,11 @@ export default function ChatPanel({ isOpen, onClose }) {
   const [binderStartIndex, setBinderStartIndex] = useState(0);
   const [selectedCardPopup, setSelectedCardPopup] = useState(null);
   const [cardFlipped, setCardFlipped] = useState(false);
+  const [cardRotation, setCardRotation] = useState(0); // Card 3D rotation
+  const [isCardAnimatingFlip, setIsCardAnimatingFlip] = useState(false);
   const [selectedBadgePopup, setSelectedBadgePopup] = useState(null);
   const [badgeRotation, setBadgeRotation] = useState(0); // Badge 3D rotation
+  const [isBadgeAnimatingFlip, setIsBadgeAnimatingFlip] = useState(false);
   const [activeTab, setActiveTab] = useState('chat'); // 'chat', 'voting', 'badges', 'cards'
   const [isVotingPanelCollapsed, setIsVotingPanelCollapsed] = useState(true); // Start collapsed by default
   const channelRef = useRef(null);
@@ -853,7 +856,7 @@ export default function ChatPanel({ isOpen, onClose }) {
     
     // Play click sound
     try {
-      const audio = new Audio('/click.mp3');
+      const audio = new Audio('/audio/click.mp3');
       audio.volume = 0.3;
       audio.play().catch(error => {
         console.log('Click audio play failed:', error);
@@ -1514,8 +1517,8 @@ export default function ChatPanel({ isOpen, onClose }) {
                                       : 'WANDERER' }
                                 </span>
                                 
-                                {/* Element name with action buttons */}
-                                <div className="mt-1 flex items-center gap-2">
+                                {/* Element name */}
+                                <div className="mt-1">
                                   <span 
                                     className="text-sm font-bold"
                                     style={{
@@ -1526,10 +1529,10 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   >
                                     {selectedUser?.element ? String(selectedUser.element).toUpperCase() : 'CHXNDLER'}
                                   </span>
-                                  
-                                  {/* Action buttons next to element */}
+
+                                  {/* Action buttons below element */}
                                   {selectedUser?.id !== 'anonymous' && user && profile && (
-                                    <div className="flex items-center gap-1 ml-2 sm:gap-2">
+                                    <div className="mt-2 w-full flex items-center justify-center gap-2">
                                       {/* Binder Button */}
                                       <button
                                         onClick={() => {
@@ -1651,8 +1654,6 @@ export default function ChatPanel({ isOpen, onClose }) {
                                     </div>
                                   )}
                                 </div>
-
-                                {/* Action icons moved below header for full-width centering */}
                               </div>
                             </div>
                           
@@ -1695,7 +1696,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                         
                         {/* Total Heart Coins positioned directly below X button */}
                         <div className="absolute right-2 top-12 z-10 flex flex-col items-center space-y-1">
-                          <div className="flex items-center space-x-1 px-2 py-1 rounded bg-black/40 border border-pink-400/30">
+                          <div className="flex items-center space-x-1">
                             <img 
                               src="/elements/heart-coin.webp" 
                               alt="Total Heart Coins" 
@@ -1710,8 +1711,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   : (selectedUser.total_heart_coins || 0)
                               }
                             </span>
+                            <span className="text-sm text-white/80">earned</span>
                           </div>
-                          <div className="text-[10px] text-white/80 text-center bg-black/30 px-1 py-0.5 rounded">
+                          <div className="text-sm text-white/80 text-center bg-black/30 px-1 py-0.5 rounded -mt-0.5">
                             <span className="text-yellow-400 font-bold">
                               Streak: {selectedUser.id === 'anonymous' 
                                 ? 0 
@@ -1740,7 +1742,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 WebkitTextStroke: '1px rgba(0,255,255,0.3)'
                               }}>
                             <img src="/elements/badges.webp" alt="Badges" className="w-4 h-4 mr-2" draggable={false} />
-                            BADGES UNLOCKED
+                            BADGES CLAIMED
                           </h4>
                           
                           {(() => {
@@ -1883,7 +1885,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   return (
                                     <div key={`earned-badge-${badge.id}`} className="flex flex-col items-center" title={badge.badge_name}>
                                       <div 
-                                        className="w-12 h-12 rounded-full mb-1 flex items-center justify-center border-2 transition-all duration-300 cursor-pointer hover:scale-110"
+                                        className="relative overflow-hidden w-12 h-12 rounded-full mb-1 flex items-center justify-center border-2 transition-all duration-300 cursor-pointer hover:scale-110"
                                         style={{
                                           background: 'rgba(0, 0, 0, 0.3)',
                                           border: `2px solid ${colors.border}`,
@@ -1902,14 +1904,10 @@ export default function ChatPanel({ isOpen, onClose }) {
                                         }}
                                         onClick={() => {
                                           try {
-                                            const audio = new Audio('/audio/click.mp3');
-                                            audio.volume = 0.3;
-                                            audio.play().catch(error => {
-                                              console.log('Click audio play failed:', error);
-                                            });
-                                          } catch (error) {
-                                            console.log('Click audio creation failed:', error);
-                                          }
+                                            const audio = new Audio('/audio/flip.mp3');
+                                            audio.volume = 0.8;
+                                            audio.play().catch(() => {});
+                                          } catch {}
                                           setSelectedBadgePopup(badge);
                                         }}
                                       >
@@ -1918,7 +1916,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                             <img
                                               src={badge.icon_url}
                                               alt={badge.badge_name || 'Badge'}
-                                              className="w-10 h-10 object-contain"
+                                              className="absolute inset-0 w-full h-full object-cover rounded-full"
                                               draggable={false}
                                               style={{ filter: 'drop-shadow(0 0 4px rgba(0,0,0,0.8))' }}
                                               onError={(e) => {
@@ -2030,7 +2028,7 @@ export default function ChatPanel({ isOpen, onClose }) {
 
                       {/* Binder Section */}
                       {showUserBinder && (
-                        <div className="pt-2 border-t border-white/20">
+                        <div className="pt-1">
                           <h4 className="text-base font-semibold mb-3 flex items-center" style={{ color: '#FF69B4' }}>
                             <img src="/elements/binder.webp" alt="Cards" className="w-4 h-4 mr-2" draggable={false} />
                             CARD COLLECTION
@@ -2375,7 +2373,7 @@ export default function ChatPanel({ isOpen, onClose }) {
       {/* Card Popup Modal */}
       {selectedCardPopup && (
         <div
-          className="absolute inset-0 z-[120] flex items-center justify-center p-4"
+          className="absolute inset-0 z-[2147483647] flex items-center justify-center p-4"
           style={{
             background: 'rgba(0, 0, 0, 0.8)'
           }}
@@ -2392,25 +2390,31 @@ export default function ChatPanel({ isOpen, onClose }) {
               animation: 'cardPulse 2s ease-in-out infinite'
             }}
           >
-            <div
-              className="w-full h-full transition-transform duration-700 preserve-3d cursor-pointer"
-              style={{
-                transformStyle: 'preserve-3d',
-                transform: cardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
-              }}
+            <TiltSpinCard
+              className="w-full h-full"
+              enableSpin={true}
+              spinSensitivity={0.8}
+              onRotationChange={(rotation) => setCardRotation(rotation)}
               onClick={() => {
                 try {
-                  const audio = new Audio('/audio/click.mp3');
-                  audio.volume = 0.3;
-                  audio.play().catch(error => {
-                    console.log('Click audio play failed:', error);
-                  });
-                } catch (error) {
-                  console.log('Click audio creation failed:', error);
-                }
-                setCardFlipped(!cardFlipped);
+                  const audio = new Audio('/audio/flip.mp3');
+                  audio.volume = 0.8;
+                  audio.play().catch(() => {});
+                } catch {}
+                setIsCardAnimatingFlip(true);
+                setCardRotation((prev) => prev + 180);
+                setTimeout(() => setIsCardAnimatingFlip(false), 500);
               }}
+              style={{ cursor: 'grab', perspective: '1000px' }}
             >
+              <div
+                className="relative w-full h-full preserve-3d"
+                style={{
+                  transformStyle: 'preserve-3d',
+                  transform: `rotateY(${cardRotation}deg)`,
+                  transition: isCardAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none'
+                }}
+              >
               {/* Front of card */}
               <div
                 className="absolute inset-0 rounded-lg backface-hidden"
@@ -2503,8 +2507,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                   />
                 </div>
               </div>
-            </div>
-
+              </div>
+            </TiltSpinCard>
+          
             {/* Close button */}
             <button
               onClick={(e) => {
@@ -2520,6 +2525,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                 }
                 setSelectedCardPopup(null);
                 setCardFlipped(false);
+                setCardRotation(0);
               }}
               className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 z-10"
               style={{
@@ -2540,7 +2546,7 @@ export default function ChatPanel({ isOpen, onClose }) {
       {/* Badge Popup Modal */}
       {selectedBadgePopup && (
         <div
-          className="absolute inset-0 z-[130] flex items-center justify-center p-3"
+          className="absolute inset-0 z-[2147483647] flex items-center justify-center p-3"
           style={{ background: 'rgba(0, 0, 0, 0.9)' }}
           onClick={() => {
             setSelectedBadgePopup(null);
@@ -2553,8 +2559,7 @@ export default function ChatPanel({ isOpen, onClose }) {
             style={{
               background: 'rgba(0,0,0,0.7)',
               border: '1px solid rgba(255,255,255,0.12)',
-              boxShadow: '0 0 30px rgba(255, 105, 180, 0.25)',
-              animation: 'cardPulse 2s ease-in-out infinite'
+              boxShadow: '0 0 30px rgba(255, 105, 180, 0.25)'
             }}
           >
             {/* Close button - top right */}
@@ -2617,6 +2622,31 @@ export default function ChatPanel({ isOpen, onClose }) {
                   default: return '🏆';
                 }
               })();
+
+              // Helper to find claimed date for this badge (earned_at/awarded_at)
+              const getClaimedAt = (badgeId) => {
+                try {
+                  const fromUserBadges = (userBadges || []).find((ub) => ub.badge_id === badgeId);
+                  if (fromUserBadges?.earned_at) return fromUserBadges.earned_at;
+                } catch {}
+                try {
+                  const fromProfile = (profile?.badges || []).find((b) => b.badge_id === badgeId);
+                  if (fromProfile?.awarded_at) return fromProfile.awarded_at;
+                } catch {}
+                return null;
+              };
+
+              const claimedAtRaw = getClaimedAt(selectedBadgePopup.id);
+              const formatClaimedDate = (dateString) => {
+                if (!dateString) return '';
+                const d = new Date(dateString);
+                const mm = d.getMonth() + 1;
+                const dd = d.getDate();
+                const yyyy = d.getFullYear();
+                return `${mm}/${dd}/${yyyy}`;
+              };
+              const claimedDateStr = formatClaimedDate(claimedAtRaw);
+              const claimedName = (profile?.name || selectedUser?.name || 'You');
               return (
                 <>
                   <div className="flex items-center justify-center mb-6 flex-1">
@@ -2625,6 +2655,16 @@ export default function ChatPanel({ isOpen, onClose }) {
                       enableSpin={true}
                       spinSensitivity={0.8}
                       onRotationChange={(rotation) => setBadgeRotation(rotation)}
+                      onClick={() => {
+                        try {
+                          const audio = new Audio('/audio/flip.mp3');
+                          audio.volume = 0.8;
+                          audio.play().catch(() => {});
+                        } catch {}
+                        setIsBadgeAnimatingFlip(true);
+                        setBadgeRotation((prev) => prev + 180);
+                        setTimeout(() => setIsBadgeAnimatingFlip(false), 500);
+                      }}
                       style={{ cursor: 'grab' }}
                     >
                       <div
@@ -2638,7 +2678,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                       >
                         {/* Front of badge */}
                         <div
-                          className="absolute inset-0 rounded-full flex items-center justify-center border-4"
+                          className="absolute inset-0 rounded-full flex items-center justify-center border-4 overflow-hidden"
                           style={{
                             width: '200px',
                             height: '200px',
@@ -2647,16 +2687,16 @@ export default function ChatPanel({ isOpen, onClose }) {
                             boxShadow: `0 0 40px ${colors.border}60, 0 0 60px ${colors.border}30`,
                             transform: `rotateY(${badgeRotation}deg)`,
                             backfaceVisibility: 'hidden',
-                            transition: 'none'
+                            transition: isBadgeAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none'
                           }}
                         >
                           {selectedBadgePopup.icon_url ? (
                             <img
                               src={selectedBadgePopup.icon_url}
                               alt={selectedBadgePopup.badge_name || 'Badge'}
-                              className="w-40 h-40 object-contain"
+                              className="w-full h-full object-cover"
                               draggable={false}
-                              style={{ filter: 'drop-shadow(0 0 8px rgba(0,0,0,0.8))' }}
+                              style={{ filter: 'drop-shadow(0 0 8px rgba(0,0,0,0.8))', animation: 'cardPulse 2s ease-in-out infinite' }}
                               onError={(e) => { e.currentTarget.style.display = 'none'; }}
                             />
                           ) : (
@@ -2667,27 +2707,39 @@ export default function ChatPanel({ isOpen, onClose }) {
                         </div>
                         {/* Back of badge */}
                         <div
-                          className="absolute inset-0 rounded-full flex items-center justify-center border-4"
+                          className="absolute inset-0 rounded-full flex items-center justify-center border-4 overflow-hidden"
                           style={{
                             width: '200px',
                             height: '200px',
-                            background: `linear-gradient(135deg, ${colors.border}, ${colors.bg})`,
+                            background: `linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)`,
                             borderColor: colors.border,
                             boxShadow: `0 0 40px ${colors.border}60, 0 0 60px ${colors.border}30`,
                             transform: `rotateY(${badgeRotation + 180}deg)`,
                             backfaceVisibility: 'hidden',
-                            transition: 'none'
+                            transition: isBadgeAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none'
                           }}
                         >
-                          <span
-                            className="text-5xl font-bold"
-                            style={{
-                              color: 'rgba(0,0,0,0.6)',
-                              textShadow: '0 0 4px rgba(255,255,255,0.3)'
-                            }}
-                          >
-                            {fallbackEmoji}
-                          </span>
+                          {claimedDateStr ? (
+                            <div className="flex flex-col items-center justify-center text-center px-3">
+                              <div className="text-white font-bold text-sm truncate max-w-[140px]" style={{ textShadow: '0 0 8px rgba(56,182,255,0.8)' }}>
+                                {claimedName}
+                              </div>
+                              <div className="text-base font-semibold mt-1 tracking-wider" style={{ color: '#39FF14', textShadow: '0 0 8px #39FF14, 0 0 14px #39FF14' }}>CLAIMED</div>
+                              <div className="text-white/80 text-sm mt-0.5">
+                                {claimedDateStr}
+                              </div>
+                            </div>
+                          ) : (
+                            <span
+                              className="text-5xl font-bold"
+                              style={{
+                                color: 'rgba(255,255,255,0.2)',
+                                textShadow: '0 0 4px rgba(255,255,255,0.25)'
+                              }}
+                            >
+                              {fallbackEmoji}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </TiltSpinCard>

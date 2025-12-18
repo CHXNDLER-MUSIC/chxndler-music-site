@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useLogOnChange } from "@/lib/useLogOnChange";
 import { createPortal } from "react-dom";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { sfx } from "@/lib/sfx";
@@ -30,24 +31,8 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
     return { shouldRender: true, reason: 'ready', open, hasProfile: isLoggedIn };
   }, [open, isLoggedIn]);
 
-  // Use useEffect for logging to prevent render-time side effects
-  useEffect(() => {
-    if (isLoggedIn) {
-      console.log('🚫 Modal not rendering: user logged in', profile?.id);
-    }
-  }, [isLoggedIn, profile?.id]);
-
-  // Log only when render status actually changes
-  useEffect(() => {
-    if (!renderStatus.shouldRender) {
-      console.log('🚫 Modal not rendering:', renderStatus.reason);
-    } else {
-      console.log('✅ Modal should render:', { 
-        open: renderStatus.open, 
-        hasProfile: renderStatus.hasProfile 
-      });
-    }
-  }, [renderStatus]);
+  // Log only when relevant values actually change
+  useLogOnChange("✅ WelcomeHomeModal state:", { open, hasProfile: isLoggedIn });
   
   // Safety check: Never show welcome modal for logged-in users
   if (isLoggedIn) {

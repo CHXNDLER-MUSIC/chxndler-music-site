@@ -48,6 +48,52 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
   const [togglingReactions, setTogglingReactions] = useState<Set<string>>(new Set()); // Track in-flight toggles
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const [userElementMap, setUserElementMap] = useState<Record<string, string>>({});
+
+  const elementToColor = (element?: string | null) => {
+    const el = (element || '').toString().toLowerCase();
+    switch (el) {
+      case 'water':
+        return '#38B6FF';
+      case 'heart':
+        return '#F91880';
+      case 'lightning':
+        return '#F2EF1D';
+      case 'darkness':
+        return '#8B5CF6';
+      default:
+        return profile?.element ? elementToColor(profile.element) : '#FFFFFF';
+    }
+  };
+
+  const getUserTextColor = (userId?: string) => {
+    if (!userId) return '#FFD700';
+    return userElementMap[userId] || '#FFD700';
+  };
+
+  const fetchElementsForUsers = async (userIds: string[]) => {
+    const ids = Array.from(new Set(userIds.filter(id => id && id !== '00000000-0000-0000-0000-000000000000')));
+    if (ids.length === 0) return;
+    try {
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('id, element')
+        .in('id', ids);
+      if (error) return;
+      const next: Record<string, string> = {};
+      (data || []).forEach((row: any) => {
+        next[row.id] = elementToColor(row.element);
+      });
+      setUserElementMap(prev => ({ ...prev, ...next }));
+    } catch {}
+  };
+
+  // Seed current user's element color to avoid flicker for own messages
+  useEffect(() => {
+    if (user?.id && profile?.element) {
+      setUserElementMap(prev => ({ ...prev, [user.id]: elementToColor(profile.element) }));
+    }
+  }, [user?.id, profile?.element]);
 
   // Auto scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -213,6 +259,10 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
         alien_count: msg.alien_count || 0,
       }));
 
+      // Load element colors for authors first to avoid color flicker
+      const authorIds = messagesData.map(m => m.user_id).filter(Boolean) as string[];
+      await fetchElementsForUsers(authorIds);
+
       setMessages(messagesData);
 
       // Load user's reactions for these messages
@@ -243,17 +293,21 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
         (payload) => {
           console.log('Real-time message received:', payload);
 
-          if (payload.eventType === 'INSERT') {
-            const newMsg = payload.new as any;
-            const newMessage: HeartSignalMessage = {
-              ...newMsg,
+        if (payload.eventType === 'INSERT') {
+          const newMsg = payload.new as any;
+          const newMessage: HeartSignalMessage = {
+            ...newMsg,
               heart_count: newMsg.heart_count || 0,
               water_count: newMsg.water_count || 0,
               lightning_count: newMsg.lightning_count || 0,
               darkness_count: newMsg.darkness_count || 0,
               alien_count: newMsg.alien_count || 0,
             };
-            setMessages((prev) => [...prev, newMessage]);
+          setMessages((prev) => [...prev, newMessage]);
+          // fetch element color for new author if unknown
+          if (newMsg?.user_id && !userElementMap[newMsg.user_id]) {
+            fetchElementsForUsers([newMsg.user_id]);
+          }
             setTimeout(scrollToBottom, 100); // Delay to ensure DOM update
           } else if (payload.eventType === 'UPDATE') {
             const updatedMsg = payload.new as any;
@@ -484,13 +538,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <span className={`text-sm font-medium ${
-                    msg.is_system || msg.user_id === '00000000-0000-0000-0000-000000000000'
-                      ? 'text-purple-400'
-                      : msg.user_id === user?.id
-                      ? 'text-blue-400'
-                      : 'text-green-400'
-                  }`}>
+                  <span className="text-sm font-medium" style={{ color: msg.is_system ? '#C084FC' : getUserTextColor(msg.user_id) }}>
                     {msg.username}
                   </span>
                   <span className="text-xs text-gray-500">
@@ -500,7 +548,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
                     })}
                   </span>
                 </div>
-                <div className="text-white text-sm break-words">
+                <div className="text-sm break-words" style={{ color: msg.is_system ? '#C084FC' : getUserTextColor(msg.user_id) }}>
                   {msg.message}
                 </div>
 

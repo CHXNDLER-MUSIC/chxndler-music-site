@@ -755,7 +755,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
               <div className="text-center mb-8">
                 <div className="mb-3">
                   <span className="text-cyan-300 text-lg font-bold uppercase tracking-wider">
-                    BADGES UNLOCKED: {profile?.badges_unlocked || userUnlockedBadges.length}
+                    BADGES CLAIMED: {profile?.badges_unlocked || userUnlockedBadges.length}
                   </span>
                 </div>
                 <h4 className="text-white/90 text-base font-bold uppercase tracking-wider">

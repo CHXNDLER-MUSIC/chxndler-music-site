@@ -794,7 +794,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
         })()}
       </div>
 
-      {/* Separate Join Aliens Form - bottom should touch the light beam top */}
+      {/* Separate Join Aliens Form - bottom should touch the light beam top border */}
       {(() => {
         // Position pink display using unified touch point system
         const beamBottomCss = 'var(--display-touch-top)';
@@ -805,7 +805,8 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
               position: "fixed",
               // Position from top instead to ensure it touches profile bar
               top: '64px',
-              bottom: 'var(--light-beam-boundary)',
+              // Bottom aligns with the TOP of the light beam (border line)
+              bottom: 'calc(var(--light-beam-boundary) + var(--beam-height))',
               // Center horizontally in the viewport (always centered)
               left: '50%',
               transform: 'translateX(-50%)',

@@ -33,6 +33,46 @@ export default function SignalChat({
   const [isConnected, setIsConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const [userElementMap, setUserElementMap] = useState<Record<string, string>>({});
+
+  const elementToColor = (element?: string | null) => {
+    const el = (element || '').toString().toLowerCase();
+    switch (el) {
+      case 'water':
+        return '#38B6FF';
+      case 'heart':
+        return '#F91880';
+      case 'lightning':
+        return '#F2EF1D';
+      case 'darkness':
+        return '#8B5CF6';
+      default:
+        return profile?.element ? elementToColor(profile.element) : '#FFFFFF';
+    }
+  };
+
+  const getUserTextColor = (userId?: string) => {
+    if (!userId) return '#FFD700';
+    if (userId === user?.id) return elementToColor(profile?.element);
+    return userElementMap[userId] || '#FFD700';
+  };
+
+  const fetchElementsForUsers = async (userIds: string[]) => {
+    const ids = Array.from(new Set(userIds.filter(id => id && id !== '00000000-0000-0000-0000-000000000000')));
+    if (ids.length === 0) return;
+    try {
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('id, element')
+        .in('id', ids);
+      if (error) return;
+      const next: Record<string, string> = {};
+      (data || []).forEach((row: any) => {
+        next[row.id] = elementToColor(row.element);
+      });
+      setUserElementMap(prev => ({ ...prev, ...next }));
+    } catch {}
+  };
 
   // Auto scroll to bottom
   const scrollToBottom = () => {
@@ -52,7 +92,11 @@ export default function SignalChat({
         return;
       }
 
-      setMessages(data || []);
+      const msgs = data || [];
+      // Preload author element colors before rendering
+      const ids = msgs.map(m => m.user_id).filter(Boolean) as string[];
+      await fetchElementsForUsers(ids);
+      setMessages(msgs);
       setTimeout(scrollToBottom, 100);
     } catch (error) {
       console.error('Error in loadAllMessages:', error);
@@ -76,6 +120,9 @@ export default function SignalChat({
           if (payload.eventType === 'INSERT') {
             const newMessage = payload.new as HeartSignalMessage;
             setMessages((prev) => [...prev, newMessage]);
+            if (newMessage?.user_id && !userElementMap[newMessage.user_id]) {
+              fetchElementsForUsers([newMessage.user_id]);
+            }
             setTimeout(scrollToBottom, 100);
           } else if (payload.eventType === 'UPDATE') {
             const updatedMessage = payload.new as HeartSignalMessage;
@@ -240,20 +287,14 @@ export default function SignalChat({
                     animate={{ opacity: 1, y: 0 }}
                     className={`text-xs rounded p-2 ${
                       msg.is_system || msg.user_id === '00000000-0000-0000-0000-000000000000'
-                        ? 'bg-purple-900/30 border-l-2 border-purple-500 text-purple-300'
+                        ? 'bg-purple-900/30 border-l-2 border-purple-500'
                         : msg.user_id === user?.id
-                        ? 'bg-blue-900/30 text-blue-300 ml-2'
-                        : 'bg-gray-800/40 text-gray-300'
+                        ? 'bg-blue-900/30 ml-2'
+                        : 'bg-gray-800/40'
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <span className={`font-medium ${
-                        msg.is_system || msg.user_id === '00000000-0000-0000-0000-000000000000'
-                          ? 'text-purple-400'
-                          : msg.user_id === user?.id
-                          ? 'text-blue-400'
-                          : 'text-green-400'
-                      }`}>
+                      <span className="font-medium">
                         {msg.username}
                       </span>
                       <span className="text-xs text-gray-500">
@@ -263,7 +304,7 @@ export default function SignalChat({
                         })}
                       </span>
                     </div>
-                    <div className="text-white break-words">{msg.message}</div>
+                    <div className="break-words">{msg.message}</div>
                   </motion.div>
                 ))
               )}

@@ -1,5 +1,6 @@
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { getBadgeProgressForUser } from '@/lib/badgeProgress';
+import { log, warn } from '@/lib/logger';
 
 /**
  * Update badge progress counters for a specific user
@@ -7,7 +8,7 @@ import { getBadgeProgressForUser } from '@/lib/badgeProgress';
  */
 export async function updateBadgeProgressCounters(userId: string) {
   try {
-    console.log('Updating badge progress counters for user:', userId);
+    log('Updating badge progress counters for user:', userId);
 
     // Get current reflection count from soul_journal_entries
     const { data: reflectionData, error: reflectionError } = await supabaseBrowser
@@ -20,7 +21,7 @@ export async function updateBadgeProgressCounters(userId: string) {
     }
 
     const reflectionCount = reflectionData?.length || 0;
-    console.log('Current reflection count:', reflectionCount);
+    log('Current reflection count:', reflectionCount);
 
     // Update the user's profile with the current counts
     const { error: updateError } = await supabaseBrowser
@@ -36,13 +37,15 @@ export async function updateBadgeProgressCounters(userId: string) {
       throw updateError;
     }
 
-    console.log('Successfully updated badge progress counters');
+    log('Successfully updated badge progress counters');
     
     // Check and award any newly eligible badges
     const newlyAwardedBadges = await checkAndAwardEligibleBadges(userId);
-    if (newlyAwardedBadges.length > 0) {
-      console.log(`🎉 Awarded ${newlyAwardedBadges.length} new badges:`, newlyAwardedBadges.map(b => b.badge_name));
-    }
+    // Summary only; show details via debug if needed
+    log('badgeProgress summary:', {
+      newlyAwarded: newlyAwardedBadges.length,
+      computedAt: new Date().toISOString(),
+    });
     
     return true;
   } catch (error) {
@@ -106,10 +109,10 @@ export async function manualBadgeCheck() {
     // Get current user from Supabase auth
     const { data: { user }, error } = await supabaseBrowser.auth.getUser();
     if (user) {
-      console.log('🔍 Manual badge check triggered for user:', user.id);
+      log('🔍 Manual badge check triggered for user:', user.id);
       return await checkAndAwardEligibleBadges(user.id);
     } else {
-      console.warn('No authenticated user for manual badge check');
+      warn('No authenticated user for manual badge check');
       return [];
     }
   }
@@ -121,7 +124,7 @@ export async function manualBadgeCheck() {
  */
 export async function checkAndAwardEligibleBadges(userId: string) {
   try {
-    console.log('Checking for eligible badges for user:', userId);
+    log('Checking for eligible badges for user:', userId);
 
     // Get user profile for progress calculation
     const { data: profile, error: profileError } = await supabaseBrowser
@@ -173,12 +176,11 @@ export async function checkAndAwardEligibleBadges(userId: string) {
 
       // Calculate progress for this badge
       const badgeProgress = getBadgeProgressForUser(badge, profile);
-      
-      console.log(`Badge ${badge.badge_name}: ${badgeProgress.current}/${badgeProgress.target} (${badgeProgress.percentage}%) - Unlocked: ${badgeProgress.isUnlocked}`);
+      // Reduce output; avoid per-badge progress logs to prevent noise
 
       // Award badge if requirement is met
       if (badgeProgress.isUnlocked) {
-        console.log(`🎉 Awarding badge: ${badge.badge_name}`);
+        log(`🎉 Awarding badge: ${badge.badge_name}`);
         
         const { error: awardError } = await supabaseBrowser
           .from('user_badges')
@@ -195,11 +197,17 @@ export async function checkAndAwardEligibleBadges(userId: string) {
           }
         } else {
           newlyAwardedBadges.push(badge);
-          console.log(`✅ Successfully awarded badge: ${badge.badge_name}`);
-        }
+          log(`✅ Successfully awarded badge: ${badge.badge_name}`);
+    }
       }
     }
 
+    // Summary for this run
+    log('badgeProgress summary:', {
+      totalBadges: allBadges?.length || 0,
+      newlyAwarded: newlyAwardedBadges.length,
+      computedAt: new Date().toISOString(),
+    });
     return newlyAwardedBadges;
   } catch (error) {
     console.error('Error in checkAndAwardEligibleBadges:', error);

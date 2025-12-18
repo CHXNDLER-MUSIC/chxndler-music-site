@@ -53,6 +53,7 @@ export function PlanetRewardsProvider({
   const [claimedToday, setClaimedToday] = useState<boolean>(false);
 
   // Fetch today's element and whether current user has claimed
+  const fetchRunRef = useRef<string | null>(null);
   useEffect(() => {
     let cancelled = false;
     async function fetchTodayAndClaim() {
@@ -78,21 +79,20 @@ export function PlanetRewardsProvider({
 
         // 2) Check if this user has already claimed today
         if (user?.id) {
-          const { data: claimRow, error: claimErr } = await supabaseBrowser
+          const { count, error: claimErr } = await supabaseBrowser
             .from('user_element_claims')
-            .select('id')
+            .select('*', { count: 'exact', head: true })
             .eq('user_id', user.id)
-            .eq('day', today)
-            .maybeSingle();
+            .eq('day', today);
 
           if (cancelled) return;
 
-          if (claimErr && claimErr.code !== 'PGRST116') {
-            // PGRST116 is PostgREST no rows found for maybeSingle; treat as not claimed
+          if (claimErr) {
             console.warn('Error fetching user_element_claims:', claimErr.message);
             setClaimedToday(false);
           } else {
-            setClaimedToday(!!claimRow?.id);
+            const alreadyClaimed = (count ?? 0) > 0;
+            setClaimedToday(alreadyClaimed);
           }
         } else {
           setClaimedToday(false);
@@ -106,6 +106,9 @@ export function PlanetRewardsProvider({
       }
     }
 
+    const todayKey = `${user?.id || 'anon'}:${getLocalDateString()}`;
+    if (fetchRunRef.current === todayKey) return () => { cancelled = true; };
+    fetchRunRef.current = todayKey;
     fetchTodayAndClaim();
     return () => { cancelled = true; };
   }, [user?.id]);

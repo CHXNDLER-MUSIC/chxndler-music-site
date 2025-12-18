@@ -129,12 +129,15 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const [showBadgesModal, setShowBadgesModal] = useState(false);
   const [showFullBadgesModal, setShowFullBadgesModal] = useState(false);
   const [enlargedBadge, setEnlargedBadge] = useState<any>(null);
+  const [enlargedBadgeMeta, setEnlargedBadgeMeta] = useState<{ userName: string; earnedAt: string | null } | null>(null);
   const [badgeRotation, setBadgeRotation] = useState(0);
   const [isBadgeAnimatingFlip, setIsBadgeAnimatingFlip] = useState(false);
   const [showIntegratedBinder, setShowIntegratedBinder] = useState(false);
   const [selectedCard, setSelectedCard] = useState<any>(null);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [cardOpen, setCardOpen] = useState(false);
+  const [cardRotation, setCardRotation] = useState(0);
+  const [isAnimatingFlip, setIsAnimatingFlip] = useState(false);
   const [publicEntries, setPublicEntries] = useState<JournalEntry[]>([]);
   const [showProfileInfo, setShowProfileInfo] = useState<{[key: string]: boolean}>({});
   const [isJourneyModalOpen, setIsJourneyModalOpen] = useState(false);
@@ -465,6 +468,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           id: profile?.id || '',
           name: profile?.name || 'Anonymous',
           profile_image_url: profile?.profile_image_url || '/elements/alien.webp',
+          journey: profile?.journey || 'wanderer',
+          element: profile?.element || entry.element,
           daily_streak_current: profile?.daily_streak || 0,
           heartcoin_total: profile?.heartcoin_total || 0
         }
@@ -670,12 +675,29 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   };
 
   // Handle badge click to show enlarged view
-  const handleBadgeClick = (badge: any) => {
-    try { 
-      sfx.play('click', 0.6); 
-    } catch {}
-    
+  const handleBadgeClick = async (badge: any, opts?: { userId?: string; userName?: string | null }) => {
+    try { sfx.play('click', 0.6); } catch {}
     setEnlargedBadge(badge);
+
+    // Default meta while loading
+    setEnlargedBadgeMeta({ userName: opts?.userName || profile?.name || 'User', earnedAt: null });
+
+    // If we know the user, fetch the claimed date for this badge
+    if (opts?.userId && badge?.id) {
+      try {
+        const { data, error } = await supabaseBrowser
+          .from('user_badges')
+          .select('earned_at')
+          .eq('user_id', opts.userId)
+          .eq('badge_id', badge.id)
+          .maybeSingle();
+        if (!error) {
+          setEnlargedBadgeMeta(prev => ({ userName: opts?.userName || prev?.userName || 'User', earnedAt: data?.earned_at || null }));
+        }
+      } catch (e) {
+        // ignore fetch errors; keep defaults
+      }
+    }
   };
 
 
@@ -691,122 +713,129 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
   return (
     <div
-      className="fixed z-[2147483647] flex items-start justify-center"
+      className="fixed z-[2147483647] flex items-stretch justify-center"
       style={{
         top: 0,
         left: 0,
         right: 0,
-        bottom: 'var(--light-beam-boundary)',
+        bottom: 'calc(var(--light-beam-boundary) + 50px)',
         paddingTop: '8vh',
         paddingLeft: '16px',
         paddingRight: '20px'
       }}
     >
 
-      {/* Card popup - positioned absolutely within journal bounds */}
+      {/* Card popup - match Binder popout visuals */}
       {cardOpen && selectedCard && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm z-50">
-          {/* Large card display */}
-          <div 
-            className="relative flex items-center justify-center"
-            style={{ 
-              perspective: '1000px',
-              maxWidth: 'min(400px, 90vw)',
-              maxHeight: 'min(600px, 80vh)'
+        <div
+          className="absolute inset-0 flex items-start justify-center z-50"
+          style={{ paddingLeft: '16px', paddingRight: '20px' }}
+          onClick={() => {
+            try { sfx.play('close', 0.8); } catch {}
+            setCardOpen(false);
+            setIsCardFlipped(false);
+            setCardRotation(0);
+            setIsAnimatingFlip(false);
+          }}
+        >
+          {/* Constrain overlay to the journal panel bounds */}
+          <div
+            className="relative flex items-center justify-center pointer-events-auto w-full max-w-4xl sm:min-w-[460px] mx-auto h-full"
+            style={{
+              background: 'rgba(0, 0, 0, 0.9)',
+              border: `1px solid ${elementTheme.color}60`,
+              boxShadow: `0 0 30px ${elementTheme.color}60, 0 0 60px ${elementTheme.color}40`,
+              borderRadius: '14px',
+              backdropFilter: 'blur(12px)'
             }}
+            onClick={(e) => e.stopPropagation()}
           >
-            {/* Back arrow - positioned at top left of card */}
+            {/* Back arrow - positioned at top left inside panel */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 try { sfx.play('close', 0.8); } catch {}
                 setCardOpen(false);
                 setIsCardFlipped(false);
+                setCardRotation(0);
+                setIsAnimatingFlip(false);
               }}
-              onMouseEnter={() => {
-                try { sfx.play('hover', 0.3); } catch {}
-              }}
-              className="absolute -top-12 left-0 z-10 bg-black/50 backdrop-blur border border-white/20 rounded-full p-2 hover:bg-white/20 transition-all duration-300 hover:scale-105"
+              onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+              className="absolute top-2 left-2 w-8 h-8 rounded-full flex items-center justify-center text-pink-400 hover:text-pink-200 transition-all duration-200 z-20"
               style={{
-                boxShadow: '0 0 15px rgba(255,255,255,0.2)'
+                background: 'rgba(255,105,180,0.1)',
+                border: '2px solid #FF69B4',
+                boxShadow: '0 0 20px rgba(255,105,180,0.8), 0 0 30px rgba(255,105,180,0.6), 0 0 40px rgba(255,105,180,0.4)',
+                textShadow: '0 0 10px rgba(255,105,180,0.8)',
+                backdropFilter: 'blur(10px)'
               }}
+              aria-label="Close card"
             >
-              <svg 
-                width="20" 
-                height="20" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="white" 
-                strokeWidth="2"
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              >
-                <path d="m15 18-6-6 6-6"/>
+              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+                <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
 
-            {/* Card container with 3D perspective */}
+            {/* TiltSpinCard wrapper for drag-to-spin interaction */}
             <div
-              className="relative cursor-pointer transition-all duration-700 hover:scale-105"
+              className="relative"
               style={{
-                width: 'min(300px, 80vw)',
-                height: 'min(420px, 80vw * 1.4)',
-                transformStyle: 'preserve-3d',
-                transform: isCardFlipped 
-                  ? 'rotateY(180deg) rotateX(9deg) rotateZ(-2deg)' 
-                  : 'rotateX(9deg) rotateZ(-2deg)',
-                filter: 'saturate(1.1) brightness(1.1) contrast(1.05)',
-                perspective: '1000px'
-              }}
-              onClick={() => {
-                try { sfx.play('card-flip', 0.6); } catch {}
-                setIsCardFlipped(!isCardFlipped);
+                width: 'auto',
+                height: '80%',
+                maxHeight: '80%',
+                maxWidth: '90%',
+                aspectRatio: '2/3',
+                animation: 'cardPulse 3s ease-in-out infinite'
               }}
             >
-              {/* Front face */}
-              <div
-                className="absolute inset-0 rounded-lg overflow-hidden shadow-2xl"
-                style={{
-                  backfaceVisibility: 'hidden',
-                  background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
-                  border: '3px solid rgba(255,255,255,0.3)',
-                  boxShadow: `
-                    0 0 30px rgba(255,255,255,0.3),
-                    0 0 60px rgba(255,255,255,0.15),
-                    inset 0 1px 0 rgba(255,255,255,0.2)
-                  `
+              <TiltSpinCard
+                className="relative w-full h-full"
+                maxRotateX={10}
+                sensitivity={0.3}
+                returnDuration={400}
+                enableSpin={true}
+                spinSensitivity={0.8}
+                onRotationChange={setCardRotation}
+                onClick={() => {
+                  try { sfx.play('flip', 0.45); } catch {}
+                  setIsAnimatingFlip(true);
+                  setCardRotation(prev => prev + 180);
+                  setTimeout(() => setIsAnimatingFlip(false), 500);
                 }}
+                style={{ borderRadius: '24px' }}
               >
+                {/* Front of card - rotates with cardRotation */}
                 <img
-                  src={selectedCard.image}
-                  alt={selectedCard.name}
-                  className="w-full h-full object-cover"
+                  src={selectedCard?.image || "https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910"}
+                  alt={selectedCard?.name || "Card"}
+                  className="absolute inset-0 w-full h-full rounded-3xl object-cover pointer-events-none"
+                  style={{
+                    backfaceVisibility: 'hidden',
+                    WebkitBackfaceVisibility: 'hidden',
+                    transform: `rotateY(${cardRotation}deg)`,
+                    transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                    border: '2px solid rgba(255,255,255,0.1)'
+                  }}
                   draggable={false}
                 />
-              </div>
 
-              {/* Back face */}
-              <div
-                className="absolute inset-0 rounded-lg overflow-hidden shadow-2xl"
-                style={{
-                  backfaceVisibility: 'hidden',
-                  transform: 'rotateY(180deg)',
-                  background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%)',
-                  border: '3px solid rgba(255,255,255,0.3)',
-                  boxShadow: `
-                    0 0 30px rgba(255,255,255,0.3),
-                    0 0 60px rgba(255,255,255,0.15),
-                    inset 0 1px 0 rgba(255,255,255,0.2)
-                  `
-                }}
-              >
+                {/* Back of card - offset by 180° */}
                 <img
-                  src="/cards/BACK.webp"
+                  src="https://ik.imagekit.io/CHXNDLER/card/back.png?updatedAt=1762388351170"
                   alt="Card Back"
-                  className="w-full h-full object-cover"
+                  className="absolute inset-0 w-full h-full rounded-3xl object-cover pointer-events-none"
+                  style={{
+                    backfaceVisibility: 'hidden',
+                    WebkitBackfaceVisibility: 'hidden',
+                    transform: `rotateY(${cardRotation + 180}deg)`,
+                    transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                    border: '2px solid rgba(255,255,255,0.1)'
+                  }}
                   draggable={false}
                 />
-              </div>
+              </TiltSpinCard>
             </div>
           </div>
         </div>
@@ -966,7 +995,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               onMouseEnter={() => {
                 try { sfx.play('hover', 0.6); } catch {}
               }}
-              className="px-12 py-2.5 rounded-full text-base font-semibold uppercase transition-all duration-200 hover:scale-105"
+              className="px-12 py-2.5 rounded text-base font-semibold uppercase transition-all duration-200 hover:scale-105"
               style={{
                 background: activeTab === 'public' ? '#00FF0030' : 'rgba(0,0,0,0.4)',
                 color: activeTab === 'public' ? '#00FF00' : '#FFFFFFCC',
@@ -985,7 +1014,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               onMouseEnter={() => {
                 try { sfx.play('hover', 0.6); } catch {}
               }}
-              className="px-12 py-2.5 rounded-full text-base font-semibold uppercase transition-all duration-200 hover:scale-105"
+              className="px-12 py-2.5 rounded text-base font-semibold uppercase transition-all duration-200 hover:scale-105"
               style={{
                 background: activeTab === 'private' ? '#FF69B430' : 'rgba(0,0,0,0.4)',
                 color: activeTab === 'private' ? '#FF69B4' : '#FFFFFFCC',
@@ -1308,17 +1337,13 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                             </div>
                           </div>
                           
-                          {/* Date - Center, with proper spacing */}
-                          <div className="flex-1 flex justify-center px-4">
+                          {/* Date + Element + Soul Star - Right */}
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
                             <div className="text-sm font-semibold text-white/90">
                               {getDisplayDateString(entry.entry_date)}
                             </div>
-                          </div>
-                          
-                          {/* Element + Soul Star - Right */}
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <div 
-                              className="px-2 py-1 text-xs font-semibold uppercase flex items-center gap-1"
+                            <div
+                              className="px-1.5 py-0.5 text-xs font-semibold uppercase flex items-center"
                               style={{
                                 color: entryTheme.color,
                                 textShadow: `0 0 4px ${entryTheme.glow}`
@@ -1329,7 +1354,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                             {/* Soul Star Button */}
                             <button
                               type="button"
-                              className={`flex items-center gap-1 transition-all duration-200 hover:scale-110 px-3 py-1.5 ${
+                              className={`flex items-center gap-1 transition-all duration-200 hover:scale-110 px-1 py-1 ${
                                 starringEntryId === entry.entry_id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                               }`}
                               disabled={starringEntryId === entry.entry_id}
@@ -1414,24 +1439,22 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                         }}
                                         className="text-left text-base font-semibold transition-all duration-200 hover:scale-105 mt-1"
                                         style={{
-                                          color: '#FFD700',
-                                          textShadow: '0 0 4px #FFD700'
+                                          color: (() => {
+                                            const j = (entry.profiles?.journey || profile?.journey || 'wanderer').toString().toLowerCase();
+                                            return j === 'lover' ? '#FF6B9D' : j === 'dreamer' ? '#FFD700' : '#00FFFF';
+                                          })(),
+                                          textShadow: (() => {
+                                            const j = (entry.profiles?.journey || profile?.journey || 'wanderer').toString().toLowerCase();
+                                            const c = j === 'lover' ? '#FF6B9D' : j === 'dreamer' ? '#FFD700' : '#00FFFF';
+                                            return `0 0 4px ${c}`;
+                                          })()
                                         }}
                                       >
                                         {(() => {
-                                          const element = entry.element?.toLowerCase();
-                                          switch (element) {
-                                            case 'heart':
-                                              return 'LOVER';
-                                            case 'water':
-                                              return 'DREAMER';
-                                            case 'lightning':
-                                              return 'WANDERER';
-                                            case 'darkness':
-                                              return 'WANDERER';
-                                            default:
-                                              return 'WANDERER';
-                                          }
+                                          const j = (entry.profiles?.journey || profile?.journey || 'wanderer').toString().toLowerCase();
+                                          if (j === 'lover') return 'LOVER';
+                                          if (j === 'dreamer') return 'DREAMER';
+                                          return 'WANDERER';
                                         })()}
                                       </button>
                                       
@@ -1444,7 +1467,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                           border: `1px solid ${entryTheme.color}40`
                                         }}
                                       >
-                                        {entry.element?.toUpperCase() || 'Unknown Element'}
+                                        {(((entry as any).profiles?.element || entry.element)?.toUpperCase()) || 'Unknown Element'}
                                       </div>
                                     </div>
                                   </div>
@@ -1470,13 +1493,13 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                     </div>
                                     <div className="flex items-center gap-2 bg-black/30 rounded-full px-4 py-2">
                                       <span 
-                                        className="font-bold text-base"
+                                        className="font-bold text-sm"
                                         style={{
                                           color: '#FF69B4',
                                           textShadow: '0 0 6px #FF69B4'
                                         }}
                                       >
-                                        Streak: {entry.profiles?.daily_streak || 0} Days
+                                        Streak: {entry.profiles?.daily_streak_current || 0} Days
                                       </span>
                                     </div>
                                   </div>
@@ -1601,7 +1624,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                     userId={entry.user_id}
                                     embedded={true}
                                     maxBadges={4}
-                                    onBadgeClick={handleBadgeClick}
+                                    onBadgeClick={(badge) => handleBadgeClick(badge, { userId: entry.user_id, userName: entry.profiles?.name || 'User' })}
                                   />
                                 </div>
                               )}
@@ -1865,7 +1888,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         <div
           className="w-full max-w-4xl sm:min-w-[460px] mx-auto"
           style={{
-            maxHeight: '100%',
+            height: '100%',
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
@@ -1878,7 +1901,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         >
           {/* Main Entry Card Container */}
           <div
-            className="rounded-lg px-1 pt-2 pb-0 space-y-1 flex flex-col"
+            className="rounded-lg px-1 pt-2 pb-0 space-y-1 flex flex-col flex-1"
             style={{
               background: 'rgba(0, 0, 0, 0.7)',
               border: `1px solid ${elementTheme.color}60`,
@@ -2021,10 +2044,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
             {/* Section Cards */}
             {dailyPrompt && (
-              <div className="space-y-0 mt-14">
+              <div className="flex flex-col flex-1 mt-28">
                 {/* Prompt Card */}
-                <div 
-                  className="rounded-lg px-1 pt-0.5 pb-1 -mx-1"
+                <div
+                  className="rounded-lg px-2 pt-2 pb-3 -mx-1"
                   style={{
                     background: 'rgba(0, 0, 0, 0.4)',
                     border: `1px solid ${elementTheme.color}60`,
@@ -2099,15 +2122,15 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 </div>
 
                 {/* Soul Star Card */}
-                <div 
-                  className="rounded-lg px-1 pt-0.5 pb-0.5 -mx-1"
+                <div
+                  className="rounded-lg px-2 pt-2 pb-3 -mx-1 mb-2 flex-1"
                   style={{
                     background: 'rgba(0, 0, 0, 0.4)',
                     border: `1px solid ${elementTheme.color}60`,
                     boxShadow: `0 0 15px ${elementTheme.color}60, 0 0 30px ${elementTheme.color}30, inset 0 0 10px ${elementTheme.color}20`
                   }}
                 >
-                  <div className="space-y-0.5">
+                  <div className="space-y-1 h-full flex flex-col">
                     <div className="flex items-center gap-2">
                       <div 
                         className="w-8 h-8 flex items-center justify-center relative"
@@ -2162,7 +2185,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                       onChange={(e) => setSoulStarText(e.target.value)}
                       onClick={(e) => e.stopPropagation()}
                       placeholder={(!user?.id || !profile?.element) ? "Let your Soul speak..." : "Let your Soul Star speak…"}
-                      className="w-full h-14 px-2 py-1 rounded-lg text-white text-lg placeholder-white/50 resize-none focus:outline-none transition-all"
+                      className="w-full flex-1 min-h-[60px] px-2 py-2 rounded-lg text-white text-lg placeholder-white/50 resize-none focus:outline-none transition-all"
                       disabled={isSaving || journalState.isSubmitted}
                       style={{
                         background: 'rgba(0,0,0,0.4)',
@@ -2186,7 +2209,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3 pb-0 mt-auto -mb-6">
+            <div className="flex gap-3 pb-2 mt-auto">
                   {(!user?.id || !profile?.element) ? (
                     <button
                       onClick={() => {
@@ -2303,25 +2326,18 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       )}
 
 
-      {/* Enlarged Badge Popup Modal - contained within journal panel area */}
+      {/* Enlarged Badge Popup Modal - contained within journal panel bounds */}
       {enlargedBadge && (
         <div
-          className="fixed z-50 flex items-start justify-center"
-          style={{
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 'var(--light-beam-boundary)',
-            paddingTop: '8vh',
-            paddingLeft: '16px',
-            paddingRight: '20px',
-          }}
+          className="absolute inset-0 flex items-start justify-center z-50"
+          style={{ paddingLeft: '16px', paddingRight: '20px' }}
           onClick={() => {
             setEnlargedBadge(null);
+            setEnlargedBadgeMeta(null);
             setBadgeRotation(0);
           }}
         >
-          {/* Badge container - matches journal panel dimensions */}
+          {/* Constrain overlay to the journal panel bounds */}
           <div
             className="relative flex flex-col items-center justify-center pointer-events-auto w-full max-w-4xl sm:min-w-[460px] mx-auto h-full"
             style={{
@@ -2329,7 +2345,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               border: `1px solid ${elementTheme.color}60`,
               boxShadow: `0 0 30px ${elementTheme.color}60, 0 0 60px ${elementTheme.color}40`,
               borderRadius: '14px',
-              backdropFilter: 'blur(12px)',
+              backdropFilter: 'blur(12px)'
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -2344,6 +2360,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               onClick={() => {
                 try { sfx.play('close', 0.8); } catch {}
                 setEnlargedBadge(null);
+                setEnlargedBadgeMeta(null);
                 setBadgeRotation(0);
               }}
               aria-label="Close badge"
@@ -2433,16 +2450,27 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                       boxShadow: '0 0 30px #FF69B460, 0 0 60px #FF69B440',
                     }}
                   >
-                    <img
-                      src={enlargedBadge.icon_url || enlargedBadge.badge_image_url || '/elements/badges.webp'}
-                      alt={enlargedBadge.badge_name || 'Badge'}
-                      className="w-full h-full object-cover"
-                      style={{ transform: 'scaleX(-1)' }}
-                      draggable={false}
-                      onError={(e) => {
-                        e.currentTarget.src = '/elements/badges.webp';
-                      }}
-                    />
+                    {/* Blank back so text is readable */}
+                    {/* Claim details overlay */}
+                    <div
+                      className="absolute inset-0 flex flex-col items-center justify-center text-center px-3"
+                    >
+                      <div className="text-white font-bold text-lg truncate max-w-[160px]" style={{ textShadow: '0 0 8px rgba(255,105,180,0.8)' }}>
+                        {enlargedBadgeMeta?.userName || profile?.name || 'User'}
+                      </div>
+                      <div className="text-base font-semibold mt-1 tracking-wider" style={{ color: '#39FF14', textShadow: '0 0 8px #39FF14, 0 0 14px #39FF14' }}>CLAIMED</div>
+                      <div className="text-white/80 text-base mt-0.5">
+                        {(() => {
+                          const raw = enlargedBadgeMeta?.earnedAt;
+                          if (!raw) return '';
+                          const d = new Date(raw);
+                          const mm = (d.getMonth() + 1).toString();
+                          const dd = d.getDate().toString();
+                          const yyyy = d.getFullYear().toString();
+                          return `${mm}/${dd}/${yyyy}`;
+                        })()}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </TiltSpinCard>
