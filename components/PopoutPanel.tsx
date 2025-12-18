@@ -260,9 +260,15 @@ export default function PopoutPanel({
       )}
       
       {/* Main popup */}
-      <div 
-        className="fixed inset-0 z-[2147483647] flex justify-center p-4"
-        style={{ alignItems: 'flex-start', paddingTop: '15vh' }}
+      <div
+        className="fixed z-[2147483647] flex justify-center"
+        style={{
+          top: '64px',
+          left: 0,
+          right: 0,
+          bottom: 'var(--light-beam-boundary)',
+          padding: '20px 16px 0 16px'
+        }}
         onClick={handleBackdropClick}
       >
         <div
@@ -271,11 +277,12 @@ export default function PopoutPanel({
             width: 'min(92vw, 700px)',
             maxWidth: '700px',
             minHeight: '200px',
-            maxHeight: '90vh',
+            height: '100%',
             padding: '10px 14px 14px 14px',
-            borderRadius: 18,
+            borderRadius: '18px 18px 0 0',
             background: 'rgba(0,0,0,0.6)',
             border: `1px solid ${borderColor}`,
+            borderBottom: 'none',
             boxShadow: `0 -8px 25px ${glowColor}40, 0 -4px 15px ${glowColor}25, 0 12px 30px rgba(0,0,0,0.4), 0 0 24px ${glowColor}45`,
             backdropFilter: 'blur(12px) saturate(140%)',
             color: glowColor,
@@ -283,21 +290,62 @@ export default function PopoutPanel({
             ...style
           }}
         >
-          {/* Soft bottom glow */}
-          <div 
-            className="absolute"
+          {/* Light beam border at bottom */}
+          <div
+            className="absolute pointer-events-none"
             style={{
-              bottom: '-15px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: '120%',
-              height: '30px',
-              background: `radial-gradient(ellipse 60% 100% at 50% 0%, ${glowColor}60 0%, ${glowColor}30 40%, transparent 80%)`,
-              filter: 'blur(30px)',
-              pointerEvents: 'none',
-              zIndex: -1
+              bottom: 0,
+              left: '-10%',
+              right: '-10%',
+              height: '60px',
+              overflow: 'visible'
             }}
-          />
+          >
+            {/* Beam core */}
+            <div
+              style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                bottom: '-30px',
+                height: '60px',
+                clipPath: 'polygon(45% 0%, 55% 0%, 100% 100%, 0% 100%)',
+                background: `linear-gradient(0deg,
+                  ${glowColor}00 0%,
+                  ${glowColor}40 30%,
+                  ${glowColor}80 50%,
+                  ${glowColor}40 70%,
+                  ${glowColor}00 100%)`,
+                filter: 'blur(3px)',
+                mixBlendMode: 'screen'
+              }}
+            />
+            {/* Beam glow */}
+            <div
+              style={{
+                position: 'absolute',
+                left: '-10%',
+                right: '-10%',
+                bottom: '-40px',
+                height: '80px',
+                background: `radial-gradient(ellipse 80% 100% at 50% 0%, ${glowColor}60 0%, ${glowColor}30 40%, transparent 80%)`,
+                filter: 'blur(20px)',
+                mixBlendMode: 'screen'
+              }}
+            />
+            {/* Horizontal beam line */}
+            <div
+              style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: '3px',
+                background: `linear-gradient(90deg, transparent, ${glowColor}60 15%, ${glowColor} 50%, ${glowColor}60 85%, transparent)`,
+                boxShadow: `0 0 8px ${glowColor}80, 0 0 16px ${glowColor}60, 0 0 24px ${glowColor}40`
+              }}
+            />
+          </div>
           
           {/* Top bloom glow */}
           <div 

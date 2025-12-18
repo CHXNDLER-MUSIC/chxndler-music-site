@@ -12,13 +12,29 @@ export interface Pure3DPlanetsProps {
   quality: 'low' | 'high';
 }
 
-export default function Pure3DPlanets({ quality, onPlanetSelect }: Pure3DPlanetsProps) {
+export default function Pure3DPlanets({ songs, songsByElement: propSongsByElement, quality, onPlanetSelect }: Pure3DPlanetsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // Compute songsByElement from songs if not provided
+  const songsByElement = React.useMemo(() => {
+    if (propSongsByElement && Object.keys(propSongsByElement).length > 0) {
+      return propSongsByElement;
+    }
+    // Build from songs array - check for 'element' or 'icon' field
+    return songs.reduce((acc: Record<string, any[]>, song: any) => {
+      const element = song.element || song.icon || 'heart';
+      if (!acc[element]) {
+        acc[element] = [];
+      }
+      acc[element].push(song);
+      return acc;
+    }, {});
+  }, [songs, propSongsByElement]);
 
   useEffect(() => {
     if (!isClient || !containerRef.current) return;
@@ -67,68 +83,100 @@ export default function Pure3DPlanets({ quality, onPlanetSelect }: Pure3DPlanets
     // Texture loader
     const textureLoader = new THREE.TextureLoader();
 
-    // Create element as a sprite showing the full image with transparency and glow
+    // Create element as a glowing sprite (opaque, not see-through)
     const createElementSprite = (texturePath: string, scale: number, position: [number, number, number], glowColor: number) => {
-      const group = new THREE.Group();
-      group.position.set(...position);
-
-      // Main sprite
       const texture = textureLoader.load(texturePath);
       texture.colorSpace = THREE.SRGBColorSpace;
 
+      // Opaque sprite - normal blending so you can't see through it
       const material = new THREE.SpriteMaterial({
         map: texture,
-        transparent: true,
-        depthWrite: false,
-        depthTest: true,
-        sizeAttenuation: true
+        transparent: true, // needed for alpha cutout on edges
+        depthWrite: true,
+        blending: THREE.NormalBlending
       });
 
       const sprite = new THREE.Sprite(material);
+      sprite.position.set(...position);
       sprite.scale.set(scale * 5, scale * 5, 1);
-      group.add(sprite);
 
-      // Glow effect - larger semi-transparent sprite behind
-      const glowGeometry = new THREE.SphereGeometry(scale * 3, 32, 32);
-      const glowMaterial = new THREE.MeshBasicMaterial({
-        color: glowColor,
-        transparent: true,
-        opacity: 0.3,
-        side: THREE.BackSide
-      });
-      const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
-      group.add(glowMesh);
-
-      // Point light for additional glow
-      const light = new THREE.PointLight(glowColor, 0.8, 20);
-      group.add(light);
-
-      return group;
+      return sprite;
     };
 
-    // Central Sun - positioned higher up as sprite
+    // Central Sun - positioned higher up as sprite with pink glow
     const sunY = 12;
-    const sun = createElementSprite('/textures/center-planet.webp', 2.5, [0, sunY, 0]);
+    const sun = createElementSprite('/textures/center-planet.webp', 2.5, [0, sunY, 0], 0xff69b4);
     scene.add(sun);
 
     // Orbiting planets evenly spaced (90 degrees apart) around the sun
     const orbitRadius = 18;
     const planets = [
-      { id: 'heart', texture: '/textures/planet_heart.webp', pos: [orbitRadius, 0, 0] as [number, number, number], speed: 0.3 },           // 0°
-      { id: 'water', texture: '/textures/planet_water.webp', pos: [0, 0, orbitRadius] as [number, number, number], speed: 0.3 },           // 90°
-      { id: 'lightning', texture: '/textures/planet_lightning.webp', pos: [-orbitRadius, 0, 0] as [number, number, number], speed: 0.3 },  // 180°
-      { id: 'darkness', texture: '/textures/planet_darkness.webp', pos: [0, 0, -orbitRadius] as [number, number, number], speed: 0.3 }     // 270°
+      { id: 'heart', texture: '/textures/planet_heart.webp', pos: [orbitRadius, 0, 0] as [number, number, number], speed: 0.3, glow: 0xff6b9d },           // 0° - pink
+      { id: 'water', texture: '/textures/planet_water.webp', pos: [0, 0, orbitRadius] as [number, number, number], speed: 0.3, glow: 0x4fc3f7 },           // 90° - blue
+      { id: 'lightning', texture: '/textures/planet_lightning.webp', pos: [-orbitRadius, 0, 0] as [number, number, number], speed: 0.3, glow: 0xffeb3b },  // 180° - yellow
+      { id: 'darkness', texture: '/textures/planet_darkness.webp', pos: [0, 0, -orbitRadius] as [number, number, number], speed: 0.3, glow: 0x9c27b0 }     // 270° - purple
     ];
 
     const orbitGroups: { group: THREE.Group; speed: number }[] = [];
+
+    // Create song as a colored sphere
+    const createSongSphere = (color: number, scale: number, position: [number, number, number]) => {
+      const geometry = new THREE.SphereGeometry(scale, 16, 16);
+      const material = new THREE.MeshStandardMaterial({
+        color: color,
+        emissive: color,
+        emissiveIntensity: 0.3,
+        metalness: 0.2,
+        roughness: 0.6
+      });
+
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(...position);
+
+      return mesh;
+    };
+
+    // Song orbit groups for animation
+    const songOrbitGroups: { group: THREE.Group; speed: number }[] = [];
+
+    console.log('Building planets with songsByElement:', songsByElement, 'songs count:', songs.length);
 
     planets.forEach(p => {
       const group = new THREE.Group();
       // Position group at sun's location so planets orbit around the sun
       group.position.set(0, sunY, 0);
-      // Create sprite showing full texture image
-      const planet = createElementSprite(p.texture, 1.8, p.pos);
+      // Create sprite showing full texture image with glow
+      const planet = createElementSprite(p.texture, 1.8, p.pos, p.glow);
       group.add(planet);
+
+      // Add song planets orbiting around this element
+      const elementSongs = songsByElement[p.id] || [];
+      console.log(`Element ${p.id} has ${elementSongs.length} songs`);
+      const songOrbitRadius = 10; // Distance from element planet
+
+      if (elementSongs.length > 0) {
+        // Create song orbit group centered at the element position
+        const songGroup = new THREE.Group();
+        // Position the song group at the element's location
+        songGroup.position.set(p.pos[0], p.pos[1], p.pos[2]);
+
+        elementSongs.forEach((song: any, idx: number) => {
+          const angle = (idx / elementSongs.length) * Math.PI * 2;
+          // Position relative to songGroup center (0,0,0)
+          const songX = Math.cos(angle) * songOrbitRadius;
+          const songZ = Math.sin(angle) * songOrbitRadius;
+
+          const songSlug = song.slug || song.id;
+          console.log(`Adding song sphere: ${song.title} (${songSlug}) orbiting ${p.id}`);
+          // Create colored sphere matching element color
+          const songSphere = createSongSphere(p.glow, 1.2, [songX, 0, songZ]);
+          songGroup.add(songSphere);
+        });
+
+        group.add(songGroup);
+        songOrbitGroups.push({ group: songGroup, speed: 0.8 });
+      }
+
       scene.add(group);
       orbitGroups.push({ group, speed: p.speed });
     });
@@ -189,9 +237,14 @@ export default function Pure3DPlanets({ quality, onPlanetSelect }: Pure3DPlanets
       // Rotate sun
       sun.rotation.y = elapsed * 0.5;
 
-      // Orbit planets
+      // Orbit planets around sun
       orbitGroups.forEach(og => {
         og.group.rotation.y = elapsed * og.speed;
+      });
+
+      // Orbit songs around their element planets
+      songOrbitGroups.forEach(sg => {
+        sg.group.rotation.y = elapsed * sg.speed;
       });
 
       controls.update();
@@ -222,7 +275,9 @@ export default function Pure3DPlanets({ quality, onPlanetSelect }: Pure3DPlanets
         container.removeChild(renderer.domElement);
       }
     };
-  }, [isClient, quality, onPlanetSelect]);
+  // Only rebuild when songs are first loaded (length changes from 0)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isClient, quality, songs.length]);
 
   if (!isClient) {
     return (

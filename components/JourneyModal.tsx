@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
+import TiltSpinCard from "./TiltSpinCard";
 
 interface JourneyModalProps {
   open: boolean;
@@ -221,18 +222,20 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
           {(Object.keys(tierData) as TierType[]).map((tier) => {
             const data = tierData[tier];
             const isFlipped = flippedTier === tier;
-            
+
             return (
-              <div
+              <TiltSpinCard
                 key={tier}
+                onClick={() => handleTierClick(tier)}
+                maxRotateX={15}
+                maxRotateY={25}
+                sensitivity={0.4}
                 className="tier-card"
                 style={{
                   width: '175px',
                   height: '100%',
-                  perspective: '1000px',
                   cursor: 'pointer'
                 }}
-                onClick={() => handleTierClick(tier)}
               >
                 <div
                   className="tier-card-inner"
@@ -386,7 +389,7 @@ export default function JourneyModal({ open, onClose }: JourneyModalProps) {
                     </div>
                   </div>
                 </div>
-              </div>
+              </TiltSpinCard>
             );
           })}
         </div>

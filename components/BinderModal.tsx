@@ -2447,7 +2447,12 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                             setShowFullCollection(true);
                             // Set to 'All' to show all cards of this element, not just one specific card
                             setSelectedCardName('All');
-                            setCurrentCardIndex(0);
+                            // Find the card that matches the element name (e.g., "Lightning" for Lightning element)
+                            const elementCards = songCollection.filter(song => song.element === element);
+                            const matchingCardIndex = elementCards.findIndex(
+                              song => song.name.toLowerCase() === element.toLowerCase()
+                            );
+                            setCurrentCardIndex(matchingCardIndex >= 0 ? matchingCardIndex : 0);
                           }}
                           onMouseEnter={() => {
                             try { sfx.play('change-channel', 0.5); } catch {}

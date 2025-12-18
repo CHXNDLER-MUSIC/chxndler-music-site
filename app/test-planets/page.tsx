@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { useSongs } from '@/hooks/useSongs';
 
 // Dynamically import 3D planets to avoid SSR issues with Three.js
 const Pure3DPlanets = dynamic(() => import('@/components/planetarium/Pure3DPlanets'), {
@@ -9,6 +10,8 @@ const Pure3DPlanets = dynamic(() => import('@/components/planetarium/Pure3DPlane
 });
 
 export default function TestPlanetsPage() {
+  const { songs, songsByElement, loading } = useSongs();
+
   return (
     <div className="min-h-screen bg-gray-900 p-8">
       <div className="max-w-4xl mx-auto">
@@ -22,13 +25,17 @@ export default function TestPlanetsPage() {
           </h2>
 
           <div className="h-[500px] w-full">
-            <Pure3DPlanets
-              songs={[]}
-              songsByElement={{}}
-              zoomLevel={1}
-              onPlanetSelect={(planetId) => console.log('Selected planet:', planetId)}
-              quality="high"
-            />
+            {loading ? (
+              <div className="h-full flex items-center justify-center text-cyan-400">Loading songs...</div>
+            ) : (
+              <Pure3DPlanets
+                songs={songs}
+                songsByElement={songsByElement}
+                zoomLevel={1}
+                onPlanetSelect={(planetId) => console.log('Selected planet:', planetId)}
+                quality="high"
+              />
+            )}
           </div>
 
           <div className="mt-6 text-sm text-gray-400">
@@ -39,6 +46,7 @@ export default function TestPlanetsPage() {
               <li>Click on planets to select them</li>
               <li>Auto-rotation is enabled</li>
             </ul>
+            <p className="mt-4"><strong>Songs loaded:</strong> {songs.length}</p>
           </div>
         </div>
       </div>

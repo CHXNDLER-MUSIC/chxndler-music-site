@@ -595,10 +595,11 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
   // Handle card click to show popup
   const handleCardClick = (card: any) => {
-    try { 
-      sfx.play('card-ding', 0.45); 
+    try {
+      sfx.play('card-ding', 0.45);
     } catch {}
-    
+
+    setIsCardFlipped(false); // Reset to show front of card
     setSelectedCard({
       name: card.card_name,
       image: getCardImage(card.card_name, card.element),
@@ -2027,8 +2028,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                       </div>
                     </div>
                     <div
-                      className="text-lg leading-snug"
-                      style={{ color: '#FFFFFF', lineHeight: '1.3' }}
+                      className="text-lg leading-tight"
+                      style={{ color: '#FFFFFF', lineHeight: '1.15' }}
                     >
                       {dailyPrompt.intention.text}
                     </div>
@@ -2100,10 +2101,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                       </div>
                     </div>
                     <div
-                      className="text-lg leading-snug"
+                      className="text-lg leading-tight"
                       style={{
                         color: dailyPrompt.entry_text?.text ? '#FFFFFF' : 'rgba(255, 255, 255, 0.6)',
-                        lineHeight: '1.3'
+                        lineHeight: '1.15'
                       }}
                     >
                       {dailyPrompt.entry_text?.text || 'No prompt was generated for this day.'}
@@ -2175,7 +2176,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                       onChange={(e) => setSoulStarText(e.target.value)}
                       onClick={(e) => e.stopPropagation()}
                       placeholder={(!user?.id || !profile?.element) ? "Let your Soul speak..." : "Let your Soul Star speak…"}
-                      className="w-full h-16 p-2 rounded-lg text-white text-lg placeholder-white/50 resize-none focus:outline-none transition-all"
+                      className="w-full h-14 px-2 py-1 rounded-lg text-white text-lg placeholder-white/50 resize-none focus:outline-none transition-all"
                       disabled={isSaving || journalState.isSubmitted}
                       style={{
                         background: 'rgba(0,0,0,0.4)',
@@ -2183,7 +2184,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                         boxShadow: `0 0 8px ${elementTheme.color}15`,
                         opacity: (isSaving || journalState.isSubmitted) ? 0.7 : 1,
                         pointerEvents: (isSaving || journalState.isSubmitted) ? 'none' as any : 'auto',
-                        lineHeight: '1.2'
+                        lineHeight: '1.1'
                       }}
                       onFocus={(e) => {
                         if (journalState.isSubmitted) return;
@@ -2415,6 +2416,24 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             }}
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Close button - top right */}
+            <button
+              className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full z-10 transition-all duration-200 hover:scale-110"
+              style={{
+                background: 'rgba(0, 0, 0, 0.6)',
+                border: '2px solid #FF69B4',
+                boxShadow: '0 0 10px #FF69B440',
+              }}
+              onClick={() => {
+                try { sfx.play('close', 0.8); } catch {}
+                setEnlargedBadge(null);
+                setBadgeRotation(0);
+              }}
+              aria-label="Close badge"
+            >
+              <span className="text-white text-xl font-bold leading-none">×</span>
+            </button>
+
             {/* Touch capture container */}
             <div
               className="relative"
