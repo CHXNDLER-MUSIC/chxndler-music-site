@@ -2295,12 +2295,12 @@ const HUDPanel = React.memo(function HUDPanel({
               opacity: contentOpacity,
               // Move the 3D planet system higher
               top: 0,
-              height: '400px',
-              pointerEvents: 'auto', // FIXED: Allow mouse interactions with 3D system
-              zIndex: 10 // Ensure planets render above other elements
+              height: '300px',
+              pointerEvents: 'none', // Let clicks pass through to elements below
+              zIndex: 5 // Lower z-index so it doesn't block cover art
             }}
           >
-            <div className="w-full h-full" style={{ pointerEvents: 'auto', minHeight: '400px' }}>
+            <div className="w-full h-full" style={{ pointerEvents: 'auto', minHeight: '300px' }}>
                 <ErrorBoundary
                   key={preferRaw3D ? 'raw' : 'r3f'}
                   fallback={<div className="w-full h-full flex items-center justify-center text-red-400">3D Error - Check Console</div>}

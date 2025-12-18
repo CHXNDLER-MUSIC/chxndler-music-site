@@ -138,6 +138,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const [publicEntries, setPublicEntries] = useState<JournalEntry[]>([]);
   const [showProfileInfo, setShowProfileInfo] = useState<{[key: string]: boolean}>({});
   const [isJourneyModalOpen, setIsJourneyModalOpen] = useState(false);
+  const [starredByMe, setStarredByMe] = useState<Set<string>>(new Set());
+  const [starringEntryId, setStarringEntryId] = useState<string | null>(null);
 
   const today = getLocalDateString();
   const todayFormatted = getDisplayDateString(today);
@@ -444,7 +446,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       // For now, let's use the existing journalEntries and filter them on the client side
       // This is a temporary solution to get the PUBLIC tab working
       const publicEntriesFromContext = journalEntries.filter(entry => entry.is_public === true);
-      
+
       // Sort them by date desc, then stars desc
       const sortedPublicEntries = publicEntriesFromContext.sort((a, b) => {
         const dateComparison = new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime();
@@ -466,12 +468,25 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
       console.log('Public entries loaded from context:', enrichedEntries.length, enrichedEntries);
       setPublicEntries(enrichedEntries);
+
+      // Fetch which entries the current user has starred
+      if (user?.id) {
+        const { data: starredData, error: starredError } = await supabaseBrowser
+          .from('journal_entry_stars')
+          .select('entry_id')
+          .eq('user_id', user.id);
+
+        if (!starredError && starredData) {
+          const starredIds = new Set(starredData.map(row => row.entry_id));
+          setStarredByMe(starredIds);
+        }
+      }
     } catch (error) {
       console.error('Error in loadPublicEntries:', error);
     }
   };
 
-  const handleGiveStar = async (entryId: string) => {
+  const handleToggleStar = async (entryId: string) => {
     try {
       // Require authentication to star entries
       if (!user?.id) {
@@ -479,48 +494,45 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         return;
       }
 
-      // Insert a star into the journal_entry_stars table
-      const { error } = await supabaseBrowser
-        .from('journal_entry_stars')
-        .insert({ entry_id: entryId, user_id: user.id });
+      // Prevent double-clicks while request is in flight
+      if (starringEntryId) return;
+      setStarringEntryId(entryId);
+
+      // Call the RPC to toggle the star
+      const { data, error } = await supabaseBrowser
+        .rpc('toggle_journal_entry_star', { p_entry_id: entryId });
 
       if (error) {
-        // Ignore duplicate insert errors if user already starred
-        const msg = (error as any)?.message || '';
-        const code = (error as any)?.code || '';
-        const isDuplicate = code === '23505' || /duplicate key|already exists|unique/i.test(msg);
-        if (!isDuplicate) {
-          console.error('Error giving star:', error);
-          return;
+        console.error('Error toggling star:', error);
+        setStarringEntryId(null);
+        return;
+      }
+
+      // Update local state with the returned values
+      const { starred, stars_count } = data;
+
+      // Update starredByMe set
+      setStarredByMe(prev => {
+        const next = new Set(prev);
+        if (starred) {
+          next.add(entryId);
         } else {
-          // User already starred this entry, don't increment
-          return;
+          next.delete(entryId);
         }
-      }
+        return next;
+      });
 
-      // Update the stars_count in soul_journal_entries table
-      const { error: updateError } = await supabaseBrowser
-        .from('soul_journal_entries')
-        .update({ 
-          stars_count: supabaseBrowser.raw('COALESCE(stars_count, 0) + 1')
-        })
-        .eq('entry_id', entryId);
-
-      if (updateError) {
-        console.error('Error updating star count:', updateError);
-      }
-
-      // Update local state immediately for instant feedback
-      setPublicEntries(prev => prev.map(entry => 
-        entry.entry_id === entryId 
-          ? { ...entry, stars_count: (entry.stars_count ?? 0) + 1 }
+      // Update stars_count in publicEntries
+      setPublicEntries(prev => prev.map(entry =>
+        entry.entry_id === entryId
+          ? { ...entry, stars_count }
           : entry
       ));
 
-      // Refresh to reflect updated star counts
-      await Promise.all([refreshProfile(), loadPublicEntries()]);
+      setStarringEntryId(null);
     } catch (error) {
-      console.error('Failed to give star:', error);
+      console.error('Failed to toggle star:', error);
+      setStarringEntryId(null);
     }
   };
 
@@ -1272,11 +1284,14 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                             {/* Soul Star Button */}
                             <button
                               type="button"
-                              className="flex items-center gap-1 transition-all duration-200 hover:scale-105 px-3 py-1.5"
+                              className={`flex items-center gap-1 transition-all duration-200 hover:scale-105 px-3 py-1.5 ${
+                                starringEntryId === entry.entry_id ? 'opacity-50 cursor-not-allowed' : ''
+                              }`}
+                              disabled={starringEntryId === entry.entry_id}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 sfx.play('card-ding', 0.45);
-                                handleGiveStar(entry.entry_id);
+                                handleToggleStar(entry.entry_id);
                               }}
                               onMouseEnter={() => {
                                 try { sfx.play('hover', 0.6); } catch {}
@@ -1291,14 +1306,18 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                 width={28}
                                 height={28}
                                 style={{
-                                  filter: `drop-shadow(0 0 4px ${entryTheme.color})`
+                                  filter: starredByMe.has(entry.entry_id)
+                                    ? `drop-shadow(0 0 8px ${entryTheme.color}) drop-shadow(0 0 12px ${entryTheme.glow}) brightness(1.2)`
+                                    : `drop-shadow(0 0 4px ${entryTheme.color}) opacity(0.7)`
                                 }}
                               />
-                              <span 
+                              <span
                                 className="text-sm font-semibold"
-                                style={{ 
-                                  color: entryTheme.color,
-                                  textShadow: `0 0 4px ${entryTheme.glow}`
+                                style={{
+                                  color: starredByMe.has(entry.entry_id) ? entryTheme.color : `${entryTheme.color}99`,
+                                  textShadow: starredByMe.has(entry.entry_id)
+                                    ? `0 0 6px ${entryTheme.glow}`
+                                    : `0 0 4px ${entryTheme.glow}`
                                 }}
                               >
                                 {entry.stars_count ?? 0}

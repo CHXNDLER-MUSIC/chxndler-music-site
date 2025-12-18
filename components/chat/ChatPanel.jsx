@@ -2394,6 +2394,19 @@ export default function ChatPanel({ isOpen, onClose }) {
               animation: 'cardPulse 2s ease-in-out infinite'
             }}
           >
+            {/* Close button - top right */}
+            <button
+              onClick={() => setSelectedBadgePopup(null)}
+              className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 z-10"
+              style={{
+                background: 'rgba(242, 239, 29, 0.15)',
+                border: '2px solid rgba(242, 239, 29, 0.6)',
+                color: '#F2EF1D',
+                boxShadow: '0 0 10px rgba(242, 239, 29, 0.3)'
+              }}
+            >
+              <span className="text-lg font-bold leading-none">×</span>
+            </button>
             {(() => {
               const getCategoryColors = (category) => {
                 switch(category) {
@@ -2455,17 +2468,6 @@ export default function ChatPanel({ isOpen, onClose }) {
                       </div>
                     )}
                   </div>
-                  <button
-                    onClick={() => setSelectedBadgePopup(null)}
-                    className="mt-4 w-full py-2 rounded-md text-sm font-medium transition-colors"
-                    style={{
-                      background: 'rgba(242, 239, 29, 0.15)',
-                      border: '1px solid rgba(242, 239, 29, 0.4)',
-                      color: '#F2EF1D'
-                    }}
-                  >
-                    Close
-                  </button>
                 </>
               );
             })()}

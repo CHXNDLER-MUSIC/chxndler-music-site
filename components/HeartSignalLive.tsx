@@ -1,10 +1,22 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { useProfile } from '@/contexts/ProfileContext';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+
+// Emoji types for reactions
+type EmojiType = 'heart' | 'water' | 'lightning' | 'darkness' | 'alien';
+
+// Emoji configuration with display info
+const EMOJI_CONFIG: Record<EmojiType, { emoji: string; label: string; color: string }> = {
+  heart: { emoji: '💖', label: 'Heart', color: '#FF69B4' },
+  water: { emoji: '🌊', label: 'Water', color: '#00BFFF' },
+  lightning: { emoji: '⚡', label: 'Lightning', color: '#FFD700' },
+  darkness: { emoji: '🌑', label: 'Darkness', color: '#8B5CF6' },
+  alien: { emoji: '👽', label: 'Alien', color: '#00FF7F' },
+};
 
 interface HeartSignalMessage {
   id: string;
@@ -13,7 +25,16 @@ interface HeartSignalMessage {
   message: string;
   created_at: string;
   is_system?: boolean;
+  // Reaction counts
+  heart_count: number;
+  water_count: number;
+  lightning_count: number;
+  darkness_count: number;
+  alien_count: number;
 }
+
+// User's reactions for messages (message_id -> set of emoji types)
+type UserReactionsMap = Map<string, Set<EmojiType>>;
 
 export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: boolean; onClose?: () => void }) {
   const { profile, user } = useProfile();
@@ -23,6 +44,8 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
   const [isSending, setIsSending] = useState(false);
   const [heartSignalSent, setHeartSignalSent] = useState(false);
   const [heartSignalLoading, setHeartSignalLoading] = useState(false);
+  const [userReactions, setUserReactions] = useState<UserReactionsMap>(new Map());
+  const [togglingReactions, setTogglingReactions] = useState<Set<string>>(new Set()); // Track in-flight toggles
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
@@ -31,20 +54,155 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Load all existing messages on component mount
-  const loadMessages = async () => {
+  // Load user's reactions for a set of message IDs
+  const loadUserReactions = useCallback(async (messageIds: string[]) => {
+    if (!user?.id || messageIds.length === 0) return;
+
     try {
       const { data, error } = await supabaseClient
+        .from('heart_signal_message_reactions')
+        .select('message_id, emoji')
+        .eq('user_id', user.id)
+        .in('message_id', messageIds);
+
+      if (error) {
+        console.error('Error loading user reactions:', error);
+        return;
+      }
+
+      // Build reactions map
+      const reactionsMap = new Map<string, Set<EmojiType>>();
+      (data || []).forEach((reaction: { message_id: string; emoji: string }) => {
+        const msgReactions = reactionsMap.get(reaction.message_id) || new Set<EmojiType>();
+        msgReactions.add(reaction.emoji as EmojiType);
+        reactionsMap.set(reaction.message_id, msgReactions);
+      });
+
+      setUserReactions(reactionsMap);
+    } catch (error) {
+      console.error('Error in loadUserReactions:', error);
+    }
+  }, [user?.id]);
+
+  // Toggle a reaction for a message using RPC
+  const toggleReaction = useCallback(async (messageId: string, emoji: EmojiType) => {
+    if (!user?.id) {
+      console.error('User not authenticated');
+      return;
+    }
+
+    // Prevent double-clicking
+    const toggleKey = `${messageId}-${emoji}`;
+    if (togglingReactions.has(toggleKey)) return;
+
+    setTogglingReactions(prev => new Set(prev).add(toggleKey));
+
+    // Optimistic update
+    const wasReacted = userReactions.get(messageId)?.has(emoji) || false;
+    const countField = `${emoji}_count` as keyof HeartSignalMessage;
+
+    // Update user reactions optimistically
+    setUserReactions(prev => {
+      const newMap = new Map(prev);
+      const msgReactions = new Set(newMap.get(messageId) || []);
+      if (wasReacted) {
+        msgReactions.delete(emoji);
+      } else {
+        msgReactions.add(emoji);
+      }
+      newMap.set(messageId, msgReactions);
+      return newMap;
+    });
+
+    // Update message count optimistically
+    setMessages(prev =>
+      prev.map(msg => {
+        if (msg.id !== messageId) return msg;
+        const currentCount = (msg[countField] as number) || 0;
+        return {
+          ...msg,
+          [countField]: wasReacted ? Math.max(0, currentCount - 1) : currentCount + 1,
+        };
+      })
+    );
+
+    try {
+      const { data: isNowReacted, error } = await supabaseClient.rpc('toggle_heart_signal_reaction', {
+        p_message_id: messageId,
+        p_emoji: emoji,
+      });
+
+      if (error) {
+        console.error('Error toggling reaction:', error);
+        // Revert optimistic update on error
+        setUserReactions(prev => {
+          const newMap = new Map(prev);
+          const msgReactions = new Set(newMap.get(messageId) || []);
+          if (wasReacted) {
+            msgReactions.add(emoji);
+          } else {
+            msgReactions.delete(emoji);
+          }
+          newMap.set(messageId, msgReactions);
+          return newMap;
+        });
+        setMessages(prev =>
+          prev.map(msg => {
+            if (msg.id !== messageId) return msg;
+            const currentCount = (msg[countField] as number) || 0;
+            return {
+              ...msg,
+              [countField]: wasReacted ? currentCount + 1 : Math.max(0, currentCount - 1),
+            };
+          })
+        );
+        return;
+      }
+
+      console.log(`Reaction ${emoji} on message ${messageId}: ${isNowReacted ? 'ON' : 'OFF'}`);
+    } catch (error) {
+      console.error('Error in toggleReaction:', error);
+    } finally {
+      setTogglingReactions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(toggleKey);
+        return newSet;
+      });
+    }
+  }, [user?.id, userReactions, togglingReactions]);
+
+  // Load the latest 50 messages on component mount
+  const loadMessages = async () => {
+    try {
+      // Fetch latest 50 messages ordered by created_at desc, then reverse for display
+      const { data, error } = await supabaseClient
         .from('heart_signal_messages')
-        .select('*')
-        .order('created_at', { ascending: true });
+        .select('id, user_id, username, message, created_at, is_system, heart_count, water_count, lightning_count, darkness_count, alien_count')
+        .order('created_at', { ascending: false })
+        .limit(50);
 
       if (error) {
         console.error('Error loading messages:', error);
         return;
       }
 
-      setMessages(data || []);
+      // Reverse to show oldest first (for chat display)
+      const messagesData = (data || []).reverse().map(msg => ({
+        ...msg,
+        heart_count: msg.heart_count || 0,
+        water_count: msg.water_count || 0,
+        lightning_count: msg.lightning_count || 0,
+        darkness_count: msg.darkness_count || 0,
+        alien_count: msg.alien_count || 0,
+      }));
+
+      setMessages(messagesData);
+
+      // Load user's reactions for these messages
+      if (messagesData.length > 0) {
+        const messageIds = messagesData.map(m => m.id);
+        await loadUserReactions(messageIds);
+      }
     } catch (error) {
       console.error('Error in loadMessages:', error);
     } finally {
@@ -67,14 +225,30 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
         { event: '*', schema: 'public', table: 'heart_signal_messages' },
         (payload) => {
           console.log('Real-time message received:', payload);
-          
+
           if (payload.eventType === 'INSERT') {
-            const newMessage = payload.new as HeartSignalMessage;
+            const newMsg = payload.new as any;
+            const newMessage: HeartSignalMessage = {
+              ...newMsg,
+              heart_count: newMsg.heart_count || 0,
+              water_count: newMsg.water_count || 0,
+              lightning_count: newMsg.lightning_count || 0,
+              darkness_count: newMsg.darkness_count || 0,
+              alien_count: newMsg.alien_count || 0,
+            };
             setMessages((prev) => [...prev, newMessage]);
             setTimeout(scrollToBottom, 100); // Delay to ensure DOM update
           } else if (payload.eventType === 'UPDATE') {
-            const updatedMessage = payload.new as HeartSignalMessage;
-            setMessages((prev) => 
+            const updatedMsg = payload.new as any;
+            const updatedMessage: HeartSignalMessage = {
+              ...updatedMsg,
+              heart_count: updatedMsg.heart_count || 0,
+              water_count: updatedMsg.water_count || 0,
+              lightning_count: updatedMsg.lightning_count || 0,
+              darkness_count: updatedMsg.darkness_count || 0,
+              alien_count: updatedMsg.alien_count || 0,
+            };
+            setMessages((prev) =>
               prev.map((msg) => msg.id === updatedMessage.id ? updatedMessage : msg)
             );
           } else if (payload.eventType === 'DELETE') {
@@ -113,7 +287,8 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
         .insert({
           user_id: userId,
           username: username,
-          message: newMessage.trim()
+          message: newMessage.trim(),
+          is_system: false
         })
         .select()
         .single();
@@ -303,15 +478,63 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
                     {msg.username}
                   </span>
                   <span className="text-xs text-gray-500">
-                    {new Date(msg.created_at).toLocaleTimeString([], { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
+                    {new Date(msg.created_at).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit'
                     })}
                   </span>
                 </div>
                 <div className="text-white text-sm break-words">
                   {msg.message}
                 </div>
+
+                {/* Reaction buttons - only show for non-system messages */}
+                {!(msg.is_system || msg.user_id === 'system') && (
+                  <div className="flex items-center gap-1 mt-2 flex-wrap">
+                    {(Object.keys(EMOJI_CONFIG) as EmojiType[]).map((emojiType) => {
+                      const config = EMOJI_CONFIG[emojiType];
+                      const countField = `${emojiType}_count` as keyof HeartSignalMessage;
+                      const count = (msg[countField] as number) || 0;
+                      const isReacted = userReactions.get(msg.id)?.has(emojiType) || false;
+                      const isToggling = togglingReactions.has(`${msg.id}-${emojiType}`);
+
+                      return (
+                        <button
+                          key={emojiType}
+                          onClick={() => toggleReaction(msg.id, emojiType)}
+                          disabled={!user || isToggling}
+                          className={`
+                            flex items-center gap-1 px-2 py-1 rounded-full text-xs
+                            transition-all duration-200 ease-out
+                            ${isReacted
+                              ? 'bg-opacity-30 scale-105'
+                              : 'bg-gray-700/50 hover:bg-gray-600/50'
+                            }
+                            ${!user ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-105'}
+                            ${isToggling ? 'opacity-70' : ''}
+                          `}
+                          style={{
+                            backgroundColor: isReacted ? `${config.color}30` : undefined,
+                            borderWidth: '1px',
+                            borderColor: isReacted ? config.color : 'transparent',
+                            boxShadow: isReacted ? `0 0 8px ${config.color}40` : undefined,
+                          }}
+                          title={`${config.label}${!user ? ' (login required)' : ''}`}
+                        >
+                          <span className="text-sm">{config.emoji}</span>
+                          {count > 0 && (
+                            <span
+                              className="text-xs font-medium"
+                              style={{ color: isReacted ? config.color : '#9CA3AF' }}
+                            >
+                              {count}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </motion.div>
             ))}
           </AnimatePresence>

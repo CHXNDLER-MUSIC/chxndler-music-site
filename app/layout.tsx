@@ -22,6 +22,7 @@ import CustomCursor from "@/components/CustomCursor";
 import HeartCoinCelebration from "@/components/HeartCoinCelebration";
 import BadgeCelebration from "@/components/BadgeCelebration";
 import CardCelebration from "@/components/CardCelebration";
+import BadgeCelebrationController from "@/components/BadgeCelebrationController";
 import GlobalKeyboardHandler from "@/components/GlobalKeyboardHandler";
 
 export const metadata: Metadata = {
@@ -157,6 +158,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <CardCelebration />
             <HeartCoinCelebration />
             <BadgeCelebration />
+            <BadgeCelebrationController />
                 </TourProvider>
               </MenuStateProvider>
             </AudioProvider>

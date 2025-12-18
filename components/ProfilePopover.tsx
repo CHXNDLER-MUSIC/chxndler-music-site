@@ -73,6 +73,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
   const [currentElementIndex, setCurrentElementIndex] = useState(0);
 
   const popoverRef = useRef<HTMLDivElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   // Helper to render user's JOURNEY label
   const getJourneyDisplay = () => {
@@ -95,6 +96,14 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
     }
   }, [profile]);
 
+  // Focus name input when entering edit mode
+  useEffect(() => {
+    if (isEditingName && nameInputRef.current) {
+      nameInputRef.current.focus();
+      nameInputRef.current.select();
+    }
+  }, [isEditingName]);
+
   // Fetch unlocked badges and relics when component opens
   useEffect(() => {
     if (isOpen && user) {
@@ -102,13 +111,26 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
     }
   }, [isOpen, user]);
 
+  // Reset editing state when popover closes
+  useEffect(() => {
+    if (!isOpen) {
+      setIsEditingName(false);
+      if (profile) {
+        setEditedName(profile.name || '');
+      }
+    }
+  }, [isOpen, profile]);
+
   // Close on escape key and outside click
   useEffect(() => {
     if (!isOpen) return;
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        if (showElementInfo) {
+        if (isEditingName) {
+          setEditedName(profile?.name || '');
+          setIsEditingName(false);
+        } else if (showElementInfo) {
           setShowElementInfo(false);
         } else if (showRelicsInline) {
           setShowRelicsInline(false);
@@ -143,7 +165,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
       document.removeEventListener('keydown', handleEscape);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, onClose, showElementMenu, showRelicsModal, showElementInfo, showRelicsInline]);
+  }, [isOpen, onClose, showElementMenu, showRelicsModal, showElementInfo, showRelicsInline, isEditingName, profile]);
 
   // Helper to get element image URL
   const getElementImageUrl = (element: string | null): string => {
@@ -446,6 +468,45 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
     });
 
     setAvailableImages(images);
+  };
+
+  // Handle saving name changes
+  const handleSaveName = async () => {
+    if (!profile || !user || !editedName.trim()) return;
+    if (editedName.trim() === profile.name) {
+      // No change, just exit edit mode
+      setIsEditingName(false);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error } = await supabaseBrowser
+        .from('profiles')
+        .update({
+          name: editedName.trim(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('Error updating profile name:', error);
+        return;
+      }
+
+      // Play flip sound
+      try { sfx.play('flip', 0.6); } catch {}
+
+      // Refresh profile context
+      await refreshProfile();
+
+      // Exit edit mode
+      setIsEditingName(false);
+    } catch (error) {
+      console.error('Error saving name:', error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Handle saving changes
@@ -767,17 +828,89 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
             
             {/* Left side - Username, Journey, Element */}
             <div className="flex-1 ml-4">
-              <div 
-                className="text-left"
-                style={{ 
-                  color: '#00FFFF', 
-                  textShadow: '0 0 8px rgba(0,255,255,0.6)', 
-                  fontSize: '28px',
-                  fontWeight: 'bold'
-                }}
-              >
-                {profile?.name || 'Unknown'}
-              </div>
+              {/* Editable Name Field */}
+              {isEditingName ? (
+                <div className="relative flex items-center gap-2">
+                  <input
+                    ref={nameInputRef}
+                    type="text"
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSaveName();
+                      } else if (e.key === 'Escape') {
+                        setEditedName(profile?.name || '');
+                        setIsEditingName(false);
+                      }
+                    }}
+                    className="text-left bg-transparent border-b-2 border-cyan-400/60 outline-none"
+                    style={{
+                      color: '#00FFFF',
+                      textShadow: '0 0 8px rgba(0,255,255,0.6)',
+                      fontSize: '28px',
+                      fontWeight: 'bold',
+                      width: '100%',
+                      maxWidth: '200px'
+                    }}
+                    maxLength={30}
+                  />
+                  {/* Green Checkmark Button */}
+                  <button
+                    onClick={handleSaveName}
+                    disabled={saving || !editedName.trim()}
+                    onMouseEnter={() => {
+                      try { sfx.play('hover', 0.3); } catch {}
+                    }}
+                    className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      background: 'rgba(0,255,0,0.2)',
+                      border: '2px solid rgba(0,255,0,0.7)',
+                      color: '#00FF00',
+                      boxShadow: '0 0 12px rgba(0,255,0,0.4)',
+                    }}
+                    title="Save name"
+                  >
+                    {saving ? (
+                      <div className="w-3 h-3 border-2 border-green-300 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <svg viewBox="0 0 24 24" width="14" height="14">
+                        <path
+                          fill="none"
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="3"
+                          d="M5 12l5 5L20 7"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setIsEditingName(true);
+                    try { sfx.play('click', 0.4); } catch {}
+                  }}
+                  onMouseEnter={() => {
+                    try { sfx.play('hover', 0.3); } catch {}
+                  }}
+                  className="text-left cursor-pointer transition-all duration-200 hover:scale-[1.02]"
+                  style={{
+                    color: '#00FFFF',
+                    textShadow: '0 0 8px rgba(0,255,255,0.6)',
+                    fontSize: '28px',
+                    fontWeight: 'bold',
+                    background: 'none',
+                    border: 'none',
+                    padding: 0
+                  }}
+                  title="Click to edit name"
+                >
+                  {profile?.name || 'Unknown'}
+                </button>
+              )}
 
               {/* Journey label */}
               <div className="mt-1">

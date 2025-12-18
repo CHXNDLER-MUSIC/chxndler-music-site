@@ -12,6 +12,12 @@ export function useMerchPurchase() {
     setIsProcessing(true);
     setError(null);
 
+    // Log before calling RPC
+    console.log('[useMerchPurchase] Initiating purchase:', {
+      merch_item_id: merchItem.id,
+      qty: quantity
+    });
+
     try {
       const response = await fetch('/api/merch/purchase', {
         method: 'POST',
@@ -26,17 +32,36 @@ export function useMerchPurchase() {
 
       const result = await response.json();
 
+      // Log the API response
+      console.log('[useMerchPurchase] API response:', {
+        status: response.status,
+        ok: response.ok,
+        result
+      });
+
       if (!response.ok) {
         throw new Error(result.error || 'Purchase failed');
       }
 
-      // The API returns a normalized shape
-      console.log('Purchase successful:', result);
-      return result as PurchaseWithHeartcoinsResult;
+      // Handle array return shape from TABLE-returning RPC
+      const normalizedResult = Array.isArray(result) ? result[0] : result;
+
+      // Check if the purchase was actually successful
+      if (!normalizedResult?.success) {
+        throw new Error(normalizedResult?.message || 'Purchase failed');
+      }
+
+      console.log('[useMerchPurchase] Purchase successful:', normalizedResult);
+      return normalizedResult as PurchaseWithHeartcoinsResult;
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Purchase failed';
-      console.error('Purchase error:', errorMessage);
+      console.error('[useMerchPurchase] Purchase error:', {
+        error: err,
+        message: errorMessage,
+        merch_item_id: merchItem.id,
+        qty: quantity
+      });
       setError(errorMessage);
       return null;
     } finally {

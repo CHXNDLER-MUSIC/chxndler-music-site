@@ -564,6 +564,12 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         }
       } else {
         // Use merch purchase API for regular merch items
+        // Log before calling RPC
+        console.log('[HeartCoinModal] Initiating purchase:', {
+          merch_item_id: selectedItem.merch_item_id,
+          qty: 1
+        });
+
         const response = await fetch('/api/merch/purchase', {
           method: 'POST',
           headers: {
@@ -577,22 +583,32 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
         result = await response.json();
 
-        console.log('Purchase API response:', result);
-        console.log('Purchase response status:', response.status);
-        console.log('Purchase response ok:', response.ok);
+        // Log the API response
+        console.log('[HeartCoinModal] Purchase API response:', {
+          status: response.status,
+          ok: response.ok,
+          error: response.ok ? null : result.error,
+          result
+        });
 
         if (!response.ok) {
-          console.error('Purchase API error:', result);
-          setError(result.error || 'Purchase failed. Please try again.');
+          console.error('[HeartCoinModal] Purchase API error:', result);
+          setError(result.error || result.message || 'Purchase failed. Please try again.');
           return;
         }
 
+        // Handle array return shape from TABLE-returning RPC
+        const normalizedResult = Array.isArray(result) ? result[0] : result;
+
         // Check if we actually got a successful result
-        if (!result.success && !result.order_id) {
-          console.error('Purchase succeeded but no order_id returned:', result);
-          setError('Purchase may have failed. Please check your balance and try again.');
+        if (!normalizedResult?.success) {
+          console.error('[HeartCoinModal] Purchase returned failure:', normalizedResult);
+          setError(normalizedResult?.message || 'Purchase failed. Please try again.');
           return;
         }
+
+        // Use the normalized result for the rest of the flow
+        result = normalizedResult;
 
         // Send confirmation email for merch
         if (result.order_id) {
@@ -621,8 +637,20 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         }
       }
 
-      // Success! Clear form and show success message
-      setMessage(`Successfully purchased ${selectedItem.name}! Your order has been placed and a confirmation email has been sent.`);
+      // Success! Log the successful purchase with all details
+      console.log('[HeartCoinModal] Purchase complete:', {
+        order_id: result.order_id,
+        heartcoins_before: result.heartcoins_before,
+        heartcoins_after: result.heartcoins_after,
+        amount_spent: result.amount_spent
+      });
+
+      // Show success message with new balance if available
+      const balanceInfo = result.heartcoins_after != null
+        ? ` Your new balance is ${result.heartcoins_after} HeartCoins.`
+        : '';
+      setMessage(`Successfully purchased ${selectedItem.name}!${balanceInfo} Your order has been placed and a confirmation email has been sent.`);
+
       setShowShippingForm(false);
       setSelectedItem(null);
       setShippingInfo({
@@ -635,12 +663,12 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         country: 'United States'
       });
       setValidationErrors({});
-      
+
       // Refresh profile to update HeartCoin balance
       await refreshProfile();
-      
+
     } catch (error: any) {
-      console.error('Purchase error:', error);
+      console.error('[HeartCoinModal] Purchase error:', error);
       setError(error?.message || `Failed to purchase ${selectedItem.name}`);
     } finally {
       setModalLoading(false);

@@ -39,16 +39,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`[PURCHASE] User ${user.id} attempting purchase ${quantity}x of merch ${merchItemId}`);
+    console.log('[PURCHASE] Attempting purchase:', { merch_item_id: merchItemId, qty: quantity, user_id: user.id });
 
-    // Call the secure RPC function that uses database as source of truth
-    // Primary path: use the secure RPC overload
-    const { data: result, error: rpcError } = await supabase
-      .rpc('purchase_item_with_heartcoins', {
-        p_user_id: user.id,
+    // Call the secure RPC function - it gets user from auth context
+    const { data: rpcData, error: rpcError } = await supabase
+      .rpc('purchase_merch_with_heartcoins', {
         p_merch_item_id: merchItemId,
-        p_quantity: quantity,
+        p_qty: quantity,
       });
+
+    // Handle array return shape from TABLE-returning function
+    const result = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+
+    console.log('[PURCHASE] RPC response:', { error: rpcError, result });
 
     if (rpcError) {
       console.error('[PURCHASE] RPC Error:', rpcError);
@@ -100,11 +103,12 @@ export async function POST(request: NextRequest) {
       // Graceful fallback: only if function missing or schema cache issues
       if (
         rpcError.message?.includes('Could not find the function') ||
+        rpcError.message?.includes('purchase_merch_with_heartcoins') ||
         rpcError.message?.includes('schema cache') ||
         rpcError.message?.toLowerCase?.().includes('function not found') ||
         rpcError.message?.toLowerCase?.().includes('rpc not available')
       ) {
-        console.warn('[PURCHASE] RPC missing; using manual fallback flow');
+        console.warn('[PURCHASE] RPC purchase_merch_with_heartcoins missing; using manual fallback flow');
 
         // 1) Fetch merch item details and validate availability
         const { data: merchItem, error: merchError } = await supabase
@@ -348,6 +352,21 @@ export async function POST(request: NextRequest) {
         amount_spent: Number((r as any).amount_spent ?? 0),
       };
     })();
+
+    console.log('[PURCHASE] Normalized result:', normalized);
+
+    // If the RPC returned success: false, treat as an error
+    if (!normalized.success) {
+      console.error('[PURCHASE] RPC returned failure:', normalized);
+      return NextResponse.json(
+        {
+          error: normalized.message || 'Purchase failed',
+          errorCode: 'PURCHASE_FAILED',
+          ...normalized
+        },
+        { status: 400 }
+      );
+    }
 
     console.log(`[PURCHASE] Success - Order ${normalized.order_id} created for user ${user.id}`);
 

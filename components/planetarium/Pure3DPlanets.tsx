@@ -66,7 +66,7 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
     controls.minDistance = 15;
     controls.maxDistance = 100;
     controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.3;
+    controls.autoRotateSpeed = 0.1;
 
     // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
@@ -111,10 +111,10 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
     // Orbiting planets evenly spaced (90 degrees apart) around the sun
     const orbitRadius = 18;
     const planets = [
-      { id: 'heart', texture: '/textures/planet_heart.webp', pos: [orbitRadius, 0, 0] as [number, number, number], speed: 0.3, glow: 0xff6b9d },           // 0° - pink
-      { id: 'water', texture: '/textures/planet_water.webp', pos: [0, 0, orbitRadius] as [number, number, number], speed: 0.3, glow: 0x4fc3f7 },           // 90° - blue
-      { id: 'lightning', texture: '/textures/planet_lightning.webp', pos: [-orbitRadius, 0, 0] as [number, number, number], speed: 0.3, glow: 0xffeb3b },  // 180° - yellow
-      { id: 'darkness', texture: '/textures/planet_darkness.webp', pos: [0, 0, -orbitRadius] as [number, number, number], speed: 0.3, glow: 0x9c27b0 }     // 270° - purple
+      { id: 'heart', texture: '/textures/planet_heart.webp', pos: [orbitRadius, 0, 0] as [number, number, number], speed: 0.08, glow: 0xff6b9d },           // 0° - pink
+      { id: 'water', texture: '/textures/planet_water.webp', pos: [0, 0, orbitRadius] as [number, number, number], speed: 0.08, glow: 0x4fc3f7 },           // 90° - blue
+      { id: 'lightning', texture: '/textures/planet_lightning.webp', pos: [-orbitRadius, 0, 0] as [number, number, number], speed: 0.08, glow: 0xffeb3b },  // 180° - yellow
+      { id: 'darkness', texture: '/textures/planet_darkness.webp', pos: [0, 0, -orbitRadius] as [number, number, number], speed: 0.08, glow: 0x9c27b0 }     // 270° - purple
     ];
 
     const orbitGroups: { group: THREE.Group; speed: number }[] = [];
@@ -167,14 +167,16 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
           const songZ = Math.sin(angle) * songOrbitRadius;
 
           const songSlug = song.slug || song.id;
-          console.log(`Adding song sphere: ${song.title} (${songSlug}) orbiting ${p.id}`);
-          // Create colored sphere matching element color
-          const songSphere = createSongSphere(p.glow, 1.2, [songX, 0, songZ]);
+          const isReleased = song.is_released !== false; // Default to released if not specified
+          const sphereColor = isReleased ? p.glow : 0x666666; // Grey for unreleased
+
+          console.log(`Adding song sphere: ${song.title} (${songSlug}) orbiting ${p.id} - ${isReleased ? 'released' : 'unreleased'}`);
+          const songSphere = createSongSphere(sphereColor, 1.2, [songX, 0, songZ]);
           songGroup.add(songSphere);
         });
 
         group.add(songGroup);
-        songOrbitGroups.push({ group: songGroup, speed: 0.8 });
+        songOrbitGroups.push({ group: songGroup, speed: 0.15 });
       }
 
       scene.add(group);
@@ -202,6 +204,10 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
     const mouse = new THREE.Vector2();
 
     const handleClick = (event: MouseEvent) => {
+      // Stop event from bubbling up to parent elements (prevents HUD toggle)
+      event.stopPropagation();
+      event.preventDefault();
+
       const rect = container.getBoundingClientRect();
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -224,7 +230,13 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
       }
     };
 
+    // Prevent clicks from bubbling to parent
+    const handleMouseDown = (event: MouseEvent) => {
+      event.stopPropagation();
+    };
+
     container.addEventListener('click', handleClick);
+    container.addEventListener('mousedown', handleMouseDown);
 
     // Animation loop
     let animationId: number;
@@ -269,6 +281,7 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
       cancelAnimationFrame(animationId);
       window.removeEventListener('resize', handleResize);
       container.removeEventListener('click', handleClick);
+      container.removeEventListener('mousedown', handleMouseDown);
       controls.dispose();
       renderer.dispose();
       if (container.contains(renderer.domElement)) {

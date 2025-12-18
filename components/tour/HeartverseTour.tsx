@@ -474,20 +474,15 @@ function TourOverlay() {
                 
                 // Position tooltip well to the right with sufficient margin
                 const isMobile = viewportWidth <= 768;
-                const marginFromMenu = isMobile ? 30 : 50;
-                
-                // Calculate left position with more generous spacing
-                left = menuRightEdge + marginFromMenu + scrollLeft;
-                
-                // For mobile screens, ensure we don't exceed viewport bounds
-                if (isMobile) {
-                  const maxLeft = viewportWidth - 300; // Reserve 300px for tooltip
-                  left = Math.min(left, maxLeft);
-                }
-                
+                const marginFromMenu = isMobile ? 16 : 50;
+
+                // Calculate left position - ALWAYS stay to the right of the menu
+                const minLeft = menuRightEdge + marginFromMenu + scrollLeft;
+                left = minLeft;
+
                 // Center tooltip vertically relative to the menu item
                 top = rect.top + scrollTop + (rect.height / 2);
-                
+
                 console.log(`Tour: Positioning menu step at left: ${left}, menu right edge: ${menuRightEdge}, viewport width: ${viewportWidth}, margin: ${marginFromMenu}`);
               } else {
                 top += rect.height / 2;
