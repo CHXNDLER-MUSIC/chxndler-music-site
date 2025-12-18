@@ -3,6 +3,7 @@
 import React from 'react';
 import Pure3DPlanets from './Pure3DPlanets';
 import { useSongs } from '@/hooks/useSongs';
+import { useFocusElementOfDay } from '@/hooks/useFocusElementOfDay';
 
 interface ClientPlanetSceneProps {
   zoomLevel: number;
@@ -28,6 +29,7 @@ export default function ClientPlanetScene({
   worldId
 }: ClientPlanetSceneProps) {
   const { songs, songsByElement, loading, error } = useSongs();
+  const { focusElement } = useFocusElementOfDay();
   const quality = getDeviceQuality();
 
   console.log('ClientPlanetScene render:', { loading, error: error?.message, songsCount: songs.length, quality });
@@ -63,6 +65,7 @@ export default function ClientPlanetScene({
       zoomLevel={zoomLevel}
       onPlanetSelect={onPlanetSelect}
       quality={quality}
+      focusElement={focusElement}
     />
   );
 }

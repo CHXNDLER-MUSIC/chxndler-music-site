@@ -55,6 +55,24 @@ export default function SkyboxVideo({
   const flyEndCalledRef = useRef(false);
   const firstRunRef = useRef(true);
   const warpSoundPlayingRef = useRef(false);
+  // Track when warp audio has finished (for coordinating with visual timing)
+  const warpAudioFinishedRef = useRef(false);
+  // Track when min duration timer has elapsed
+  const minDurationElapsedRef = useRef(false);
+  // Stable ref for onWarpSfxEnd callback
+  const onWarpSfxEndRef = useRef(onWarpSfxEnd);
+  React.useEffect(() => { onWarpSfxEndRef.current = onWarpSfxEnd; }, [onWarpSfxEnd]);
+  // Track if onWarpSfxEnd has been called (prevent double calls)
+  const warpSfxEndCalledRef = useRef(false);
+
+  // Helper to check if we should fire onWarpSfxEnd (both audio and visual must be done)
+  const maybeFireWarpSfxEnd = () => {
+    if (warpSfxEndCalledRef.current) return; // Already called
+    if (!warpAudioFinishedRef.current) return; // Audio not done yet
+    if (!minDurationElapsedRef.current) return; // Visual not done yet
+    warpSfxEndCalledRef.current = true;
+    try { onWarpSfxEndRef.current && onWarpSfxEndRef.current(); } catch {}
+  };
   // Stable refs for callback props to avoid effect thrash on each render
   const onFlyEndRef = useRef(onFlyEnd);
   const onBasePlayingRef = useRef(onBasePlaying);
@@ -125,6 +143,10 @@ export default function SkyboxVideo({
     try {
       setShowLightspeed(true);
       lsStartRef.current = Date.now();
+      // Reset coordination refs for new warp
+      warpAudioFinishedRef.current = false;
+      minDurationElapsedRef.current = false;
+      warpSfxEndCalledRef.current = false;
       const v = lsRef.current;
       if (v) { try { v.currentTime = 0; } catch {} void v.play().catch(()=>{}); }
       // Delay warp SFX slightly to sync with lightspeed video, and notify when it ends
@@ -133,14 +155,18 @@ export default function SkyboxVideo({
           warpSoundPlayingRef.current = true;
           sfx.playAndWait('warp', 0.7).then(() => {
             warpSoundPlayingRef.current = false;
-            try { onWarpSfxEnd && onWarpSfxEnd(); } catch {}
-          }).catch(() => { 
+            // Mark audio as finished and check if we can fire onWarpSfxEnd
+            warpAudioFinishedRef.current = true;
+            maybeFireWarpSfxEnd();
+          }).catch(() => {
             warpSoundPlayingRef.current = false;
-            try { onWarpSfxEnd && onWarpSfxEnd(); } catch {} 
+            warpAudioFinishedRef.current = true;
+            maybeFireWarpSfxEnd();
           });
-        } catch { 
+        } catch {
           warpSoundPlayingRef.current = false;
-          try { onWarpSfxEnd && onWarpSfxEnd(); } catch {} 
+          warpAudioFinishedRef.current = true;
+          maybeFireWarpSfxEnd();
         }
       }, 100);
       flyEndCalledRef.current = false;
@@ -153,6 +179,9 @@ export default function SkyboxVideo({
           lsTimerRef.current = undefined;
           if (!flyEndCalledRef.current && onFlyEndRef.current) { try { onFlyEndRef.current(); } catch {} }
           flyEndCalledRef.current = true;
+          // Mark min duration as elapsed and check if we can fire onWarpSfxEnd
+          minDurationElapsedRef.current = true;
+          maybeFireWarpSfxEnd();
         }, Math.max(0, minDurationMs));
       } else {
         // When holding for readiness, ensure overlay remains until readyToReveal becomes true
@@ -172,6 +201,10 @@ export default function SkyboxVideo({
     try {
       setShowLightspeed(true);
       lsStartRef.current = Date.now();
+      // Reset coordination refs for new warp
+      warpAudioFinishedRef.current = false;
+      minDurationElapsedRef.current = false;
+      warpSfxEndCalledRef.current = false;
       // Start lightspeed overlay video only when using local MP4 overlay
       if (!lsYtEmbedUrl) {
         const v = lsRef.current;
@@ -183,14 +216,18 @@ export default function SkyboxVideo({
           warpSoundPlayingRef.current = true;
           sfx.playAndWait('warp', 0.7).then(() => {
             warpSoundPlayingRef.current = false;
-            try { onWarpSfxEnd && onWarpSfxEnd(); } catch {}
-          }).catch(() => { 
+            // Mark audio as finished and check if we can fire onWarpSfxEnd
+            warpAudioFinishedRef.current = true;
+            maybeFireWarpSfxEnd();
+          }).catch(() => {
             warpSoundPlayingRef.current = false;
-            try { onWarpSfxEnd && onWarpSfxEnd(); } catch {} 
+            warpAudioFinishedRef.current = true;
+            maybeFireWarpSfxEnd();
           });
-        } catch { 
+        } catch {
           warpSoundPlayingRef.current = false;
-          try { onWarpSfxEnd && onWarpSfxEnd(); } catch {} 
+          warpAudioFinishedRef.current = true;
+          maybeFireWarpSfxEnd();
         }
       }, 100);
       if (!holdLightspeed) {
@@ -198,6 +235,9 @@ export default function SkyboxVideo({
         lsTimerRef.current = window.setTimeout(() => {
           setShowLightspeed(false);
           lsTimerRef.current = undefined;
+          // Mark min duration as elapsed and check if we can fire onWarpSfxEnd
+          minDurationElapsedRef.current = true;
+          maybeFireWarpSfxEnd();
         }, Math.max(0, minDurationMs));
       } else {
         if (lsTimerRef.current !== undefined) { window.clearTimeout(lsTimerRef.current); lsTimerRef.current = undefined; }
@@ -220,6 +260,9 @@ export default function SkyboxVideo({
       lsTimerRef.current = undefined;
       if (!flyEndCalledRef.current && onFlyEndRef.current) { try { onFlyEndRef.current(); } catch {} }
       flyEndCalledRef.current = true;
+      // Mark min duration as elapsed and check if we can fire onWarpSfxEnd
+      minDurationElapsedRef.current = true;
+      maybeFireWarpSfxEnd();
     }, remain);
   }, [holdLightspeed, readyToReveal, showLightspeed, minDurationMs]);
 

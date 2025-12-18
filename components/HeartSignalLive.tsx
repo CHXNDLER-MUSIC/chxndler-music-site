@@ -97,6 +97,23 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
 
     setTogglingReactions(prev => new Set(prev).add(toggleKey));
 
+    // Play reaction sound
+    try {
+      const audioMap: Record<EmojiType, string> = {
+        heart: '/audio/heart-pulse.MP3',
+        water: '/audio/water-ripple.MP3',
+        lightning: '/audio/lightning-spark.MP3',
+        darkness: '/audio/shadow-glow.MP3',
+        alien: '/audio/alien-wave.MP3',
+      };
+      const src = audioMap[emoji];
+      if (src) {
+        const audio = new Audio(src);
+        audio.volume = 0.5;
+        audio.play().catch(() => {});
+      }
+    } catch {}
+
     // Optimistic update
     const wasReacted = userReactions.get(messageId)?.has(emoji) || false;
     const countField = `${emoji}_count` as keyof HeartSignalMessage;

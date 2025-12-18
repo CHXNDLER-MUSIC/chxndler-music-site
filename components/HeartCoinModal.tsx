@@ -12,6 +12,8 @@ import { useMerchItems } from '@/hooks/useMerchItems';
 import { useMerchPurchase } from '@/hooks/useMerchPurchase';
 import { MerchItem } from '@/types/merch';
 import TiltSpinCard from '@/components/TiltSpinCard';
+import { usePlanetRewardsContext } from '@/components/PlanetRewardsProvider';
+import { getElementalPlanetImage } from '@/lib/elementalPlanets';
 
 type Props = {
   open: boolean;
@@ -144,6 +146,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   const { bonusQuests, isLoading: questsLoading } = useBonusQuests();
   const { items: merchItems, loading: merchLoading } = useMerchItems('physical');
   const { purchaseWithHeartCoins, isProcessing } = useMerchPurchase();
+  const { elementOfDay } = usePlanetRewardsContext();
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -202,11 +205,13 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   const [isAnimatingFlip, setIsAnimatingFlip] = useState(false); // For smooth flip transition
 
   // Element selection and internal cards state for CARDS tab
-  const [selectedElement, setSelectedElement] = useState<'LIGHTNING' | 'WATER' | 'HEART' | 'VOID' | null>(null);
+  const [selectedElement, setSelectedElement] = useState<'LIGHTNING' | 'WATER' | 'HEART' | 'DARKNESS' | null>(null);
   const [allCards, setAllCards] = useState<any[]>([]);
   const [internalCardIndex, setInternalCardIndex] = useState(0);
   // Ensure we only snap to the element's namesake card once per selection
   const [didInitElementIndex, setDidInitElementIndex] = useState(false);
+  // Ordered list of cards for the selected element
+  const [elementCards, setElementCards] = useState<any[]>([]);
 
   const itemsPerPage = 6;
 
@@ -242,75 +247,109 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       setSelectedElement(null);
       setInternalCardIndex(0);
       setDidInitElementIndex(false);
+      setElementCards([]);
     }
   }, [activeTab]);
 
-  // Filter cards by selected element
-  const filteredCards = selectedElement
-    ? allCards.filter(card => {
-        const cardElement = (card.element || '').toUpperCase();
-        return cardElement === selectedElement;
-      })
-    : [];
+  // Build ordered element cards: element namesake card first
+  const buildOrderedElementCards = (element: 'LIGHTNING' | 'WATER' | 'HEART' | 'DARKNESS', cards: any[]) => {
+    const normalize = (s: string) => (s || '').toUpperCase().trim().replace(/[^A-Z]/g, '');
+    const elementUpper = element.toUpperCase();
+    const elementNorm = normalize(element);
+    const filtered = cards.filter(card => ((card.element || '').toUpperCase()) === elementUpper);
+    if (filtered.length === 0) return [];
 
-  // Use internal cards when element is selected, otherwise use props
-  const displayCards = selectedElement ? filteredCards : availableCards;
+    // Helper to get all possible name fields from a card
+    const getCardNames = (card: any): string[] => {
+      const names: string[] = [];
+      if (card.card_name) names.push(normalize(card.card_name));
+      if (card.title) names.push(normalize(card.title));
+      if (card.name) names.push(normalize(card.name));
+      if (card.cards?.card_name) names.push(normalize(card.cards.card_name));
+      if (card.cards?.title) names.push(normalize(card.cards.title));
+      return names;
+    };
+
+    // First try exact match on any name field
+    let idx = filtered.findIndex(card => getCardNames(card).some(n => n === elementNorm));
+    // Then try partial match (contains element name)
+    if (idx < 0) idx = filtered.findIndex(card => getCardNames(card).some(n => n.includes(elementNorm)));
+
+    if (idx <= 0) return filtered;
+    return [...filtered.slice(idx), ...filtered.slice(0, idx)];
+  };
+
+  // Use internal ordered element cards when selected, otherwise props
+  const displayCards = selectedElement ? elementCards : availableCards;
   const displayCardIndex = selectedElement ? internalCardIndex : currentCardIndex;
 
   // Helper: find the index of the primary element card (e.g. WATER) within the filtered list
-  const getPrimaryElementCardIndex = (element: 'LIGHTNING' | 'WATER' | 'HEART' | 'VOID') => {
+  const getPrimaryElementCardIndex = (element: 'LIGHTNING' | 'WATER' | 'HEART' | 'DARKNESS') => {
     const normalize = (s: string) => (s || '').toUpperCase().trim().replace(/[^A-Z]/g, '');
     const elementNorm = normalize(element);
     const elementUpper = element.toUpperCase();
     const cardsForElement = allCards.filter(card => (card.element || '').toUpperCase() === elementUpper);
     if (cardsForElement.length === 0) return 0;
 
+    // Helper to get all possible name fields from a card
+    const getCardNames = (card: any): string[] => {
+      const names: string[] = [];
+      if (card.card_name) names.push(normalize(card.card_name));
+      if (card.title) names.push(normalize(card.title));
+      if (card.name) names.push(normalize(card.name));
+      if (card.cards?.card_name) names.push(normalize(card.cards.card_name));
+      if (card.cards?.title) names.push(normalize(card.cards.title));
+      return names;
+    };
+
     // Prefer exact normalized match (e.g., 'WATER', 'HEART')
-    let idx = cardsForElement.findIndex(card => normalize(card.card_name || card.cards?.card_name || '') === elementNorm);
+    let idx = cardsForElement.findIndex(card => getCardNames(card).some(n => n === elementNorm));
     if (idx >= 0) return idx;
 
     // Next, prefer names that contain the element label (e.g., '💧 WATER')
-    idx = cardsForElement.findIndex(card => normalize(card.card_name || card.cards?.card_name || '').includes(elementNorm));
+    idx = cardsForElement.findIndex(card => getCardNames(card).some(n => n.includes(elementNorm)));
     return idx >= 0 ? idx : 0;
   };
 
   // Handle element selection
-  const handleElementSelect = (element: 'LIGHTNING' | 'WATER' | 'HEART' | 'VOID') => {
+  const handleElementSelect = (element: 'LIGHTNING' | 'WATER' | 'HEART' | 'DARKNESS') => {
     try { sfx.play('select', 0.5); } catch {}
     setSelectedElement(element);
-    // Reset init flag so once cards are (re)loaded we snap correctly
+    // Build & set ordered element cards immediately if available
+    // buildOrderedElementCards puts the namesake card first (index 0)
+    const orderedNow = buildOrderedElementCards(element, allCards);
+    setElementCards(orderedNow);
     setDidInitElementIndex(false);
-    // Prefer showing the element's namesake card first if it exists (works if cards are already loaded)
-    setInternalCardIndex(getPrimaryElementCardIndex(element));
+    // Set to index 0 since buildOrderedElementCards puts namesake first
+    setInternalCardIndex(0);
   };
 
   // Handle dropdown change
   const handleElementDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value as 'LIGHTNING' | 'WATER' | 'HEART' | 'VOID';
+    const value = e.target.value as 'LIGHTNING' | 'WATER' | 'HEART' | 'DARKNESS';
     setSelectedElement(value);
+    // buildOrderedElementCards puts the namesake card first (index 0)
+    const orderedNow = buildOrderedElementCards(value, allCards);
+    setElementCards(orderedNow);
     setDidInitElementIndex(false);
-    // Prefer showing the element's namesake card first if it exists (works if cards are already loaded)
-    setInternalCardIndex(getPrimaryElementCardIndex(value));
+    // Set to index 0 since buildOrderedElementCards puts namesake first
+    setInternalCardIndex(0);
   };
 
   // After cards load for the selected element, snap to the element's namesake card once
   useEffect(() => {
     if (!selectedElement) return;
     if (didInitElementIndex) return;
-    if (filteredCards.length === 0) return;
+    // Rebuild ordered list when cards first load/change
+    // buildOrderedElementCards puts the namesake card first (index 0)
+    const ordered = buildOrderedElementCards(selectedElement, allCards);
+    setElementCards(ordered);
+    if (ordered.length === 0) return;
 
-    const normalize = (s: string) => (s || '').toUpperCase().trim().replace(/[^A-Z]/g, '');
-    const elementNorm = normalize(selectedElement);
-    let idx = filteredCards.findIndex(card => normalize(card.card_name || card.cards?.card_name || '') === elementNorm);
-    if (idx < 0) {
-      idx = filteredCards.findIndex(card => normalize(card.card_name || card.cards?.card_name || '').includes(elementNorm));
-    }
-    const targetIndex = idx >= 0 ? idx : 0;
-    if (internalCardIndex !== targetIndex) {
-      setInternalCardIndex(targetIndex);
-    }
+    // Set to index 0 since buildOrderedElementCards puts namesake first
+    if (internalCardIndex !== 0) setInternalCardIndex(0);
     setDidInitElementIndex(true);
-  }, [selectedElement, filteredCards.length]);
+  }, [selectedElement, allCards.length]);
 
   // Handle back to element selection
   const handleBackToElementSelection = () => {
@@ -889,9 +928,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     setIsEnlargedCardFlipped(false);
 
     // If element is selected, use internal navigation
-    if (selectedElement && filteredCards.length > 0) {
+    if (selectedElement && displayCards.length > 0) {
       setInternalCardIndex(prev =>
-        prev <= 0 ? filteredCards.length - 1 : prev - 1
+        prev <= 0 ? displayCards.length - 1 : prev - 1
       );
     } else if (availableCards.length > 1 && onCardNavigation) {
       onCardNavigation('prev');
@@ -903,9 +942,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     setIsEnlargedCardFlipped(false);
 
     // If element is selected, use internal navigation
-    if (selectedElement && filteredCards.length > 0) {
+    if (selectedElement && displayCards.length > 0) {
       setInternalCardIndex(prev =>
-        prev >= filteredCards.length - 1 ? 0 : prev + 1
+        prev >= displayCards.length - 1 ? 0 : prev + 1
       );
     } else if (availableCards.length > 1 && onCardNavigation) {
       onCardNavigation('next');
@@ -1042,23 +1081,26 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         {activeTab === 'earn' ? (
           <div className="flex flex-col flex-1 h-full">
             <div className="text-center mb-4">
-              <p className="text-white/80 text-sm">
-                {showHeartCoinDescription
-                  ? "HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting and showing up. They represent your engagement with the community and can be used to unlock special content, purchase exclusive items, and access unique experiences within the Heartverse ecosystem."
-                  : "HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting and showing up."
-                }
-              </p>
+              {showHeartCoinDescription ? (
+                <div className="text-white/80 text-sm leading-relaxed space-y-2">
+                  <p>HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting, and showing up.</p>
+                  <p>Complete quests. Attend community events. Engage with the Heartverse.</p>
+                  <p>Use your HeartCoins to unlock collectibles and cards, and deepen your place in the community.</p>
+                </div>
+              ) : (
+                <p className="text-white/80 text-sm">HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting, and showing up.</p>
+              )}
             </div>
 
             {/* Quest Content */}
             {activeEarnTab === 'DAILY QUESTS' ? (
               <div className="flex flex-col flex-1 w-full gap-3 h-full">
                 {/* Element of the Day Quest */}
-                <div className="w-full bg-black/20 rounded-lg p-4 border border-white/10 flex-1">
-                  <div className="flex items-center justify-between h-full w-full">
+                <div className="w-full bg-black/20 rounded-lg p-4 border border-white/10 flex-shrink-0">
+                  <div className="flex items-center justify-between w-full">
                     <div className="flex items-center gap-4 flex-1 min-w-0">
                       <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center flex-shrink-0">
-                        <img src="/elements/earth.webp" alt="Element" className="w-8 h-8" />
+                        <img src={getElementalPlanetImage(elementOfDay || 'heart') || '/textures/planet_heart.webp'} alt={`${elementOfDay || 'heart'} element`} className="w-8 h-8 rounded-full object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="text-white font-semibold text-base mb-1">1. Tap the Element of the Day</h3>
@@ -1075,7 +1117,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
                 {/* Journal Entry Quest */}
                 <div className="w-full bg-black/20 rounded-lg p-4 border border-white/10 flex-1">
-                  <div className="flex items-center justify-between h-full w-full">
+                  <div className="flex items-start justify-between w-full h-full">
                     <div className="flex items-center gap-4 flex-1 min-w-0">
                       <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center flex-shrink-0">
                         <svg className="w-7 h-7 text-white/60" fill="currentColor" viewBox="0 0 20 20">
@@ -1503,7 +1545,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   <option value="LIGHTNING">LIGHTNING</option>
                   <option value="WATER">WATER</option>
                   <option value="HEART">HEART</option>
-                  <option value="VOID">VOID</option>
+                  <option value="DARKNESS">DARKNESS</option>
                 </select>
               </div>
             </div>
@@ -1514,10 +1556,16 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               <button
                 onClick={handlePrevCard}
                 onMouseEnter={() => {
-                  try { sfx.play('hover', 0.3); } catch {}
+                  if (displayCards.length > 1) {
+                    try { sfx.play('hover', 0.3); } catch {}
+                  }
                 }}
-                disabled={false}
-                className={`absolute left-4 top-1/2 transform -translate-y-1/2 z-10 w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 border-2 bg-black/70 hover:bg-black/90 border-white/30 hover:border-white/60 text-white/70 hover:text-white hover:scale-110`}
+                disabled={displayCards.length <= 1}
+                className={`absolute left-4 top-1/2 transform -translate-y-1/2 z-20 w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 border-2 ${
+                  displayCards.length > 1
+                    ? 'bg-black/70 hover:bg-black/90 border-white/50 hover:border-white/80 text-white hover:text-white hover:scale-110 cursor-pointer'
+                    : 'bg-black/40 border-white/20 text-white/30 cursor-not-allowed'
+                }`}
                 style={{
                   backdropFilter: 'blur(8px)'
                 }}
@@ -1625,10 +1673,16 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               <button
                 onClick={handleNextCard}
                 onMouseEnter={() => {
-                  try { sfx.play('hover', 0.3); } catch {}
+                  if (displayCards.length > 1) {
+                    try { sfx.play('hover', 0.3); } catch {}
+                  }
                 }}
-                disabled={false}
-                className={`absolute right-4 top-1/2 transform -translate-y-1/2 z-10 w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 border-2 bg-black/70 hover:bg-black/90 border-white/30 hover:border-white/60 text-white/70 hover:text-white hover:scale-110`}
+                disabled={displayCards.length <= 1}
+                className={`absolute right-4 top-1/2 transform -translate-y-1/2 z-20 w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 border-2 ${
+                  displayCards.length > 1
+                    ? 'bg-black/70 hover:bg-black/90 border-white/50 hover:border-white/80 text-white hover:text-white hover:scale-110 cursor-pointer'
+                    : 'bg-black/40 border-white/20 text-white/30 cursor-not-allowed'
+                }`}
                 style={{
                   backdropFilter: 'blur(8px)'
                 }}
@@ -1700,19 +1754,19 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 </div>
               </div>
 
-              {/* Void/Air Element */}
+              {/* Darkness Element */}
               <div
                 className="relative group cursor-pointer"
-                onClick={() => handleElementSelect('VOID')}
+                onClick={() => handleElementSelect('DARKNESS')}
                 onMouseEnter={() => {
                   try { sfx.play('change-channel', 0.5); } catch {}
                 }}
               >
-                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-gray-400/20 to-gray-600/20 rounded-full border-2 border-gray-400/40 flex items-center justify-center transition-all duration-300 hover:border-gray-300 hover:shadow-[0_0_20px_rgba(128,128,128,0.6)] hover:scale-105">
-                  <div className="w-12 h-12 rounded-full border-2 border-gray-400 bg-gradient-to-br from-transparent to-gray-500/20" />
+                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-purple-900/30 to-black/40 rounded-full border-2 border-purple-600/40 flex items-center justify-center transition-all duration-300 hover:border-purple-400 hover:shadow-[0_0_20px_rgba(138,43,226,0.6)] hover:scale-105">
+                  <div className="w-12 h-12 rounded-full border-2 border-purple-600 bg-gradient-to-br from-transparent to-purple-900/40" />
                 </div>
                 <div className="text-center mt-2">
-                  <span className="text-gray-400 font-bold text-sm">9</span>
+                  <span className="text-purple-400 font-bold text-sm">9</span>
                 </div>
               </div>
 

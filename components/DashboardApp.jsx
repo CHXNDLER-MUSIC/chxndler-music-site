@@ -229,8 +229,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [powerBusy, setPowerBusy] = useState(false);
   const [uiCloseSignal, setUiCloseSignal] = useState(0); // increment to force-close buttons/menus during warp
   // Gate overlay + HUD power-up until Start is pressed (or deep link)
-  // NOTE: uiUnlocked and showOverlayUI now derived from uiPhase below
-  const [allowWarp, setAllowWarp] = useState(!initialSlug); // show lightspeed on opening homepage
+  // NOTE: Do NOT auto-run warp on homepage; only enable after START click or deep link
+  // Deep links will explicitly set allowWarp(true) in the route effect below
+  const [allowWarp, setAllowWarp] = useState(false);
   const [landingMode, setLandingMode] = useState(true); // initial screen state
   const [landingRevealReady, setLandingRevealReady] = useState(false); // when true, allow initial overlay to hide
   const [homeMode, setHomeMode] = useState(!initialSlug); // true when on homepage (no initial slug)
@@ -266,6 +267,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [explicitClose, setExplicitClose] = useState(false); // track when explicitly closing without opening another display
   const [shouldOpenJournal, setShouldOpenJournal] = useState(false); // track when journal should be opened
   const [safariRefreshKey, setSafariRefreshKey] = useState(0); // Safari refresh mechanism
+  // Lock to prevent beam/HUD reveal until button.mp3 finishes
+  const [uiRevealLocked, setUiRevealLocked] = useState(false);
   
   // DEBUG LOGGING HELPER
   const DEBUG = false; // Set to true for detailed logs
@@ -297,9 +300,15 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const setShowOverlayUI = () => { /* no-op: derived from uiPhase */ };
   const setUiUnlocked = () => { /* no-op: derived from uiPhase */ };
   
-  // Legacy state variables - now derived from phase system
-  const warpActive = isWarping; // derive from phase instead of separate state
-  const setWarpActive = () => {}; // no-op since managed by phase system
+  // Track when the warp VISUAL overlay is active (lightspeed effect)
+  // This is separate from uiPhase because the overlay might still be visible
+  // even after phase changes to "landed"
+  const [warpOverlayActive, setWarpOverlayActive] = useState(false);
+
+  // warpActive = true when either in warping phase OR the overlay is still visible
+  // This ensures beam/display don't appear until lightspeed effect actually finishes
+  const warpActive = isWarping || warpOverlayActive;
+  const setWarpActive = (val) => setWarpOverlayActive(val); // now functional
   
   // Debug: Log UI phase changes (only when DEBUG is true)
   useEffect(() => {
@@ -565,6 +574,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const triggerHudPower = React.useCallback((turnOn) => {
     // Prevent HUD/beam/buttons enabling before Start press
     if (!uiUnlocked) return;
+    // Do not allow revealing HUD/beam during warp or while reveal is locked
+    if ((uiPhase === 'warping') || uiRevealLocked) return;
     if (powerBusy) return;
     setPowerBusy(true);
     const turningOn = typeof turnOn === 'boolean' ? turnOn : (!beamEnabled && !showHUD);
@@ -613,7 +624,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         setTimeout(() => { setShowHUD(false); setPowerBusy(false); }, 50); // unmount HUD right after
       }, 150); // Reduced to match faster HUD fade-in timing for consistency
     }
-  }, [powerBusy, beamEnabled, showHUD, uiUnlocked]);
+  }, [powerBusy, beamEnabled, showHUD, uiUnlocked, uiPhase, uiRevealLocked]);
 
 
   function onSongChange(id, options){
@@ -757,6 +768,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // If a warp is already active (or being initiated by Start), avoid stacking warps.
     // Keep the current warp running and let the latest pending selection take effect when it finishes.
     if (!warpActive && !isWarping) {
+      // Mark warp overlay as active immediately before triggering
+      setWarpActive(true);
       // Add a brief delay before triggering warp sequence, allowing for anticipation
       setTimeout(() => {
         // Trigger warp sequence
@@ -1050,6 +1063,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   
   // Handle beam color control with strict mutual exclusion between displays
   const handleBeamToggle = React.useCallback((color) => {
+    // Block any beam/display changes during warp or while reveal is locked
+    if ((uiPhase === 'warping') || uiRevealLocked) return;
     // Allow immediate OFF even during transitions; otherwise guard
     if (beamTransitioning && color !== 'off') return;
     
@@ -1265,7 +1280,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         setBeamTransitioning(false);
       }, BEAM_SWITCH_DELAY_MS);
     }
-  }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose]);
+  }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose, uiPhase, uiRevealLocked]);
 
   // Function to open HeartCoin modal with a specific tab
   const openHeartCoinModal = React.useCallback((tab = 'earn') => {
@@ -1295,12 +1310,16 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
     // Enter warp phase immediately
     setUiPhase("warping");
+    // Prevent any UI reveals until button.mp3 completes
+    setUiRevealLocked(true);
     
     // Hide HUD immediately when warp starts so power button turns off
     setShowHUD(false);
     setBeamEnabled(false);
     setBeamColor('off');
-    
+    // Mark warp overlay as active immediately (onFlyStart will also set this)
+    setWarpActive(true);
+
     // Trigger existing warp visual/audio systems
     setAllowWarp(true);
     setSky(SPACE_SKY);
@@ -1345,7 +1364,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         console.log("🛬 LANDING COMPLETE - Phase updated (beam/HUD handled by onWarpSfxEnd)");
       }
       // Only set phase to landed if not already set by onWarpSfxEnd
-      if (uiPhase !== "landed") {
+      // and only if UI reveal is no longer locked (button.mp3 finished)
+      if (!uiRevealLocked && uiPhase !== "landed") {
         setUiPhase("landed");
       }
       startInFlightRef.current = false;
@@ -1779,13 +1799,14 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           onCloseBlueDisplay={() => setShowHUD(false)}
           onOpenBlueDisplay={() => {
             // Force open blue display without toggle logic
-            if (!showHUD && beamColor === 'blue') {
-              setBeamEnabled(true);
-              setShowHUD(true);
-            } else if (beamColor !== 'blue') {
-              handleBeamToggle('blue');
-            }
-          }}
+          if (uiPhase === 'warping' || uiRevealLocked) { return; }
+          if (!showHUD && beamColor === 'blue') {
+            setBeamEnabled(true);
+            setShowHUD(true);
+          } else if (beamColor !== 'blue') {
+            handleBeamToggle('blue');
+          }
+        }}
           onOpenJournal={handleOpenJournal}
           onJournalCompleted={handleJournalCompleted}
           onBeamColorChange={handleBeamToggle}
@@ -1900,8 +1921,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         onDigitalBinderClick={handleDigitalBinderClick}
         onBadgesClick={handleBadgesClick}
         onCloseBlueDisplay={() => setShowHUD(false)}
-        onOpenBlueDisplay={() => {
-          // Force open blue display without toggle logic
+          onOpenBlueDisplay={() => {
+            // Force open blue display without toggle logic
+          if (uiPhase === 'warping' || uiRevealLocked) { return; }
           if (!showHUD && beamColor === 'blue') {
             setBeamEnabled(true);
             setShowHUD(true);
@@ -1964,8 +1986,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         youtubeUrl={(() => {
           const slug = curTrack?.slug;
           const mapped = slug ? youtubeSkyFor(slug) : undefined;
-          // On the homepage, always prefer the space video; do not show a track's video
-          if (homeMode) return isLanded ? HOME_YOUTUBE_SKY : undefined;
+          // On the homepage:
+          // - During intro (before START), show the lightspeed sky
+          // - After landing, switch to the calm space sky
+          if (homeMode) return isLanded ? HOME_YOUTUBE_SKY : 'https://youtu.be/KFssNa5WvKc';
           // Off-home (song view): show the mapped YouTube sky as soon as a selection is happening
           // or after playback has started (ytSkyStartedSlug guard), so users see it right after clicking.
           if (slug && mapped) {
@@ -2060,6 +2084,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               const buttonPromise = sfx.playAndWait('button', 0.9);
               buttonPromise.then(() => {
                 console.log("✅ button.mp3 finished, now opening beam");
+                // Unlock UI reveal now that button.mp3 has finished
+                setUiRevealLocked(false);
                 // After button.mp3 finishes, open the light beam
                 setBeamEnabled(true);
                 setBeamColor('blue');
@@ -2074,26 +2100,139 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                     console.log("🌟 Full UI reveal complete: button.mp3 -> beam -> HUD");
                   }
                 }, 150); // Short delay for beam to open first
+                // If a track play is pending, trigger join SFX and then start the song now
+                if (pendingTrackPlay) {
+                  try {
+                    joinSfxWaitRef.current = sfx.playAndWait('join', 0.9);
+                    if (joinSfxWaitRef.current && typeof joinSfxWaitRef.current.then === 'function') {
+                      joinSfxWaitRef.current.then(() => {
+                        const trackIndex = pendingTrackIndexRef.current;
+                        if (trackIndex !== null && trackIndex >= 0) {
+                          setChannelIdxWithLog(trackIndex);
+                          pendingTrackIndexRef.current = null;
+                        }
+                      }).catch(() => {
+                        const trackIndex = pendingTrackIndexRef.current;
+                        if (trackIndex !== null && trackIndex >= 0) {
+                          setChannelIdxWithLog(trackIndex);
+                          pendingTrackIndexRef.current = null;
+                        }
+                      });
+                    }
+                  } catch {
+                    joinSfxWaitRef.current = null;
+                    const trackIndex = pendingTrackIndexRef.current;
+                    if (trackIndex !== null && trackIndex >= 0) {
+                      setChannelIdxWithLog(trackIndex);
+                      pendingTrackIndexRef.current = null;
+                      setTimeout(() => {
+                        try {
+                          if (!(typeof window !== 'undefined' && (window).__AUDIO_MANAGER_ACTIVE)) {
+                            setPlaySignal((n) => n + 1);
+                          }
+                        } catch {
+                          setPlaySignal((n) => n + 1);
+                        }
+                      }, 100);
+                    }
+                  }
+                }
               }).catch(() => {
                 // Fallback if button SFX fails
                 console.warn("⚠️ button.mp3 failed, opening UI anyway");
+                setUiRevealLocked(false);
                 setBeamEnabled(true);
                 setBeamColor('blue');
                 setWarpActive(false);
                 setTimeout(() => {
                   setShowHUD(true);
                   setUiPhase("landed");
+                  // Also trigger song start if pending
+                  if (pendingTrackPlay) {
+                    try {
+                      joinSfxWaitRef.current = sfx.playAndWait('join', 0.9);
+                      if (joinSfxWaitRef.current && typeof joinSfxWaitRef.current.then === 'function') {
+                        joinSfxWaitRef.current.then(() => {
+                          const trackIndex = pendingTrackIndexRef.current;
+                          if (trackIndex !== null && trackIndex >= 0) {
+                            setChannelIdxWithLog(trackIndex);
+                            pendingTrackIndexRef.current = null;
+                          }
+                        }).catch(() => {
+                          const trackIndex = pendingTrackIndexRef.current;
+                          if (trackIndex !== null && trackIndex >= 0) {
+                            setChannelIdxWithLog(trackIndex);
+                            pendingTrackIndexRef.current = null;
+                          }
+                        });
+                      }
+                    } catch {
+                      joinSfxWaitRef.current = null;
+                      const trackIndex = pendingTrackIndexRef.current;
+                      if (trackIndex !== null && trackIndex >= 0) {
+                        setChannelIdxWithLog(trackIndex);
+                        pendingTrackIndexRef.current = null;
+                        setTimeout(() => {
+                          try {
+                            if (!(typeof window !== 'undefined' && (window).__AUDIO_MANAGER_ACTIVE)) {
+                              setPlaySignal((n) => n + 1);
+                            }
+                          } catch {
+                            setPlaySignal((n) => n + 1);
+                          }
+                        }, 100);
+                      }
+                    }
+                  }
                 }, 150);
               });
             } catch {
               // Ultimate fallback
               console.warn("⚠️ SFX system failed, opening UI directly");
+              setUiRevealLocked(false);
               setBeamEnabled(true);
               setBeamColor('blue');
               setWarpActive(false);
               setTimeout(() => {
                 setShowHUD(true);
                 setUiPhase("landed");
+                // Also trigger song start if pending
+                if (pendingTrackPlay) {
+                  try {
+                    joinSfxWaitRef.current = sfx.playAndWait('join', 0.9);
+                    if (joinSfxWaitRef.current && typeof joinSfxWaitRef.current.then === 'function') {
+                      joinSfxWaitRef.current.then(() => {
+                        const trackIndex = pendingTrackIndexRef.current;
+                        if (trackIndex !== null && trackIndex >= 0) {
+                          setChannelIdxWithLog(trackIndex);
+                          pendingTrackIndexRef.current = null;
+                        }
+                      }).catch(() => {
+                        const trackIndex = pendingTrackIndexRef.current;
+                        if (trackIndex !== null && trackIndex >= 0) {
+                          setChannelIdxWithLog(trackIndex);
+                          pendingTrackIndexRef.current = null;
+                        }
+                      });
+                    }
+                  } catch {
+                    joinSfxWaitRef.current = null;
+                    const trackIndex = pendingTrackIndexRef.current;
+                    if (trackIndex !== null && trackIndex >= 0) {
+                      setChannelIdxWithLog(trackIndex);
+                      pendingTrackIndexRef.current = null;
+                      setTimeout(() => {
+                        try {
+                          if (!(typeof window !== 'undefined' && (window).__AUDIO_MANAGER_ACTIVE)) {
+                            setPlaySignal((n) => n + 1);
+                          }
+                        } catch {
+                          setPlaySignal((n) => n + 1);
+                        }
+                      }, 100);
+                    }
+                  }
+                }
               }, 150);
             }
           };
@@ -2135,53 +2274,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               }
             } catch {}
           }
-          // Kick off join-alien SFX as soon as warp SFX ends so it's definitely
-          // in progress before base sky reports playing (avoids race conditions).
-          if (pendingTrackPlay) {
-            try { 
-              joinSfxWaitRef.current = sfx.playAndWait('join', 0.9); 
-              // Set channel index after join-alien SFX completes
-              if (joinSfxWaitRef.current && typeof joinSfxWaitRef.current.then === 'function') {
-                joinSfxWaitRef.current.then(() => {
-                  // Use the stored track index from when the song was selected
-                  const trackIndex = pendingTrackIndexRef.current;
-                  console.log('🎵 Warp complete, starting selected song:', tracks[trackIndex]?.title);
-                  if (trackIndex !== null && trackIndex >= 0) {
-                    setChannelIdxWithLog(trackIndex);
-                    pendingTrackIndexRef.current = null; // Clear the pending index
-                    // Channel index is set; playback will be handled by onFlyEnd
-                  }
-                }).catch(() => {
-                  // Fallback in case SFX fails
-                  const trackIndex = pendingTrackIndexRef.current;
-                  if (trackIndex !== null && trackIndex >= 0) {
-                    setChannelIdxWithLog(trackIndex);
-                    pendingTrackIndexRef.current = null; // Clear the pending index
-                    // Channel index is set; playback will be handled by onFlyEnd
-                  }
-                });
-              }
-            } catch { 
-              joinSfxWaitRef.current = null; 
-              // Fallback to immediate channel change if SFX setup fails
-              const trackIndex = pendingTrackIndexRef.current;
-              if (trackIndex !== null && trackIndex >= 0) {
-                setChannelIdxWithLog(trackIndex);
-                pendingTrackIndexRef.current = null; // Clear the pending index
-                // Force a play signal after the channel change to ensure the new song plays
-                // Only when the legacy MediaPlayer is responsible for playback.
-                setTimeout(() => {
-                  try {
-                    if (!(typeof window !== 'undefined' && (window).__AUDIO_MANAGER_ACTIVE)) {
-                      setPlaySignal((n) => n + 1);
-                    }
-                  } catch {
-                    setPlaySignal((n) => n + 1);
-                  }
-                }, 100);
-              }
-            }
-          }
+          // Song start is now triggered AFTER button.mp3 finishes and UI reveals
           // If we're landing on home via Start, set up home mode state
           // NOTE: Button.mp3 and beam/HUD reveal are handled by playButtonAndRevealUI() above
           // to ensure proper sequence: warp.mp3 -> button.mp3 -> beam -> HUD
@@ -2656,6 +2749,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   style={{ background:'transparent', zIndex: 30, cursor:'pointer' }}
                   onClick={() => {
                     if (!uiUnlocked) return;
+                    if (uiPhase === 'warping' || uiRevealLocked) return; // block early reveals during warp/button
                     setHomeMode(true);
                     try { playerStore.setState({ mainId: null }); } catch {}
                     // Check if welcome audio is currently playing before disabling

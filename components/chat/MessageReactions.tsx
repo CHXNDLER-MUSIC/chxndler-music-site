@@ -2,7 +2,6 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageReactionCount, ReactionType, REACTION_CONFIG } from '@/lib/reactions';
-import { useState } from 'react';
 import Image from 'next/image';
 
 interface MessageReactionsProps {
@@ -12,8 +11,6 @@ interface MessageReactionsProps {
 }
 
 export default function MessageReactions({ reactions, messageId, className = "" }: MessageReactionsProps) {
-  const [showAll, setShowAll] = useState(false);
-  
   // Convert reactions to sorted array
   const reactionEntries = Object.entries(reactions)
     .filter(([_, count]) => count > 0)
@@ -27,9 +24,8 @@ export default function MessageReactions({ reactions, messageId, className = "" 
     return null;
   }
 
-  const maxVisible = 3;
-  const visibleReactions = showAll ? reactionEntries : reactionEntries.slice(0, maxVisible);
-  const hiddenCount = reactionEntries.length - maxVisible;
+  // Show all 6 reaction types without truncation
+  const visibleReactions = reactionEntries;
 
   return (
     <motion.div
@@ -82,30 +78,6 @@ export default function MessageReactions({ reactions, messageId, className = "" 
           );
         })}
       </AnimatePresence>
-      
-      {/* Show "+N more" if there are hidden reactions */}
-      {!showAll && hiddenCount > 0 && (
-        <motion.button
-          onClick={() => setShowAll(true)}
-          className="px-2 py-1 text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          +{hiddenCount}
-        </motion.button>
-      )}
-      
-      {/* Show "show less" if all are visible */}
-      {showAll && hiddenCount > 0 && (
-        <motion.button
-          onClick={() => setShowAll(false)}
-          className="px-2 py-1 text-xs text-cyan-400/60 hover:text-cyan-300 transition-colors"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          less
-        </motion.button>
-      )}
     </motion.div>
   );
 }

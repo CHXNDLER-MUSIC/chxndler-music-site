@@ -501,26 +501,13 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       // Prevent double-clicks while request is in flight
       if (starringEntryId) return;
 
-      // If already starred by this user, do nothing (no toggle off)
-      if (starredByMe.has(entryId)) return;
-
       setStarringEntryId(entryId);
 
-      // Optimistic update: mark as starred and increment count locally
-      setStarredByMe(prev => new Set(prev).add(entryId));
-      setPublicEntries(prev => prev.map(entry =>
-        entry.entry_id === entryId
-          ? { ...entry, stars_count: (entry.stars_count ?? 0) + 1 }
-          : entry
-      ));
+      const isCurrentlyStarred = starredByMe.has(entryId);
 
-      // Call the RPC to add the star (server is source of truth)
-      const { data, error } = await supabaseBrowser
-        .rpc('toggle_journal_entry_star', { p_entry_id: entryId });
-
-      if (error) {
-        console.error('Error toggling star:', error);
-        // Revert optimistic update on failure
+      // Optimistic update: toggle star state
+      if (isCurrentlyStarred) {
+        // Unstar: remove from set and decrement count
         setStarredByMe(prev => {
           const next = new Set(prev);
           next.delete(entryId);
@@ -531,6 +518,44 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             ? { ...entry, stars_count: Math.max(0, (entry.stars_count ?? 1) - 1) }
             : entry
         ));
+      } else {
+        // Star: add to set and increment count
+        setStarredByMe(prev => new Set(prev).add(entryId));
+        setPublicEntries(prev => prev.map(entry =>
+          entry.entry_id === entryId
+            ? { ...entry, stars_count: (entry.stars_count ?? 0) + 1 }
+            : entry
+        ));
+      }
+
+      // Call the RPC to add the star (server is source of truth)
+      const { data, error } = await supabaseBrowser
+        .rpc('toggle_journal_entry_star', { p_entry_id: entryId });
+
+      if (error) {
+        console.error('Error toggling star:', error);
+        // Revert optimistic update on failure
+        if (isCurrentlyStarred) {
+          // Was unstarring, revert by re-adding star
+          setStarredByMe(prev => new Set(prev).add(entryId));
+          setPublicEntries(prev => prev.map(entry =>
+            entry.entry_id === entryId
+              ? { ...entry, stars_count: (entry.stars_count ?? 0) + 1 }
+              : entry
+          ));
+        } else {
+          // Was starring, revert by removing star
+          setStarredByMe(prev => {
+            const next = new Set(prev);
+            next.delete(entryId);
+            return next;
+          });
+          setPublicEntries(prev => prev.map(entry =>
+            entry.entry_id === entryId
+              ? { ...entry, stars_count: Math.max(0, (entry.stars_count ?? 1) - 1) }
+              : entry
+          ));
+        }
         setStarringEntryId(null);
         return;
       }
@@ -660,12 +685,14 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const elementEmoji = ELEMENT_EMOJIS[currentElement] || "💖";
 
   return (
-    <div 
-      className="fixed inset-0 z-[2147483647] flex items-start justify-center"
-      style={{ 
+    <div
+      className="fixed z-[2147483647] flex items-start justify-center"
+      style={{
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 'var(--light-beam-boundary)',
         paddingTop: '8vh',
-        // Ensure bottom padding accounts for button offset from bottom, its size, and translateY(8px)
-        paddingBottom: 'calc(var(--buttons-bottom, 10%) + var(--power-size-px, 72px) + 160px)',
         paddingLeft: '16px',
         paddingRight: '20px'
       }}
@@ -851,10 +878,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
       {showHistory ? (
         /* Full Log View - Public or Private based on activeTab */
-        <div 
+        <div
           className="w-full max-w-4xl sm:min-w-[460px] mx-auto"
-          style={{ 
-            height: 'calc(100vh - 8vh - var(--buttons-bottom, 10%) - var(--power-size-px, 72px) - 160px)', 
+          style={{
+            height: '100%', 
             overflowY: 'auto', 
             display: 'flex', 
             flexDirection: 'column',
@@ -1024,6 +1051,48 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
+                            {/* Soul Star Button */}
+                            <button
+                              type="button"
+                              className={`flex items-center gap-1 transition-all duration-200 hover:scale-110 px-2 py-1 ${
+                                starringEntryId === entry.entry_id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                              }`}
+                              disabled={starringEntryId === entry.entry_id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                sfx.play('card-ding', 0.45);
+                                handleToggleStar(entry.entry_id);
+                              }}
+                              onMouseEnter={() => {
+                                try { sfx.play('hover', 0.6); } catch {}
+                              }}
+                              style={{
+                                background: 'transparent'
+                              }}
+                            >
+                              <Image
+                                src="/elements/soul-star.webp"
+                                alt="Soul Star"
+                                width={24}
+                                height={24}
+                                style={{
+                                  filter: starredByMe.has(entry.entry_id)
+                                    ? `drop-shadow(0 0 10px ${entryTheme.color}) drop-shadow(0 0 20px ${entryTheme.glow}) brightness(1.3)`
+                                    : `drop-shadow(0 0 6px ${entryTheme.color}) drop-shadow(0 0 10px ${entryTheme.glow}) brightness(1.0)`
+                                }}
+                              />
+                              <span
+                                className="text-sm font-semibold"
+                                style={{
+                                  color: entryTheme.color,
+                                  textShadow: starredByMe.has(entry.entry_id)
+                                    ? `0 0 8px ${entryTheme.glow}, 0 0 12px ${entryTheme.glow}`
+                                    : `0 0 4px ${entryTheme.glow}`
+                                }}
+                              >
+                                {entry.stars_count ?? 0}
+                              </span>
+                            </button>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1267,10 +1336,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                             {/* Soul Star Button */}
                             <button
                               type="button"
-                              className={`flex items-center gap-1 transition-all duration-200 hover:scale-105 px-3 py-1.5 ${
-                                (starringEntryId === entry.entry_id || starredByMe.has(entry.entry_id)) ? 'opacity-50 cursor-not-allowed' : ''
+                              className={`flex items-center gap-1 transition-all duration-200 hover:scale-110 px-3 py-1.5 ${
+                                starringEntryId === entry.entry_id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                               }`}
-                              disabled={starringEntryId === entry.entry_id || starredByMe.has(entry.entry_id)}
+                              disabled={starringEntryId === entry.entry_id}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 sfx.play('card-ding', 0.45);
@@ -1290,16 +1359,16 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                 height={28}
                                 style={{
                                   filter: starredByMe.has(entry.entry_id)
-                                    ? `drop-shadow(0 0 8px ${entryTheme.color}) drop-shadow(0 0 12px ${entryTheme.glow}) brightness(1.2)`
-                                    : `drop-shadow(0 0 4px ${entryTheme.color}) opacity(0.7)`
+                                    ? `drop-shadow(0 0 10px ${entryTheme.color}) drop-shadow(0 0 20px ${entryTheme.glow}) brightness(1.3)`
+                                    : `drop-shadow(0 0 6px ${entryTheme.color}) drop-shadow(0 0 10px ${entryTheme.glow}) brightness(1.0)`
                                 }}
                               />
                               <span
                                 className="text-sm font-semibold"
                                 style={{
-                                  color: starredByMe.has(entry.entry_id) ? entryTheme.color : `${entryTheme.color}99`,
+                                  color: entryTheme.color,
                                   textShadow: starredByMe.has(entry.entry_id)
-                                    ? `0 0 6px ${entryTheme.glow}`
+                                    ? `0 0 8px ${entryTheme.glow}, 0 0 12px ${entryTheme.glow}`
                                     : `0 0 4px ${entryTheme.glow}`
                                 }}
                               >
@@ -1800,12 +1869,12 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         </div>
       ) : (
         /* Today's Journal Interface */
-        <div 
+        <div
           className="w-full max-w-4xl sm:min-w-[460px] mx-auto"
-          style={{ 
-            height: 'calc(100vh - 8vh - var(--buttons-bottom, 10%) - var(--power-size-px, 72px) - 160px)', 
-            overflowY: 'auto', 
-            display: 'flex', 
+          style={{
+            maxHeight: '100%',
+            overflowY: 'auto',
+            display: 'flex',
             flexDirection: 'column',
             background: 'rgba(0, 0, 0, 0.7)',
             border: `1px solid ${elementTheme.color}60`,
@@ -1816,7 +1885,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         >
           {/* Main Entry Card Container */}
           <div
-            className="rounded-lg px-1 pt-2 pb-0 space-y-1 h-full flex flex-col"
+            className="rounded-lg px-1 pt-2 pb-0 space-y-1 flex flex-col"
             style={{
               background: 'rgba(0, 0, 0, 0.7)',
               border: `1px solid ${elementTheme.color}60`,
@@ -2316,10 +2385,13 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       {/* Enlarged Badge Popup Modal - contained within journal panel area */}
       {enlargedBadge && (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center"
+          className="fixed z-50 flex items-start justify-center"
           style={{
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 'var(--light-beam-boundary)',
             paddingTop: '8vh',
-            paddingBottom: 'calc(var(--buttons-bottom, 10%) + var(--power-size-px, 72px) + 160px)',
             paddingLeft: '16px',
             paddingRight: '20px',
           }}

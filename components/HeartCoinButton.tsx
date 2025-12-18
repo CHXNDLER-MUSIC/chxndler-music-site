@@ -12,6 +12,8 @@ import { useMerchItems } from '@/hooks/useMerchItems';
 import { useMerchPurchase } from '@/hooks/useMerchPurchase';
 import { MerchItem } from '@/types/merch';
 import TiltSpinCard from '@/components/TiltSpinCard';
+import { usePlanetRewardsContext } from '@/components/PlanetRewardsProvider';
+import { getElementalPlanetImage } from '@/lib/elementalPlanets';
 
 // Helper function to convert MerchItem to StoreItem for backward compatibility
 const merchItemToStoreItem = (merchItem: MerchItem): StoreItem => ({
@@ -247,7 +249,8 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, onOpenBinder, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, isActive = false, journalCompleted = false, onJournalCompleted, onClose, onBeamColorChange, ...restProps }: Props) {
   const { profile, refreshProfile, setIsJournalOpen } = useProfile();
-  
+  const { elementOfDay } = usePlanetRewardsContext();
+
   // New hooks for database-driven merch
   const { items: merchItems, loading: merchLoading, error: merchError } = useMerchItems('physical');
   const { purchaseWithHeartCoins, updateShipping, isProcessing, error: purchaseError, clearError } = useMerchPurchase();
@@ -795,27 +798,33 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     return (quest.times_completed > 0 && quest.max_total_completions === 1) || completedQuests.has(quest.id);
   };
 
-  // Redeem secret phrase via API (for ATTEND_LIVESTREAM quest)
+  // Redeem secret phrase via Supabase RPC (for ATTEND_LIVESTREAM quest)
   const redeemAttendLivestreamPhrase = async (phrase: string): Promise<{ status: string; reward?: number }> => {
-    const trimmed = phrase.trim();
+    const trimmed = phrase.trim().toLowerCase();
     if (!trimmed) return { status: 'invalid' };
 
     try {
-      const res = await fetch('/api/redeem-secret-phrase', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phrase: trimmed })
+      const { data, error } = await supabaseBrowser.rpc("redeem_daily_secret_phrase", {
+        p_phrase: trimmed
       });
 
-      if (!res.ok) {
-        console.error('ATTEND_LIVESTREAM API error:', res.status, res.statusText);
+      if (error) {
+        console.error("SECRET_PHRASE RPC error:", error);
+        const msg = error.message?.toLowerCase() || '';
+        if (msg.includes('not authenticated')) {
+          return { status: 'not_authenticated' };
+        } else if (msg.includes('invalid phrase')) {
+          return { status: 'invalid' };
+        } else if (msg.includes('already redeemed')) {
+          return { status: 'already_redeemed' };
+        }
         return { status: 'error' };
       }
 
-      const json = await res.json();
+      const row = Array.isArray(data) ? data[0] : data;
       return {
-        status: json?.status || 'error',
-        reward: json?.rewardHeartCoins || json?.reward || json?.awarded || 0
+        status: 'success',
+        reward: row?.granted_amount || 0
       };
     } catch (error) {
       console.error('Error redeeming ATTEND_LIVESTREAM phrase:', error);
@@ -1016,11 +1025,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         return;
       }
 
-      // Handle RPC response statuses
-      const status = data?.status;
+      // Normalize RPC response shape (array or single object)
+      const result = (Array.isArray(data) ? data[0] : data) as { status?: string; awarded?: number; reward?: number } | null;
+      const status = result?.status;
 
-      if (status === 'redeemed') {
-        const reward = data?.reward || 0;
+      if (status === 'success' || status === 'redeemed') {
+        const reward = result?.awarded ?? result?.reward ?? 0;
         setSecretPhraseValue('');
         setSecretPhraseInputVisible(null);
         setCheckInMessage(`Secret phrase accepted! +${reward} HeartCoins`);
@@ -1040,14 +1050,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         }, 3000);
 
         try { sfx.play('click', 0.7); } catch {}
-      } else if (status === 'already_checked_in') {
-        setCheckInMessage('Already checked in today');
+      } else if (status === 'already_redeemed' || status === 'already_checked_in') {
+        setCheckInMessage('Already checked in');
         setStatusType('error');
         setTimeout(() => {
           setCheckInMessage("");
           setStatusType('idle');
         }, 3000);
-      } else if (status === 'incorrect') {
+      } else if (status === 'invalid' || status === 'incorrect') {
         setCheckInMessage('Incorrect secret phrase');
         setStatusType('error');
         setTimeout(() => {
@@ -1063,6 +1073,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         }, 3000);
       } else {
         // Unknown status
+        console.warn('Unknown secret phrase status:', result);
         setCheckInMessage('Failed to redeem secret phrase');
         setStatusType('error');
         setTimeout(() => {
@@ -1123,7 +1134,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   };
 
   const getElementIcon = (element: string) => {
-    return `/elements/${element}.webp`;
+    // Use planet textures for element icons
+    return getElementalPlanetImage(element) || `/textures/planet_${element}.webp`;
   };
 
   const handleElementTap = () => {
@@ -1209,11 +1221,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     }
 
     console.log("Attempting HeartCoin purchase:", {
-      user_id: profile.id,
-      merch_item_id: merchItem.id,
-      item_slug: item.slug,
-      cost: merchItem.price_heartcoins,
-      current_balance: profile.heartcoin_balance
+      userId: profile.id,
+      merchItemId: merchItem.id,
+      priceHeartCoins: merchItem.price_heartcoins,
+      currentBalance: profile.heartcoin_balance
     });
 
     // Clear any previous errors
@@ -1866,10 +1877,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   disabled={dailyQuests.elementTapped}
                   className="flex items-center space-x-1"
                 >
-                  <img 
-                    src={getElementIcon(todaysElement)} 
-                    alt={`${todaysElement} element`}
-                    className="w-8 h-8"
+                  <img
+                    src={getElementIcon(elementOfDay || 'heart')}
+                    alt={`${elementOfDay || 'heart'} element`}
+                    className="w-8 h-8 rounded-full object-cover"
                     style={{
                       filter: dailyQuests.elementTapped ? 'grayscale(1)' : 'drop-shadow(0 0 8px rgba(255,215,0,0.8))'
                     }}

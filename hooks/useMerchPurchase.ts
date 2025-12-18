@@ -12,11 +12,32 @@ export function useMerchPurchase() {
     setIsProcessing(true);
     setError(null);
 
+    // Basic validation: ensure merch_item_id exists
+    if (!merchItem?.id || typeof merchItem.id !== 'string' || merchItem.id.trim() === '') {
+      const validationError = '[useMerchPurchase] Missing merch_item_id (merchItem.id)';
+      console.error(validationError, { merchItem });
+      setError('Invalid item. Please try again.');
+      setIsProcessing(false);
+      return null;
+    }
+
+    // Prepare payload expected by API route (camelCase)
+    const payload: {
+      merchItemId: string;
+      quantity: number;
+      merchItemSlug?: string;
+    } = {
+      merchItemId: merchItem.id,
+      quantity,
+    };
+    if (merchItem.slug) payload.merchItemSlug = merchItem.slug;
+
     // Log before calling RPC
     console.log('[useMerchPurchase] Initiating purchase:', {
-      merch_item_id: merchItem.id,
-      qty: quantity
+      merchItemId: merchItem.id,
+      quantity
     });
+    console.log('[useMerchPurchase] Payload to be sent:', payload);
 
     try {
       console.log('[useMerchPurchase] Making fetch request to /api/merch/purchase');
@@ -28,11 +49,7 @@ export function useMerchPurchase() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            merchItemId: merchItem.id,
-            merchItemSlug: merchItem.slug,
-            quantity
-          }),
+          body: JSON.stringify(payload),
         });
       } catch (fetchError) {
         console.error('[useMerchPurchase] Fetch failed (network error):', fetchError);
@@ -46,7 +63,7 @@ export function useMerchPurchase() {
         contentType: response.headers.get('content-type')
       });
 
-      let result;
+      let result: any;
       try {
         const responseText = await response.text();
         console.log('[useMerchPurchase] Response text (first 500 chars):', responseText.slice(0, 500));
@@ -64,7 +81,14 @@ export function useMerchPurchase() {
       });
 
       if (!response.ok) {
-        throw new Error(result.error || 'Purchase failed');
+        const errorMessage = result?.error || result?.message || 'Purchase failed';
+        // Log the response JSON on failure with the payload we sent
+        console.error('[useMerchPurchase] Purchase failed response JSON:', {
+          payload_sent: payload,
+          response_json: result,
+          status: response.status,
+        });
+        throw new Error(`Purchase failed (${response.status}): ${errorMessage}`);
       }
 
       // Handle array return shape from TABLE-returning RPC
@@ -95,8 +119,8 @@ export function useMerchPurchase() {
         errorType: err?.constructor?.name || typeof err,
         errorMessage,
         errorString: String(err),
-        merch_item_id: merchItem.id,
-        qty: quantity
+        merchItemId: merchItem.id,
+        quantity
       });
 
       // Also log the raw error for debugging
@@ -114,18 +138,33 @@ export function useMerchPurchase() {
     setError(null);
 
     try {
-      const response = await fetch('/api/merch/updateShipping', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(shippingInfo),
-      });
+      let response: Response;
+      try {
+        response = await fetch('/api/merch/updateShipping', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(shippingInfo),
+        });
+      } catch (fetchError) {
+        console.error('[updateShipping] Fetch failed (network error):', fetchError);
+        throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Failed to connect to server'}`);
+      }
 
-      const result = await response.json();
+      // Read response body exactly once using text() then parse
+      let result;
+      try {
+        const responseText = await response.text();
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('[updateShipping] Failed to parse response as JSON:', parseError);
+        throw new Error(`Server returned invalid response: ${parseError instanceof Error ? parseError.message : 'Parse error'}`);
+      }
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to update shipping information');
+        const errorMessage = result?.error || result?.message || 'Failed to update shipping information';
+        throw new Error(`Shipping update failed (${response.status}): ${errorMessage}`);
       }
 
       console.log('Shipping update successful:', result.data);

@@ -232,6 +232,25 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
             </div>
           )}
 
+          {/* Bottom light beam boundary */}
+          <div
+            className="absolute w-full flex-shrink-0"
+            style={{
+              bottom: 0,
+              left: 0,
+              height: '1px',
+              background: headerRuleVariant === 'cyan'
+                ? 'linear-gradient(90deg, transparent, rgba(0,191,255,0.8) 20%, rgba(0,191,255,1) 50%, rgba(0,191,255,0.8) 80%, transparent)'
+                : 'linear-gradient(90deg, transparent, rgba(255,105,180,0.8) 20%, rgba(255,105,180,1) 50%, rgba(255,105,180,0.8) 80%, transparent)',
+              boxShadow: headerRuleVariant === 'cyan'
+                ? '0 0 8px rgba(0,191,255,0.8), 0 0 15px rgba(0,191,255,0.5)'
+                : '0 0 8px rgba(255,105,180,0.8), 0 0 15px rgba(255,105,180,0.5)',
+              zIndex: 50,
+              borderRadius: '0 0 14px 14px',
+              pointerEvents: 'none'
+            }}
+          />
+
           {/* Full overlay - covers entire popout including header */}
           {fullOverlay && (
             <div

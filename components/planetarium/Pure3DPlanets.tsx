@@ -331,13 +331,14 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
       darkness: new THREE.Vector3(0, sunY, -orbitRadius),   // -Z axis
     };
 
-    // Define optimal camera positions for viewing each element
-    // Camera is positioned behind and above the element, looking toward center
+    // Define optimal camera positions for viewing each element (CLOSER for focus planet effect)
+    // Camera is positioned behind and above the element, looking toward the planet
+    // Distance from planet is ~13 units for a close-up view of the focus planet
     const elementCameraPositions: Record<ElementType, THREE.Vector3> = {
-      heart: new THREE.Vector3(35, 25, 15),       // Behind +X, slightly offset in Z
-      water: new THREE.Vector3(15, 25, 35),       // Behind +Z, slightly offset in X
-      lightning: new THREE.Vector3(-35, 25, 15),  // Behind -X, slightly offset in Z
-      darkness: new THREE.Vector3(15, 25, -35),   // Behind -Z, slightly offset in X
+      heart: new THREE.Vector3(28, 18, 6),        // Close behind heart planet
+      water: new THREE.Vector3(6, 18, 28),        // Close behind water planet
+      lightning: new THREE.Vector3(-28, 18, 6),   // Close behind lightning planet
+      darkness: new THREE.Vector3(6, 18, -28),    // Close behind darkness planet
     };
 
     const targetPosition = elementTargets[focusElement];

@@ -15,6 +15,7 @@ import VotingPanel from './VotingPanel';
 import ReactionTray from './ReactionTray';
 import FloatingRoomReactions from './FloatingRoomReactions';
 import { RATE_LIMITS, markSoulStarUsed } from '@/lib/reactions';
+import { TiltSpinCard } from '@/components/TiltSpinCard';
 
 // Debug flag to control console logging
 const DEBUG = process.env.NODE_ENV === 'development' && true;
@@ -280,6 +281,7 @@ export default function ChatPanel({ isOpen, onClose }) {
   const [selectedCardPopup, setSelectedCardPopup] = useState(null);
   const [cardFlipped, setCardFlipped] = useState(false);
   const [selectedBadgePopup, setSelectedBadgePopup] = useState(null);
+  const [badgeRotation, setBadgeRotation] = useState(0); // Badge 3D rotation
   const [activeTab, setActiveTab] = useState('chat'); // 'chat', 'voting', 'badges', 'cards'
   const [isVotingPanelCollapsed, setIsVotingPanelCollapsed] = useState(true); // Start collapsed by default
   const channelRef = useRef(null);
@@ -464,6 +466,24 @@ export default function ChatPanel({ isOpen, onClose }) {
             }
           }));
           setMessages(transformedMessages);
+
+          // Load reaction counts from messages into messageReactions state
+          const loadedReactions = {};
+          result.messages.forEach(msg => {
+            const reactions = {};
+            // Map database columns to reaction types
+            if (msg.heart_count > 0) reactions.heart_pulse = msg.heart_count;
+            if (msg.water_count > 0) reactions.water_ripple = msg.water_count;
+            if (msg.lightning_count > 0) reactions.lightning_spark = msg.lightning_count;
+            if (msg.darkness_count > 0) reactions.shadow_glow = msg.darkness_count;
+            if (msg.alien_count > 0) reactions.alien_wave = msg.alien_count;
+
+            if (Object.keys(reactions).length > 0) {
+              loadedReactions[msg.id] = reactions;
+            }
+          });
+          setMessageReactions(loadedReactions);
+          DEBUG && console.log('🎉 Loaded message reactions:', loadedReactions);
         }
       } catch (error) {
         console.error('Error loading heart signal messages:', error);
@@ -527,6 +547,9 @@ export default function ChatPanel({ isOpen, onClose }) {
 
             // Replace any optimistic temp message that matches this one
             setMessages(prev => {
+              // If already present (by id), ignore
+              if (prev.some(m => m.id === newMessage.id)) return prev;
+
               const withoutTempDupes = prev.filter(m => {
                 const isTemp = typeof m.id === 'string' && m.id.startsWith('temp-');
                 if (!isTemp) return true;
@@ -568,6 +591,27 @@ export default function ChatPanel({ isOpen, onClose }) {
                 }];
               }
             });
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'heart_signal_messages' },
+          (payload) => {
+            DEBUG && console.log('🔥 Heart Signal message UPDATE:', payload);
+            const msg = payload.new;
+
+            // Update reaction counts in messageReactions state
+            const reactions = {};
+            if (msg.heart_count > 0) reactions.heart_pulse = msg.heart_count;
+            if (msg.water_count > 0) reactions.water_ripple = msg.water_count;
+            if (msg.lightning_count > 0) reactions.lightning_spark = msg.lightning_count;
+            if (msg.darkness_count > 0) reactions.shadow_glow = msg.darkness_count;
+            if (msg.alien_count > 0) reactions.alien_wave = msg.alien_count;
+
+            setMessageReactions(prev => ({
+              ...prev,
+              [msg.id]: Object.keys(reactions).length > 0 ? reactions : undefined
+            }));
           }
         )
         .on('broadcast', { event: 'typing' }, (payload) => {
@@ -652,9 +696,14 @@ export default function ChatPanel({ isOpen, onClose }) {
       }
     }
 
-    if (channelRef.current) {
-      await chatService.unsubscribe();
-      channelRef.current = null;
+    // Properly remove this component's realtime channel to avoid leaks/duplicates
+    try {
+      if (channelRef.current) {
+        await supabaseClient.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    } catch (err) {
+      console.error('Error removing chat channel:', err);
     }
 
     setHasJoined(false);
@@ -900,8 +949,58 @@ export default function ChatPanel({ isOpen, onClose }) {
     }
 
     try {
-      // Send reaction via chat service
+      // Play sound by reaction
+      const reactionAudioMap = {
+        heart_pulse: '/audio/heart-pulse.MP3',
+        water_ripple: '/audio/water-ripple.MP3',
+        lightning_spark: '/audio/lightning-spark.MP3',
+        shadow_glow: '/audio/shadow-glow.MP3',
+        alien_wave: '/audio/alien-wave.MP3',
+      };
+      const audioSrc = reactionAudioMap[reaction];
+      if (audioSrc) {
+        try {
+          const audio = new Audio(audioSrc);
+          audio.volume = 0.5;
+          audio.play().catch(err => {
+            DEBUG && console.log('Reaction audio play blocked or failed:', err);
+          });
+        } catch (e) {
+          DEBUG && console.log('Reaction audio init failed:', e);
+        }
+      }
+
+      // Send reaction via chat service (broadcast for UI effects)
       await chatService.sendReaction(reaction, messageId, currentUserId);
+
+      // Persist reaction counts to heart_signal_messages via RPC when applicable
+      if (messageId) {
+        const mapReactionToEmoji = (r) => ({
+          heart_pulse: 'heart',
+          water_ripple: 'water',
+          lightning_spark: 'lightning',
+          shadow_glow: 'darkness',
+          alien_wave: 'alien',
+        })[r];
+        const emoji = mapReactionToEmoji(reaction);
+
+        // Only attempt DB update for supported mapped reactions
+        if (emoji) {
+          try {
+            const { data: isNowReacted, error } = await supabaseClient.rpc('toggle_heart_signal_reaction', {
+              p_message_id: messageId,
+              p_emoji: emoji,
+            });
+            if (error) {
+              console.error('Failed to persist reaction count:', error);
+            } else {
+              console.log(`Reaction ${emoji} persisted for message ${messageId}:`, isNowReacted);
+            }
+          } catch (e) {
+            console.error('Error calling toggle_heart_signal_reaction RPC:', e);
+          }
+        }
+      }
 
       // Update rate limiting state
       setLastReactionTime(now);
@@ -1815,10 +1914,10 @@ export default function ChatPanel({ isOpen, onClose }) {
                                       >
                                         {badge.icon_url ? (
                                           <>
-                                            <img 
-                                              src={badge.icon_url} 
+                                            <img
+                                              src={badge.icon_url}
                                               alt={badge.badge_name || 'Badge'}
-                                              className="w-6 h-6"
+                                              className="w-10 h-10 object-contain"
                                               draggable={false}
                                               style={{ filter: 'drop-shadow(0 0 4px rgba(0,0,0,0.8))' }}
                                               onError={(e) => {
@@ -1826,9 +1925,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                                                 e.target.nextSibling.style.display = 'block';
                                               }}
                                             />
-                                            <span 
-                                              className="text-lg" 
-                                              style={{ 
+                                            <span
+                                              className="text-2xl"
+                                              style={{
                                                 filter: 'drop-shadow(0 0 4px rgba(0,0,0,0.8))',
                                                 display: 'none'
                                               }}
@@ -1837,9 +1936,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                                             </span>
                                           </>
                                         ) : (
-                                          <span 
-                                            className="text-lg" 
-                                            style={{ 
+                                          <span
+                                            className="text-2xl"
+                                            style={{
                                               filter: 'drop-shadow(0 0 4px rgba(0,0,0,0.8))'
                                             }}
                                           >
@@ -2440,15 +2539,18 @@ export default function ChatPanel({ isOpen, onClose }) {
       {/* Badge Popup Modal */}
       {selectedBadgePopup && (
         <div
-          className="absolute inset-0 z-[130] flex items-center justify-center p-6"
-          style={{ background: 'rgba(0, 0, 0, 0.8)' }}
-          onClick={() => setSelectedBadgePopup(null)}
+          className="absolute inset-0 z-[130] flex items-center justify-center p-3"
+          style={{ background: 'rgba(0, 0, 0, 0.9)' }}
+          onClick={() => {
+            setSelectedBadgePopup(null);
+            setBadgeRotation(0); // Reset rotation when closing
+          }}
         >
           <div
-            className="relative w-full max-w-sm rounded-lg p-5"
+            className="relative w-full h-full max-h-[90%] rounded-lg p-4 flex flex-col items-center justify-center"
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: 'rgba(0,0,0,0.6)',
+              background: 'rgba(0,0,0,0.7)',
               border: '1px solid rgba(255,255,255,0.12)',
               boxShadow: '0 0 30px rgba(255, 105, 180, 0.25)',
               animation: 'cardPulse 2s ease-in-out infinite'
@@ -2456,7 +2558,19 @@ export default function ChatPanel({ isOpen, onClose }) {
           >
             {/* Close button - top right */}
             <button
-              onClick={() => setSelectedBadgePopup(null)}
+              onClick={() => {
+                try {
+                  const audio = new Audio('/audio/close.mp3');
+                  audio.volume = 0.3;
+                  audio.play().catch(error => {
+                    console.log('Close audio play failed:', error);
+                  });
+                } catch (error) {
+                  console.log('Close audio creation failed:', error);
+                }
+                setSelectedBadgePopup(null);
+                setBadgeRotation(0); // Reset rotation when closing
+              }}
               className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 z-10"
               style={{
                 background: 'rgba(242, 239, 29, 0.15)',
@@ -2493,37 +2607,85 @@ export default function ChatPanel({ isOpen, onClose }) {
               })();
               return (
                 <>
-                  <div className="flex items-center justify-center mb-4">
-                    <div
-                      className="w-28 h-28 rounded-full flex items-center justify-center border-4"
-                      style={{
-                        background: `linear-gradient(135deg, ${colors.bg}, ${colors.border})`,
-                        borderColor: colors.border,
-                        boxShadow: `0 0 25px ${colors.border}60, 0 0 45px ${colors.border}30`
-                      }}
+                  <div className="flex items-center justify-center mb-6 flex-1">
+                    {/* TiltSpinCard wrapper for drag-to-spin interaction */}
+                    <TiltSpinCard
+                      enableSpin={true}
+                      spinSensitivity={0.8}
+                      onRotationChange={(rotation) => setBadgeRotation(rotation)}
+                      style={{ cursor: 'grab' }}
                     >
-                      {selectedBadgePopup.icon_url ? (
-                        <img
-                          src={selectedBadgePopup.icon_url}
-                          alt={selectedBadgePopup.badge_name || 'Badge'}
-                          className="w-16 h-16"
-                          draggable={false}
-                          style={{ filter: 'drop-shadow(0 0 6px rgba(0,0,0,0.8))' }}
-                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                        />
-                      ) : (
-                        <span className="text-5xl" style={{ filter: 'drop-shadow(0 0 6px rgba(0,0,0,0.8))' }}>
-                          {fallbackEmoji}
-                        </span>
-                      )}
-                    </div>
+                      <div
+                        className="relative"
+                        style={{
+                          width: '200px',
+                          height: '200px',
+                          transformStyle: 'preserve-3d',
+                          perspective: '1000px'
+                        }}
+                      >
+                        {/* Front of badge */}
+                        <div
+                          className="absolute inset-0 rounded-full flex items-center justify-center border-4"
+                          style={{
+                            width: '200px',
+                            height: '200px',
+                            background: `linear-gradient(135deg, ${colors.bg}, ${colors.border})`,
+                            borderColor: colors.border,
+                            boxShadow: `0 0 40px ${colors.border}60, 0 0 60px ${colors.border}30`,
+                            transform: `rotateY(${badgeRotation}deg)`,
+                            backfaceVisibility: 'hidden',
+                            transition: 'none'
+                          }}
+                        >
+                          {selectedBadgePopup.icon_url ? (
+                            <img
+                              src={selectedBadgePopup.icon_url}
+                              alt={selectedBadgePopup.badge_name || 'Badge'}
+                              className="w-40 h-40 object-contain"
+                              draggable={false}
+                              style={{ filter: 'drop-shadow(0 0 8px rgba(0,0,0,0.8))' }}
+                              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                            />
+                          ) : (
+                            <span className="text-7xl" style={{ filter: 'drop-shadow(0 0 8px rgba(0,0,0,0.8))' }}>
+                              {fallbackEmoji}
+                            </span>
+                          )}
+                        </div>
+                        {/* Back of badge */}
+                        <div
+                          className="absolute inset-0 rounded-full flex items-center justify-center border-4"
+                          style={{
+                            width: '200px',
+                            height: '200px',
+                            background: `linear-gradient(135deg, ${colors.border}, ${colors.bg})`,
+                            borderColor: colors.border,
+                            boxShadow: `0 0 40px ${colors.border}60, 0 0 60px ${colors.border}30`,
+                            transform: `rotateY(${badgeRotation + 180}deg)`,
+                            backfaceVisibility: 'hidden',
+                            transition: 'none'
+                          }}
+                        >
+                          <span
+                            className="text-5xl font-bold"
+                            style={{
+                              color: 'rgba(0,0,0,0.6)',
+                              textShadow: '0 0 4px rgba(255,255,255,0.3)'
+                            }}
+                          >
+                            {fallbackEmoji}
+                          </span>
+                        </div>
+                      </div>
+                    </TiltSpinCard>
                   </div>
-                  <div className="text-center">
-                    <div className="text-lg font-semibold text-white mb-1">
+                  <div className="text-center mt-4">
+                    <div className="text-2xl font-bold text-white mb-2">
                       {selectedBadgePopup.badge_name}
                     </div>
                     {selectedBadgePopup.description && (
-                      <div className="text-sm text-white/80">
+                      <div className="text-base text-white/80">
                         {selectedBadgePopup.description}
                       </div>
                     )}

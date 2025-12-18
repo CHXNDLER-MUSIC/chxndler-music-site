@@ -968,6 +968,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                               rarity: collectedCard.cards.rarity,
                               element: collectedCard.cards.element
                             });
+                            setCardRotation(0);
                             setCardOpen(true);
                           } else if (isFirstSlotWithChxndler) {
                             try { sfx.play('card-ding', 0.45); } catch {}
@@ -977,6 +978,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                               rarity: 'Common',
                               element: 'ALL'
                             });
+                            setCardRotation(0);
                             setCardOpen(true);
                           } else if (!hasCard && !isFirstSlotWithChxndler && !isLockedSlot) {
                             // Empty slot: open HeartCoin modal with CARDS tab
@@ -2551,6 +2553,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                                   rarity: currentCard.rarity,
                                   element: currentCard.element
                                 });
+                                setCardRotation(0);
                                 setCardOpen(true);
                               }
                             }}

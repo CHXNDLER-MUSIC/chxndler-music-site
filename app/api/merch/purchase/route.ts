@@ -5,8 +5,11 @@ import type { PurchaseWithHeartcoinsResult } from '@/types/merch';
 
 export async function POST(request: NextRequest) {
   try {
+    // Read request body exactly once at the top
+    const body = await request.json();
     const {
       merchItemId,
+      merchItemSlug,
       quantity = 1,
       // Optional shipping fields (required for physical items)
       shippingFullName,
@@ -16,7 +19,7 @@ export async function POST(request: NextRequest) {
       shippingState,
       shippingZip,
       shippingCountry,
-    } = await request.json();
+    } = body;
 
     if (!merchItemId) {
       return NextResponse.json(
@@ -59,9 +62,7 @@ export async function POST(request: NextRequest) {
     let merchItem: any = null;
     let merchLookupError: any = null;
 
-    const {
-      merchItemSlug
-    }: { merchItemSlug?: string } = (await request.clone().json().catch(() => ({}))) as any;
+    // merchItemSlug already destructured from body above - no need to re-read request
 
     const { data: byId, error: byIdError } = await admin
       .from('merch_items')
