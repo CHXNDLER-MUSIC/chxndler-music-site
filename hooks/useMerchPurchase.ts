@@ -25,12 +25,10 @@ export function useMerchPurchase() {
     const payload: {
       merchItemId: string;
       quantity: number;
-      merchItemSlug?: string;
     } = {
       merchItemId: merchItem.id,
       quantity,
     };
-    if (merchItem.slug) payload.merchItemSlug = merchItem.slug;
 
     // Log before calling RPC
     console.log('[useMerchPurchase] Initiating purchase:', {

@@ -789,7 +789,14 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     <AnimatePresence>
       {enlargedBadge && (
         <motion.div
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+          className="fixed z-[9999] flex items-start justify-center"
+          style={{
+            top: 'var(--profile-bar-boundary, 64px)',
+            bottom: 'var(--display-touch-top, 36%)',
+            left: 0,
+            right: 0,
+            paddingTop: '60px',
+          }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -814,9 +821,9 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
               width: '200px',
               height: '200px',
             }}
-            initial={{ scale: 0.5, opacity: 0, y: -20 }}
-            animate={{ scale: 1, opacity: 1, y: -20 }}
-            exit={{ scale: 0.5, opacity: 0, y: -20 }}
+            initial={{ scale: 0.5, opacity: 0, y: 0 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.5, opacity: 0, y: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 400 }}
             onClick={(e) => e.stopPropagation()}
           >

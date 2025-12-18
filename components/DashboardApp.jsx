@@ -260,6 +260,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const joinSfxWaitRef = React.useRef(null);
   // Track index to set after warp and join-alien SFX complete
   const pendingTrackIndexRef = React.useRef(null);
+  // Guard to prevent button.mp3 from playing multiple times per warp
+  const buttonRevealTriggeredRef = React.useRef(false);
   const [cardModalOpen, setCardModalOpen] = useState(false); // track card modal state for beam dimming
   const [joinAlienOpen, setJoinAlienOpen] = useState(false); // track join alien button state for pink beam
   const [beamColor, setBeamColor] = useState('blue'); // track active beam color
@@ -770,6 +772,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     if (!warpActive && !isWarping) {
       // Mark warp overlay as active immediately before triggering
       setWarpActive(true);
+      // Reset button reveal guard for this new warp
+      buttonRevealTriggeredRef.current = false;
       // Add a brief delay before triggering warp sequence, allowing for anticipation
       setTimeout(() => {
         // Trigger warp sequence
@@ -989,6 +993,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     try { buttonSfxWaitRef.current = null; } catch {}
     setPendingTrackPlay(true);
     setHidePlanetsForSelection(true);
+    // Reset button reveal guard for this new warp
+    buttonRevealTriggeredRef.current = false;
     // Trigger warp overlay and switch sky to this song
     setAllowWarp(true);
     setNextSky(skyFor(t.slug));
@@ -1304,6 +1310,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     
     // Set flag to identify this as a start button warp
     startButtonWarpRef.current = true;
+    // Reset button reveal guard for this new warp
+    buttonRevealTriggeredRef.current = false;
 
     // Enable SFX immediately so warp sound can play
     try { sfx.setEnabled(true); } catch {}
@@ -1519,6 +1527,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             setHomeIntroEnabled(true);
           setPendingOverlayReveal(true);
           setUiUnlocked(true);
+          // Reset button reveal guard for this new warp
+          buttonRevealTriggeredRef.current = false;
           setAllowWarp(true);
           setSky(SPACE_SKY);
           setNextSky(null);
@@ -2076,164 +2086,57 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           // Disable warp to prevent additional warp sounds
           setAllowWarp(false);
 
-          // SEQUENCE: Play button.mp3 FIRST, then open beam, then HUD
-          // This ensures proper order: warp.mp3 -> button.mp3 -> beam opens -> HUD opens
+          // SEQUENCE: warp.mp3 -> button.mp3 -> beam/HUD -> trigger play
+          // Simple and clean audio sequence
           const playButtonAndRevealUI = () => {
-            console.log("🔊 Playing button.mp3 before revealing UI");
-            try {
-              const buttonPromise = sfx.playAndWait('button', 0.9);
-              buttonPromise.then(() => {
-                console.log("✅ button.mp3 finished, now opening beam");
-                // Unlock UI reveal now that button.mp3 has finished
-                setUiRevealLocked(false);
-                // After button.mp3 finishes, open the light beam
-                setBeamEnabled(true);
-                setBeamColor('blue');
-                setWarpActive(false);
+            // Guard: prevent multiple button.mp3 plays per warp
+            if (buttonRevealTriggeredRef.current) {
+              console.log("⏭️ Skipping button.mp3 - already triggered for this warp");
+              return;
+            }
+            buttonRevealTriggeredRef.current = true;
 
-                // After beam opens, open the HUD with a short delay
-                setTimeout(() => {
-                  console.log("✅ Opening blue HUD display");
-                  setShowHUD(true);
-                  setUiPhase("landed");
-                  if (process.env.NODE_ENV === "development") {
-                    console.log("🌟 Full UI reveal complete: button.mp3 -> beam -> HUD");
-                  }
-                }, 150); // Short delay for beam to open first
-                // If a track play is pending, trigger join SFX and then start the song now
-                if (pendingTrackPlay) {
-                  try {
-                    joinSfxWaitRef.current = sfx.playAndWait('join', 0.9);
-                    if (joinSfxWaitRef.current && typeof joinSfxWaitRef.current.then === 'function') {
-                      joinSfxWaitRef.current.then(() => {
-                        const trackIndex = pendingTrackIndexRef.current;
-                        if (trackIndex !== null && trackIndex >= 0) {
-                          setChannelIdxWithLog(trackIndex);
-                          pendingTrackIndexRef.current = null;
-                        }
-                      }).catch(() => {
-                        const trackIndex = pendingTrackIndexRef.current;
-                        if (trackIndex !== null && trackIndex >= 0) {
-                          setChannelIdxWithLog(trackIndex);
-                          pendingTrackIndexRef.current = null;
-                        }
-                      });
-                    }
-                  } catch {
-                    joinSfxWaitRef.current = null;
-                    const trackIndex = pendingTrackIndexRef.current;
-                    if (trackIndex !== null && trackIndex >= 0) {
-                      setChannelIdxWithLog(trackIndex);
-                      pendingTrackIndexRef.current = null;
-                      setTimeout(() => {
-                        try {
-                          if (!(typeof window !== 'undefined' && (window).__AUDIO_MANAGER_ACTIVE)) {
-                            setPlaySignal((n) => n + 1);
-                          }
-                        } catch {
-                          setPlaySignal((n) => n + 1);
-                        }
-                      }, 100);
-                    }
-                  }
-                }
-              }).catch(() => {
-                // Fallback if button SFX fails
-                console.warn("⚠️ button.mp3 failed, opening UI anyway");
-                setUiRevealLocked(false);
-                setBeamEnabled(true);
-                setBeamColor('blue');
-                setWarpActive(false);
-                setTimeout(() => {
-                  setShowHUD(true);
-                  setUiPhase("landed");
-                  // Also trigger song start if pending
-                  if (pendingTrackPlay) {
-                    try {
-                      joinSfxWaitRef.current = sfx.playAndWait('join', 0.9);
-                      if (joinSfxWaitRef.current && typeof joinSfxWaitRef.current.then === 'function') {
-                        joinSfxWaitRef.current.then(() => {
-                          const trackIndex = pendingTrackIndexRef.current;
-                          if (trackIndex !== null && trackIndex >= 0) {
-                            setChannelIdxWithLog(trackIndex);
-                            pendingTrackIndexRef.current = null;
-                          }
-                        }).catch(() => {
-                          const trackIndex = pendingTrackIndexRef.current;
-                          if (trackIndex !== null && trackIndex >= 0) {
-                            setChannelIdxWithLog(trackIndex);
-                            pendingTrackIndexRef.current = null;
-                          }
-                        });
-                      }
-                    } catch {
-                      joinSfxWaitRef.current = null;
-                      const trackIndex = pendingTrackIndexRef.current;
-                      if (trackIndex !== null && trackIndex >= 0) {
-                        setChannelIdxWithLog(trackIndex);
-                        pendingTrackIndexRef.current = null;
-                        setTimeout(() => {
-                          try {
-                            if (!(typeof window !== 'undefined' && (window).__AUDIO_MANAGER_ACTIVE)) {
-                              setPlaySignal((n) => n + 1);
-                            }
-                          } catch {
-                            setPlaySignal((n) => n + 1);
-                          }
-                        }, 100);
-                      }
-                    }
-                  }
-                }, 150);
-              });
-            } catch {
-              // Ultimate fallback
-              console.warn("⚠️ SFX system failed, opening UI directly");
+            // Helper to reveal UI and optionally trigger play
+            const revealUIAndPlay = () => {
               setUiRevealLocked(false);
               setBeamEnabled(true);
               setBeamColor('blue');
               setWarpActive(false);
+
+              // Open HUD after beam starts
               setTimeout(() => {
                 setShowHUD(true);
                 setUiPhase("landed");
-                // Also trigger song start if pending
+                console.log("✅ UI revealed: beam -> HUD");
+
+                // If a track is pending, trigger play after HUD opens
                 if (pendingTrackPlay) {
-                  try {
-                    joinSfxWaitRef.current = sfx.playAndWait('join', 0.9);
-                    if (joinSfxWaitRef.current && typeof joinSfxWaitRef.current.then === 'function') {
-                      joinSfxWaitRef.current.then(() => {
-                        const trackIndex = pendingTrackIndexRef.current;
-                        if (trackIndex !== null && trackIndex >= 0) {
-                          setChannelIdxWithLog(trackIndex);
-                          pendingTrackIndexRef.current = null;
-                        }
-                      }).catch(() => {
-                        const trackIndex = pendingTrackIndexRef.current;
-                        if (trackIndex !== null && trackIndex >= 0) {
-                          setChannelIdxWithLog(trackIndex);
-                          pendingTrackIndexRef.current = null;
-                        }
-                      });
-                    }
-                  } catch {
-                    joinSfxWaitRef.current = null;
-                    const trackIndex = pendingTrackIndexRef.current;
-                    if (trackIndex !== null && trackIndex >= 0) {
-                      setChannelIdxWithLog(trackIndex);
-                      pendingTrackIndexRef.current = null;
-                      setTimeout(() => {
-                        try {
-                          if (!(typeof window !== 'undefined' && (window).__AUDIO_MANAGER_ACTIVE)) {
-                            setPlaySignal((n) => n + 1);
-                          }
-                        } catch {
-                          setPlaySignal((n) => n + 1);
-                        }
-                      }, 100);
-                    }
+                  const trackIndex = pendingTrackIndexRef.current;
+                  if (trackIndex !== null && trackIndex >= 0) {
+                    setChannelIdxWithLog(trackIndex);
+                    pendingTrackIndexRef.current = null;
                   }
+                  // Trigger play/pause button
+                  setTimeout(() => {
+                    console.log("▶️ Triggering play");
+                    setPlaySignal((n) => n + 1);
+                  }, 100);
                 }
               }, 150);
+            };
+
+            console.log("🔊 Playing button.mp3");
+            try {
+              sfx.playAndWait('button', 0.9).then(() => {
+                console.log("✅ button.mp3 finished");
+                revealUIAndPlay();
+              }).catch(() => {
+                console.warn("⚠️ button.mp3 failed, revealing UI anyway");
+                revealUIAndPlay();
+              });
+            } catch {
+              console.warn("⚠️ SFX system failed, revealing UI directly");
+              revealUIAndPlay();
             }
           };
 

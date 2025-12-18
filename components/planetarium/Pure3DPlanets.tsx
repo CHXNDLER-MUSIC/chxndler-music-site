@@ -17,13 +17,15 @@ export interface Pure3DPlanetsProps {
   focusSongId?: string | null;
 }
 
-export default function Pure3DPlanets({ songs, songsByElement: propSongsByElement, quality, onPlanetSelect, focusElement, focusSongId }: Pure3DPlanetsProps) {
+export default function Pure3DPlanets({ songs, songsByElement: propSongsByElement, quality, onPlanetSelect, focusElement, focusSongId, glowingElement = null, glowActive = false }: Pure3DPlanetsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isClient, setIsClient] = useState(false);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   // Keep references to song meshes by slug/id for camera focusing
   const songMeshMapRef = useRef<Map<string, THREE.Object3D>>(new Map());
+  // Keep references to glow sprites for element planets so we can toggle visibility
+  const glowSpriteMapRef = useRef<Map<string, THREE.Sprite>>(new Map());
 
   useEffect(() => {
     setIsClient(true);
@@ -96,7 +98,7 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
     // Texture loader
     const textureLoader = new THREE.TextureLoader();
 
-    // Create element as a glowing sprite (opaque, not see-through)
+    // Create element as a sprite (opaque, not see-through)
     const createElementSprite = (texturePath: string, scale: number, position: [number, number, number], glowColor: number) => {
       const texture = textureLoader.load(texturePath);
       texture.colorSpace = THREE.SRGBColorSpace;
@@ -114,6 +116,24 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
       sprite.scale.set(scale * 5, scale * 5, 1);
 
       return sprite;
+    };
+
+    const createGlowSprite = (texturePath: string, scale: number, position: [number, number, number]) => {
+      const texture = textureLoader.load(texturePath);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthWrite: false,
+        opacity: 0.45,
+        blending: THREE.AdditiveBlending,
+        color: 0xffffff,
+      });
+      const sprite = new THREE.Sprite(material);
+      sprite.position.set(...position);
+      sprite.scale.set(scale * 6.2, scale * 6.2, 1);
+      sprite.renderOrder = -1;
+      return sprite as THREE.Sprite;
     };
 
     // Central Sun - positioned higher up as sprite with pink glow
@@ -158,8 +178,13 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
       const group = new THREE.Group();
       // Position group at sun's location so planets orbit around the sun
       group.position.set(0, sunY, 0);
-      // Create sprite showing full texture image with glow
+      // Planet sprite
       const planet = createElementSprite(p.texture, 1.8, p.pos, p.glow);
+      // Optional glow sprite (controlled by props)
+      const glowSprite = createGlowSprite(p.texture, 1.8, p.pos);
+      glowSprite.visible = (glowActive && glowingElement === p.id);
+      try { glowSpriteMapRef.current.set(p.id, glowSprite); } catch {}
+      group.add(glowSprite);
       group.add(planet);
 
       // Add song planets orbiting around this element
@@ -307,10 +332,20 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
       }
       // Clear song mesh map on teardown
       try { songMeshMapRef.current.clear(); } catch {}
+      try { glowSpriteMapRef.current.clear(); } catch {}
     };
   // Only rebuild when songs are first loaded (length changes from 0)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClient, quality, songs.length]);
+
+  // Toggle glow visibility when props change without rebuilding the scene
+  useEffect(() => {
+    try {
+      glowSpriteMapRef.current.forEach((sprite, id) => {
+        sprite.visible = !!(glowActive && glowingElement === id);
+      });
+    } catch {}
+  }, [glowingElement, glowActive]);
 
   // Camera focus effect - animate camera to focus on the element of the day
   useEffect(() => {

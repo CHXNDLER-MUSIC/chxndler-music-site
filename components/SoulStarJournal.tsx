@@ -572,6 +572,11 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         }
       } catch {}
 
+      // Refresh journalEntries to keep private tab in sync with public tab
+      if (user?.id) {
+        loadJournalEntries(user.id);
+      }
+
       setStarringEntryId(null);
     } catch (error) {
       console.error('Failed to toggle star:', error);
@@ -657,7 +662,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
     setIsCardFlipped(false); // Reset to show front of card
     setSelectedCard({
       name: card.card_name,
-      image: getCardImage(card.card_name, card.element),
+      image: card.artwork_url || getCardImage(card.card_name, card.element),
       rarity: card.rarity,
       element: card.element
     });

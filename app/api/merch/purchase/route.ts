@@ -9,9 +9,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       merchItemId,
-      merchItemSlug,
       quantity = 1,
-      // Optional shipping fields (required for physical items)
+      // Optional shipping fields (ignored in id-only flow; kept for backwards compat)
       shippingFullName,
       shippingAddressLine1,
       shippingAddressLine2,
@@ -55,34 +54,18 @@ export async function POST(request: NextRequest) {
 
     console.log('[PURCHASE] Attempting purchase:', { merch_item_id: merchItemId, qty: quantity, user_id: user.id });
 
-    // Determine item category to validate shipping as needed
-    // Look up merch item using admin client to avoid RLS surprises during read-only lookup.
-    // Accept either UUID id or slug (optionally provided by client).
+    // Look up merch item using admin (service role) client by ID only to avoid RLS and slug reliance
     const admin = getSupabaseAdmin();
     let merchItem: any = null;
     let merchLookupError: any = null;
 
-    // merchItemSlug already destructured from body above - no need to re-read request
-
     const { data: byId, error: byIdError } = await admin
       .from('merch_items')
-      .select('id, name, category, price_heartcoins, slug, is_active')
+      .select('id, name, category, price_heartcoins, is_active')
       .eq('id', merchItemId)
       .single();
     merchItem = byId;
     merchLookupError = byIdError;
-
-    if (merchLookupError || !merchItem) {
-      console.warn('[PURCHASE] Item lookup by id failed; trying slug fallback', { merchItemId, merchItemSlug });
-      const slugToTry = merchItemSlug || String(merchItemId);
-      const { data: bySlug, error: slugError } = await admin
-        .from('merch_items')
-        .select('id, name, category, price_heartcoins, slug, is_active')
-        .eq('slug', slugToTry)
-        .single();
-      merchItem = bySlug as any;
-      merchLookupError = slugError;
-    }
 
     if (merchLookupError || !merchItem) {
       return NextResponse.json(
@@ -92,6 +75,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!merchItem?.is_active) {
+      console.warn('[PURCHASE] Item filtered out due to is_active=false', { merch_item_id: merchItemId });
       return NextResponse.json(
         { error: 'Item not found or no longer available.', errorCode: 'ITEM_NOT_FOUND' },
         { status: 404 }
@@ -100,15 +84,7 @@ export async function POST(request: NextRequest) {
 
     const isPhysical = merchItem.category === 'physical';
 
-    // If physical, validate shipping fields early
-    if (isPhysical) {
-      if (!shippingFullName || !shippingAddressLine1 || !shippingCity || !shippingState || !shippingZip) {
-        return NextResponse.json(
-          { error: 'Missing shipping address fields', errorCode: 'MISSING_SHIPPING' },
-          { status: 400 }
-        );
-      }
-    }
+    // Do not require shipping fields here; they can be updated post-purchase
 
     // Prefer canonical single-item checkout RPC that accepts shipping
     const { data: rpcData, error: rpcError } = await supabase
@@ -276,7 +252,7 @@ export async function POST(request: NextRequest) {
         const orderStatus = merchItem.category === 'physical' ? 'pending_shipping' : 'paid';
         console.log('[PURCHASE] Creating order with data:', {
           user_id: user.id,
-          item_id: merchItem.slug,
+          item_id: merchItem.id,
           item_name: merchItem.name,
           price_heartcoins: totalPrice,
           status: orderStatus
@@ -298,7 +274,7 @@ export async function POST(request: NextRequest) {
           .from('orders')
           .insert({
             user_id: user.id,
-            item_id: merchItem.slug,
+            item_id: merchItem.id,
             item_name: merchItem.name,
             // use canonical column name per migrations
             total_heartcoins: totalPrice,
@@ -384,7 +360,7 @@ export async function POST(request: NextRequest) {
             .from('user_items')
             .insert({
               user_id: user.id,
-              item_id: merchItem.slug,
+              item_id: merchItem.id,
               item_name: merchItem.name,
               item_type: 'digital',
               acquisition_method: 'heartcoin_purchase',

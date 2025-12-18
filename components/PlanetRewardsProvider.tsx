@@ -1,7 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useCallback, ReactNode, useState, useEffect } from 'react';
-import { usePlanetRewards, ElementType, PlanetReward } from '@/lib/usePlanetRewards';
+import React, { createContext, useContext, useCallback, ReactNode, useState, useEffect, useRef } from 'react';
+import { ElementType, PlanetReward } from '@/lib/usePlanetRewards';
 import { useAuth } from '@/app/providers/AuthProvider';
 import PlanetRewardCelebration from './PlanetRewardCelebration';
 import { supabaseBrowser } from '@/lib/supabase-browser';
@@ -15,6 +15,7 @@ interface PlanetRewardsContextValue {
   clearError: () => void;
   isAuthenticated: boolean;
   elementOfDay: ElementType | null;
+  claimedToday: boolean;
 }
 
 const PlanetRewardsContext = createContext<PlanetRewardsContextValue | null>(null);
@@ -39,49 +40,75 @@ export function PlanetRewardsProvider({
   onSignInRequired,
 }: PlanetRewardsProviderProps) {
   const { user } = useAuth();
-  const {
-    isClaimingReward,
-    cooldownActive,
-    lastReward,
-    error,
-    claimReward,
-    clearReward,
-    clearError,
-    isAuthenticated,
-  } = usePlanetRewards();
+  // Local state fully governs Element-of-Day flow and UI
+  const [isClaimingReward, setIsClaimingReward] = useState(false);
+  const [cooldownActive, setCooldownActive] = useState(false);
+  const [lastReward, setLastReward] = useState<PlanetReward | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const isAuthenticated = !!user;
+  const cooldownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Element of the day - only this element's planet can give rewards
   const [elementOfDay, setElementOfDay] = useState<ElementType | null>(null);
+  const [claimedToday, setClaimedToday] = useState<boolean>(false);
 
-  // Fetch element of the day from soul_daily_prompts
+  // Fetch today's element and whether current user has claimed
   useEffect(() => {
-    async function fetchElementOfDay() {
+    let cancelled = false;
+    async function fetchTodayAndClaim() {
       try {
         const today = getLocalDateString();
-        const { data, error: fetchError } = await supabaseBrowser
-          .from("soul_daily_prompts")
-          .select("element")
-          .eq("prompt_date", today)
+
+        // 1) Fetch the element of the day from source of truth
+        const { data: eod, error: eodErr } = await supabaseBrowser
+          .from('element_of_day')
+          .select('element')
+          .eq('day', today)
           .maybeSingle();
 
-        if (fetchError) {
-          console.warn("Error fetching element of day for rewards:", fetchError.message);
-          setElementOfDay("heart"); // fallback
-        } else if (data?.element) {
-          const normalized = normalizeElement(data.element);
-          setElementOfDay(normalized || "heart");
-          console.log("Planet rewards - element of day:", normalized || "heart");
+        if (cancelled) return;
+
+        if (eodErr) {
+          console.warn('Error fetching element_of_day:', eodErr.message);
+          setElementOfDay(null);
         } else {
-          setElementOfDay("heart"); // fallback if no entry
+          const normalized = normalizeElement(eod?.element);
+          setElementOfDay(normalized);
+        }
+
+        // 2) Check if this user has already claimed today
+        if (user?.id) {
+          const { data: claimRow, error: claimErr } = await supabaseBrowser
+            .from('user_element_claims')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('day', today)
+            .maybeSingle();
+
+          if (cancelled) return;
+
+          if (claimErr && claimErr.code !== 'PGRST116') {
+            // PGRST116 is PostgREST no rows found for maybeSingle; treat as not claimed
+            console.warn('Error fetching user_element_claims:', claimErr.message);
+            setClaimedToday(false);
+          } else {
+            setClaimedToday(!!claimRow?.id);
+          }
+        } else {
+          setClaimedToday(false);
         }
       } catch (err) {
-        console.error("Failed to fetch element of day for rewards:", err);
-        setElementOfDay("heart");
+        if (!cancelled) {
+          console.error('Failed initial Element-of-Day fetch:', err);
+          setElementOfDay(null);
+          setClaimedToday(false);
+        }
       }
     }
 
-    fetchElementOfDay();
-  }, []);
+    fetchTodayAndClaim();
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   const claimPlanetReward = useCallback(async (element: ElementType): Promise<PlanetReward | null> => {
     // Check authentication first
@@ -90,25 +117,74 @@ export function PlanetRewardsProvider({
       return null;
     }
 
-    const reward = await claimReward(element);
+    // Prevent duplicate claims while in-flight or during brief cooldown
+    if (isClaimingReward || cooldownActive) return null;
 
-    if (reward) {
-      // Trigger appropriate callback after a delay to let celebration show
-      setTimeout(() => {
-        if (reward.type === 'RELIC') {
-          onRelicClaimed?.();
-        } else if (reward.type === 'BOOST') {
-          onBoostClaimed?.();
+    // Clear any pending cooldown
+    if (cooldownTimeoutRef.current) clearTimeout(cooldownTimeoutRef.current);
+
+    setIsClaimingReward(true);
+    setError(null);
+
+    try {
+      const { data, error: rpcErr } = await supabaseBrowser.rpc('claim_element_of_day', { p_element: element });
+
+      if (rpcErr) {
+        const msg = String(rpcErr.message || '').toLowerCase();
+        if (msg.includes('already claimed')) {
+          // Consider it claimed for today; stop glow
+          setClaimedToday(true);
+          setIsClaimingReward(false);
+          setCooldownActive(true);
+          cooldownTimeoutRef.current = setTimeout(() => setCooldownActive(false), 1200);
+          return null;
         }
-      }, 100);
-    }
+        if (msg.includes('wrong element')) {
+          setError('Wrong element for today');
+          setIsClaimingReward(false);
+          return null;
+        }
+        setError('Could not claim reward, try again');
+        setIsClaimingReward(false);
+        return null;
+      }
 
-    return reward;
-  }, [user, claimReward, onRelicClaimed, onBoostClaimed, onSignInRequired]);
+      // Success: mark claimed and show confirmation UI
+      setClaimedToday(true);
+      setIsClaimingReward(false);
+      setCooldownActive(true);
+      cooldownTimeoutRef.current = setTimeout(() => setCooldownActive(false), 1200);
+
+      // Create a lightweight confirmation reward object for UI only
+      const reward: PlanetReward = {
+        type: 'BOOST',
+        element,
+        code: 'element_of_day_claimed',
+        label: 'Daily blessing received',
+      } as any;
+
+      setLastReward(reward);
+
+      // Let host screens refresh if needed
+      setTimeout(() => {
+        try { onBoostClaimed?.(); } catch {}
+        try { onRelicClaimed?.(); } catch {}
+      }, 100);
+
+      return reward;
+    } catch (err) {
+      console.error('Element-of-Day claim error:', err);
+      setIsClaimingReward(false);
+      setError('Could not claim reward, try again');
+      return null;
+    }
+  }, [user, isClaimingReward, cooldownActive, onBoostClaimed, onRelicClaimed, onSignInRequired]);
 
   const handleCelebrationComplete = useCallback(() => {
-    clearReward();
-  }, [clearReward]);
+    setLastReward(null);
+  }, []);
+
+  const clearError = useCallback(() => setError(null), []);
 
   return (
     <PlanetRewardsContext.Provider
@@ -120,6 +196,7 @@ export function PlanetRewardsProvider({
         clearError,
         isAuthenticated,
         elementOfDay,
+        claimedToday,
       }}
     >
       {children}
@@ -144,6 +221,7 @@ export function usePlanetRewardsContext() {
       clearError: () => {},
       isAuthenticated: false,
       elementOfDay: null as ElementType | null,
+      claimedToday: false,
     };
   }
   return context;
@@ -154,7 +232,7 @@ export function withPlanetRewards<P extends { onPlanetSelect?: (planetId: string
   Component: React.ComponentType<P>
 ) {
   return function WithPlanetRewards(props: P) {
-    const { claimPlanetReward, isClaimingReward, cooldownActive, elementOfDay } = usePlanetRewardsContext();
+    const { claimPlanetReward, isClaimingReward, cooldownActive, elementOfDay, claimedToday } = usePlanetRewardsContext();
 
     const handlePlanetSelect = useCallback((planetId: string) => {
       // Only claim rewards for element planets, not center or song planets
@@ -163,14 +241,16 @@ export function withPlanetRewards<P extends { onPlanetSelect?: (planetId: string
       if (elementPlanets.includes(planetId as ElementType)) {
         // Only allow clicking the element of the day for daily rewards
         // Other element planets are not clickable for rewards
-        if (planetId === elementOfDay && !isClaimingReward && !cooldownActive) {
+        if (planetId === elementOfDay && !claimedToday && !isClaimingReward && !cooldownActive) {
           claimPlanetReward(planetId as ElementType);
         }
+        // Block non-today element clicks entirely
+        return;
       }
 
       // Always call the original handler for song selection etc
       props.onPlanetSelect?.(planetId);
-    }, [claimPlanetReward, isClaimingReward, cooldownActive, elementOfDay, props.onPlanetSelect]);
+    }, [claimPlanetReward, isClaimingReward, cooldownActive, elementOfDay, claimedToday, props.onPlanetSelect]);
 
     return <Component {...props} onPlanetSelect={handlePlanetSelect} />;
   };

@@ -246,27 +246,29 @@ const HUDPanel = React.memo(function HUDPanel({
   // Handler for planet selection that intercepts element planets for rewards
   const ELEMENT_PLANETS = ['heart', 'water', 'lightning', 'darkness'];
   const handlePlanetSelectWithRewards = React.useCallback((planetId) => {
-    // Check if this is an element planet (not center, not a song planet)
-    if (ELEMENT_PLANETS.includes(planetId)) {
-      // Claim the reward (the context handles spam protection internally)
-      if (!planetRewards.isClaimingReward && !planetRewards.cooldownActive) {
-        planetRewards.claimPlanetReward(planetId).then((reward) => {
-          if (!reward && planetRewards.error) {
-            // Show error toast
-            setPlanetRewardError(planetRewards.error);
-            if (planetRewardErrorTimeoutRef.current) {
-              clearTimeout(planetRewardErrorTimeoutRef.current);
-            }
-            planetRewardErrorTimeoutRef.current = setTimeout(() => {
-              setPlanetRewardError(null);
-              planetRewards.clearError();
-            }, 3000);
+    const pid = String(planetId);
+    // Element planets: only today's element is clickable; others do nothing
+    if (ELEMENT_PLANETS.includes(pid)) {
+      if (pid !== planetRewards.elementOfDay) return;
+      if (planetRewards.claimedToday) return;
+      if (planetRewards.isClaimingReward || planetRewards.cooldownActive) return;
+
+      planetRewards.claimPlanetReward(pid).then((reward) => {
+        if (!reward && planetRewards.error) {
+          // Show error toast
+          setPlanetRewardError(planetRewards.error);
+          if (planetRewardErrorTimeoutRef.current) {
+            clearTimeout(planetRewardErrorTimeoutRef.current);
           }
-        }).catch(() => {});
-      }
+          planetRewardErrorTimeoutRef.current = setTimeout(() => {
+            setPlanetRewardError(null);
+            planetRewards.clearError();
+          }, 3000);
+        }
+      }).catch(() => {});
+      return; // Block downstream song selection when element clicked
     }
-    // Always call the original handler for song selection functionality
-    // Preserve the blue display when selection comes from the HUD planetarium
+    // Non-element interactions continue to route through original handler
     onSongChange?.(planetId, { preserveBlueDisplay: true });
   }, [planetRewards, onSongChange]);
 
@@ -2367,6 +2369,8 @@ const HUDPanel = React.memo(function HUDPanel({
                     quality="high"
                     focusElement={focusElement}
                     focusSongId={currentId || null}
+                    glowingElement={planetRewards.elementOfDay || null}
+                    glowActive={!planetRewards.claimedToday}
                   />
                 </ErrorBoundary>
               </div>

@@ -251,13 +251,12 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     }
   }, [activeTab]);
 
-  // Build ordered element cards: element namesake card first
-  const buildOrderedElementCards = (element: 'LIGHTNING' | 'WATER' | 'HEART' | 'DARKNESS', cards: any[]) => {
+  // Build ordered element cards: ensure namesake card appears first, even if its element tag is missing
+  const buildOrderedElementCards = (element: 'LIGHTNING' | 'WATER' | 'HEART' | 'VOID' | 'DARKNESS', cards: any[]) => {
     const normalize = (s: string) => (s || '').toUpperCase().trim().replace(/[^A-Z]/g, '');
     const elementUpper = element.toUpperCase();
     const elementNorm = normalize(element);
     const filtered = cards.filter(card => ((card.element || '').toUpperCase()) === elementUpper);
-    if (filtered.length === 0) return [];
 
     // Helper to get all possible name fields from a card
     const getCardNames = (card: any): string[] => {
@@ -270,13 +269,62 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       return names;
     };
 
-    // First try exact match on any name field
-    let idx = filtered.findIndex(card => getCardNames(card).some(n => n === elementNorm));
-    // Then try partial match (contains element name)
-    if (idx < 0) idx = filtered.findIndex(card => getCardNames(card).some(n => n.includes(elementNorm)));
+    // Find the namesake card from all cards (not just filtered)
+    const namesake = cards.find(card => getCardNames(card).some(n => n === elementNorm));
 
-    if (idx <= 0) return filtered;
-    return [...filtered.slice(idx), ...filtered.slice(0, idx)];
+    // Start with filtered list
+    let ordered = [...filtered];
+
+    // If there are no filtered cards but a namesake exists, show only the namesake
+    if (ordered.length === 0) {
+      return namesake ? [namesake] : [];
+    }
+
+    // Ensure namesake is first by normalized name match, even if ids differ
+    const includesNamesakeByName = ordered.some(c => getCardNames(c).some(n => n === elementNorm));
+    if (!includesNamesakeByName) {
+      if (namesake) {
+        ordered = [namesake, ...ordered];
+      } else {
+        // As a final fallback, synthesize an element card so it always starts on the elemental card
+        const synthetic = {
+          id: `synthetic-${element}`,
+          card_name: element,
+          element: element,
+          artwork_url: `/cards/${element}.webp`,
+          card_description: undefined,
+        } as any;
+        ordered = [synthetic, ...ordered];
+      }
+    } else {
+      // Stable sort so exact match is first, then partial matches
+      ordered = ordered.sort((a, b) => {
+        const aNames = getCardNames(a);
+        const bNames = getCardNames(b);
+        const aScore = aNames.some(n => n === elementNorm) ? 0 : aNames.some(n => n.includes(elementNorm)) ? 1 : 2;
+        const bScore = bNames.some(n => n === elementNorm) ? 0 : bNames.some(n => n.includes(elementNorm)) ? 1 : 2;
+        return aScore - bScore;
+      });
+    }
+
+    // Deduplicate by id or by normalized name if id missing
+    const seenIds = new Set<string>();
+    const seenNames = new Set<string>();
+    const deduped: any[] = [];
+    for (const c of ordered) {
+      const cid = c.id as string | undefined;
+      const cname = (getCardNames(c)[0] || '');
+      if (cid) {
+        if (seenIds.has(cid)) continue;
+        seenIds.add(cid);
+      } else {
+        if (seenNames.has(cname)) continue;
+        seenNames.add(cname);
+      }
+      deduped.push(c);
+    }
+
+    return deduped;
   };
 
   // Use internal ordered element cards when selected, otherwise props
@@ -284,7 +332,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   const displayCardIndex = selectedElement ? internalCardIndex : currentCardIndex;
 
   // Helper: find the index of the primary element card (e.g. WATER) within the filtered list
-  const getPrimaryElementCardIndex = (element: 'LIGHTNING' | 'WATER' | 'HEART' | 'DARKNESS') => {
+  const getPrimaryElementCardIndex = (element: 'LIGHTNING' | 'WATER' | 'HEART' | 'VOID' | 'DARKNESS') => {
     const normalize = (s: string) => (s || '').toUpperCase().trim().replace(/[^A-Z]/g, '');
     const elementNorm = normalize(element);
     const elementUpper = element.toUpperCase();
@@ -312,7 +360,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   };
 
   // Handle element selection
-  const handleElementSelect = (element: 'LIGHTNING' | 'WATER' | 'HEART' | 'DARKNESS') => {
+  const handleElementSelect = (element: 'LIGHTNING' | 'WATER' | 'HEART' | 'VOID' | 'DARKNESS') => {
     try { sfx.play('select', 0.5); } catch {}
     setSelectedElement(element);
     // Build & set ordered element cards immediately if available
@@ -326,7 +374,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
   // Handle dropdown change
   const handleElementDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value as 'LIGHTNING' | 'WATER' | 'HEART' | 'DARKNESS';
+    const value = e.target.value as 'LIGHTNING' | 'WATER' | 'HEART' | 'VOID' | 'DARKNESS';
     setSelectedElement(value);
     // buildOrderedElementCards puts the namesake card first (index 0)
     const orderedNow = buildOrderedElementCards(value, allCards);
@@ -660,15 +708,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
           },
           body: JSON.stringify({
             merchItemId: selectedItem.merch_item_id,
-            quantity: 1,
-            // Pass shipping details for physical items
-            shippingFullName: shippingInfo.fullName,
-            shippingAddressLine1: shippingInfo.addressLine1,
-            shippingAddressLine2: shippingInfo.addressLine2,
-            shippingCity: shippingInfo.city,
-            shippingState: shippingInfo.state,
-            shippingZip: shippingInfo.zip,
-            shippingCountry: shippingInfo.country
+            quantity: 1
           }),
         });
 
@@ -1079,7 +1119,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         )}
 
         {activeTab === 'earn' ? (
-          <div className="flex flex-col flex-1 h-full">
+          <div className="flex flex-col flex-1 min-h-0">
             <div className="text-center mb-4">
               {showHeartCoinDescription ? (
                 <div className="text-white/80 text-sm leading-relaxed space-y-2">
@@ -1094,7 +1134,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
             {/* Quest Content */}
             {activeEarnTab === 'DAILY QUESTS' ? (
-              <div className="flex flex-col flex-1 w-full gap-3 h-full">
+              <div className="flex flex-col flex-1 w-full gap-3 min-h-0">
                 {/* Element of the Day Quest */}
                 <div className="w-full bg-black/20 rounded-lg p-4 border border-white/10 flex-shrink-0">
                   <div className="flex items-center justify-between w-full">
