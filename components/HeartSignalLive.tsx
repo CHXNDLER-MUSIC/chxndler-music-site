@@ -538,7 +538,17 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-medium" style={{ color: msg.is_system ? '#C084FC' : getUserTextColor(msg.user_id) }}>
+                  <span 
+                    className="text-sm font-medium" 
+                    style={{ color: msg.is_system ? '#C084FC' : getUserTextColor(msg.user_id) }}
+                    onMouseEnter={() => {
+                      try {
+                        const audio = new Audio('/audio/hover.mp3');
+                        audio.volume = 0.3;
+                        audio.play().catch(() => {});
+                      } catch {}
+                    }}
+                  >
                     {msg.username}
                   </span>
                   <span className="text-xs text-gray-500">
@@ -548,7 +558,17 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
                     })}
                   </span>
                 </div>
-                <div className="text-sm break-words" style={{ color: msg.is_system ? '#C084FC' : getUserTextColor(msg.user_id) }}>
+                <div 
+                  className="text-sm break-words"
+                  style={{ color: msg.is_system ? '#C084FC' : getUserTextColor(msg.user_id) }}
+                  onMouseEnter={() => {
+                    try {
+                      const audio = new Audio('/audio/hover.mp3');
+                      audio.volume = 0.3;
+                      audio.play().catch(() => {});
+                    } catch {}
+                  }}
+                >
                   {msg.message}
                 </div>
 

@@ -130,17 +130,43 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
     audioManager.togglePlayPause();
   }, [audioManager]);
 
-  // Handle progress bar click for seeking
+  // Handle click-to-seek
   const handleProgressClick = useCallback((e: React.MouseEvent) => {
-    const progressBar = progressBarRef.current;
-    if (!progressBar || duration <= 0) return;
-    
-    const rect = progressBar.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const ratio = Math.max(0, Math.min(1, clickX / rect.width));
-    const newTime = ratio * duration;
-    
-    audioManager.seek(newTime);
+    const el = progressBarRef.current;
+    if (!el || duration <= 0) return;
+
+    const rect = el.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const ratio = Math.max(0, Math.min(1, x / rect.width));
+    audioManager.seek(ratio * duration);
+  }, [duration, audioManager]);
+
+  // Handle drag-to-seek with pointer events
+  const handleProgressPointerDown = useCallback((e: React.PointerEvent) => {
+    const el = progressBarRef.current;
+    if (!el || duration <= 0) return;
+
+    const rect = el.getBoundingClientRect();
+    const seekFromX = (clientX: number) => {
+      const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+      const ratio = rect.width > 0 ? x / rect.width : 0;
+      audioManager.seek(ratio * duration);
+    };
+
+    try { (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); } catch {}
+    e.preventDefault();
+
+    // Initial seek
+    seekFromX(e.clientX);
+
+    // Drag listeners
+    const onMove = (ev: PointerEvent) => seekFromX(ev.clientX);
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp as any);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp, { once: true } as any);
   }, [duration, audioManager]);
 
   // Keep track of the current audio element for reference
@@ -207,8 +233,9 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
               <div
                 ref={progressBarRef}
                 onClick={handleProgressClick}
+                onPointerDown={handleProgressPointerDown}
                 className="relative w-full h-3 bg-black/40 rounded-full cursor-pointer overflow-hidden border border-[#19E3FF]/20 hover:border-[#19E3FF]/60 transition-all duration-200"
-                title="Click to seek"
+                title="Click or drag to seek"
               >
                 {/* Background glow */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#19E3FF]/10 to-transparent"></div>

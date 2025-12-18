@@ -254,6 +254,27 @@ export default function ChatPanel({ isOpen, onClose }) {
   // Reaction state
   const [messageReactions, setMessageReactions] = useState({});
   const [roomReactions, setRoomReactions] = useState([]);
+
+  // Map of userId -> basic profile data for quick lookup (element, profile image)
+  const userProfilesById = useMemo(() => {
+    const map = {};
+    try {
+      (chatUsers || []).forEach(u => {
+        if (!u?.id) return;
+        map[u.id] = {
+          element: u.element || null,
+          profile_image_url: u.profile_image_url || null,
+        };
+      });
+      if (user && profile) {
+        map[user.id] = {
+          element: profile.element || null,
+          profile_image_url: profile.profile_image_url || null,
+        };
+      }
+    } catch {}
+    return map;
+  }, [chatUsers, user?.id, profile?.element, profile?.profile_image_url]);
   const [showRoomReactionTray, setShowRoomReactionTray] = useState(false);
   const [lastReactionTime, setLastReactionTime] = useState(0);
   const [lastLightningTime, setLastLightningTime] = useState(0);
@@ -1392,6 +1413,21 @@ export default function ChatPanel({ isOpen, onClose }) {
                       messageReactions={messageReactions}
                       onReact={handleReaction}
                       currentUserId={user?.id || 'anonymous'}
+                      currentUserElement={profile?.element || null}
+                      currentUserProfileImageUrl={profile?.profile_image_url || null}
+                      userProfilesById={userProfilesById}
+                      onUserClickByName={(name) => {
+                        try {
+                          const audio = new Audio('/audio/click.mp3');
+                          audio.volume = 0.3;
+                          audio.play().catch(() => {});
+                        } catch {}
+                        const match = chatUsers.find(u => (u.name || '').trim() === name.trim());
+                        if (match) { handleUserClick(match.id); return; }
+                        if (profile?.name && profile.name.trim() === name.trim() && user?.id) { handleUserClick(user.id); return; }
+                        const ci = chatUsers.find(u => (u.name || '').toLowerCase() === name.toLowerCase());
+                        if (ci) { handleUserClick(ci.id); }
+                      }}
                     />
                   </div>
                   
@@ -1421,6 +1457,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                         showRoomReactionTray={showRoomReactionTray}
                         setShowRoomReactionTray={setShowRoomReactionTray}
                         user={user}
+                        currentUserElement={profile?.element || null}
                       />
                     )}
                   </div>

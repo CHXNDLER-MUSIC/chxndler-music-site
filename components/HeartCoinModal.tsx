@@ -203,6 +203,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   const [isEnlargedCardFlipped, setIsEnlargedCardFlipped] = useState(false);
   const [cardRotation, setCardRotation] = useState(0); // For 360° spin mode
   const [isAnimatingFlip, setIsAnimatingFlip] = useState(false); // For smooth flip transition
+  // Toggle purchase preview (replaces card image with balance vs cost)
+  const [selectedPurchaseType, setSelectedPurchaseType] = useState<null | 'digital' | 'physical'>(null);
 
   // Element selection and internal cards state for CARDS tab
   const [selectedElement, setSelectedElement] = useState<'LIGHTNING' | 'WATER' | 'HEART' | 'DARKNESS' | null>(null);
@@ -411,6 +413,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     try { sfx.play('close', 0.5); } catch {}
     setSelectedElement(null);
     setInternalCardIndex(0);
+    setSelectedPurchaseType(null);
   };
 
   // Helper function to check if quest is completed
@@ -868,7 +871,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       return;
     }
 
-    const currentCard = availableCards[currentCardIndex];
+    // Use filtered cards if an element is selected; otherwise use provided props
+    const currentCard = selectedElement ? displayCards[displayCardIndex] : availableCards[currentCardIndex];
     if (!currentCard) {
       setError("No card selected");
       return;
@@ -899,6 +903,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       setError(null);
       setMessage(null);
       setValidationErrors({});
+      setSelectedPurchaseType(null);
     } else {
       // Digital purchase - immediate
       setModalLoading(true);
@@ -951,6 +956,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         setMessage(`Successfully purchased digital ${currentCard.card_name || currentCard.cards?.card_name || 'card'}! A confirmation email has been sent.`);
         // Refresh profile to update balance
         await refreshProfile();
+        setSelectedPurchaseType(null);
       } catch (error: any) {
         console.error('Card purchase error:', error);
         setError(error?.message || `Failed to purchase card`);
@@ -973,6 +979,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   const handlePrevCard = () => {
     try { sfx.play('flip', 0.8); } catch {}
     setIsEnlargedCardFlipped(false);
+    setSelectedPurchaseType(null);
 
     // If element is selected, use internal navigation
     if (selectedElement && displayCards.length > 0) {
@@ -987,6 +994,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   const handleNextCard = () => {
     try { sfx.play('flip', 0.8); } catch {}
     setIsEnlargedCardFlipped(false);
+    setSelectedPurchaseType(null);
 
     // If element is selected, use internal navigation
     if (selectedElement && displayCards.length > 0) {
@@ -1626,18 +1634,56 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     setEnlargedCard(displayCards[displayCardIndex]);
                     setIsEnlargedCardFlipped(false);
                   }}
-                  style={{
-                    perspective: '1000px'
-                  }}
+                  style={{ perspective: '1000px' }}
                 >
-                  <img
-                    src={displayCards[displayCardIndex]?.artwork_url || `/cards/${displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name}.webp`}
-                    alt={displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name || 'Card'}
-                    className="w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain hover:scale-105 transition-transform duration-300"
-                    style={{
-                      filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))'
-                    }}
-                  />
+                  {selectedPurchaseType === null ? (
+                    <img
+                      src={displayCards[displayCardIndex]?.artwork_url || `/cards/${displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name}.webp`}
+                      alt={displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name || 'Card'}
+                      className="w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain hover:scale-105 transition-transform duration-300"
+                      style={{ filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))' }}
+                    />
+                  ) : (
+                    <div className="w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl flex flex-col items-center justify-center gap-4 bg-black/60">
+                      <div className="text-center">
+                        <div className="text-white/80 text-xs mb-2">Your Balance</div>
+                        <div className="flex items-center justify-center gap-2 text-white text-xl font-bold">
+                          <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6" />
+                          <span>{profile?.heartcoin_balance ?? 0}</span>
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-white/80 text-xs mb-2">Cost ({selectedPurchaseType === 'digital' ? 'Digital' : 'Physical'})</div>
+                        <div className="flex items-center justify-center gap-2 text-[#4ECDC4] text-xl font-bold">
+                          <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6" />
+                          <span>{selectedPurchaseType === 'digital' ? 5 : 15}</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-3 mt-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const type = selectedPurchaseType;
+                            if (!type) return;
+                            try { sfx.play('hover', 0.3); } catch {}
+                            handleCardPurchase(type);
+                          }}
+                          className="px-4 py-2 rounded bg-[#4ECDC4] text-black font-bold text-xs hover:opacity-90"
+                          disabled={selectedPurchaseType === 'digital'
+                            ? (modalLoading || !profile || (profile.heartcoin_balance || 0) < 5)
+                            : (modalLoading || !profile || (profile.heartcoin_balance || 0) < 15)}
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setSelectedPurchaseType(null); }}
+                          className="px-4 py-2 rounded bg-white/10 border border-white/30 text-white font-bold text-xs hover:bg-white/20"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Card Info */}
@@ -1663,7 +1709,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     <button
                       onClick={() => {
                         try { sfx.play('hover', 0.3); } catch {}
-                        handleCardPurchase('digital');
+                        setSelectedPurchaseType(prev => prev === 'digital' ? null : 'digital');
                       }}
                       onMouseEnter={() => {
                         try { sfx.play('hover', 0.3); } catch {}
@@ -1688,7 +1734,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     <button
                       onClick={() => {
                         try { sfx.play('hover', 0.3); } catch {}
-                        handleCardPurchase('physical');
+                        setSelectedPurchaseType(prev => prev === 'physical' ? null : 'physical');
                       }}
                       onMouseEnter={() => {
                         try { sfx.play('hover', 0.3); } catch {}
@@ -2039,8 +2085,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     >
                       {/* Front of card - rotates with cardRotation */}
                       <img
-                        src={availableCards[currentCardIndex]?.artwork_url || `/cards/${availableCards[currentCardIndex]?.card_name || availableCards[currentCardIndex]?.cards?.card_name}.webp`}
-                        alt={availableCards[currentCardIndex]?.card_name || availableCards[currentCardIndex]?.cards?.card_name || 'Card'}
+                        src={displayCards[displayCardIndex]?.artwork_url || `/cards/${displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name}.webp`}
+                        alt={displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name || 'Card'}
                         className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
                         style={{
                           filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
@@ -2065,8 +2111,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                       />
                     </TiltSpinCard>
                     
-                    {/* Navigation arrows - only show if multiple cards */}
-                    {availableCards.length > 1 && (
+                    {/* Navigation arrows - only show if multiple cards in current view */}
+                    {displayCards.length > 1 && (
                       <>
                         <button
                           onClick={(e) => {
@@ -2094,11 +2140,11 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         
                         {/* Card indicators */}
                         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-1">
-                          {availableCards.map((_, index) => (
+                          {displayCards.map((_, index) => (
                             <div
                               key={index}
                               className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                                index === currentCardIndex
+                                index === displayCardIndex
                                   ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]'
                                   : 'bg-white/30'
                               }`}

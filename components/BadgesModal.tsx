@@ -138,7 +138,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         name: 'COLLECTOR',
         displayName: 'COLLECTOR', 
         badges: allBadges.length > 0 ? badgesWithUnlocked.filter(badge => badge.category === 'collector') : [],
-        image: '/badges/collector.webp'
+        image: '/elements/collector.webp'
       },
       {
         id: 'elemental-streak',
@@ -156,10 +156,10 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       },
       {
         id: 'currency',
-        name: 'HEARTCOIN',
-        displayName: 'HEARTCOIN',
+        name: 'CURRENCY',
+        displayName: 'CURRENCY',
         badges: allBadges.length > 0 ? badgesWithUnlocked.filter(badge => badge.category === 'currency') : [],
-        image: '/badges/currency.webp'
+        image: '/elements/currency.webp'
       },
       {
         id: 'community',
@@ -216,7 +216,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             onTouchMove={(e) => e.stopPropagation()}
           >
             <TiltSpinCard
-              className="relative w-40 h-40 cursor-grab active:cursor-grabbing"
+              className="relative w-56 h-56 cursor-grab active:cursor-grabbing"
               style={{
                 touchAction: 'none',
                 perspective: '1000px',
@@ -263,7 +263,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                       <img
                         src={selectedBadge.icon_url}
                         alt={selectedBadge.badge_name}
-                        className="w-36 h-36 object-cover rounded-full"
+                        className="w-44 h-44 object-cover rounded-full"
                         draggable={false}
                       />
                     ) : (
@@ -293,8 +293,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                         {profile?.display_name || profile?.name || 'Anonymous'}
                       </div>
                       <div
-                        className="text-cyan-400 text-[10px] uppercase tracking-wide"
-                        style={{ textShadow: '0 0 6px rgba(56,182,255,0.6)' }}
+                        className="text-[10px] uppercase tracking-wide"
+                        style={{ color: '#39FF14', textShadow: '0 0 8px #39FF14, 0 0 14px #39FF14' }}
                       >
                         CLAIMED {formatClaimedDate(selectedBadge.earned_at)}
                       </div>
@@ -305,7 +305,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                         <img
                           src={selectedBadge.icon_url}
                           alt={selectedBadge.badge_name}
-                          className="w-36 h-36 object-cover rounded-full"
+                          className="w-44 h-44 object-cover rounded-full"
                           style={{ transform: 'scaleX(-1)' }}
                           draggable={false}
                         />
@@ -905,7 +905,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                       <img
                         src={enlargedBadge.icon_url}
                         alt={enlargedBadge.badge_name}
-                        className="w-32 h-32 object-cover rounded-full"
+                        className="w-44 h-44 object-cover rounded-full"
                         draggable={false}
                       />
                     ) : (
@@ -940,8 +940,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                         {profile?.display_name || profile?.name || 'Anonymous'}
                       </div>
                       <div
-                        className="text-cyan-400 text-xs uppercase tracking-wide"
-                        style={{ textShadow: '0 0 6px rgba(56,182,255,0.6)' }}
+                        className="text-xs uppercase tracking-wide"
+                        style={{ color: '#39FF14', textShadow: '0 0 8px #39FF14, 0 0 14px #39FF14' }}
                       >
                         CLAIMED {formatClaimedDate(enlargedBadge.earned_at)}
                       </div>
@@ -952,7 +952,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                         <img
                           src={enlargedBadge.icon_url}
                           alt={enlargedBadge.badge_name}
-                          className="w-32 h-32 object-cover rounded-full"
+                          className="w-44 h-44 object-cover rounded-full"
                           draggable={false}
                           style={{ transform: 'scaleX(-1)' }}
                         />

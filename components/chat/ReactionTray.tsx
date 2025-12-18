@@ -49,6 +49,7 @@ export default function ReactionTray({ onReact, userId, disabled = false, classN
         overflowX: 'visible',
         ...style
       }}
+      onClick={(e) => { e.stopPropagation(); }}
       initial={{ opacity: 0, scale: 0.8, y: 10 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.8, y: 10 }}
@@ -62,7 +63,7 @@ export default function ReactionTray({ onReact, userId, disabled = false, classN
         return (
           <motion.button
             key={reaction}
-            onClick={() => handleReactionClick(reaction)}
+            onClick={(e) => { e.stopPropagation(); handleReactionClick(reaction); }}
             onMouseEnter={() => {
               setHoveredReaction(reaction);
               // Play hover sound effect

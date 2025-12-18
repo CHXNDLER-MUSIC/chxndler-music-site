@@ -12,7 +12,7 @@ import MessageReactions from './MessageReactions';
  * MessageList Component
  * Displays chat messages with real-time updates and auto-scroll
  */
-export default function MessageList({ messages, onUserClick, loading, messageReactions, onReact, currentUserId }) {
+export default function MessageList({ messages, onUserClick, loading, messageReactions, onReact, currentUserId, currentUserElement = null, onUserClickByName, currentUserProfileImageUrl = null, userProfilesById = {} }) {
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const [isNearBottom, setIsNearBottom] = useState(true);
@@ -99,6 +99,9 @@ export default function MessageList({ messages, onUserClick, loading, messageRea
               reactions={messageReactions?.[message.id] || {}}
               onReact={onReact}
               currentUserId={currentUserId}
+              currentUserElement={currentUserElement}
+              currentUserProfileImageUrl={currentUserProfileImageUrl}
+              userProfilesById={userProfilesById}
               isConsecutive={
                 index > 0 && 
                 messages[index - 1].user_id === message.user_id &&
@@ -128,42 +131,53 @@ export default function MessageList({ messages, onUserClick, loading, messageRea
 /**
  * Individual Chat Message Component
  */
-function ChatMessage({ message, onUserClick, reactions, onReact, currentUserId, isConsecutive }) {
+function ChatMessage({ message, onUserClick, onUserClickByName, reactions, onReact, currentUserId, currentUserElement = null, currentUserProfileImageUrl = null, userProfilesById = {}, isConsecutive }) {
   const [showReactionTray, setShowReactionTray] = useState(false);
   const [longPressTimer, setLongPressTimer] = useState(null);
   const reactionTrayTimeoutRef = useRef(null);
+  const containerRef = useRef(null);
   
   const userProfile = message.user_profile;
   const displayName = userProfile?.name || 'Anonymous';
-  const elementColor = getElementColor(userProfile?.element);
-  // Get text color based on element, default to yellow for anonymous users
-  const textColor = userProfile?.element ? elementColor : '#F2EF1D';
+  // Resolve element/profile image from message, known users, or current user
+  const resolvedElement = (userProfile?.element) || (userProfilesById?.[message.user_id]?.element) || ((message.user_id === currentUserId) ? currentUserElement : null);
+  const elementColor = resolvedElement ? getElementColor(resolvedElement) : undefined;
+  const textColor = elementColor;
+  const resolvedProfileImageUrl = (userProfile?.profile_image_url) || (userProfilesById?.[message.user_id]?.profile_image_url) || ((message.user_id === currentUserId) ? currentUserProfileImageUrl : null);
   const timestamp = formatChatTimestamp(message.created_at);
   const sanitizedMessage = sanitizeMessage(message.message);
 
-  // Handle reaction tray visibility
-  const handleMouseEnter = () => {
+  // Show reaction tray only on explicit click (no hover)
+  const handleMessageClick = () => {
     if (message.message_type !== 'message') return;
-    
-    if (reactionTrayTimeoutRef.current) {
-      clearTimeout(reactionTrayTimeoutRef.current);
-    }
-    
-    // Add a small delay before showing to prevent flashing
-    reactionTrayTimeoutRef.current = setTimeout(() => {
-      setShowReactionTray(true);
-    }, 300);
+    setShowReactionTray((prev) => !prev);
   };
 
-  const handleMouseLeave = () => {
-    if (reactionTrayTimeoutRef.current) {
-      clearTimeout(reactionTrayTimeoutRef.current);
-    }
-    
-    reactionTrayTimeoutRef.current = setTimeout(() => {
-      setShowReactionTray(false);
-    }, 200);
-  };
+  // Hide reaction tray when clicking outside this message
+  useEffect(() => {
+    if (!showReactionTray) return;
+    const handleDocumentClick = (e) => {
+      const node = containerRef.current;
+      if (!node) return;
+      if (!node.contains(e.target)) {
+        setShowReactionTray(false);
+      }
+    };
+    document.addEventListener('click', handleDocumentClick, true);
+    return () => document.removeEventListener('click', handleDocumentClick, true);
+  }, [showReactionTray]);
+
+  // Hide reaction tray on Escape key
+  useEffect(() => {
+    if (!showReactionTray) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setShowReactionTray(false);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [showReactionTray]);
 
   // Handle long press for mobile
   const handleTouchStart = () => {
@@ -237,14 +251,30 @@ function ChatMessage({ message, onUserClick, reactions, onReact, currentUserId, 
       };
     }
 
+    // If it's a "connected to the signal" message, make clickable to open that user's profile
+    const isConnectMsg = sanitizedMessage.includes('connected to the signal');
+    const tryOpenUserFromMessage = () => {
+      if (!isConnectMsg || !onUserClickByName) return;
+      const name = sanitizedMessage.split(' connected to the signal')[0].trim();
+      if (name) onUserClickByName(name);
+    };
     return (
       <div className="flex justify-center my-3">
-        <div 
+        <button 
           className="px-4 py-2 rounded-full text-sm font-semibold"
-          style={systemStyle}
+          style={{ cursor: isConnectMsg ? 'pointer' : 'default', ...systemStyle }}
+          onMouseEnter={() => {
+            try {
+              const audio = new Audio('/audio/hover.mp3');
+              audio.volume = 0.3;
+              audio.play().catch(() => {});
+            } catch {}
+          }}
+          onClick={tryOpenUserFromMessage}
+          title={isConnectMsg ? 'View profile' : undefined}
         >
           {sanitizedMessage}
-        </div>
+        </button>
       </div>
     );
   }
@@ -254,8 +284,8 @@ function ChatMessage({ message, onUserClick, reactions, onReact, currentUserId, 
       className={`group hover:bg-white/5 rounded-lg transition-colors duration-200 relative ${
         isConsecutive ? 'py-1 px-3' : 'py-2 px-3'
       }`}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      ref={containerRef}
+      onClick={handleMessageClick}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
@@ -269,9 +299,9 @@ function ChatMessage({ message, onUserClick, reactions, onReact, currentUserId, 
             <div 
               className="w-6 h-6 rounded-full flex items-center justify-center overflow-hidden"
               style={{
-                background: `${elementColor}30`,
-                border: `1px solid ${elementColor}`,
-                boxShadow: `0 0 8px ${elementColor}60`
+                background: elementColor ? `${elementColor}30` : 'rgba(255,255,255,0.05)',
+                border: elementColor ? `1px solid ${elementColor}` : '1px solid rgba(255,255,255,0.2)',
+                boxShadow: elementColor ? `0 0 8px ${elementColor}60` : 'none'
               }}
             >
               {message.user_id === 'anonymous' ? (
@@ -289,10 +319,10 @@ function ChatMessage({ message, onUserClick, reactions, onReact, currentUserId, 
                     }
                   }}
                 />
-              ) : userProfile?.profile_image_url ? (
+              ) : resolvedProfileImageUrl ? (
                 // Show actual profile image for authenticated users
                 <img
-                  src={userProfile.profile_image_url}
+                  src={resolvedProfileImageUrl}
                   alt={displayName}
                   className="w-full h-full object-cover"
                   onError={(e) => {
@@ -362,6 +392,14 @@ function ChatMessage({ message, onUserClick, reactions, onReact, currentUserId, 
               <button
                 onClick={() => onUserClick(message.user_id)}
                 className="font-semibold text-sm hover:underline transition-colors duration-200"
+                style={elementColor ? { color: elementColor } : undefined}
+                onMouseEnter={() => {
+                  try {
+                    const audio = new Audio('/audio/hover.mp3');
+                    audio.volume = 0.3;
+                    audio.play().catch(() => {});
+                  } catch {}
+                }}
               >
                 {displayName}
               </button>
@@ -374,6 +412,14 @@ function ChatMessage({ message, onUserClick, reactions, onReact, currentUserId, 
           {/* Message text */}
           <div 
             className="text-sm leading-relaxed break-words"
+            style={textColor ? { color: textColor } : undefined}
+            onMouseEnter={() => {
+              try {
+                const audio = new Audio('/audio/hover.mp3');
+                audio.volume = 0.3;
+                audio.play().catch(() => {});
+              } catch {}
+            }}
             dangerouslySetInnerHTML={{
               __html: formatMessageText(sanitizedMessage, textColor)
             }}

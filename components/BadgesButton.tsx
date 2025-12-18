@@ -123,7 +123,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
     },
     {
       id: 'currency',
-      name: 'HEARTCOIN',
+      name: 'CURRENCY',
       emoji: '💰',
       color: '#F59E0B',
       badges: badgesWithUnlocked.filter(badge => badge.category === 'currency')
@@ -540,12 +540,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                   <div className="w-full max-w-sm mx-4 p-6 text-center space-y-4">
                     {/* Badge display with TiltSpinCard */}
                   <div className="flex flex-col items-center space-y-4">
-                    {/* Unlocked status - only show above badge when unlocked */}
-                    {isUnlocked(selectedBadge) && (
-                      <div className="text-sm font-bold text-green-400">
-                        CLAIMED
-                      </div>
-                    )}
+                    {/* Removed CLAIMED label above badge in enlarged view */}
 
                     <div
                       className="relative"
@@ -558,7 +553,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                       onTouchMove={(e) => e.stopPropagation()}
                     >
                       <TiltSpinCard
-                        className="relative w-32 h-32 cursor-grab active:cursor-grabbing"
+                        className="relative w-44 h-44 cursor-grab active:cursor-grabbing"
                         style={{
                           touchAction: 'none',
                           perspective: '1000px',
@@ -607,7 +602,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                                 <img
                                   src={selectedBadge.icon_url}
                                   alt={selectedBadge.badge_name}
-                                  className="w-28 h-28 object-cover rounded-full"
+                                  className="w-40 h-40 object-cover rounded-full"
                                   draggable={false}
                                 />
                               ) : (
@@ -641,7 +636,12 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                                 <div className="text-white font-bold text-sm truncate max-w-[100px]" style={{ textShadow: '0 0 8px rgba(0,191,255,0.8)' }}>
                                   {profile?.name || 'You'}
                                 </div>
-                                <div className="text-cyan-400 text-[10px] font-semibold mt-1">CLAIMED</div>
+                                <div
+                                  className="text-[10px] font-semibold mt-1"
+                                  style={{ color: '#39FF14', textShadow: '0 0 8px #39FF14, 0 0 14px #39FF14' }}
+                                >
+                                  CLAIMED
+                                </div>
                                 <div className="text-white/80 text-[10px] mt-0.5">
                                   {(() => {
                                     const userBadge = userBadges.find(ub => ub.badge_id === selectedBadge.id);
@@ -668,7 +668,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                                     <img
                                       src={selectedBadge.icon_url}
                                       alt={selectedBadge.badge_name}
-                                      className="w-28 h-28 object-cover rounded-full"
+                                      className="w-40 h-40 object-cover rounded-full"
                                       draggable={false}
                                     />
                                   ) : (

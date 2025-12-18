@@ -47,14 +47,15 @@ export default function SignalChat({
       case 'darkness':
         return '#8B5CF6';
       default:
-        return profile?.element ? elementToColor(profile.element) : '#FFFFFF';
+        // No forced default color; inherit site default
+        return undefined as unknown as string;
     }
   };
 
   const getUserTextColor = (userId?: string) => {
-    if (!userId) return '#FFD700';
+    if (!userId) return undefined as unknown as string;
     if (userId === user?.id) return elementToColor(profile?.element);
-    return userElementMap[userId] || '#FFD700';
+    return userElementMap[userId] || (undefined as unknown as string);
   };
 
   const fetchElementsForUsers = async (userIds: string[]) => {
@@ -294,7 +295,7 @@ export default function SignalChat({
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium">
+                      <span className="font-medium" style={{ color: getUserTextColor(msg.user_id) }}>
                         {msg.username}
                       </span>
                       <span className="text-xs text-gray-500">
@@ -304,7 +305,7 @@ export default function SignalChat({
                         })}
                       </span>
                     </div>
-                    <div className="break-words">{msg.message}</div>
+                    <div className="break-words" style={{ color: getUserTextColor(msg.user_id) }}>{msg.message}</div>
                   </motion.div>
                 ))
               )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from 'react';
+import { getElementColor } from '@/lib/supabase/chat';
 import { motion } from 'framer-motion';
 import { sfx } from '@/lib/sfx';
 import ReactionTray from './ReactionTray';
@@ -9,7 +10,7 @@ import ReactionTray from './ReactionTray';
  * MessageInput Component
  * Input field for sending chat messages with emoji picker and formatting
  */
-export default function MessageInput({ onSendMessage, disabled, placeholder = "Send a Heart Signal…", onTyping, onRoomReaction, showRoomReactionTray, setShowRoomReactionTray, user }) {
+export default function MessageInput({ onSendMessage, disabled, placeholder = "Send a Heart Signal…", onTyping, onRoomReaction, showRoomReactionTray, setShowRoomReactionTray, user, currentUserElement = null }) {
   const [message, setMessage] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -132,12 +133,12 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "S
                 padding: '10px 12px',
                 lineHeight: '24px',
                 background: 'rgba(0, 0, 0, 0.6)',
-                border: `2px solid #F2EF1D`,
-                color: '#F2EF1D',
-                textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
+                border: `2px solid ${getElementColor(currentUserElement)}`,
+                color: getElementColor(currentUserElement),
+                textShadow: 'none',
                 boxShadow: isFocused 
-                  ? '0 0 25px rgba(242, 239, 29, 0.6), 0 0 50px rgba(242, 239, 29, 0.3), inset 0 0 20px rgba(242, 239, 29, 0.1)' 
-                  : '0 0 15px rgba(242, 239, 29, 0.4), 0 0 30px rgba(242, 239, 29, 0.2)',
+                  ? '0 0 20px currentColor, inset 0 0 10px rgba(0,0,0,0.2)'
+                  : '0 0 10px currentColor',
                 overflow: 'hidden',
                 resize: 'none',
                 whiteSpace: 'nowrap',
@@ -190,14 +191,14 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "S
               width: '44px',
               padding: '0',
               background: showRoomReactionTray 
-                ? 'rgba(242, 239, 29, 0.2)'
-                : 'rgba(242, 239, 29, 0.1)',
-              color: '#F2EF1D',
-              textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
-              border: '2px solid #F2EF1D',
+                ? 'rgba(0, 0, 0, 0.2)'
+                : 'rgba(0, 0, 0, 0.1)',
+              color: getElementColor(currentUserElement),
+              textShadow: 'none',
+              border: `2px solid ${getElementColor(currentUserElement)}`,
               boxShadow: showRoomReactionTray
-                ? '0 0 20px rgba(242, 239, 29, 0.6), 0 0 40px rgba(242, 239, 29, 0.3)'
-                : '0 0 12px rgba(242, 239, 29, 0.4)',
+                ? '0 0 16px currentColor'
+                : '0 0 8px currentColor',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
@@ -228,14 +229,14 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "S
               background: disabled || !message.trim() 
                 ? 'rgba(128, 128, 128, 0.1)'
                 : 'transparent',
-              color: '#F2EF1D',
-              textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
+              color: getElementColor(currentUserElement),
+              textShadow: 'none',
               border: disabled || !message.trim()
                 ? '2px solid rgba(128, 128, 128, 0.3)'
-                : '2px solid #F2EF1D',
+                : `2px solid ${getElementColor(currentUserElement)}`,
               boxShadow: disabled || !message.trim()
                 ? 'none'
-                : '0 0 25px rgba(242, 239, 29, 0.6), 0 0 50px rgba(242, 239, 29, 0.3), inset 0 0 15px rgba(242, 239, 29, 0.2)',
+                : '0 0 16px currentColor',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
