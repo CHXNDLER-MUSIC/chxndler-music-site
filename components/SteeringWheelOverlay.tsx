@@ -819,8 +819,8 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
             {/* Join form panel */}
             <div
               style={{
-                // Fixed width so the pink display stays the same size across viewports
-                width: 'calc(var(--pink-display-width, 260px) + 40px)',
+                // Match the blue display width (same formula as DashboardApp)
+                width: 'calc(var(--display-width) + 32px)',
                 height: '100%',
                 borderRadius: 'var(--display-border-radius)',
                 padding: '0px 4px 8px 4px',

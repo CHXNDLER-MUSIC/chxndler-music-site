@@ -47,6 +47,7 @@ import { DEBUG_MEDIA, dlog, dwarn } from "@/lib/debug";
 import { ElementIcon as OptimizedElementIcon } from "@/lib/elementIcons";
 import { sfx } from "@/lib/sfx";
 import { usePlanetRewardsContext } from "@/components/PlanetRewardsProvider";
+import { useFocusElementOfDay } from "@/hooks/useFocusElementOfDay";
 
 // Use system font stack to avoid network font fetches during build
 
@@ -137,6 +138,9 @@ const HUDPanel = React.memo(function HUDPanel({
 
   // Planet rewards system for element planet clicks
   const planetRewards = usePlanetRewardsContext();
+
+  // Get the element of the day for camera focus
+  const { focusElement } = useFocusElementOfDay();
 
   // Temporary kill-switch to disable 3D planets for performance testing
   // Set to true to disable. You can also override at runtime by setting
@@ -2360,6 +2364,7 @@ const HUDPanel = React.memo(function HUDPanel({
                     zoomLevel={1}
                     onPlanetSelect={handlePlanetSelectWithRewards}
                     quality="high"
+                    focusElement={focusElement}
                   />
                 </ErrorBoundary>
               </div>

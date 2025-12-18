@@ -4,17 +4,22 @@ import React, { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three-stdlib';
 
+export type ElementType = 'heart' | 'water' | 'lightning' | 'darkness';
+
 export interface Pure3DPlanetsProps {
   songs: any[];
   songsByElement: Record<string, any[]>;
   zoomLevel: number;
   onPlanetSelect?: (planetId: string) => void;
   quality: 'low' | 'high';
+  focusElement?: ElementType | null;
 }
 
-export default function Pure3DPlanets({ songs, songsByElement: propSongsByElement, quality, onPlanetSelect }: Pure3DPlanetsProps) {
+export default function Pure3DPlanets({ songs, songsByElement: propSongsByElement, quality, onPlanetSelect, focusElement }: Pure3DPlanetsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isClient, setIsClient] = useState(false);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -49,6 +54,7 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
     // Camera
     const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
     camera.position.set(0, 20, 40);
+    cameraRef.current = camera;
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({
@@ -69,6 +75,7 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
     controls.maxDistance = 100;
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.1;
+    controlsRef.current = controls;
 
     // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
@@ -293,6 +300,74 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
   // Only rebuild when songs are first loaded (length changes from 0)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClient, quality, songs.length]);
+
+  // Camera focus effect - animate camera to focus on the element of the day
+  useEffect(() => {
+    if (!focusElement || !cameraRef.current || !controlsRef.current) return;
+
+    const camera = cameraRef.current;
+    const controls = controlsRef.current;
+
+    // Element planet positions (relative to sun at y=12, orbit radius 18)
+    const sunY = 12;
+    const orbitRadius = 18;
+    const elementPositions: Record<ElementType, THREE.Vector3> = {
+      heart: new THREE.Vector3(orbitRadius, sunY, 0),
+      water: new THREE.Vector3(0, sunY, orbitRadius),
+      lightning: new THREE.Vector3(-orbitRadius, sunY, 0),
+      darkness: new THREE.Vector3(0, sunY, -orbitRadius),
+    };
+
+    const targetPosition = elementPositions[focusElement];
+    if (!targetPosition) return;
+
+    // Calculate camera position to look at the target element
+    // Position camera at an offset from the target, looking toward it
+    const cameraDistance = 35;
+    const cameraOffset = targetPosition.clone().normalize().multiplyScalar(cameraDistance);
+    const newCameraPosition = new THREE.Vector3(
+      targetPosition.x + cameraOffset.x * 0.8,
+      sunY + 15, // Keep camera above the orbital plane
+      targetPosition.z + cameraOffset.z * 0.8
+    );
+
+    // Animate camera to new position
+    const startPosition = camera.position.clone();
+    const startTarget = controls.target.clone();
+    const endTarget = targetPosition.clone();
+
+    let progress = 0;
+    const duration = 2000; // 2 seconds
+    const startTime = performance.now();
+
+    const animateCamera = () => {
+      const elapsed = performance.now() - startTime;
+      progress = Math.min(elapsed / duration, 1);
+
+      // Easing function (ease-out cubic)
+      const eased = 1 - Math.pow(1 - progress, 3);
+
+      // Interpolate camera position
+      camera.position.lerpVectors(startPosition, newCameraPosition, eased);
+
+      // Interpolate controls target
+      controls.target.lerpVectors(startTarget, endTarget, eased);
+      controls.update();
+
+      if (progress < 1) {
+        requestAnimationFrame(animateCamera);
+      } else {
+        console.log(`Camera focused on ${focusElement} planet`);
+      }
+    };
+
+    // Start animation after a short delay to let the scene initialize
+    const timeoutId = setTimeout(() => {
+      animateCamera();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [focusElement]);
 
   if (!isClient) {
     return (

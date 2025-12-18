@@ -3,20 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import type { ElementType } from "@/lib/planetConfig";
-
-type FocusRecord = {
-  element: string; // 'heart' | 'water' | 'lightning' | 'darkness' (case insensitive acceptable)
-  focus_date?: string | null;
-  created_at?: string | null;
-};
-
-const CANDIDATE_TABLES = [
-  process.env.NEXT_PUBLIC_FOCUS_ELEMENT_TABLE || "",
-  "element_focus_daily",
-  "daily_focus_element",
-  "focus_elements",
-  "element_of_the_day",
-].filter(Boolean);
+import { getLocalDateString } from "@/utils/dateHelpers";
 
 function normalizeElement(s: string | null | undefined): ElementType | null {
   const v = String(s || "").toLowerCase();
@@ -26,14 +13,43 @@ function normalizeElement(s: string | null | undefined): ElementType | null {
 
 export function useFocusElementOfDay() {
   const [focusElement, setFocusElement] = useState<ElementType | null>("heart");
+  const [loading, setLoading] = useState(true);
 
-  // TEMPORARILY DISABLED: Skip database calls that cause 404 errors
-  // This allows the 3D planet system to work properly
   useEffect(() => {
-    // Just use "heart" as the default focus element
-    setFocusElement("heart");
+    async function fetchElementOfDay() {
+      try {
+        const today = getLocalDateString();
+
+        // Fetch from soul_daily_prompts table
+        const { data, error } = await supabaseBrowser
+          .from("soul_daily_prompts")
+          .select("element")
+          .eq("prompt_date", today)
+          .maybeSingle();
+
+        if (error) {
+          console.warn("Error fetching element of day:", error.message);
+          // Fall back to heart on error
+          setFocusElement("heart");
+        } else if (data?.element) {
+          const normalized = normalizeElement(data.element);
+          setFocusElement(normalized || "heart");
+          console.log("Focus element of day:", normalized || "heart");
+        } else {
+          // No entry for today, fall back to heart
+          setFocusElement("heart");
+        }
+      } catch (err) {
+        console.error("Failed to fetch element of day:", err);
+        setFocusElement("heart");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchElementOfDay();
   }, []);
 
-  return { focusElement };
+  return { focusElement, loading };
 }
 

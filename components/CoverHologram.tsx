@@ -621,16 +621,20 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
             setShowCard(false);
           }}
         >
-          {/* Card modal positioned below profile bar */}
+          {/* Card modal positioned between profile bar and light beam boundary */}
           <div
             className="card-anchored"
             style={{
               position: 'fixed',
-              top: '72px', // Below profile bar (64px) + 8px padding
+              top: '64px', // Below profile bar
+              bottom: 'var(--light-beam-boundary)',
               left: '50%',
               transform: 'translateX(-50%)',
               pointerEvents: 'auto',
-              maxHeight: 'calc(100vh - 180px)', // Leave space for profile bar top and controls at bottom
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
               overflow: 'visible'
             }}
             onClick={(e)=> e.stopPropagation()}
@@ -1151,16 +1155,16 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
         
         
         .card-modal{
-          /* Larger pop container */
+          /* Larger pop container - fills available space between profile bar and light beam */
           width: min(85vw, 400px);
           max-width: 85vw;
-          max-height: calc(100vh - 200px); /* Constrain height to fit between profile bar and bottom */
+          max-height: 100%; /* Fill available vertical space */
           background: rgba(25,227,255,0.45);
           box-shadow: 0 0 60px rgba(25,227,255,0.45), inset 0 0 0 1px rgba(25,227,255,0.35);
           overflow: hidden; /* Contain content within bounds */
         }
         .card-modal .tilt-img {
-          max-height: calc(100vh - 260px); /* Ensure card image fits within available space */
+          max-height: 65vh; /* Ensure card image fits within available space between profile bar and light beam */
           object-fit: contain;
         }
         @media (max-width: 380px) {

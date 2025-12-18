@@ -1291,34 +1291,37 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     }
 
     // When warp finishes, move to landed phase
+    // NOTE: The beam and HUD are now enabled in onWarpSfxEnd AFTER button.mp3 plays
+    // to ensure proper sequence: warp.mp3 -> button.mp3 -> beam opens -> HUD opens
     setTimeout(() => {
       if (process.env.NODE_ENV === "development") {
-        console.log("🛬 LANDING COMPLETE - Full cockpit reveal");
+        console.log("🛬 LANDING COMPLETE - Phase updated (beam/HUD handled by onWarpSfxEnd)");
       }
-      setUiPhase("landed");
+      // Only set phase to landed if not already set by onWarpSfxEnd
+      if (uiPhase !== "landed") {
+        setUiPhase("landed");
+      }
       startInFlightRef.current = false;
-      
+
       // CRITICAL: Mark user has entered Heartverse to show profile bar
-      try { 
-        enterHeartverse(); 
+      try {
+        enterHeartverse();
         if (process.env.NODE_ENV === "development") {
           console.log("✅ User entered Heartverse - profile bar will show immediately");
         }
-      } catch { 
-        setHasEnteredHeartverse(true); 
+      } catch {
+        setHasEnteredHeartverse(true);
         if (process.env.NODE_ENV === "development") {
           console.log("✅ Fallback: set hasEnteredHeartverse to true");
         }
       }
-      
-      // Enable remaining systems for landed state
-      setBeamEnabled(true);
-      setShowHUD(true);
-      setBeamColor('blue');
+
+      // Do NOT enable beam/HUD here - this is now handled in onWarpSfxEnd
+      // after button.mp3 plays to ensure proper sequence
       setBeamOnly(false);
       setPowerBusy(false);
       setLandingRevealReady(true);
-      
+
     }, WARP_DURATION_MS);
     
   }, [audioManager]);
@@ -1932,12 +1935,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           // Notify unified audio system that warp completed so pending tracks auto-play
           try { audioManager?.markWarpCompleted(); } catch {}
           
-          // FALLBACK: Ensure cockpit is fully revealed if Start button warp
+          // FALLBACK: Ensure supporting systems are ready if Start button warp
+          // NOTE: Beam/HUD enabling is handled by playButtonAndRevealUI below
+          // to ensure proper sequence: warp.mp3 -> button.mp3 -> beam -> HUD
           if (startButtonWarpRef.current && uiPhase !== "landed") {
-            console.log("🛬 FALLBACK: Start button warp SFX ended, forcing landed state");
-            setUiPhase("landed");
+            console.log("🛬 FALLBACK: Start button warp SFX ended, preparing systems");
             startInFlightRef.current = false;
-            
+
             // Mark warp as completed for unified audio system
             try { audioManager?.markWarpCompleted(); } catch {}
             // Auto-play ambient space music via unified audio when landing on home
@@ -1946,28 +1950,27 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 audioManager?.playTrack('space-music');
               }
             } catch {}
-            
+
             // Ensure user entered Heartverse state
-            try { 
-              enterHeartverse(); 
-            } catch { 
-              setHasEnteredHeartverse(true); 
+            try {
+              enterHeartverse();
+            } catch {
+              setHasEnteredHeartverse(true);
             }
-            
-            // Enable remaining systems
-            setBeamEnabled(true);
-            setShowHUD(true);
+
+            // Set supporting state but do NOT enable beam/HUD here
+            // The playButtonAndRevealUI function will handle beam/HUD after button.mp3 plays
             setBeamOnly(false);
             setPowerBusy(false);
             setLandingRevealReady(true);
-            
+
             // Enable ambient space music after START button warp completes
             setAmbientSuspended(false);
             // Auto-trigger ambient space music after start button warp
-            try { 
-              window.dispatchEvent(new CustomEvent('ambient:play')); 
+            try {
+              window.dispatchEvent(new CustomEvent('ambient:play'));
             } catch {}
-            
+
             // Auto-trigger play button to start space music and sync button state
             setTimeout(() => {
               try {
@@ -2001,18 +2004,56 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           
           // Disable warp to prevent additional warp sounds
           setAllowWarp(false);
-          
-          // Automatically fade in blue display and light beam after warp effect completes
-          // This ensures the UI is always visible after any warp, regardless of the path
-          setTimeout(() => {
-            setBeamEnabled(true);
-            setShowHUD(true);
-            setWarpActive(false); // Ensure warp state is ended to allow UI visibility
-            if (process.env.NODE_ENV === "development") {
-              console.log("🌟 Auto fade-in: Blue display and light beam enabled after warp");
+
+          // SEQUENCE: Play button.mp3 FIRST, then open beam, then HUD
+          // This ensures proper order: warp.mp3 -> button.mp3 -> beam opens -> HUD opens
+          const playButtonAndRevealUI = () => {
+            console.log("🔊 Playing button.mp3 before revealing UI");
+            try {
+              const buttonPromise = sfx.playAndWait('button', 0.9);
+              buttonPromise.then(() => {
+                console.log("✅ button.mp3 finished, now opening beam");
+                // After button.mp3 finishes, open the light beam
+                setBeamEnabled(true);
+                setBeamColor('blue');
+                setWarpActive(false);
+
+                // After beam opens, open the HUD with a short delay
+                setTimeout(() => {
+                  console.log("✅ Opening blue HUD display");
+                  setShowHUD(true);
+                  setUiPhase("landed");
+                  if (process.env.NODE_ENV === "development") {
+                    console.log("🌟 Full UI reveal complete: button.mp3 -> beam -> HUD");
+                  }
+                }, 150); // Short delay for beam to open first
+              }).catch(() => {
+                // Fallback if button SFX fails
+                console.warn("⚠️ button.mp3 failed, opening UI anyway");
+                setBeamEnabled(true);
+                setBeamColor('blue');
+                setWarpActive(false);
+                setTimeout(() => {
+                  setShowHUD(true);
+                  setUiPhase("landed");
+                }, 150);
+              });
+            } catch {
+              // Ultimate fallback
+              console.warn("⚠️ SFX system failed, opening UI directly");
+              setBeamEnabled(true);
+              setBeamColor('blue');
+              setWarpActive(false);
+              setTimeout(() => {
+                setShowHUD(true);
+                setUiPhase("landed");
+              }, 150);
             }
-          }, 300); // Short delay for smooth transition
-          
+          };
+
+          // Trigger the button sound + UI reveal sequence
+          playButtonAndRevealUI();
+
           // Welcome modal will be shown after UI reveal below
           
           // After a song is selected, reveal ONLY the selected planet post-warp
@@ -2094,8 +2135,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               }
             }
           }
-          // If we're landing on home via Start, reveal overlay/UI after warp finishes
-          // Only revert to home if this isn't a user-selected song
+          // If we're landing on home via Start, set up home mode state
+          // NOTE: Button.mp3 and beam/HUD reveal are handled by playButtonAndRevealUI() above
+          // to ensure proper sequence: warp.mp3 -> button.mp3 -> beam -> HUD
           if (pendingOverlayReveal && !userSelected && !pendingTrackPlay) {
             // Ensure we are in home mode (CHXNDLER) before revealing HUD
             try { setHomeMode(true); } catch {}
@@ -2112,68 +2154,33 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             try {
               if (nextSky) { setSky(nextSky); setNextSky(null); }
             } catch {}
-            // Play the button sound; start ambient from the beginning after it finishes.
-            // Welcome VO will now play AFTER the first full ambient loop completes.
+
+            // Reset ambient to beginning (will be triggered after UI reveals)
             try {
-              const p = sfx.playAndWait('button', 0.9);
-              let settled = false;
-              const startAudioFromBeginning = () => {
-                if (settled) return; settled = true;
-                
-                
-                // Reset ambient to beginning and trigger ambient playback.
-                try {
-                  const ambientEl = document.querySelector('audio[data-ambient="1"]');
-                  
-                  // Reset to beginning
-                  if (ambientEl) {
-                    ambientEl.currentTime = 0;
-                    
-                  }
-                  
-                  // Ambient start disabled - no auto-play after warp
-                  // setAmbientSuspended(false); // DISABLED
-                  // try { window.dispatchEvent(new CustomEvent('ambient:play')); } catch {} // DISABLED
-                  
-                } catch (e) {
-                  console.error('🎵 DashboardApp: Error starting audio from beginning:', e);
-                }
-              };
-              
-              p.then(startAudioFromBeginning).catch(() => {
-                // If SFX fails, still start audio soon after to avoid silence
-                setTimeout(startAudioFromBeginning, 200);
-              });
-              // Watchdog: if SFX promise neither resolves nor rejects (shouldn't happen),
-              // start after a generous timeout to avoid getting stuck on silence.
-              setTimeout(() => { if (!settled) startAudioFromBeginning(); }, 3000);
-            } catch {
-              // Ambient resume disabled - no auto-play fallback
-              // setTimeout(() => {
-              //   try { setAmbientSuspended(false); } catch {}
-              //   try { window.dispatchEvent(new CustomEvent('ambient:play')); } catch {}
-              // }, 300);
-            }
-            // SYNCHRONIZED COCKPIT REVEAL - ALL TOGETHER AT WARP END
-            try { 
+              const ambientEl = document.querySelector('audio[data-ambient="1"]');
+              if (ambientEl) {
+                ambientEl.currentTime = 0;
+              }
+            } catch {}
+
+            // Set supporting state - beam/HUD are handled by playButtonAndRevealUI()
+            // DO NOT enable beam/HUD here - let the button.mp3 sequence handle it
+            try {
               setUiUnlocked(true);
               setShowOverlayUI(true);
-              setCockpitLanded(true);
-              setBeamEnabled(true);
-              setShowHUD(true);
-              setShowProfileBar(true);
               setBeamOnly(false);
               setPowerBusy(false);
               setLandingRevealReady(true);
-              setWarpActive(false); // CRITICAL: End warp state to allow light beam and other UI to show
-              
+              // NOTE: Do NOT set setBeamEnabled or setShowHUD here
+              // They will be set by playButtonAndRevealUI after button.mp3 finishes
+
               // Enable ambient space music after homepage reveal
               setAmbientSuspended(false);
               // Auto-trigger ambient space music after homepage warp
-              try { 
-                window.dispatchEvent(new CustomEvent('ambient:play')); 
+              try {
+                window.dispatchEvent(new CustomEvent('ambient:play'));
               } catch {}
-              
+
               // Auto-trigger play button to start space music and sync button state
               setTimeout(() => {
                 try {
@@ -2185,17 +2192,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   }
                 } catch {}
               }, 500); // Small delay to ensure audio is ready
-              if (process.env.NODE_ENV === "development") {
-                console.log("🚀 WARP END: Synchronized cockpit reveal - all UI elements visible");
-                console.log("🛸 POST-WARP STATES:", { 
-                  cockpitVisible: true,
-                  uiUnlocked: true,
-                  showOverlayUI: true,
-                  showProfileBar: true,
-                  cockpitVisible: "should be true now"
-                });
-              }
-              
+
               // Show welcome modal for non-logged users (synchronized with blue display reveal)
               // Only show if not already open to prevent excessive re-renders
               if (!profile?.id && !userSelected && !pendingTrackPlay && userClickedStart && !showWelcomeHomeModal) {
@@ -2272,16 +2269,16 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               playerStore.getState().setPlanetsVisible(true);
             } catch {}
           }
-          // If a track play is pending, begin UI fade-in immediately at warp end.
+          // If a track play is pending, prepare for UI reveal after button.mp3 plays
+          // NOTE: Beam/HUD are now enabled by playButtonAndRevealUI() in onWarpSfxEnd
+          // to ensure proper sequence: warp.mp3 -> button.mp3 -> beam -> HUD -> song
           if (pendingTrackPlay) {
             try {
               // Cancel any fallback that might race with our sequencing
               if (trackPlayTimerRef.current !== undefined) { clearTimeout(trackPlayTimerRef.current); trackPlayTimerRef.current = undefined; }
             } catch {}
-            // Reveal UI elements together (beam + HUD + buttons) now
-            setShowHUD(true);
-            setBeamEnabled(true);
-            setBeamColor('blue'); // Ensure beam color is restored to blue
+            // Set supporting state but do NOT enable beam/HUD here
+            // They will be enabled by playButtonAndRevealUI() after button.mp3 finishes
             setBeamOnly(false);
             setShowOverlayUI(true);
             // Safety: if base video readiness callback is delayed, start music after a grace period

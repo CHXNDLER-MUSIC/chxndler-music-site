@@ -43,7 +43,7 @@ const storeItems: StoreItem[] = [
     description: "A symbol that you belong here with the people who feel deeply, dream big, and find beauty in being different.",
     cost: 4.5,
     heartCoin: 3,
-    merch_item_id: "00000000-0000-0000-0000-000000000001" // Placeholder UUID - should be actual merch_items.id
+    merch_item_id: "2ebc68bd-b466-4c99-81b5-5465d98321fa"
   },
   {
     name: "PATCH",
@@ -53,7 +53,7 @@ const storeItems: StoreItem[] = [
     description: "Stitch this into your world as a quiet reminder that this isn't just music, it's a community.",
     cost: 6,
     heartCoin: 4,
-    merch_item_id: "00000000-0000-0000-0000-000000000002"
+    merch_item_id: "b49e562c-31ba-4fd6-8157-7a1a683e5279"
   },
   {
     name: "Sticker",
@@ -62,7 +62,7 @@ const storeItems: StoreItem[] = [
     description: "A simple reminder that you're part of something bigger. Remember you're not alone in this story.",
     cost: 3,
     heartCoin: 2,
-    merch_item_id: "00000000-0000-0000-0000-000000000003"
+    merch_item_id: "b608657d-df9d-4a00-b94a-0d2b598fa73c"
   },
   {
     name: "Hat",
@@ -71,7 +71,7 @@ const storeItems: StoreItem[] = [
     description: "A classic you'll wear everywhere. It's lowkey, but it says everything it needs to.",
     cost: 30,
     heartCoin: 20,
-    merch_item_id: "00000000-0000-0000-0000-000000000004"
+    merch_item_id: "6e8a6c59-a69e-40c7-afeb-8a3af62d7365"
   },
   {
     name: "Keychain",
@@ -80,7 +80,7 @@ const storeItems: StoreItem[] = [
     description: "A small piece of the HEARTVERSE to carry everywhere. A quiet reminder that you're connected, always.",
     cost: 6,
     heartCoin: 4,
-    merch_item_id: "00000000-0000-0000-0000-000000000005"
+    merch_item_id: "8ad93b98-8dc8-46ed-8285-ce26a7028637"
   },
   {
     name: "House Party Poster",
@@ -89,7 +89,7 @@ const storeItems: StoreItem[] = [
     description: "This poster captures the night the HEARTVERSE came alive. Hang it up and remember when you joined the story.",
     cost: 30,
     heartCoin: 20,
-    merch_item_id: "00000000-0000-0000-0000-000000000006"
+    merch_item_id: "2582977b-1680-4567-a5bb-cd31c4e74135"
   },
   {
     name: "Necklace",
@@ -98,7 +98,7 @@ const storeItems: StoreItem[] = [
     description: "A symbol of love, connection, and everything this world stands for. It's a keepsake for the people who found home here.",
     cost: 18,
     heartCoin: 12,
-    merch_item_id: "00000000-0000-0000-0000-000000000007"
+    merch_item_id: "a0442c84-55c7-48cc-be79-5296360d9ca7"
   },
   {
     name: "Beanie",
@@ -108,7 +108,7 @@ const storeItems: StoreItem[] = [
     description: "For the ones who wear their hearts out loud and aren't afraid to stand out.",
     cost: 30,
     heartCoin: 20,
-    merch_item_id: "00000000-0000-0000-0000-000000000008"
+    merch_item_id: "214c10af-ed40-4856-b3f5-6433db3c1428"
   },
   {
     name: "Button",
@@ -117,7 +117,7 @@ const storeItems: StoreItem[] = [
     description: "A symbol of unity, curiosity, and courage for those who feel deeply and dream beyond the ordinary.",
     cost: 6,
     heartCoin: 4,
-    merch_item_id: "00000000-0000-0000-0000-000000000009"
+    merch_item_id: "ebf2ea83-b65b-474b-9ac5-8891ffd3e28a"
   },
   {
     name: "Bracelet",
@@ -126,7 +126,7 @@ const storeItems: StoreItem[] = [
     description: "A reminder you wear on your wrist that you're growing, healing, and finding your place. It's a quiet symbol that you belong here, with the ones who feel deeply and love endlessly.",
     cost: 24,
     heartCoin: 16,
-    merch_item_id: "00000000-0000-0000-0000-000000000010"
+    merch_item_id: "c1d24372-294e-4cdf-adb7-3cb77bb1d68d"
   },
   {
     name: "Pick",
@@ -135,7 +135,7 @@ const storeItems: StoreItem[] = [
     description: "Your reminder to follow your passion wherever it leads. A glow in the dark pick made for the dreamers and late night creators who carry music like a heartbeat through the dark.",
     cost: 6,
     heartCoin: 4,
-    merch_item_id: "00000000-0000-0000-0000-000000000011"
+    merch_item_id: "8d40159b-fd70-47cc-b394-7c1fdc4e197f"
   }
 ];
 
