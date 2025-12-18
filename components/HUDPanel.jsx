@@ -2371,11 +2371,12 @@ const HUDPanel = React.memo(function HUDPanel({
           {/* Bloom layers removed */}
           <div
               className={`relative ${inConsole ? 'p-2' : 'p-4'}`}
-              style={{ 
+              style={{
                 // Keep this wrapper always visible so cover art never flashes with 3D
-                opacity: 1, 
-                transition: 'opacity 240ms ease', 
-                pointerEvents: 'auto', 
+                opacity: 1,
+                transition: 'opacity 240ms ease',
+                // Let clicks pass through to 3D canvas below; individual children set pointerEvents: auto
+                pointerEvents: 'none',
                 minHeight: inConsole ? 380 : 480,
                 width: '100%',
                 height: '100%',
@@ -2386,7 +2387,9 @@ const HUDPanel = React.memo(function HUDPanel({
                 // Create an isolated stacking context to prevent compositing flicker on iOS
                 isolation: 'isolate',
                 WebkitTransform: 'translateZ(0)',
-                transform: 'translateZ(0)'
+                transform: 'translateZ(0)',
+                // Ensure this wrapper (containing cover art) is above the 3D planets layer (z-index: 5)
+                zIndex: 10
               }}
               ref={innerRef}
             >

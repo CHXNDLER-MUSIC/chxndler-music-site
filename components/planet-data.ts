@@ -93,7 +93,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'HEART',
     orbitRadius: 5.5,
     orbitSpeed: 0.12,
-    released: true,
+    released: false,
   },
   {
     id: 'ALWAYS_ON_MY_MIND_ACOUSTIC',
@@ -102,7 +102,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'HEART',
     orbitRadius: 5.5,
     orbitSpeed: 0.10,
-    released: true,
+    released: false,
   },
   {
     id: 'ALWAYS_ON_MY_MIND_REMIX',
@@ -111,7 +111,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'HEART',
     orbitRadius: 5.5,
     orbitSpeed: 0.14,
-    released: true,
+    released: false,
   },
   {
     id: 'BABY',
@@ -138,7 +138,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'HEART',
     orbitRadius: 6.5,
     orbitSpeed: 0.27,
-    released: true,
+    released: false,
   },
   {
     id: 'COLLIDE',
@@ -174,7 +174,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'HEART',
     orbitRadius: 6.5,
     orbitSpeed: 0.29,
-    released: true,
+    released: false,
   },
   {
     id: 'I_MIGHT_FALL_IN_LOVE_WITH_YOU',
@@ -183,7 +183,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'HEART',
     orbitRadius: 6.5,
     orbitSpeed: 0.34,
-    released: true,
+    released: false,
   },
   {
     id: 'I_MIGHT_FALL_IN_LOVE_WITH_YOU_ACOUSTIC',
@@ -192,7 +192,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'HEART',
     orbitRadius: 7.5,
     orbitSpeed: 0.24,
-    released: true,
+    released: false,
   },
   {
     id: 'LOVE_ME',
@@ -201,7 +201,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'HEART',
     orbitRadius: 7.5,
     orbitSpeed: 0.36,
-    released: true,
+    released: false,
   },
   {
     id: 'LOVE_ME_ACOUSTIC',
@@ -210,7 +210,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'HEART',
     orbitRadius: 7.5,
     orbitSpeed: 0.23,
-    released: true,
+    released: false,
   },
   {
     id: 'PINK_MOON',
@@ -219,7 +219,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'HEART',
     orbitRadius: 7.5,
     orbitSpeed: 0.37,
-    released: true,
+    released: false,
   },
   {
     id: 'SOMEBODY_TO_LOVE',
@@ -228,7 +228,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'HEART',
     orbitRadius: 7.5,
     orbitSpeed: 0.22,
-    released: true,
+    released: false,
   },
   {
     id: 'TIENES_UN_AMIGO',
@@ -237,7 +237,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'HEART',
     orbitRadius: 8.5,
     orbitSpeed: 0.38,
-    released: true,
+    released: false,
   },
   {
     id: 'WERE_JUST_FRIENDS',
@@ -284,7 +284,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'WATER',
     orbitRadius: 6.5,
     orbitSpeed: 0.14,
-    released: true,
+    released: false,
   },
   {
     id: 'OCEAN_GIRL',
@@ -322,7 +322,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'LIGHTNING',
     orbitRadius: 5.5,
     orbitSpeed: 0.18,
-    released: true,
+    released: false,
   },
   {
     id: 'BLUE_ACOUSTIC',
@@ -331,7 +331,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'LIGHTNING',
     orbitRadius: 5.5,
     orbitSpeed: 0.40,
-    released: true,
+    released: false,
   },
   {
     id: 'BLUE',
@@ -340,7 +340,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'LIGHTNING',
     orbitRadius: 5.5,
     orbitSpeed: 0.14,
-    released: true,
+    released: false,
   },
   {
     id: 'BRAIN_FREEZE',
@@ -358,7 +358,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'LIGHTNING',
     orbitRadius: 6.8,
     orbitSpeed: 0.30,
-    released: true,
+    released: false,
   },
   {
     id: 'GAME_BOY_HEART',
@@ -376,7 +376,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'LIGHTNING',
     orbitRadius: 6.8,
     orbitSpeed: 0.10,
-    released: true,
+    released: false,
   },
   {
     id: 'HOME_ACOUSTIC',
@@ -385,7 +385,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'LIGHTNING',
     orbitRadius: 6.8,
     orbitSpeed: 0.24,
-    released: true,
+    released: false,
   },
   {
     id: 'HOUSE_PARTY',
@@ -403,7 +403,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'LIGHTNING',
     orbitRadius: 8.1,
     orbitSpeed: 0.26,
-    released: true,
+    released: false,
   },
   {
     id: 'KID_FOREVER',
@@ -432,7 +432,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'DARKNESS',
     orbitRadius: 6.0,
     orbitSpeed: 0.18,
-    released: true,
+    released: false,
   },
   {
     id: 'ALONE_ACOUSTIC',
@@ -441,7 +441,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'DARKNESS',
     orbitRadius: 6.0,
     orbitSpeed: 0.22,
-    released: true,
+    released: false,
   },
   {
     id: 'CHEERLEADER',
@@ -450,7 +450,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'DARKNESS',
     orbitRadius: 6.0,
     orbitSpeed: 0.15,
-    released: true,
+    released: false,
   },
   {
     id: 'LITTLE_BLACK_HEART',
@@ -459,7 +459,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'DARKNESS',
     orbitRadius: 6.0,
     orbitSpeed: 0.26,
-    released: true,
+    released: false,
   },
   {
     id: 'LITTLE_BLACK_HEART_ACOUSTIC',
@@ -468,7 +468,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'DARKNESS',
     orbitRadius: 7.5,
     orbitSpeed: 0.12,
-    released: true,
+    released: false,
   },
   {
     id: 'MR_BRIGHTSIDE',
@@ -477,7 +477,7 @@ const baseSongPlanets: Omit<SongPlanet, 'appearance'>[] = [
     elementId: 'DARKNESS',
     orbitRadius: 7.5,
     orbitSpeed: 0.30,
-    released: true,
+    released: false,
   },
   {
     id: 'PARIS',

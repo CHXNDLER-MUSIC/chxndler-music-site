@@ -823,7 +823,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
                 width: 'calc(var(--pink-display-width, 260px) + 40px)',
                 height: '100%',
                 borderRadius: 'var(--display-border-radius)',
-                padding: '0px 12px 12px 12px',
+                padding: '0px 4px 8px 4px',
                 color: '#fff',
                 background: `
                   linear-gradient(180deg, #FC54AF44, #FC54AF26),

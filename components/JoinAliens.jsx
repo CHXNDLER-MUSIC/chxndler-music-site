@@ -243,7 +243,7 @@ export default function JoinAliens({ visible = true } = {}) {
         minHeight: 'fit-content',
         maxHeight: '100%',
         margin: '0',
-        padding: '0px 20px 0px 20px',
+        padding: '0px 8px 0px 8px',
         background: 'rgba(0, 0, 0, 0.6)',
         backdropFilter: 'blur(12px)',
         border: 'none',

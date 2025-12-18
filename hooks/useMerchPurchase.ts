@@ -19,18 +19,41 @@ export function useMerchPurchase() {
     });
 
     try {
-      const response = await fetch('/api/merch/purchase', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          merchItemId: merchItem.id,
-          quantity
-        }),
+      console.log('[useMerchPurchase] Making fetch request to /api/merch/purchase');
+
+      let response: Response;
+      try {
+        response = await fetch('/api/merch/purchase', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            merchItemId: merchItem.id,
+            quantity
+          }),
+        });
+      } catch (fetchError) {
+        console.error('[useMerchPurchase] Fetch failed (network error):', fetchError);
+        throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Failed to connect to server'}`);
+      }
+
+      console.log('[useMerchPurchase] Response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        contentType: response.headers.get('content-type')
       });
 
-      const result = await response.json();
+      let result;
+      try {
+        const responseText = await response.text();
+        console.log('[useMerchPurchase] Response text (first 500 chars):', responseText.slice(0, 500));
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('[useMerchPurchase] Failed to parse response as JSON:', parseError);
+        throw new Error(`Server returned invalid response: ${parseError instanceof Error ? parseError.message : 'Parse error'}`);
+      }
 
       // Log the API response
       console.log('[useMerchPurchase] API response:', {
@@ -55,13 +78,29 @@ export function useMerchPurchase() {
       return normalizedResult as PurchaseWithHeartcoinsResult;
 
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Purchase failed';
+      // Better error extraction - handle various error types
+      let errorMessage = 'Purchase failed';
+
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (err && typeof err === 'object') {
+        // Try to extract message from error-like objects
+        errorMessage = (err as any).message || (err as any).error || JSON.stringify(err) || 'Purchase failed';
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+
       console.error('[useMerchPurchase] Purchase error:', {
-        error: err,
-        message: errorMessage,
+        errorType: err?.constructor?.name || typeof err,
+        errorMessage,
+        errorString: String(err),
         merch_item_id: merchItem.id,
         qty: quantity
       });
+
+      // Also log the raw error for debugging
+      console.error('[useMerchPurchase] Raw error object:', err);
+
       setError(errorMessage);
       return null;
     } finally {

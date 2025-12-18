@@ -59,6 +59,8 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
     renderer.setPixelRatio(quality === 'high' ? Math.min(window.devicePixelRatio, 2) : 1);
     renderer.setClearColor(0x000000, 0);
     container.appendChild(renderer.domElement);
+    // Enable pointer events on canvas for OrbitControls and click detection
+    renderer.domElement.style.pointerEvents = 'auto';
 
     // Controls
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -310,7 +312,7 @@ export default function Pure3DPlanets({ songs, songsByElement: propSongsByElemen
         width: '100%',
         height: '100%',
         minHeight: '400px',
-        pointerEvents: 'auto' // Enable clicks on the 3D canvas
+        pointerEvents: 'none' // Let clicks pass through to elements below; canvas will handle its own events
       }}
     />
   );

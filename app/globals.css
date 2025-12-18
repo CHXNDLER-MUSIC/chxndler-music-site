@@ -203,8 +203,8 @@
   /* Slightly widen the minimum blue display width on small screens */
   /* Slightly narrower minimum on mobile */
   --display-width: max(160px, min(420px, calc((100vw - 16px) * 0.8)));
-  /* Fixed width for the pink display so it remains constant across breakpoints */
-  --pink-display-width: 260px;
+  /* Responsive width for the pink display - scales with viewport, min 260px, max 900px */
+  --pink-display-width: max(260px, min(900px, 55vw));
   --display-border-radius: 12px;
 }
 
