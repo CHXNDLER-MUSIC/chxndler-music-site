@@ -56,6 +56,8 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
   const targetCameraPos = useRef<THREE.Vector3>(new THREE.Vector3(0, 150, 400.0));
   const targetCameraLookAt = useRef<THREE.Vector3>(new THREE.Vector3(0, 0, 0));
   const cameraTransitionSpeed = useRef<number>(0.08);
+  // Track when user is actively manipulating the camera to avoid snapping back
+  const isUserCameraDragging = useRef<boolean>(false);
   
   // Particle system for gravitational connections
   const particleSystemRef = useRef<THREE.Points | null>(null);
@@ -1887,24 +1889,27 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       // Update camera focus for smooth transitions
       const camera = cameraRef.current;
       if (camera) {
-        // Smoothly animate camera position to target with eased motion
-        const distance = camera.position.distanceTo(targetCameraPos.current);
-        const easedSpeed = distance > 0.1 ? cameraTransitionSpeed.current * 1.5 : cameraTransitionSpeed.current;
-        camera.position.lerp(targetCameraPos.current, easedSpeed);
-        
-        // Smoothly animate camera look-at target with enhanced focus
-        const currentLookAt = new THREE.Vector3();
-        camera.getWorldDirection(currentLookAt);
-        currentLookAt.add(camera.position);
-        
-        const targetLookDirection = targetCameraLookAt.current.clone().sub(camera.position).normalize();
-        const currentLookDirection = currentLookAt.sub(camera.position).normalize();
-        
-        // Use faster look-at transition for more responsive focusing
-        const lookAtSpeed = distance > 0.1 ? easedSpeed * 1.2 : easedSpeed;
-        currentLookDirection.lerp(targetLookDirection, lookAtSpeed);
-        const newLookAt = camera.position.clone().add(currentLookDirection);
-        camera.lookAt(newLookAt);
+        // If the user is dragging/zooming the camera, don't override their input
+        if (!isUserCameraDragging.current) {
+          // Smoothly animate camera position to target with eased motion
+          const distance = camera.position.distanceTo(targetCameraPos.current);
+          const easedSpeed = distance > 0.1 ? cameraTransitionSpeed.current * 1.5 : cameraTransitionSpeed.current;
+          camera.position.lerp(targetCameraPos.current, easedSpeed);
+
+          // Smoothly animate camera look-at target with enhanced focus
+          const currentLookAt = new THREE.Vector3();
+          camera.getWorldDirection(currentLookAt);
+          currentLookAt.add(camera.position);
+
+          const targetLookDirection = targetCameraLookAt.current.clone().sub(camera.position).normalize();
+          const currentLookDirection = currentLookAt.sub(camera.position).normalize();
+
+          // Use faster look-at transition for more responsive focusing
+          const lookAtSpeed = distance > 0.1 ? easedSpeed * 1.2 : easedSpeed;
+          currentLookDirection.lerp(targetLookDirection, lookAtSpeed);
+          const newLookAt = camera.position.clone().add(currentLookDirection);
+          camera.lookAt(newLookAt);
+        }
       }
 
       // Update central planet if it exists
@@ -2282,6 +2287,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
     
     const onMouseDown = (event: MouseEvent) => {
       isDragging = true;
+      isUserCameraDragging.current = true;
       previousMousePosition = { x: event.clientX, y: event.clientY };
       console.log('🎮 Started camera drag');
     };
@@ -2312,12 +2318,20 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       // Update camera position
       camera.position.setFromSpherical(spherical);
       camera.lookAt(0, 0, 0);
+
+      // Keep target in sync so the tick loop doesn't snap back
+      targetCameraPos.current.copy(camera.position);
+      targetCameraLookAt.current.set(0, 0, 0);
       
       previousMousePosition = { x: event.clientX, y: event.clientY };
     };
     
     const onMouseUp = () => {
       isDragging = false;
+      isUserCameraDragging.current = false;
+      // Persist the final position as the new target
+      targetCameraPos.current.copy(camera.position);
+      targetCameraLookAt.current.set(0, 0, 0);
       console.log('🎮 Ended camera drag');
     };
     
@@ -2328,7 +2342,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       const zoomDelta = event.deltaY > 0 ? 1 + zoomSpeed : 1 - zoomSpeed;
       
       camera.position.multiplyScalar(zoomDelta);
-      
+
       // Prevent getting too close or too far
       const distance = camera.position.length();
       if (distance < 5) {
@@ -2336,13 +2350,21 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       } else if (distance > 100) {
         camera.position.normalize().multiplyScalar(100);
       }
-      
+
+      // Treat wheel as user camera interaction and sync target
+      isUserCameraDragging.current = true;
+      targetCameraPos.current.copy(camera.position);
+      targetCameraLookAt.current.set(0, 0, 0);
+      // Small timeout to allow the tick to resume smoothing after wheel
+      setTimeout(() => { isUserCameraDragging.current = false; }, 100);
+
       console.log('🔍 Mouse wheel zoom, distance:', distance);
     };
     
     renderer.domElement.addEventListener('mousedown', onMouseDown);
     renderer.domElement.addEventListener('mousemove', onMouseMove);
     renderer.domElement.addEventListener('mouseup', onMouseUp);
+    renderer.domElement.addEventListener('mouseleave', onMouseUp);
     renderer.domElement.addEventListener('wheel', onWheel);
 
     // Resize
@@ -3003,6 +3025,9 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
               const currentPos = camera.position.clone();
               const targetPos = currentPos.multiplyScalar(1.3); // Move camera further away
               camera.position.copy(targetPos);
+              // Keep the camera target in sync
+              targetCameraPos.current.copy(camera.position);
+              targetCameraLookAt.current.set(0, 0, 0);
             }
           }}
           className="bg-cyan-500/80 hover:bg-cyan-500 border-2 border-white rounded text-white text-lg font-bold transition-colors duration-200 w-10 h-10 flex items-center justify-center shadow-lg"
@@ -3020,6 +3045,9 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
               const currentPos = camera.position.clone();
               const targetPos = currentPos.multiplyScalar(0.8); // Move camera closer
               camera.position.copy(targetPos);
+              // Keep the camera target in sync
+              targetCameraPos.current.copy(camera.position);
+              targetCameraLookAt.current.set(0, 0, 0);
             }
           }}
           className="bg-cyan-500/80 hover:bg-cyan-500 border-2 border-white rounded text-white text-lg font-bold transition-colors duration-200 w-10 h-10 flex items-center justify-center shadow-lg"
@@ -3035,6 +3063,9 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
             if (cameraRef.current) {
               cameraRef.current.position.set(0, 8, 25);
               cameraRef.current.lookAt(0, 0, 0);
+              // Sync targets so no snap-back
+              targetCameraPos.current.set(0, 8, 25);
+              targetCameraLookAt.current.set(0, 0, 0);
             }
           }}
           className="bg-yellow-500/80 hover:bg-yellow-500 border-2 border-white rounded text-black text-xs font-bold transition-colors duration-200 px-2 py-1"

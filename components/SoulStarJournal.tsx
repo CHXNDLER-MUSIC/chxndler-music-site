@@ -1030,7 +1030,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
           {/* Scrollable entries container for both PUBLIC and PRIVATE tabs */}
           <div className="journal-scroll mt-3 space-y-3 flex-1 overflow-y-auto pr-1 pl-2">
-            {activeTab === 'private' ? (
+            {activeTab === 'private' && (
               <div className="space-y-4">
                 {journalEntries
                   .filter(entry => true) // Show all entries in private tab
@@ -1286,7 +1286,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   </div>
                 )}
               </div>
-            ) : (
+            )}
+            {activeTab === 'public' && (
               <div className="space-y-4">
                 {publicEntries
                   .map((entry) => {
@@ -1888,6 +1889,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 )}
               </div>
             )}
+            {activeTab === 'public' && <PublicJournalFeed />}
           </div>
         </div>
       ) : (

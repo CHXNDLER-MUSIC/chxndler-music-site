@@ -1,7 +1,6 @@
 "use client";
 
 import { usePublicSoulJournalEntries } from "@/hooks/useSoulJournalEntries";
-import { useProfile } from "@/contexts/ProfileContext";
 
 const ELEMENT_COLORS: Record<string, { color: string; glow: string; emoji: string; label: string }> = {
   heart: { color: "#F91880", glow: "#F918B0", emoji: "💖", label: "HEART" },
@@ -11,16 +10,7 @@ const ELEMENT_COLORS: Record<string, { color: string; glow: string; emoji: strin
 };
 
 export default function PublicJournalFeed() {
-  const { user } = useProfile();
   const { entries, loading, error } = usePublicSoulJournalEntries();
-
-  if (!user?.id) {
-    return (
-      <div className="p-4 text-center text-sm" style={{ color: "#FFFFFFCC" }}>
-        Sign in to view the public journal feed.
-      </div>
-    );
-  }
 
   if (loading) {
     return (

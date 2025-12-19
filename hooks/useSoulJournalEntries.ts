@@ -33,7 +33,9 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
   const [error, setError] = useState<string>('');
 
   const fetchEntries = useCallback(async () => {
-    if (!user?.id) {
+    // For public-only queries, do not gate on auth
+    const requireUser = options.includePrivate === true;
+    if (requireUser && !user?.id) {
       setEntries([]);
       return;
     }
@@ -63,18 +65,18 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
         .not('entry_text', 'eq', '')
         .order('created_at', { ascending: false });
 
-      // Filter by specific user if provided
+      // Filter by specific user if provided (only meaningful when includePrivate or explicit user view)
       if (options.userId) {
         query = query.eq('user_id', options.userId);
       }
 
       // Handle privacy filtering
       if (!options.includePrivate) {
-        // Show only public entries
+        // Public feed: only fetch public entries; do not depend on current user
         query = query.eq('is_public', true);
       } else {
-        // Show both public entries and private entries owned by current user
-        query = query.or(`is_public.eq.true,user_id.eq.${user.id}`);
+        // Include private entries owned by the current user along with public entries
+        query = query.or(`is_public.eq.true,user_id.eq.${user!.id}`);
       }
 
       const { data, error } = await query;

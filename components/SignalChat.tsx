@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabaseClient } from '@/lib/supabaseClient';
+import ProfileModal from '@/components/chat/ProfileModal';
 import { useProfile } from '@/contexts/ProfileContext';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -34,6 +35,8 @@ export default function SignalChat({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const [userElementMap, setUserElementMap] = useState<Record<string, string>>({});
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<{ id: string; name: string; element?: string | null } | null>(null);
 
   const elementToColor = (element?: string | null) => {
     const el = (element || '').toString().toLowerCase();
@@ -56,6 +59,17 @@ export default function SignalChat({
     if (!userId) return undefined as unknown as string;
     if (userId === user?.id) return elementToColor(profile?.element);
     return userElementMap[userId] || (undefined as unknown as string);
+  };
+
+  const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
+
+  const openProfileForMessage = (msg: HeartSignalMessage) => {
+    if (!msg?.user_id || msg.user_id === SYSTEM_USER_ID) return;
+    const nameFromMessage = (msg.message?.includes('connected to the signal')
+      ? msg.message.split(' connected to the signal')[0].trim()
+      : undefined) || msg.username || 'User';
+    setSelectedUser({ id: msg.user_id, name: nameFromMessage });
+    setShowProfileModal(true);
   };
 
   const fetchElementsForUsers = async (userIds: string[]) => {
@@ -295,9 +309,16 @@ export default function SignalChat({
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium" style={{ color: getUserTextColor(msg.user_id) }}>
+                      <button
+                        type="button"
+                        onClick={() => openProfileForMessage(msg)}
+                        className="font-medium text-left"
+                        style={{ color: getUserTextColor(msg.user_id) }}
+                        title="View profile"
+                        disabled={!msg?.user_id || msg.user_id === SYSTEM_USER_ID}
+                      >
                         {msg.username}
-                      </span>
+                      </button>
                       <span className="text-xs text-gray-500">
                         {new Date(msg.created_at).toLocaleTimeString([], { 
                           hour: '2-digit', 
@@ -305,7 +326,20 @@ export default function SignalChat({
                         })}
                       </span>
                     </div>
-                    <div className="break-words" style={{ color: getUserTextColor(msg.user_id) }}>{msg.message}</div>
+                    {(msg.is_system && (msg.message || '').includes('connected to the signal')) ? (
+                      <button
+                        type="button"
+                        onClick={() => openProfileForMessage(msg)}
+                        className="break-words text-left"
+                        style={{ color: getUserTextColor(msg.user_id) }}
+                        title="View profile"
+                        disabled={!msg?.user_id || msg.user_id === SYSTEM_USER_ID}
+                      >
+                        {msg.message}
+                      </button>
+                    ) : (
+                      <div className="break-words" style={{ color: getUserTextColor(msg.user_id) }}>{msg.message}</div>
+                    )}
                   </motion.div>
                 ))
               )}
@@ -347,5 +381,13 @@ export default function SignalChat({
         )}
       </AnimatePresence>
     </div>
+    
+    {/* Profile modal for clicked users */}
+    <ProfileModal
+      user={selectedUser || undefined as any}
+      isOpen={showProfileModal}
+      onClose={() => setShowProfileModal(false)}
+      isOwnProfile={!!(user?.id && selectedUser?.id && user.id === selectedUser.id)}
+    />
   );
 }

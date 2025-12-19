@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabaseClient } from '@/lib/supabaseClient';
+import ProfileModal from '@/components/chat/ProfileModal';
 import { useProfile } from '@/contexts/ProfileContext';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -49,6 +50,8 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const [userElementMap, setUserElementMap] = useState<Record<string, string>>({});
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<{ id: string; name: string; element?: string | null } | null>(null);
 
   const elementToColor = (element?: string | null) => {
     const el = (element || '').toString().toLowerCase();
@@ -69,6 +72,17 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
   const getUserTextColor = (userId?: string) => {
     if (!userId) return '#FFD700';
     return userElementMap[userId] || '#FFD700';
+  };
+
+  const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
+
+  const openProfileForMessage = (msg: HeartSignalMessage) => {
+    if (!msg?.user_id || msg.user_id === SYSTEM_USER_ID) return;
+    const nameFromMessage = (msg.message?.includes('connected to the signal')
+      ? msg.message.split(' connected to the signal')[0].trim()
+      : undefined) || msg.username || 'User';
+    setSelectedUser({ id: msg.user_id, name: nameFromMessage });
+    setShowProfileModal(true);
   };
 
   const fetchElementsForUsers = async (userIds: string[]) => {
@@ -538,8 +552,55 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <span 
-                    className="text-sm font-medium" 
+                  <button
+                    type="button"
+                    onClick={() => openProfileForMessage(msg)}
+                    className="text-left"
+                    style={{
+                      color: msg.is_system ? '#C084FC' : getUserTextColor(msg.user_id),
+                      fontSize: '0.875rem',
+                      fontWeight: 600
+                    }}
+                    onMouseEnter={() => {
+                      try {
+                        const audio = new Audio('/audio/hover.mp3');
+                        audio.volume = 0.3;
+                        audio.play().catch(() => {});
+                      } catch {}
+                    }}
+                    title="View profile"
+                    disabled={!msg?.user_id || msg.user_id === SYSTEM_USER_ID}
+                  >
+                    {msg.username}
+                  </button>
+                  <span className="text-xs text-gray-500">
+                    {new Date(msg.created_at).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                </div>
+                {msg.is_system && (msg.message || '').includes('connected to the signal') ? (
+                  <button
+                    type="button"
+                    onClick={() => openProfileForMessage(msg)}
+                    className="text-sm break-words"
+                    style={{ color: '#C084FC', textAlign: 'left' }}
+                    onMouseEnter={() => {
+                      try {
+                        const audio = new Audio('/audio/hover.mp3');
+                        audio.volume = 0.3;
+                        audio.play().catch(() => {});
+                      } catch {}
+                    }}
+                    title="View profile"
+                    disabled={!msg?.user_id || msg.user_id === SYSTEM_USER_ID}
+                  >
+                    {msg.message}
+                  </button>
+                ) : (
+                  <div 
+                    className="text-sm break-words"
                     style={{ color: msg.is_system ? '#C084FC' : getUserTextColor(msg.user_id) }}
                     onMouseEnter={() => {
                       try {
@@ -549,28 +610,9 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
                       } catch {}
                     }}
                   >
-                    {msg.username}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {new Date(msg.created_at).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </span>
-                </div>
-                <div 
-                  className="text-sm break-words"
-                  style={{ color: msg.is_system ? '#C084FC' : getUserTextColor(msg.user_id) }}
-                  onMouseEnter={() => {
-                    try {
-                      const audio = new Audio('/audio/hover.mp3');
-                      audio.volume = 0.3;
-                      audio.play().catch(() => {});
-                    } catch {}
-                  }}
-                >
-                  {msg.message}
-                </div>
+                    {msg.message}
+                  </div>
+                )}
 
                 {/* Reaction buttons - only show for non-system messages */}
                 {!(msg.is_system || msg.user_id === '00000000-0000-0000-0000-000000000000') && (
@@ -694,6 +736,14 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
           </button>
         </div>
       </div>
+      
+      {/* Profile modal for clicked users */}
+      <ProfileModal
+        user={selectedUser || undefined as any}
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        isOwnProfile={!!(user?.id && selectedUser?.id && user.id === selectedUser.id)}
+      />
 
       {/* Message Input */}
       <div className="p-4 border-t border-purple-500/30 mt-4">
