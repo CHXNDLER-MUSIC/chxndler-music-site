@@ -201,8 +201,8 @@
   /* Mobile-specific display sizing */
   /* Increase minimum width so blue display stays wider on small screens */
   /* Slightly widen the minimum blue display width on small screens */
-  /* Slightly narrower minimum on mobile */
-  --display-width: max(160px, min(420px, calc((100vw - 16px) * 0.8)));
+  /* Wider to extend closer to screen edges */
+  --display-width: max(160px, min(420px, calc((100vw - 16px) * 0.92)));
   /* Responsive width for the pink display - scales with viewport, min 260px, max 900px */
   --pink-display-width: max(260px, min(900px, 55vw));
   --display-border-radius: 12px;
@@ -219,8 +219,8 @@
     
     /* Tablet-specific display sizing */
     /* Slightly widen the minimum blue display width on tablets */
-    /* Slightly narrower minimum on tablets */
-    --display-width: max(180px, min(480px, calc((100vw - 24px) * 0.8)));
+    /* Wider to extend closer to screen edges */
+    --display-width: max(180px, min(480px, calc((100vw - 24px) * 0.92)));
     --display-border-radius: 14px;
     
     /* Enhanced beam visual properties for tablets */
@@ -240,8 +240,8 @@
     
     /* Desktop-specific display sizing */
     /* Slightly widen the minimum blue display width on desktops */
-    /* Slightly narrower minimum on desktops */
-    --display-width: max(200px, min(580px, calc((100vw - 32px) * 0.8)));
+    /* Wider to extend closer to screen edges */
+    --display-width: max(200px, min(580px, calc((100vw - 32px) * 0.92)));
     --display-border-radius: 16px;
     
     /* Enhanced beam visual properties for desktop */
@@ -261,8 +261,8 @@
     
     /* Large desktop display sizing */
     /* Slightly widen the minimum blue display width on large desktops */
-    /* Slightly narrower minimum on large desktops */
-    --display-width: max(220px, min(650px, calc((100vw - 48px) * 0.8)));
+    /* Wider to extend closer to screen edges */
+    --display-width: max(220px, min(650px, calc((100vw - 48px) * 0.92)));
     --display-border-radius: 18px;
     
     /* Enhanced visual effects for large screens */
@@ -281,8 +281,8 @@
     
     /* Ultra-wide display sizing */
     /* Slightly widen the minimum blue display width on ultra-wide displays */
-    /* Slightly narrower minimum on ultra-wide */
-    --display-width: max(240px, min(720px, calc((100vw - 64px) * 0.8)));
+    /* Wider to extend closer to screen edges */
+    --display-width: max(240px, min(720px, calc((100vw - 64px) * 0.92)));
     --display-border-radius: 20px;
   }
 }

@@ -270,6 +270,14 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     const elementNorm = normalize(element);
     const filtered = cards.filter(card => ((card.element || '').toUpperCase()) === elementUpper);
 
+    console.log('[buildOrderedElementCards]', {
+      element,
+      elementNorm,
+      totalCards: cards.length,
+      filteredCount: filtered.length,
+      filteredNames: filtered.map(c => c.card_name).slice(0, 10),
+    });
+
     // Helper to get all possible name fields from a card
     const getCardNames = (card: any): string[] => {
       const names: string[] = [];
@@ -281,42 +289,52 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       return names;
     };
 
+    // Helper to check if a card is the namesake (element card)
+    const isNamesakeCard = (card: any): boolean => {
+      const names = getCardNames(card);
+      const isMatch = names.some(n => n === elementNorm);
+      return isMatch;
+    };
+
     // Find the namesake card from all cards (not just filtered)
-    const namesake = cards.find(card => getCardNames(card).some(n => n === elementNorm));
+    const namesake = cards.find(card => isNamesakeCard(card));
+    console.log('[buildOrderedElementCards] namesake found:', namesake?.card_name || 'NONE');
 
     // Start with filtered list
     let ordered = [...filtered];
 
     // If there are no filtered cards but a namesake exists, show only the namesake
     if (ordered.length === 0) {
+      console.log('[buildOrderedElementCards] No filtered cards, returning namesake only');
       return namesake ? [namesake] : [];
     }
 
-    // Ensure namesake is first by normalized name match, even if ids differ
-    const includesNamesakeByName = ordered.some(c => getCardNames(c).some(n => n === elementNorm));
-    if (!includesNamesakeByName) {
-      if (namesake) {
-        ordered = [namesake, ...ordered];
-      } else {
-        // As a final fallback, synthesize an element card so it always starts on the elemental card
-        const synthetic = {
-          id: `synthetic-${element}`,
-          card_name: element,
-          element: element,
-          artwork_url: `/cards/${element}.webp`,
-          card_description: undefined,
-        } as any;
-        ordered = [synthetic, ...ordered];
-      }
+    // ALWAYS put the namesake card first by explicitly separating it from others
+    const namesakeInFiltered = ordered.find(c => isNamesakeCard(c));
+    const otherCards = ordered.filter(c => !isNamesakeCard(c));
+
+    console.log('[buildOrderedElementCards] namesakeInFiltered:', namesakeInFiltered?.card_name || 'NONE');
+    console.log('[buildOrderedElementCards] otherCards:', otherCards.map(c => c.card_name));
+
+    if (namesakeInFiltered) {
+      // Namesake found in filtered list - put it first
+      ordered = [namesakeInFiltered, ...otherCards];
+      console.log('[buildOrderedElementCards] Put namesake first, new order:', ordered.map(c => c.card_name));
+    } else if (namesake) {
+      // Namesake not in filtered (different element tag) - prepend it
+      ordered = [namesake, ...otherCards];
+      console.log('[buildOrderedElementCards] Prepended namesake from all cards');
     } else {
-      // Stable sort so exact match is first, then partial matches
-      ordered = ordered.sort((a, b) => {
-        const aNames = getCardNames(a);
-        const bNames = getCardNames(b);
-        const aScore = aNames.some(n => n === elementNorm) ? 0 : aNames.some(n => n.includes(elementNorm)) ? 1 : 2;
-        const bScore = bNames.some(n => n === elementNorm) ? 0 : bNames.some(n => n.includes(elementNorm)) ? 1 : 2;
-        return aScore - bScore;
-      });
+      // No namesake found - synthesize an element card
+      const synthetic = {
+        id: `synthetic-${element}`,
+        card_name: element,
+        element: element,
+        artwork_url: `/cards/${element}.webp`,
+        card_description: undefined,
+      } as any;
+      ordered = [synthetic, ...otherCards];
+      console.log('[buildOrderedElementCards] Created synthetic card');
     }
 
     // Deduplicate by id or by normalized name if id missing
@@ -378,10 +396,13 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     // Build & set ordered element cards immediately if available
     // buildOrderedElementCards puts the namesake card first (index 0)
     const orderedNow = buildOrderedElementCards(element, allCards);
-    try {
-      console.log('[Cards] element selected:', element, 'ordered count:', orderedNow.length, 'first:', orderedNow[0]?.card_name || orderedNow[0]?.cards?.card_name);
-      console.log('[Cards] ordered list:', orderedNow.map((c:any)=> c.card_name || c.cards?.card_name));
-    } catch {}
+    console.log('[Cards] handleElementSelect called:', {
+      element,
+      allCardsCount: allCards.length,
+      orderedCount: orderedNow.length,
+      firstCard: orderedNow[0]?.card_name || orderedNow[0]?.cards?.card_name || 'NONE',
+      orderedList: orderedNow.map((c:any)=> c.card_name || c.cards?.card_name),
+    });
     setElementCards(orderedNow);
     setDidInitElementIndex(false);
     // Set to index 0 since buildOrderedElementCards puts namesake first
@@ -1639,17 +1660,21 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 </svg>
               </button>
 
-              {/* Element Filter Dropdown */}
+              {/* Card Name Dropdown - shows cards in selected element */}
               <div className="flex-1 ml-4">
                 <select
                   className="w-full bg-black/30 border border-white/20 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-white/40"
-                  value={selectedElement}
-                  onChange={handleElementDropdownChange}
+                  value={displayCardIndex}
+                  onChange={(e) => {
+                    const newIndex = parseInt(e.target.value, 10);
+                    setInternalCardIndex(newIndex);
+                  }}
                 >
-                  <option value="LIGHTNING">LIGHTNING</option>
-                  <option value="WATER">WATER</option>
-                  <option value="HEART">HEART</option>
-                  <option value="DARKNESS">DARKNESS</option>
+                  {displayCards.map((card, index) => (
+                    <option key={card.id || index} value={index}>
+                      {card.card_name || card.cards?.card_name || `Card ${index + 1}`}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -1664,14 +1689,18 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     try { sfx.play('hover', 0.3); } catch {}
                   }
                 }}
-                disabled={false}
-                className={`absolute left-4 top-1/2 transform -translate-y-1/2 z-20 w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 border-2 bg-black/70 hover:bg-black/90 border-white/50 hover:border-white/80 text-white hover:text-white hover:scale-110 cursor-pointer`}
+                disabled={displayCards.length <= 1}
+                className={`absolute left-4 top-1/2 transform -translate-y-1/2 z-20 w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 border-2 ${
+                  displayCards.length > 1
+                    ? 'bg-[#4ECDC4]/20 border-[#4ECDC4] text-[#4ECDC4] hover:bg-[#4ECDC4]/40 hover:scale-110 cursor-pointer shadow-[0_0_15px_rgba(78,205,196,0.4)]'
+                    : 'bg-black/30 border-white/20 text-white/30 cursor-not-allowed'
+                }`}
                 style={{
                   backdropFilter: 'blur(8px)'
                 }}
               >
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
 
@@ -1762,14 +1791,18 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     try { sfx.play('hover', 0.3); } catch {}
                   }
                 }}
-                disabled={false}
-                className={`absolute right-4 top-1/2 transform -translate-y-1/2 z-20 w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 border-2 bg-black/70 hover:bg-black/90 border-white/50 hover:border-white/80 text-white hover:text-white hover:scale-110 cursor-pointer`}
+                disabled={displayCards.length <= 1}
+                className={`absolute right-4 top-1/2 transform -translate-y-1/2 z-20 w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 border-2 ${
+                  displayCards.length > 1
+                    ? 'bg-[#4ECDC4]/20 border-[#4ECDC4] text-[#4ECDC4] hover:bg-[#4ECDC4]/40 hover:scale-110 cursor-pointer shadow-[0_0_15px_rgba(78,205,196,0.4)]'
+                    : 'bg-black/30 border-white/20 text-white/30 cursor-not-allowed'
+                }`}
                 style={{
                   backdropFilter: 'blur(8px)'
                 }}
               >
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
             </div>
@@ -2170,22 +2203,22 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             e.stopPropagation();
                             handlePrevCard();
                           }}
-                          className="absolute left-2 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-all duration-200"
+                          className="absolute left-2 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-[#4ECDC4]/20 hover:bg-[#4ECDC4]/40 border-2 border-[#4ECDC4] rounded-full flex items-center justify-center text-[#4ECDC4] hover:text-white transition-all duration-200 shadow-[0_0_15px_rgba(78,205,196,0.4)]"
                         >
                           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
                           </svg>
                         </button>
-                        
+
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleNextCard();
                           }}
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-all duration-200"
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-[#4ECDC4]/20 hover:bg-[#4ECDC4]/40 border-2 border-[#4ECDC4] rounded-full flex items-center justify-center text-[#4ECDC4] hover:text-white transition-all duration-200 shadow-[0_0_15px_rgba(78,205,196,0.4)]"
                         >
                           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                           </svg>
                         </button>
                         

@@ -97,11 +97,19 @@ export default function UserBadges({
 
         const { data, error } = await supabaseBrowser
           .rpc('get_public_profile', { p_profile_id: userId })
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error('Error fetching user profile:', error);
           setError(`Failed to load user profile: ${error.message}`);
+          return;
+        }
+
+        // Handle case where profile doesn't exist
+        if (!data) {
+          console.warn('Profile not found for user:', userId);
+          setUserProfile(null);
+          setLoading(false);
           return;
         }
 
@@ -148,7 +156,23 @@ export default function UserBadges({
             .order('badge_name', { ascending: true }),
           supabaseBrowser
             .from('user_badges')
-            .select('id, badge_id, earned_at')
+            .select(`
+              id,
+              badge_id,
+              earned_at,
+              awarded_at,
+              badges (
+                id,
+                slug,
+                badge_name,
+                icon_url,
+                description,
+                category,
+                requirement_type,
+                requirement_count,
+                requirement_text
+              )
+            `)
             .eq('user_id', userId)
         ]);
 
@@ -246,6 +270,15 @@ export default function UserBadges({
     return (
       <div className={`text-center text-red-400 text-sm ${className}`}>
         Error loading badges: {error}
+      </div>
+    );
+  }
+
+  // Handle case where profile doesn't exist
+  if (!userProfile) {
+    return (
+      <div className={`text-center text-white/60 text-sm ${className}`}>
+        Profile not found
       </div>
     );
   }

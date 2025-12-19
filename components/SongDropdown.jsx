@@ -292,53 +292,46 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
             zIndex: 100000
           }}
         >
-          {/* Element filter row */}
-          <div className="px-1.5 pt-2 pb-1">
-            <div className="flex items-center gap-0.5 flex-wrap">
-              {/* ALL filter */}
-              <button
-                type="button"
-                onMouseEnter={() => {
-                  console.log('ALL filter hovered - attempting to play sound');
-                  try { 
-                    const a = hoverRef.current; 
-                    console.log('hoverRef.current:', a);
-                    if (a) { 
-                      a.currentTime = 0; 
-                      a.volume = 0.3; 
-                      a.play().catch((err) => {
-                        console.error('Failed to play hover sound:', err);
-                      }); 
-                    } else {
-                      console.log('hoverRef.current is null');
-                    }
-                  } catch (e) {
-                    console.error('Error in hover sound:', e);
+          {/* Element filter rows */}
+          <div className="px-1.5 pt-2 pb-1 flex flex-col gap-1">
+            {/* ALL filter - full width top row */}
+            <button
+              type="button"
+              onMouseEnter={() => {
+                try {
+                  const a = hoverRef.current;
+                  if (a) {
+                    a.currentTime = 0;
+                    a.volume = 0.3;
+                    a.play().catch(() => {});
                   }
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveElement(null);
-                  setHighlight(0);
-                  try { sfx.play('change', 0.35); } catch {}
-                  track('element_filter_selected', { element: 'ALL', active: true });
-                }}
-                className={`filter-pill inline-flex items-center gap-1.5 px-3 py-2 rounded-md border text-sm font-semibold tracking-wide transition-all duration-200 ${
-                  !activeElement
-                    ? 'bg-[#19E3FF] text-white border-[#19E3FF]' 
-                    : 'border-[#19E3FF]/40 text-[#CFF7FF] hover:bg-cyan-400/10'
-                }`}
-                style={!activeElement ? {
-                  boxShadow: 'inset 0 0 20px rgba(25, 227, 255, 0.4), inset 0 0 40px rgba(25, 227, 255, 0.2)',
-                  textShadow: '0 0 3px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.7), 0 0 16px rgba(255,255,255,0.5)'
-                } : {}}
-                aria-pressed={!activeElement}
-              >
-                <span style={!activeElement ? {
-                  textShadow: '0 0 3px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.7), 0 0 16px rgba(255,255,255,0.5)'
-                } : {}}>ALL</span>
-              </button>
-              
+                } catch {}
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveElement(null);
+                setHighlight(0);
+                try { sfx.play('change', 0.35); } catch {}
+                track('element_filter_selected', { element: 'ALL', active: true });
+              }}
+              className={`filter-pill w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border text-sm font-semibold tracking-wide transition-all duration-200 ${
+                !activeElement
+                  ? 'bg-[#19E3FF] text-white border-[#19E3FF]'
+                  : 'border-[#19E3FF]/40 text-[#CFF7FF] hover:bg-cyan-400/10'
+              }`}
+              style={!activeElement ? {
+                boxShadow: 'inset 0 0 20px rgba(25, 227, 255, 0.4), inset 0 0 40px rgba(25, 227, 255, 0.2)',
+                textShadow: '0 0 3px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.7), 0 0 16px rgba(255,255,255,0.5)'
+              } : {}}
+              aria-pressed={!activeElement}
+            >
+              <span style={!activeElement ? {
+                textShadow: '0 0 3px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.7), 0 0 16px rgba(255,255,255,0.5)'
+              } : {}}>ALL</span>
+            </button>
+
+            {/* Element icons - always on same line */}
+            <div className="flex items-center justify-between w-full shrink-0">
               {['heart','water','lightning','darkness'].map((el) => {
                 const active = activeElement === el;
                 const getElementBgColor = (element, isActive) => {

@@ -62,10 +62,10 @@ export default function UserCards({
         // Fetch user profile and cards in parallel
         const [profileResponse, cardsResponse] = await Promise.all([
           supabaseBrowser
-            .from('profiles')
-            .select('id, name, card_slots')
-            .eq('id', userId)
-            .single(),
+            .from('public_profiles')
+            .select('user_id, name, card_slots')
+            .eq('user_id', userId)
+            .maybeSingle(),
           supabaseBrowser
             .from('user_cards')
             .select(`
@@ -92,6 +92,15 @@ export default function UserCards({
           return;
         }
 
+        // Handle case where profile doesn't exist in public_profiles
+        if (!profileResponse.data) {
+          console.warn('Profile not found in public_profiles for user:', userId);
+          setUserProfile(null);
+          setUserCards([]);
+          setLoading(false);
+          return;
+        }
+
         if (cardsResponse.error) {
           console.error('Error fetching user cards:', cardsResponse.error);
           setError(`Failed to load user cards: ${cardsResponse.error.message}`);
@@ -99,7 +108,7 @@ export default function UserCards({
         }
 
         setUserProfile({
-          id: profileResponse.data.id,
+          id: profileResponse.data.user_id,
           name: profileResponse.data.name,
           card_slots: profileResponse.data.card_slots,
         });
@@ -139,6 +148,15 @@ export default function UserCards({
     return (
       <div className={`text-center text-red-400 text-sm ${className}`}>
         Error loading cards: {error}
+      </div>
+    );
+  }
+
+  // Handle case where profile doesn't exist
+  if (!userProfile) {
+    return (
+      <div className={`text-center text-white/60 text-sm ${className}`}>
+        Profile not found
       </div>
     );
   }

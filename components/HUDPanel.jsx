@@ -42,7 +42,7 @@ import DevErrorLogger from "@/components/DevErrorLogger";
 // 3D Planetarium system with Three.js
 const Pure3DPlanets = dynamic(() => import("@/components/planetarium/Pure3DPlanets"), {
   ssr: false,
-  loading: () => <div className="flex items-center justify-center h-full text-cyan-400">Loading 3D planets...</div>
+  loading: () => null // No loading placeholder - prevents flash of wrong background
 });
 import { DEBUG_MEDIA, dlog, dwarn } from "@/lib/debug";
 import { ElementIcon as OptimizedElementIcon } from "@/lib/elementIcons";
@@ -2322,7 +2322,7 @@ const HUDPanel = React.memo(function HUDPanel({
           >
           {/* Background removed: keep HUD box transparent */}
         {/* Single blue outline wrapping the HUD content (amped glow) */}
-        <div className={`relative rounded-2xl ${inConsole ? 'pt-0 pb-2 px-2' : 'pt-0 pb-4 px-4'}`} style={{
+        <div className={`relative rounded-2xl ${inConsole ? 'pt-0 pb-2 px-1' : 'pt-0 pb-4 px-4'}`} style={{
           background: 'transparent',
           boxShadow: 'none',
           willChange: 'opacity, transform',
@@ -2388,7 +2388,7 @@ const HUDPanel = React.memo(function HUDPanel({
           {/* Holographic beam overlays removed */}
           {/* Bloom layers removed */}
           <div
-              className={`relative ${inConsole ? 'p-2' : 'p-4'}`}
+              className={`relative ${inConsole ? 'py-2 px-1' : 'p-4'}`}
               style={{
                 // Keep this wrapper always visible so cover art never flashes with 3D
                 opacity: 1,
@@ -2558,7 +2558,7 @@ const HUDPanel = React.memo(function HUDPanel({
                         top: 24,
                         zIndex: 6,
                         borderRadius: '8px',
-                        padding: '4px 8px',
+                        padding: '4px 2px',
                         backgroundColor: 'transparent'
                       }}>
                       <button 

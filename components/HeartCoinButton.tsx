@@ -71,6 +71,7 @@ interface PurchaseDraft {
   uiCost: number;           // The cost shown to user (for display only - server is authoritative)
   source: 'MERCH' | 'CARDS';
   itemName: string;         // For display in confirm modal
+  idempotencyKey: string;   // Generated ONCE when draft is created, reused on confirm
 }
 
 // Physical store items - now loaded dynamically from database
@@ -317,8 +318,18 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // Purchase draft - captures exact item info at moment of "PAY WITH" click
   // This is the SINGLE SOURCE OF TRUTH for what we're purchasing
   const [purchaseDraft, setPurchaseDraft] = useState<PurchaseDraft | null>(null);
-  // Prevents double-submit - set immediately on confirm click
+
+  // ============================================================
+  // DOUBLE-SUBMIT PREVENTION (React StrictMode, Fast Refresh, rapid clicks)
+  // ============================================================
+  // useRef for SYNCHRONOUS check - not affected by React's async state batching
+  // This ref is checked immediately and blocks duplicate calls before any async work
+  const purchaseInFlightRef = useRef(false);
+  // useState for UI reactivity (button disabled state, showing "PROCESSING...")
   const [isPurchasing, setIsPurchasing] = useState(false);
+  // Store idempotencyKey in ref to ensure it's stable across re-renders
+  // This prevents regeneration during StrictMode double-invocation
+  const currentIdempotencyKeyRef = useRef<string | null>(null);
   const [heartCoinPayToggled, setHeartCoinPayToggled] = useState(false);
   const [dailyQuests, setDailyQuests] = useState({
     elementTapped: false,
@@ -355,8 +366,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // Only handle navigation when MERCH tab is active and modal is open
-      if (!open || activeTab !== 'USE' || activeUseTab !== 'MERCH') return;
-      
+      // Disable navigation while purchase is in progress
+      if (!open || activeTab !== 'USE' || activeUseTab !== 'MERCH' || isPurchasing) return;
+
       if (event.key === 'ArrowLeft') {
         event.preventDefault();
         try { sfx.play('click', 0.6); } catch {}
@@ -370,7 +382,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, activeTab, activeUseTab, sfx]);
+  }, [open, activeTab, activeUseTab, sfx, isPurchasing]);
 
   // Check for initial tab preference from hamburger menu
   const [isFromHamburger, setIsFromHamburger] = useState(false);
@@ -1224,11 +1236,23 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     }
   };
 
-  // NEW: Main purchase handler that uses purchaseDraft as single source of truth
+  // ============================================================
+  // MAIN PURCHASE HANDLER - SINGLE FUNCTION FOR API CALL
+  // This is the ONLY place where purchaseWithHeartCoins is called
+  // ============================================================
   const handleConfirmPurchase = async () => {
-    // CRITICAL: Check isPurchasing first to prevent double-submit
+    // ============================================================
+    // CRITICAL: Synchronous ref check FIRST - prevents double-submit
+    // This check is NOT affected by React's async state batching
+    // ============================================================
+    if (purchaseInFlightRef.current) {
+      console.warn('[PURCHASE] BLOCKED: Purchase already in flight (ref check in handleConfirmPurchase)');
+      return;
+    }
+
+    // Also check state (belt and suspenders)
     if (isPurchasing) {
-      console.log('[PURCHASE] handleConfirmPurchase blocked - already in progress');
+      console.warn('[PURCHASE] BLOCKED: isPurchasing state is true');
       return;
     }
 
@@ -1242,24 +1266,37 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       return;
     }
 
-    // Log the exact payload we're sending
-    console.log('[PURCHASE] handleConfirmPurchase starting with draft:', purchaseDraft);
-    console.log('[PURCHASE] merchItemId to send:', purchaseDraft.merchItemId);
-    console.log('[PURCHASE] User balance:', profile.heartcoin_balance);
+    // ============================================================
+    // SET REF IMMEDIATELY - before any async work
+    // This is the key to preventing StrictMode/FastRefresh duplicates
+    // ============================================================
+    purchaseInFlightRef.current = true;
+    setIsPurchasing(true);
+    console.log('[PURCHASE] In-flight ref set to TRUE');
 
     // Clear any previous errors
     clearError();
 
-    try {
-      // Generate idempotency key for this specific purchase attempt
-      const idempotencyKey = crypto.randomUUID();
-      console.log('[PURCHASE] Generated idempotencyKey:', idempotencyKey);
+    // Use idempotencyKey from draft - generated once when PAY WITH was clicked
+    // Also store in ref to ensure stability
+    const { idempotencyKey, merchItemId, quantity, clientSlug } = purchaseDraft;
+    currentIdempotencyKeyRef.current = idempotencyKey;
 
-      // Call the purchase hook with the draft values
+    console.log('[PURCHASE] handleConfirmPurchase calling API (SINGLE CALL)', {
+      idempotencyKey,
+      merchItemId,
+      quantity,
+      userBalance: profile.heartcoin_balance,
+    });
+
+    try {
+      // ============================================================
+      // SINGLE API CALL - purchaseWithHeartCoins has its own ref guard
+      // ============================================================
       const purchaseResult = await purchaseWithHeartCoins({
-        merchItemId: purchaseDraft.merchItemId,
-        quantity: purchaseDraft.quantity,
-        clientSlug: purchaseDraft.clientSlug,
+        merchItemId,
+        quantity,
+        clientSlug,
         idempotencyKey,
       });
 
@@ -1279,6 +1316,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         // Clear purchaseDraft after successful purchase
         setPurchaseDraft(null);
         setShowHeartCoinPurchase(false);
+        currentIdempotencyKeyRef.current = null;
 
       } else {
         // Error is handled by the hook, but we can show it in our UI
@@ -1299,8 +1337,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         setStatusType('idle');
       }, 3000);
     } finally {
-      // ALWAYS reset isPurchasing in finally block
+      // ============================================================
+      // CRITICAL: Always reset both ref AND state in finally block
+      // ============================================================
+      purchaseInFlightRef.current = false;
       setIsPurchasing(false);
+      console.log('[PURCHASE] In-flight ref reset to FALSE');
     }
   };
 
@@ -2402,14 +2444,17 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       />
                                     </div>
                                     {/* Navigation arrows - positioned independently */}
+                                    {/* Disabled while purchase is in progress */}
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
+                                        if (isPurchasing) return;
                                         try { sfx.play('click', 0.6); } catch {}
                                         setCurrentMerchIndex(prev => prev > 0 ? prev - 1 : PHYSICAL_ITEMS.length - 1);
                                       }}
                                       onMouseEnter={(e) => { e.stopPropagation(); try { sfx.play('hover', 0.3); } catch {} }}
-                                      className="absolute flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-110 transition-all duration-200"
+                                      disabled={isPurchasing}
+                                      className={`absolute flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-110 transition-all duration-200 ${isPurchasing ? 'opacity-50 cursor-not-allowed' : ''}`}
                                       style={{ left: '-40px', top: '50%', transform: 'translateY(-50%)', boxShadow: '0 0 8px rgba(255,255,255,0.3)' }}
                                       aria-label="Previous item"
                                     >
@@ -2418,11 +2463,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
+                                        if (isPurchasing) return;
                                         try { sfx.play('click', 0.6); } catch {}
                                         setCurrentMerchIndex(prev => prev < PHYSICAL_ITEMS.length - 1 ? prev + 1 : 0);
                                       }}
                                       onMouseEnter={(e) => { e.stopPropagation(); try { sfx.play('hover', 0.3); } catch {} }}
-                                      className="absolute flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-110 transition-all duration-200"
+                                      disabled={isPurchasing}
+                                      className={`absolute flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-110 transition-all duration-200 ${isPurchasing ? 'opacity-50 cursor-not-allowed' : ''}`}
                                       style={{ right: '-40px', top: '50%', transform: 'translateY(-50%)', boxShadow: '0 0 8px rgba(255,255,255,0.3)' }}
                                       aria-label="Next item"
                                     >
@@ -2472,18 +2519,28 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             boxShadow: '0 0 8px rgba(0,255,0,0.3)'
                           }}
                           onClick={() => {
-                            // CRITICAL: Double-submit prevention
+                            // ============================================================
+                            // CRITICAL: Synchronous ref check FIRST
+                            // This prevents double-submit from StrictMode/FastRefresh
+                            // ============================================================
+                            if (purchaseInFlightRef.current) {
+                              console.warn('[PURCHASE] BLOCKED in onClick: ref already true');
+                              return;
+                            }
                             if (isPurchasing) {
-                              console.log('[PURCHASE] Blocked - already in progress');
+                              console.warn('[PURCHASE] BLOCKED in onClick: state already true');
                               return;
                             }
                             if (!purchaseDraft) {
                               console.error('[PURCHASE] No purchaseDraft available');
                               return;
                             }
-                            // Set isPurchasing IMMEDIATELY before any async work
-                            setIsPurchasing(true);
-                            console.log('[PURCHASE] Confirm clicked, draft:', purchaseDraft);
+                            // Do NOT set state here - handleConfirmPurchase does it
+                            // Just log and call the handler
+                            console.log('[PURCHASE] CONFIRM clicked, calling handler', {
+                              idempotencyKey: purchaseDraft.idempotencyKey,
+                              merchItemId: purchaseDraft.merchItemId,
+                            });
                             handleConfirmPurchase();
                           }}
                           onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
@@ -2539,6 +2596,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
                           // Create purchaseDraft from CURRENT displayed item - this is the source of truth
                           if (currentMerchItem) {
+                            // Generate idempotencyKey ONCE here - reused on confirm, never regenerated
+                            const idempotencyKey = crypto.randomUUID();
                             const draft: PurchaseDraft = {
                               merchItemId: currentMerchItem.id,  // Use .id NOT .merch_item_id
                               clientSlug: currentMerchItem.slug,
@@ -2546,9 +2605,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               uiCost: currentMerchItem.price_heartcoins,
                               source: 'MERCH',
                               itemName: currentMerchItem.name,
+                              idempotencyKey,  // Stored on draft, not regenerated on confirm
                             };
-                            console.log('[PURCHASE] displayed item', currentMerchItem);
-                            console.log('[PURCHASE] draft created', draft);
+                            console.log('[PURCHASE] PAY WITH clicked, draft created', {
+                              idempotencyKey: draft.idempotencyKey,
+                              merchItemId: draft.merchItemId,
+                              itemName: draft.itemName,
+                            });
                             setPurchaseDraft(draft);
                             setSelectedItem(PHYSICAL_ITEMS[currentMerchIndex]);
                             setShowHeartCoinPurchase(true);

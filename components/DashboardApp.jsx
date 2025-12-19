@@ -2132,13 +2132,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
             console.log("🔊 Playing button.mp3");
             try {
-              sfx.playAndWait('button', 0.9).then(() => {
-                console.log("✅ button.mp3 finished");
-                revealUIAndPlay();
-              }).catch(() => {
-                console.warn("⚠️ button.mp3 failed, revealing UI anyway");
-                revealUIAndPlay();
-              });
+              // Play button sound and reveal UI simultaneously (don't wait for sound to finish)
+              sfx.play('button', 0.9);
+              revealUIAndPlay();
             } catch {
               console.warn("⚠️ SFX system failed, revealing UI directly");
               revealUIAndPlay();

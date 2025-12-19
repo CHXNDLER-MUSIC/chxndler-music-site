@@ -618,181 +618,166 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
       
       {showCard && mounted ? createPortal(
         <div
-          className="fixed inset-0 z-[9999] bg-transparent"
-          style={{ padding: 0 }}
+          className="fixed z-[2147483647] bg-black bg-opacity-90"
+          style={{
+            top: 'var(--profile-bar-boundary, 64px)',
+            bottom: 'var(--light-beam-boundary)',
+            left: 0,
+            right: 0,
+            backdropFilter: 'blur(8px)',
+          }}
           onClick={() => {
             try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
             setShowCard(false);
           }}
         >
-          {/* Card modal positioned between profile bar and light beam boundary */}
           <div
-            className="card-anchored"
-            style={{
-              position: 'fixed',
-              top: '64px', // Below profile bar
-              bottom: 'var(--light-beam-boundary)',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              pointerEvents: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'center',
-              overflow: 'visible'
-            }}
-            onClick={(e)=> e.stopPropagation()}
+            className="absolute inset-0 flex items-center justify-center p-4"
+            onClick={(e) => e.stopPropagation()}
           >
             <div
-              className="relative rounded-2xl p-4 card-modal"
-              style={{ paddingBottom: '0px', paddingTop: '32px' }}
+              className="relative rounded-lg p-6 max-w-2xl overflow-hidden"
+              style={{
+                background: 'rgba(17, 24, 39, 0.95)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(75, 85, 99, 0.5)',
+                maxHeight: '100%',
+              }}
             >
-            <div className="tilt-wrap">
-              <div className="card-frame">
-                {/* Drag-to-rotate container (mirrors HeartCoin cards tab) */}
-                <TiltSpinCard
-                  className="card-flip-container relative w-full h-full"
-                  maxRotateX={10}
-                  sensitivity={0.3}
-                  returnDuration={400}
-                  enableSpin={true}
-                  spinSensitivity={0.8}
-                  onRotationChange={setCardRotation}
-                  onClick={() => {
-                    // Click-to-flip using rotation increments for smoothness
-                    try {
-                      const a = flipCoverRef.current as HTMLAudioElement | null;
-                      if (a && a.readyState >= 2) {
-                        a.currentTime = 0;
-                        a.volume = 0.45;
-                        a.play().catch(() => {});
-                      }
-                    } catch {}
-                    setIsAnimatingFlip(true);
-                    setCardRotation(prev => prev + 180);
-                    // Maintain legacy flipped flag for any dependent styles
-                    setCardFlipped(v => !v);
-                    setTimeout(() => setIsAnimatingFlip(false), 500);
-                  }}
-                >
-                  {/* Front side - rotates with cardRotation */}
-                  <img
-                    src={explicitCardSrc || computedCardSrc}
-                    alt={title}
-                    className="tilt-img absolute inset-0 w-full h-full object-contain pointer-events-none"
+              {/* Close Button */}
+              <button
+                onClick={() => {
+                  try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
+                  setShowCard(false);
+                }}
+                onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
+                className="absolute top-2 right-2 w-8 h-8 bg-gray-700 hover:bg-gray-600 rounded-full flex items-center justify-center text-gray-300 hover:text-white transition-all duration-200 z-10"
+              >
+                ×
+              </button>
+
+              {/* Card Image */}
+              <div className="flex items-center justify-center w-full h-full">
+                <div className="relative max-w-full max-h-full">
+                  <div
+                    className="relative w-full"
                     style={{
-                      backfaceVisibility: 'hidden',
-                      transform: `rotateY(${cardRotation}deg)`,
-                      transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                      height: '55vh',
+                      maxWidth: '320px'
                     }}
-                    onError={(e)=>{
-                      // If card not found, try swapping covers->cards, then fallback to card back
-                      const fallback = src.replace('/covers/', '/cards/');
-                      if (fallback && fallback !== src) {
-                        (e.currentTarget as HTMLImageElement).onerror = () => { (e.currentTarget as HTMLImageElement).src = CARD_URLS['back'] || '/cards/BACK.webp'; };
-                        (e.currentTarget as HTMLImageElement).src = fallback;
-                      } else {
-                        (e.currentTarget as HTMLImageElement).src = CARD_URLS['back'] || '/cards/BACK.webp';
-                      }
-                    }}
-                    draggable={false}
-                  />
-                  {/* Back side - offset 180° */}
-                  <img
-                    src={'/cards/BACK.webp'}
-                    alt={`${title} card back`}
-                    className="tilt-img absolute inset-0 w-full h-full object-contain pointer-events-none"
-                    style={{
-                      backfaceVisibility: 'hidden',
-                      transform: `rotateY(${cardRotation + 180}deg)`,
-                      transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                    }}
-                    onError={(e)=>{
-                      // If back image missing, fall back to brand logo
-                      (e.currentTarget as HTMLImageElement).src = "/logo/CHXNDLER_Logo.png";
-                    }}
-                    draggable={false}
-                  />
-                </TiltSpinCard>
-                <span className="frame-sheen" aria-hidden />
-              </div>
-            </div>
-            {hasRealCard && (
-              <>
-                {/* Centered Collect Card button */}
-                <div className="absolute top-[5px] left-1/2 transform -translate-x-1/2 z-10">
-                  <div className="buttons-row" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div className="ocean-cta-wrap relative">
-                      <button
-                        type="button"
-                        className="btn-ocean"
-                        title="Collect this card"
-                        aria-label={`Collect Card: ${title}`}
-                        data-song={title}
-                        data-slug={title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}
-                        onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
-                        onClick={(e) => {
-                          try { e.preventDefault(); } catch {}
-                          try { sfx.play('click', 0.7); } catch {}
-                          
-                          // Close the card modal
-                          setShowCard(false);
-                          
-                          // Set HeartCoin modal to open with USE tab and CARDS sub-tab
-                          try {
-                            (window as any).priceHeartCoinsInitialTab = 'cards';
-                            // Store the currently playing song name for filtering
-                            (window as any).priceHeartCoinsSelectedCard = currentTrack?.title || title;
-                            // Clear store flag to ensure proper tab navigation
-                            delete (window as any).priceHeartCoinsFromStore;
-                          } catch {}
-                          
-                          // Emit custom event to open HeartCoin modal with card filter
-                          try {
-                            const currentSongTitle = currentTrack?.title || title;
-                            const heartCoinEvent = new CustomEvent('openHeartCoinCards', {
-                              detail: { 
-                                cardTitle: currentSongTitle,
-                                songSlug: currentSongTitle?.toLowerCase().replace(/\s+/g, '-'),
-                                cardSrc: src 
-                              }
-                            });
-                            window.dispatchEvent(heartCoinEvent);
-                          } catch {}
-                          
-                          try {
-                            const currentSongTitle = currentTrack?.title || title;
-                            track('collect_card_clicked', { 
-                              song_slug: currentSongTitle?.toLowerCase().replace(/\s+/g, '-'),
-                              card_src: src,
-                              payload: { song_title: currentSongTitle, card_image: src, action: 'open_heartcoin_with_card' } 
-                            });
-                          } catch {}
+                  >
+                    {/* TiltSpinCard wrapper for 360° drag-to-spin interaction */}
+                    <TiltSpinCard
+                      className="relative w-full h-full"
+                      maxRotateX={10}
+                      sensitivity={0.3}
+                      returnDuration={400}
+                      enableSpin={true}
+                      spinSensitivity={0.8}
+                      onRotationChange={setCardRotation}
+                      onClick={() => {
+                        // Click-to-flip using rotation increments for smoothness
+                        try {
+                          const a = flipCoverRef.current as HTMLAudioElement | null;
+                          if (a && a.readyState >= 2) {
+                            a.currentTime = 0;
+                            a.volume = 0.45;
+                            a.play().catch(() => {});
+                          }
+                        } catch {}
+                        setIsAnimatingFlip(true);
+                        setCardRotation(prev => prev + 180);
+                        setCardFlipped(v => !v);
+                        setTimeout(() => setIsAnimatingFlip(false), 500);
+                      }}
+                    >
+                      {/* Front side - rotates with cardRotation */}
+                      <img
+                        src={explicitCardSrc || computedCardSrc}
+                        alt={title}
+                        className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
+                        style={{
+                          filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
+                          backfaceVisibility: 'hidden',
+                          transform: `rotateY(${cardRotation}deg)`,
+                          transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
                         }}
-                      >
-                        <span className="btn-label" style={{ whiteSpace: 'nowrap' }}>COLLECT CARD</span>
-                        <span className="btn-ripple" aria-hidden />
-                      </button>
-                    </div>
+                        onError={(e)=>{
+                          const fallback = src.replace('/covers/', '/cards/');
+                          if (fallback && fallback !== src) {
+                            (e.currentTarget as HTMLImageElement).onerror = () => { (e.currentTarget as HTMLImageElement).src = CARD_URLS['back'] || '/cards/BACK.webp'; };
+                            (e.currentTarget as HTMLImageElement).src = fallback;
+                          } else {
+                            (e.currentTarget as HTMLImageElement).src = CARD_URLS['back'] || '/cards/BACK.webp';
+                          }
+                        }}
+                        draggable={false}
+                      />
+                      {/* Back side - offset 180° */}
+                      <img
+                        src={'/cards/BACK.webp'}
+                        alt={`${title} card back`}
+                        className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
+                        style={{
+                          filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
+                          backfaceVisibility: 'hidden',
+                          transform: `rotateY(${cardRotation + 180}deg)`,
+                          transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                        }}
+                        onError={(e)=>{
+                          (e.currentTarget as HTMLImageElement).src = "/logo/CHXNDLER_Logo.png";
+                        }}
+                        draggable={false}
+                      />
+                    </TiltSpinCard>
                   </div>
                 </div>
-              </>
-            )}
+              </div>
 
-
-            <button
-              type="button"
-              aria-label="Close"
-              onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
-              onClick={() => {
-                try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
-                setShowCard(false);
-              }}
-              onMouseOver={(e)=>{ try { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.08)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 28px rgba(25,227,255,1)'; } catch {} }}
-              onMouseOut={(e)=>{ try { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.0)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 20px rgba(25,227,255,0.8)'; } catch {} }}
-              className="absolute -top-1 -right-1 rounded-full bg-[#19E3FF] text-black font-bold w-8 h-8 shadow-[0_0_20px_rgba(25,227,255,0.8)] transition-transform"
-              title="Close"
-            >×</button>
+              {/* Collect Card Button */}
+              {hasRealCard && (
+                <div className="mt-4 flex justify-center">
+                  <button
+                    type="button"
+                    className="px-8 py-3 rounded-lg font-bold text-sm transition-all duration-200 bg-gradient-to-r from-[#4ECDC4] to-[#45b7b8] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(78,205,196,0.6)]"
+                    style={{
+                      boxShadow: '0 0 15px rgba(78,205,196,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
+                    }}
+                    onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
+                    onClick={(e) => {
+                      try { e.preventDefault(); } catch {}
+                      try { sfx.play('click', 0.7); } catch {}
+                      setShowCard(false);
+                      try {
+                        (window as any).priceHeartCoinsInitialTab = 'cards';
+                        (window as any).priceHeartCoinsSelectedCard = currentTrack?.title || title;
+                        delete (window as any).priceHeartCoinsFromStore;
+                      } catch {}
+                      try {
+                        const currentSongTitle = currentTrack?.title || title;
+                        const heartCoinEvent = new CustomEvent('openHeartCoinCards', {
+                          detail: {
+                            cardTitle: currentSongTitle,
+                            songSlug: currentSongTitle?.toLowerCase().replace(/\s+/g, '-'),
+                            cardSrc: src
+                          }
+                        });
+                        window.dispatchEvent(heartCoinEvent);
+                      } catch {}
+                      try {
+                        const currentSongTitle = currentTrack?.title || title;
+                        track('collect_card_clicked', {
+                          song_slug: currentSongTitle?.toLowerCase().replace(/\s+/g, '-'),
+                          card_src: src,
+                          payload: { song_title: currentSongTitle, card_image: src, action: 'open_heartcoin_with_card' }
+                        });
+                      } catch {}
+                    }}
+                  >
+                    COLLECT CARD
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>,
@@ -1155,106 +1140,6 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
         .cover-hologram-container.hovered .cover-glow-frame {
           border-color: rgba(25, 227, 255, 1);
           box-shadow: none;
-        }
-        
-        
-        
-        .card-modal{
-          /* Smaller pop container to reduce image size */
-          width: min(70vw, 280px);
-          max-width: 70vw;
-          max-height: 100%; /* Fill available vertical space */
-          background: rgba(25,227,255,0.45);
-          box-shadow: 0 0 60px rgba(25,227,255,0.45), inset 0 0 0 1px rgba(25,227,255,0.35);
-          overflow: hidden; /* Contain content within bounds */
-        }
-        .card-modal .tilt-img {
-          /* Reduce max height so card appears smaller */
-          max-height: 45vh;
-          object-fit: contain;
-        }
-        @media (max-width: 380px) {
-          /* Keep smaller on very narrow devices */
-          .card-modal{ width: min(90vw, 260px); }
-        }
-        .tilt-wrap{ perspective: 1200px; transform-style: preserve-3d; }
-        .card-frame{
-          position:relative; border-radius: 16px; padding: 8px; background: transparent;
-          outline: 1px solid rgba(25,227,255,.4);
-          box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 0 36px rgba(25,227,255,.35);
-        }
-        /* Hover grow + glow on the card, similar to COLLECT CARD button */
-        .card-flip-container{ transition: transform .12s ease, box-shadow .18s ease, filter .18s ease; will-change: transform; }
-        .card-flip-container:hover{ transform: translateZ(0) scale(1.05); }
-        .card-frame:hover{
-          box-shadow:
-            0 0 52px rgba(25,227,255,.9),
-            0 0 90px rgba(25,227,255,.7),
-            0 0 140px rgba(25,227,255,0.5),
-            0 0 200px rgba(25,227,255,0.3),
-            inset 0 0 0 1px rgba(255,255,255,.12);
-          outline-color: rgba(25,227,255,.75);
-        }
-        .card-frame:hover .tilt-img{
-          filter: saturate(1.1) brightness(1.08) contrast(1.08)
-            drop-shadow(0 0 26px rgba(25,227,255,1))
-            drop-shadow(0 0 52px rgba(25,227,255,.8))
-            drop-shadow(0 0 96px rgba(25,227,255,.6));
-        }
-        .tilt-img{
-          width: 100%; height: auto; display:block; object-fit: contain;
-          transform: rotateX(10deg) rotateY(-10deg) translateZ(0);
-          filter: saturate(1.06) contrast(1.06) brightness(1.04)
-            drop-shadow(0 0 18px rgba(25,227,255,0.55)) drop-shadow(0 0 36px rgba(25,227,255,0.35));
-          animation: tiltPulse 3s ease-in-out infinite;
-          border-radius: 14px;
-        }
-        .frame-sheen{ position:absolute; inset: 6px; border-radius: 12px; pointer-events:none;
-          background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,0) 60%);
-          mix-blend-mode: screen; opacity:.6;
-        }
-        .tilt-img:hover{ animation-duration: 2.2s; }
-        @keyframes tiltPulse{
-          0%,100% { transform: rotateX(9deg) rotateY(-9deg) scale(1); }
-          50%      { transform: rotateX(13deg) rotateY(-13deg) scale(1.04); }
-        }
-        .ocean-cta-wrap{ position:relative; }
-        .buttons-row{ position: relative; justify-content: center; }
-        .btn-ocean{
-          position:relative; display:inline-grid; place-items:center;
-          padding: 5px 12px; border-radius: 10px; font-weight:800; letter-spacing:.06em; font-size: 12px; line-height: 1.1;
-          color:#001014; text-transform:uppercase; font-family: InterLocal, system-ui, sans-serif;
-          background: radial-gradient(100% 100% at 50% 20%, rgba(255,255,210,0.95), #F2EF1D);
-          border: 1px solid rgba(255,255,255,.24);
-          box-shadow: 0 0 20px rgba(242,239,29,.55), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -8px 16px rgba(0,0,0,.22);
-          transition: transform .12s ease, box-shadow .18s ease, filter .18s ease;
-          overflow:hidden;
-          white-space: nowrap;
-        }
-        .btn-ocean:hover{
-          transform: translateZ(0) scale(1.05);
-          box-shadow:
-            0 0 36px rgba(242,239,29,.95),
-            0 0 80px rgba(242,239,29,.55),
-            inset 0 2px 0 rgba(255,255,255,.7),
-            inset 0 -10px 18px rgba(0,0,0,.28);
-          filter: saturate(1.08) brightness(1.07);
-          animation: oceanGlow 1.8s ease-in-out infinite;
-        }
-        .btn-ocean:active{ transform: scale(.98); }
-        @keyframes oceanGlow {
-          0%, 100% { box-shadow: 0 0 36px rgba(242,239,29,.95), 0 0 80px rgba(242,239,29,.55), inset 0 2px 0 rgba(255,255,255,.7), inset 0 -10px 18px rgba(0,0,0,.28); }
-          50% { box-shadow: 0 0 52px rgba(242,239,29,1), 0 0 110px rgba(242,239,29,.7), inset 0 2px 0 rgba(255,255,255,.75), inset 0 -12px 20px rgba(0,0,0,.3); }
-        }
-        .btn-ripple{ position:absolute; inset:-10%; border-radius:inherit; pointer-events:none; opacity:0;
-          background: radial-gradient(closest-side, rgba(255,255,255,.85), rgba(242,239,29,.45) 40%, rgba(242,239,29,0) 60%);
-          filter: blur(1px);
-        }
-        .btn-ocean.is-rippling .btn-ripple{ animation: og-ripple 520ms ease-out 1; }
-        @keyframes og-ripple{
-          0% { opacity:.7; transform: scale(.5); }
-          60% { opacity:.25; transform: scale(1.6); }
-          100% { opacity:0; transform: scale(2.2); }
         }
         /* Elements popover: no entrance animation, stronger scrollbar */
         .elements-popover { animation: none !important; transition: none !important; }

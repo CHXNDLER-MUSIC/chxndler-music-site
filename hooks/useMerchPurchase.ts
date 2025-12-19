@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { PurchaseWithHeartcoinsResult, ShippingInfo, ShippingUpdateResponse } from '@/types/merch';
 
 // New purchase request interface - client sends only IDs, not prices
@@ -10,21 +10,47 @@ export interface PurchaseRequest {
   idempotencyKey: string;   // Prevents double-submit on server
 }
 
+/**
+ * Hook for handling merch purchases with HeartCoins.
+ *
+ * DOUBLE-SUBMIT PREVENTION:
+ * - Uses useRef for synchronous in-flight check (not affected by React batching)
+ * - useState for UI updates (button disabled state)
+ * - The ref check happens BEFORE any async work begins
+ * - This prevents duplicate calls from: StrictMode, Fast Refresh, rapid clicks
+ */
 export function useMerchPurchase() {
+  // useState for UI reactivity (disabling buttons, showing spinners)
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const purchaseWithHeartCoins = async (
+  // useRef for SYNCHRONOUS duplicate prevention
+  // This is checked immediately and is NOT subject to React's async state batching
+  const purchaseInFlightRef = useRef(false);
+
+  const purchaseWithHeartCoins = useCallback(async (
     request: PurchaseRequest
   ): Promise<PurchaseWithHeartcoinsResult | null> => {
     const { merchItemId, quantity, clientSlug, idempotencyKey } = request;
 
-    // Prevent double-submit at hook level
-    if (isProcessing) {
-      console.warn('[useMerchPurchase] Already processing, ignoring duplicate call');
+    // ============================================================
+    // CRITICAL: Synchronous duplicate prevention using ref
+    // This check happens BEFORE any async work and is not affected
+    // by React's state batching or StrictMode double-invocation
+    // ============================================================
+    if (purchaseInFlightRef.current) {
+      console.warn('[useMerchPurchase] BLOCKED: Purchase already in flight (ref check)', {
+        idempotencyKey,
+        merchItemId,
+      });
       return null;
     }
 
+    // Set ref IMMEDIATELY and SYNCHRONOUSLY before any async work
+    purchaseInFlightRef.current = true;
+    console.log('[useMerchPurchase] Purchase in flight set to TRUE', { idempotencyKey });
+
+    // Also set state for UI updates (button disabled state)
     setIsProcessing(true);
     setError(null);
 
@@ -34,6 +60,7 @@ export function useMerchPurchase() {
       console.error(validationError, { request });
       setError('Invalid item. Please try again.');
       setIsProcessing(false);
+      purchaseInFlightRef.current = false;
       return null;
     }
 
@@ -42,6 +69,7 @@ export function useMerchPurchase() {
       console.error(validationError, { request });
       setError('Missing idempotency key. Please try again.');
       setIsProcessing(false);
+      purchaseInFlightRef.current = false;
       return null;
     }
 
@@ -54,14 +82,12 @@ export function useMerchPurchase() {
       clientSlug, // For server-side logging only
     };
 
-    // Log before calling API
-    console.log('[useMerchPurchase] Initiating purchase:', {
+    console.log('[useMerchPurchase] Initiating purchase (single API call):', {
       merchItemId,
       quantity,
       clientSlug,
       idempotencyKey,
     });
-    console.log('[useMerchPurchase] Payload to be sent:', payload);
 
     try {
       console.log('[useMerchPurchase] Making fetch request to /api/merch/purchase');
@@ -84,7 +110,6 @@ export function useMerchPurchase() {
         status: response.status,
         statusText: response.statusText,
         ok: response.ok,
-        contentType: response.headers.get('content-type')
       });
 
       let result: any;
@@ -101,12 +126,11 @@ export function useMerchPurchase() {
       console.log('[useMerchPurchase] API response:', {
         status: response.status,
         ok: response.ok,
-        result
+        result,
       });
 
       if (!response.ok) {
         const errorMessage = result?.error || result?.message || 'Purchase failed';
-        // Log the response JSON on failure with the payload we sent
         console.error('[useMerchPurchase] Purchase failed response JSON:', {
           payload_sent: payload,
           response_json: result,
@@ -133,7 +157,6 @@ export function useMerchPurchase() {
       if (err instanceof Error) {
         errorMessage = err.message;
       } else if (err && typeof err === 'object') {
-        // Try to extract message from error-like objects
         errorMessage = (err as any).message || (err as any).error || JSON.stringify(err) || 'Purchase failed';
       } else if (typeof err === 'string') {
         errorMessage = err;
@@ -142,23 +165,24 @@ export function useMerchPurchase() {
       console.error('[useMerchPurchase] Purchase error:', {
         errorType: err?.constructor?.name || typeof err,
         errorMessage,
-        errorString: String(err),
         merchItemId,
-        quantity,
         idempotencyKey,
       });
-
-      // Also log the raw error for debugging
-      console.error('[useMerchPurchase] Raw error object:', err);
 
       setError(errorMessage);
       return null;
     } finally {
+      // ============================================================
+      // CRITICAL: Always reset both ref and state in finally block
+      // This ensures we can retry after errors
+      // ============================================================
+      purchaseInFlightRef.current = false;
       setIsProcessing(false);
+      console.log('[useMerchPurchase] Purchase in flight reset to FALSE');
     }
-  };
+  }, []);
 
-  const updateShipping = async (shippingInfo: ShippingInfo): Promise<ShippingUpdateResponse | null> => {
+  const updateShipping = useCallback(async (shippingInfo: ShippingInfo): Promise<ShippingUpdateResponse | null> => {
     setIsProcessing(true);
     setError(null);
 
@@ -177,7 +201,6 @@ export function useMerchPurchase() {
         throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Failed to connect to server'}`);
       }
 
-      // Read response body exactly once using text() then parse
       let result;
       try {
         const responseText = await response.text();
@@ -203,13 +226,13 @@ export function useMerchPurchase() {
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, []);
 
   return {
     purchaseWithHeartCoins,
     updateShipping,
     isProcessing,
     error,
-    clearError: () => setError(null)
+    clearError: useCallback(() => setError(null), []),
   };
 }
