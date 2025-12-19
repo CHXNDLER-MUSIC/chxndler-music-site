@@ -2843,47 +2843,80 @@ const HUDPanel = React.memo(function HUDPanel({
                           
                           const handleSeek = (clientX) => {
                             const bar = document.querySelector('.hud-enhanced-track');
-                            if (!bar || !duration) return;
+                            if (!bar) return;
+
                             const rect = bar.getBoundingClientRect();
-                            const clickX = clientX - rect.left;
-                            const percentage = Math.max(0, Math.min(1, clickX / rect.width));
-                            const seekTime = percentage * duration;
+                            const clickX = Math.max(0, Math.min(rect.width, clientX - rect.left));
+                            const percentage = rect.width > 0 ? clickX / rect.width : 0;
 
-                            // Seek using unified audio manager
-                            try { audioManager.seek(seekTime); } catch {}
-
-                            // Also try direct audio element access as fallback
+                            // Use the audio element's duration directly for accuracy
                             const audioEl = liveAudioRef?.current;
-                            if (audioEl) {
-                              try { audioEl.currentTime = seekTime; } catch {}
-                              try { setProgress(seekTime); } catch {}
+                            const actualDuration = audioEl?.duration || duration || 0;
+
+                            if (!actualDuration || actualDuration <= 0) {
+                              console.warn('No valid duration for seeking');
+                              return;
                             }
+
+                            const seekTime = percentage * actualDuration;
+
+                            console.log('Seeking:', {
+                              clickX,
+                              barWidth: rect.width,
+                              percentage: (percentage * 100).toFixed(1) + '%',
+                              seekTime: seekTime.toFixed(2),
+                              duration: actualDuration.toFixed(2)
+                            });
+
+                            // Seek using direct audio element for reliability
+                            if (audioEl) {
+                              try {
+                                audioEl.currentTime = seekTime;
+                                setProgress(seekTime);
+                              } catch (e) {
+                                console.error('Seek error:', e);
+                              }
+                            }
+
+                            // Also try unified audio manager as backup
+                            try { audioManager.seek(seekTime); } catch {}
                           };
 
                           const onBarClick = (e) => {
+                            console.log('✅ Progress bar clicked!', e.clientX);
                             handleSeek(e.clientX);
                             try { sfx.play('click', 0.3); } catch {}
                           };
 
                           const onPointerDown = (e) => {
+                            console.log('✅ Progress bar pointer down!', e.type);
                             e.preventDefault();
                             e.stopPropagation();
-                            handleSeek(e.clientX || (e.touches?.[0]?.clientX) || 0);
+
+                            const startX = e.clientX || (e.touches?.[0]?.clientX) || 0;
+                            handleSeek(startX);
+
+                            let isDragging = true;
 
                             const onMove = (me) => {
+                              if (!isDragging) return;
+                              me.preventDefault();
                               const cx = me.clientX || (me.touches?.[0]?.clientX) || 0;
                               handleSeek(cx);
                             };
+
                             const onUp = () => {
-                              window.removeEventListener('mousemove', onMove);
-                              window.removeEventListener('touchmove', onMove);
-                              window.removeEventListener('mouseup', onUp);
-                              window.removeEventListener('touchend', onUp);
+                              isDragging = false;
+                              document.removeEventListener('mousemove', onMove);
+                              document.removeEventListener('touchmove', onMove);
+                              document.removeEventListener('mouseup', onUp);
+                              document.removeEventListener('touchend', onUp);
                             };
-                            window.addEventListener('mousemove', onMove, { passive: true });
-                            window.addEventListener('touchmove', onMove, { passive: true });
-                            window.addEventListener('mouseup', onUp, { passive: true });
-                            window.addEventListener('touchend', onUp, { passive: true });
+
+                            document.addEventListener('mousemove', onMove);
+                            document.addEventListener('touchmove', onMove);
+                            document.addEventListener('mouseup', onUp);
+                            document.addEventListener('touchend', onUp);
                           };
 
                           return (
@@ -2891,19 +2924,27 @@ const HUDPanel = React.memo(function HUDPanel({
                               className="hud-enhanced-track"
                               style={{
                                 position: 'absolute',
-                                left: 14, // Start closer to play button alignment
+                                left: 14,
                                 right: 6,
                                 bottom: -55,
                                 height: 10,
                                 borderRadius: 9999,
                                 background: 'rgba(0,0,0,0.4)',
-                                border: '1px solid rgba(255,255,255,0.1)',
+                                border: '2px solid rgba(0,255,0,0.5)',
                                 overflow: 'hidden',
                                 cursor: 'pointer',
-                                touchAction: 'none'
+                                touchAction: 'none',
+                                pointerEvents: 'auto',
+                                zIndex: 999999
                               }}
-                              onClick={onBarClick}
-                              onMouseDown={onPointerDown}
+                              onClick={(e) => {
+                                console.log('🎯 DIRECT CLICK!', e.clientX, e.target);
+                                onBarClick(e);
+                              }}
+                              onMouseDown={(e) => {
+                                console.log('🎯 DIRECT MOUSEDOWN!', e.clientX);
+                                onPointerDown(e);
+                              }}
                               onTouchStart={onPointerDown}
                               onMouseEnter={(e) => {
                                 try { e.currentTarget.style.filter = 'brightness(1.2) saturate(1.1)'; } catch {}

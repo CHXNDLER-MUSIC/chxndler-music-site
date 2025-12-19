@@ -57,7 +57,10 @@ export default function SignalChat({
 
   const getUserTextColor = (userId?: string) => {
     if (!userId) return undefined as unknown as string;
-    if (userId === user?.id) return elementToColor(profile?.element);
+    // Only use profile color if we have both user and profile
+    if (user?.id && profile && userId === user.id) {
+      return elementToColor(profile.element);
+    }
     return userElementMap[userId] || (undefined as unknown as string);
   };
 
@@ -279,53 +282,60 @@ export default function SignalChat({
                   Listening for heart signals...
                 </div>
               ) : (
-                messages.map((msg) => (
-                  <motion.div
-                    key={msg.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`text-xs rounded p-2 ${
-                      msg.is_system || msg.user_id === '00000000-0000-0000-0000-000000000000'
-                        ? 'bg-purple-900/30 border-l-2 border-purple-500'
-                        : msg.user_id === user?.id
-                        ? 'bg-blue-900/30 ml-2'
-                        : 'bg-gray-800/40'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <button
-                        type="button"
-                        onClick={() => openProfileForMessage(msg)}
-                        className="font-medium text-left"
-                        style={{ color: getUserTextColor(msg.user_id) }}
-                        title="View profile"
-                        disabled={!msg?.user_id || msg.user_id === SYSTEM_USER_ID}
-                      >
-                        {msg.username}
-                      </button>
-                      <span className="text-xs text-gray-500">
-                        {new Date(msg.created_at).toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
-                      </span>
-                    </div>
-                    {(msg.is_system && (msg.message || '').includes('connected to the signal')) ? (
-                      <button
-                        type="button"
-                        onClick={() => openProfileForMessage(msg)}
-                        className="break-words text-left"
-                        style={{ color: getUserTextColor(msg.user_id) }}
-                        title="View profile"
-                        disabled={!msg?.user_id || msg.user_id === SYSTEM_USER_ID}
-                      >
-                        {msg.message}
-                      </button>
-                    ) : (
-                      <div className="break-words" style={{ color: getUserTextColor(msg.user_id) }}>{msg.message}</div>
-                    )}
-                  </motion.div>
-                ))
+                messages.map((msg) => {
+                  // Fallback for missing username
+                  const displayName = msg.username || 'ALIEN';
+                  const isSystemMsg = msg.is_system || msg.user_id === SYSTEM_USER_ID;
+                  const isOwnMessage = user?.id && msg.user_id === user.id;
+
+                  return (
+                    <motion.div
+                      key={msg.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`text-xs rounded p-2 ${
+                        isSystemMsg
+                          ? 'bg-purple-900/30 border-l-2 border-purple-500'
+                          : isOwnMessage
+                          ? 'bg-blue-900/30 ml-2'
+                          : 'bg-gray-800/40'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <button
+                          type="button"
+                          onClick={() => openProfileForMessage(msg)}
+                          className="font-medium text-left"
+                          style={{ color: getUserTextColor(msg.user_id) }}
+                          title="View profile"
+                          disabled={!msg?.user_id || isSystemMsg}
+                        >
+                          {displayName}
+                        </button>
+                        <span className="text-xs text-gray-500">
+                          {new Date(msg.created_at).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                      {(isSystemMsg && (msg.message || '').includes('connected to the signal')) ? (
+                        <button
+                          type="button"
+                          onClick={() => openProfileForMessage(msg)}
+                          className="break-words text-left"
+                          style={{ color: getUserTextColor(msg.user_id) }}
+                          title="View profile"
+                          disabled={!msg?.user_id || isSystemMsg}
+                        >
+                          {msg.message}
+                        </button>
+                      ) : (
+                        <div className="break-words" style={{ color: getUserTextColor(msg.user_id) }}>{msg.message}</div>
+                      )}
+                    </motion.div>
+                  );
+                })
               )}
               <div ref={messagesEndRef} />
             </div>
