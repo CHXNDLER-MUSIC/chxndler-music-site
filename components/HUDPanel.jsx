@@ -2851,9 +2851,9 @@ const HUDPanel = React.memo(function HUDPanel({
                                 bottom: -75,
                                 height: 10,
                                 borderRadius: 9999,
-                                background: 'lime',
-                                border: '2px solid red',
-                                overflow: 'visible',
+                                background: 'rgba(0,0,0,0.4)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                overflow: 'hidden',
                                 cursor: 'pointer',
                                 pointerEvents: 'auto',
                                 zIndex: 100

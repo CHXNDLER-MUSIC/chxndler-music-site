@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three-stdlib';
+import { debug } from '@/lib/logger';
 
 export type ElementType = 'heart' | 'water' | 'lightning' | 'darkness';
 
@@ -234,7 +235,7 @@ export default function Pure3DPlanets({
     // Song orbit groups for animation
     const songOrbitGroups: { group: THREE.Group; speed: number }[] = [];
 
-    console.log('Building planets with songsByElement:', songsByElement, 'songs count:', songs.length);
+    debug('Building planets with songsByElement:', songsByElement, 'songs count:', songs.length);
 
     planets.forEach(p => {
       const group = new THREE.Group();
@@ -256,7 +257,7 @@ export default function Pure3DPlanets({
 
       // Add song planets orbiting around this element
       const elementSongs = songsByElement[p.id] || [];
-      console.log(`Element ${p.id} has ${elementSongs.length} songs`);
+      debug(`Element ${p.id} has ${elementSongs.length} songs`);
       const songOrbitRadius = 10; // Distance from element planet
 
       if (elementSongs.length > 0) {
@@ -275,7 +276,7 @@ export default function Pure3DPlanets({
           const isReleased = song.is_released !== false; // Default to released if not specified
           const sphereColor = isReleased ? p.glow : 0x666666; // Grey for unreleased
 
-          console.log(`Adding song sphere: ${song.title} (${songSlug}) orbiting ${p.id} - ${isReleased ? 'released' : 'unreleased'}`);
+          debug(`Adding song sphere: ${song.title} (${songSlug}) orbiting ${p.id} - ${isReleased ? 'released' : 'unreleased'}`);
           const songSphere = createSongSphere(sphereColor, 1.2, [songX, 0, songZ]);
           // Tag mesh for identification and store a reference for focusing
           try {
@@ -380,7 +381,7 @@ export default function Pure3DPlanets({
               // Call the reward claim function
               await onDailyPlanetClick(elementId);
             } catch (err) {
-              console.error('Error claiming element of day reward:', err);
+              console.error('Failed to claim element of day reward:', err);
             }
 
             // After a short beat, return camera to rest position
@@ -629,8 +630,8 @@ export default function Pure3DPlanets({
 
     if (!targetPosition || !newCameraPosition) return;
 
-    console.log(`Starting camera focus on ${focusElement} planet at`, targetPosition.toArray());
-    console.log(`Camera will move to`, newCameraPosition.toArray());
+    debug(`Starting camera focus on ${focusElement} planet at`, targetPosition.toArray());
+    debug(`Camera will move to`, newCameraPosition.toArray());
 
     // Animate camera to new position
     const startPosition = camera.position.clone();
@@ -657,7 +658,7 @@ export default function Pure3DPlanets({
       if (progress < 1) {
         requestAnimationFrame(animateCamera);
       } else {
-        console.log(`Camera focused on ${focusElement} planet at`, targetPosition.toArray());
+        debug(`Camera focused on ${focusElement} planet at`, targetPosition.toArray());
       }
     };
 

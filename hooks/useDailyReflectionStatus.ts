@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getLocalDateString } from '@/utils/dateHelpers';
+import { debug } from '@/lib/logger';
 
 export function useDailyReflectionStatus() {
   const { user, journalEntries, profile } = useProfile();
@@ -44,7 +45,7 @@ export function useDailyReflectionStatus() {
                           (entry.intention_response && entry.intention_response.trim() !== '');
         
         // Debug logging to help track down the issue
-        console.log('useDailyReflectionStatus - checking entry:', {
+        debug('useDailyReflectionStatus - checking entry:', {
           entryDate: entry.entry_date,
           today,
           yesterdayStr,
@@ -64,14 +65,14 @@ export function useDailyReflectionStatus() {
 
       // If manually marked as completed, don't override
       if (manuallyCompleted) {
-        console.log('useDailyReflectionStatus - manually completed, keeping false');
+        debug('useDailyReflectionStatus - manually completed, keeping false');
         setHasPendingReflection(false);
         setLoading(false);
         return;
       }
 
       // If no reflection found for today, user has pending reflection
-      console.log('useDailyReflectionStatus - final result:', {
+      debug('useDailyReflectionStatus - final result:', {
         todayReflection: !!todayReflection,
         hasPendingReflection: !todayReflection,
         manuallyCompleted
@@ -85,7 +86,7 @@ export function useDailyReflectionStatus() {
 
   // Function to manually mark reflection as completed
   const markReflectionComplete = () => {
-    console.log('markReflectionComplete called - manually setting hasPendingReflection to false');
+    debug('markReflectionComplete called - manually setting hasPendingReflection to false');
     setManuallyCompleted(true);
     setHasPendingReflection(false);
   };

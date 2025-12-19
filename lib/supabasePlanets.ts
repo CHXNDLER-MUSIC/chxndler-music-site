@@ -1,4 +1,4 @@
-import { fetchSongs } from "./songs";
+import { fetchReleasedSongs } from "./songs";
 import { AUDIO_ASSETS_BY_SLUG } from "@/data/audioAssets";
 import { SONG_ELEMENT_MAPPING } from "@/data/songElements";
 import type { SongRow, ElementType } from "@/types/song";
@@ -49,7 +49,7 @@ const ELEMENT_PLANET_CONFIG = {
 
 export async function buildSupabaseSongPlanets(): Promise<SupabaseSongPlanet[]> {
   try {
-    const songs = await fetchSongs();
+    const songs = await fetchReleasedSongs();
     
     return songs.map((song, index) => {
       const element = SONG_ELEMENT_MAPPING[song.slug] || 'heart';

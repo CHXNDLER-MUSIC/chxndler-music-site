@@ -824,42 +824,48 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     
   }, [state.warpCompleted, state.pendingTrack, api.playTrack]);
 
-  // Listen for player store changes to sync with holo panel selections  
+  // Listen for player store changes to sync with holo panel selections
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
+
     // Import playerStore dynamically to avoid SSR issues
     const subscribeToPlayerStore = async () => {
       try {
         const { playerStore } = await import('@/store/usePlayerStore');
         const { useProfile } = await import('@/contexts/ProfileContext');
-        
+
         const unsubscribe = playerStore.subscribe((storeState: any) => {
           const currentMainId = storeState?.mainId;
           const currentTrackId = state.currentTrack?.id; // Use local AudioProvider state, not store state
-          
+
+          // Check if HoloAudioBridge is handling the warp sequence - if so, don't interfere
+          if ((window as any).__HOLO_WARP_IN_PROGRESS) {
+            console.log('🎵 AudioProvider: Warp in progress, skipping track sync');
+            return;
+          }
+
           // Only sync if a different song is selected AND we're not already playing that specific track
           if (currentMainId && currentMainId !== currentTrackId) {
             console.log('🎵 AudioProvider: Syncing with player store selection:', currentMainId, 'was playing:', currentTrackId);
-            
+
             // Set current track info immediately for UI updates
             const trackInfo = TRACK_INFO[currentMainId];
             if (trackInfo) {
               setState(s => ({ ...s, currentTrack: trackInfo }));
             }
-            
+
             // Always switch to the new track, even if something else is playing
             console.log('🎵 AudioProvider: Switching to new track:', currentMainId);
             api.playTrack(currentMainId).catch(console.error);
           }
         });
-        
+
         return unsubscribe;
       } catch (err) {
         console.warn('Failed to subscribe to player store:', err);
       }
     };
-    
+
     subscribeToPlayerStore();
   }, [state.currentTrack?.id, state.playing, api.playTrack]);
 

@@ -1,8 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
+import { debug } from '@/lib/logger';
 
-// Debug environment variables (only in development)
-if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
-  console.log('DEBUG Supabase config:', {
+// Debug environment variables (only when NEXT_PUBLIC_DEBUG_LOGS is enabled)
+if (typeof window !== 'undefined') {
+  debug('Supabase config:', {
     hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
     hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     urlPrefix: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 20) + '...',

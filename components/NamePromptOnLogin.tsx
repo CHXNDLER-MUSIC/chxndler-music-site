@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useUIStore } from '@/store/useUIStore';
+import { debug } from '@/lib/logger';
 
 // This lightweight gate only opens the name prompt when completeProfile=1 is present.
 // It does NOT fetch sessions or profiles to avoid any flash on first load.
@@ -43,22 +44,16 @@ export default function NamePromptOnLogin() {
 
   // Only log when debug data actually changes
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔍 NamePromptOnLogin check:', debugData);
-    }
+    debug('NamePromptOnLogin check:', debugData);
   }, [debugData]);
 
   const handleOpenPrompt = useCallback(() => {
-    try { 
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔄 Calling openNamePromptFromAuth...');
-      }
-      openNamePromptFromAuth(); 
-      if (process.env.NODE_ENV === 'development') {
-        console.log('✅ openNamePromptFromAuth called successfully');
-      }
+    try {
+      debug('Calling openNamePromptFromAuth...');
+      openNamePromptFromAuth();
+      debug('openNamePromptFromAuth called successfully');
     } catch (e) {
-      console.error('❌ Failed to open name prompt from auth:', e);
+      console.error('Failed to open name prompt from auth:', e);
     }
   }, [openNamePromptFromAuth]);
 
@@ -67,28 +62,22 @@ export default function NamePromptOnLogin() {
       const params = new URLSearchParams(searchParams.toString());
       params.delete('completeProfile');
       const newUrl = params.toString() ? `/?${params.toString()}` : '/';
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🧹 Cleaning up URL from', window.location.href, 'to', newUrl);
-      }
+      debug('Cleaning up URL from', window.location.href, 'to', newUrl);
       router.replace(newUrl);
     } catch (e) {
-      console.warn('Failed to clean up URL parameters:', e);
+      console.error('Failed to clean up URL parameters:', e);
     }
   }, [searchParams, router]);
 
   useEffect(() => {
     if (!mounted) return;
-    
+
     if (!parameterChecks.shouldOpen) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🚫 No completeProfile or welcome parameter found, not opening modal');
-      }
+      debug('No completeProfile or welcome parameter found, not opening modal');
       return;
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('✅ Opening name prompt from auth');
-    }
+    debug('Opening name prompt from auth');
 
     // Open prompt exactly once per arrival - use a small delay to ensure all components are ready
     const timeoutId = setTimeout(handleOpenPrompt, 100);
@@ -105,9 +94,9 @@ export default function NamePromptOnLogin() {
   // Temporary debug button - remove after testing
   if (typeof window !== 'undefined' && window.location.search.includes('debug=1')) {
     return (
-      <button 
+      <button
         onClick={() => {
-          console.log('🔧 Manual debug trigger');
+          debug('Manual debug trigger');
           openNamePromptFromAuth();
         }}
         style={{

@@ -948,11 +948,11 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     return (
                       <div
                         key={`slot-${index}`}
-                        className={`rounded-lg border backdrop-blur-sm transition-all duration-300 w-28 h-36 ${
+                        className={`rounded-lg border transition-all duration-300 w-28 h-36 ${
                           isLockedSlot
                             ? 'border-white/5 cursor-default'
                             : hasCard || isFirstSlotWithChxndler
-                            ? 'border-white/10 cursor-pointer hover:scale-105' 
+                            ? 'border-white/10 cursor-pointer hover:scale-105'
                             : 'border-white/10 cursor-pointer hover:scale-105'
                         }`}
                         onClick={() => {
@@ -1202,7 +1202,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-28 h-36"
+                          className="rounded-lg border border-white/5 transition-all duration-300 w-28 h-36"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}
@@ -1310,7 +1310,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-28 h-36"
+                          className="rounded-lg border border-white/5 transition-all duration-300 w-28 h-36"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}
@@ -1418,7 +1418,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-28 h-36"
+                          className="rounded-lg border border-white/5 transition-all duration-300 w-28 h-36"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}
@@ -1526,7 +1526,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-28 h-36"
+                          className="rounded-lg border border-white/5 transition-all duration-300 w-28 h-36"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}
@@ -1634,7 +1634,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-28 h-36"
+                          className="rounded-lg border border-white/5 transition-all duration-300 w-28 h-36"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}
@@ -1742,7 +1742,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-28 h-36"
+                          className="rounded-lg border border-white/5 transition-all duration-300 w-28 h-36"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}
@@ -1850,7 +1850,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-28 h-36"
+                          className="rounded-lg border border-white/5 transition-all duration-300 w-28 h-36"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}
@@ -1958,7 +1958,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-28 h-36"
+                          className="rounded-lg border border-white/5 transition-all duration-300 w-28 h-36"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}
@@ -2066,7 +2066,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-28 h-36"
+                          className="rounded-lg border border-white/5 transition-all duration-300 w-28 h-36"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}
@@ -2174,7 +2174,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-28 h-36"
+                          className="rounded-lg border border-white/5 transition-all duration-300 w-28 h-36"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}
@@ -2282,7 +2282,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-28 h-36"
+                          className="rounded-lg border border-white/5 transition-all duration-300 w-28 h-36"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}
@@ -2390,7 +2390,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       return (
                         <div
                           key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 backdrop-blur-sm transition-all duration-300 w-24 h-32"
+                          className="rounded-lg border border-white/5 transition-all duration-300 w-24 h-32"
                           style={{
                             boxShadow: '0 0 5px rgba(255,105,180,0.1)'
                           }}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import { debug, warn } from "@/lib/logger";
 import type { ElementType } from "@/lib/planetConfig";
 import { getLocalDateString } from "@/utils/dateHelpers";
 
@@ -28,13 +29,13 @@ export function useFocusElementOfDay() {
           .maybeSingle();
 
         if (error) {
-          console.warn("Error fetching element of day:", error.message);
+          warn("Error fetching element of day:", error.message);
           // Fall back to heart on error
           setFocusElement("heart");
         } else if (data?.element) {
           const normalized = normalizeElement(data.element);
           setFocusElement(normalized || "heart");
-          console.log("Focus element of day:", normalized || "heart");
+          debug("Focus element of day:", normalized || "heart");
         } else {
           // No entry for today, fall back to heart
           setFocusElement("heart");

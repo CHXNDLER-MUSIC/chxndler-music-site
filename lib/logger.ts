@@ -1,17 +1,33 @@
-export const debugEnabled =
-  typeof window !== "undefined" &&
-  (process.env.NEXT_PUBLIC_DEBUG === "true" ||
-    (window as any).__DEBUG__ === true);
+/**
+ * Debug logger utility
+ * Logs only when:
+ * - NODE_ENV !== "production"
+ * - NEXT_PUBLIC_DEBUG_LOGS === "true"
+ */
 
-export const log = (...args: any[]) => {
-  if (debugEnabled) console.log(...args);
+const isDebugEnabled = (): boolean => {
+  return (
+    process.env.NODE_ENV !== "production" &&
+    process.env.NEXT_PUBLIC_DEBUG_LOGS === "true"
+  );
 };
 
-export const warn = (...args: any[]) => {
-  if (debugEnabled) console.warn(...args);
+export const debug = (...args: unknown[]): void => {
+  if (isDebugEnabled()) {
+    console.log(...args);
+  }
 };
 
-export const err = (...args: any[]) => {
+export const warn = (...args: unknown[]): void => {
+  if (isDebugEnabled()) {
+    console.warn(...args);
+  }
+};
+
+// Legacy export for compatibility
+export const debugEnabled = isDebugEnabled();
+export const log = debug;
+export const err = (...args: unknown[]): void => {
   console.error(...args);
 };
 

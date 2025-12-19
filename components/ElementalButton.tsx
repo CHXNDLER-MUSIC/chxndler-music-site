@@ -2,6 +2,8 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { sfx } from "@/lib/sfx";
+import { useProfile } from "@/contexts/ProfileContext";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   asChild?: boolean;
@@ -16,10 +18,12 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 export default function ElementalButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onBeamColorChange, element, onElementSelect, isActive = false, ...restProps }: Props) {
+  const { profile, user, refreshProfile } = useProfile();
   const [open, setOpen] = useState(false);
   const [hoveredElement, setHoveredElement] = useState<string | null>(null);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [committedElement, setCommittedElement] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   
   // Initialize and sync committedElement with the profile element
   useEffect(() => {
@@ -331,24 +335,59 @@ THE ELEMENTS OF THE HEARTVERSE
               {/* COMMIT Button - Bottom of container */}
               <div className="w-full flex-shrink-0" style={{marginBottom: '11px'}}>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
+                    if (!selectedElement || saving) return;
+
                     try { sfx.play('click', 0.8); } catch {}
                     // Play star.mp3 when ALIGN button is clicked
                     try {
                       const audio = new Audio('/audio/star.mp3');
                       audio.play().catch(e => console.log('Star audio play failed:', e));
                     } catch {}
-                    if (selectedElement) {
-                      setCommittedElement(selectedElement);
-                      // Notify parent component to save to profile
-                      if (onElementSelect) {
-                        onElementSelect(selectedElement);
+
+                    // Save to database if user is logged in
+                    if (user && profile) {
+                      setSaving(true);
+                      try {
+                        const { error } = await supabaseBrowser
+                          .from('profiles')
+                          .update({
+                            element: selectedElement,
+                            profile_image_url: `/elements/${selectedElement}.webp`,
+                            updated_at: new Date().toISOString()
+                          })
+                          .eq('id', user.id);
+
+                        if (error) {
+                          console.error('Error updating profile element:', error);
+                          setSaving(false);
+                          return;
+                        }
+
+                        // Refresh profile context
+                        await refreshProfile();
+
+                        try { sfx.play('flip', 0.6); } catch {}
+                        try { sfx.play('success', 0.8); } catch {}
+                      } catch (error) {
+                        console.error('Error aligning with element:', error);
+                        setSaving(false);
+                        return;
                       }
+                      setSaving(false);
                     }
+
+                    setCommittedElement(selectedElement);
+                    // Notify parent component if callback provided
+                    if (onElementSelect) {
+                      onElementSelect(selectedElement);
+                    }
+
                     setOpen(false);
                     try { onOpenBlueDisplay?.(); } catch {}
                   }}
-                  className="w-full py-2 bg-white/10 hover:bg-white/20 border-2 border-white/60 text-white font-bold rounded-lg transition-all duration-200 hover:scale-105"
+                  disabled={saving || !selectedElement}
+                  className="w-full py-2 bg-white/10 hover:bg-white/20 border-2 border-white/60 text-white font-bold rounded-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{
                     boxShadow: '0 0 25px rgba(255, 255, 255, 0.8), 0 0 50px rgba(255, 255, 255, 0.5), 0 0 75px rgba(255, 255, 255, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.2)',
                     textShadow: '0 0 12px rgba(255, 255, 255, 1), 0 0 20px rgba(255, 255, 255, 0.8)',
@@ -367,7 +406,7 @@ THE ELEMENTS OF THE HEARTVERSE
                     e.currentTarget.style.textShadow = '0 0 12px rgba(255, 255, 255, 1), 0 0 20px rgba(255, 255, 255, 0.8)';
                   }}
                 >
-                  ALIGN
+                  {saving ? 'ALIGNING...' : 'ALIGN'}
                 </button>
               </div>
               

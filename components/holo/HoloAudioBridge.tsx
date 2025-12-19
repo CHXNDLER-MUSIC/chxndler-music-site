@@ -85,41 +85,18 @@ export default function HoloAudioBridge() {
     });
   }
 
-  // Load+play on track change (when source exists) with warp -> join -> song sequence
+  // Load+play on track change (when source exists) with warp -> join + song simultaneously
   useEffect(() => {
-    
+
     const a = audioRef.current; if (!a) return;
     if (!currentTrack) return;
-    
+
+    // Signal that HoloAudioBridge is handling this track - prevents AudioProvider from interfering
+    try { (window as any).__HOLO_WARP_IN_PROGRESS = true; } catch {}
+
     // Immediately hide all planets during warp regardless of selection source
     try { playerStore.getState().setPlanetsVisible(false); } catch {}
     try { playerStore.getState().setPlanetDisplayMode('hidden'); } catch {}
-
-    // Stop ALL audio elements first to prevent conflicts (especially the default baby.mp3)
-    try {
-      const allAudio = document.querySelectorAll('audio');
-      allAudio.forEach(audio => {
-        if (audio !== a) { // Don't stop our own audio element yet
-          audio.pause();
-          audio.currentTime = 0;
-          // Also clear the src to prevent auto-resume
-          if (audio.src) {
-            console.log('🎵 HoloAudioBridge: Stopping conflicting audio:', audio.src.slice(-20));
-          }
-        }
-      });
-      
-      // Specifically stop our background audio tracks
-      [spaceMusicRef, welcomeToHeartrverseRef, welcomeBackRef].forEach(ref => {
-        const el = ref.current;
-        if (el && !el.paused) {
-          el.pause();
-          el.currentTime = 0;
-        }
-      });
-    } catch (e) {
-      // Silently handle any errors during audio stop
-    }
 
     // Stop current song before loading new one
     try {
@@ -128,12 +105,12 @@ export default function HoloAudioBridge() {
     } catch (e) {
       // Silently handle any errors during stop
     }
-    
+
     // Don't load the track immediately - wait until after warp effect
     const primarySrc = (currentTrack as any).sources?.[0]?.src || (currentTrack as any).src;
     if (primarySrc) {
       console.log('🎵 HoloAudioBridge: Starting warp sequence for:', currentTrack.title);
-      
+
       // Visual feedback that warp is happening
       document.body.style.backgroundColor = '#FF0000';
       const clearFlash = () => { document.body.style.backgroundColor = ''; };
@@ -141,74 +118,44 @@ export default function HoloAudioBridge() {
 
       // Sequence guard to cancel if track changes again
       let cancelled = false;
-      const cancel = () => { cancelled = true; };
+      const cancel = () => {
+        cancelled = true;
+        try { (window as any).__HOLO_WARP_IN_PROGRESS = false; } catch {}
+      };
 
-      // Chain: warp sfx -> join-alien sfx -> THEN load and play song
+      // Chain: warp sfx -> THEN play join-alien + song SIMULTANEOUSLY
       const run = async () => {
         try {
+          // Stop any conflicting audio AFTER starting warp (not before)
+          // This ensures we only stop audio once we're committed to the new track
+          try {
+            // Stop our background audio tracks
+            [spaceMusicRef, welcomeToHeartrverseRef, welcomeBackRef].forEach(ref => {
+              const el = ref.current;
+              if (el && !el.paused) {
+                el.pause();
+                el.currentTime = 0;
+              }
+            });
+          } catch (e) {
+            // Silently handle any errors during audio stop
+          }
+
           // Play warp SFX and wait (fallback ~1.6s if needed)
           console.log('🎵 HoloAudioBridge: Playing warp effect...');
           const warpEl = warpAudioRef.current; if (warpEl) warpEl.volume = 0.7;
           await playAndWait(warpAudioRef.current, 1600);
           if (cancelled) return;
 
-          // Play join-alien SFX and wait (fallback ~0.9s)
-          console.log('🎵 HoloAudioBridge: Playing join effect...');
-          const joinEl = joinAudioRef.current; if (joinEl) joinEl.volume = 0.9;
-          await playAndWait(joinAudioRef.current, 900);
-          if (cancelled) return;
-
-          // After blue display/join button sound, play appropriate welcome + space music combination
-          const isLoggedIn = profile?.id; // Check if user is logged in
-          console.log('🎵 HoloAudioBridge: User logged in status:', !!isLoggedIn);
-          
-          if (isLoggedIn) {
-            // Logged in: play space-music.opus + welcome-back.opus together
-            console.log('🎵 HoloAudioBridge: Playing welcome back + space music for logged in user');
-            const spaceMusicEl = spaceMusicRef.current;
-            const welcomeBackEl = welcomeBackRef.current;
-            
-            if (spaceMusicEl) {
-              spaceMusicEl.volume = 0.5;
-              spaceMusicEl.loop = true;
-              spaceMusicEl.currentTime = 0;
-              spaceMusicEl.play().catch(console.error);
-            }
-            
-            if (welcomeBackEl) {
-              welcomeBackEl.volume = 0.7;
-              welcomeBackEl.currentTime = 0;
-              welcomeBackEl.play().catch(console.error);
-            }
-          } else {
-            // Not logged in: play space-music.opus + welcome-to-the-heartverse.opus together
-            console.log('🎵 HoloAudioBridge: Playing welcome to heartverse + space music for guest user');
-            const spaceMusicEl = spaceMusicRef.current;
-            const welcomeToHeartrverseEl = welcomeToHeartrverseRef.current;
-            
-            if (spaceMusicEl) {
-              spaceMusicEl.volume = 0.5;
-              spaceMusicEl.loop = true;
-              spaceMusicEl.currentTime = 0;
-              spaceMusicEl.play().catch(console.error);
-            }
-            
-            if (welcomeToHeartrverseEl) {
-              welcomeToHeartrverseEl.volume = 0.7;
-              welcomeToHeartrverseEl.currentTime = 0;
-              welcomeToHeartrverseEl.play().catch(console.error);
-            }
-          }
-
-          // NOW load and play the track after warp effects complete
+          // NOW load the track source while preparing for simultaneous playback
           const trackSrc = (currentTrack as any).sources?.[0]?.src || (currentTrack as any).src;
           if (!trackSrc) {
             console.error('🎵 HoloAudioBridge: No audio source available for track:', currentTrack.title);
             return;
           }
-          
-          console.log('🎵 HoloAudioBridge: Loading track:', trackSrc);
-          
+
+          console.log('🎵 HoloAudioBridge: Pre-loading track:', trackSrc);
+
           // Disable browser media session before playing to prevent title overlays
           if ('mediaSession' in navigator) {
             navigator.mediaSession.metadata = null;
@@ -217,12 +164,40 @@ export default function HoloAudioBridge() {
             navigator.mediaSession.setActionHandler('previoustrack', null);
             navigator.mediaSession.setActionHandler('nexttrack', null);
           }
-          
+
+          // Pre-load the track
           a.src = trackSrc;
           a.load();
 
-          // After SFX sequence, start the song with autoplay fallbacks and only
-          // reveal the focused planet once playback actually starts
+          // Wait for track to be ready to play
+          await new Promise<void>((resolve) => {
+            if (a.readyState >= 3) {
+              resolve();
+              return;
+            }
+            const onCanPlay = () => {
+              a.removeEventListener('canplaythrough', onCanPlay);
+              a.removeEventListener('canplay', onCanPlayFallback);
+              resolve();
+            };
+            const onCanPlayFallback = () => {
+              a.removeEventListener('canplaythrough', onCanPlay);
+              a.removeEventListener('canplay', onCanPlayFallback);
+              resolve();
+            };
+            a.addEventListener('canplaythrough', onCanPlay, { once: true });
+            a.addEventListener('canplay', onCanPlayFallback, { once: true });
+            // Timeout fallback
+            setTimeout(resolve, 2000);
+          });
+
+          if (cancelled) return;
+
+          // Play join-alien SFX (blue display) AND song SIMULTANEOUSLY
+          console.log('🎵 HoloAudioBridge: Playing join effect + song simultaneously...');
+          const joinEl = joinAudioRef.current; if (joinEl) joinEl.volume = 0.9;
+
+          // Reveal planet and start song at the SAME time as join sound
           const onPlaying = () => {
             console.log('🎵 HoloAudioBridge: Song started playing, revealing planet');
             try { playerStore.getState().setPlanetsVisible(true); } catch {}
@@ -231,13 +206,21 @@ export default function HoloAudioBridge() {
           };
           try { a.addEventListener('playing', onPlaying, { once: true } as any); } catch {}
 
+          // Start both join-alien and track at the same time
           try {
+            if (joinEl) {
+              joinEl.currentTime = 0;
+              joinEl.play().catch(console.error);
+            }
             await playWithAutoplayFallback(a, { maxRetries: 3, initialDelay: 500 });
           } catch (err) {
             console.error('🎵 HoloAudioBridge: Play failed after retries', err);
-            // If play ultimately fails (autoplay restrictions), do not reveal planets yet
             try { a.removeEventListener('playing', onPlaying); } catch {}
           }
+
+          // Clear the warp flag now that playback has started
+          try { (window as any).__HOLO_WARP_IN_PROGRESS = false; } catch {}
+
         } finally {
           clearFlash();
         }

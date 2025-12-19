@@ -1,12 +1,16 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 
 interface SimpleWaveformProps {
   className?: string;
 }
 
-const SimpleWaveform: React.FC<SimpleWaveformProps> = ({ 
+// WeakMap to track which audio elements have already had a source node created
+// This persists across component instances and React StrictMode double-renders
+const audioSourceMap = new WeakMap<HTMLMediaElement, MediaElementAudioSourceNode>();
+
+const SimpleWaveform: React.FC<SimpleWaveformProps> = ({
   className = ""
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -14,14 +18,15 @@ const SimpleWaveform: React.FC<SimpleWaveformProps> = ({
   const animationIdRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
+  // Track which audio element we're currently connected to
+  const connectedAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     // Find any playing audio element on the page
-    const findActiveAudio = () => {
+    const findActiveAudio = (): HTMLAudioElement | null => {
       const audioElements = document.querySelectorAll('audio');
       for (const audio of audioElements) {
         if (!audio.paused && audio.currentTime > 0) {
@@ -32,57 +37,78 @@ const SimpleWaveform: React.FC<SimpleWaveformProps> = ({
       return document.querySelector('audio[data-holo-audio="1"]') as HTMLAudioElement || null;
     };
 
-    const audioEl = findActiveAudio();
-    if (!audioEl) return;
-
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const setupAudioContext = async (targetAudio: HTMLAudioElement) => {
+    const setupAudioContext = (targetAudio: HTMLAudioElement) => {
       try {
-        // Clean up previous connections
-        if (analyserRef.current) {
-          analyserRef.current.disconnect();
-        }
-        if (sourceRef.current) {
-          sourceRef.current.disconnect();
+        // If we're already connected to this exact audio element, don't reconnect
+        if (connectedAudioRef.current === targetAudio && sourceRef.current) {
+          // Just ensure analyser is connected and start drawing
+          if (analyserRef.current) {
+            startDrawing();
+          }
+          return;
         }
 
         // Create audio context if it doesn't exist
-        if (!audioContextRef.current) {
-          const AudioCtor: typeof AudioContext = 
+        if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+          const AudioCtor: typeof AudioContext =
             (window as any).AudioContext || (window as any).webkitAudioContext;
           audioContextRef.current = new AudioCtor();
         }
 
         const audioContext = audioContextRef.current;
-        
-        // Create new source for the target audio
-        sourceRef.current = audioContext.createMediaElementSource(targetAudio);
-        // Connect source to destination to maintain audio output
-        sourceRef.current.connect(audioContext.destination);
 
-        // Create analyser
+        // Check if this audio element already has a source node (from WeakMap)
+        let source = audioSourceMap.get(targetAudio);
+
+        if (!source) {
+          // Only create a new source if one doesn't exist for this element
+          source = audioContext.createMediaElementSource(targetAudio);
+          audioSourceMap.set(targetAudio, source);
+          // Connect source to destination to maintain audio output
+          source.connect(audioContext.destination);
+        }
+
+        sourceRef.current = source;
+        connectedAudioRef.current = targetAudio;
+
+        // Disconnect old analyser if it exists
+        if (analyserRef.current) {
+          try { analyserRef.current.disconnect(); } catch {}
+        }
+
+        // Create new analyser
         const analyser = audioContext.createAnalyser();
-        analyser.fftSize = 512; // Smaller FFT for simpler visualization
+        analyser.fftSize = 512;
         analyser.smoothingTimeConstant = 0.8;
 
         // Connect source to analyser
-        sourceRef.current.connect(analyser);
+        source.connect(analyser);
         analyserRef.current = analyser;
-        setIsConnected(true);
 
         // Start drawing
-        draw();
+        startDrawing();
       } catch (error) {
-        console.warn("Failed to setup audio context:", error);
-        setIsConnected(false);
+        // Only log if it's not the known "already connected" error
+        if (!(error instanceof DOMException && error.name === 'InvalidStateError')) {
+          console.warn("Failed to setup audio context:", error);
+        }
       }
+    };
+
+    const startDrawing = () => {
+      // Cancel any existing animation frame before starting new one
+      if (animationIdRef.current) {
+        cancelAnimationFrame(animationIdRef.current);
+      }
+      draw();
     };
 
     const draw = () => {
       if (!analyserRef.current) return;
-      
+
       animationIdRef.current = requestAnimationFrame(draw);
 
       const canvas = canvasRef.current;
@@ -130,16 +156,23 @@ const SimpleWaveform: React.FC<SimpleWaveformProps> = ({
       ctx.stroke();
     };
 
-    // Try to connect to the audio element
-    if (audioEl && !isConnected) {
+    // Try to connect to any active audio element
+    const audioEl = findActiveAudio();
+    if (audioEl) {
       setupAudioContext(audioEl);
     }
 
     // Periodic check for new audio elements
     const intervalId = setInterval(() => {
       const currentAudio = findActiveAudio();
-      if (currentAudio && currentAudio !== audioEl) {
-        setupAudioContext(currentAudio);
+      if (currentAudio) {
+        // Only setup if it's a different audio element than we're connected to
+        if (currentAudio !== connectedAudioRef.current) {
+          setupAudioContext(currentAudio);
+        } else if (!animationIdRef.current && analyserRef.current) {
+          // Restart drawing if it stopped
+          startDrawing();
+        }
       }
     }, 2000);
 
@@ -147,28 +180,30 @@ const SimpleWaveform: React.FC<SimpleWaveformProps> = ({
       clearInterval(intervalId);
       if (animationIdRef.current) {
         cancelAnimationFrame(animationIdRef.current);
+        animationIdRef.current = null;
       }
+      // Disconnect analyser but NOT the source (it's shared via WeakMap)
       if (analyserRef.current) {
         try { analyserRef.current.disconnect(); } catch {}
+        analyserRef.current = null;
       }
     };
-  }, [isConnected]);
+  }, []);
 
-  // Cleanup on unmount
+  // Cleanup on unmount - don't close AudioContext as it may be reused
   useEffect(() => {
     return () => {
       if (animationIdRef.current) {
         cancelAnimationFrame(animationIdRef.current);
+        animationIdRef.current = null;
       }
       if (analyserRef.current) {
         try { analyserRef.current.disconnect(); } catch {}
+        analyserRef.current = null;
       }
-      if (sourceRef.current) {
-        try { sourceRef.current.disconnect(); } catch {}
-      }
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        try { audioContextRef.current.close(); } catch {}
-      }
+      // Note: We don't disconnect sourceRef or close audioContext here
+      // because the source node is shared via WeakMap and may be reused
+      connectedAudioRef.current = null;
     };
   }, []);
 

@@ -819,13 +819,12 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     <AnimatePresence>
       {enlargedBadge && (
         <motion.div
-          className="fixed z-[9999] flex items-start justify-center"
+          className="fixed z-[9999] flex items-center justify-center"
           style={{
             top: 'var(--profile-bar-boundary, 64px)',
             bottom: 'var(--display-touch-top, 36%)',
             left: 0,
             right: 0,
-            paddingTop: '60px',
           }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -844,145 +843,152 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             exit={{ opacity: 0 }}
           />
 
-          {/* Enlarged Badge with TiltSpinCard */}
+          {/* Enlarged Badge Container - vertically centered with content below */}
           <motion.div
-            className="relative z-10"
+            className="relative z-10 flex flex-col items-center"
             style={{
-              width: '200px',
-              height: '200px',
+              maxHeight: '100%',
+              padding: '16px',
             }}
-            initial={{ scale: 0.5, opacity: 0, y: 0 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.5, opacity: 0, y: 0 }}
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.5, opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 400 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <TiltSpinCard
-              className="relative w-full h-full"
-              style={{ perspective: '1000px' }}
-              maxRotateX={10}
-              sensitivity={0.3}
-              returnDuration={400}
-              enableSpin={true}
-              spinSensitivity={0.8}
-              onRotationChange={setBadgeRotation}
-              onClick={() => {
-                // Play flip sound and animate
-                try {
-                  sfx.play('flip', 0.8);
-                } catch {
-                  try {
-                    const audio = new Audio('/audio/flip.mp3');
-                    audio.volume = 0.8;
-                    audio.play();
-                  } catch {}
-                }
-                setIsBadgeAnimatingFlip(true);
-                setBadgeRotation(prev => prev + 180);
-                setTimeout(() => setIsBadgeAnimatingFlip(false), 500);
+            {/* Badge Card */}
+            <div
+              style={{
+                width: 'min(160px, 40vw)',
+                height: 'min(160px, 40vw)',
               }}
             >
-              {/* 3D container for badge - this spins */}
-              <div
-                className="absolute inset-0 w-full h-full"
-                style={{
-                  transformStyle: 'preserve-3d',
-                  transform: `rotateY(${badgeRotation}deg)`,
-                  transition: isBadgeAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+              <TiltSpinCard
+                className="relative w-full h-full"
+                style={{ perspective: '1000px' }}
+                maxRotateX={10}
+                sensitivity={0.3}
+                returnDuration={400}
+                enableSpin={true}
+                spinSensitivity={0.8}
+                onRotationChange={setBadgeRotation}
+                onClick={() => {
+                  // Play flip sound and animate
+                  try {
+                    sfx.play('flip', 0.8);
+                  } catch {
+                    try {
+                      const audio = new Audio('/audio/flip.mp3');
+                      audio.volume = 0.8;
+                      audio.play();
+                    } catch {}
+                  }
+                  setIsBadgeAnimatingFlip(true);
+                  setBadgeRotation(prev => prev + 180);
+                  setTimeout(() => setIsBadgeAnimatingFlip(false), 500);
                 }}
               >
-                {/* Front of badge */}
+                {/* 3D container for badge - this spins */}
                 <div
-                  className="absolute inset-0 w-full h-full bg-gradient-to-br from-gray-800/80 to-black/90 border-4 border-white/30 rounded-3xl flex items-center justify-center"
+                  className="absolute inset-0 w-full h-full"
                   style={{
-                    backfaceVisibility: 'hidden',
-                    boxShadow: '0 0 60px rgba(252,84,175,0.4), 0 0 120px rgba(56,182,255,0.3)'
+                    transformStyle: 'preserve-3d',
+                    transform: `rotateY(${badgeRotation}deg)`,
+                    transition: isBadgeAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
                   }}
                 >
-                  {/* Badge content */}
-                  <div className={`transition-opacity ${enlargedBadge.unlocked ? 'opacity-100' : 'opacity-40'}`}>
-                    {enlargedBadge.icon_url ? (
-                      <img
-                        src={enlargedBadge.icon_url}
-                        alt={enlargedBadge.badge_name}
-                        className="w-44 h-44 object-cover rounded-full"
-                        draggable={false}
-                      />
-                    ) : (
-                      <div className="text-6xl">🏅</div>
-                    )}
-                  </div>
-
-                  {/* Locked overlay */}
-                  {!enlargedBadge.unlocked && (
-                    <div className="absolute inset-4 bg-black/40 rounded-3xl flex items-center justify-center">
-                      <div className="w-8 h-8 bg-white/20 rounded-full" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Back of badge */}
-                <div
-                  className="absolute inset-0 w-full h-full bg-gradient-to-br from-gray-800/80 to-black/90 border-4 border-white/30 rounded-3xl flex items-center justify-center"
-                  style={{
-                    backfaceVisibility: 'hidden',
-                    transform: 'rotateY(180deg)',
-                    boxShadow: '0 0 60px rgba(252,84,175,0.4), 0 0 120px rgba(56,182,255,0.3)'
-                  }}
-                >
-                  {/* Show user name and claimed date for unlocked badges */}
-                  {enlargedBadge.unlocked ? (
-                    <div className="flex flex-col items-center justify-center text-center px-4 space-y-2">
-                      <div
-                        className="text-white font-bold text-sm uppercase tracking-wider"
-                        style={{ textShadow: '0 0 8px rgba(56,182,255,0.8)' }}
-                      >
-                        {profile?.display_name || profile?.name || 'Anonymous'}
-                      </div>
-                      <div
-                        className="text-xs uppercase tracking-wide"
-                        style={{ color: '#39FF14', textShadow: '0 0 8px #39FF14, 0 0 14px #39FF14' }}
-                      >
-                        CLAIMED {formatClaimedDate(enlargedBadge.earned_at)}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="transition-opacity opacity-40">
+                  {/* Front of badge */}
+                  <div
+                    className="absolute inset-0 w-full h-full bg-gradient-to-br from-gray-800/80 to-black/90 border-4 border-white/30 rounded-3xl flex items-center justify-center"
+                    style={{
+                      backfaceVisibility: 'hidden',
+                      boxShadow: '0 0 60px rgba(252,84,175,0.4), 0 0 120px rgba(56,182,255,0.3)'
+                    }}
+                  >
+                    {/* Badge content */}
+                    <div className={`transition-opacity ${enlargedBadge.unlocked ? 'opacity-100' : 'opacity-40'}`}>
                       {enlargedBadge.icon_url ? (
                         <img
                           src={enlargedBadge.icon_url}
                           alt={enlargedBadge.badge_name}
-                          className="w-44 h-44 object-cover rounded-full"
+                          className="object-cover rounded-full"
+                          style={{ width: 'calc(100% - 16px)', height: 'calc(100% - 16px)' }}
                           draggable={false}
-                          style={{ transform: 'scaleX(-1)' }}
                         />
                       ) : (
-                        <div className="text-6xl">🏅</div>
+                        <div className="text-5xl">🏅</div>
                       )}
                     </div>
-                  )}
-                </div>
-              </div>
-            </TiltSpinCard>
 
-            {/* Badge name and actions overlay - stays fixed */}
-            <div className="absolute -bottom-20 left-0 right-0 p-4 pointer-events-auto">
-              <h3 className="text-white font-bold text-lg text-center mb-2" style={{ textShadow: '0 0 10px rgba(0,0,0,0.8)' }}>
+                    {/* Locked overlay */}
+                    {!enlargedBadge.unlocked && (
+                      <div className="absolute inset-4 bg-black/40 rounded-3xl flex items-center justify-center">
+                        <div className="w-6 h-6 bg-white/20 rounded-full" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Back of badge */}
+                  <div
+                    className="absolute inset-0 w-full h-full bg-gradient-to-br from-gray-800/80 to-black/90 border-4 border-white/30 rounded-3xl flex items-center justify-center"
+                    style={{
+                      backfaceVisibility: 'hidden',
+                      transform: 'rotateY(180deg)',
+                      boxShadow: '0 0 60px rgba(252,84,175,0.4), 0 0 120px rgba(56,182,255,0.3)'
+                    }}
+                  >
+                    {/* Show user name and claimed date for unlocked badges */}
+                    {enlargedBadge.unlocked ? (
+                      <div className="flex flex-col items-center justify-center text-center px-3 space-y-1">
+                        <div
+                          className="text-white font-bold text-xs uppercase tracking-wider"
+                          style={{ textShadow: '0 0 8px rgba(56,182,255,0.8)' }}
+                        >
+                          {profile?.display_name || profile?.name || 'Anonymous'}
+                        </div>
+                        <div
+                          className="text-[10px] uppercase tracking-wide"
+                          style={{ color: '#39FF14', textShadow: '0 0 8px #39FF14, 0 0 14px #39FF14' }}
+                        >
+                          CLAIMED {formatClaimedDate(enlargedBadge.earned_at)}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="transition-opacity opacity-40">
+                        {enlargedBadge.icon_url ? (
+                          <img
+                            src={enlargedBadge.icon_url}
+                            alt={enlargedBadge.badge_name}
+                            className="object-cover rounded-full"
+                            style={{ width: 'calc(100% - 16px)', height: 'calc(100% - 16px)', transform: 'scaleX(-1)' }}
+                            draggable={false}
+                          />
+                        ) : (
+                          <div className="text-5xl">🏅</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </TiltSpinCard>
+            </div>
+
+            {/* Badge name and actions - positioned below badge, not overlapping */}
+            <div className="mt-4 text-center pointer-events-auto">
+              <h3 className="text-white font-bold text-base mb-2" style={{ textShadow: '0 0 10px rgba(0,0,0,0.8)' }}>
                 {enlargedBadge.badge_name}
               </h3>
-              <div className="flex justify-center">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEnlargedBadge(null);
-                    setSelectedBadge(enlargedBadge);
-                    setBadgeRotation(0);
-                  }}
-                  className="px-4 py-1 text-xs bg-[#38B6FF]/20 border border-[#38B6FF]/50 text-[#38B6FF] hover:bg-[#38B6FF]/30 transition-all rounded-full"
-                >
-                  VIEW DETAILS
-                </button>
-              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEnlargedBadge(null);
+                  setSelectedBadge(enlargedBadge);
+                  setBadgeRotation(0);
+                }}
+                className="px-4 py-1 text-xs bg-[#38B6FF]/20 border border-[#38B6FF]/50 text-[#38B6FF] hover:bg-[#38B6FF]/30 transition-all rounded-full"
+              >
+                VIEW DETAILS
+              </button>
             </div>
           </motion.div>
         </motion.div>

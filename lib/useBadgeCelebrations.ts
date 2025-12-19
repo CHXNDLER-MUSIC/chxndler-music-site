@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
+import { debug } from '@/lib/logger';
 import type { RealtimePostgresInsertPayload } from '@supabase/supabase-js';
 
 export interface BadgeCelebrationItem {
@@ -88,9 +89,7 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
         }
       )
       .subscribe((status) => {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Badge celebrations subscription status:', status);
-        }
+        debug('Badge celebrations subscription status:', status);
       });
 
     // Cleanup on unmount or userId change

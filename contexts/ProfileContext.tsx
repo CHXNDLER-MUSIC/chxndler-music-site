@@ -10,6 +10,7 @@ import React, {
   useCallback,
 } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import { debug } from "@/lib/logger";
 import { ProfileTier } from "@/types/card";
 import { getLocalDateString } from "@/utils/dateHelpers";
 import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
@@ -293,7 +294,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       
       // Debug log for ProfileContext
       if (typeof window !== 'undefined') {
-        console.log("DEBUG ProfileContext fetchProfile", {
+        debug("ProfileContext fetchProfile", {
           browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",
           hasSession: !!session,
           hasUser: !!user,
@@ -425,7 +426,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
       // Debug log when profile is successfully loaded
       if (typeof window !== 'undefined') {
-        console.log("DEBUG ProfileContext profile loaded", {
+        debug("ProfileContext profile loaded", {
           browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",
           loading: false,
           currentUser: user,
@@ -616,7 +617,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     } = supabaseBrowser.auth.onAuthStateChange(async (event, session) => {
       // Debug log for auth state changes
       if (typeof window !== 'undefined') {
-        console.log("DEBUG ProfileContext auth state change", {
+        debug("ProfileContext auth state change", {
           browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",
           event,
           hasSession: !!session,
@@ -625,10 +626,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           timestamp: new Date().toISOString()
         });
       }
-      
+
       if (session?.user) {
         if (typeof window !== 'undefined') {
-          console.log("DEBUG ProfileContext user session detected, fetching profile", {
+          debug("ProfileContext user session detected, fetching profile", {
             browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",
             userId: session.user.id,
             timestamp: new Date().toISOString()
@@ -641,7 +642,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         setBadgesLoading(false);
       } else {
         if (typeof window !== 'undefined') {
-          console.log("DEBUG ProfileContext no user session, clearing profile", {
+          debug("ProfileContext no user session, clearing profile", {
             browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",
             timestamp: new Date().toISOString()
           });
@@ -658,9 +659,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
     // Listen for forced profile refresh events
     const handleProfileUpdate = async () => {
-      if (process.env.NODE_ENV === "development") {
-        console.log('Profile update event received, forcing refresh...');
-      }
+      debug('Profile update event received, forcing refresh...');
       await fetchProfile();
     };
 
@@ -764,7 +763,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         entryData.is_public = entry.is_public;
       }
 
-      console.log('Saving journal entry with data:', entryData);
+      debug('Saving journal entry with data:', entryData);
 
       // Check if entry already exists for this user and date
       const { data: existingEntry } = await supabaseBrowser

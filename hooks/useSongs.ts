@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchSongs } from "@/lib/songs";
+import { fetchReleasedSongs } from "@/lib/songs";
 import { SONG_ELEMENT_MAPPING } from "@/data/songElements";
 import type { SongRow, ElementType } from "@/types/song";
 
@@ -17,7 +17,7 @@ export function useSongs() {
 
     async function loadSongs() {
       try {
-        const data = await fetchSongs();
+        const data = await fetchReleasedSongs();
         
         if (isMounted) {
           // Use element from database, fallback to mapping if needed
