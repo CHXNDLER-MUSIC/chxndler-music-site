@@ -1,39 +1,65 @@
 import { useState } from 'react';
-import { MerchItem, PurchaseWithHeartcoinsResult, ShippingInfo, ShippingUpdateResponse } from '@/types/merch';
+import { PurchaseWithHeartcoinsResult, ShippingInfo, ShippingUpdateResponse } from '@/types/merch';
+
+// New purchase request interface - client sends only IDs, not prices
+// Server is authoritative for price lookup
+export interface PurchaseRequest {
+  merchItemId: string;      // The UUID from merch_items.id
+  quantity: number;
+  clientSlug?: string;      // For logging/debugging only
+  idempotencyKey: string;   // Prevents double-submit on server
+}
 
 export function useMerchPurchase() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const purchaseWithHeartCoins = async (
-    merchItem: MerchItem,
-    quantity: number = 1
+    request: PurchaseRequest
   ): Promise<PurchaseWithHeartcoinsResult | null> => {
+    const { merchItemId, quantity, clientSlug, idempotencyKey } = request;
+
+    // Prevent double-submit at hook level
+    if (isProcessing) {
+      console.warn('[useMerchPurchase] Already processing, ignoring duplicate call');
+      return null;
+    }
+
     setIsProcessing(true);
     setError(null);
 
-    // Basic validation: ensure merch_item_id exists
-    if (!merchItem?.id || typeof merchItem.id !== 'string' || merchItem.id.trim() === '') {
-      const validationError = '[useMerchPurchase] Missing merch_item_id (merchItem.id)';
-      console.error(validationError, { merchItem });
+    // Basic validation: ensure merchItemId exists
+    if (!merchItemId || typeof merchItemId !== 'string' || merchItemId.trim() === '') {
+      const validationError = '[useMerchPurchase] Missing or invalid merchItemId';
+      console.error(validationError, { request });
       setError('Invalid item. Please try again.');
       setIsProcessing(false);
       return null;
     }
 
-    // Prepare payload expected by API route (camelCase)
-    const payload: {
-      merchItemId: string;
-      quantity: number;
-    } = {
-      merchItemId: merchItem.id,
+    if (!idempotencyKey || typeof idempotencyKey !== 'string') {
+      const validationError = '[useMerchPurchase] Missing idempotencyKey';
+      console.error(validationError, { request });
+      setError('Missing idempotency key. Please try again.');
+      setIsProcessing(false);
+      return null;
+    }
+
+    // Prepare payload expected by API route
+    // IMPORTANT: Do NOT send price - server looks it up
+    const payload = {
+      merchItemId,
       quantity,
+      idempotencyKey,
+      clientSlug, // For server-side logging only
     };
 
-    // Log before calling RPC
+    // Log before calling API
     console.log('[useMerchPurchase] Initiating purchase:', {
-      merchItemId: merchItem.id,
-      quantity
+      merchItemId,
+      quantity,
+      clientSlug,
+      idempotencyKey,
     });
     console.log('[useMerchPurchase] Payload to be sent:', payload);
 
@@ -117,8 +143,9 @@ export function useMerchPurchase() {
         errorType: err?.constructor?.name || typeof err,
         errorMessage,
         errorString: String(err),
-        merchItemId: merchItem.id,
-        quantity
+        merchItemId,
+        quantity,
+        idempotencyKey,
       });
 
       // Also log the raw error for debugging

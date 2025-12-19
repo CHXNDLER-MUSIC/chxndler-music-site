@@ -11,6 +11,8 @@ export async function POST(request: NextRequest) {
     const {
       merchItemId,
       quantity = 1,
+      idempotencyKey,  // NEW: For preventing double-submit
+      clientSlug,      // NEW: For logging/debugging
       // Optional shipping fields (ignored in id-only flow; kept for backwards compat)
       shippingFullName,
       shippingAddressLine1,
@@ -20,6 +22,14 @@ export async function POST(request: NextRequest) {
       shippingZip,
       shippingCountry,
     } = body;
+
+    // Log incoming request with idempotency info
+    console.log('[PURCHASE] Incoming request:', {
+      merchItemId,
+      quantity,
+      idempotencyKey: idempotencyKey || 'none',
+      clientSlug: clientSlug || 'none',
+    });
 
     if (!merchItemId) {
       return NextResponse.json(
@@ -53,7 +63,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[PURCHASE] Attempting purchase:', { merch_item_id: merchItemId, qty: quantity, user_id: user.id });
+    console.log('[PURCHASE] Attempting purchase:', {
+      merch_item_id: merchItemId,
+      qty: quantity,
+      user_id: user.id,
+      idempotency_key: idempotencyKey || 'none',
+      client_slug: clientSlug || 'none',
+    });
 
     // Debug: confirm which Supabase URL the server is using
     console.log('SUPABASE_URL(server):', process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL);

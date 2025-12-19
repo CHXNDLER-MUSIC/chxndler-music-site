@@ -62,6 +62,16 @@ interface Card {
   physicalCost?: number;
 }
 
+// Purchase draft - captures exact item info at moment of "PAY WITH" click
+// This prevents stale state bugs where the displayed item changes after click
+interface PurchaseDraft {
+  merchItemId: string;      // The actual database UUID
+  clientSlug: string;       // For logging/debugging
+  quantity: number;
+  uiCost: number;           // The cost shown to user (for display only - server is authoritative)
+  source: 'MERCH' | 'CARDS';
+  itemName: string;         // For display in confirm modal
+}
 
 // Physical store items - now loaded dynamically from database
 // This hardcoded array is replaced by the dynamic PHYSICAL_ITEMS computed in the component
@@ -303,6 +313,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
   const [showItemDetail, setShowItemDetail] = useState(false);
   const [showHeartCoinPurchase, setShowHeartCoinPurchase] = useState(false);
+
+  // Purchase draft - captures exact item info at moment of "PAY WITH" click
+  // This is the SINGLE SOURCE OF TRUTH for what we're purchasing
+  const [purchaseDraft, setPurchaseDraft] = useState<PurchaseDraft | null>(null);
+  // Prevents double-submit - set immediately on confirm click
+  const [isPurchasing, setIsPurchasing] = useState(false);
   const [heartCoinPayToggled, setHeartCoinPayToggled] = useState(false);
   const [dailyQuests, setDailyQuests] = useState({
     elementTapped: false,
@@ -1190,63 +1206,101 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     try { sfx.play('close', 0.4); } catch {}
   };
 
+  // DEPRECATED: Old handler that looked up by slug - kept for backwards compat
   const handlePurchaseWithHeartCoins = async (item: StoreItem) => {
-    if (!profile || !item) return;
-    // In-flight guard to prevent double clicks
-    if (isProcessing) return;
-
-    // Find the corresponding MerchItem from database
+    console.warn('[PURCHASE] handlePurchaseWithHeartCoins is deprecated, use handleConfirmPurchase');
+    // Redirect to new flow by setting purchaseDraft
     const merchItem = merchItems.find(m => m.slug === item.slug);
-    if (!merchItem) {
-      console.error('MerchItem not found for slug:', item.slug);
-      setCheckInMessage("Item not found");
-      setStatusType('error');
-      setTimeout(() => {
-        setCheckInMessage("");
-        setStatusType('idle');
-      }, 3000);
+    if (merchItem) {
+      setPurchaseDraft({
+        merchItemId: merchItem.id,
+        clientSlug: merchItem.slug,
+        quantity: 1,
+        uiCost: merchItem.price_heartcoins,
+        source: 'MERCH',
+        itemName: merchItem.name,
+      });
+      handleConfirmPurchase();
+    }
+  };
+
+  // NEW: Main purchase handler that uses purchaseDraft as single source of truth
+  const handleConfirmPurchase = async () => {
+    // CRITICAL: Check isPurchasing first to prevent double-submit
+    if (isPurchasing) {
+      console.log('[PURCHASE] handleConfirmPurchase blocked - already in progress');
       return;
     }
 
-    const payload = { merchItemId: merchItem.id, quantity: 1 };
+    if (!profile) {
+      console.error('[PURCHASE] No profile');
+      return;
+    }
 
-    console.log("[MERCH PURCHASE] selected item", merchItem);
-    console.log("[MERCH PURCHASE] payload", payload);
-    console.log("[MERCH PURCHASE] displayed cost", merchItem.price_heartcoins);
-    console.log("Attempting HeartCoin purchase:", {
-      userId: profile.id,
-      merchItemId: merchItem.id,
-      priceHeartCoins: merchItem.price_heartcoins,
-      currentBalance: profile.heartcoin_balance
-    });
+    if (!purchaseDraft) {
+      console.error('[PURCHASE] No purchaseDraft available');
+      return;
+    }
+
+    // Log the exact payload we're sending
+    console.log('[PURCHASE] handleConfirmPurchase starting with draft:', purchaseDraft);
+    console.log('[PURCHASE] merchItemId to send:', purchaseDraft.merchItemId);
+    console.log('[PURCHASE] User balance:', profile.heartcoin_balance);
 
     // Clear any previous errors
     clearError();
 
-    // Use the new purchase hook that calls secure API
-    const purchaseResult = await purchaseWithHeartCoins(merchItem, 1);
+    try {
+      // Generate idempotency key for this specific purchase attempt
+      const idempotencyKey = crypto.randomUUID();
+      console.log('[PURCHASE] Generated idempotencyKey:', idempotencyKey);
 
-    if (purchaseResult && purchaseResult.success) {
-      console.log("Purchase successful, order created:", purchaseResult.order_id);
+      // Call the purchase hook with the draft values
+      const purchaseResult = await purchaseWithHeartCoins({
+        merchItemId: purchaseDraft.merchItemId,
+        quantity: purchaseDraft.quantity,
+        clientSlug: purchaseDraft.clientSlug,
+        idempotencyKey,
+      });
 
-      setCurrentOrderId(purchaseResult.order_id || null);
-      setStep('shipping');
-      
-      // Play success sound
-      try { sfx.play('card-ding', 0.8); } catch {}
-      
-      // Refresh profile to update HeartCoin balance (authoritative from DB)
-      await refreshProfile();
-      console.log('[MERCH PURCHASE] profile refreshed; new balance should match Supabase.');
+      if (purchaseResult && purchaseResult.success) {
+        console.log('[PURCHASE] Success, order created:', purchaseResult.order_id);
 
-    } else {
-      // Error is handled by the hook, but we can show it in our UI
-      setCheckInMessage(purchaseError || "Purchase failed");
+        setCurrentOrderId(purchaseResult.order_id || null);
+        setStep('shipping');
+
+        // Play success sound
+        try { sfx.play('card-ding', 0.8); } catch {}
+
+        // Refresh profile to update HeartCoin balance (authoritative from DB)
+        await refreshProfile();
+        console.log('[PURCHASE] Profile refreshed; new balance from Supabase');
+
+        // Clear purchaseDraft after successful purchase
+        setPurchaseDraft(null);
+        setShowHeartCoinPurchase(false);
+
+      } else {
+        // Error is handled by the hook, but we can show it in our UI
+        console.error('[PURCHASE] Failed:', purchaseError);
+        setCheckInMessage(purchaseError || "Purchase failed");
+        setStatusType('error');
+        setTimeout(() => {
+          setCheckInMessage("");
+          setStatusType('idle');
+        }, 3000);
+      }
+    } catch (err) {
+      console.error('[PURCHASE] Unexpected error:', err);
+      setCheckInMessage("Purchase failed unexpectedly");
       setStatusType('error');
       setTimeout(() => {
         setCheckInMessage("");
         setStatusType('idle');
       }, 3000);
+    } finally {
+      // ALWAYS reset isPurchasing in finally block
+      setIsPurchasing(false);
     }
   };
 
@@ -2261,7 +2315,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               <div className="flex-1" />
                               
                               {/* Item Title + Image OR User/Cost Display */}
-                              {showHeartCoinPurchase && selectedItem?.slug === PHYSICAL_ITEMS[currentMerchIndex].slug ? (
+                              {/* Use purchaseDraft as source of truth for showing purchase mode */}
+                              {purchaseDraft && showHeartCoinPurchase ? (
                                 /* User at top, Cost positioned above CONFIRM button */
                                 <div className="flex flex-col items-center h-full">
                                   {/* User Section - at top */}
@@ -2292,9 +2347,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   <div className="flex-1" />
 
                                   {/* Cost Section - positioned near bottom, above CONFIRM */}
+                                  {/* IMPORTANT: Render from purchaseDraft to ensure consistency */}
                                   <div className="flex flex-col items-center pb-8">
                                     <div className="flex items-center gap-3">
-                                      <div 
+                                      <div
                                         className="font-bold text-white text-xl"
                                         style={{
                                           textShadow: '0 0 4px rgba(255,255,255,0.6)'
@@ -2303,15 +2359,19 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                         Cost
                                       </div>
                                       <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
-                                      <div 
+                                      <div
                                         className="text-2xl font-bold"
-                                        style={{ 
-                                          color: '#FFFFFF', 
-                                          textShadow: '0 0 6px rgba(255,255,255,0.8)' 
+                                        style={{
+                                          color: '#FFFFFF',
+                                          textShadow: '0 0 6px rgba(255,255,255,0.8)'
                                         }}
                                       >
-                                        {PHYSICAL_ITEMS[currentMerchIndex].priceHeartCoins}
+                                        {purchaseDraft?.uiCost ?? 0}
                                       </div>
+                                    </div>
+                                    {/* Show item name from purchaseDraft for clarity */}
+                                    <div className="text-white/70 text-sm mt-2" style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}>
+                                      {purchaseDraft?.itemName?.toUpperCase()}
                                     </div>
                                   </div>
                                 </div>
@@ -2386,7 +2446,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   )}
 
                   {/* Bottom description and index above action bar - Only show when NOT in heart coin purchase mode */}
-                  {activeUseTab === 'MERCH' && PHYSICAL_ITEMS[currentMerchIndex] && !(showHeartCoinPurchase && selectedItem?.slug === PHYSICAL_ITEMS[currentMerchIndex].slug) && (
+                  {activeUseTab === 'MERCH' && PHYSICAL_ITEMS[currentMerchIndex] && !purchaseDraft && (
                     <div className="absolute left-6 right-6 bottom-16" style={{ lineHeight: '1.3' }}>
                       <div className="text-center text-white/70 text-xs mb-1" style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}>
                         {currentMerchIndex + 1} of {PHYSICAL_ITEMS.length}
@@ -2397,13 +2457,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     </div>
                   )}
 
-                  {/* CONFIRM button for heart coin purchase */}
-                  {activeUseTab === 'MERCH' && PHYSICAL_ITEMS[currentMerchIndex] && showHeartCoinPurchase && selectedItem?.slug === PHYSICAL_ITEMS[currentMerchIndex].slug && (
+                  {/* CONFIRM button for heart coin purchase - renders from purchaseDraft */}
+                  {activeUseTab === 'MERCH' && purchaseDraft && showHeartCoinPurchase && (
                     <div className="absolute left-6 right-6 bottom-16">
-                      {(profile?.id ? heartCoins : 0) >= (PHYSICAL_ITEMS[currentMerchIndex].priceHeartCoins || 0) ? (
-                        <button 
-                          className="w-full px-4 py-3 rounded border transition-colors text-center font-bold text-lg"
-                          style={{ 
+                      {/* Check balance against purchaseDraft.uiCost (server is authoritative for actual deduction) */}
+                      {(profile?.id ? heartCoins : 0) >= (purchaseDraft.uiCost || 0) ? (
+                        <button
+                          className={`w-full px-4 py-3 rounded border transition-colors text-center font-bold text-lg ${isPurchasing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          style={{
                             backgroundColor: 'rgba(0,255,0,0.2)',
                             borderColor: 'rgba(0,255,0,0.6)',
                             color: '#90EE90',
@@ -2411,19 +2472,29 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             boxShadow: '0 0 8px rgba(0,255,0,0.3)'
                           }}
                           onClick={() => {
-                            if (selectedItem) {
-                              handlePurchaseWithHeartCoins(selectedItem);
+                            // CRITICAL: Double-submit prevention
+                            if (isPurchasing) {
+                              console.log('[PURCHASE] Blocked - already in progress');
+                              return;
                             }
+                            if (!purchaseDraft) {
+                              console.error('[PURCHASE] No purchaseDraft available');
+                              return;
+                            }
+                            // Set isPurchasing IMMEDIATELY before any async work
+                            setIsPurchasing(true);
+                            console.log('[PURCHASE] Confirm clicked, draft:', purchaseDraft);
+                            handleConfirmPurchase();
                           }}
                           onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-                          disabled={isProcessing}
+                          disabled={isPurchasing || isProcessing}
                         >
-                          {isProcessing ? 'PROCESSING...' : 'CONFIRM'}
+                          {isPurchasing || isProcessing ? 'PROCESSING...' : 'CONFIRM'}
                         </button>
                       ) : (
-                        <button 
+                        <button
                           className="w-full px-4 py-3 rounded border transition-colors cursor-not-allowed text-center font-bold text-lg"
-                          style={{ 
+                          style={{
                             backgroundColor: 'rgba(255,0,0,0.2)',
                             borderColor: 'rgba(255,0,0,0.6)',
                             color: '#FF6B6B',
@@ -2432,7 +2503,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           }}
                           disabled
                         >
-                          CONFIRM
+                          NOT ENOUGH ❤️
                         </button>
                       )}
                     </div>
@@ -2455,12 +2526,40 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       <button
                         onClick={() => {
                           try { sfx.play('click', 0.6); } catch {}
-                          setSelectedItem(PHYSICAL_ITEMS[currentMerchIndex]);
-                          setShowHeartCoinPurchase(!showHeartCoinPurchase);
+                          // Get the CURRENT displayed MerchItem at this exact moment
+                          const currentMerchItem = merchItems[currentMerchIndex];
+
+                          // Toggle off if already showing for this item
+                          if (purchaseDraft && purchaseDraft.merchItemId === currentMerchItem?.id) {
+                            console.log('[PURCHASE] Toggling off purchaseDraft');
+                            setPurchaseDraft(null);
+                            setShowHeartCoinPurchase(false);
+                            return;
+                          }
+
+                          // Create purchaseDraft from CURRENT displayed item - this is the source of truth
+                          if (currentMerchItem) {
+                            const draft: PurchaseDraft = {
+                              merchItemId: currentMerchItem.id,  // Use .id NOT .merch_item_id
+                              clientSlug: currentMerchItem.slug,
+                              quantity: 1,
+                              uiCost: currentMerchItem.price_heartcoins,
+                              source: 'MERCH',
+                              itemName: currentMerchItem.name,
+                            };
+                            console.log('[PURCHASE] displayed item', currentMerchItem);
+                            console.log('[PURCHASE] draft created', draft);
+                            setPurchaseDraft(draft);
+                            setSelectedItem(PHYSICAL_ITEMS[currentMerchIndex]);
+                            setShowHeartCoinPurchase(true);
+                          }
                         }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                        disabled={isPurchasing}
                         className={`flex-1 px-4 py-3 rounded border cursor-pointer transition-all duration-200 text-white font-semibold flex items-center justify-center gap-1 text-xs whitespace-nowrap ${
-                          showHeartCoinPurchase && selectedItem?.slug === PHYSICAL_ITEMS[currentMerchIndex].slug
+                          isPurchasing ? 'opacity-50 cursor-not-allowed' : ''
+                        } ${
+                          purchaseDraft && purchaseDraft.merchItemId === merchItems[currentMerchIndex]?.id
                             ? 'border-yellow-400 bg-yellow-500/40 shadow-[0_0_20px_rgba(255,215,0,0.6)]'
                             : 'border-yellow-500/60 bg-yellow-500/20 hover:bg-yellow-500/30'
                         }`}
