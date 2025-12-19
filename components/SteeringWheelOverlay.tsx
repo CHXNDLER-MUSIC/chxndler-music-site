@@ -1076,35 +1076,22 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
         .wheel-play.chx{
           background: transparent !important;
           border: none !important;
+          box-shadow: none !important;
+          outline: none !important;
           position: relative;
           cursor: pointer;
           transform: translateZ(0);
           will-change: transform, box-shadow;
           transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
         }
-        /* Spotlight halo around the full START button */
-        .wheel-play.chx::before{
-          content:""; position:absolute; inset:-20%; border-radius:9999px; pointer-events:none;
-          /* Soft, even spotlight that wraps the full circle */
-          background:
-            radial-gradient(closest-side, rgba(25,227,255,0.65), rgba(25,227,255,0.24) 64%, rgba(25,227,255,0) 100%);
-          box-shadow:
-            0 0 40px rgba(25,227,255,.70),
-            0 0 110px rgba(25,227,255,.55),
-            0 0 180px rgba(25,227,255,.40);
-          mix-blend-mode: screen;
-          filter: blur(3px) brightness(1.03) saturate(1.08);
-          animation: startHalo 2.2s ease-in-out infinite;
-        }
-        /* Subtle inner sheen following the circular mask */
+        /* Hide all pseudo-elements for CHX variant - no ring/halo effects */
+        .wheel-play.chx::before,
         .wheel-play.chx::after{
-          content:""; position:absolute; inset:-4%; border-radius:9999px; pointer-events:none; mix-blend-mode:screen; opacity:.85;
-          background:
-            linear-gradient(120deg, rgba(255,255,255,.20), rgba(255,255,255,0) 60%),
-            repeating-linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.10) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px);
+          display: none !important;
+          content: none !important;
         }
-        .chx-icon{ width: 92%; height: 92%; object-fit: contain; display:block; will-change: transform, filter;
-          filter: 
+        .chx-icon{ width: 100%; height: 100%; object-fit: contain; display:block; will-change: transform, filter;
+          filter:
             drop-shadow(0 2px 4px rgba(0,0,0,0.3))
             drop-shadow(0 4px 8px rgba(0,0,0,0.2))
             drop-shadow(0 0 12px rgba(25,227,255,0.4));
@@ -1115,19 +1102,13 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
         .wheel-play.chx.start-pulse .chx-icon{
           animation: startPulse 1.9s ease-in-out infinite;
         }
-        .wheel-play.chx:hover .chx-icon{ 
-          animation: none; 
-          transform: scale(1.06) translateY(-2px); 
-          filter: 
+        .wheel-play.chx:hover .chx-icon{
+          animation: none;
+          transform: scale(1.06) translateY(-2px);
+          filter:
             drop-shadow(0 4px 8px rgba(0,0,0,0.4))
-            drop-shadow(0 8px 16px rgba(0,0,0,0.3))
-            drop-shadow(0 0 20px rgba(25,227,255,0.6))
-            drop-shadow(0 0 40px rgba(25,227,255,0.4));
+            drop-shadow(0 8px 16px rgba(0,0,0,0.3));
         }
-        .wheel-play.chx:hover::before{ filter: blur(2px) brightness(1.06) saturate(1.12); }
-        /* Disable spotlight after first click */
-        .wheel-play.chx.no-spotlight::before,
-        .wheel-play.chx.no-spotlight::after{ display:none; content:none; }
         @keyframes startPulse {
           0%, 100% { transform: scale(1); filter: saturate(1.25) brightness(1.1) drop-shadow(0 0 8px #19E3FF) drop-shadow(0 0 22px #19E3FF) drop-shadow(0 0 42px #19E3FF); }
           50% { transform: scale(1.08); filter: saturate(1.5) brightness(1.22) drop-shadow(0 0 16px #19E3FF) drop-shadow(0 0 40px #19E3FF) drop-shadow(0 0 84px #19E3FF); }
@@ -1200,15 +1181,18 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
           box-shadow: 0 14px 36px rgba(0,0,0,.6), 0 0 60px rgba(255,59,48,.98), 0 0 150px rgba(255,59,48,.7), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -8px 20px rgba(0,0,0,.45);
         }
         .wheel-play:active { transform: scale(0.96); }
-        /* CHXNDLER start button hover: enhanced depth with lifted effect */
-        .wheel-play.chx:hover{ 
-          box-shadow: 
-            0 12px 24px rgba(0,0,0,0.5),
-            0 6px 12px rgba(0,0,0,0.4),
-            0 0 30px rgba(25,227,255,0.5),
-            0 0 60px rgba(25,227,255,0.3);
-          transform: translateY(-3px) translateZ(0);
-          filter: brightness(1.1) saturate(1.2);
+        /* CHXNDLER start button hover: grow slightly with inner glow */
+        .wheel-play.chx:hover{
+          outline: none;
+          transform: scale(1.06) translateZ(0);
+          filter: brightness(1.12) saturate(1.2);
+        }
+        .wheel-play.chx:hover .chx-icon{
+          filter:
+            brightness(1.15)
+            saturate(1.3)
+            drop-shadow(0 0 8px rgba(25, 227, 255, 0.8))
+            drop-shadow(0 0 16px rgba(25, 227, 255, 0.5));
         }
         .wheel-play.chx:active{ 
           transform: translateY(-1px) scale(0.98) translateZ(0);
@@ -1221,12 +1205,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
         .wheel-play.chx .chx-icon{ transition: transform .12s ease, filter .15s ease; }
         .wheel-play.chx:hover .chx-icon{
           transform: scale(1.04);
-          filter:
-            saturate(1.25) brightness(1.12)
-            drop-shadow(0 0 0 #19E3FF)
-            drop-shadow(0 0 10px #19E3FF)
-            drop-shadow(0 0 26px #19E3FF)
-            drop-shadow(0 0 54px #19E3FF);
+          filter: saturate(1.25) brightness(1.12);
         }
         
         /* Power button styles */

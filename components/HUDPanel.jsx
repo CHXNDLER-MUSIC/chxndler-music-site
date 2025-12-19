@@ -2485,11 +2485,11 @@ const HUDPanel = React.memo(function HUDPanel({
                   <div
                     className="cover-art-glow"
                     onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {}; try { const a = hoverCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
-                    style={{ 
-                      pointerEvents: joinAlienOpen ? 'none' : 'auto', 
+                    style={{
+                      pointerEvents: joinAlienOpen ? 'none' : 'auto',
                       overflow: 'visible',
                       position: 'relative',
-                      transform: 'translateY(5px)' // Nudge icon down by 5px
+                      transform: 'translateY(12px)' // Nudge icon down
                     }}
                   >
                     <CoverHologram key={trackingSong} src={src} title={title} slug={trackingSong} inline={true} size={110} />
@@ -2505,11 +2505,11 @@ const HUDPanel = React.memo(function HUDPanel({
                   <div
                     className="cover-art-glow"
                     onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {}; try { const a = hoverCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
-                    style={{ 
-                      pointerEvents: joinAlienOpen ? 'none' : 'auto', 
+                    style={{
+                      pointerEvents: joinAlienOpen ? 'none' : 'auto',
                       overflow: 'visible',
                       position: 'relative',
-                      transform: 'translateY(5px)' // Nudge icon down by 5px
+                      transform: 'translateY(12px)' // Nudge icon down
                     }}
                   >
                     <CoverHologram key={trackingSong} src={src} title={title} slug={trackingSong} inline={true} size={110} />
@@ -2548,14 +2548,14 @@ const HUDPanel = React.memo(function HUDPanel({
                   return (
                     <>
                       {/* Controls positioned above waveform */}
-                      <div className="hud-top-controls" style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: 8, 
+                      <div className="hud-top-controls" style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
                         position: 'absolute',
                         left: 8,
                         right: 8,
-                        top: 4,
+                        top: 24,
                         zIndex: 6,
                         borderRadius: '8px',
                         padding: '4px 8px',
@@ -2846,17 +2846,17 @@ const HUDPanel = React.memo(function HUDPanel({
                               className="hud-enhanced-track"
                               style={{
                                 position: 'absolute',
-                                left: 14,
-                                right: 6,
-                                bottom: -55,
-                                height: 14,
+                                left: 4,
+                                right: -104,
+                                bottom: -75,
+                                height: 10,
                                 borderRadius: 9999,
-                                background: 'red',
-                                border: '2px solid yellow',
-                                overflow: 'hidden',
+                                background: 'lime',
+                                border: '2px solid red',
+                                overflow: 'visible',
                                 cursor: 'pointer',
                                 pointerEvents: 'auto',
-                                zIndex: 999999
+                                zIndex: 100
                               }}
                               onClick={(e) => {
                                 console.log('CLICKED AT', e.clientX);

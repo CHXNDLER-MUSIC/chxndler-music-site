@@ -160,7 +160,7 @@ export default function PublicJournalFeed() {
                   }}
                 >
                   <img
-                    src={entry.profiles?.avatar_url || "/elements/alien.webp"}
+                    src={entry.author?.profile_image_url ?? "/elements/alien.webp"}
                     alt="User"
                     className="w-8 h-8 rounded-full object-cover"
                     style={{
@@ -169,7 +169,7 @@ export default function PublicJournalFeed() {
                     }}
                   />
                   <div className="text-sm font-medium text-white">
-                    {entry.profiles?.name || 'Anonymous'}
+                    {entry.author?.name ?? 'Anonymous'}
                   </div>
                 </div>
 
@@ -249,7 +249,7 @@ export default function PublicJournalFeed() {
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-start">
                           <img
-                            src={entry.profiles?.avatar_url || "/elements/alien.webp"}
+                            src={entry.author?.profile_image_url ?? "/elements/alien.webp"}
                             alt="User"
                             className="w-16 h-16 rounded-full object-cover mr-3"
                             style={{
@@ -259,35 +259,10 @@ export default function PublicJournalFeed() {
                           />
                           <div className="flex flex-col">
                             <div className="text-2xl font-bold text-white">
-                              {entry.profiles?.name || 'Anonymous'}
+                              {entry.author?.name ?? 'Anonymous'}
                             </div>
 
-                            {/* Journey text directly below name */}
-                            {(entry.profiles as any)?.journey && (
-                              <div
-                                className="text-left text-base font-semibold mt-1"
-                                style={{
-                                  color: (() => {
-                                    const j = ((entry.profiles as any)?.journey || 'wanderer').toString().toLowerCase();
-                                    return j === 'lover' ? '#FF6B9D' : j === 'dreamer' ? '#FFD700' : '#00FFFF';
-                                  })(),
-                                  textShadow: (() => {
-                                    const j = ((entry.profiles as any)?.journey || 'wanderer').toString().toLowerCase();
-                                    const c = j === 'lover' ? '#FF6B9D' : j === 'dreamer' ? '#FFD700' : '#00FFFF';
-                                    return `0 0 4px ${c}`;
-                                  })()
-                                }}
-                              >
-                                {(() => {
-                                  const j = ((entry.profiles as any)?.journey || 'wanderer').toString().toLowerCase();
-                                  if (j === 'lover') return 'LOVER';
-                                  if (j === 'dreamer') return 'DREAMER';
-                                  return 'WANDERER';
-                                })()}
-                              </div>
-                            )}
-
-                            {/* Element label below journey */}
+                            {/* Element label */}
                             <div
                               className="text-sm font-medium uppercase tracking-wider flex items-center gap-1 mt-2"
                               style={{
@@ -301,41 +276,6 @@ export default function PublicJournalFeed() {
                           </div>
                         </div>
 
-                        {/* Stats positioned at top right */}
-                        <div className="flex flex-col items-end gap-2">
-                          {(entry.profiles as any)?.heartcoin_total !== undefined && (
-                            <div className="flex items-center gap-2 bg-black/30 rounded-full px-4 py-2">
-                              <span className="text-base text-white/60">Total:</span>
-                              <img
-                                src="/elements/heart-coin.webp"
-                                alt="Heart Coin"
-                                className="w-7 h-7"
-                              />
-                              <span
-                                className="font-bold text-xl"
-                                style={{
-                                  color: '#FF69B4',
-                                  textShadow: '0 0 6px #FF69B4'
-                                }}
-                              >
-                                {(entry.profiles as any)?.heartcoin_total || 0}
-                              </span>
-                            </div>
-                          )}
-                          {(entry.profiles as any)?.daily_streak_current !== undefined && (
-                            <div className="flex items-center gap-2 bg-black/30 rounded-full px-4 py-2">
-                              <span
-                                className="font-bold text-sm"
-                                style={{
-                                  color: '#FF69B4',
-                                  textShadow: '0 0 6px #FF69B4'
-                                }}
-                              >
-                                Streak: {(entry.profiles as any)?.daily_streak_current || 0} Days
-                              </span>
-                            </div>
-                          )}
-                        </div>
                       </div>
 
                       {/* Binder, Badges, and Send HeartCoin Buttons - Larger and Centered */}

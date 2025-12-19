@@ -222,7 +222,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
   if (!items.length) return null;
 
   return (
-    <div ref={rootRef} className="w-full relative z-[99999] mt-3" style={{ pointerEvents: 'auto' }}>
+    <div ref={rootRef} className="w-full relative z-[99999] mt-6" style={{ pointerEvents: 'auto' }}>
       {/* Trigger */}
       <button
         type="button"
@@ -485,8 +485,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
         /* Glow behavior similar to cover art */
         .songs-trigger{ outline:1px solid rgba(25,227,255,.35); transition: transform .15s ease, box-shadow .2s ease, outline-color .2s ease; }
         .songs-trigger:hover{
-          /* Remove scale to prevent visual size change */
-          transform: none;
+          transform: scale(1.02);
           outline-color: rgba(25,227,255,.8);
           box-shadow: 0 0 52px rgba(25,227,255,.7), 0 0 90px rgba(25,227,255,.45);
         }

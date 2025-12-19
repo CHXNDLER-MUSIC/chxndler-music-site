@@ -2,14 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useProfile } from '@/contexts/ProfileContext';
 
-// Updated types with joined profile data
-export type Profile = {
+// Author profile data from public_profiles view
+export type Author = {
   id: string;
   name: string | null;
-  avatar_url: string | null;
-  journey?: string | null;
-  heartcoin_total?: number | null;
-  daily_streak_current?: number | null;
+  profile_image_url: string | null;
 };
 
 export type SoulJournalEntry = {
@@ -22,7 +19,7 @@ export type SoulJournalEntry = {
   element: string;
   entry_text: string | null;
   stars_count?: number;
-  profiles?: Profile | null;
+  author?: Author | null;
 };
 
 export interface UseSoulJournalEntriesOptions {
@@ -48,7 +45,7 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
       setLoading(true);
       setError('');
 
-      // Build query for journal entries with profile joins
+      // Build query for journal entries with author from public_profiles view
       let query = supabaseBrowser
         .from('soul_journal_entries')
         .select(`
@@ -60,13 +57,10 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
           created_at,
           is_public,
           stars_count,
-          profiles (
+          author:public_profiles!soul_journal_entries_user_id_fkey (
             id,
             name,
-            profile_image_url,
-            journey,
-            heartcoin_total,
-            daily_streak_current
+            profile_image_url
           )
         `)
         .not('entry_text', 'is', null)
@@ -96,25 +90,29 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
       }
 
       // Map the data to our expected format
-      const mappedEntries: SoulJournalEntry[] = (data || []).map((entry: any) => ({
-        entry_id: entry.entry_id,
-        user_id: entry.user_id,
-        content: entry.entry_text || '',
-        is_public: entry.is_public ?? false,
-        created_at: entry.created_at,
-        entry_date: entry.entry_date,
-        element: entry.element,
-        entry_text: entry.entry_text,
-        stars_count: entry.stars_count ?? 0,
-        profiles: entry.profiles ? {
-          id: entry.profiles.id,
-          name: entry.profiles.name,
-          avatar_url: entry.profiles.profile_image_url,
-          journey: entry.profiles.journey,
-          heartcoin_total: entry.profiles.heartcoin_total,
-          daily_streak_current: entry.profiles.daily_streak_current
-        } : null
-      }));
+      const mappedEntries: SoulJournalEntry[] = (data || []).map((entry: any) => {
+        // Add console log for first entry to verify data shape
+        if ((data || []).indexOf(entry) === 0) {
+          console.log('PUBLIC ROW', entry);
+        }
+
+        return {
+          entry_id: entry.entry_id,
+          user_id: entry.user_id,
+          content: entry.entry_text || '',
+          is_public: entry.is_public ?? false,
+          created_at: entry.created_at,
+          entry_date: entry.entry_date,
+          element: entry.element,
+          entry_text: entry.entry_text,
+          stars_count: entry.stars_count ?? 0,
+          author: entry.author ? {
+            id: entry.author.id,
+            name: entry.author.name,
+            profile_image_url: entry.author.profile_image_url
+          } : null
+        };
+      });
 
       setEntries(mappedEntries);
     } catch (err) {

@@ -8,25 +8,19 @@ import ProfileModal from '@/components/chat/ProfileModal';
 import { useProfile } from '@/contexts/ProfileContext';
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
 
-// Generate or retrieve anonymous ALIEN name
 const getAnonymousName = (): string => {
   if (typeof window === 'undefined') return 'ALIEN00000000';
-
   const stored = sessionStorage.getItem('heartSignalAlienName');
   if (stored) return stored;
-
   const alienNumber = Math.floor(Math.random() * 99999999) + 1;
   const paddedNumber = String(alienNumber).padStart(8, '0');
   const alienName = `ALIEN${paddedNumber}`;
-
   sessionStorage.setItem('heartSignalAlienName', alienName);
   return alienName;
 };
 
-// Emoji types for reactions
 type EmojiType = 'heart' | 'water' | 'lightning' | 'darkness' | 'alien';
 
-// Emoji configuration with display info
 const EMOJI_CONFIG: Record<EmojiType, { emoji: string; label: string; color: string }> = {
   heart: { emoji: '💖', label: 'Heart', color: '#FF69B4' },
   water: { emoji: '🌊', label: 'Water', color: '#00BFFF' },
@@ -37,10 +31,11 @@ const EMOJI_CONFIG: Record<EmojiType, { emoji: string; label: string; color: str
 
 interface HeartSignalMessage {
   id: string;
-  user_id: string;
-  username: string;
-  message: string;
   created_at: string;
+  user_id: string | null;
+  guest_id: string | null;
+  sender_name: string | null;
+  message: string;
   is_system?: boolean;
   heart_count: number;
   water_count: number;
@@ -73,26 +68,20 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
 
   const openProfileForMessage = (msg: HeartSignalMessage) => {
     if (!msg?.user_id || msg.user_id === SYSTEM_USER_ID) return;
-    const nameFromMessage = (msg.message?.includes('connected to the signal')
-      ? msg.message.split(' connected to the signal')[0].trim()
-      : undefined) || msg.username || 'User';
+    const nameFromMessage = msg.sender_name || 'ALIEN';
     setSelectedUser({ id: msg.user_id, name: nameFromMessage });
     setShowProfileModal(true);
   };
 
-  // Auto scroll to bottom when new messages arrive
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Get display name for sender with fallback
+  // Get display name - NO dependency on profiles
   const getDisplayName = (msg: HeartSignalMessage): string => {
-    if (msg.username) return msg.username;
-    if (msg.user_id) return 'ALIEN';
-    return 'ALIEN';
+    return msg.sender_name ?? (msg.user_id ? 'ALIEN' : 'ALIEN');
   };
 
-  // Load user's reactions for a set of message IDs
   const loadUserReactions = useCallback(async (messageIds: string[]) => {
     if (!user?.id || messageIds.length === 0) return;
 
@@ -121,7 +110,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
     }
   }, [user?.id]);
 
-  // Toggle a reaction for a message using RPC
   const toggleReaction = useCallback(async (messageId: string, emoji: EmojiType) => {
     if (!user?.id) {
       console.error('User not authenticated');
@@ -133,7 +121,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
 
     setTogglingReactions(prev => new Set(prev).add(toggleKey));
 
-    // Play reaction sound
     try {
       const audioMap: Record<EmojiType, string> = {
         heart: '/audio/heart-pulse.MP3',
@@ -220,18 +207,19 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
     }
   }, [user?.id, userReactions, togglingReactions]);
 
-  // Load messages - works for anon and authed
+  // Load ALL messages - NO user_id filters
   const loadMessages = async (client: SupabaseClient) => {
     try {
-      console.log('📨 Loading Heart Signal messages...');
+      console.log('📨 Loading Heart Signal messages (all users)...');
+
       const { data, error } = await client
         .from('heart_signal_messages')
-        .select('*')
+        .select('id, created_at, user_id, guest_id, sender_name, message, is_system, heart_count, water_count, lightning_count, darkness_count, alien_count')
         .order('created_at', { ascending: true })
         .limit(200);
 
       if (error) {
-        console.error('Error loading messages:', error);
+        console.error('❌ Error loading messages:', error);
         return;
       }
 
@@ -244,10 +232,9 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
         alien_count: msg.alien_count || 0,
       }));
 
-      console.log(`✅ Loaded ${messagesData.length} messages`);
+      console.log(`✅ Loaded ${messagesData.length} messages (from all users)`);
       setMessages(messagesData);
 
-      // Load user's reactions for these messages
       if (messagesData.length > 0 && user?.id) {
         const messageIds = messagesData.map(m => m.id);
         await loadUserReactions(messageIds);
@@ -255,19 +242,19 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
 
       setTimeout(scrollToBottom, 100);
     } catch (error) {
-      console.error('Error in loadMessages:', error);
+      console.error('❌ Error in loadMessages:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Subscribe to real-time messages - works for anon and authed
+  // Subscribe to ALL INSERT events - NO filters
   const subscribeToMessages = (client: SupabaseClient) => {
     if (channelRef.current) {
       client.removeChannel(channelRef.current);
     }
 
-    console.log('🔌 Subscribing to Heart Signal realtime...');
+    console.log('🔌 Subscribing to Heart Signal realtime (all users, no filters)...');
 
     channelRef.current = client
       .channel('heart_signal_messages_public')
@@ -279,16 +266,23 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
           table: 'heart_signal_messages',
         },
         (payload) => {
-          console.log('NEW MESSAGE', payload.new);
+          console.log('📩 NEW MESSAGE received:', payload.new);
           const newMsg = payload.new as any;
           const newMessage: HeartSignalMessage = {
-            ...newMsg,
+            id: newMsg.id,
+            created_at: newMsg.created_at,
+            user_id: newMsg.user_id,
+            guest_id: newMsg.guest_id,
+            sender_name: newMsg.sender_name,
+            message: newMsg.message,
+            is_system: newMsg.is_system,
             heart_count: newMsg.heart_count || 0,
             water_count: newMsg.water_count || 0,
             lightning_count: newMsg.lightning_count || 0,
             darkness_count: newMsg.darkness_count || 0,
             alien_count: newMsg.alien_count || 0,
           };
+          console.log('✅ Appending message to state:', newMessage);
           setMessages((prev) => [...prev, newMessage]);
           setTimeout(scrollToBottom, 100);
         }
@@ -303,45 +297,59 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
       });
   };
 
-  // Load aliens online from recent message senders (last 10 minutes)
+  // Aliens Online from recent messages - NO presence/profiles
   const loadAliensOnline = async (client: SupabaseClient) => {
     setAliensLoading(true);
+
+    const timeout = setTimeout(() => {
+      console.warn('⚠️ Aliens online loading timeout (1s)');
+      setAliensLoading(false);
+      setAliensOnline(['ALIEN']);
+    }, 1000);
+
     try {
       const tenMinutesAgo = new Date();
       tenMinutesAgo.setMinutes(tenMinutesAgo.getMinutes() - 10);
 
+      console.log('👽 Loading Aliens Online from recent messages...');
+
       const { data, error } = await client
         .from('heart_signal_messages')
-        .select('username, user_id')
+        .select('user_id, guest_id, sender_name')
         .gte('created_at', tenMinutesAgo.toISOString())
         .order('created_at', { ascending: false });
 
+      clearTimeout(timeout);
+
       if (error) {
         console.error('Error loading aliens online:', error);
-        setAliensOnline(['ALIEN']); // Fallback
+        setAliensOnline(['ALIEN']);
+        setAliensLoading(false);
         return;
       }
 
-      // Get unique senders
+      // Unique by (user_id || guest_id)
       const uniqueSenders = new Map<string, string>();
       (data || []).forEach((msg: any) => {
-        const displayName = msg.username || 'ALIEN';
-        if (!uniqueSenders.has(msg.user_id)) {
-          uniqueSenders.set(msg.user_id, displayName);
-        }
+        const senderId = msg.user_id || msg.guest_id;
+        if (!senderId || uniqueSenders.has(senderId)) return;
+
+        const displayName = msg.sender_name ?? 'ALIEN';
+        uniqueSenders.set(senderId, displayName);
       });
 
       const aliens = Array.from(uniqueSenders.values()).slice(0, 20);
+      console.log(`✅ Aliens Online: ${aliens.length} unique senders`);
       setAliensOnline(aliens.length > 0 ? aliens : ['ALIEN']);
     } catch (error) {
+      clearTimeout(timeout);
       console.error('Error in loadAliensOnline:', error);
-      setAliensOnline(['ALIEN']); // Fallback
+      setAliensOnline(['ALIEN']);
     } finally {
       setAliensLoading(false);
     }
   };
 
-  // Send message via API
   const sendMessage = async () => {
     if (!newMessage.trim() || isSending) return;
 
@@ -380,7 +388,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
     }
   };
 
-  // Send system message via API
   const sendSystemMessage = async (message: string) => {
     try {
       const response = await fetch('/api/heart-signal-messages', {
@@ -401,7 +408,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
     }
   };
 
-  // Handle Enter key press
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -409,7 +415,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
     }
   };
 
-  // Send a heart signal
   const sendHeartSignal = async () => {
     if (heartSignalLoading) return;
 
@@ -438,20 +443,19 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
     }
   };
 
-  // Initialize component
+  // Initialize - use anon client when logged out
   useEffect(() => {
     let client: SupabaseClient;
     let mounted = true;
 
     const init = async () => {
-      // Determine which client to use based on auth state
       const { data: { session } } = await supabaseClient.auth.getSession();
 
       if (session?.user) {
         console.log('🔐 Using authenticated client');
         client = supabaseClient;
       } else {
-        console.log('👽 Using anonymous client');
+        console.log('👽 Using anonymous client (no cookies)');
         client = createAnonClient();
       }
 
@@ -459,34 +463,21 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
 
       setActiveClient(client);
 
-      // Load messages
       await loadMessages(client);
-
-      // Subscribe to realtime
       subscribeToMessages(client);
+      loadAliensOnline(client);
 
-      // Load aliens online with 1s timeout
-      const aliensTimeout = setTimeout(() => {
-        if (aliensLoading) {
-          console.warn('⚠️ Aliens online loading timeout');
-          setAliensLoading(false);
-          setAliensOnline(['ALIEN']);
-        }
-      }, 1000);
-
-      loadAliensOnline(client).finally(() => clearTimeout(aliensTimeout));
-
-      // Send connection message
       if (user && profile?.name) {
         sendSystemMessage(`${profile.name} connected to the signal`);
       } else {
         const anonymousName = getAnonymousName();
         const localConnectionMessage: HeartSignalMessage = {
           id: `local-connection-${Date.now()}`,
-          user_id: SYSTEM_USER_ID,
-          username: 'SYSTEM',
-          message: `${anonymousName} connected to the signal`,
           created_at: new Date().toISOString(),
+          user_id: null,
+          guest_id: null,
+          sender_name: 'SYSTEM',
+          message: `${anonymousName} connected to the signal`,
           is_system: true,
           heart_count: 0,
           water_count: 0,
@@ -508,7 +499,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
     };
   }, [user?.id]);
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -530,7 +520,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
         transition={{ duration: 0.3 }}
         className="fixed left-0 top-0 h-full w-80 bg-black/90 border-r border-purple-500/30 z-50 flex flex-col"
       >
-      {/* Header */}
       <div className="p-4 border-b border-purple-500/30">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center flex-1">
@@ -565,7 +554,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
           )}
         </div>
 
-        {/* Aliens Online */}
         <div className="mt-2 p-2 bg-green-500/10 border border-green-500/30 rounded">
           <div className="text-xs font-bold text-green-400 mb-1">ALIENS ONLINE</div>
           <div className="text-xs text-green-300/80 max-h-16 overflow-y-auto">
@@ -580,7 +568,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
         </div>
       </div>
 
-      {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {isLoading ? (
           <div className="text-center text-purple-400 py-8">
@@ -652,7 +639,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
                     </div>
                   )}
 
-                  {/* Reaction buttons */}
                   {!isSystemMsg && (
                     <div className="flex items-center gap-1 mt-2 flex-wrap">
                       {(Object.keys(EMOJI_CONFIG) as EmojiType[]).map((emojiType) => {
@@ -707,7 +693,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Heart Signal Section */}
       <div className="px-4 pt-1 pb-0 border-t border-purple-500/30 space-y-1" style={{ marginBottom: '-12px' }}>
         <div className="text-center">
           <div
@@ -781,7 +766,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
         isOwnProfile={!!(user?.id && selectedUser?.id && user.id === selectedUser.id)}
       />
 
-      {/* Message Input */}
       <div className="p-4 border-t border-purple-500/30 mt-4">
         <div className="flex gap-2">
           <input
