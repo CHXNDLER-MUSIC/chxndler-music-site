@@ -94,28 +94,9 @@ export default function UserBadges({
     const fetchUserProfile = async () => {
       try {
         if (!userId) return;
-        
+
         const { data, error } = await supabaseBrowser
-          .from('profiles')
-          .select(`
-            id,
-            name,
-            heartcoin_total,
-            daily_streak_current,
-            total_reflections,
-            total_listening_minutes,
-            total_heartcoins_earned,
-            elemental_sessions_count,
-            community_interactions,
-            achievements_unlocked,
-            streams_attended,
-            concerts_attended,
-            cards_owned,
-            merch_items_owned,
-            donations_made,
-            heartcoins_sent
-          `)
-          .eq('id', userId)
+          .rpc('get_public_profile', { p_profile_id: userId })
           .single();
 
         if (error) {

@@ -86,11 +86,9 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
     try {
       setLoading(true);
 
-      // Load profile details
+      // Load profile details using RPC
       const { data: profile, error: profileError } = await supabaseClient
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
+        .rpc('get_public_profile', { p_profile_id: user.id })
         .single();
 
       if (profileError) {

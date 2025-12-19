@@ -77,9 +77,7 @@ export default function SignalChat({
     if (ids.length === 0) return;
     try {
       const { data, error } = await supabaseClient
-        .from('profiles')
-        .select('id, element')
-        .in('id', ids);
+        .rpc('get_public_chat_profiles_by_ids', { p_ids: ids });
       if (error) return;
       const next: Record<string, string> = {};
       (data || []).forEach((row: any) => {
@@ -108,9 +106,6 @@ export default function SignalChat({
       }
 
       const msgs = data || [];
-      // Preload author element colors before rendering
-      const ids = msgs.map(m => m.user_id).filter(Boolean) as string[];
-      await fetchElementsForUsers(ids);
       setMessages(msgs);
       setTimeout(scrollToBottom, 100);
     } catch (error) {
@@ -125,29 +120,18 @@ export default function SignalChat({
     }
 
     channelRef.current = supabaseClient
-      .channel('heart-signal-global')
+      .channel('heart-signal')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'heart_signal_messages' },
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'heart_signal_messages',
+        },
         (payload) => {
-          console.log('Global signal received:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            const newMessage = payload.new as HeartSignalMessage;
-            setMessages((prev) => [...prev, newMessage]);
-            if (newMessage?.user_id && !userElementMap[newMessage.user_id]) {
-              fetchElementsForUsers([newMessage.user_id]);
-            }
-            setTimeout(scrollToBottom, 100);
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedMessage = payload.new as HeartSignalMessage;
-            setMessages((prev) => 
-              prev.map((msg) => msg.id === updatedMessage.id ? updatedMessage : msg)
-            );
-          } else if (payload.eventType === 'DELETE') {
-            const deletedMessage = payload.old as HeartSignalMessage;
-            setMessages((prev) => prev.filter((msg) => msg.id !== deletedMessage.id));
-          }
+          console.log('NEW MESSAGE', payload.new);
+          setMessages(prev => [...prev, payload.new as HeartSignalMessage]);
+          setTimeout(scrollToBottom, 100);
         }
       )
       .subscribe((status) => {

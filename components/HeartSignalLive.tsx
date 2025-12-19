@@ -108,9 +108,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
     if (ids.length === 0) return;
     try {
       const { data, error } = await supabaseClient
-        .from('profiles')
-        .select('id, element')
-        .in('id', ids);
+        .rpc('get_public_chat_profiles_by_ids', { p_ids: ids });
       if (error) return;
       const next: Record<string, string> = {};
       (data || []).forEach((row: any) => {

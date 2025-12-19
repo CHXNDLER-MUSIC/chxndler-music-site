@@ -2841,6 +2841,51 @@ const HUDPanel = React.memo(function HUDPanel({
                           const element = currentSong?.icon || 'heart';
                           const elementColor = TRACK_ELEMENT_COLORS[element] || '#38B6FF';
                           
+                          const handleSeek = (clientX) => {
+                            const bar = document.querySelector('.hud-enhanced-track');
+                            if (!bar || !duration) return;
+                            const rect = bar.getBoundingClientRect();
+                            const clickX = clientX - rect.left;
+                            const percentage = Math.max(0, Math.min(1, clickX / rect.width));
+                            const seekTime = percentage * duration;
+
+                            // Seek using unified audio manager
+                            try { audioManager.seek(seekTime); } catch {}
+
+                            // Also try direct audio element access as fallback
+                            const audioEl = liveAudioRef?.current;
+                            if (audioEl) {
+                              try { audioEl.currentTime = seekTime; } catch {}
+                              try { setProgress(seekTime); } catch {}
+                            }
+                          };
+
+                          const onBarClick = (e) => {
+                            handleSeek(e.clientX);
+                            try { sfx.play('click', 0.3); } catch {}
+                          };
+
+                          const onPointerDown = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleSeek(e.clientX || (e.touches?.[0]?.clientX) || 0);
+
+                            const onMove = (me) => {
+                              const cx = me.clientX || (me.touches?.[0]?.clientX) || 0;
+                              handleSeek(cx);
+                            };
+                            const onUp = () => {
+                              window.removeEventListener('mousemove', onMove);
+                              window.removeEventListener('touchmove', onMove);
+                              window.removeEventListener('mouseup', onUp);
+                              window.removeEventListener('touchend', onUp);
+                            };
+                            window.addEventListener('mousemove', onMove, { passive: true });
+                            window.addEventListener('touchmove', onMove, { passive: true });
+                            window.addEventListener('mouseup', onUp, { passive: true });
+                            window.addEventListener('touchend', onUp, { passive: true });
+                          };
+
                           return (
                             <div
                               className="hud-enhanced-track"
@@ -2855,8 +2900,11 @@ const HUDPanel = React.memo(function HUDPanel({
                                 border: '1px solid rgba(255,255,255,0.1)',
                                 overflow: 'hidden',
                                 cursor: 'pointer',
+                                touchAction: 'none'
                               }}
-                              onClick={handleProgressClick}
+                              onClick={onBarClick}
+                              onMouseDown={onPointerDown}
+                              onTouchStart={onPointerDown}
                               onMouseEnter={(e) => {
                                 try { e.currentTarget.style.filter = 'brightness(1.2) saturate(1.1)'; } catch {}
                                 try { sfx.play('hover', 0.28); } catch {}

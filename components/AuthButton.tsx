@@ -150,8 +150,23 @@ export default function AuthButton() {
 
   return (
     <>
+      <style jsx>{`
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+          }
+          50% {
+            opacity: 0.8;
+            transform: scale(1.02);
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.6), 0 0 25px rgba(255, 255, 255, 0.4);
+          }
+        }
+      `}</style>
+
       {/* Single unified clickable button containing both icon and text */}
-      <button 
+      <button
         ref={buttonRef}
         onClick={handleButtonClick}
         onKeyDown={(e) => {
@@ -164,15 +179,16 @@ export default function AuthButton() {
         className={`flex items-center font-medium text-xl relative flex-shrink-0 transition-all duration-200 cursor-pointer bg-transparent border-none focus:outline-none rounded pointer-events-auto ${
           isDimmed ? 'opacity-50 pointer-events-none' : 'opacity-100 pointer-events-auto'
         }`}
-        style={{ 
+        style={{
           color: getUsernameColor(currentElement),
           filter: 'brightness(1.2)',
           padding: '12px 18px',
           background: 'transparent',
-          transition: 'all 0.3s ease'
+          transition: 'all 0.3s ease',
+          animation: buttonMode === 'login' && !isDimmed ? 'pulse 2s ease-in-out infinite' : 'none'
         }}
         title={
-          buttonMode === 'login' 
+          buttonMode === 'login'
             ? "Click to log in and join the Heartverse"
             : buttonMode === 'setup'
             ? "Click to complete your profile setup"
