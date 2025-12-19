@@ -746,24 +746,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     return counts;
   };
 
-  // Helper function to update heart coins
-  const updateHeartCoins = async (newAmount: number) => {
-    setHeartCoins(newAmount);
-    onHeartCoinsChange?.(newAmount);
-    
-    // Update database
-    try {
-      const { data: { user } } = await import('@/lib/supabase-browser').then(m => m.supabaseBrowser.auth.getUser());
-      if (user) {
-        await fetch('/api/heart-coins/update', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: newAmount })
-        });
-      }
-    } catch (error) {
-      console.error('Failed to update heart coins in database:', error);
-    }
+  // Helper: after coin-related changes, refresh profile from server
+  const updateHeartCoins = async (_newAmount: number) => {
+    try { await refreshProfile(); } catch {}
+    onHeartCoinsChange?.(_newAmount);
   };
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [secretPhrase, setSecretPhrase] = useState("");
@@ -1103,7 +1089,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       if (result.success) {
         // Award heart coins using existing system
         if (result.rewards?.heartcoins && profile) {
-          updateHeartCoins(heartCoins + result.rewards.heartcoins);
+          await updateHeartCoins(heartCoins + result.rewards.heartcoins);
         }
         
         setCheckInMessage(`Quest completed! +${quest.reward_heartcoins} Heart Coins earned`);
@@ -1206,6 +1192,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
   const handlePurchaseWithHeartCoins = async (item: StoreItem) => {
     if (!profile || !item) return;
+    // In-flight guard to prevent double clicks
+    if (isProcessing) return;
 
     // Find the corresponding MerchItem from database
     const merchItem = merchItems.find(m => m.slug === item.slug);
@@ -1220,6 +1208,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       return;
     }
 
+    const payload = { merchItemId: merchItem.id, quantity: 1 };
+
+    console.log("[MERCH PURCHASE] selected item", merchItem);
+    console.log("[MERCH PURCHASE] payload", payload);
+    console.log("[MERCH PURCHASE] displayed cost", merchItem.price_heartcoins);
     console.log("Attempting HeartCoin purchase:", {
       userId: profile.id,
       merchItemId: merchItem.id,
@@ -1242,8 +1235,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       // Play success sound
       try { sfx.play('card-ding', 0.8); } catch {}
       
-      // Refresh profile to update HeartCoin balance
+      // Refresh profile to update HeartCoin balance (authoritative from DB)
       await refreshProfile();
+      console.log('[MERCH PURCHASE] profile refreshed; new balance should match Supabase.');
 
     } else {
       // Error is handled by the hook, but we can show it in our UI

@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseServer';
+import { logHeartcoinTransaction } from '@/utils/heartcoins';
 
 export async function POST(req: NextRequest) {
   try {
@@ -54,8 +55,6 @@ export async function POST(req: NextRequest) {
         id: user.id,
         email: user.email,
         name: displayName,
-        heartcoin_balance: 5, // Welcome bonus heart coins
-        heartcoin_total: 5,   // Also set total
         profile_complete: false,
         metadata: {
           source: 'welcome_home_modal',
@@ -77,6 +76,19 @@ export async function POST(req: NextRequest) {
     }
 
     console.log('🧪 Profile created successfully:', newProfile);
+    // Award welcome bonus via transaction insert
+    try {
+      await logHeartcoinTransaction(admin as any, {
+        user_id: user.id,
+        amount: 5,
+        reason: 'WELCOME_BONUS',
+        description: 'Welcome bonus heart coins',
+        transaction_type: 'bonus',
+        metadata: { source: 'welcome_home_modal' }
+      });
+    } catch (txErr) {
+      console.error('🧪 Failed to insert welcome bonus transaction:', txErr);
+    }
     
     return NextResponse.json({ 
       message: 'Profile created successfully via test',

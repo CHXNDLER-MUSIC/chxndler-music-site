@@ -483,8 +483,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
       if (updates.element !== undefined) dbUpdates.element = updates.element;
       if (updates.journey !== undefined) dbUpdates.journey = updates.journey;
-      if (updates.heartcoin_balance !== undefined) dbUpdates.heartcoin_balance = updates.heartcoin_balance;
-      if (updates.heartcoin_total !== undefined) dbUpdates.heartcoin_total = updates.heartcoin_total;
+      // Never allow front-end to directly update heartcoin fields
       if (updates.profile_complete !== undefined) dbUpdates.profile_complete = updates.profile_complete;
       
       // Update the existing profile (no insert logic - trigger handles creation)

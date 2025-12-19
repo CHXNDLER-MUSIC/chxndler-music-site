@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { awardHeartCoins } from '@/utils/heartcoins';
+import { logHeartcoinTransaction } from '@/utils/heartcoins';
 
 export interface SongPoll {
   id: string;
@@ -274,20 +274,20 @@ export async function castVote(
       throw new Error('Invalid poll option');
     }
 
-    // Debit HeartCoins using the existing helper
-    await awardHeartCoins(
-      supabase,
-      userId,
-      -heartcoinsToSpend,
-      'song_vote',
-      {
+    // Debit HeartCoins via transaction insert
+    await logHeartcoinTransaction(supabase, {
+      user_id: userId,
+      amount: -heartcoinsToSpend,
+      reason: 'SONG_VOTE',
+      description: 'Song poll vote',
+      transaction_type: 'debit',
+      metadata: {
         poll_id: pollId,
         option_id: optionId,
         amount: heartcoinsToSpend,
-        transaction_type: 'debit',
         source: 'song_vote'
       }
-    );
+    });
 
     // Record the vote
     const { error: voteError } = await supabase
@@ -303,19 +303,19 @@ export async function castVote(
       console.error('Error recording vote:', voteError);
       // Try to refund the HeartCoins if vote recording failed
       try {
-        await awardHeartCoins(
-          supabase,
-          userId,
-          heartcoinsToSpend,
-          'song_vote_refund',
-          {
+        await logHeartcoinTransaction(supabase, {
+          user_id: userId,
+          amount: heartcoinsToSpend,
+          reason: 'SONG_VOTE_REFUND',
+          description: 'Refund for song poll vote',
+          transaction_type: 'credit',
+          metadata: {
             poll_id: pollId,
             option_id: optionId,
             amount: heartcoinsToSpend,
-            transaction_type: 'credit',
             source: 'song_vote_refund'
           }
-        );
+        });
       } catch (refundError) {
         console.error('Failed to refund HeartCoins after vote error:', refundError);
       }

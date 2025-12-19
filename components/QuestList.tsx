@@ -6,6 +6,7 @@ import SoulStareModal from "./SoulStareModal";
 import SoulStarJournal from "./SoulStarJournal";
 import { hasAnsweredToday, getTodaysQuestion } from "@/lib/dailyQuestions";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { logHeartcoinTransaction } from "@/utils/heartcoins";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useProfile } from "@/contexts/ProfileContext";
 import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
@@ -202,27 +203,22 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
     setLoading(true);
     
     try {
-      const response = await fetch('/api/heart-coins/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ heartCoinsToAdd: 1 })
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user?.id) throw new Error('Not authenticated');
+      await logHeartcoinTransaction(supabaseClient, {
+        user_id: user.id,
+        amount: 1,
+        reason: 'ELEMENT_OF_DAY',
+        description: 'Element of the Day reward',
+        transaction_type: 'bonus',
+        metadata: {}
       });
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Heart coin update successful:', data);
-        setQuestStatus(prev => ({ ...prev, elementOfDay: true }));
-        // Save to localStorage to persist across sessions for today
-        const today = new Date().toDateString();
-        localStorage.setItem(`quest_element_${today}`, 'true');
-        showCelebration(`✨ Element touched! Your ${todaysElement.name} energy is awakened! +1 HeartCoin earned.`);
-        // Trigger HeartCoin celebration animation
-        triggerHeartCoinCelebration(1);
-      } else {
-        const errorData = await response.json();
-        console.error('Heart coin update failed:', errorData);
-      }
+      setQuestStatus(prev => ({ ...prev, elementOfDay: true }));
+      const today = new Date().toDateString();
+      localStorage.setItem(`quest_element_${today}`, 'true');
+      showCelebration(`✨ Element touched! Your ${todaysElement.name} energy is awakened! +1 HeartCoin earned.`);
+      triggerHeartCoinCelebration(1);
+      try { await refreshProfile(); } catch {}
     } catch (error) {
       console.error('Failed to award heart coin:', error);
     } finally {

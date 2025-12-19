@@ -40,6 +40,8 @@ export default function Pure3DPlanets({
   const [isClient, setIsClient] = useState(false);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
+  // Track when the user is interacting so we don't snap back
+  const isUserInteractingRef = useRef(false);
   // Keep references to song meshes by slug/id for camera focusing
   const songMeshMapRef = useRef<Map<string, THREE.Object3D>>(new Map());
   // Keep references to glow sprites for element planets so we can toggle visibility
@@ -117,6 +119,31 @@ export default function Pure3DPlanets({
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.1;
     controlsRef.current = controls;
+
+    // Keep camera targets in sync with user interaction to avoid snap-back
+    const onControlStart = () => {
+      isUserInteractingRef.current = true;
+      // While the user is moving the camera, make desired == current
+      desiredCameraPosRef.current = camera.position.clone();
+      desiredLookAtRef.current = controls.target.clone();
+    };
+    const onControlChange = () => {
+      if (isUserInteractingRef.current) {
+        desiredCameraPosRef.current = camera.position.clone();
+        desiredLookAtRef.current = controls.target.clone();
+      }
+    };
+    const onControlEnd = () => {
+      isUserInteractingRef.current = false;
+      // Persist the position the user left the camera at
+      restCameraPositionRef.current = camera.position.clone();
+      restCameraTargetRef.current = controls.target.clone();
+      desiredCameraPosRef.current = camera.position.clone();
+      desiredLookAtRef.current = controls.target.clone();
+    };
+    controls.addEventListener('start', onControlStart);
+    controls.addEventListener('change', onControlChange);
+    controls.addEventListener('end', onControlEnd);
 
     // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
@@ -498,10 +525,13 @@ export default function Pure3DPlanets({
       }
 
       // Camera lerp for smooth easing (hover bias and cinematic focus)
-      const lerpSpeed = isCinematicRef.current ? 0.04 : 0.08; // Slower during cinematic for dramatic effect
-      if (desiredCameraPosRef.current && desiredLookAtRef.current) {
-        camera.position.lerp(desiredCameraPosRef.current, lerpSpeed);
-        controls.target.lerp(desiredLookAtRef.current, lerpSpeed);
+      // Do NOT override user interaction; only lerp when the user is not actively moving the camera
+      if (!isUserInteractingRef.current) {
+        const lerpSpeed = isCinematicRef.current ? 0.04 : 0.08; // Slower during cinematic for dramatic effect
+        if (desiredCameraPosRef.current && desiredLookAtRef.current) {
+          camera.position.lerp(desiredCameraPosRef.current, lerpSpeed);
+          controls.target.lerp(desiredLookAtRef.current, lerpSpeed);
+        }
       }
 
       // Initial camera bias toward daily element on scene load (first 2 seconds)
@@ -535,6 +565,12 @@ export default function Pure3DPlanets({
       container.removeEventListener('mousedown', handleMouseDown);
       container.removeEventListener('mousemove', handleMouseMove);
       container.removeEventListener('mouseleave', handleMouseLeave);
+      // Remove control listeners and dispose
+      try {
+        controls.removeEventListener('start', onControlStart);
+        controls.removeEventListener('change', onControlChange);
+        controls.removeEventListener('end', onControlEnd);
+      } catch {}
       controls.dispose();
       renderer.dispose();
       if (container.contains(renderer.domElement)) {

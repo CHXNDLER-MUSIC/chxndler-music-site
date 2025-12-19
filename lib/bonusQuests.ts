@@ -1,7 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { BonusQuestRow, UserBonusQuestRow, BonusQuestWithCompletion, QuestCompletionResult } from '@/types/bonusQuests';
-import { awardHeartCoins } from '@/utils/heartcoins';
+import { logHeartcoinTransaction } from '@/utils/heartcoins';
 
 /**
  * Fetches bonus quests with a specific Supabase client (for server-side use).
@@ -347,13 +347,14 @@ export async function completeBonusQuest(params: {
 
     // Award HeartCoins if quest has reward
     if (quest.reward_heartcoins && quest.reward_heartcoins > 0) {
-      await awardHeartCoins(
-        supabase,
-        userId,
-        quest.reward_heartcoins,
-        `Bonus Quest: ${quest.title}`,
-        { quest_id: quest.id }
-      );
+      await logHeartcoinTransaction(supabase, {
+        user_id: userId,
+        amount: quest.reward_heartcoins,
+        reason: 'BONUS_QUEST',
+        description: `Bonus Quest: ${quest.title}`,
+        transaction_type: 'bonus',
+        metadata: { quest_id: quest.id }
+      });
     }
 
     console.log(`✅ Quest ${quest.quest_key} completed successfully! +${quest.reward_heartcoins} HeartCoins awarded to user ${userId}`);

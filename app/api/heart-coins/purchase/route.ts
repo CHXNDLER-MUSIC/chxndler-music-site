@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
+import { logHeartcoinTransaction } from '@/utils/heartcoins';
 
 export async function POST(req: NextRequest) {
   try {
@@ -98,24 +99,21 @@ export async function POST(req: NextRequest) {
       // Don't fail the purchase if order save fails, but log it
     }
 
-    // Deduct Heart Coins from user's balance (total remains unchanged for cumulative tracking)
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ 
-        heartcoin_balance: (profile.heartcoin_balance || 0) - heartCoins,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', user.id);
-
-    if (updateError) {
-      return NextResponse.json({ error: 'Failed to deduct Heart Coins' }, { status: 500 });
-    }
+    // Record HeartCoin spend transaction; balance is updated by DB trigger
+    await logHeartcoinTransaction(supabase, {
+      user_id: user.id,
+      amount: -heartCoins,
+      reason: 'MERCH_PURCHASE',
+      description: `Card purchase: ${cardTitle}`,
+      transaction_type: 'purchase',
+      metadata: { cardTitle, heartCoins }
+    });
 
     return NextResponse.json({
       success: true,
       message: 'Purchase completed successfully',
       heartCoinsSpent: heartCoins,
-      remainingHearts: (profile.heartcoin_balance || 0) - heartCoins
+      remainingHearts: null
     });
 
   } catch (error) {

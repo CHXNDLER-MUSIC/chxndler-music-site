@@ -485,9 +485,8 @@ export default function ProfileBar({
                 onClick={() => togglePanel('heartcoins')}
                 journalCompleted={journalCompletedToday}
                 onJournalCompleted={handleJournalCompleted}
-                onHeartCoinsChange={(newAmount) => {
-                  // Update through ProfileContext
-                  updateProfile({ heartcoin_balance: newAmount });
+                onHeartCoinsChange={async () => {
+                  try { await refreshProfile(); } catch {}
                 }}
                 onClose={() => setActivePanel(null)}
                 onBeamColorChange={onBeamColorChange}

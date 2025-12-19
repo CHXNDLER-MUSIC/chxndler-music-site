@@ -632,6 +632,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   // Confirm purchase and create order with shipping info
   const handleConfirmPurchase = async () => {
     if (!selectedItem || !profile) return;
+    if (modalLoading) return; // in-flight guard
 
     // Validate shipping form first
     if (!validateShippingForm()) {
@@ -706,6 +707,10 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       } else {
         // Use merch purchase API for regular merch items
         // Log before calling RPC
+        const payload = { merchItemId: selectedItem.merch_item_id, quantity: 1 };
+        console.log('[MERCH PURCHASE] selected item', selectedItem);
+        console.log('[MERCH PURCHASE] payload', payload);
+        console.log('[MERCH PURCHASE] displayed cost', selectedItem.heartCoin);
         console.log('[HeartCoinModal] Initiating purchase:', {
           merch_item_id: selectedItem.merch_item_id,
           qty: 1
@@ -716,10 +721,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            merchItemId: selectedItem.merch_item_id,
-            quantity: 1
-          }),
+          body: JSON.stringify(payload),
         });
 
         result = await response.json();
@@ -791,6 +793,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         ? ` Your new balance is ${result.heartcoins_after} HeartCoins.`
         : '';
       setMessage(`Successfully purchased ${selectedItem.name}!${balanceInfo} Your order has been placed and a confirmation email has been sent.`);
+      try { await refreshProfile(); } catch {}
 
       setShowShippingForm(false);
       setSelectedItem(null);
@@ -807,6 +810,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
       // Refresh profile to update HeartCoin balance
       await refreshProfile();
+      console.log('[MERCH PURCHASE] profile refreshed; new balance should match Supabase.');
 
     } catch (error: any) {
       console.error('[HeartCoinModal] Purchase error:', error);
@@ -854,6 +858,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       }
 
       setMessage(`Successfully purchased ${item.name}!`);
+      try { await refreshProfile(); } catch {}
       // Refresh profile to update balance
       window.location.reload();
     } catch (error: any) {
@@ -954,6 +959,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         }
 
         setMessage(`Successfully purchased digital ${currentCard.card_name || currentCard.cards?.card_name || 'card'}! A confirmation email has been sent.`);
+        try { await refreshProfile(); } catch {}
         // Refresh profile to update balance
         await refreshProfile();
         setSelectedPurchaseType(null);

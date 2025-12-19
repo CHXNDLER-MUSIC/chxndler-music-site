@@ -11,6 +11,65 @@ import { triggerHeartCoinCelebration } from './heartcoinCelebration';
  * @param reason - Description of why the HeartCoins were awarded/spent
  * @param metadata - Additional data about the transaction
  */
+export type HeartcoinTransactionInput = {
+  user_id: string;
+  amount: number; // negative for spending
+  reason: string; // canonical reason code
+  description?: string;
+  metadata?: Record<string, any>;
+  transaction_type?: string;
+  from_user_id?: string;
+  to_user_id?: string;
+};
+
+/**
+ * Insert a HeartCoin transaction row. Postgres trigger updates balances.
+ * Never mutate profiles. Callers should refresh profile after success.
+ */
+export async function logHeartcoinTransaction(
+  supabaseClient: SupabaseClient,
+  input: HeartcoinTransactionInput
+): Promise<{ id: string }> {
+  const payload: any = {
+    user_id: input.user_id,
+    amount: input.amount,
+    reason: input.reason,
+    description: input.description ?? input.reason,
+    metadata: input.metadata ?? {},
+    created_at: new Date().toISOString(),
+  };
+  if (input.transaction_type) payload.transaction_type = input.transaction_type;
+  if (input.from_user_id) payload.from_user_id = input.from_user_id;
+  if (input.to_user_id) payload.to_user_id = input.to_user_id;
+
+  console.debug('🪙 Inserting heartcoin transaction', payload);
+
+  const { data, error } = await supabaseClient
+    .from('heartcoin_transactions')
+    .insert(payload)
+    .select('id')
+    .single();
+
+  if (error) {
+    // Defensive logging: surface PG error
+    console.error('HeartCoin transaction insert failed:', error);
+    const message = (error as any)?.message || 'Unknown error';
+    throw new Error(`Failed to record HeartCoin transaction: ${message}`);
+  }
+
+  if (!data) {
+    throw new Error('Failed to record HeartCoin transaction: No data returned');
+  }
+
+  // Celebration on client for positive amounts
+  if (typeof window !== 'undefined' && input.amount > 0) {
+    try { triggerHeartCoinCelebration(input.amount); } catch {}
+  }
+
+  return { id: data.id };
+}
+
+// Backward compatibility: route all legacy calls through the new helper
 export async function awardHeartCoins(
   supabaseClient: SupabaseClient,
   userId: string,
@@ -18,45 +77,14 @@ export async function awardHeartCoins(
   reason: string,
   metadata: Record<string, any> = {}
 ): Promise<void> {
-  console.debug('🪙 Attempting to award HeartCoins:', { userId, amount, reason, metadata });
-  
-  const { data, error } = await supabaseClient
-    .from('heartcoin_transactions')
-    .insert({
-      user_id: userId,
-      amount: amount,
-      transaction_type: 'bonus',
-      description: reason,
-      metadata: metadata,
-      created_at: new Date().toISOString()
-    })
-    .select('id')
-    .single();
-
-  console.debug('🪙 HeartCoin award response:', { data, error });
-
-  if (error) {
-    console.error('Failed to award HeartCoins (Supabase error):', error);
-    const message =
-      typeof error === 'string'
-        ? error
-        : 'message' in error
-        ? (error as any).message
-        : JSON.stringify(error);
-    throw new Error(`Failed to award HeartCoins: ${message}`);
-  }
-
-  if (!data) {
-    console.error('Failed to award HeartCoins: No data returned from insert');
-    throw new Error('Failed to award HeartCoins: No data returned from insert');
-  }
-
-  console.debug('✅ Successfully awarded HeartCoins:', { transactionId: data.id, userId, amount, reason });
-
-  // Trigger celebration event for positive amounts in browser only
-  if (amount > 0) {
-    triggerHeartCoinCelebration(amount);
-  }
+  await logHeartcoinTransaction(supabaseClient, {
+    user_id: userId,
+    amount,
+    reason,
+    description: reason,
+    transaction_type: amount > 0 ? 'bonus' : 'debit',
+    metadata,
+  });
 }
 
 /**

@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { getTodaysQuestion, markQuestionAnswered, hasAnsweredToday } from "@/lib/dailyQuestions";
 import { useProfile } from "@/contexts/ProfileContext";
+import { supabaseBrowser } from "@/lib/supabase-browser";
+import { logHeartcoinTransaction } from "@/utils/heartcoins";
 import { sfx } from "@/lib/sfx";
 import SoulStarJournal from "@/components/SoulStarJournal";
 
@@ -48,23 +50,23 @@ export default function SoulStareModal({ isOpen, onClose, onComplete, onOpenBlue
     setIsSubmitting(true);
     
     try {
-      // Award heart coin
-      const heartResponse = await fetch('/api/heart-coins/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ heartCoinsToAdd: 1 })
+      const { data: { user } } = await supabaseBrowser.auth.getUser();
+      if (!user?.id) throw new Error('Not authenticated');
+      await logHeartcoinTransaction(supabaseBrowser, {
+        user_id: user.id,
+        amount: 1,
+        reason: 'DAILY_REFLECTION',
+        description: 'Completed daily reflection',
+        transaction_type: 'bonus'
       });
-      
-      if (heartResponse.ok) {
-        markQuestionAnswered();
-        setSubmitted(true);
-        onComplete();
-        setTimeout(() => {
-          handleClose();
-          setResponse("");
-          setSubmitted(false);
-        }, 2000);
-      }
+      markQuestionAnswered();
+      setSubmitted(true);
+      onComplete();
+      setTimeout(() => {
+        handleClose();
+        setResponse("");
+        setSubmitted(false);
+      }, 2000);
     } catch (error) {
       console.error('Failed to submit soul star:', error);
     } finally {

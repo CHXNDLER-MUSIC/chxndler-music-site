@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { logHeartcoinTransaction } from "@/utils/heartcoins";
+import { useProfile } from "@/contexts/ProfileContext";
 import { getRandomRewardForRitual, PlanetReward, rarityLabel } from "@/lib/planetRewards";
 
 // RewardRevealModal component
@@ -72,6 +74,7 @@ export default function ElementPlanetOfTheDay({ className = "" }: ElementPlanetO
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const supabase = supabaseClient;
+  const { refreshProfile } = useProfile();
 
   async function applyRewardForUser(reward: PlanetReward) {
     const { data } = await supabase.auth.getUser();
@@ -84,15 +87,20 @@ export default function ElementPlanetOfTheDay({ className = "" }: ElementPlanetO
       const amount = reward.heart_amount ?? 0;
       if (amount <= 0) return;
 
-      const { error } = await supabase.from("heartcoin_transactions").insert({
-        user_id: userId,
-        amount,
-        reason: "ELEMENT_PLANET_RITUAL",
-        source: "element_planet",
-      });
-
-      if (error) {
-        throw error;
+      try {
+        await logHeartcoinTransaction(supabase, {
+          user_id: userId,
+          amount,
+          reason: "ELEMENT_OF_DAY",
+          description: "Element of the Day reward",
+          transaction_type: 'bonus',
+          metadata: { source: 'element_planet' }
+        });
+        // Refresh profile to avoid drift
+        await refreshProfile();
+      } catch (txErr) {
+        console.error('Failed to record heartcoin reward:', txErr);
+        throw txErr;
       }
     }
 

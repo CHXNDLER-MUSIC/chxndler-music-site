@@ -11,7 +11,8 @@ import SharedButton from "@/components/SharedButton";
 import HeartverseButton from "@/components/HeartverseButton";
 import SoulStarJournal from "@/components/SoulStarJournal";
 import { supabaseClient } from "@/lib/supabaseClient";
-import { awardHeartCoins } from "@/utils/heartcoins";
+import { logHeartcoinTransaction } from "@/utils/heartcoins";
+import { useProfile } from "@/contexts/ProfileContext";
 import { useAudio } from "@/app/providers/AudioProvider";
 // 2D fallback hologram
 // 2D HUD removed per request; 3D only
@@ -1818,6 +1819,7 @@ const HUDPanel = React.memo(function HUDPanel({
   const liveAudioRef = useRef(null);
   // Progress bar ref for seeking
   const progressBarRef = useRef(null);
+  const { refreshProfile } = useProfile();
   useEffect(() => {
     if (typeof beamEnabled === 'boolean') {
       const t = setTimeout(() => setBeamOpacity(beamEnabled ? 1 : 0), 10);
@@ -6975,16 +6977,18 @@ const HUDPanel = React.memo(function HUDPanel({
                             try {
                               const { data: { user } } = await supabaseClient.auth.getUser();
                               if (user) {
-                                await awardHeartCoins(
-                                  supabaseClient,
-                                  user.id,
-                                  1,
-                                  'Completed journal reflection',
-                                  {
+                                await logHeartcoinTransaction(supabaseClient, {
+                                  user_id: user.id,
+                                  amount: 1,
+                                  reason: 'DAILY_REFLECTION',
+                                  description: 'Completed journal reflection',
+                                  transaction_type: 'bonus',
+                                  metadata: {
                                     response: questionResponse.trim(),
                                     date: new Date().toISOString().split('T')[0]
                                   }
-                                );
+                                });
+                                try { await refreshProfile(); } catch {}
                                 
                                 // Notify parent component of journal completion
                                 onJournalCompleted?.();

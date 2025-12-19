@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
+import { logHeartcoinTransaction } from '@/utils/heartcoins';
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
     let result;
 
     if (isPhysical) {
-      // Handle physical purchases manually since the RPC function doesn't exist
+      // Handle physical purchases manually if RPC not available
       try {
         // 1. Get current user balance
         const { data: profile, error: profileError } = await supabase
@@ -60,57 +61,15 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const newBalance = currentBalance - priceHeartCoins;
-
-        // 3. Start transaction - update balance
-        const { error: balanceError } = await supabase
-          .from('profiles')
-          .update({ 
-            heartcoin_balance: newBalance,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', user.id);
-
-        if (balanceError) {
-          console.error('Failed to update balance in Supabase', balanceError);
-          return NextResponse.json(
-            { 
-              error: `Failed to update balance: ${balanceError.message}`,
-              details: balanceError 
-            },
-            { status: 500 }
-          );
-        }
-
-        // 4. Record the HeartCoin transaction
-        const { data: transactionData, error: transactionError } = await supabase
-          .from('heartcoin_transactions')
-          .insert({
-            user_id: user.id,
-            amount: -priceHeartCoins,
-            transaction_type: 'purchase',
-            description: `Purchased ${itemTitle} from store`,
-            created_at: new Date().toISOString()
-          })
-          .select('id')
-          .single();
-
-        if (transactionError) {
-          console.error('Failed to record transaction in Supabase', transactionError);
-          // Try to rollback balance update
-          await supabase
-            .from('profiles')
-            .update({ heartcoin_balance: currentBalance })
-            .eq('id', user.id);
-          
-          return NextResponse.json(
-            { 
-              error: `Failed to record transaction: ${transactionError.message}`,
-              details: transactionError 
-            },
-            { status: 500 }
-          );
-        }
+        // 3. Record the HeartCoin transaction (negative spend)
+        const transactionData = await logHeartcoinTransaction(supabase, {
+          user_id: user.id,
+          amount: -priceHeartCoins,
+          reason: 'MERCH_PURCHASE',
+          description: `Merch purchase: ${itemTitle}`,
+          transaction_type: 'purchase',
+          metadata: { merchItemId: itemId, quantity: 1, priceHeartCoins }
+        });
 
         // 5. Create order for shipping
         const { data: orderData, error: orderError } = await supabase
@@ -148,7 +107,7 @@ export async function POST(request: NextRequest) {
           success: true,
           id: orderData.id,
           previous_balance: currentBalance,
-          new_balance: newBalance,
+          new_balance: null,
           amount_spent: priceHeartCoins,
           item_id: itemId,
           item_name: itemTitle,

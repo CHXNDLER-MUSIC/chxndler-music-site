@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
 import type { PurchaseWithHeartcoinsResult } from '@/types/merch';
+import { logHeartcoinTransaction } from '@/utils/heartcoins';
 
 export async function POST(request: NextRequest) {
   try {
@@ -204,57 +205,19 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const newBalance = currentBalance - totalPrice;
-
-        // 3) Deduct HeartCoins
-        const { error: balanceError } = await supabase
-          .from('profiles')
-          .update({ heartcoin_balance: newBalance, updated_at: new Date().toISOString() })
-          .eq('id', user.id);
-
-        if (balanceError) {
-          return NextResponse.json(
-            {
-              error: `Failed to update balance: ${balanceError.message}`,
-              errorCode: 'BALANCE_UPDATE_FAILED'
-            },
-            { status: 500 }
-          );
-        }
-
-        // 4) Record heartcoin transaction
-        const { data: tx, error: txError } = await supabase
-          .from('heartcoin_transactions')
-          .insert({
-            user_id: user.id,
-            amount: -totalPrice,
-            transaction_type: 'purchase',
-            description: `Purchased ${merchItem.name} from store`,
-            metadata: {
-              merch_item_id: merchItem.id,
-              quantity,
-              unit_price: unitPrice
-            },
-            created_at: new Date().toISOString()
-          })
-          .select('id')
-          .single();
-
-        if (txError) {
-          // Attempt to rollback balance
-          await supabase
-            .from('profiles')
-            .update({ heartcoin_balance: currentBalance })
-            .eq('id', user.id);
-
-          return NextResponse.json(
-            {
-              error: `Failed to record transaction: ${txError.message}`,
-              errorCode: 'TXN_FAILED'
-            },
-            { status: 500 }
-          );
-        }
+        // No direct balance updates. Record HeartCoin transaction only (negative amount).
+        const tx = await logHeartcoinTransaction(supabase, {
+          user_id: user.id,
+          amount: -totalPrice,
+          reason: 'MERCH_PURCHASE',
+          description: `Merch purchase: ${merchItem.name}`,
+          transaction_type: 'purchase',
+          metadata: {
+            merchItemId: merchItem.id,
+            quantity,
+            priceHeartCoins: unitPrice
+          }
+        });
 
         // 5) Create order
         const orderStatus = merchItem.category === 'physical' ? 'pending_shipping' : 'paid';
@@ -346,12 +309,6 @@ export async function POST(request: NextRequest) {
           orderError = orderLegacyError;
 
           if (orderError) {
-            // Attempt to rollback balance
-            await supabase
-              .from('profiles')
-              .update({ heartcoin_balance: currentBalance })
-              .eq('id', user.id);
-
             return NextResponse.json(
               {
                 error: `Failed to create order: ${orderError.message}`,
@@ -387,13 +344,32 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        // Best-effort: update transaction metadata with orderId if available
+        try {
+          if (order?.id) {
+            await supabase
+              .from('heartcoin_transactions')
+              .update({
+                metadata: {
+                  merchItemId: merchItem.id,
+                  quantity,
+                  priceHeartCoins: unitPrice,
+                  orderId: order.id
+                }
+              })
+              .eq('id', tx.id);
+          }
+        } catch (metaErr) {
+          console.warn('[PURCHASE] Failed to update transaction metadata with orderId', metaErr);
+        }
+
         const normalized: PurchaseWithHeartcoinsResult = {
           success: true,
           message: `Successfully purchased ${merchItem.name} for ${totalPrice} HeartCoins!`,
           order_id: order?.id ? String(order.id) : null,
           user_id: String(user.id),
           heartcoins_before: currentBalance,
-          heartcoins_after: newBalance,
+          heartcoins_after: null,
           amount_spent: totalPrice,
         };
         
