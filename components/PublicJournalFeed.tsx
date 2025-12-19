@@ -1,6 +1,14 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { usePublicSoulJournalEntries } from "@/hooks/useSoulJournalEntries";
+import { useProfile } from "@/contexts/ProfileContext";
+import { supabaseBrowser } from "@/lib/supabase-browser";
+import { getDisplayDateString } from "@/utils/dateHelpers";
+import { sfx } from "@/lib/sfx";
+import Image from 'next/image';
+import UserBadges from "./UserBadges";
+import UserCards from "./UserCards";
 
 const ELEMENT_COLORS: Record<string, { color: string; glow: string; emoji: string; label: string }> = {
   heart: { color: "#F91880", glow: "#F918B0", emoji: "💖", label: "HEART" },
@@ -10,7 +18,92 @@ const ELEMENT_COLORS: Record<string, { color: string; glow: string; emoji: strin
 };
 
 export default function PublicJournalFeed() {
-  const { entries, loading, error } = usePublicSoulJournalEntries();
+  const { entries, loading, error, refreshEntries } = usePublicSoulJournalEntries();
+  const { user } = useProfile();
+  const [showProfileInfo, setShowProfileInfo] = useState<{[key: string]: boolean}>({});
+  const [starredByMe, setStarredByMe] = useState<Set<string>>(new Set());
+  const [starringEntryId, setStarringEntryId] = useState<string | null>(null);
+  const [showIntegratedBinder, setShowIntegratedBinder] = useState<{[key: string]: boolean}>({});
+  const [showBadgesModal, setShowBadgesModal] = useState<{[key: string]: boolean}>({});
+
+  // Load starred entries when component mounts or user changes
+  useEffect(() => {
+    const loadStarredEntries = async () => {
+      if (user?.id) {
+        try {
+          const { data: starredData, error: starredError } = await supabaseBrowser
+            .from('journal_entry_stars')
+            .select('entry_id')
+            .eq('user_id', user.id);
+
+          if (!starredError && starredData) {
+            const starredIds = new Set(starredData.map(row => row.entry_id));
+            setStarredByMe(starredIds);
+          }
+        } catch (error) {
+          console.error('Error loading starred entries:', error);
+        }
+      }
+    };
+
+    loadStarredEntries();
+  }, [user?.id]);
+
+  const handleToggleStar = async (entryId: string) => {
+    try {
+      // Require authentication to star entries
+      if (!user?.id) {
+        // Could show login prompt here
+        return;
+      }
+
+      // Prevent double-clicks while request is in flight
+      if (starringEntryId) return;
+
+      setStarringEntryId(entryId);
+
+      const isCurrentlyStarred = starredByMe.has(entryId);
+
+      // Optimistic update: toggle star state
+      if (isCurrentlyStarred) {
+        setStarredByMe(prev => {
+          const next = new Set(prev);
+          next.delete(entryId);
+          return next;
+        });
+      } else {
+        setStarredByMe(prev => new Set(prev).add(entryId));
+      }
+
+      // Call the RPC to toggle the star (server is source of truth)
+      const { error } = await supabaseBrowser
+        .rpc('toggle_journal_entry_star', { p_entry_id: entryId });
+
+      if (error) {
+        console.error('Error toggling star:', error);
+        // Revert optimistic update on failure
+        if (isCurrentlyStarred) {
+          setStarredByMe(prev => new Set(prev).add(entryId));
+        } else {
+          setStarredByMe(prev => {
+            const next = new Set(prev);
+            next.delete(entryId);
+            return next;
+          });
+        }
+        setStarringEntryId(null);
+        return;
+      }
+
+      // Refresh entries to get updated star counts
+      refreshEntries();
+
+      setStarringEntryId(null);
+    } catch (error) {
+      console.error('Failed to toggle star:', error);
+      setStarringEntryId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -29,115 +122,367 @@ export default function PublicJournalFeed() {
   }
 
   return (
-    <div className="p-4 space-y-3">
-      <div className="text-center mb-2">
-        <div
-          className="text-lg font-bold tracking-wider mb-2"
-          style={{
-            color: "#F2EF1D",
-            textShadow: "0 0 15px #FFFF00, 0 0 30px #FFFF00",
-            filter: "drop-shadow(0 0 8px #FFFF00)",
-          }}
-        >
-          PUBLIC SOUL FEED
-        </div>
-        <div
-          className="mx-auto"
-          style={{
-            width: "260px",
-            height: "2px",
-            background: "#F2EF1D",
-            boxShadow: "0 0 8px #F2EF1D, 0 0 15px #FFFF00",
-          }}
-        />
-      </div>
-
+    <div className="space-y-4">
       {entries.length === 0 ? (
-        <div
-          className="text-center mb-4 p-3 rounded-lg"
-          style={{
-            background: "rgba(255, 255, 255, 0.05)",
-            border: "1px solid rgba(255,255,255,0.15)",
-            color: "rgba(255, 255, 255, 0.7)",
-          }}
-        >
-          No public reflections yet.
+        <div className="text-center p-8 text-white/60">
+          <div className="text-lg mb-2">🌍 No Public Journal Entries</div>
+          <div className="text-sm opacity-80">Public journal entries will appear here</div>
         </div>
       ) : (
         entries.map((entry) => {
-          const theme = ELEMENT_COLORS[entry.element] || ELEMENT_COLORS.heart;
-          const created = new Date(entry.entry_date);
-          const dateStr = created.toLocaleDateString();
+          const entryTheme = ELEMENT_COLORS[entry.element] || ELEMENT_COLORS.heart;
+
           return (
             <div
               key={entry.entry_id}
-              className="rounded-lg p-3"
+              className="rounded-lg p-2 space-y-2 transition-all duration-200 hover:opacity-90"
               style={{
-                background: `${theme.color}08`,
-                border: `1px solid ${theme.color}30`,
-                borderLeft: `4px solid ${theme.color}`,
+                background: 'rgba(0, 0, 0, 0.4)',
+                border: `1px solid ${entryTheme.color}40`,
+                boxShadow: `0 0 15px ${entryTheme.color}20`
               }}
             >
-              <div className="flex items-center gap-3 mb-3">
-                {/* User Profile Image */}
-                <div 
-                  className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0"
-                  style={{
-                    background: entry.profiles?.avatar_url ? 'none' : `linear-gradient(135deg, ${theme.color}40, ${theme.color}60)`,
-                    border: `2px solid ${theme.color}40`,
-                    boxShadow: `0 0 8px ${theme.color}20`
+              {/* Header with Profile (left), Date (center), Element + Soul Star (right) */}
+              <div className="flex items-center justify-between mb-2 relative">
+                {/* Profile Info - Left */}
+                <div
+                  className="flex items-center gap-2 cursor-pointer transition-all duration-200 hover:opacity-80 hover:scale-105"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    try { sfx.play('click', 0.6); } catch {}
+                    setShowProfileInfo(prev => ({
+                      ...prev,
+                      [entry.entry_id]: !prev[entry.entry_id]
+                    }));
+                  }}
+                  onMouseEnter={() => {
+                    try { sfx.play('hover', 0.6); } catch {}
                   }}
                 >
-                  {entry.profiles?.avatar_url ? (
-                    <img 
-                      src={entry.profiles.avatar_url} 
-                      alt={`${entry.profiles.name || 'User'} profile`}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-lg" style={{ color: theme.color }}>
-                      {theme.emoji}
-                    </span>
-                  )}
-                </div>
-                
-                <div className="flex-1">
-                  {/* Username */}
-                  <div className="text-sm font-semibold mb-1" style={{ color: theme.color }}>
-                    {entry.profiles?.name ? entry.profiles.name : "Anonymous"}
+                  <img
+                    src={entry.profiles?.avatar_url || "/elements/alien.webp"}
+                    alt="User"
+                    className="w-8 h-8 rounded-full object-cover"
+                    style={{
+                      border: `1px solid ${entryTheme.color}60`,
+                      boxShadow: `0 0 4px ${entryTheme.color}30`
+                    }}
+                  />
+                  <div className="text-sm font-medium text-white">
+                    {entry.profiles?.name || 'Anonymous'}
                   </div>
-                  
-                  {/* Date and Element */}
-                  <div className="flex items-center gap-2">
-                    <div className="text-xs opacity-80" style={{ color: "#FFFFFF" }}>
-                      {dateStr}
-                    </div>
-                    <span
-                      className="text-xs px-2 py-0.5 rounded-full uppercase font-semibold flex items-center gap-1"
+                </div>
+
+                {/* Date + Element + Soul Star - Right */}
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <div className="text-sm font-semibold text-white/90">
+                    {getDisplayDateString(entry.entry_date)}
+                  </div>
+                  <div
+                    className="px-1.5 py-0.5 text-xs font-semibold uppercase flex items-center"
+                    style={{
+                      color: entryTheme.color,
+                      textShadow: `0 0 4px ${entryTheme.glow}`
+                    }}
+                  >
+                    {entry.element?.toUpperCase()}
+                  </div>
+                  {/* Soul Star Button */}
+                  <button
+                    type="button"
+                    className={`flex items-center gap-1 transition-all duration-200 hover:scale-110 px-1 py-1 ${
+                      starringEntryId === entry.entry_id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                    }`}
+                    disabled={starringEntryId === entry.entry_id || !user?.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      try { sfx.play('card-ding', 0.45); } catch {}
+                      handleToggleStar(entry.entry_id);
+                    }}
+                    onMouseEnter={() => {
+                      try { sfx.play('hover', 0.6); } catch {}
+                    }}
+                    style={{
+                      background: 'transparent'
+                    }}
+                  >
+                    <Image
+                      src="/elements/soul-star.webp"
+                      alt="Soul Star"
+                      width={28}
+                      height={28}
                       style={{
-                        background: `${theme.color}15`,
-                        color: theme.color,
-                        border: `1px solid ${theme.color}40`,
+                        filter: starredByMe.has(entry.entry_id)
+                          ? `drop-shadow(0 0 10px ${entryTheme.color}) drop-shadow(0 0 20px ${entryTheme.glow}) brightness(1.3)`
+                          : `drop-shadow(0 0 6px ${entryTheme.color}) drop-shadow(0 0 10px ${entryTheme.glow}) brightness(1.0)`
+                      }}
+                    />
+                    <span
+                      className="text-sm font-semibold"
+                      style={{
+                        color: entryTheme.color,
+                        textShadow: starredByMe.has(entry.entry_id)
+                          ? `0 0 8px ${entryTheme.glow}, 0 0 12px ${entryTheme.glow}`
+                          : `0 0 4px ${entryTheme.glow}`
                       }}
                     >
-                      {theme.emoji} {theme.label}
+                      {(entry as any).stars_count ?? 0}
                     </span>
-                  </div>
+                  </button>
                 </div>
               </div>
-              
-              {/* Soul Star Content */}
+
+              {/* Soul Star Preview - Always visible in public view */}
               <div
-                className="text-sm leading-relaxed"
+                className="rounded-lg px-3 py-2 mb-2"
                 style={{
-                  color: "#FFFFFF",
-                  background: "rgba(0,0,0,0.25)",
-                  padding: "12px",
-                  borderRadius: "8px",
-                  border: `1px solid ${theme.color}15`,
+                  background: 'rgba(0, 0, 0, 0.3)',
+                  border: `1px solid ${entryTheme.color}60`,
+                  boxShadow: `0 0 12px ${entryTheme.color}20`
                 }}
               >
-                {entry.entry_text}
+                {showProfileInfo[entry.entry_id] ? (
+                  <>
+                    {/* Profile Info Layout */}
+                    <div className="flex flex-col mb-3">
+                      {/* Top Row: Profile/Name/Journey/Element on left, Stats on right */}
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-start">
+                          <img
+                            src={entry.profiles?.avatar_url || "/elements/alien.webp"}
+                            alt="User"
+                            className="w-16 h-16 rounded-full object-cover mr-3"
+                            style={{
+                              border: `3px solid ${entryTheme.color}60`,
+                              boxShadow: `0 0 12px ${entryTheme.color}30`
+                            }}
+                          />
+                          <div className="flex flex-col">
+                            <div className="text-2xl font-bold text-white">
+                              {entry.profiles?.name || 'Anonymous'}
+                            </div>
+
+                            {/* Journey text directly below name */}
+                            {(entry.profiles as any)?.journey && (
+                              <div
+                                className="text-left text-base font-semibold mt-1"
+                                style={{
+                                  color: (() => {
+                                    const j = ((entry.profiles as any)?.journey || 'wanderer').toString().toLowerCase();
+                                    return j === 'lover' ? '#FF6B9D' : j === 'dreamer' ? '#FFD700' : '#00FFFF';
+                                  })(),
+                                  textShadow: (() => {
+                                    const j = ((entry.profiles as any)?.journey || 'wanderer').toString().toLowerCase();
+                                    const c = j === 'lover' ? '#FF6B9D' : j === 'dreamer' ? '#FFD700' : '#00FFFF';
+                                    return `0 0 4px ${c}`;
+                                  })()
+                                }}
+                              >
+                                {(() => {
+                                  const j = ((entry.profiles as any)?.journey || 'wanderer').toString().toLowerCase();
+                                  if (j === 'lover') return 'LOVER';
+                                  if (j === 'dreamer') return 'DREAMER';
+                                  return 'WANDERER';
+                                })()}
+                              </div>
+                            )}
+
+                            {/* Element label below journey */}
+                            <div
+                              className="text-sm font-medium uppercase tracking-wider flex items-center gap-1 mt-2"
+                              style={{
+                                color: entryTheme.color,
+                                background: 'transparent',
+                                border: 'none'
+                              }}
+                            >
+                              {entry.element ? entry.element.toUpperCase() : 'UNKNOWN ELEMENT'}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Stats positioned at top right */}
+                        <div className="flex flex-col items-end gap-2">
+                          {(entry.profiles as any)?.heartcoin_total !== undefined && (
+                            <div className="flex items-center gap-2 bg-black/30 rounded-full px-4 py-2">
+                              <span className="text-base text-white/60">Total:</span>
+                              <img
+                                src="/elements/heart-coin.webp"
+                                alt="Heart Coin"
+                                className="w-7 h-7"
+                              />
+                              <span
+                                className="font-bold text-xl"
+                                style={{
+                                  color: '#FF69B4',
+                                  textShadow: '0 0 6px #FF69B4'
+                                }}
+                              >
+                                {(entry.profiles as any)?.heartcoin_total || 0}
+                              </span>
+                            </div>
+                          )}
+                          {(entry.profiles as any)?.daily_streak_current !== undefined && (
+                            <div className="flex items-center gap-2 bg-black/30 rounded-full px-4 py-2">
+                              <span
+                                className="font-bold text-sm"
+                                style={{
+                                  color: '#FF69B4',
+                                  textShadow: '0 0 6px #FF69B4'
+                                }}
+                              >
+                                Streak: {(entry.profiles as any)?.daily_streak_current || 0} Days
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Binder, Badges, and Send HeartCoin Buttons - Larger and Centered */}
+                      <div className="flex justify-center gap-6">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            try { sfx.play('click', 0.4); } catch {}
+                            setShowBadgesModal(prev => ({ ...prev, [entry.entry_id]: false }));
+                            setShowIntegratedBinder(prev => ({ ...prev, [entry.entry_id]: !prev[entry.entry_id] }));
+                          }}
+                          onMouseEnter={() => {
+                            try { sfx.play('hover', 0.6); } catch {}
+                          }}
+                          className="w-20 h-20 rounded-full text-xs font-semibold transition-all duration-200 hover:scale-105 flex items-center justify-center"
+                          style={{
+                            background: 'transparent',
+                            color: '#00BFFF',
+                            textShadow: '0 0 4px #00BFFF'
+                          }}
+                        >
+                          <img
+                            src="/elements/binder.webp"
+                            alt="Binder"
+                            className="w-12 h-12"
+                          />
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            try { sfx.play('click', 0.4); } catch {}
+                            setShowIntegratedBinder(prev => ({ ...prev, [entry.entry_id]: false }));
+                            setShowBadgesModal(prev => ({ ...prev, [entry.entry_id]: !prev[entry.entry_id] }));
+                          }}
+                          onMouseEnter={() => {
+                            try { sfx.play('hover', 0.6); } catch {}
+                          }}
+                          className="w-20 h-20 rounded-full text-xs font-semibold transition-all duration-200 hover:scale-105 flex items-center justify-center"
+                          style={{
+                            background: 'transparent',
+                            color: '#FF69B4',
+                            textShadow: '0 0 4px #FF69B4'
+                          }}
+                        >
+                          <img
+                            src="/elements/badges.webp"
+                            alt="Badges"
+                            className="w-12 h-12"
+                          />
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            try { sfx.play('click', 0.4); } catch {}
+                            // TODO: Add send heart coin functionality
+                            console.log('Send heart coin to:', entry.user_id);
+                          }}
+                          onMouseEnter={() => {
+                            try { sfx.play('hover', 0.6); } catch {}
+                          }}
+                          className="w-20 h-20 rounded-full text-xs font-semibold transition-all duration-200 hover:scale-105 flex items-center justify-center"
+                          style={{
+                            background: 'transparent',
+                            color: '#FF69B4',
+                            textShadow: '0 0 4px #FF69B4'
+                          }}
+                        >
+                          <img
+                            src="/elements/heart-coin.webp"
+                            alt="Send Heart Coin"
+                            className="w-12 h-12"
+                          />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Integrated Binder Display - Show when BINDER is clicked */}
+                    {showIntegratedBinder[entry.entry_id] && (
+                      <div
+                        className="rounded-lg px-3 py-2 mb-2"
+                        style={{
+                          background: 'rgba(255, 105, 180, 0.1)',
+                          border: `1px solid #FF69B430`,
+                          boxShadow: `0 0 8px #FF69B420`
+                        }}
+                      >
+                        <UserCards
+                          userId={entry.user_id}
+                          embedded={true}
+                          showTitle={true}
+                          maxCards={4}
+                        />
+                      </div>
+                    )}
+
+                    {/* Integrated Badges Display - Show when BADGES is clicked */}
+                    {showBadgesModal[entry.entry_id] && (
+                      <div
+                        className="rounded-lg px-3 py-2 mb-2"
+                        style={{
+                          background: 'rgba(255, 105, 180, 0.1)',
+                          border: `1px solid #FF69B430`,
+                          boxShadow: `0 0 8px #FF69B420`
+                        }}
+                      >
+                        <div className="text-center mb-3">
+                          <h3 className="text-lg font-bold text-white">
+                            BADGE COLLECTION
+                          </h3>
+                        </div>
+                        <UserBadges
+                          userId={entry.user_id}
+                          embedded={true}
+                          maxBadges={4}
+                        />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 mb-2">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        style={{
+                          filter: `drop-shadow(0 0 4px ${entryTheme.color})`
+                        }}
+                      >
+                        <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z" fill={entryTheme.color} stroke={entryTheme.color} strokeWidth="0.5"/>
+                        <circle cx="12" cy="12" r="8" fill="none" stroke={entryTheme.color} strokeWidth="1" opacity="0.6"/>
+                      </svg>
+                      <div
+                        className="text-sm font-semibold uppercase tracking-wider"
+                        style={{ color: entryTheme.color, textShadow: `0 0 4px ${entryTheme.glow}` }}
+                      >
+                        Soul Star
+                      </div>
+                    </div>
+                    <div className="text-sm leading-relaxed text-white">
+                      {entry.entry_text || "No entry text"}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           );

@@ -7,6 +7,9 @@ export type Profile = {
   id: string;
   name: string | null;
   avatar_url: string | null;
+  journey?: string | null;
+  heartcoin_total?: number | null;
+  daily_streak_current?: number | null;
 };
 
 export type SoulJournalEntry = {
@@ -18,6 +21,7 @@ export type SoulJournalEntry = {
   entry_date: string;
   element: string;
   entry_text: string | null;
+  stars_count?: number;
   profiles?: Profile | null;
 };
 
@@ -55,10 +59,14 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
           entry_date,
           created_at,
           is_public,
+          stars_count,
           profiles (
             id,
             name,
-            profile_image_url
+            profile_image_url,
+            journey,
+            heartcoin_total,
+            daily_streak_current
           )
         `)
         .not('entry_text', 'is', null)
@@ -97,10 +105,14 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
         entry_date: entry.entry_date,
         element: entry.element,
         entry_text: entry.entry_text,
+        stars_count: entry.stars_count ?? 0,
         profiles: entry.profiles ? {
           id: entry.profiles.id,
           name: entry.profiles.name,
-          avatar_url: entry.profiles.profile_image_url
+          avatar_url: entry.profiles.profile_image_url,
+          journey: entry.profiles.journey,
+          heartcoin_total: entry.profiles.heartcoin_total,
+          daily_streak_current: entry.profiles.daily_streak_current
         } : null
       }));
 

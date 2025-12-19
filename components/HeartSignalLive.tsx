@@ -3,24 +3,22 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabaseClient } from '@/lib/supabaseClient';
+import { createAnonClient } from '@/lib/supabase-anon';
 import ProfileModal from '@/components/chat/ProfileModal';
 import { useProfile } from '@/contexts/ProfileContext';
-import type { RealtimeChannel } from '@supabase/supabase-js';
+import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
 
 // Generate or retrieve anonymous ALIEN name
 const getAnonymousName = (): string => {
   if (typeof window === 'undefined') return 'ALIEN00000000';
 
-  // Check if we already have a stored name in session storage
   const stored = sessionStorage.getItem('heartSignalAlienName');
   if (stored) return stored;
 
-  // Generate new ALIEN name with 8 digits
   const alienNumber = Math.floor(Math.random() * 99999999) + 1;
   const paddedNumber = String(alienNumber).padStart(8, '0');
   const alienName = `ALIEN${paddedNumber}`;
 
-  // Store for this session
   sessionStorage.setItem('heartSignalAlienName', alienName);
   return alienName;
 };
@@ -44,7 +42,6 @@ interface HeartSignalMessage {
   message: string;
   created_at: string;
   is_system?: boolean;
-  // Reaction counts
   heart_count: number;
   water_count: number;
   lightning_count: number;
@@ -52,7 +49,6 @@ interface HeartSignalMessage {
   alien_count: number;
 }
 
-// User's reactions for messages (message_id -> set of emoji types)
 type UserReactionsMap = Map<string, Set<EmojiType>>;
 
 export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: boolean; onClose?: () => void }) {
@@ -64,33 +60,14 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
   const [heartSignalSent, setHeartSignalSent] = useState(false);
   const [heartSignalLoading, setHeartSignalLoading] = useState(false);
   const [userReactions, setUserReactions] = useState<UserReactionsMap>(new Map());
-  const [togglingReactions, setTogglingReactions] = useState<Set<string>>(new Set()); // Track in-flight toggles
+  const [togglingReactions, setTogglingReactions] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
-  const [userElementMap, setUserElementMap] = useState<Record<string, string>>({});
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{ id: string; name: string; element?: string | null } | null>(null);
-
-  const elementToColor = (element?: string | null) => {
-    const el = (element || '').toString().toLowerCase();
-    switch (el) {
-      case 'water':
-        return '#38B6FF';
-      case 'heart':
-        return '#F91880';
-      case 'lightning':
-        return '#F2EF1D';
-      case 'darkness':
-        return '#8B5CF6';
-      default:
-        return profile?.element ? elementToColor(profile.element) : '#FFFFFF';
-    }
-  };
-
-  const getUserTextColor = (userId?: string) => {
-    if (!userId) return '#FFD700';
-    return userElementMap[userId] || '#FFD700';
-  };
+  const [activeClient, setActiveClient] = useState<SupabaseClient | null>(null);
+  const [aliensOnline, setAliensOnline] = useState<string[]>([]);
+  const [aliensLoading, setAliensLoading] = useState(false);
 
   const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
 
@@ -103,31 +80,16 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
     setShowProfileModal(true);
   };
 
-  const fetchElementsForUsers = async (userIds: string[]) => {
-    const ids = Array.from(new Set(userIds.filter(id => id && id !== '00000000-0000-0000-0000-000000000000')));
-    if (ids.length === 0) return;
-    try {
-      const { data, error } = await supabaseClient
-        .rpc('get_public_chat_profiles_by_ids', { p_ids: ids });
-      if (error) return;
-      const next: Record<string, string> = {};
-      (data || []).forEach((row: any) => {
-        next[row.id] = elementToColor(row.element);
-      });
-      setUserElementMap(prev => ({ ...prev, ...next }));
-    } catch {}
-  };
-
-  // Seed current user's element color to avoid flicker for own messages
-  useEffect(() => {
-    if (user?.id && profile?.element) {
-      setUserElementMap(prev => ({ ...prev, [user.id]: elementToColor(profile.element) }));
-    }
-  }, [user?.id, profile?.element]);
-
   // Auto scroll to bottom when new messages arrive
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Get display name for sender with fallback
+  const getDisplayName = (msg: HeartSignalMessage): string => {
+    if (msg.username) return msg.username;
+    if (msg.user_id) return 'ALIEN';
+    return 'ALIEN';
   };
 
   // Load user's reactions for a set of message IDs
@@ -146,7 +108,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
         return;
       }
 
-      // Build reactions map
       const reactionsMap = new Map<string, Set<EmojiType>>();
       (data || []).forEach((reaction: { message_id: string; emoji: string }) => {
         const msgReactions = reactionsMap.get(reaction.message_id) || new Set<EmojiType>();
@@ -167,7 +128,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
       return;
     }
 
-    // Prevent double-clicking
     const toggleKey = `${messageId}-${emoji}`;
     if (togglingReactions.has(toggleKey)) return;
 
@@ -190,11 +150,9 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
       }
     } catch {}
 
-    // Optimistic update
     const wasReacted = userReactions.get(messageId)?.has(emoji) || false;
     const countField = `${emoji}_count` as keyof HeartSignalMessage;
 
-    // Update user reactions optimistically
     setUserReactions(prev => {
       const newMap = new Map(prev);
       const msgReactions = new Set(newMap.get(messageId) || []);
@@ -207,7 +165,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
       return newMap;
     });
 
-    // Update message count optimistically
     setMessages(prev =>
       prev.map(msg => {
         if (msg.id !== messageId) return msg;
@@ -227,7 +184,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
 
       if (error) {
         console.error('Error toggling reaction:', error);
-        // Revert optimistic update on error
         setUserReactions(prev => {
           const newMap = new Map(prev);
           const msgReactions = new Set(newMap.get(messageId) || []);
@@ -264,23 +220,22 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
     }
   }, [user?.id, userReactions, togglingReactions]);
 
-  // Load the latest 50 messages on component mount
-  const loadMessages = async () => {
+  // Load messages - works for anon and authed
+  const loadMessages = async (client: SupabaseClient) => {
     try {
-      // Fetch latest 50 messages ordered by created_at desc, then reverse for display
-      const { data, error } = await supabaseClient
+      console.log('📨 Loading Heart Signal messages...');
+      const { data, error } = await client
         .from('heart_signal_messages')
-        .select('id, user_id, username, message, created_at, is_system, heart_count, water_count, lightning_count, darkness_count, alien_count')
-        .order('created_at', { ascending: false })
-        .limit(50);
+        .select('*')
+        .order('created_at', { ascending: true })
+        .limit(200);
 
       if (error) {
         console.error('Error loading messages:', error);
         return;
       }
 
-      // Reverse to show oldest first (for chat display)
-      const messagesData = (data || []).reverse().map(msg => ({
+      const messagesData = (data || []).map(msg => ({
         ...msg,
         heart_count: msg.heart_count || 0,
         water_count: msg.water_count || 0,
@@ -289,17 +244,16 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
         alien_count: msg.alien_count || 0,
       }));
 
-      // Load element colors for authors first to avoid color flicker
-      const authorIds = messagesData.map(m => m.user_id).filter(Boolean) as string[];
-      await fetchElementsForUsers(authorIds);
-
+      console.log(`✅ Loaded ${messagesData.length} messages`);
       setMessages(messagesData);
 
       // Load user's reactions for these messages
-      if (messagesData.length > 0) {
+      if (messagesData.length > 0 && user?.id) {
         const messageIds = messagesData.map(m => m.id);
         await loadUserReactions(messageIds);
       }
+
+      setTimeout(scrollToBottom, 100);
     } catch (error) {
       console.error('Error in loadMessages:', error);
     } finally {
@@ -307,58 +261,40 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
     }
   };
 
-  // Subscribe to real-time changes on heart_signal_messages table
-  const subscribeToMessages = () => {
-    // Clean up existing subscription
+  // Subscribe to real-time messages - works for anon and authed
+  const subscribeToMessages = (client: SupabaseClient) => {
     if (channelRef.current) {
-      supabaseClient.removeChannel(channelRef.current);
+      client.removeChannel(channelRef.current);
     }
 
-    // Create new global subscription
-    channelRef.current = supabaseClient
-      .channel('heart-signal-chat')
+    console.log('🔌 Subscribing to Heart Signal realtime...');
+
+    channelRef.current = client
+      .channel('heart_signal_messages_public')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'heart_signal_messages' },
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'heart_signal_messages',
+        },
         (payload) => {
-          console.log('Real-time message received:', payload);
-
-        if (payload.eventType === 'INSERT') {
+          console.log('NEW MESSAGE', payload.new);
           const newMsg = payload.new as any;
           const newMessage: HeartSignalMessage = {
             ...newMsg,
-              heart_count: newMsg.heart_count || 0,
-              water_count: newMsg.water_count || 0,
-              lightning_count: newMsg.lightning_count || 0,
-              darkness_count: newMsg.darkness_count || 0,
-              alien_count: newMsg.alien_count || 0,
-            };
+            heart_count: newMsg.heart_count || 0,
+            water_count: newMsg.water_count || 0,
+            lightning_count: newMsg.lightning_count || 0,
+            darkness_count: newMsg.darkness_count || 0,
+            alien_count: newMsg.alien_count || 0,
+          };
           setMessages((prev) => [...prev, newMessage]);
-          // fetch element color for new author if unknown
-          if (newMsg?.user_id && !userElementMap[newMsg.user_id]) {
-            fetchElementsForUsers([newMsg.user_id]);
-          }
-            setTimeout(scrollToBottom, 100); // Delay to ensure DOM update
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedMsg = payload.new as any;
-            const updatedMessage: HeartSignalMessage = {
-              ...updatedMsg,
-              heart_count: updatedMsg.heart_count || 0,
-              water_count: updatedMsg.water_count || 0,
-              lightning_count: updatedMsg.lightning_count || 0,
-              darkness_count: updatedMsg.darkness_count || 0,
-              alien_count: updatedMsg.alien_count || 0,
-            };
-            setMessages((prev) =>
-              prev.map((msg) => msg.id === updatedMessage.id ? updatedMessage : msg)
-            );
-          } else if (payload.eventType === 'DELETE') {
-            const deletedMessage = payload.old as HeartSignalMessage;
-            setMessages((prev) => prev.filter((msg) => msg.id !== deletedMessage.id));
-          }
+          setTimeout(scrollToBottom, 100);
         }
       )
       .subscribe((status) => {
+        console.log('🔔 Subscription status:', status);
         if (status === 'SUBSCRIBED') {
           console.log('✅ Heart Signal Live subscription active');
         } else if (status === 'CHANNEL_ERROR') {
@@ -367,7 +303,45 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
       });
   };
 
-  // Send a new message via API to bypass RLS
+  // Load aliens online from recent message senders (last 10 minutes)
+  const loadAliensOnline = async (client: SupabaseClient) => {
+    setAliensLoading(true);
+    try {
+      const tenMinutesAgo = new Date();
+      tenMinutesAgo.setMinutes(tenMinutesAgo.getMinutes() - 10);
+
+      const { data, error } = await client
+        .from('heart_signal_messages')
+        .select('username, user_id')
+        .gte('created_at', tenMinutesAgo.toISOString())
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading aliens online:', error);
+        setAliensOnline(['ALIEN']); // Fallback
+        return;
+      }
+
+      // Get unique senders
+      const uniqueSenders = new Map<string, string>();
+      (data || []).forEach((msg: any) => {
+        const displayName = msg.username || 'ALIEN';
+        if (!uniqueSenders.has(msg.user_id)) {
+          uniqueSenders.set(msg.user_id, displayName);
+        }
+      });
+
+      const aliens = Array.from(uniqueSenders.values()).slice(0, 20);
+      setAliensOnline(aliens.length > 0 ? aliens : ['ALIEN']);
+    } catch (error) {
+      console.error('Error in loadAliensOnline:', error);
+      setAliensOnline(['ALIEN']); // Fallback
+    } finally {
+      setAliensLoading(false);
+    }
+  };
+
+  // Send message via API
   const sendMessage = async () => {
     if (!newMessage.trim() || isSending) return;
 
@@ -435,10 +409,10 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
     }
   };
 
-  // Send a heart signal 
+  // Send a heart signal
   const sendHeartSignal = async () => {
     if (heartSignalLoading) return;
-    
+
     setHeartSignalLoading(true);
     try {
       const response = await fetch('/api/heart-signal', {
@@ -453,7 +427,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
 
       if (response.ok) {
         setHeartSignalSent(true);
-        // Also send a system message to the chat
         await sendSystemMessage(`💖 Heart signal sent to the Heartverse!`);
       } else {
         console.error('Failed to send heart signal');
@@ -467,36 +440,70 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
 
   // Initialize component
   useEffect(() => {
-    loadMessages();
-    subscribeToMessages();
+    let client: SupabaseClient;
+    let mounted = true;
 
-    // Send connection message when user joins
-    if (user && profile?.name) {
-      // Authenticated user - send system message to database
-      sendSystemMessage(`${profile.name} connected to the signal`);
-    } else {
-      // Anonymous user - add local connection message
-      const anonymousName = getAnonymousName();
-      const localConnectionMessage: HeartSignalMessage = {
-        id: `local-connection-${Date.now()}`,
-        user_id: '00000000-0000-0000-0000-000000000000',
-        username: 'SYSTEM',
-        message: `${anonymousName} connected to the signal`,
-        created_at: new Date().toISOString(),
-        is_system: true,
-        heart_count: 0,
-        water_count: 0,
-        lightning_count: 0,
-        darkness_count: 0,
-        alien_count: 0,
-      };
-      setMessages((prev) => [...prev, localConnectionMessage]);
-    }
+    const init = async () => {
+      // Determine which client to use based on auth state
+      const { data: { session } } = await supabaseClient.auth.getSession();
 
-    // Cleanup on unmount
+      if (session?.user) {
+        console.log('🔐 Using authenticated client');
+        client = supabaseClient;
+      } else {
+        console.log('👽 Using anonymous client');
+        client = createAnonClient();
+      }
+
+      if (!mounted) return;
+
+      setActiveClient(client);
+
+      // Load messages
+      await loadMessages(client);
+
+      // Subscribe to realtime
+      subscribeToMessages(client);
+
+      // Load aliens online with 1s timeout
+      const aliensTimeout = setTimeout(() => {
+        if (aliensLoading) {
+          console.warn('⚠️ Aliens online loading timeout');
+          setAliensLoading(false);
+          setAliensOnline(['ALIEN']);
+        }
+      }, 1000);
+
+      loadAliensOnline(client).finally(() => clearTimeout(aliensTimeout));
+
+      // Send connection message
+      if (user && profile?.name) {
+        sendSystemMessage(`${profile.name} connected to the signal`);
+      } else {
+        const anonymousName = getAnonymousName();
+        const localConnectionMessage: HeartSignalMessage = {
+          id: `local-connection-${Date.now()}`,
+          user_id: SYSTEM_USER_ID,
+          username: 'SYSTEM',
+          message: `${anonymousName} connected to the signal`,
+          created_at: new Date().toISOString(),
+          is_system: true,
+          heart_count: 0,
+          water_count: 0,
+          lightning_count: 0,
+          darkness_count: 0,
+          alien_count: 0,
+        };
+        setMessages((prev) => [...prev, localConnectionMessage]);
+      }
+    };
+
+    init();
+
     return () => {
-      if (channelRef.current) {
-        supabaseClient.removeChannel(channelRef.current);
+      mounted = false;
+      if (channelRef.current && client) {
+        client.removeChannel(channelRef.current);
       }
     };
   }, [user?.id]);
@@ -527,7 +534,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
       <div className="p-4 border-b border-purple-500/30">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center flex-1">
-            <h2 
+            <h2
               className="text-xl font-bold whitespace-nowrap"
               style={{
                 color: '#FC54AF !important',
@@ -538,9 +545,8 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
             >
               HEART SIGNAL
             </h2>
-            
-            {/* Extended glow line */}
-            <div 
+
+            <div
               className="flex-1 h-px ml-4"
               style={{
                 background: 'linear-gradient(90deg, rgba(252, 84, 175, 0.6), rgba(252, 84, 175, 0.2), transparent)',
@@ -548,7 +554,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
               }}
             />
           </div>
-          
+
           {onClose && (
             <button
               onClick={onClose}
@@ -557,6 +563,20 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
               ✕
             </button>
           )}
+        </div>
+
+        {/* Aliens Online */}
+        <div className="mt-2 p-2 bg-green-500/10 border border-green-500/30 rounded">
+          <div className="text-xs font-bold text-green-400 mb-1">ALIENS ONLINE</div>
+          <div className="text-xs text-green-300/80 max-h-16 overflow-y-auto">
+            {aliensLoading ? (
+              <div>Loading...</div>
+            ) : aliensOnline.length > 0 ? (
+              aliensOnline.join(', ')
+            ) : (
+              'ALIEN'
+            )}
+          </div>
         </div>
       </div>
 
@@ -572,131 +592,116 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
           </div>
         ) : (
           <AnimatePresence>
-            {messages.map((msg) => (
-              <motion.div
-                key={msg.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`rounded-lg p-3 ${
-                  msg.is_system || msg.user_id === '00000000-0000-0000-0000-000000000000'
-                    ? 'bg-purple-900/30 border-l-4 border-purple-500'
-                    : msg.user_id === user?.id
-                    ? 'bg-blue-900/30 ml-4'
-                    : 'bg-gray-800/30'
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <button
-                    type="button"
-                    onClick={() => openProfileForMessage(msg)}
-                    className="text-left"
-                    style={{
-                      color: msg.is_system ? '#C084FC' : getUserTextColor(msg.user_id),
-                      fontSize: '0.875rem',
-                      fontWeight: 600
-                    }}
-                    onMouseEnter={() => {
-                      try {
-                        const audio = new Audio('/audio/hover.mp3');
-                        audio.volume = 0.3;
-                        audio.play().catch(() => {});
-                      } catch {}
-                    }}
-                    title="View profile"
-                    disabled={!msg?.user_id || msg.user_id === SYSTEM_USER_ID}
-                  >
-                    {msg.username}
-                  </button>
-                  <span className="text-xs text-gray-500">
-                    {new Date(msg.created_at).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </span>
-                </div>
-                {msg.is_system && (msg.message || '').includes('connected to the signal') ? (
-                  <button
-                    type="button"
-                    onClick={() => openProfileForMessage(msg)}
-                    className="text-sm break-words"
-                    style={{ color: '#C084FC', textAlign: 'left' }}
-                    onMouseEnter={() => {
-                      try {
-                        const audio = new Audio('/audio/hover.mp3');
-                        audio.volume = 0.3;
-                        audio.play().catch(() => {});
-                      } catch {}
-                    }}
-                    title="View profile"
-                    disabled={!msg?.user_id || msg.user_id === SYSTEM_USER_ID}
-                  >
-                    {msg.message}
-                  </button>
-                ) : (
-                  <div 
-                    className="text-sm break-words"
-                    style={{ color: msg.is_system ? '#C084FC' : getUserTextColor(msg.user_id) }}
-                    onMouseEnter={() => {
-                      try {
-                        const audio = new Audio('/audio/hover.mp3');
-                        audio.volume = 0.3;
-                        audio.play().catch(() => {});
-                      } catch {}
-                    }}
-                  >
-                    {msg.message}
-                  </div>
-                )}
+            {messages.map((msg) => {
+              const displayName = getDisplayName(msg);
+              const isSystemMsg = msg.is_system || msg.user_id === SYSTEM_USER_ID;
+              const isOwnMessage = user?.id && msg.user_id === user.id;
 
-                {/* Reaction buttons - only show for non-system messages */}
-                {!(msg.is_system || msg.user_id === '00000000-0000-0000-0000-000000000000') && (
-                  <div className="flex items-center gap-1 mt-2 flex-wrap">
-                    {(Object.keys(EMOJI_CONFIG) as EmojiType[]).map((emojiType) => {
-                      const config = EMOJI_CONFIG[emojiType];
-                      const countField = `${emojiType}_count` as keyof HeartSignalMessage;
-                      const count = (msg[countField] as number) || 0;
-                      const isReacted = userReactions.get(msg.id)?.has(emojiType) || false;
-                      const isToggling = togglingReactions.has(`${msg.id}-${emojiType}`);
-
-                      return (
-                        <button
-                          key={emojiType}
-                          onClick={() => toggleReaction(msg.id, emojiType)}
-                          disabled={!user || isToggling}
-                          className={`
-                            flex items-center gap-1 px-2 py-1 rounded-full text-xs
-                            transition-all duration-200 ease-out
-                            ${isReacted
-                              ? 'bg-opacity-30 scale-105'
-                              : 'bg-gray-700/50 hover:bg-gray-600/50'
-                            }
-                            ${!user ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-105'}
-                            ${isToggling ? 'opacity-70' : ''}
-                          `}
-                          style={{
-                            backgroundColor: isReacted ? `${config.color}30` : undefined,
-                            borderWidth: '1px',
-                            borderColor: isReacted ? config.color : 'transparent',
-                            boxShadow: isReacted ? `0 0 8px ${config.color}40` : undefined,
-                          }}
-                          title={`${config.label}${!user ? ' (login required)' : ''}`}
-                        >
-                          <span className="text-sm">{config.emoji}</span>
-                          {count > 0 && (
-                            <span
-                              className="text-xs font-medium"
-                              style={{ color: isReacted ? config.color : '#9CA3AF' }}
-                            >
-                              {count}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
+              return (
+                <motion.div
+                  key={msg.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`rounded-lg p-3 ${
+                    isSystemMsg
+                      ? 'bg-purple-900/30 border-l-4 border-purple-500'
+                      : isOwnMessage
+                      ? 'bg-blue-900/30 ml-4'
+                      : 'bg-gray-800/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <button
+                      type="button"
+                      onClick={() => openProfileForMessage(msg)}
+                      className="text-left"
+                      style={{
+                        color: isSystemMsg ? '#C084FC' : '#FFD700',
+                        fontSize: '0.875rem',
+                        fontWeight: 600
+                      }}
+                      title="View profile"
+                      disabled={!msg?.user_id || isSystemMsg}
+                    >
+                      {displayName}
+                    </button>
+                    <span className="text-xs text-gray-500">
+                      {new Date(msg.created_at).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
                   </div>
-                )}
-              </motion.div>
-            ))}
+                  {isSystemMsg && (msg.message || '').includes('connected to the signal') ? (
+                    <button
+                      type="button"
+                      onClick={() => openProfileForMessage(msg)}
+                      className="text-sm break-words"
+                      style={{ color: '#C084FC', textAlign: 'left' }}
+                      title="View profile"
+                      disabled={!msg?.user_id || isSystemMsg}
+                    >
+                      {msg.message}
+                    </button>
+                  ) : (
+                    <div
+                      className="text-sm break-words"
+                      style={{ color: isSystemMsg ? '#C084FC' : '#FFD700' }}
+                    >
+                      {msg.message}
+                    </div>
+                  )}
+
+                  {/* Reaction buttons */}
+                  {!isSystemMsg && (
+                    <div className="flex items-center gap-1 mt-2 flex-wrap">
+                      {(Object.keys(EMOJI_CONFIG) as EmojiType[]).map((emojiType) => {
+                        const config = EMOJI_CONFIG[emojiType];
+                        const countField = `${emojiType}_count` as keyof HeartSignalMessage;
+                        const count = (msg[countField] as number) || 0;
+                        const isReacted = userReactions.get(msg.id)?.has(emojiType) || false;
+                        const isToggling = togglingReactions.has(`${msg.id}-${emojiType}`);
+
+                        return (
+                          <button
+                            key={emojiType}
+                            onClick={() => toggleReaction(msg.id, emojiType)}
+                            disabled={!user || isToggling}
+                            className={`
+                              flex items-center gap-1 px-2 py-1 rounded-full text-xs
+                              transition-all duration-200 ease-out
+                              ${isReacted
+                                ? 'bg-opacity-30 scale-105'
+                                : 'bg-gray-700/50 hover:bg-gray-600/50'
+                              }
+                              ${!user ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-105'}
+                              ${isToggling ? 'opacity-70' : ''}
+                            `}
+                            style={{
+                              backgroundColor: isReacted ? `${config.color}30` : undefined,
+                              borderWidth: '1px',
+                              borderColor: isReacted ? config.color : 'transparent',
+                              boxShadow: isReacted ? `0 0 8px ${config.color}40` : undefined,
+                            }}
+                            title={`${config.label}${!user ? ' (login required)' : ''}`}
+                          >
+                            <span className="text-sm">{config.emoji}</span>
+                            {count > 0 && (
+                              <span
+                                className="text-xs font-medium"
+                                style={{ color: isReacted ? config.color : '#9CA3AF' }}
+                              >
+                                {count}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
         )}
         <div ref={messagesEndRef} />
@@ -704,10 +709,9 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
 
       {/* Heart Signal Section */}
       <div className="px-4 pt-1 pb-0 border-t border-purple-500/30 space-y-1" style={{ marginBottom: '-12px' }}>
-        {/* Stay Connected Text */}
         <div className="text-center">
-          <div 
-            style={{ 
+          <div
+            style={{
               color: '#00FFFF',
               fontSize: '16px',
               fontWeight: '600',
@@ -718,7 +722,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
           </div>
         </div>
 
-        {/* Send Heart Signal Button */}
         <div className="flex justify-center" style={{ marginBottom: '-16px' }}>
           <button
             onClick={sendHeartSignal}
@@ -729,22 +732,22 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
               background: 'transparent',
               border: heartSignalSent
                 ? '2px solid #00FF00'
-                : heartSignalLoading 
-                  ? '2px solid rgba(128, 128, 128, 0.3)' 
+                : heartSignalLoading
+                  ? '2px solid rgba(128, 128, 128, 0.3)'
                   : '2px solid #00FFFF',
               borderRadius: '8px',
               color: heartSignalSent
                 ? '#00FF00'
-                : heartSignalLoading 
-                  ? 'rgba(128, 128, 128, 0.6)' 
+                : heartSignalLoading
+                  ? 'rgba(128, 128, 128, 0.6)'
                   : '#00FFFF',
               fontSize: '16px',
               fontWeight: '600',
               cursor: heartSignalLoading || heartSignalSent ? 'not-allowed' : 'pointer',
               textShadow: heartSignalSent
                 ? '0 0 8px rgba(0, 255, 0, 0.6)'
-                : !heartSignalLoading 
-                  ? '0 0 8px rgba(0, 255, 255, 0.6)' 
+                : !heartSignalLoading
+                  ? '0 0 8px rgba(0, 255, 255, 0.6)'
                   : 'none',
               transition: 'all 0.3s ease',
               opacity: heartSignalLoading || heartSignalSent ? 0.7 : 1
@@ -770,8 +773,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
           </button>
         </div>
       </div>
-      
-      {/* Profile modal for clicked users */}
+
       <ProfileModal
         user={selectedUser || undefined as any}
         isOpen={showProfileModal}
@@ -806,7 +808,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
         )}
       </div>
 
-      {/* $ Button - positioned in bottom right corner */}
       <div
         style={{
           position: 'absolute',
@@ -820,7 +821,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
       >
         <button
           onClick={() => {
-            // Add tip functionality here
             console.log('Tip button clicked in HeartSignalLive');
           }}
           style={{
@@ -843,13 +843,13 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
             position: 'relative',
             zIndex: 1001
           }}
-          onMouseEnter={(e) => {
+          onMouseEnter={(e: any) => {
             e.target.style.transform = 'scale(1.1)';
             e.target.style.background = 'rgba(252, 84, 175, 0.2)';
             e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
             e.target.style.textShadow = '0 0 15px #FC54AF, 0 0 25px #FC54AF';
           }}
-          onMouseLeave={(e) => {
+          onMouseLeave={(e: any) => {
             e.target.style.transform = 'scale(1)';
             e.target.style.background = 'rgba(252, 84, 175, 0.1)';
             e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';

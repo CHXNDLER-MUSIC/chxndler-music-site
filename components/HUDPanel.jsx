@@ -2829,95 +2829,17 @@ const HUDPanel = React.memo(function HUDPanel({
                           const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
                           const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
                           const pct = liveDur > 0 ? Math.max(0, Math.min(100, (liveTime / liveDur) * 100)) : 0;
-                          
+
                           // Get element-based color for enhanced glow
                           const TRACK_ELEMENT_COLORS = {
                             heart: "#FC54AF",
-                            water: "#38B6FF", 
+                            water: "#38B6FF",
                             lightning: "#F2EF1D",
                             darkness: "#FFFFFF"
                           };
                           const currentSong = resolvedSongs.find(s => s.id === active);
                           const element = currentSong?.icon || 'heart';
                           const elementColor = TRACK_ELEMENT_COLORS[element] || '#38B6FF';
-                          
-                          const handleSeek = (clientX) => {
-                            const bar = document.querySelector('.hud-enhanced-track');
-                            if (!bar) return;
-
-                            const rect = bar.getBoundingClientRect();
-                            const clickX = Math.max(0, Math.min(rect.width, clientX - rect.left));
-                            const percentage = rect.width > 0 ? clickX / rect.width : 0;
-
-                            // Use the audio element's duration directly for accuracy
-                            const audioEl = liveAudioRef?.current;
-                            const actualDuration = audioEl?.duration || duration || 0;
-
-                            if (!actualDuration || actualDuration <= 0) {
-                              console.warn('No valid duration for seeking');
-                              return;
-                            }
-
-                            const seekTime = percentage * actualDuration;
-
-                            console.log('Seeking:', {
-                              clickX,
-                              barWidth: rect.width,
-                              percentage: (percentage * 100).toFixed(1) + '%',
-                              seekTime: seekTime.toFixed(2),
-                              duration: actualDuration.toFixed(2)
-                            });
-
-                            // Seek using direct audio element for reliability
-                            if (audioEl) {
-                              try {
-                                audioEl.currentTime = seekTime;
-                                setProgress(seekTime);
-                              } catch (e) {
-                                console.error('Seek error:', e);
-                              }
-                            }
-
-                            // Also try unified audio manager as backup
-                            try { audioManager.seek(seekTime); } catch {}
-                          };
-
-                          const onBarClick = (e) => {
-                            console.log('✅ Progress bar clicked!', e.clientX);
-                            handleSeek(e.clientX);
-                            try { sfx.play('click', 0.3); } catch {}
-                          };
-
-                          const onPointerDown = (e) => {
-                            console.log('✅ Progress bar pointer down!', e.type);
-                            e.preventDefault();
-                            e.stopPropagation();
-
-                            const startX = e.clientX || (e.touches?.[0]?.clientX) || 0;
-                            handleSeek(startX);
-
-                            let isDragging = true;
-
-                            const onMove = (me) => {
-                              if (!isDragging) return;
-                              me.preventDefault();
-                              const cx = me.clientX || (me.touches?.[0]?.clientX) || 0;
-                              handleSeek(cx);
-                            };
-
-                            const onUp = () => {
-                              isDragging = false;
-                              document.removeEventListener('mousemove', onMove);
-                              document.removeEventListener('touchmove', onMove);
-                              document.removeEventListener('mouseup', onUp);
-                              document.removeEventListener('touchend', onUp);
-                            };
-
-                            document.addEventListener('mousemove', onMove);
-                            document.addEventListener('touchmove', onMove);
-                            document.addEventListener('mouseup', onUp);
-                            document.addEventListener('touchend', onUp);
-                          };
 
                           return (
                             <div
@@ -2927,31 +2849,61 @@ const HUDPanel = React.memo(function HUDPanel({
                                 left: 14,
                                 right: 6,
                                 bottom: -55,
-                                height: 10,
+                                height: 14,
                                 borderRadius: 9999,
-                                background: 'rgba(0,0,0,0.4)',
-                                border: '2px solid rgba(0,255,0,0.5)',
+                                background: 'red',
+                                border: '2px solid yellow',
                                 overflow: 'hidden',
                                 cursor: 'pointer',
-                                touchAction: 'none',
                                 pointerEvents: 'auto',
                                 zIndex: 999999
                               }}
                               onClick={(e) => {
-                                console.log('🎯 DIRECT CLICK!', e.clientX, e.target);
-                                onBarClick(e);
+                                console.log('CLICKED AT', e.clientX);
+
+                                // Try multiple ways to get the audio element
+                                let audioEl = liveAudioRef?.current;
+                                if (!audioEl) {
+                                  // Try to get from unified audio manager
+                                  try {
+                                    audioEl = audioManager.getCurrentAudio?.();
+                                  } catch {}
+                                }
+                                if (!audioEl) {
+                                  // Try to find in DOM
+                                  audioEl = document.querySelector('audio[src*="tracks"]');
+                                }
+
+                                // Try multiple ways to get duration
+                                let dur = liveDur;
+                                if (!dur && audioEl) {
+                                  dur = audioEl.duration;
+                                }
+                                if (!dur) {
+                                  dur = duration;
+                                }
+
+                                if (!audioEl) {
+                                  console.error('No audio element found');
+                                  alert('No audio element found');
+                                  return;
+                                }
+                                if (!dur || dur <= 0) {
+                                  console.error('No valid duration');
+                                  alert('No valid duration');
+                                  return;
+                                }
+
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                const clickX = e.clientX - rect.left;
+                                const ratio = Math.max(0, Math.min(1, clickX / rect.width));
+                                const newTime = ratio * dur;
+
+                                console.log('Seeking to', newTime, 'seconds (', ratio * 100, '%)');
+                                audioEl.currentTime = newTime;
+                                try { sfx.play('click', 0.3); } catch {}
                               }}
-                              onMouseDown={(e) => {
-                                console.log('🎯 DIRECT MOUSEDOWN!', e.clientX);
-                                onPointerDown(e);
-                              }}
-                              onTouchStart={onPointerDown}
-                              onMouseEnter={(e) => {
-                                try { e.currentTarget.style.filter = 'brightness(1.2) saturate(1.1)'; } catch {}
-                                try { sfx.play('hover', 0.28); } catch {}
-                              }}
-                              onMouseLeave={(e) => { try { e.currentTarget.style.filter = 'none'; } catch {} }}
-                              title={`${Math.round((progress / Math.max(1, duration)) * 100)}% - ${Math.floor(progress / 60)}:${Math.floor(progress % 60).toString().padStart(2, '0')} / ${Math.floor(duration / 60)}:${Math.floor(duration % 60).toString().padStart(2, '0')}`}
+                              title={`Click to seek`}
                             >
                               {/* Background glow */}
                               <div
