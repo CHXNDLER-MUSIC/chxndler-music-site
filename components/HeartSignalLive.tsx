@@ -304,7 +304,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
     const timeout = setTimeout(() => {
       console.warn('⚠️ Aliens online loading timeout (1s)');
       setAliensLoading(false);
-      setAliensOnline(['ALIEN']);
     }, 1000);
 
     try {
@@ -323,7 +322,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
 
       if (error) {
         console.error('Error loading aliens online:', error);
-        setAliensOnline(['ALIEN']);
         setAliensLoading(false);
         return;
       }
@@ -339,12 +337,16 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
       });
 
       const aliens = Array.from(uniqueSenders.values()).slice(0, 20);
-      console.log(`✅ Aliens Online: ${aliens.length} unique senders`);
-      setAliensOnline(aliens.length > 0 ? aliens : ['ALIEN']);
+      console.log(`✅ Aliens Online: ${aliens.length} unique senders from messages`);
+
+      // Update state - keep existing users and add new ones
+      setAliensOnline(prev => {
+        const merged = new Set([...prev, ...aliens]);
+        return Array.from(merged).slice(0, 20);
+      });
     } catch (error) {
       clearTimeout(timeout);
       console.error('Error in loadAliensOnline:', error);
-      setAliensOnline(['ALIEN']);
     } finally {
       setAliensLoading(false);
     }
@@ -463,9 +465,28 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
 
       setActiveClient(client);
 
+      // Get current user's display name
+      const currentUserName = user && profile?.name
+        ? profile.name
+        : getAnonymousName();
+
+      // Immediately show current user in Aliens Online
+      setAliensOnline([currentUserName]);
+      console.log('👽 Added current user to Aliens Online:', currentUserName);
+
       await loadMessages(client);
       subscribeToMessages(client);
-      loadAliensOnline(client);
+
+      // Load other aliens online (will merge with current user)
+      loadAliensOnline(client).then(() => {
+        // Ensure current user is still in the list
+        setAliensOnline(prev => {
+          if (prev.includes(currentUserName)) {
+            return prev;
+          }
+          return [currentUserName, ...prev];
+        });
+      });
 
       if (user && profile?.name) {
         sendSystemMessage(`${profile.name} connected to the signal`);

@@ -89,25 +89,33 @@ export default function UserBadges({
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
 
-  // Fetch user profile data
+  // Fetch user profile data from public_profiles_table (never query private profiles table)
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
         if (!userId) return;
 
         const { data, error } = await supabaseBrowser
-          .rpc('get_public_profile', { p_profile_id: userId })
+          .from('public_profiles_table')
+          .select(`
+            id, name, heartcoin_total, daily_streak_current,
+            total_reflections, total_listening_minutes, total_heartcoins_earned,
+            elemental_sessions_count, community_interactions, achievements_unlocked,
+            streams_attended, concerts_attended, cards_owned, merch_items_owned,
+            donations_made, heartcoins_sent
+          `)
+          .eq('id', userId)
           .maybeSingle();
 
         if (error) {
-          console.error('Error fetching user profile:', error);
-          setError(`Failed to load user profile: ${error.message}`);
+          // Don't show error, just show empty state
+          setUserProfile(null);
+          setLoading(false);
           return;
         }
 
         // Handle case where profile doesn't exist
         if (!data) {
-          console.warn('Profile not found for user:', userId);
           setUserProfile(null);
           setLoading(false);
           return;
@@ -131,9 +139,9 @@ export default function UserBadges({
           donations_made: data.donations_made,
           heartcoins_sent: data.heartcoins_sent,
         });
-      } catch (err) {
-        console.error('Error in fetchUserProfile:', err);
-        setError(`Failed to fetch user profile: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      } catch {
+        // On any error, show empty state
+        setUserProfile(null);
       }
     };
 
@@ -147,14 +155,26 @@ export default function UserBadges({
         setLoading(true);
         setError(null);
 
-        // Fetch all badges and user badges in parallel
-        const [badgesResponse, userBadgesResponse] = await Promise.all([
-          supabaseBrowser
-            .from('badges')
-            .select('*')
-            .order('category', { ascending: true })
-            .order('badge_name', { ascending: true }),
-          supabaseBrowser
+        // Fetch all badges (public table, should always work)
+        const badgesResponse = await supabaseBrowser
+          .from('badges')
+          .select('*')
+          .order('category', { ascending: true })
+          .order('badge_name', { ascending: true });
+
+        if (badgesResponse.error) {
+          // If we can't load badge definitions, show empty state
+          setAllBadges([]);
+          setUserBadges([]);
+          setLoading(false);
+          return;
+        }
+
+        setAllBadges(badgesResponse.data || []);
+
+        // Try fetching user badges - may fail due to RLS for other users
+        try {
+          const userBadgesResponse = await supabaseBrowser
             .from('user_badges')
             .select(`
               id,
@@ -173,26 +193,22 @@ export default function UserBadges({
                 requirement_text
               )
             `)
-            .eq('user_id', userId)
-        ]);
+            .eq('user_id', userId);
 
-        if (badgesResponse.error) {
-          console.error('Error fetching badges:', badgesResponse.error);
-          setError(`Failed to load badges: ${badgesResponse.error.message}`);
-          return;
+          if (userBadgesResponse.error) {
+            // Don't show error - just show empty badges
+            setUserBadges([]);
+          } else {
+            setUserBadges(userBadgesResponse.data || []);
+          }
+        } catch {
+          // If user badges fetch fails for any reason, show empty state
+          setUserBadges([]);
         }
-
-        if (userBadgesResponse.error) {
-          console.error('Error fetching user badges:', userBadgesResponse.error);
-          setError(`Failed to load user badges: ${userBadgesResponse.error.message}`);
-          return;
-        }
-
-        setAllBadges(badgesResponse.data || []);
-        setUserBadges(userBadgesResponse.data || []);
-      } catch (err) {
-        console.error('Error in fetchBadgeData:', err);
-        setError(`Failed to fetch badge data: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      } catch {
+        // On any error, show empty state
+        setAllBadges([]);
+        setUserBadges([]);
       } finally {
         setLoading(false);
       }
@@ -268,8 +284,8 @@ export default function UserBadges({
 
   if (error) {
     return (
-      <div className={`text-center text-red-400 text-sm ${className}`}>
-        Error loading badges: {error}
+      <div className={`text-center text-white/60 text-sm ${className}`}>
+        No public badges yet.
       </div>
     );
   }
@@ -278,7 +294,7 @@ export default function UserBadges({
   if (!userProfile) {
     return (
       <div className={`text-center text-white/60 text-sm ${className}`}>
-        Profile not found
+        No public badges yet.
       </div>
     );
   }

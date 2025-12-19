@@ -45,7 +45,7 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
       setLoading(true);
       setError('');
 
-      // Build query for journal entries with author from public_profiles view
+      // Build query for journal entries with author from public_profiles_table
       let query = supabaseBrowser
         .from('soul_journal_entries')
         .select(`
@@ -57,7 +57,7 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
           created_at,
           is_public,
           stars_count,
-          author:public_profiles!soul_journal_entries_user_id_fkey (
+          author:public_profiles_table!soul_journal_entries_user_id_public_profiles_table_fkey (
             id,
             name,
             profile_image_url
@@ -91,11 +91,6 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
 
       // Map the data to our expected format
       const mappedEntries: SoulJournalEntry[] = (data || []).map((entry: any) => {
-        // Add console log for first entry to verify data shape
-        if ((data || []).indexOf(entry) === 0) {
-          console.log('PUBLIC ROW', entry);
-        }
-
         return {
           entry_id: entry.entry_id,
           user_id: entry.user_id,

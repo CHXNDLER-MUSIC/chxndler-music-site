@@ -5,18 +5,69 @@ import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
 // UUID validation regex
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+/**
+ * Helper to log errors with full details
+ */
+function logError(context: string, error: any, extra?: Record<string, any>) {
+  console.error(`[PURCHASE] ${context}:`, {
+    message: error?.message || String(error),
+    code: error?.code,
+    details: error?.details,
+    hint: error?.hint,
+    ...extra,
+  });
+  if (error?.stack) {
+    console.error(`[PURCHASE] ${context} stack:`, error.stack);
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Read request body exactly once at the top
     const body = await request.json();
-    const { merchItemId, quantity = 1, idempotencyKey } = body;
+    const {
+      merchItemId,
+      quantity = 1,
+      idempotencyKey,
+      paymentType,  // 'HEARTCOINS' | 'USD' | undefined
+    } = body;
 
-    // Log incoming request
+    // ============================================================
+    // DETERMINE PAYMENT TYPE
+    // HeartCoins purchase: has idempotencyKey OR paymentType === 'HEARTCOINS'
+    // Stripe/USD purchase: paymentType === 'USD' (not implemented in this route)
+    // ============================================================
+    const isHeartCoinsPurchase = Boolean(idempotencyKey) || paymentType === 'HEARTCOINS';
+    const isUsdPurchase = paymentType === 'USD';
+
     console.log('[PURCHASE] Incoming request:', {
       merchItemId,
       quantity,
-      idempotencyKey: idempotencyKey || 'MISSING',
+      idempotencyKey: idempotencyKey || 'NONE',
+      paymentType: paymentType || 'HEARTCOINS (inferred)',
+      isHeartCoinsPurchase,
+      isUsdPurchase,
     });
+
+    // ============================================================
+    // USD/STRIPE PATH - Not handled in this route
+    // ============================================================
+    if (isUsdPurchase) {
+      console.log('[PURCHASE] USD payment requested - not supported in this route');
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'USD payments are not supported in this endpoint. Use /api/checkout for Stripe payments.',
+          errorCode: 'WRONG_ENDPOINT',
+        },
+        { status: 400 }
+      );
+    }
+
+    // ============================================================
+    // HEARTCOINS PURCHASE PATH
+    // This route ONLY handles HeartCoins purchases - no Stripe involved
+    // ============================================================
 
     // Validate merchItemId
     if (!merchItemId || typeof merchItemId !== 'string') {
@@ -26,9 +77,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate idempotencyKey is present and is a valid UUID
+    // Validate idempotencyKey for HeartCoins purchases
     if (!idempotencyKey || typeof idempotencyKey !== 'string') {
-      console.error('[PURCHASE] Missing idempotencyKey');
+      console.error('[PURCHASE] Missing idempotencyKey for HeartCoins purchase');
       return NextResponse.json(
         { success: false, error: 'Missing required field: idempotencyKey' },
         { status: 400 }
@@ -57,7 +108,7 @@ export async function POST(request: NextRequest) {
 
     if (!token) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'Unauthorized - no session token' },
         { status: 401 }
       );
     }
@@ -65,9 +116,17 @@ export async function POST(request: NextRequest) {
     const supabase = createSupabaseServerClientWithJwt(token);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (authError || !user) {
+    if (authError) {
+      logError('Auth error', authError);
       return NextResponse.json(
-        { success: false, error: 'Authentication required' },
+        { success: false, error: 'Authentication failed' },
+        { status: 401 }
+      );
+    }
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'User not found in session' },
         { status: 401 }
       );
     }
@@ -75,14 +134,16 @@ export async function POST(request: NextRequest) {
     // Map idempotencyKey -> client_request_id
     const client_request_id = idempotencyKey;
 
-    console.log('[PURCHASE] Attempting purchase:', {
+    console.log('[PURCHASE] HeartCoins purchase - attempting:', {
       merch_item_id: merchItemId,
       client_request_id,
       quantity,
       user_id: user.id,
     });
 
-    // Try the RPC function first (if it exists and works)
+    // ============================================================
+    // TRY RPC FIRST (atomic, preferred)
+    // ============================================================
     const { data: rpcResult, error: rpcError } = await supabase.rpc(
       'purchase_merch_with_heartcoins_v3',
       {
@@ -92,7 +153,11 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    console.log('[PURCHASE] RPC response:', { rpcResult, rpcError: rpcError?.message });
+    console.log('[PURCHASE] RPC response:', {
+      hasResult: !!rpcResult,
+      rpcError: rpcError?.message,
+      rpcCode: rpcError?.code,
+    });
 
     // If RPC succeeded, return the result
     if (!rpcError && rpcResult) {
@@ -106,7 +171,7 @@ export async function POST(request: NextRequest) {
         orderId = rpcResult;
       }
 
-      console.log(`[PURCHASE] RPC Success - Order ${orderId} created for user ${user.id}`);
+      console.log(`[PURCHASE] RPC Success - Order ${orderId} for user ${user.id}`);
 
       return NextResponse.json({
         success: true,
@@ -117,17 +182,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if we should fall back to manual logic
-    // This includes: function not found, schema errors, column errors
     const shouldFallback =
       rpcError?.message?.includes('Could not find the function') ||
-      rpcError?.message?.includes('does not exist') ||  // Catches both function and column errors
+      rpcError?.message?.includes('does not exist') ||
       rpcError?.message?.includes('schema cache') ||
-      rpcError?.message?.includes('column') ||  // Any column-related error
-      rpcError?.code === '42883' ||  // PostgreSQL "undefined_function"
-      rpcError?.code === '42703';    // PostgreSQL "undefined_column"
+      rpcError?.message?.includes('column') ||
+      rpcError?.code === '42883' ||  // undefined_function
+      rpcError?.code === '42703';    // undefined_column
 
     if (!shouldFallback && rpcError) {
-      // RPC exists and returned a business logic error - handle it
+      // RPC exists but returned a business logic error
+      logError('RPC business error', rpcError);
 
       // Check for duplicate (idempotent success)
       if (
@@ -135,7 +200,7 @@ export async function POST(request: NextRequest) {
         rpcError.message?.includes('unique constraint') ||
         rpcError.code === '23505'
       ) {
-        console.log('[PURCHASE] Duplicate request detected, fetching existing order');
+        console.log('[PURCHASE] Duplicate request - fetching existing order');
 
         const { data: existingOrder } = await supabase
           .from('orders')
@@ -144,7 +209,6 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (existingOrder) {
-          console.log('[PURCHASE] Returning existing order (idempotent):', existingOrder.id);
           return NextResponse.json({
             success: true,
             order_id: String(existingOrder.id),
@@ -164,7 +228,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // Handle specific error types
+      // Handle specific RPC error types
       if (rpcError.message?.includes('INSUFFICIENT_HEARTCOINS')) {
         const match = rpcError.message.match(/Have (\d+), need (\d+)/);
         return NextResponse.json(
@@ -191,25 +255,34 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Return generic RPC error (only for non-schema errors)
+      // Return the actual RPC error for debugging
       return NextResponse.json(
-        { success: false, error: rpcError.message || 'Purchase failed', errorCode: 'PURCHASE_FAILED' },
+        {
+          success: false,
+          error: `RPC error: ${rpcError.message || 'Unknown error'}`,
+          errorCode: 'RPC_FAILED',
+          details: rpcError.code,
+        },
         { status: 400 }
       );
     }
 
     // ============================================================
-    // FALLBACK: Manual purchase logic
-    // Used when RPC doesn't exist or has schema errors (e.g., column bugs)
+    // FALLBACK: Manual HeartCoins purchase logic
+    // Used when RPC doesn't exist or has schema errors
     // ============================================================
-    console.log('[PURCHASE] Using manual fallback (RPC unavailable or has schema error)');
+    console.log('[PURCHASE] Using manual fallback for HeartCoins purchase');
 
-    // 1. Check for existing order with same client_request_id (idempotency)
-    const { data: existingOrder } = await supabase
+    // 1. Check for existing order (idempotency)
+    const { data: existingOrder, error: existingError } = await supabase
       .from('orders')
       .select('id, total_heartcoins')
       .eq('client_request_id', client_request_id)
       .maybeSingle();
+
+    if (existingError) {
+      logError('Error checking existing order', existingError);
+    }
 
     if (existingOrder) {
       console.log('[PURCHASE] Idempotent: Order already exists:', existingOrder.id);
@@ -223,20 +296,28 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Fetch merch item details
-    // ============================================================
-    // IMPORTANT: merch_items table has column `name`, NOT `item_name`
-    // We select `name` here and map it to `item_name` when inserting into orders
-    // ============================================================
+    // IMPORTANT: merch_items has `name`, NOT `item_name`
     const { data: merchItem, error: merchError } = await supabase
       .from('merch_items')
-      .select('id, name, price_heartcoins, is_active')  // `name` not `item_name`
+      .select('id, name, price_heartcoins, is_active')
       .eq('id', merchItemId)
       .single();
 
-    if (merchError || !merchItem) {
-      console.error('[PURCHASE] Merch item not found:', merchError?.message);
+    if (merchError) {
+      logError('Merch item lookup failed', merchError, { merchItemId });
       return NextResponse.json(
-        { success: false, error: 'Item not found or unavailable.', errorCode: 'ITEM_NOT_FOUND' },
+        {
+          success: false,
+          error: `Item lookup failed: ${merchError.message}`,
+          errorCode: 'ITEM_LOOKUP_FAILED',
+        },
+        { status: 404 }
+      );
+    }
+
+    if (!merchItem) {
+      return NextResponse.json(
+        { success: false, error: 'Item not found.', errorCode: 'ITEM_NOT_FOUND' },
         { status: 404 }
       );
     }
@@ -255,8 +336,19 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single();
 
-    if (profileError || !profile) {
-      console.error('[PURCHASE] Profile not found:', profileError?.message);
+    if (profileError) {
+      logError('Profile lookup failed', profileError, { userId: user.id });
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Profile lookup failed: ${profileError.message}`,
+          errorCode: 'PROFILE_LOOKUP_FAILED',
+        },
+        { status: 404 }
+      );
+    }
+
+    if (!profile) {
       return NextResponse.json(
         { success: false, error: 'User profile not found.', errorCode: 'USER_NOT_FOUND' },
         { status: 404 }
@@ -266,6 +358,8 @@ export async function POST(request: NextRequest) {
     const unitPrice = merchItem.price_heartcoins || 0;
     const totalCost = unitPrice * quantity;
     const currentBalance = profile.heartcoin_balance || 0;
+
+    console.log('[PURCHASE] Balance check:', { currentBalance, totalCost, unitPrice, quantity });
 
     if (currentBalance < totalCost) {
       return NextResponse.json(
@@ -280,20 +374,36 @@ export async function POST(request: NextRequest) {
 
     // 4. Deduct HeartCoins from profile
     const newBalance = currentBalance - totalCost;
-    const { error: updateError } = await supabase
+    console.log('[PURCHASE] Deducting HeartCoins:', { from: currentBalance, to: newBalance });
+
+    const { data: updateData, error: updateError } = await supabase
       .from('profiles')
       .update({ heartcoin_balance: newBalance })
-      .eq('id', user.id);
+      .eq('id', user.id)
+      .select('heartcoin_balance')
+      .single();
 
     if (updateError) {
-      console.error('[PURCHASE] Failed to deduct HeartCoins:', updateError.message);
+      logError('Failed to deduct HeartCoins', updateError, {
+        userId: user.id,
+        currentBalance,
+        newBalance,
+        totalCost,
+      });
       return NextResponse.json(
-        { success: false, error: 'Failed to process payment.', errorCode: 'PAYMENT_FAILED' },
+        {
+          success: false,
+          error: `HeartCoin deduction failed: ${updateError.message}`,
+          errorCode: 'BALANCE_UPDATE_FAILED',
+          details: updateError.code,
+        },
         { status: 500 }
       );
     }
 
-    // 5. Record HeartCoin transaction with client_request_id
+    console.log('[PURCHASE] HeartCoins deducted successfully:', updateData);
+
+    // 5. Record HeartCoin transaction
     const { error: txError } = await supabase.from('heartcoin_transactions').insert({
       user_id: user.id,
       amount: -totalCost,
@@ -309,15 +419,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (txError) {
-      console.warn('[PURCHASE] Failed to record transaction (non-fatal):', txError.message);
+      logError('Transaction record failed (non-fatal)', txError);
       // Continue - order is more important
     }
 
     // 6. Create order record
-    // ============================================================
-    // COLUMN MAPPING: merch_items.name -> orders.item_name
-    // merch_items table has `name`, orders table has `item_name`
-    // ============================================================
+    // MAPPING: merch_items.name -> orders.item_name
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -327,7 +434,7 @@ export async function POST(request: NextRequest) {
         quantity: quantity,
         price_heartcoins: unitPrice,
         total_heartcoins: totalCost,
-        client_request_id: client_request_id,  // idempotencyKey passed through
+        client_request_id: client_request_id,
         status: 'pending_shipping',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -336,20 +443,31 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (orderError) {
-      console.error('[PURCHASE] Failed to create order:', orderError.message);
+      logError('Order creation failed', orderError, { merchItemId, userId: user.id });
+
       // Attempt to refund the HeartCoins
-      await supabase
+      console.log('[PURCHASE] Attempting refund due to order failure');
+      const { error: refundError } = await supabase
         .from('profiles')
         .update({ heartcoin_balance: currentBalance })
         .eq('id', user.id);
 
+      if (refundError) {
+        logError('Refund failed', refundError);
+      }
+
       return NextResponse.json(
-        { success: false, error: 'Failed to create order.', errorCode: 'ORDER_FAILED' },
+        {
+          success: false,
+          error: `Order creation failed: ${orderError.message}`,
+          errorCode: 'ORDER_CREATION_FAILED',
+          details: orderError.code,
+        },
         { status: 500 }
       );
     }
 
-    console.log(`[PURCHASE] Fallback Success - Order ${order.id} created for user ${user.id}`);
+    console.log(`[PURCHASE] HeartCoins Success - Order ${order.id} for user ${user.id}`);
 
     return NextResponse.json({
       success: true,
@@ -359,7 +477,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[PURCHASE] Unexpected error:', error);
+    logError('Unexpected error', error);
     return NextResponse.json(
       {
         success: false,

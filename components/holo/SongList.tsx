@@ -80,14 +80,13 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
           } catch {}
           audioManager?.togglePlayPause();
         } else {
-          // Prefer parent sequencing if provided; otherwise, focus planet directly
+          // Prefer parent sequencing if provided; otherwise, set main ID
+          // and let HoloAudioBridge handle planet visibility (warp effect)
           if (onSongChange) {
             onSongChange(id);
           } else {
             try {
               playerStore.getState().setMain(id);
-              playerStore.getState().setPlanetDisplayMode('single');
-              playerStore.getState().setPlanetsVisible(true);
             } catch {}
           }
         }
@@ -211,11 +210,10 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
                 if (onSongChange) {
                   onSongChange(s.id);
                 } else {
-                  // Fallback: focus the selected planet immediately
+                  // Fallback: just set the main ID - let HoloAudioBridge handle
+                  // planet visibility (hide during warp, show after)
                   try {
                     playerStore.getState().setMain(s.id);
-                    playerStore.getState().setPlanetDisplayMode('single');
-                    playerStore.getState().setPlanetsVisible(true);
                   } catch {}
                 }
               }

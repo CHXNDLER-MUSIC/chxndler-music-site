@@ -80,11 +80,11 @@ export default function HoloPanel() {
           <SongList onSongChange={(id) => {
             // In the Holo panel standalone route, delegate to the 3D audio bridge
             // by updating the player store selection directly. The bridge will
-            // handle warp -> join -> song sequencing.
+            // handle warp -> join -> song sequencing (hide planets during warp, show after).
             try {
+              // Only set the main ID - let HoloAudioBridge handle planet visibility
+              // so the blue display closes during warp and reopens after
               playerStore.getState().setMain(id);
-              playerStore.getState().setPlanetDisplayMode('single');
-              playerStore.getState().setPlanetsVisible(true);
             } catch {}
           }} />
         </div>

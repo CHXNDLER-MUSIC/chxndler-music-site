@@ -55,18 +55,43 @@ export default function UserCards({
     const fetchUserData = async () => {
       try {
         if (!userId) return;
-        
+
         setLoading(true);
         setError(null);
 
-        // Fetch user profile and cards in parallel
-        const [profileResponse, cardsResponse] = await Promise.all([
-          supabaseBrowser
-            .from('public_profiles')
-            .select('user_id, name, card_slots')
-            .eq('user_id', userId)
-            .maybeSingle(),
-          supabaseBrowser
+        // Fetch user profile from public_profiles_table (never query private profiles table)
+        const profileResponse = await supabaseBrowser
+          .from('public_profiles_table')
+          .select('id, name, card_slots')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (profileResponse.error) {
+          // Don't show error, just show empty state
+          setUserProfile(null);
+          setUserCards([]);
+          setLoading(false);
+          return;
+        }
+
+        // Handle case where profile doesn't exist in public_profiles_table
+        if (!profileResponse.data) {
+          setUserProfile(null);
+          setUserCards([]);
+          setLoading(false);
+          return;
+        }
+
+        setUserProfile({
+          id: profileResponse.data.id,
+          name: profileResponse.data.name,
+          card_slots: profileResponse.data.card_slots,
+        });
+
+        // Try fetching cards - use user_cards table (RLS should allow if permitted)
+        // If this fails due to RLS or missing table, show empty cards
+        try {
+          const cardsResponse = await supabaseBrowser
             .from('user_cards')
             .select(`
               id,
@@ -83,40 +108,22 @@ export default function UserCards({
               )
             `)
             .eq('user_id', userId)
-            .order('acquired_at', { ascending: true })
-        ]);
+            .order('acquired_at', { ascending: true });
 
-        if (profileResponse.error) {
-          console.error('Error fetching user profile:', profileResponse.error);
-          setError(`Failed to load user profile: ${profileResponse.error.message}`);
-          return;
-        }
-
-        // Handle case where profile doesn't exist in public_profiles
-        if (!profileResponse.data) {
-          console.warn('Profile not found in public_profiles for user:', userId);
-          setUserProfile(null);
+          if (cardsResponse.error) {
+            // Don't show error - just show empty cards
+            setUserCards([]);
+          } else {
+            setUserCards(cardsResponse.data || []);
+          }
+        } catch {
+          // If cards fetch fails for any reason, show empty state
           setUserCards([]);
-          setLoading(false);
-          return;
         }
-
-        if (cardsResponse.error) {
-          console.error('Error fetching user cards:', cardsResponse.error);
-          setError(`Failed to load user cards: ${cardsResponse.error.message}`);
-          return;
-        }
-
-        setUserProfile({
-          id: profileResponse.data.user_id,
-          name: profileResponse.data.name,
-          card_slots: profileResponse.data.card_slots,
-        });
-
-        setUserCards(cardsResponse.data || []);
       } catch (err) {
-        console.error('Error in fetchUserData:', err);
-        setError(`Failed to fetch user data: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        // On any error, show empty state rather than error message
+        setUserProfile(null);
+        setUserCards([]);
       } finally {
         setLoading(false);
       }
@@ -146,8 +153,8 @@ export default function UserCards({
 
   if (error) {
     return (
-      <div className={`text-center text-red-400 text-sm ${className}`}>
-        Error loading cards: {error}
+      <div className={`text-center text-white/60 text-sm ${className}`}>
+        No public cards yet.
       </div>
     );
   }
@@ -156,7 +163,7 @@ export default function UserCards({
   if (!userProfile) {
     return (
       <div className={`text-center text-white/60 text-sm ${className}`}>
-        Profile not found
+        No public cards yet.
       </div>
     );
   }

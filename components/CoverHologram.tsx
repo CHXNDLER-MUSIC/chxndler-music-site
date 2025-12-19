@@ -618,13 +618,12 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
       
       {showCard && mounted ? createPortal(
         <div
-          className="fixed z-[2147483647] bg-black bg-opacity-90"
+          className="fixed z-[2147483647]"
           style={{
             top: 'var(--profile-bar-boundary, 64px)',
             bottom: 'var(--light-beam-boundary)',
             left: 0,
             right: 0,
-            backdropFilter: 'blur(8px)',
           }}
           onClick={() => {
             try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
@@ -635,37 +634,28 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
             className="absolute inset-0 flex items-center justify-center p-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div
-              className="relative rounded-lg p-6 max-w-2xl overflow-hidden"
-              style={{
-                background: 'rgba(17, 24, 39, 0.95)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(75, 85, 99, 0.5)',
-                maxHeight: '100%',
+            {/* Close Button */}
+            <button
+              onClick={() => {
+                try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
+                setShowCard(false);
               }}
+              onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
+              className="absolute top-2 right-2 w-8 h-8 bg-[#19E3FF] hover:bg-[#19E3FF]/80 rounded-full flex items-center justify-center text-black font-bold transition-all duration-200 z-10 shadow-[0_0_20px_rgba(25,227,255,0.8)]"
             >
-              {/* Close Button */}
-              <button
-                onClick={() => {
-                  try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
-                  setShowCard(false);
-                }}
-                onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
-                className="absolute top-2 right-2 w-8 h-8 bg-gray-700 hover:bg-gray-600 rounded-full flex items-center justify-center text-gray-300 hover:text-white transition-all duration-200 z-10"
-              >
-                ×
-              </button>
+              ×
+            </button>
 
-              {/* Card Image */}
-              <div className="flex items-center justify-center w-full h-full">
-                <div className="relative max-w-full max-h-full">
-                  <div
-                    className="relative w-full"
-                    style={{
-                      height: '55vh',
-                      maxWidth: '320px'
-                    }}
-                  >
+            {/* Card Image */}
+            <div className="flex items-center justify-center w-full h-full">
+                <div
+                  className="relative"
+                  style={{
+                    height: '55vh',
+                    width: 'min(320px, 80vw)',
+                    aspectRatio: '3 / 4'
+                  }}
+                >
                     {/* TiltSpinCard wrapper for 360° drag-to-spin interaction */}
                     <TiltSpinCard
                       className="relative w-full h-full"
@@ -695,9 +685,8 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                       <img
                         src={explicitCardSrc || computedCardSrc}
                         alt={title}
-                        className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
+                        className="absolute inset-0 w-full h-full rounded-lg object-contain pointer-events-none"
                         style={{
-                          filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
                           backfaceVisibility: 'hidden',
                           transform: `rotateY(${cardRotation}deg)`,
                           transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
@@ -717,9 +706,8 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                       <img
                         src={'/cards/BACK.webp'}
                         alt={`${title} card back`}
-                        className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
+                        className="absolute inset-0 w-full h-full rounded-lg object-contain pointer-events-none"
                         style={{
-                          filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
                           backfaceVisibility: 'hidden',
                           transform: `rotateY(${cardRotation + 180}deg)`,
                           transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
@@ -730,7 +718,6 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                         draggable={false}
                       />
                     </TiltSpinCard>
-                  </div>
                 </div>
               </div>
 
@@ -778,7 +765,6 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                   </button>
                 </div>
               )}
-            </div>
           </div>
         </div>,
         document.body

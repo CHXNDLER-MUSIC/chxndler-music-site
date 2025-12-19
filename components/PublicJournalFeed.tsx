@@ -169,7 +169,7 @@ export default function PublicJournalFeed() {
                     }}
                   />
                   <div className="text-sm font-medium text-white">
-                    {entry.author?.name ?? 'Anonymous'}
+                    {entry.author?.name ?? 'Unknown Alien'}
                   </div>
                 </div>
 
@@ -259,7 +259,7 @@ export default function PublicJournalFeed() {
                           />
                           <div className="flex flex-col">
                             <div className="text-2xl font-bold text-white">
-                              {entry.author?.name ?? 'Anonymous'}
+                              {entry.author?.name ?? 'Unknown Alien'}
                             </div>
 
                             {/* Element label */}
