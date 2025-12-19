@@ -2435,78 +2435,6 @@ const HUDPanel = React.memo(function HUDPanel({
               <div className="holo-particle holo-particle-10"></div>
             </div>
 
-            {/* Bottom-anchored Spotify-style progress bar inside blue display */}
-            {(() => {
-              const a = liveAudioRef?.current;
-              const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
-              const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
-              const pct = liveDur ? (liveTime / liveDur) * 100 : 0;
-
-              const handleSeek = (clientX) => {
-                const audioEl = liveAudioRef?.current;
-                const bar = progressBarRef?.current;
-                if (!audioEl || !bar || !liveDur) return;
-                const rect = bar.getBoundingClientRect();
-                const clickX = clientX - rect.left;
-                const ratio = Math.min(Math.max(clickX / rect.width, 0), 1);
-                const newTime = ratio * liveDur;
-                try { audioEl.currentTime = newTime; } catch {}
-                try { setProgress(newTime); } catch {}
-              };
-
-              const onBarClick = (e) => {
-                handleSeek(e.clientX);
-              };
-
-              const onPointerDown = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleSeek(e.clientX || (e.touches?.[0]?.clientX) || 0);
-
-                const onMove = (me) => {
-                  const cx = me.clientX || (me.touches?.[0]?.clientX) || 0;
-                  handleSeek(cx);
-                };
-                const onUp = () => {
-                  window.removeEventListener('mousemove', onMove);
-                  window.removeEventListener('touchmove', onMove);
-                  window.removeEventListener('mouseup', onUp);
-                  window.removeEventListener('touchend', onUp);
-                };
-                window.addEventListener('mousemove', onMove, { passive: true });
-                window.addEventListener('touchmove', onMove, { passive: true });
-                window.addEventListener('mouseup', onUp, { passive: true });
-                window.addEventListener('touchend', onUp, { passive: true });
-              };
-
-              return (
-                <div
-                  className="absolute left-2 right-2 bottom-2"
-                  style={{ zIndex: 100, pointerEvents: 'auto' }}
-                >
-                  <div
-                    ref={progressBarRef}
-                    className="relative w-full h-4 rounded-full bg-white/10 cursor-pointer"
-                    onClick={onBarClick}
-                    onMouseDown={onPointerDown}
-                    onTouchStart={onPointerDown}
-                    style={{ touchAction: 'none' }}
-                  >
-                    <div className="absolute inset-0 opacity-40 bg-white/20 rounded-full" />
-                    <div
-                      className="absolute inset-y-0 left-0 bg-[#FC54AF] rounded-full shadow-[0_0_12px_rgba(252,84,175,0.8)]"
-                      style={{ width: `${pct}%`, pointerEvents: 'none' }}
-                    />
-                    <div
-                      className="absolute top-1/2 -translate-y-1/2 pointer-events-none"
-                      style={{ left: `calc(${pct}% - 6px)` }}
-                    >
-                      <div className="w-3 h-3 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)]" />
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
 
           
           {/* Cover section at bottom right corner - using CoverHologram for pop-out functionality */}
@@ -2893,127 +2821,6 @@ const HUDPanel = React.memo(function HUDPanel({
                         borderRadius: '1px',
                         zIndex: 5
                       }} />
-                      {/* Waveform positioned below controls, aligned with play button */}
-                      <div className="hud-mini-wave flex items-center justify-start" style={{ marginBottom: 8, marginLeft: 0, marginTop: 2 }}>
-                        <div 
-                          className="waveform"
-                          onClick={handleProgressClick}
-                          onMouseMove={(e) => {
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            const hoverX = e.clientX - rect.left;
-                            const hoverPercentage = (hoverX / rect.width) * 100;
-                            e.currentTarget.style.setProperty('--hover-position', `${hoverPercentage}%`);
-                          }}
-                          style={{
-                            position: 'relative',
-                            border: 'none',
-                            width: `calc((100vw - ${(inConsole ? 6 : 8) + (oneLinerRight + 4) + 32}px) * 0.85)`, // 85% of dropdown width
-                            height: 18,
-                            borderRadius: 0,
-                            background: 'transparent',
-                            marginLeft: '8px' // Align with play button
-                          }}
-                          onMouseEnter={(e) => {
-                            try { sfx.play('hover', 0.3); } catch {}
-                            // No border styling needed for invisible container
-                          }}
-                          onMouseLeave={(e) => {
-                            // No border styling needed for invisible container
-                          }}
-                        >
-                          <svg className="w-full h-full" viewBox="0 0 100 18" preserveAspectRatio="none" style={{ background: 'transparent' }}>
-                            <defs>
-                              {(() => {
-                                const ELEMENT_COLORS = {
-                                  heart: {
-                                    stroke: "#FC54AF",
-                                    glow: "rgba(252, 84, 175, 0.9)"
-                                  },
-                                  water: {
-                                    stroke: "#38B6FF",
-                                    glow: "rgba(56, 182, 255, 0.9)"
-                                  },
-                                  lightning: {
-                                    stroke: "#F2EF1D",
-                                    glow: "rgba(242, 239, 29, 0.9)"
-                                  },
-                                  darkness: {
-                                    stroke: "#FFFFFF",
-                                    glow: "rgba(255, 255, 255, 0.7)"
-                                  }
-                                };
-                                const currentSong = resolvedSongs.find(s => s.id === active);
-                                const element = currentSong?.icon || 'heart';
-                                const elementColor = ELEMENT_COLORS[element]?.stroke || '#FFFFFF';
-                                const hexToRgba = (hex, alpha) => {
-                                  const r = parseInt(hex.slice(1, 3), 16);
-                                  const g = parseInt(hex.slice(3, 5), 16);
-                                  const b = parseInt(hex.slice(5, 7), 16);
-                                  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-                                };
-                                return (
-                                  <>
-                                    <linearGradient id="miniUnplayed" x1="0%" y1="0%" x2="0%" y2="100%">
-                                      <stop offset="0%" stopColor={hexToRgba(elementColor, 0.25)} />
-                                      <stop offset="50%" stopColor={hexToRgba(elementColor, 0.35)} />
-                                      <stop offset="100%" stopColor={hexToRgba(elementColor, 0.25)} />
-                                    </linearGradient>
-                                    <linearGradient id="miniPlayed" x1="0%" y1="0%" x2="0%" y2="100%">
-                                      <stop offset="0%" stopColor={hexToRgba(elementColor, 0.8)} />
-                                      <stop offset="50%" stopColor={hexToRgba(elementColor, 1)} />
-                                      <stop offset="100%" stopColor={hexToRgba(elementColor, 0.8)} />
-                                    </linearGradient>
-                                    <filter id="waveformGlow">
-                                      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                                      <feMerge>
-                                        <feMergeNode in="coloredBlur"/>
-                                        <feMergeNode in="SourceGraphic"/>
-                                      </feMerge>
-                                    </filter>
-                                  </>
-                                );
-                              })()}
-                            </defs>
-                            {(() => {
-                              const ELEMENT_COLORS = {
-                                heart: {
-                                  stroke: "#FC54AF",
-                                  glow: "rgba(252, 84, 175, 0.9)"
-                                },
-                                water: {
-                                  stroke: "#38B6FF",
-                                  glow: "rgba(56, 182, 255, 0.9)"
-                                },
-                                lightning: {
-                                  stroke: "#F2EF1D",
-                                  glow: "rgba(242, 239, 29, 0.9)"
-                                },
-                                darkness: {
-                                  stroke: "#FFFFFF",
-                                  glow: "rgba(255, 255, 255, 0.7)"
-                                }
-                              };
-                              const currentSong = resolvedSongs.find(s => s.id === active);
-                              const element = currentSong?.icon || 'heart';
-                              const elementColor = ELEMENT_COLORS[element]?.stroke || '#FFFFFF';
-                              const a = liveAudioRef.current;
-                              const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
-                              const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
-                              const progressRatio = liveDur > 0 ? (liveTime / liveDur) : 0;
-                              const progressX = progressRatio * 100;
-                              const centerY = 9; // half of 18
-                              return (
-                                <>
-                                  {/* Background track as a thick rounded line */}
-                                  <line x1="0" y1={centerY} x2="100" y2={centerY} stroke={elementColor} strokeWidth="8" opacity="0.35" strokeLinecap="round" strokeLinejoin="round" filter="url(#waveformGlow)" />
-                                  {/* Played portion: single clean rounded bar with glow */}
-                                  <line x1="0" y1={centerY} x2={progressX} y2={centerY} stroke={elementColor} strokeWidth="8" opacity="1" strokeLinecap="round" strokeLinejoin="round" filter="url(#waveformGlow)" />
-                                </>
-                              );
-                            })()}
-                          </svg>
-                        </div>
-                      </div>
 
                       {/* Enhanced glowing track line pinned to the bottom of blue display */}
                       {(() => {
@@ -3035,13 +2842,13 @@ const HUDPanel = React.memo(function HUDPanel({
                           const elementColor = TRACK_ELEMENT_COLORS[element] || '#38B6FF';
                           
                           return (
-                            <div 
+                            <div
                               className="hud-enhanced-track"
                               style={{
                                 position: 'absolute',
                                 left: 14, // Start closer to play button alignment
                                 right: 6,
-                                bottom: -1,
+                                bottom: -55,
                                 height: 10,
                                 borderRadius: 9999,
                                 background: 'rgba(0,0,0,0.4)',
@@ -3064,9 +2871,10 @@ const HUDPanel = React.memo(function HUDPanel({
                                   inset: 0,
                                   background: `linear-gradient(90deg, transparent, ${elementColor}25, transparent)`,
                                   borderRadius: 9999,
+                                  pointerEvents: 'none'
                                 }}
                               />
-                              
+
                               {/* Additional ambient glow layer */}
                               <div
                                 style={{
@@ -3074,10 +2882,11 @@ const HUDPanel = React.memo(function HUDPanel({
                                   inset: -2,
                                   background: `radial-gradient(ellipse, ${elementColor}20 0%, transparent 70%)`,
                                   borderRadius: 9999,
-                                  filter: 'blur(4px)'
+                                  filter: 'blur(4px)',
+                                  pointerEvents: 'none'
                                 }}
                               />
-                              
+
                               {/* Progress fill with enhanced bright glow */}
                               <div
                                 style={{
@@ -3093,7 +2902,8 @@ const HUDPanel = React.memo(function HUDPanel({
                                     inset 0 1px 0 rgba(255,255,255,0.4)
                                   `,
                                   transition: 'width 200ms ease-out',
-                                  filter: 'brightness(1.2) saturate(1.1)'
+                                  filter: 'brightness(1.2) saturate(1.1)',
+                                  pointerEvents: 'none'
                                 }}
                               />
                               
@@ -3117,6 +2927,7 @@ const HUDPanel = React.memo(function HUDPanel({
                                       0 1px 3px rgba(0,0,0,0.4)
                                     `,
                                     transition: 'left 200ms ease-out',
+                                    pointerEvents: 'none',
                                     filter: 'brightness(1.3) saturate(1.2)'
                                   }}
                                 />

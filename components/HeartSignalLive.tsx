@@ -7,6 +7,24 @@ import ProfileModal from '@/components/chat/ProfileModal';
 import { useProfile } from '@/contexts/ProfileContext';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
+// Generate or retrieve anonymous ALIEN name
+const getAnonymousName = (): string => {
+  if (typeof window === 'undefined') return 'ALIEN00000000';
+
+  // Check if we already have a stored name in session storage
+  const stored = sessionStorage.getItem('heartSignalAlienName');
+  if (stored) return stored;
+
+  // Generate new ALIEN name with 8 digits
+  const alienNumber = Math.floor(Math.random() * 99999999) + 1;
+  const paddedNumber = String(alienNumber).padStart(8, '0');
+  const alienName = `ALIEN${paddedNumber}`;
+
+  // Store for this session
+  sessionStorage.setItem('heartSignalAlienName', alienName);
+  return alienName;
+};
+
 // Emoji types for reactions
 type EmojiType = 'heart' | 'water' | 'lightning' | 'darkness' | 'alien';
 
@@ -456,7 +474,25 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
 
     // Send connection message when user joins
     if (user && profile?.name) {
+      // Authenticated user - send system message to database
       sendSystemMessage(`${profile.name} connected to the signal`);
+    } else {
+      // Anonymous user - add local connection message
+      const anonymousName = getAnonymousName();
+      const localConnectionMessage: HeartSignalMessage = {
+        id: `local-connection-${Date.now()}`,
+        user_id: '00000000-0000-0000-0000-000000000000',
+        username: 'SYSTEM',
+        message: `${anonymousName} connected to the signal`,
+        created_at: new Date().toISOString(),
+        is_system: true,
+        heart_count: 0,
+        water_count: 0,
+        lightning_count: 0,
+        darkness_count: 0,
+        alien_count: 0,
+      };
+      setMessages((prev) => [...prev, localConnectionMessage]);
     }
 
     // Cleanup on unmount

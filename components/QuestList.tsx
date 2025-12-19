@@ -950,7 +950,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                       : handleInviteFriend
                 }
                 disabled={questStatus.inviteFriendConfirm || loading || bonusQuestsLoading}
-                className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 cursor-pointer ${
+                className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 cursor-pointer flex items-center justify-center ${
                   questStatus.inviteFriendConfirm
                     ? 'bg-green-500 border-2 border-green-400 text-white cursor-default !opacity-100'
                     : !isAuthenticated
@@ -977,13 +977,16 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                   opacity: questStatus.inviteFriendConfirm ? 1 : undefined
                 }}
               >
-                {questStatus.inviteFriendConfirm 
-                  ? 'COMPLETED' 
+                {questStatus.inviteFriendConfirm
+                  ? 'COMPLETED'
                   : !isAuthenticated
                     ? 'LOG IN TO COMPLETE'
-                    : questStatus.inviteFriend 
-                        ? 'CONFIRM' 
-                        : 'INVITE FRIEND'
+                    : questStatus.inviteFriend
+                        ? 'CONFIRM'
+                        : <div className="flex flex-col items-center leading-none">
+                            <span>INVITE</span>
+                            <span>FRIEND</span>
+                          </div>
                 }
               </button>
               <div 
@@ -1035,65 +1038,62 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
           }}
         >
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                {!showCheckIn ? (
-                  <>
-                    <h4 className="text-white font-semibold mb-1">3. Attend a Livestream or Live Show</h4>
-                    <p className="text-white/80 text-sm">Check in at a CHXNDLER show or stream to receive bonus HEART coins.</p>
-                  </>
-                ) : (
-                  <div className="space-y-2">
-                    <form onSubmit={(e) => {
-                      e.preventDefault();
-                      if (secretPhrase.trim() && !loading) {
-                        handleCheckInSubmit();
-                      }
-                    }}>
-                      <input
-                        type="text"
-                        value={secretPhrase}
-                        onChange={(e) => {
-                          const newValue = e.target.value;
-                          console.log('Input changed:', newValue);
-                          console.log('Input length:', newValue.length);
-                          console.log('Trimmed value:', newValue.trim());
-                          setSecretPhrase(newValue);
-                          setCheckInError("");
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && secretPhrase.trim() && !loading) {
-                            e.preventDefault();
-                            handleCheckInSubmit();
-                          }
-                        }}
-                        placeholder="ENTER PASSWORD"
-                        className={`w-full rounded-md border px-3 py-2 text-sm text-white placeholder-white/60 shadow-sm focus:outline-none transition-all ${
-                          secretPhrase.trim() 
-                            ? 'border-yellow-400/60 bg-yellow-600/10 focus:border-yellow-400' 
-                            : 'border-white/20 bg-black/30 focus:border-cyan-400'
-                        }`}
-                        style={{
-                          boxShadow: secretPhrase.trim() 
-                            ? '0 0 12px rgba(255,255,0,0.4)' 
-                            : '0 0 8px rgba(0,255,255,0.2)'
-                        }}
-                        autoComplete="off"
-                        autoCorrect="off"
-                        spellCheck="false"
-                        autoFocus
-                      />
-                    </form>
-                  </div>
-                )}
-              </div>
+            <div>
+              <h4 className="text-white font-semibold mb-1">3. Attend a Livestream or Live Show</h4>
+              <p className="text-white/80 text-sm mb-3">Check in at a CHXNDLER show or stream to receive bonus HEART coins.</p>
+
+              {showCheckIn && (
+                <div className="mb-3">
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    if (secretPhrase.trim() && !loading) {
+                      handleCheckInSubmit();
+                    }
+                  }}>
+                    <input
+                      type="text"
+                      value={secretPhrase}
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        console.log('Input changed:', newValue);
+                        console.log('Input length:', newValue.length);
+                        console.log('Trimmed value:', newValue.trim());
+                        setSecretPhrase(newValue);
+                        setCheckInError("");
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && secretPhrase.trim() && !loading) {
+                          e.preventDefault();
+                          handleCheckInSubmit();
+                        }
+                      }}
+                      placeholder="ENTER PASSWORD"
+                      className={`w-full rounded-md border px-3 py-2 text-sm text-white placeholder-white/60 shadow-sm focus:outline-none transition-all ${
+                        secretPhrase.trim()
+                          ? 'border-yellow-400/60 bg-yellow-600/10 focus:border-yellow-400'
+                          : 'border-white/20 bg-black/30 focus:border-cyan-400'
+                      }`}
+                      style={{
+                        boxShadow: secretPhrase.trim()
+                          ? '0 0 12px rgba(255,255,0,0.4)'
+                          : '0 0 8px rgba(0,255,255,0.2)'
+                      }}
+                      autoComplete="off"
+                      autoCorrect="off"
+                      spellCheck="false"
+                      autoFocus
+                    />
+                  </form>
+                </div>
+              )}
+
               <div className="flex items-center gap-2">
                 <button
                   onClick={
-                    questStatus.liveShow 
-                      ? undefined 
-                      : showCheckIn 
-                        ? handleCheckInSubmit 
+                    questStatus.liveShow
+                      ? undefined
+                      : showCheckIn
+                        ? handleCheckInSubmit
                         : handleShowCheckInForm
                   }
                   disabled={questStatus.liveShow || bonusQuestsLoading || (showCheckIn && (loading || !secretPhrase.trim()))}
@@ -1129,42 +1129,42 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                             : '0 0 4px rgba(252,84,175,0.6)'
                   }}
                 >
-                  {questStatus.liveShow 
-                    ? 'COMPLETED' 
-                    : !isAuthenticated 
-                      ? 'LOG IN TO COMPLETE' 
+                  {questStatus.liveShow
+                    ? 'COMPLETED'
+                    : !isAuthenticated
+                      ? 'LOG IN TO COMPLETE'
                       : showCheckIn
                         ? (loading ? 'CONFIRMING...' : secretPhrase.trim() ? 'CONFIRM' : 'ENTER PHRASE ABOVE')
                         : 'CHECK IN'
                   }
                 </button>
-                <div 
+                <div
                   className={`font-bold text-sm cursor-pointer ${
-                    questStatus.liveShow 
-                      ? 'text-green-400' 
-                      : !isAuthenticated 
-                        ? 'text-yellow-400 hover:text-yellow-300' 
+                    questStatus.liveShow
+                      ? 'text-green-400'
+                      : !isAuthenticated
+                        ? 'text-yellow-400 hover:text-yellow-300'
                         : 'text-pink-400'
                   }`}
-                  style={{ 
-                    textShadow: questStatus.liveShow 
-                      ? '0 0 4px rgba(0,255,0,0.6)' 
+                  style={{
+                    textShadow: questStatus.liveShow
+                      ? '0 0 4px rgba(0,255,0,0.6)'
                       : !isAuthenticated
                         ? '0 0 4px rgba(255,255,0,0.6)'
-                        : '0 0 4px rgba(252,84,175,0.6)' 
+                        : '0 0 4px rgba(252,84,175,0.6)'
                   }}
                   onClick={
-                    questStatus.liveShow 
-                      ? undefined 
-                      : showCheckIn 
-                        ? handleCheckInSubmit 
+                    questStatus.liveShow
+                      ? undefined
+                      : showCheckIn
+                        ? handleCheckInSubmit
                         : handleShowCheckInForm
                   }
                 >
-                  {questStatus.liveShow 
-                    ? '✓ Complete' 
-                    : !isAuthenticated 
-                      ? 'Log in to complete' 
+                  {questStatus.liveShow
+                    ? '✓ Complete'
+                    : !isAuthenticated
+                      ? 'Log in to complete'
                       : '+5'
                   }
                 </div>

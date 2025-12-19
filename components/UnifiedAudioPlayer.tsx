@@ -228,45 +228,39 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
               )}
             </button>
 
-            {/* Progress Bar - Connected to Play Button */}
+            {/* Single Unified Progress Bar */}
             <div className="flex-1 relative">
               <div
                 ref={progressBarRef}
                 onClick={handleProgressClick}
                 onPointerDown={handleProgressPointerDown}
-                className="relative w-full h-3 bg-black/40 rounded-full cursor-pointer overflow-hidden border border-[#19E3FF]/20 hover:border-[#19E3FF]/60 transition-all duration-200"
+                className="relative w-full h-2 bg-white/20 rounded-full cursor-pointer overflow-visible hover:h-2.5 transition-all duration-200 group"
                 title="Click or drag to seek"
               >
-                {/* Background glow */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#19E3FF]/10 to-transparent"></div>
-                
                 {/* Progress Fill with Gradient */}
                 <div
-                  className="absolute top-0 left-0 h-full rounded-full transition-all duration-75 ease-out"
+                  className="absolute top-0 left-0 h-full rounded-full transition-all duration-100 ease-out"
                   style={{
                     width: `${progress * 100}%`,
                     background: `linear-gradient(90deg, ${BRAND_COLORS.pink} 0%, ${BRAND_COLORS.blue} 50%, ${BRAND_COLORS.yellow} 100%)`,
                     boxShadow: `
-                      0 0 12px ${BRAND_COLORS.blue}60,
-                      0 0 20px ${BRAND_COLORS.pink}40,
-                      0 0 30px ${BRAND_COLORS.yellow}30,
-                      inset 0 1px 0 rgba(255,255,255,0.2)
+                      0 0 8px ${BRAND_COLORS.pink}60,
+                      0 0 16px ${BRAND_COLORS.blue}40
                     `
                   }}
                 />
-                
-                {/* Circular Handle */}
+
+                {/* Circular Handle - Only visible on hover or when dragging */}
                 <div
-                  className="absolute top-1/2 w-5 h-5 rounded-full border-2 border-white transition-all duration-75 ease-out shadow-lg"
+                  className="absolute top-1/2 w-4 h-4 rounded-full border-2 border-white transition-all duration-100 ease-out shadow-lg opacity-0 group-hover:opacity-100"
                   style={{
                     left: `${progress * 100}%`,
                     transform: 'translateX(-50%) translateY(-50%)',
-                    background: `radial-gradient(circle, ${BRAND_COLORS.blue}, ${BRAND_COLORS.pink})`,
+                    background: `radial-gradient(circle, ${BRAND_COLORS.pink}, ${BRAND_COLORS.blue})`,
                     boxShadow: `
-                      0 0 12px ${BRAND_COLORS.blue}80,
-                      0 0 20px ${BRAND_COLORS.pink}60,
-                      0 2px 8px rgba(0,0,0,0.3),
-                      inset 0 1px 2px rgba(255,255,255,0.3)
+                      0 0 10px ${BRAND_COLORS.pink}80,
+                      0 0 18px ${BRAND_COLORS.blue}60,
+                      0 2px 6px rgba(0,0,0,0.3)
                     `
                   }}
                 />

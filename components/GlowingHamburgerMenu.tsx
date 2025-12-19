@@ -27,9 +27,10 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
   const { hasPendingReflection } = useDailyReflectionStatus();
   
   const journeyTitle = getJourneyTitle(!!user);
-  
-  // Show COMPLETED state (and hide pink dot) when no pending entry
-  const journalLabel = hasPendingReflection ? "JOURNAL" : "COMPLETED";
+
+  // Show COMPLETED state only when logged in AND no pending entry
+  // Always show JOURNAL when logged out
+  const journalLabel = !user ? "JOURNAL" : (hasPendingReflection ? "JOURNAL" : "COMPLETED");
   
   const menuItems = [
     { label: "ABOUT", href: undefined },
