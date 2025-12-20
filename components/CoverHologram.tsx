@@ -621,7 +621,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
           className="fixed z-[2147483647]"
           style={{
             top: 'var(--profile-bar-boundary, 64px)',
-            bottom: 'var(--light-beam-boundary)',
+            bottom: 'calc(var(--light-beam-boundary) + var(--beam-height, 68px))',
             left: 0,
             right: 0,
           }}
@@ -634,101 +634,40 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
             className="absolute inset-0 flex items-center justify-center p-4"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close Button */}
-            <button
-              onClick={() => {
-                try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
-                setShowCard(false);
+            {/* Blue container with card - same width as blue display */}
+            <div
+              className="relative rounded-2xl p-4 flex flex-col items-center"
+              style={{
+                background: 'rgba(25, 227, 255, 0.45)',
+                boxShadow: '0 0 60px rgba(25, 227, 255, 0.45), inset 0 0 0 1px rgba(25, 227, 255, 0.35)',
+                width: 'var(--display-width)',
+                maxHeight: '100%',
+                overflow: 'hidden',
               }}
-              onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
-              className="absolute top-2 right-2 w-8 h-8 bg-[#19E3FF] hover:bg-[#19E3FF]/80 rounded-full flex items-center justify-center text-black font-bold transition-all duration-200 z-10 shadow-[0_0_20px_rgba(25,227,255,0.8)]"
             >
-              ×
-            </button>
+              {/* Close Button */}
+              <button
+                onClick={() => {
+                  try { const a = closeCoverRef.current; if (a && a.readyState >= 2) { a.currentTime = 0; a.volume = 0.6; a.play().catch(()=>{}); } } catch {}
+                  setShowCard(false);
+                }}
+                onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
+                className="absolute -top-2 -right-2 w-8 h-8 bg-[#19E3FF] hover:bg-[#19E3FF]/80 rounded-full flex items-center justify-center text-black font-bold transition-all duration-200 z-10 shadow-[0_0_20px_rgba(25,227,255,0.8)]"
+              >
+                ×
+              </button>
 
-            {/* Card Image */}
-            <div className="flex items-center justify-center w-full h-full">
-                <div
-                  className="relative"
-                  style={{
-                    height: '55vh',
-                    width: 'min(320px, 80vw)',
-                    aspectRatio: '3 / 4'
-                  }}
-                >
-                    {/* TiltSpinCard wrapper for 360° drag-to-spin interaction */}
-                    <TiltSpinCard
-                      className="relative w-full h-full"
-                      maxRotateX={10}
-                      sensitivity={0.3}
-                      returnDuration={400}
-                      enableSpin={true}
-                      spinSensitivity={0.8}
-                      onRotationChange={setCardRotation}
-                      onClick={() => {
-                        // Click-to-flip using rotation increments for smoothness
-                        try {
-                          const a = flipCoverRef.current as HTMLAudioElement | null;
-                          if (a && a.readyState >= 2) {
-                            a.currentTime = 0;
-                            a.volume = 0.45;
-                            a.play().catch(() => {});
-                          }
-                        } catch {}
-                        setIsAnimatingFlip(true);
-                        setCardRotation(prev => prev + 180);
-                        setCardFlipped(v => !v);
-                        setTimeout(() => setIsAnimatingFlip(false), 500);
-                      }}
-                    >
-                      {/* Front side - rotates with cardRotation */}
-                      <img
-                        src={explicitCardSrc || computedCardSrc}
-                        alt={title}
-                        className="absolute inset-0 w-full h-full rounded-lg object-contain pointer-events-none"
-                        style={{
-                          backfaceVisibility: 'hidden',
-                          transform: `rotateY(${cardRotation}deg)`,
-                          transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                        }}
-                        onError={(e)=>{
-                          const fallback = src.replace('/covers/', '/cards/');
-                          if (fallback && fallback !== src) {
-                            (e.currentTarget as HTMLImageElement).onerror = () => { (e.currentTarget as HTMLImageElement).src = CARD_URLS['back'] || '/cards/BACK.webp'; };
-                            (e.currentTarget as HTMLImageElement).src = fallback;
-                          } else {
-                            (e.currentTarget as HTMLImageElement).src = CARD_URLS['back'] || '/cards/BACK.webp';
-                          }
-                        }}
-                        draggable={false}
-                      />
-                      {/* Back side - offset 180° */}
-                      <img
-                        src={'/cards/BACK.webp'}
-                        alt={`${title} card back`}
-                        className="absolute inset-0 w-full h-full rounded-lg object-contain pointer-events-none"
-                        style={{
-                          backfaceVisibility: 'hidden',
-                          transform: `rotateY(${cardRotation + 180}deg)`,
-                          transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                        }}
-                        onError={(e)=>{
-                          (e.currentTarget as HTMLImageElement).src = "/logo/CHXNDLER_Logo.png";
-                        }}
-                        draggable={false}
-                      />
-                    </TiltSpinCard>
-                </div>
-              </div>
-
-              {/* Collect Card Button */}
+              {/* Collect Card Button - Above the card */}
               {hasRealCard && (
-                <div className="mt-4 flex justify-center">
+                <div className="mb-3 flex justify-center">
                   <button
                     type="button"
-                    className="px-8 py-3 rounded-lg font-bold text-sm transition-all duration-200 bg-gradient-to-r from-[#4ECDC4] to-[#45b7b8] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(78,205,196,0.6)]"
+                    className="px-6 py-2 rounded-lg font-bold text-sm transition-all duration-200"
                     style={{
-                      boxShadow: '0 0 15px rgba(78,205,196,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
+                      background: 'radial-gradient(100% 100% at 50% 20%, rgba(255,255,210,0.95), #F2EF1D)',
+                      color: '#001014',
+                      boxShadow: '0 0 20px rgba(242,239,29,.55), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -8px 16px rgba(0,0,0,.22)',
+                      border: '1px solid rgba(255,255,255,.24)',
                     }}
                     onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
                     onClick={(e) => {
@@ -765,6 +704,79 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                   </button>
                 </div>
               )}
+
+              {/* Card Image */}
+              <div
+                className="relative flex-1"
+                style={{
+                  width: '100%',
+                  maxWidth: 'calc(var(--display-width) - 32px)',
+                  maxHeight: '100%',
+                  aspectRatio: '3 / 4'
+                }}
+              >
+                <TiltSpinCard
+                  className="relative w-full h-full"
+                  maxRotateX={10}
+                  sensitivity={0.3}
+                  returnDuration={400}
+                  enableSpin={true}
+                  spinSensitivity={0.8}
+                  onRotationChange={setCardRotation}
+                  onClick={() => {
+                    try {
+                      const a = flipCoverRef.current as HTMLAudioElement | null;
+                      if (a && a.readyState >= 2) {
+                        a.currentTime = 0;
+                        a.volume = 0.45;
+                        a.play().catch(() => {});
+                      }
+                    } catch {}
+                    setIsAnimatingFlip(true);
+                    setCardRotation(prev => prev + 180);
+                    setCardFlipped(v => !v);
+                    setTimeout(() => setIsAnimatingFlip(false), 500);
+                  }}
+                >
+                  {/* Front side */}
+                  <img
+                    src={explicitCardSrc || computedCardSrc}
+                    alt={title}
+                    className="absolute inset-0 w-full h-full rounded-3xl object-contain pointer-events-none"
+                    style={{
+                      backfaceVisibility: 'hidden',
+                      transform: `rotateY(${cardRotation}deg)`,
+                      transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                    }}
+                    onError={(e)=>{
+                      const fallback = src.replace('/covers/', '/cards/');
+                      if (fallback && fallback !== src) {
+                        (e.currentTarget as HTMLImageElement).onerror = () => { (e.currentTarget as HTMLImageElement).src = CARD_URLS['back'] || '/cards/BACK.webp'; };
+                        (e.currentTarget as HTMLImageElement).src = fallback;
+                      } else {
+                        (e.currentTarget as HTMLImageElement).src = CARD_URLS['back'] || '/cards/BACK.webp';
+                      }
+                    }}
+                    draggable={false}
+                  />
+                  {/* Back side */}
+                  <img
+                    src={'/cards/BACK.webp'}
+                    alt={`${title} card back`}
+                    className="absolute inset-0 w-full h-full rounded-3xl object-contain pointer-events-none"
+                    style={{
+                      backfaceVisibility: 'hidden',
+                      transform: `rotateY(${cardRotation + 180}deg)`,
+                      transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                    }}
+                    onError={(e)=>{
+                      (e.currentTarget as HTMLImageElement).src = "/logo/CHXNDLER_Logo.png";
+                    }}
+                    draggable={false}
+                  />
+                </TiltSpinCard>
+              </div>
+            </div>
           </div>
         </div>,
         document.body

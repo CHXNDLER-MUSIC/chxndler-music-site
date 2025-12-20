@@ -619,6 +619,15 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
+                    {/* Profile Image - alien.webp for logged-out users */}
+                    {!isSystemMsg && (
+                      <img
+                        src="/elements/alien.webp"
+                        alt="Profile"
+                        className="w-6 h-6 rounded-full flex-shrink-0"
+                        style={{ objectFit: 'cover' }}
+                      />
+                    )}
                     <button
                       type="button"
                       onClick={() => openProfileForMessage(msg)}

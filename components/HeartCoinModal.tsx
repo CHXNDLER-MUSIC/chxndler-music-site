@@ -1649,11 +1649,21 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         {selectedElement !== null ? (
           <div className="relative">
             {/* Top Navigation Bar */}
-            <div className="flex items-center justify-between mb-6">
-              {/* Back Arrow */}
+            <div className="flex items-center justify-between mb-6 relative z-30">
+              {/* Previous Card Arrow */}
               <button
-                className="flex items-center justify-center w-8 h-8 rounded-full text-white/60 hover:text-white transition-colors"
-                onClick={handleBackToElementSelection}
+                className={`flex items-center justify-center w-10 h-10 rounded-full transition-colors cursor-pointer ${
+                  displayCards.length > 1
+                    ? 'text-[#4ECDC4] hover:text-[#4ECDC4] hover:bg-[#4ECDC4]/20'
+                    : 'text-white/30'
+                }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (displayCards.length > 1) {
+                    handlePrevCard();
+                  }
+                }}
+                style={{ pointerEvents: 'auto' }}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -2215,9 +2225,12 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             e.stopPropagation();
                             handleNextCard();
                           }}
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-[#4ECDC4]/20 hover:bg-[#4ECDC4]/40 border-2 border-[#4ECDC4] rounded-full flex items-center justify-center text-[#4ECDC4] hover:text-white transition-all duration-200 shadow-[0_0_15px_rgba(78,205,196,0.4)]"
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/20 hover:bg-white/40 border-2 border-white rounded-full flex items-center justify-center text-white transition-all duration-200"
+                          style={{
+                            boxShadow: '0 0 15px rgba(255,255,255,0.6), 0 0 30px rgba(255,255,255,0.4), 0 0 45px rgba(255,255,255,0.2)',
+                          }}
                         >
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.8))' }}>
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                           </svg>
                         </button>

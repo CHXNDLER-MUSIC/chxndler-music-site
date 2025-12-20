@@ -721,47 +721,38 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
                       setSuspendYellowPanel(true);
                       // Start pink fade-out (parent will handle setJoinAlienOpen)
                       onBeamColorChange?.('off');
-                      // After pink fade completes (~350ms), flip beam to yellow
+                      // After pink fade completes (~350ms), flip beam to yellow and show panel together
                       yellowFromPinkTimeoutA.current = window.setTimeout(() => {
                         setActiveBeamColor('yellow');
                         onBeamColorChange?.('yellow');
-                        // Parent enables the yellow beam shortly after; un-suspend panel with extra buffer so the beam is clearly visible first
-                        yellowFromPinkTimeoutB.current = window.setTimeout(() => {
-                          setSuspendYellowPanel(false);
-                        }, 220);
+                        // Show panel immediately with beam
+                        setSuspendYellowPanel(false);
                       }, 360);
                     } else {
-                      // Default path (blue → yellow): ask parent to switch beam,
-                      // and hold the yellow panel until the beam actually turns yellow
-                      setSuspendYellowPanel(true);
+                      // Comms ON: beam and yellow panel should appear together
                       setActiveBeamColor('yellow');
                       onBeamColorChange?.('yellow');
-                      // DashboardApp waits ~450ms before enabling yellow beam
-                      // Release panel with a larger cushion so the beam turns yellow first on all devices
-                      window.setTimeout(() => {
-                        setSuspendYellowPanel(false);
-                      }, 560);
+                      // Show panel immediately with beam
+                      setSuspendYellowPanel(false);
                     }
                   } else {
-                    // Menu is closing: turn displays off without auto-opening blue
+                    // Comms OFF: beam should disappear completely
                     // Play button sound when closing
                     try {
                       const a = buttonRef.current;
                       if (a) { a.currentTime = 0; a.volume = 0.95; a.play().catch(()=>{}); }
                     } catch {}
-                    if (activeBeamColor === 'yellow') {
-                      // Don't flash blue - just turn off displays then reset color after delay
-                      onBeamColorChange?.('off'); // tell parent to turn ALL displays off
-                      // Reset local state after beam fully fades out to avoid blue flash during fade
-                      setTimeout(() => {
-                        suppressNextBeamNotifyRef.current = true;
-                        setActiveBeamColor('blue');
-                      }, 400);
-                      // Also cancel any pending transition timers
-                      if (yellowFromPinkTimeoutA.current) { window.clearTimeout(yellowFromPinkTimeoutA.current); yellowFromPinkTimeoutA.current = null; }
-                      if (yellowFromPinkTimeoutB.current) { window.clearTimeout(yellowFromPinkTimeoutB.current); yellowFromPinkTimeoutB.current = null; }
-                      setSuspendYellowPanel(false);
-                    }
+                    // Always turn off the beam when comms is closed
+                    onBeamColorChange?.('off'); // tell parent to turn ALL displays off
+                    // Reset local state after beam fully fades out to avoid blue flash during fade
+                    setTimeout(() => {
+                      suppressNextBeamNotifyRef.current = true;
+                      setActiveBeamColor('blue');
+                    }, 400);
+                    // Cancel any pending transition timers
+                    if (yellowFromPinkTimeoutA.current) { window.clearTimeout(yellowFromPinkTimeoutA.current); yellowFromPinkTimeoutA.current = null; }
+                    if (yellowFromPinkTimeoutB.current) { window.clearTimeout(yellowFromPinkTimeoutB.current); yellowFromPinkTimeoutB.current = null; }
+                    setSuspendYellowPanel(false);
                   }
                 }}
               />

@@ -124,7 +124,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [hasClickedInitialButton, setHasClickedInitialButton] = useState(false);
-  const [activeTab, setActiveTab] = useState<'private' | 'public'>('private');
+  const [activeTab, setActiveTab] = useState<'private' | 'public'>('public');
   const [showCardsModal, setShowCardsModal] = useState(false);
   const [showBadgesModal, setShowBadgesModal] = useState(false);
   const [showFullBadgesModal, setShowFullBadgesModal] = useState(false);
