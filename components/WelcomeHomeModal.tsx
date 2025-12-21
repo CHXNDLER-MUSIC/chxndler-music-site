@@ -33,7 +33,21 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
 
   // Log only when relevant values actually change
   useLogOnChange("✅ WelcomeHomeModal state:", { open, hasProfile: isLoggedIn });
-  
+
+  // Check if we should reopen the journal after login
+  useEffect(() => {
+    if (isLoggedIn) {
+      const shouldReopenJournal = sessionStorage.getItem('reopenJournalAfterLogin');
+      if (shouldReopenJournal === 'true') {
+        sessionStorage.removeItem('reopenJournalAfterLogin');
+        // Dispatch event to reopen journal after a brief delay
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('openJournalModal'));
+        }, 300);
+      }
+    }
+  }, [isLoggedIn]);
+
   // Safety check: Never show welcome modal for logged-in users
   if (isLoggedIn) {
     return null;

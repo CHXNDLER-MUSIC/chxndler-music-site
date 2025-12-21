@@ -140,10 +140,13 @@ function ChatMessage({ message, onUserClick, onUserClickByName, reactions, onRea
   const userProfile = message.user_profile;
   const displayName = userProfile?.name || 'Anonymous';
   // Resolve element/profile image from message, known users, or current user
-  const resolvedElement = (userProfile?.element) || (userProfilesById?.[message.user_id]?.element) || ((message.user_id === currentUserId) ? currentUserElement : null);
+  // Guests always have 'alien' element
+  const isGuestMessage = !!message.guest_id;
+  const senderId = message.guest_id || message.user_id;
+  const resolvedElement = isGuestMessage ? 'alien' : ((userProfile?.element) || (userProfilesById?.[senderId]?.element) || ((senderId === currentUserId) ? currentUserElement : null));
   const elementColor = resolvedElement ? getElementColor(resolvedElement) : undefined;
   const textColor = elementColor;
-  const resolvedProfileImageUrl = (userProfile?.profile_image_url) || (userProfilesById?.[message.user_id]?.profile_image_url) || ((message.user_id === currentUserId) ? currentUserProfileImageUrl : null);
+  const resolvedProfileImageUrl = isGuestMessage ? null : ((userProfile?.profile_image_url) || (userProfilesById?.[senderId]?.profile_image_url) || ((senderId === currentUserId) ? currentUserProfileImageUrl : null));
   const timestamp = formatChatTimestamp(message.created_at);
   const sanitizedMessage = sanitizeMessage(message.message);
 
@@ -293,10 +296,10 @@ function ChatMessage({ message, onUserClick, onUserClickByName, reactions, onRea
         {/* Avatar (only show for non-consecutive messages) */}
         {!isConsecutive && (
           <button
-            onClick={() => onUserClick(message.user_id)}
+            onClick={() => onUserClick(message.guest_id || message.user_id)}
             className="flex-shrink-0 mt-0.5 hover:scale-110 transition-transform duration-200"
           >
-            <div 
+            <div
               className="w-6 h-6 rounded-full flex items-center justify-center overflow-hidden"
               style={{
                 background: elementColor ? `${elementColor}30` : 'rgba(255,255,255,0.05)',
@@ -304,11 +307,11 @@ function ChatMessage({ message, onUserClick, onUserClickByName, reactions, onRea
                 boxShadow: elementColor ? `0 0 8px ${elementColor}60` : 'none'
               }}
             >
-              {message.user_id === 'anonymous' ? (
-                // Always show alien.webp for anonymous users
+              {(message.guest_id || message.user_id === 'anonymous') ? (
+                // Always show alien.webp for guest users
                 <img
                   src="/elements/alien.webp"
-                  alt="Anonymous User"
+                  alt="Guest User"
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     // Fallback to emoji if alien.webp fails to load
@@ -390,7 +393,7 @@ function ChatMessage({ message, onUserClick, onUserClickByName, reactions, onRea
           {!isConsecutive && (
             <div className="flex items-baseline space-x-2 mb-1">
               <button
-                onClick={() => onUserClick(message.user_id)}
+                onClick={() => onUserClick(message.guest_id || message.user_id)}
                 className="font-semibold text-sm hover:underline transition-colors duration-200"
                 style={elementColor ? { color: elementColor } : undefined}
                 onMouseEnter={() => {

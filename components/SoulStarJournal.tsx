@@ -1552,8 +1552,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                           setHasClickedInitialButton(true);
                         } else {
                           sfx.play('button', 0.8);
-                          // Close journal and open welcome home immediately
+                          // Close journal and open welcome home, then reopen journal after login
                           onClose();
+                          // Set flag to reopen journal after profile creation
+                          sessionStorage.setItem('reopenJournalAfterLogin', 'true');
                           setTimeout(() => {
                             if (openWelcomeHome) {
                               openWelcomeHome();

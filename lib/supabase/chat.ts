@@ -431,31 +431,22 @@ export class ChatService {
   }
 
   /**
-   * Get list of users currently in the chat
+   * Get list of users currently in the chat (from heart_signal_messages)
+   * Includes both authenticated users and guests
    */
   async getChatUsers(): Promise<ChatUser[]> {
     try {
-      const sessionId = await this.getCurrentStreamSession();
-      
       // Get unique users from recent messages (last 30 minutes)
       const thirtyMinutesAgo = new Date();
       thirtyMinutesAgo.setMinutes(thirtyMinutesAgo.getMinutes() - 30);
-      
+
+      // Query heart_signal_messages to get both authenticated users and guests
       const { data, error } = await supabaseClient
-        .from('chat_messages')
-        .select(`
-          user_id,
-          created_at,
-          user_profile:profiles!user_id (
-            name,
-            element,
-            avatar_badge_id,
-            profile_image_url
-          )
-        `)
-        .eq('stream_session_id', sessionId)
+        .from('heart_signal_messages')
+        .select('user_id, guest_id, username, created_at')
         .gte('created_at', thirtyMinutesAgo.toISOString())
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
 
       if (error) {
         console.warn('Database not accessible for chat users, using local state:', error.message || 'Unknown error');
@@ -464,18 +455,49 @@ export class ChatService {
 
       // Remove duplicates and format data
       const uniqueUsers = new Map<string, ChatUser>();
-      
+
       for (const message of data || []) {
-        if (!message.user_profile || uniqueUsers.has(message.user_id)) continue;
-        
-        uniqueUsers.set(message.user_id, {
-          id: message.user_id,
-          name: message.user_profile.name,
-          element: message.user_profile.element as ElementType | null,
-          avatar_badge_id: message.user_profile.avatar_badge_id,
-          profile_image_url: message.user_profile.profile_image_url,
+        // Determine sender ID (user_id or guest_id)
+        const senderId = message.user_id || message.guest_id;
+        if (!senderId || uniqueUsers.has(senderId)) continue;
+
+        const isGuest = !!message.guest_id && !message.user_id;
+
+        uniqueUsers.set(senderId, {
+          id: senderId,
+          name: message.username || (isGuest ? 'ALIEN' : 'Anonymous'),
+          element: isGuest ? ('alien' as ElementType) : null,
+          avatar_badge_id: null,
+          profile_image_url: null,
           last_seen: message.created_at
         });
+      }
+
+      // If there are authenticated users, try to get their profile info
+      const userIds = Array.from(uniqueUsers.values())
+        .filter(u => !u.element || u.element !== 'alien')
+        .map(u => u.id);
+
+      if (userIds.length > 0) {
+        const { data: profiles, error: profileError } = await supabaseClient
+          .from('profiles')
+          .select('id, name, element, avatar_badge_id, profile_image_url')
+          .in('id', userIds);
+
+        if (!profileError && profiles) {
+          for (const profile of profiles) {
+            const existingUser = uniqueUsers.get(profile.id);
+            if (existingUser) {
+              uniqueUsers.set(profile.id, {
+                ...existingUser,
+                name: profile.name || existingUser.name,
+                element: profile.element as ElementType | null,
+                avatar_badge_id: profile.avatar_badge_id,
+                profile_image_url: profile.profile_image_url
+              });
+            }
+          }
+        }
       }
 
       return Array.from(uniqueUsers.values());

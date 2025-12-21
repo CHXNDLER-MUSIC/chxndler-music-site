@@ -631,15 +631,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // Reset song and rarity filters when element changes
   useEffect(() => {
     if (selectedCardElement && selectedCardElement !== 'all') {
-      // If no song selected or song not available, select element card or first available song
-      if (!selectedSong || !availableSongs.includes(selectedSong)) {
-        const elementName = selectedCardElement.charAt(0).toUpperCase() + selectedCardElement.slice(1).toLowerCase();
-        // Try to select the element card first, otherwise select first available song
-        if (availableSongs.includes(elementName)) {
-          setSelectedSong(elementName);
-        } else if (availableSongs.length > 0) {
-          setSelectedSong(availableSongs[0]);
-        }
+      // Reset to "All Cards" when element changes so user can navigate all cards
+      if (selectedSong && !availableSongs.includes(selectedSong)) {
+        setSelectedSong('');
       }
 
       // Reset rarity if it's not available in the selected element
@@ -867,12 +861,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         style.id = 'card-pulse-keyframes';
         style.innerHTML = `
           @keyframes cardPulse {
-            0%, 100% { 
-              transform: scale(1);
+            0%, 100% {
+              transform: translateY(0px);
               filter: saturate(1.06) contrast(1.06) brightness(1.04) drop-shadow(0 0 15px rgba(255, 215, 0, 0.6));
             }
-            50% { 
-              transform: scale(1.02);
+            50% {
+              transform: translateY(-8px);
               filter: saturate(1.1) brightness(1.08) contrast(1.08) drop-shadow(0 0 25px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 50px rgba(255, 215, 0, 0.6));
             }
           }
@@ -1175,6 +1169,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         try {
           setIsJournalOpen(true);
           onOpenJournal?.();
+          window.dispatchEvent(new CustomEvent('openJournalModal'));
         } catch {}
       }, 150);
     }
@@ -2744,7 +2739,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             <select
                               value={selectedSong}
                               onChange={(e) => {
-                                try { sfx.play('change-channel', 0.6); } catch {}
+                                try { sfx.play('song-select', 0.6); } catch {}
                                 setSelectedSong(e.target.value);
                                 setCurrentCardIndex(0); // Reset to first card when filter changes
                               }}
@@ -2752,19 +2747,31 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 try { sfx.play('hover', 0.3); } catch {}
                               }}
                               onInput={() => {
-                                // Play hover sound when cycling through options
-                                try { sfx.play('hover', 0.3); } catch {}
+                                // Play song-select sound when cycling through options
+                                try { sfx.play('song-select', 0.5); } catch {}
                               }}
                               onKeyDown={(e) => {
-                                // Play hover sound when cycling through options with arrow keys
+                                // Play song-select sound when cycling through options with arrow keys
                                 if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                                  try { sfx.play('hover', 0.3); } catch {}
+                                  try { sfx.play('song-select', 0.5); } catch {}
                                 }
                               }}
-                              className="bg-black/60 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1 hover:scale-105 transition-transform duration-200"
+                              className="bg-black/90 border border-white/40 rounded px-3 py-1 text-white text-sm flex-1 hover:scale-105 transition-transform duration-200 cursor-pointer"
+                              style={{
+                                backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                              }}
                             >
+                              <option value="" style={{ backgroundColor: '#1a1a1a', color: 'white' }}>
+                                All Cards
+                              </option>
                               {availableSongs.map(song => (
-                                <option key={song} value={song}>{song}</option>
+                                <option
+                                  key={song}
+                                  value={song}
+                                  style={{ backgroundColor: '#1a1a1a', color: 'white' }}
+                                >
+                                  {song}
+                                </option>
                               ))}
                             </select>
                           </div>
@@ -2852,6 +2859,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 <span style={{ fontSize: '20px' }}>→</span>
                               </button>
                             </div>
+
+                              {/* Card Index Indicator */}
+                              <div
+                                className="text-center text-white/70 text-xs mb-2"
+                                style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}
+                              >
+                                {currentCardIndex + 1} of {filteredCards.length}
+                              </div>
 
                               {/* Card Details - Below Image */}
                               <div className="w-full max-w-md">

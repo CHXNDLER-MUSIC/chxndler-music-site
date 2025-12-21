@@ -160,7 +160,7 @@ export default function PublicJournalFeed() {
                   }}
                 >
                   <img
-                    src={entry.author?.profile_image_url ?? "/elements/alien.webp"}
+                    src={entry.author_avatar_url ?? "/elements/alien.webp"}
                     alt="User"
                     className="w-8 h-8 rounded-full object-cover"
                     style={{
@@ -169,7 +169,7 @@ export default function PublicJournalFeed() {
                     }}
                   />
                   <div className="text-sm font-medium text-white">
-                    {entry.author?.name ?? 'Unknown Alien'}
+                    {entry.author_name ?? 'Alien'}
                   </div>
                 </div>
 
@@ -249,7 +249,7 @@ export default function PublicJournalFeed() {
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-start">
                           <img
-                            src={entry.author?.profile_image_url ?? "/elements/alien.webp"}
+                            src={entry.author_avatar_url ?? "/elements/alien.webp"}
                             alt="User"
                             className="w-16 h-16 rounded-full object-cover mr-3"
                             style={{
@@ -259,7 +259,7 @@ export default function PublicJournalFeed() {
                           />
                           <div className="flex flex-col">
                             <div className="text-2xl font-bold text-white">
-                              {entry.author?.name ?? 'Unknown Alien'}
+                              {entry.author_name ?? 'Alien'}
                             </div>
 
                             {/* Element label */}

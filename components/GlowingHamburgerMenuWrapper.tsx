@@ -63,16 +63,22 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
       setWelcomeHomeOpen(true);
     };
 
+    const handleOpenJournalModal = () => {
+      setJournalOpen(true);
+    };
+
     window.addEventListener('openBinderModal', handleOpenBinderModal);
     window.addEventListener('openBadgesModal', handleOpenBadgesModal);
     window.addEventListener('openHeartCoinModal', handleOpenHeartCoinModal);
     window.addEventListener('openWelcomeHomeModal', handleOpenWelcomeHomeModal);
+    window.addEventListener('openJournalModal', handleOpenJournalModal);
 
     return () => {
       window.removeEventListener('openBinderModal', handleOpenBinderModal);
       window.removeEventListener('openBadgesModal', handleOpenBadgesModal);
       window.removeEventListener('openHeartCoinModal', handleOpenHeartCoinModal);
       window.removeEventListener('openWelcomeHomeModal', handleOpenWelcomeHomeModal);
+      window.removeEventListener('openJournalModal', handleOpenJournalModal);
     };
   }, [onBeamColorChange]);
 
@@ -330,6 +336,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
         style={{ display: 'none' }}
         isActive={heartCoinOpen}
         onClose={() => setHeartCoinOpen(false)}
+        onOpenJournal={() => setJournalOpen(true)}
       />
       {/* Welcome Home Modal */}
       <WelcomeHomeModal

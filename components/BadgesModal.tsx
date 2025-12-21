@@ -191,7 +191,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   // Badge detail modal
   if (selectedBadge) {
     const badgeDetailContent = (
-      <div className="relative text-center space-y-6 w-full px-4" style={{ touchAction: 'pan-y' }}>
+      <div className="relative text-center space-y-6 w-full px-4 pt-4" style={{ touchAction: 'pan-y' }}>
         <button
           onClick={() => {
             sfx.play('click');

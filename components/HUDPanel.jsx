@@ -301,6 +301,7 @@ const HUDPanel = React.memo(function HUDPanel({
   const [questionResponse, setQuestionResponse] = useState('');
   const [showStarAnimation, setShowStarAnimation] = useState(false);
   const [showBeamEffect, setShowBeamEffect] = useState(false);
+  const [isCasting, setIsCasting] = useState(false); // For "Cast into the Stars" orb animation
   const [showJournalView, setShowJournalView] = useState(false);
   const [journalEntries, setJournalEntries] = useState([]);
   const [journalCompletedToday, setJournalCompletedToday] = useState(false);
@@ -6806,90 +6807,145 @@ const HUDPanel = React.memo(function HUDPanel({
                     <button
                         className="cast-stars-button"
                         onClick={async () => {
-                          if (questionResponse.trim() && !journalCompletedToday) {
-                            // Create complete journal entry (always works)
-                            const journalEntry = {
-                              date: new Date().toLocaleDateString('en-US', { 
-                                weekday: 'long', 
-                                year: 'numeric', 
-                                month: 'long', 
-                                day: 'numeric' 
-                              }),
-                              intention: "Find peace in the present moment", // Current intention text
-                              reflection: "What constellation would you create if you could arrange the stars in the sky, and what story would it tell?", // Current reflection text
-                              vision: questionResponse.trim()
-                            };
-                            
-                            // Add to journal entries
-                            setJournalEntries(prev => [journalEntry, ...prev]);
-                            
-                            // Mark journal as completed
-                            setJournalCompletedToday(true);
-                            
-                            // Try to award HeartCoins if user is logged in
-                            try {
-                              const { data: { user } } = await supabaseClient.auth.getUser();
-                              if (user) {
-                                await logHeartcoinTransaction(supabaseClient, {
-                                  user_id: user.id,
-                                  amount: 1,
-                                  reason: 'DAILY_REFLECTION',
-                                  description: 'Completed journal reflection',
-                                  transaction_type: 'bonus',
-                                  metadata: {
-                                    response: questionResponse.trim(),
-                                    date: new Date().toISOString().split('T')[0]
-                                  }
-                                });
-                                try { await refreshProfile(); } catch {}
-                                
-                                // Notify parent component of journal completion
-                                onJournalCompleted?.();
-                                
-                                // Refresh heart coins display
-                                if (typeof fetchHeartCoins === 'function') {
-                                  fetchHeartCoins();
-                                }
-                              }
-                            } catch (error) {
-                              console.error('Failed to award HeartCoins for journal completion:', error);
-                              // Continue with animation even if HeartCoin awarding fails
-                            }
+                          // Prevent double clicks and check valid state
+                          if (isCasting || !questionResponse.trim() || journalCompletedToday) return;
 
-                            try { 
-                              const audio = new Audio('/audio/join-alien.mp3');
-                              audio.volume = 0.7;
-                              audio.play().catch(() => {});
-                            } catch {}
-                            setShowStarAnimation(true);
-                            setShowBeamEffect(true);
-                            // Star animation will appear for a few seconds
-                            setTimeout(() => {
-                              setShowStarAnimation(false);
-                              setShowBeamEffect(false);
-                              setQuestionResponse('');
-                            }, 4000);
+                          // Phase 1: Start the orb animation immediately
+                          setIsCasting(true);
+
+                          // Wait for orb animation to complete (1200ms total)
+                          // Phase 1 (0-300ms): glow + scale down
+                          // Phase 2 (300-1200ms): shoot upward + fade out
+                          await new Promise(resolve => setTimeout(resolve, 1200));
+
+                          // Phase 2: After animation, run the existing cast/submit logic
+                          // Create complete journal entry (always works)
+                          const journalEntry = {
+                            date: new Date().toLocaleDateString('en-US', {
+                              weekday: 'long',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            }),
+                            intention: "Find peace in the present moment",
+                            reflection: "What constellation would you create if you could arrange the stars in the sky, and what story would it tell?",
+                            vision: questionResponse.trim()
+                          };
+
+                          // Add to journal entries
+                          setJournalEntries(prev => [journalEntry, ...prev]);
+
+                          // Mark journal as completed
+                          setJournalCompletedToday(true);
+
+                          // Try to award HeartCoins if user is logged in
+                          try {
+                            const { data: { user } } = await supabaseClient.auth.getUser();
+                            if (user) {
+                              await logHeartcoinTransaction(supabaseClient, {
+                                user_id: user.id,
+                                amount: 1,
+                                reason: 'DAILY_REFLECTION',
+                                description: 'Completed journal reflection',
+                                transaction_type: 'bonus',
+                                metadata: {
+                                  response: questionResponse.trim(),
+                                  date: new Date().toISOString().split('T')[0]
+                                }
+                              });
+                              try { await refreshProfile(); } catch {}
+
+                              // Notify parent component of journal completion
+                              onJournalCompleted?.();
+
+                              // Refresh heart coins display
+                              if (typeof fetchHeartCoins === 'function') {
+                                fetchHeartCoins();
+                              }
+                            }
+                          } catch (error) {
+                            console.error('Failed to award HeartCoins for journal completion:', error);
                           }
+
+                          try {
+                            const audio = new Audio('/audio/join-alien.mp3');
+                            audio.volume = 0.7;
+                            audio.play().catch(() => {});
+                          } catch {}
+
+                          setShowStarAnimation(true);
+                          setShowBeamEffect(true);
+
+                          // Re-enable UI and clear after existing animation
+                          setTimeout(() => {
+                            setShowStarAnimation(false);
+                            setShowBeamEffect(false);
+                            setQuestionResponse('');
+                            setIsCasting(false);
+                          }, 4000);
                         }}
-                        disabled={!questionResponse.trim() || journalCompletedToday}
+                        disabled={!questionResponse.trim() || journalCompletedToday || isCasting}
                         style={{
                           padding: '12px 40px',
                           width: '100%',
                           background: 'transparent',
                           border: '1px solid rgba(255,215,0,0.6)',
                           borderRadius: '8px',
-                          color: journalCompletedToday ? '#00FF00' : (questionResponse.trim() ? '#FFD700' : 'rgba(255,255,255,0.5)'),
-                          cursor: (questionResponse.trim() && !journalCompletedToday) ? 'pointer' : 'not-allowed',
+                          color: journalCompletedToday ? '#00FF00' : (isCasting ? '#FFE066' : (questionResponse.trim() ? '#FFD700' : 'rgba(255,255,255,0.5)')),
+                          cursor: (questionResponse.trim() && !journalCompletedToday && !isCasting) ? 'pointer' : 'not-allowed',
                           transition: 'all 0.3s ease',
                           fontSize: '16px',
                           fontWeight: '600',
-                          textShadow: journalCompletedToday ? '0 0 10px #00FF00, 0 0 20px rgba(0,255,0,0.6)' : (questionResponse.trim() ? '0 0 8px rgba(255,215,0,1), 0 0 16px rgba(255,223,0,0.8), 0 0 24px rgba(255,215,0,0.6)' : 'none'),
+                          textShadow: journalCompletedToday ? '0 0 10px #00FF00, 0 0 20px rgba(0,255,0,0.6)' : (isCasting ? '0 0 12px rgba(255,224,102,1), 0 0 24px rgba(255,215,0,0.8)' : (questionResponse.trim() ? '0 0 8px rgba(255,215,0,1), 0 0 16px rgba(255,223,0,0.8), 0 0 24px rgba(255,215,0,0.6)' : 'none')),
                           boxShadow: journalCompletedToday ? '0 0 20px rgba(0,255,0,0.6), 0 0 40px rgba(0,255,0,0.4)' : (questionResponse.trim() ? '0 0 20px rgba(255,215,0,0.6), 0 0 40px rgba(255,223,0,0.4), inset 0 1px rgba(255,255,255,0.2)' : 'none'),
                           marginBottom: 0
                         }}
                       >
-{journalCompletedToday ? "YOUR SOUL STAR SHINES ABOVE" : 'Cast into the Stars'}
+{journalCompletedToday ? "YOUR SOUL STAR SHINES ABOVE" : (isCasting ? 'Casting…' : 'Cast into the Stars')}
                       </button>
+
+                      {/* StarCastOrb: Glowing orb animation when casting */}
+                      {isCasting && (
+                        <motion.div
+                          style={{
+                            position: 'absolute',
+                            left: '50%',
+                            top: '50%',
+                            width: 14,
+                            height: 14,
+                            borderRadius: '50%',
+                            // Heartverse colors: pink/yellow/blue blend
+                            background: 'radial-gradient(circle, rgba(255,230,150,1) 0%, rgba(255,182,193,0.9) 40%, rgba(135,206,250,0.7) 70%, transparent 100%)',
+                            boxShadow: '0 0 20px rgba(255,215,0,0.9), 0 0 40px rgba(255,182,193,0.6), 0 0 60px rgba(135,206,250,0.4)',
+                            pointerEvents: 'none',
+                            zIndex: 10
+                          }}
+                          initial={{
+                            x: '-50%',
+                            y: '-50%',
+                            scale: 1,
+                            opacity: 1
+                          }}
+                          animate={{
+                            // Phase 1 (0-300ms): glow intensifies, scale down slightly (collapse)
+                            // Phase 2 (300-1200ms): shoot upward, fade out
+                            scale: [1, 0.7, 0.7, 0.3],
+                            y: ['-50%', '-50%', '-400%', '-800%'],
+                            opacity: [1, 1, 0.9, 0],
+                            boxShadow: [
+                              '0 0 20px rgba(255,215,0,0.9), 0 0 40px rgba(255,182,193,0.6), 0 0 60px rgba(135,206,250,0.4)',
+                              '0 0 40px rgba(255,215,0,1), 0 0 60px rgba(255,182,193,0.8), 0 0 80px rgba(135,206,250,0.6)',
+                              '0 0 30px rgba(255,215,0,0.8), 0 0 50px rgba(255,182,193,0.5), 0 0 70px rgba(135,206,250,0.3)',
+                              '0 0 10px rgba(255,215,0,0.3), 0 0 20px rgba(255,182,193,0.2), 0 0 30px rgba(135,206,250,0.1)'
+                            ]
+                          }}
+                          transition={{
+                            duration: 1.2,
+                            times: [0, 0.25, 0.3, 1], // Phase 1: 0-300ms, Phase 2: 300-1200ms
+                            ease: ['easeIn', 'easeIn', 'easeOut']
+                          }}
+                        />
+                      )}
 
                       {/* Yellow beam effect */}
                       {showBeamEffect && (

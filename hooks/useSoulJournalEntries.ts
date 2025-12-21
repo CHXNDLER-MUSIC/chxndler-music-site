@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useProfile } from '@/contexts/ProfileContext';
 
-// Author profile data from profiles table
+// Author profile data from profiles table (used for private/authenticated queries)
 export type Author = {
   id: string;
   name: string | null;
@@ -19,6 +19,10 @@ export type SoulJournalEntry = {
   element: string;
   entry_text: string | null;
   stars_count?: number;
+  // Denormalized author fields (for public feed - no profiles join needed)
+  author_name?: string | null;
+  author_avatar_url?: string | null;
+  // Legacy author object (for private queries that still join profiles)
   author?: Author | null;
 };
 
@@ -45,24 +49,43 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
       setLoading(true);
       setError('');
 
-      // Build query for journal entries with author from profiles table
-      // Uses the correct FK: soul_journal_entries_user_id_fkey -> profiles.id
-      const selectString = `
-          entry_id,
-          user_id,
-          entry_text,
-          element,
-          entry_date,
-          created_at,
-          is_public,
-          stars_count,
-          author:profiles!soul_journal_entries_user_id_fkey (
-            id,
-            name,
-            avatar_url
-          )
-        `;
-      console.log('[useSoulJournalEntries] Select string:', selectString.trim());
+      // Use different select strings for public vs private queries
+      // Public feed: use denormalized author fields (no profiles join - works for anon)
+      // Private feed: can join profiles since user is authenticated
+      const isPublicFeed = !options.includePrivate;
+
+      const publicSelectString = `
+        entry_id,
+        user_id,
+        entry_text,
+        element,
+        entry_date,
+        created_at,
+        is_public,
+        stars_count,
+        author_name,
+        author_avatar_url
+      `;
+
+      const privateSelectString = `
+        entry_id,
+        user_id,
+        entry_text,
+        element,
+        entry_date,
+        created_at,
+        is_public,
+        stars_count,
+        author_name,
+        author_avatar_url,
+        author:profiles!soul_journal_entries_user_id_fkey (
+          id,
+          name,
+          avatar_url
+        )
+      `;
+
+      const selectString = isPublicFeed ? publicSelectString : privateSelectString;
 
       let query = supabaseBrowser
         .from('soul_journal_entries')
@@ -77,7 +100,7 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
       }
 
       // Handle privacy filtering
-      if (!options.includePrivate) {
+      if (isPublicFeed) {
         // Public feed: only fetch public entries; do not depend on current user
         query = query.eq('is_public', true);
       } else {
@@ -108,10 +131,14 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
           element: entry.element,
           entry_text: entry.entry_text,
           stars_count: entry.stars_count ?? 0,
+          // Denormalized author fields (always available)
+          author_name: entry.author_name ?? null,
+          author_avatar_url: entry.author_avatar_url ?? null,
+          // Legacy author object (only from private queries with profiles join)
           author: entry.author ? {
             id: entry.author.id,
             name: entry.author.name,
-            profile_image_url: entry.author.avatar_url // mapped from profiles.avatar_url
+            profile_image_url: entry.author.avatar_url
           } : null
         };
       });

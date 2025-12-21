@@ -88,7 +88,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
             backdropFilter: 'saturate(140%)',
             color: '#FF69B4',
             position: 'relative',
-            overflow: 'visible'
+            overflow: 'hidden'
           }}
         >
           
@@ -210,7 +210,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
           )}
 
           {/* Content container - exact copy from Binder */}
-          <div className="flex-1 relative z-10" style={{ maxHeight: 'calc(100% - 80px)', display: 'flex', flexDirection: 'column', alignItems: 'stretch', paddingBottom: compact ? '8px' : '20px', overflowY: 'auto', overflowX: 'visible' }}>
+          <div className="flex-1 relative z-10" style={{ maxHeight: 'calc(100% - 80px)', display: 'flex', flexDirection: 'column', alignItems: 'stretch', paddingBottom: compact ? '8px' : '20px', overflow: 'auto' }}>
             {overlayContent || children}
           </div>
 

@@ -3,28 +3,39 @@
 import { ElementIcon } from '@/lib/elementIcons';
 import { getElementColor } from '@/lib/supabase/chat';
 import { sfx } from '@/lib/sfx';
+import { getGuestIdentity } from '@/lib/supabase/guest';
 
-// Import the global alien name function from ChatPanel
+// Get guest username from localStorage (stable identity across sessions)
 const getGlobalAlienName = () => {
-  // Check if we already have a stored name
+  // Check localStorage for persistent guest identity
   if (typeof window !== 'undefined') {
+    const identity = getGuestIdentity();
+    if (identity?.username) {
+      return identity.username;
+    }
+
+    // Fallback to sessionStorage for backwards compatibility
     const stored = sessionStorage.getItem('alienName');
     if (stored) {
       return stored;
     }
   }
-  
-  // Generate new alien name only if none exists
+
+  // Generate temporary alien name (will be replaced when guest identity is created)
   const alienNumber = Math.floor(Math.random() * 99999999) + 1;
   const paddedNumber = alienNumber.toString().padStart(8, '0');
-  const newAlienName = `ALIEN${paddedNumber}`;
-  
-  // Store in session storage
+  return `ALIEN${paddedNumber}`;
+};
+
+// Get guest ID from localStorage
+const getGuestId = () => {
   if (typeof window !== 'undefined') {
-    sessionStorage.setItem('alienName', newAlienName);
+    const identity = getGuestIdentity();
+    if (identity?.guest_id) {
+      return identity.guest_id;
+    }
   }
-  
-  return newAlienName;
+  return 'anonymous';
 };
 
 /**
@@ -33,16 +44,16 @@ const getGlobalAlienName = () => {
  */
 export default function UserList({ users, onUserClick, loading, currentUserProfile }) {
   console.log('🔥 UserList received:', { users, userCount: users?.length, loading });
-  
-  // Force add an anonymous user if no users exist - use global alien name for consistency
+
+  // Force add a guest user if no users exist - use persistent guest identity
   const displayUsers = users?.length > 0 ? users : [{
-    id: 'anonymous',
+    id: getGuestId(), // Use guest_id from localStorage for stable identity
     name: getGlobalAlienName(), // Use the global alien name function for consistency
     element: 'alien',
     avatar_badge_id: null,
     last_seen: new Date().toISOString()
   }];
-  
+
   console.log('🔥 DisplayUsers final:', displayUsers);
   
   if (loading) {
@@ -59,7 +70,7 @@ export default function UserList({ users, onUserClick, loading, currentUserProfi
   // Always show the user list - don't check for empty users
 
   return (
-    <div className="h-full overflow-y-auto px-1 py-2 space-y-2">
+    <div className="h-full overflow-y-auto px-0.5 py-2 space-y-2">
 
       {/* User List */}
       {displayUsers?.length > 0 ? displayUsers.map((user) => (
@@ -70,17 +81,17 @@ export default function UserList({ users, onUserClick, loading, currentUserProfi
           currentUserProfile={currentUserProfile}
         />
       )) : (
-        /* Emergency fallback - always show at least one alien user */
+        /* Emergency fallback - always show at least one guest user */
         <UserListItem
           key="emergency-alien"
           user={{
-            id: 'anonymous',
+            id: getGuestId(), // Use guest_id from localStorage for stable identity
             name: getGlobalAlienName(), // Use the global alien name function for consistency
             element: 'alien',
             avatar_badge_id: null,
             last_seen: new Date().toISOString()
           }}
-          onClick={() => onUserClick('anonymous')}
+          onClick={() => onUserClick(getGuestId())}
           currentUserProfile={currentUserProfile}
         />
       )}
@@ -109,7 +120,7 @@ function UserListItem({ user, onClick, currentUserProfile }) {
         }
         onClick();
       }}
-      className="w-full px-1 py-2 rounded-lg transition-all duration-200 hover:scale-105 group"
+      className="w-full px-0.5 py-2 rounded-lg transition-all duration-200 hover:scale-105 group"
       style={{
         background: 'rgba(255, 255, 255, 0.05)',
         border: `2px solid ${elementColor}CC`,
@@ -165,10 +176,10 @@ function UserListItem({ user, onClick, currentUserProfile }) {
             className="text-base font-bold leading-tight truncate"
             style={{
               color: elementColor,
-              maxWidth: '110px'
+              maxWidth: '120px'
             }}
           >
-            {displayName.length > 16 ? displayName.slice(0, 15) + '…' : displayName}
+            {displayName.length > 18 ? displayName.slice(0, 17) + '…' : displayName}
           </p>
         </div>
       </div>

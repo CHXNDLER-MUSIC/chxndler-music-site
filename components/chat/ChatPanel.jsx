@@ -708,12 +708,16 @@ export default function ChatPanel({ isOpen, onClose }) {
 
         // Send connection message via heart-signal-messages API
         try {
+          // For guests, include guest_id
+          const guestId = !user ? getCachedGuestIdentity()?.guest_id : null;
+
           const response = await fetch('/api/heart-signal-messages', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               message: `${displayName} connected to the signal`,
               username: displayName,
+              guest_id: guestId,
               is_system: true
             }),
           });
@@ -722,24 +726,27 @@ export default function ChatPanel({ isOpen, onClose }) {
         } catch (error) {
           DEBUG && console.log('🔥 Sync message failed:', error);
         }
-        
-        // For anonymous users, ensure they're in the user list
+
+        // For guest users, ensure they're in the user list with their guest_id
         if (!user) {
-          setChatUsers(prev => {
-            const existingAnonymous = prev.find(u => u.id === 'anonymous');
-            if (!existingAnonymous) {
-              return [...prev, {
-                id: 'anonymous',
-                name: displayName,
-                element: 'alien',
-                avatar_badge_id: null,
-                last_seen: new Date().toISOString()
-              }];
-            }
-            return prev;
-          });
+          const guestIdentity = getCachedGuestIdentity();
+          if (guestIdentity) {
+            setChatUsers(prev => {
+              const existingGuest = prev.find(u => u.id === guestIdentity.guest_id);
+              if (!existingGuest) {
+                return [...prev, {
+                  id: guestIdentity.guest_id,
+                  name: guestIdentity.username,
+                  element: 'alien',
+                  avatar_badge_id: null,
+                  last_seen: new Date().toISOString()
+                }];
+              }
+              return prev;
+            });
+          }
         }
-        
+
         setHasJoined(true);
       }
 
