@@ -656,13 +656,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       );
     }
     
-    // Filter by song
-    if (selectedSong && selectedSong.trim() !== '') {
-      filtered = filtered.filter(card => {
-        return card.card_name?.toLowerCase() === selectedSong.toLowerCase();
-      });
-    }
-    
+    // Note: We don't filter by song/card name - the dropdown navigates to cards instead of filtering
+
     // Filter by rarity
     if (selectedRarity && selectedRarity.trim() !== '') {
       filtered = filtered.filter(card => 
@@ -688,7 +683,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     }
     
     setFilteredCards(filtered);
-  }, [cards, selectedCardElement, selectedRarity, selectedSong]);
+  }, [cards, selectedCardElement, selectedRarity]);
 
   // Load cards when the modal opens and CARDS tab is active
   useEffect(() => {
@@ -1972,10 +1967,16 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     }}
                   />
                 </button>
-                <span className="text-sm flex items-center" style={{ color: dailyQuests.elementTapped ? '#666' : '#90EE90', textShadow: dailyQuests.elementTapped ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' }}>
-                  {dailyQuests.elementTapped ? '✓ +1' : '+1'}
-                  <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
-                </span>
+                <div className="flex flex-col items-center">
+                  <span className="text-[10px] font-bold" style={{
+                    color: dailyQuests.elementTapped ? '#666' : '#90EE90',
+                    textShadow: dailyQuests.elementTapped ? 'none' : '0 0 6px #90EE90'
+                  }}>Earn</span>
+                  <div className="flex items-center" style={{ color: dailyQuests.elementTapped ? '#666' : '#90EE90', textShadow: dailyQuests.elementTapped ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' }}>
+                    <span className="text-sm">{dailyQuests.elementTapped ? '✓ +1' : '+1'}</span>
+                    <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1990,21 +1991,42 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     Answer today's journal prompt to earn one HEART coin.
                   </div>
                 </div>
-                <span className="text-sm flex items-center flex-shrink-0" style={{ color: dailyQuests.journalEntry ? '#666' : '#90EE90', textShadow: dailyQuests.journalEntry ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' }}>
-                  {dailyQuests.journalEntry ? '✓ +1' : '+1'}
-                  <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
-                </span>
+                <div className="flex flex-col items-center flex-shrink-0">
+                  <span className="text-[10px] font-bold" style={{
+                    color: dailyQuests.journalEntry ? '#666' : '#90EE90',
+                    textShadow: dailyQuests.journalEntry ? 'none' : '0 0 6px #90EE90'
+                  }}>Earn</span>
+                  <div className="flex items-center" style={{ color: dailyQuests.journalEntry ? '#666' : '#90EE90', textShadow: dailyQuests.journalEntry ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' }}>
+                    <span className="text-sm">{dailyQuests.journalEntry ? '✓ +1' : '+1'}</span>
+                    <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
+                  </div>
+                </div>
               </div>
               <div className="mt-2 flex justify-center">
                 <button
                   onClick={handleJournalEntry}
                   disabled={dailyQuests.journalEntry}
-                  className="px-3 py-1 text-xs rounded border transition-colors font-bold"
+                  onMouseEnter={(e) => {
+                    try { sfx.play('hover', 0.3); } catch {}
+                    if (!dailyQuests.journalEntry) {
+                      e.currentTarget.style.transform = 'scale(1.05)';
+                      e.currentTarget.style.boxShadow = '0 0 20px rgba(78,205,196,0.8), 0 0 40px rgba(78,205,196,0.4)';
+                      e.currentTarget.style.textShadow = '0 0 10px #4ECDC4, 0 0 20px #4ECDC4';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!dailyQuests.journalEntry) {
+                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.boxShadow = 'none';
+                      e.currentTarget.style.textShadow = '0 0 8px rgba(78,205,196,0.5)';
+                    }
+                  }}
+                  className="px-3 py-1 text-xs rounded border font-bold transition-all duration-200"
                   style={{
-                    background: dailyQuests.journalEntry ? 'rgba(0,255,0,0.1)' : 'rgba(255,255,255,0.1)',
-                    color: dailyQuests.journalEntry ? '#00FF00' : '#FFFFFF',
-                    borderColor: dailyQuests.journalEntry ? '#00FF00' : 'rgba(255,255,255,0.6)',
-                    textShadow: dailyQuests.journalEntry ? '0 0 8px #00FF00, 0 0 16px #00FF00' : 'none',
+                    background: dailyQuests.journalEntry ? 'rgba(0,255,0,0.1)' : 'rgba(78,205,196,0.15)',
+                    color: dailyQuests.journalEntry ? '#00FF00' : '#4ECDC4',
+                    borderColor: dailyQuests.journalEntry ? '#00FF00' : '#4ECDC4',
+                    textShadow: dailyQuests.journalEntry ? '0 0 8px #00FF00, 0 0 16px #00FF00' : '0 0 8px rgba(78,205,196,0.5)',
                     boxShadow: dailyQuests.journalEntry ? '0 0 10px rgba(0,255,0,0.4), 0 0 20px rgba(0,255,0,0.2)' : 'none'
                   }}
                 >
@@ -2060,13 +2082,19 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           </>
                         )}
                       </div>
-                      <span className="text-base flex items-center flex-shrink-0" style={{
-                        color: isQuestCompleted(quest) ? '#666' : '#90EE90',
-                        textShadow: isQuestCompleted(quest) ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90'
-                      }}>
-                        {quest.reward_notes || `+${quest.reward_heartcoins}`}
-                        <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8 ml-1" />
-                      </span>
+                      <div className="flex flex-col items-center flex-shrink-0">
+                        <span className="text-[10px] font-bold" style={{
+                          color: isQuestCompleted(quest) ? '#666' : '#90EE90',
+                          textShadow: isQuestCompleted(quest) ? 'none' : '0 0 6px #90EE90'
+                        }}>Earn</span>
+                        <div className="flex items-center" style={{
+                          color: isQuestCompleted(quest) ? '#666' : '#90EE90',
+                          textShadow: isQuestCompleted(quest) ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90'
+                        }}>
+                          <span className="text-base">{quest.reward_notes || `+${quest.reward_heartcoins}`}</span>
+                          <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8 ml-1" />
+                        </div>
+                      </div>
                     </div>
                     <div className="mt-1 flex justify-center">
                       <button
@@ -2078,6 +2106,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           if (!isLoggedIn) {
                             setOpen(false);
                             onClose?.();
+                            try { onBeamColorChange?.('cyan'); } catch {}
                             setTimeout(() => {
                               window.dispatchEvent(new CustomEvent('openWelcomeHomeModal'));
                             }, 150);
@@ -2190,11 +2219,23 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             handleBonusQuestComplete(quest);
                           }
                         }}
-                        onMouseEnter={() => {
+                        onMouseEnter={(e) => {
                           try { sfx.play('hover', 0.3); } catch {}
+                          if (!isLoggedIn) {
+                            e.currentTarget.style.transform = 'scale(1.05)';
+                            e.currentTarget.style.boxShadow = '0 0 20px rgba(78,205,196,0.8), 0 0 40px rgba(78,205,196,0.4)';
+                            e.currentTarget.style.textShadow = '0 0 10px #4ECDC4, 0 0 20px #4ECDC4';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isLoggedIn) {
+                            e.currentTarget.style.transform = 'scale(1)';
+                            e.currentTarget.style.boxShadow = 'none';
+                            e.currentTarget.style.textShadow = '0 0 8px rgba(78,205,196,0.5)';
+                          }
                         }}
                         disabled={isLoggedIn && ((!quest.can_complete && !inviteFriendShared) || isQuestCompleted(quest) || (quest.quest_key === 'SECRET_PHRASE' && secretPhraseLoading))}
-                        className="px-2 py-1 text-xs rounded border transition-colors font-bold hover:opacity-80"
+                        className="px-2 py-1 text-xs rounded border font-bold transition-all duration-200"
                         style={{
                           background: !isLoggedIn
                             ? 'rgba(78,205,196,0.2)'
@@ -2735,13 +2776,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               }}>←</span>
                             </button>
                             
-                            {/* Song Filter */}
+                            {/* Card Navigator Dropdown */}
                             <select
-                              value={selectedSong}
+                              value={currentCardIndex}
                               onChange={(e) => {
                                 try { sfx.play('song-select', 0.6); } catch {}
-                                setSelectedSong(e.target.value);
-                                setCurrentCardIndex(0); // Reset to first card when filter changes
+                                setCurrentCardIndex(parseInt(e.target.value, 10));
                               }}
                               onMouseEnter={() => {
                                 try { sfx.play('hover', 0.3); } catch {}
@@ -2761,16 +2801,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 backgroundColor: 'rgba(0, 0, 0, 0.9)',
                               }}
                             >
-                              <option value="" style={{ backgroundColor: '#1a1a1a', color: 'white' }}>
-                                All Cards
-                              </option>
-                              {availableSongs.map(song => (
+                              {filteredCards.map((card, index) => (
                                 <option
-                                  key={song}
-                                  value={song}
+                                  key={card.id || index}
+                                  value={index}
                                   style={{ backgroundColor: '#1a1a1a', color: 'white' }}
                                 >
-                                  {song}
+                                  {card.card_name || `Card ${index + 1}`}
                                 </option>
                               ))}
                             </select>

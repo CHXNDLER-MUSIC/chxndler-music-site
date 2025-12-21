@@ -339,6 +339,25 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
               fill
               className="object-contain rounded-lg"
             />
+            {/* Vertical PAY WITH button on left side */}
+            {!showHeartCoinCheckout && !isOwned && getItemGateState(item) === 'available' && (
+              <button
+                type="button"
+                onClick={handleStripeCheckout}
+                disabled={isStripeLoading}
+                onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
+                className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 py-4 px-2 rounded-lg font-bold transition-all duration-200 flex flex-col items-center justify-center gap-1 text-sm ${
+                  isStripeLoading
+                    ? 'bg-gray-500 cursor-not-allowed text-gray-300'
+                    : 'bg-green-500 hover:bg-green-600 hover:scale-[1.05] text-white'
+                }`}
+                style={{ writingMode: 'vertical-lr', textOrientation: 'mixed' }}
+              >
+                <span className="block" style={{ writingMode: 'horizontal-tb' }}>PAY</span>
+                <span className="block" style={{ writingMode: 'horizontal-tb' }}>WITH</span>
+                <span className="block" style={{ writingMode: 'horizontal-tb' }}>${item.priceUsd}</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -516,21 +535,6 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
               // gateState === 'available' - show normal purchase buttons
               return (
                 <div className="space-y-3">
-                  {/* Buy with $ button */}
-                  <button
-                    type="button"
-                    onClick={handleStripeCheckout}
-                    disabled={isStripeLoading}
-                    onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
-                    className={`w-full py-3 px-6 rounded-lg font-bold transition-all duration-200 ${
-                      isStripeLoading
-                        ? 'bg-gray-500 cursor-not-allowed text-gray-300'
-                        : 'bg-green-500 hover:bg-green-600 hover:scale-[1.02] text-white'
-                    }`}
-                  >
-                    {isStripeLoading ? 'Redirecting...' : `PAY WITH $${item.priceUsd}`}
-                  </button>
-
                   {/* Add to Collection button */}
                   <button
                     type="button"

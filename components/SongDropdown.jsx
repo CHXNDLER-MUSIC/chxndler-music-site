@@ -222,7 +222,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
   if (!items.length) return null;
 
   return (
-    <div ref={rootRef} className="w-full relative z-[99999] mt-6" style={{ pointerEvents: 'auto' }}>
+    <div ref={rootRef} className="w-full relative z-[99999] mt-7" style={{ pointerEvents: 'auto' }}>
       {/* Trigger */}
       <button
         type="button"

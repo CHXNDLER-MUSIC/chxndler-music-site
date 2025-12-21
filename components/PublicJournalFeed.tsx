@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { usePublicSoulJournalEntries } from "@/hooks/useSoulJournalEntries";
-import { useProfile } from "@/contexts/ProfileContext";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { getDisplayDateString } from "@/utils/dateHelpers";
 import { sfx } from "@/lib/sfx";
@@ -18,63 +17,68 @@ const ELEMENT_COLORS: Record<string, { color: string; glow: string; emoji: strin
 };
 
 export default function PublicJournalFeed() {
+  // Public feed - no auth dependency for viewing entries
   const { entries, loading, error, refreshEntries } = usePublicSoulJournalEntries();
-  const { user } = useProfile();
   const [showProfileInfo, setShowProfileInfo] = useState<{[key: string]: boolean}>({});
   const [starredByMe, setStarredByMe] = useState<Set<string>>(new Set());
   const [starringEntryId, setStarringEntryId] = useState<string | null>(null);
   const [showIntegratedBinder, setShowIntegratedBinder] = useState<{[key: string]: boolean}>({});
   const [showBadgesModal, setShowBadgesModal] = useState<{[key: string]: boolean}>({});
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // Load starred entries when component mounts or user changes
+  // Check auth state only for starring functionality (not for viewing)
   useEffect(() => {
-    const loadStarredEntries = async () => {
-      if (user?.id) {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabaseBrowser.auth.getSession();
+      const userId = session?.user?.id ?? null;
+      setCurrentUserId(userId);
+
+      // Load starred entries only if logged in
+      if (userId) {
         try {
           const { data: starredData, error: starredError } = await supabaseBrowser
             .from('journal_entry_stars')
             .select('entry_id')
-            .eq('user_id', user.id);
+            .eq('user_id', userId);
 
           if (!starredError && starredData) {
-            const starredIds = new Set(starredData.map(row => row.entry_id));
-            setStarredByMe(starredIds);
+            setStarredByMe(new Set(starredData.map(row => row.entry_id)));
           }
-        } catch (error) {
-          console.error('Error loading starred entries:', error);
+        } catch (err) {
+          console.error('Error loading starred entries:', err);
         }
       }
     };
 
-    loadStarredEntries();
-  }, [user?.id]);
+    checkAuth();
+  }, []);
 
   const handleToggleStar = async (entryId: string) => {
+    // Require authentication to star entries
+    if (!currentUserId) {
+      // Anon users can't star - just return silently
+      return;
+    }
+
+    // Prevent double-clicks while request is in flight
+    if (starringEntryId) return;
+
+    setStarringEntryId(entryId);
+
+    const isCurrentlyStarred = starredByMe.has(entryId);
+
+    // Optimistic update: toggle star state
+    if (isCurrentlyStarred) {
+      setStarredByMe(prev => {
+        const next = new Set(prev);
+        next.delete(entryId);
+        return next;
+      });
+    } else {
+      setStarredByMe(prev => new Set(prev).add(entryId));
+    }
+
     try {
-      // Require authentication to star entries
-      if (!user?.id) {
-        // Could show login prompt here
-        return;
-      }
-
-      // Prevent double-clicks while request is in flight
-      if (starringEntryId) return;
-
-      setStarringEntryId(entryId);
-
-      const isCurrentlyStarred = starredByMe.has(entryId);
-
-      // Optimistic update: toggle star state
-      if (isCurrentlyStarred) {
-        setStarredByMe(prev => {
-          const next = new Set(prev);
-          next.delete(entryId);
-          return next;
-        });
-      } else {
-        setStarredByMe(prev => new Set(prev).add(entryId));
-      }
-
       // Call the RPC to toggle the star (server is source of truth)
       const { error } = await supabaseBrowser
         .rpc('toggle_journal_entry_star', { p_entry_id: entryId });
@@ -97,10 +101,19 @@ export default function PublicJournalFeed() {
 
       // Refresh entries to get updated star counts
       refreshEntries();
-
-      setStarringEntryId(null);
-    } catch (error) {
-      console.error('Failed to toggle star:', error);
+    } catch (err) {
+      console.error('Failed to toggle star:', err);
+      // Revert optimistic update
+      if (isCurrentlyStarred) {
+        setStarredByMe(prev => new Set(prev).add(entryId));
+      } else {
+        setStarredByMe(prev => {
+          const next = new Set(prev);
+          next.delete(entryId);
+          return next;
+        });
+      }
+    } finally {
       setStarringEntryId(null);
     }
   };
@@ -193,7 +206,7 @@ export default function PublicJournalFeed() {
                     className={`flex items-center gap-1 transition-all duration-200 hover:scale-110 px-1 py-1 ${
                       starringEntryId === entry.entry_id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                     }`}
-                    disabled={starringEntryId === entry.entry_id || !user?.id}
+                    disabled={starringEntryId === entry.entry_id || !currentUserId}
                     onClick={(e) => {
                       e.stopPropagation();
                       try { sfx.play('card-ding', 0.45); } catch {}

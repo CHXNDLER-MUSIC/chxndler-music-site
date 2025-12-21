@@ -2572,12 +2572,12 @@ const HUDPanel = React.memo(function HUDPanel({
                         style={{ marginTop: 1 }}
                       >
                         {audioManager.playing ? (
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                             <rect x="6" y="4" width="4" height="16" rx="1"/>
                             <rect x="14" y="4" width="4" height="16" rx="1"/>
                           </svg>
                         ) : (
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M7 4v16l12-8z"/>
                           </svg>
                       )}

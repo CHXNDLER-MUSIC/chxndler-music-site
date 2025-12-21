@@ -6,6 +6,8 @@ import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { OrbitGroup } from './OrbitGroup';
 import { InstancedStars } from './InstancedStars';
+import { HoloGrid } from './HoloGrid';
+import { OrbitRings } from './OrbitRings';
 import type { SongWithElement } from '@/hooks/useSongs';
 
 interface SolarSystemSceneProps {
@@ -156,11 +158,35 @@ export const SolarSystemScene = React.memo(({
       />
       
       {/* Stars */}
-      <InstancedStars 
-        count={quality === 'high' ? 1000 : 500} 
-        quality={quality} 
+      <InstancedStars
+        count={quality === 'high' ? 1000 : 500}
+        quality={quality}
       />
-      
+
+      {/* Holographic Background Grid - subtle perspective grid behind planets */}
+      <HoloGrid
+        opacity={0.08}
+        color="#00d4aa"
+        gridSize={2.5}
+        fadeRadius={0.85}
+        position={[0, -8, 0]}
+        rotation={[-Math.PI / 2.3, 0, 0]}
+        scale={100}
+        enableParallax={true}
+      />
+
+      {/* Optional: Faint Orbital Rings for depth */}
+      <OrbitRings
+        color="#00d4aa"
+        baseOpacity={0.05}
+        position={[0, 0, 0]}
+        ringConfigs={[
+          { radius: 22, opacity: 0.06, rotationSpeed: 0.002, tilt: Math.PI / 14 },
+          { radius: 32, opacity: 0.04, rotationSpeed: -0.0015, tilt: Math.PI / 20 },
+          { radius: 42, opacity: 0.025, rotationSpeed: 0.001, tilt: Math.PI / 28 }
+        ]}
+      />
+
       {/* Simplified test - just render some basic spheres first */}
       {/* Center Planet */}
       <mesh position={[0, 0, 0]} onClick={() => onPlanetSelect?.('center')}>

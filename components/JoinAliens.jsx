@@ -639,7 +639,7 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
         style={{
           position: 'absolute',
-          bottom: '20px',
+          bottom: '50px',
           left: '20px',
           width: '55px',
           height: '55px',
@@ -703,7 +703,7 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
         style={{
           position: 'absolute',
-          bottom: '213px', // Position above $5 button
+          bottom: '243px', // Position above $5 button
           right: '20px',
           width: '55px',
           height: '55px',
@@ -756,7 +756,7 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
         style={{
           position: 'absolute',
-          bottom: '148px', // Position above $10 button
+          bottom: '178px', // Position above $10 button
           right: '20px',
           width: '55px',
           height: '55px',
@@ -809,7 +809,7 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
         style={{
           position: 'absolute',
-          bottom: '83px', // Position above $ button
+          bottom: '113px', // Position above $ button
           right: '20px',
           width: '55px',
           height: '55px',
@@ -855,7 +855,7 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
         style={{
           position: 'absolute',
-          bottom: '20px',
+          bottom: '50px',
           right: '20px',
           width: '55px',
           height: '55px',
@@ -896,7 +896,7 @@ export default function JoinAliens({ visible = true } = {}) {
       {showTipOptions && (
         <div style={{
           position: 'absolute',
-          bottom: '63px',
+          bottom: '93px',
           right: '16px',
           display: 'flex',
           flexDirection: 'column',
@@ -1315,7 +1315,7 @@ export default function JoinAliens({ visible = true } = {}) {
         <div
           style={{
             position: 'absolute',
-            bottom: '213px',
+            bottom: '243px',
             right: '88px',
             zIndex: 15,
             display: 'flex',
@@ -1440,7 +1440,7 @@ export default function JoinAliens({ visible = true } = {}) {
         <div
           style={{
             position: 'absolute',
-            bottom: '148px',
+            bottom: '178px',
             right: '88px',
             zIndex: 15,
             display: 'flex',
@@ -1565,7 +1565,7 @@ export default function JoinAliens({ visible = true } = {}) {
         <div
           style={{
             position: 'absolute',
-            bottom: '83px',
+            bottom: '113px',
             right: '88px',
             zIndex: 15,
             display: 'flex',

@@ -544,16 +544,19 @@ export default function StreamingButtons({ pos, links, showControls = true }:{ p
         .am-close:hover { transform: scale(1.1); background: rgba(0,0,0,0.6); box-shadow: 0 0 24px rgba(255,255,255,0.55); }
         .am-close:active { transform: scale(0.95); }
         .lyrics-overlay {
-          position: fixed; inset: 0; background: transparent; backdrop-filter: none;
-          display: flex; align-items: center; justify-content: center; z-index: 2147483647;
+          position: fixed; background: transparent; backdrop-filter: none;
+          display: flex; justify-content: center; align-items: stretch; z-index: 2147483647;
+          left: 0; right: 0;
+          top: var(--profile-bar-boundary, 64px);
+          height: calc(100vh - var(--profile-bar-boundary, 64px) - var(--light-beam-boundary, 120px));
         }
         .lyrics-popover {
-          position: relative; width: min(90vw, 600px); max-height: 80vh; overflow-y: auto;
+          width: min(98vw, 1400px); height: 100%; overflow-y: auto;
           background: rgba(0,0,0,0.88);
-          border: 1px solid rgba(243,156,18,0.6);
-          border-radius: 14px; padding: 20px;
-          box-shadow: 0 18px 46px rgba(0,0,0,0.55), 0 0 32px rgba(243,156,18,0.35);
-          margin-top: -80px;
+          border-left: 1px solid rgba(243,156,18,0.6);
+          border-right: 1px solid rgba(243,156,18,0.6);
+          padding: 20px;
+          box-shadow: 0 0 32px rgba(243,156,18,0.35);
         }
         .lyrics-close { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%;
           border: 1px solid rgba(255,255,255,0.4); background: rgba(0,0,0,0.45); color: #fff; display: inline-flex;
@@ -597,7 +600,7 @@ export default function StreamingButtons({ pos, links, showControls = true }:{ p
         @media (max-width: 768px) {
           .sp-popover { margin-top: -150px; width: min(95vw, 650px); }
           .am-popover { margin-top: -150px; width: min(95vw, 650px); }
-          .lyrics-popover { margin-top: -60px; width: min(90vw, 480px); }
+          .lyrics-popover { width: min(98vw, 1400px); }
           .volume-popover { margin-top: -60px; width: min(90vw, 320px); }
         }
       `}</style>
