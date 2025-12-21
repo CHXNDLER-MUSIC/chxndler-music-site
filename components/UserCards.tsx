@@ -88,9 +88,11 @@ export default function UserCards({
           card_slots: profileResponse.data.card_slots,
         });
 
-        // Try fetching cards - use user_cards table (RLS should allow if permitted)
-        // If this fails due to RLS or missing table, show empty cards
+        // Try fetching cards - use user_cards table with is_public = true filter
+        // Only show cards that the user has explicitly marked as public
         try {
+          console.log('[UserCards] Fetching public cards for viewedUserId:', userId);
+
           const cardsResponse = await supabaseBrowser
             .from('user_cards')
             .select(`
@@ -108,16 +110,21 @@ export default function UserCards({
               )
             `)
             .eq('user_id', userId)
+            .eq('is_public', true)
             .order('acquired_at', { ascending: true });
 
           if (cardsResponse.error) {
-            // Don't show error - just show empty cards
+            console.error('[UserCards] Error fetching public cards:', cardsResponse.error);
+            setError('Unable to load public cards');
             setUserCards([]);
           } else {
+            console.log('[UserCards] Fetched public cards count:', cardsResponse.data?.length ?? 0);
             setUserCards(cardsResponse.data || []);
           }
-        } catch {
-          // If cards fetch fails for any reason, show empty state
+        } catch (err) {
+          // If cards fetch fails for any reason, show error state
+          console.error('[UserCards] Exception fetching public cards:', err);
+          setError('Unable to load public cards');
           setUserCards([]);
         }
       } catch (err) {
@@ -153,8 +160,8 @@ export default function UserCards({
 
   if (error) {
     return (
-      <div className={`text-center text-white/60 text-sm ${className}`}>
-        No public cards yet.
+      <div className={`text-center text-red-400/80 text-sm ${className}`}>
+        {error}
       </div>
     );
   }

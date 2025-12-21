@@ -59,14 +59,20 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
       setHeartCoinOpen(true);
     };
 
+    const handleOpenWelcomeHomeModal = () => {
+      setWelcomeHomeOpen(true);
+    };
+
     window.addEventListener('openBinderModal', handleOpenBinderModal);
     window.addEventListener('openBadgesModal', handleOpenBadgesModal);
     window.addEventListener('openHeartCoinModal', handleOpenHeartCoinModal);
+    window.addEventListener('openWelcomeHomeModal', handleOpenWelcomeHomeModal);
 
     return () => {
       window.removeEventListener('openBinderModal', handleOpenBinderModal);
       window.removeEventListener('openBadgesModal', handleOpenBadgesModal);
       window.removeEventListener('openHeartCoinModal', handleOpenHeartCoinModal);
+      window.removeEventListener('openWelcomeHomeModal', handleOpenWelcomeHomeModal);
     };
   }, [onBeamColorChange]);
 

@@ -2,11 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useProfile } from '@/contexts/ProfileContext';
 
-// Author profile data from public_profiles view
+// Author profile data from profiles table
 export type Author = {
   id: string;
   name: string | null;
-  profile_image_url: string | null;
+  profile_image_url: string | null; // mapped from avatar_url
 };
 
 export type SoulJournalEntry = {
@@ -45,10 +45,9 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
       setLoading(true);
       setError('');
 
-      // Build query for journal entries with author from public_profiles_table
-      let query = supabaseBrowser
-        .from('soul_journal_entries')
-        .select(`
+      // Build query for journal entries with author from profiles table
+      // Uses the correct FK: soul_journal_entries_user_id_fkey -> profiles.id
+      const selectString = `
           entry_id,
           user_id,
           entry_text,
@@ -57,12 +56,17 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
           created_at,
           is_public,
           stars_count,
-          author:public_profiles_table!soul_journal_entries_user_id_public_profiles_table_fkey (
+          author:profiles!soul_journal_entries_user_id_fkey (
             id,
             name,
-            profile_image_url
+            avatar_url
           )
-        `)
+        `;
+      console.log('[useSoulJournalEntries] Select string:', selectString.trim());
+
+      let query = supabaseBrowser
+        .from('soul_journal_entries')
+        .select(selectString)
         .not('entry_text', 'is', null)
         .not('entry_text', 'eq', '')
         .order('created_at', { ascending: false });
@@ -84,7 +88,10 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
       const { data, error } = await query;
 
       if (error) {
-        console.error('Failed to fetch soul journal entries:', error);
+        console.error('[useSoulJournalEntries] Supabase error object:', error);
+        console.error('[useSoulJournalEntries] Error code:', error.code);
+        console.error('[useSoulJournalEntries] Error message:', error.message);
+        console.error('[useSoulJournalEntries] Error details:', error.details);
         setError(`Failed to load entries: ${error.message}`);
         return;
       }
@@ -104,7 +111,7 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
           author: entry.author ? {
             id: entry.author.id,
             name: entry.author.name,
-            profile_image_url: entry.author.profile_image_url
+            profile_image_url: entry.author.avatar_url // mapped from profiles.avatar_url
           } : null
         };
       });

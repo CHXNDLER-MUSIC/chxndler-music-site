@@ -1,13 +1,14 @@
 import { useState, useRef, useCallback } from 'react';
 import { PurchaseWithHeartcoinsResult, ShippingInfo, ShippingUpdateResponse } from '@/types/merch';
 
-// New purchase request interface - client sends only IDs, not prices
-// Server is authoritative for price lookup
+// Purchase request interface for purchase_merch_with_heartcoins_v4
+// v4 signature: (p_merch_item_id uuid, p_quantity int, p_client_request_id uuid)
+// Server is authoritative for price lookup - do NOT send price
 export interface PurchaseRequest {
-  merchItemId: string;      // The UUID from merch_items.id
-  quantity: number;
-  clientSlug?: string;      // For logging/debugging only
-  idempotencyKey: string;   // Prevents double-submit on server
+  merchItemId: string;      // -> p_merch_item_id (UUID from merch_items.id)
+  quantity: number;         // -> p_quantity
+  idempotencyKey: string;   // -> p_client_request_id (prevents double-submit)
+  clientSlug?: string;      // UNUSED by v4 - kept for backwards compat, not sent to API
 }
 
 /**
@@ -31,7 +32,8 @@ export function useMerchPurchase() {
   const purchaseWithHeartCoins = useCallback(async (
     request: PurchaseRequest
   ): Promise<PurchaseWithHeartcoinsResult | null> => {
-    const { merchItemId, quantity, clientSlug, idempotencyKey } = request;
+    // v4 only uses: merchItemId, quantity, idempotencyKey
+    const { merchItemId, quantity, idempotencyKey } = request;
 
     // ============================================================
     // CRITICAL: Synchronous duplicate prevention using ref
@@ -73,21 +75,16 @@ export function useMerchPurchase() {
       return null;
     }
 
-    // Prepare payload expected by API route
-    // IMPORTANT: Do NOT send price - server looks it up
+    // Prepare payload for API route -> purchase_merch_with_heartcoins_v4
+    // v4 signature: (p_merch_item_id, p_quantity, p_client_request_id)
+    // Do NOT send: price, clientSlug, order_type, userId - v4 handles internally
     const payload = {
-      merchItemId,
-      quantity,
-      idempotencyKey,
-      clientSlug, // For server-side logging only
+      merchItemId,        // -> p_merch_item_id
+      quantity,           // -> p_quantity
+      idempotencyKey,     // -> p_client_request_id
     };
 
-    console.log('[useMerchPurchase] Initiating purchase (single API call):', {
-      merchItemId,
-      quantity,
-      clientSlug,
-      idempotencyKey,
-    });
+    console.log('[useMerchPurchase] Initiating purchase (single API call):', payload);
 
     try {
       console.log('[useMerchPurchase] Making fetch request to /api/merch/purchase');

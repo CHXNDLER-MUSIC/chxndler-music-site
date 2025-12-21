@@ -8,27 +8,11 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    // v4 only needs: merchItemId, quantity, idempotencyKey
+    // Do NOT extract or send: order_type, clientSlug, userId - v4 handles these internally
     const { merchItemId, quantity = 1, idempotencyKey, paymentType } = body;
 
-    // Normalize order_type defensively - accept multiple field names
-    const VALID_ORDER_TYPES = ['merch', 'physical_card'] as const;
-    type ValidOrderType = typeof VALID_ORDER_TYPES[number];
-
-    const rawOrderType = body.order_type ?? body.orderType ?? body.type ?? 'merch';
-
-    // Guard: if caller explicitly passed an invalid type, reject the request
-    if (rawOrderType && !VALID_ORDER_TYPES.includes(rawOrderType)) {
-      return NextResponse.json(
-        { success: false, error: `Invalid order_type: "${rawOrderType}". Must be 'merch' or 'physical_card'.`, errorCode: 'INVALID_ORDER_TYPE' },
-        { status: 400 }
-      );
-    }
-
-    const order_type: ValidOrderType = VALID_ORDER_TYPES.includes(rawOrderType)
-      ? rawOrderType
-      : 'merch';
-
-    console.log('[PURCHASE] Incoming request:', { merchItemId, quantity, idempotencyKey, order_type });
+    console.log('[PURCHASE] Incoming request:', { merchItemId, quantity, idempotencyKey });
 
     // USD not supported in this route
     if (paymentType === 'USD') {
@@ -75,29 +59,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
     }
 
-    console.log('[PURCHASE] Calling RPC purchase_merch_with_heartcoins_v4:', {
+    // ============================================================
+    // CALL RPC: purchase_merch_with_heartcoins_v4
+    // Signature: (p_merch_item_id uuid, p_quantity int, p_client_request_id uuid)
+    // v4 uses auth.uid() internally, order_type defaults to 'merch'
+    // Do NOT send: p_order_type, p_user_id, p_idempotency_key, p_client_slug
+    // ============================================================
+    const rpcParams = {
       p_merch_item_id: merchItemId,
       p_quantity: quantity,
       p_client_request_id: idempotencyKey,
-      p_order_type: order_type,
-    });
+    };
+    console.log('[PURCHASE] RPC call: purchase_merch_with_heartcoins_v4', rpcParams);
 
-    // ============================================================
-    // CALL RPC - Let the database handle everything atomically
-    // Do NOT write to heartcoin balance or orders manually
-    // ============================================================
-    console.log('[PURCHASE] inserting order_type:', order_type);
     const { data: rpcResult, error: rpcError } = await supabase.rpc(
       'purchase_merch_with_heartcoins_v4',
-      {
-        p_merch_item_id: merchItemId,
-        p_quantity: quantity,
-        p_client_request_id: idempotencyKey,
-        p_order_type: order_type,
-      }
+      rpcParams
     );
 
-    console.log('[PURCHASE] RPC response:', { rpcResult, rpcError: rpcError?.message });
+    console.log('[PURCHASE] RPC response:', { success: !rpcError, data: rpcResult, error: rpcError?.message, code: rpcError?.code });
 
     if (rpcError) {
       console.error('[PURCHASE] RPC error:', rpcError);

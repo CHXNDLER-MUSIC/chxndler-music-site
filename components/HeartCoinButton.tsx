@@ -2066,7 +2066,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         onClick={() => {
                           // Play click sound for all button interactions
                           try { sfx.play('click', 0.6); } catch {}
-                          
+
+                          // If not logged in, open welcome home modal for login
+                          if (!isLoggedIn) {
+                            window.dispatchEvent(new CustomEvent('openWelcomeHomeModal'));
+                            return;
+                          }
+
                           if (quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared) {
                             handleBonusQuestConfirm(quest);
                           } else if (quest.quest_key === 'ATTEND_LIVESTREAM') {
@@ -2176,44 +2182,44 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         onMouseEnter={() => {
                           try { sfx.play('hover', 0.3); } catch {}
                         }}
-                        disabled={!isLoggedIn || (!quest.can_complete && !inviteFriendShared) || isQuestCompleted(quest) || (quest.quest_key === 'SECRET_PHRASE' && secretPhraseLoading)}
-                        className="px-2 py-1 text-xs rounded border transition-colors font-bold"
+                        disabled={isLoggedIn && ((!quest.can_complete && !inviteFriendShared) || isQuestCompleted(quest) || (quest.quest_key === 'SECRET_PHRASE' && secretPhraseLoading))}
+                        className="px-2 py-1 text-xs rounded border transition-colors font-bold hover:opacity-80"
                         style={{
                           background: !isLoggedIn
-                            ? 'rgba(100,100,100,0.3)'
+                            ? 'rgba(78,205,196,0.2)'
                             : isQuestCompleted(quest)
-                            ? 'rgba(0,255,0,0.2)' 
+                            ? 'rgba(0,255,0,0.2)'
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? 'rgba(0,0,0,0.3)'
                               : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
                                 ? 'rgba(0,0,0,0.3)'
-                                : quest.can_complete 
+                                : quest.can_complete
                                   ? 'rgba(255,255,255,0.1)'
                                   : 'rgba(100,100,100,0.3)',
                           color: !isLoggedIn
-                            ? '#666'
+                            ? '#4ECDC4'
                             : isQuestCompleted(quest)
-                            ? '#00FF00' 
+                            ? '#00FF00'
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? '#F2EF1D'
                               : quest.quest_key === 'ATTEND_LIVESTREAM' && phraseValidationResult === 'correct'
                                 ? '#00FF00'
                                 : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
                                   ? '#F2EF1D'
-                                  : quest.can_complete 
+                                  : quest.can_complete
                                     ? '#FFFFFF'
                                     : '#666',
                           borderColor: !isLoggedIn
-                            ? 'rgba(100,100,100,0.6)'
+                            ? '#4ECDC4'
                             : isQuestCompleted(quest)
-                            ? '#00FF00' 
+                            ? '#00FF00'
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? '#F2EF1D'
                               : quest.quest_key === 'ATTEND_LIVESTREAM' && phraseValidationResult === 'correct'
                                 ? '#00FF00'
                                 : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
                                   ? '#F2EF1D'
-                                  : quest.can_complete 
+                                  : quest.can_complete
                                     ? 'rgba(255,255,255,0.6)'
                                     : 'rgba(100,100,100,0.6)',
                           borderWidth: isQuestCompleted(quest)
@@ -2224,9 +2230,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 ? '2px'
                                 : '1px',
                           textShadow: !isLoggedIn
-                            ? 'none'
+                            ? '0 0 8px rgba(78,205,196,0.5)'
                             : isQuestCompleted(quest)
-                            ? '0 0 8px #00FF00, 0 0 16px #00FF00' 
+                            ? '0 0 8px #00FF00, 0 0 16px #00FF00'
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? '0 0 10px #F2EF1D'
                               : quest.quest_key === 'ATTEND_LIVESTREAM' && phraseValidationResult === 'correct'
@@ -2237,14 +2243,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           boxShadow: !isLoggedIn
                             ? 'none'
                             : isQuestCompleted(quest)
-                            ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)' 
+                            ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)'
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? '0 0 20px rgba(242,239,29,0.8), inset 0 0 10px rgba(242,239,29,0.2)'
                               : quest.quest_key === 'ATTEND_LIVESTREAM' && phraseValidationResult === 'correct'
                                 ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)'
                                 : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
                                   ? '0 0 20px rgba(242,239,29,0.8), inset 0 0 10px rgba(242,239,29,0.2)'
-                                  : 'none'
+                                  : 'none',
+                          cursor: !isLoggedIn ? 'pointer' : 'default'
                         }}
                       >
                         {!isLoggedIn

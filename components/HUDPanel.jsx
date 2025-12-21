@@ -1764,13 +1764,14 @@ const HUDPanel = React.memo(function HUDPanel({
 
   // Auto-open journal when shouldOpenJournal is true
   useEffect(() => {
-    if (shouldOpenJournal && !showSoulSkyPopover) {
+    if (shouldOpenJournal && !showSoulStarJournal) {
       try {
-        openSoulSkyPopover();
+        // Open the Soul Star Journal modal directly (not the Soul Sky popover)
+        setShowSoulStarJournal(true);
         onJournalOpened?.();
       } catch {}
     }
-  }, [shouldOpenJournal, showSoulSkyPopover, onJournalOpened]);
+  }, [shouldOpenJournal, showSoulStarJournal, onJournalOpened]);
 
   // Check if journal was completed today on mount and when user changes
   useEffect(() => {

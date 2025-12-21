@@ -447,6 +447,11 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     setSelectedPurchaseType(null);
   };
 
+  // Helper function to count cards for a given element
+  const getElementCardCount = (element: 'LIGHTNING' | 'WATER' | 'HEART' | 'DARKNESS') => {
+    return allCards.filter(card => (card.element || '').toUpperCase() === element.toUpperCase()).length;
+  };
+
   // Helper function to check if quest is completed
   const isQuestCompleted = (quest: BonusQuestWithCompletion): boolean => {
     return quest.completion !== null && quest.completion !== undefined;
@@ -1290,16 +1295,16 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   </div>
                 ) : bonusQuests.length > 0 ? (
                   bonusQuests.map((quest, index) => (
-                    <div key={quest.id} className="flex items-center justify-between p-3 rounded-lg border border-white/30 bg-white/10">
-                      <div className="flex-1 mr-4">
-                        <div className="text-sm font-bold text-white">
-                          {index + 1}. {quest.title}
+                    <div key={quest.id} className="flex flex-col p-3 rounded-lg border border-white/30 bg-white/10">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 mr-4">
+                          <div className="text-sm font-bold text-white">
+                            {index + 1}. {quest.title}
+                          </div>
+                          <div className="text-xs text-white/80">
+                            {quest.description}
+                          </div>
                         </div>
-                        <div className="text-xs text-white/80">
-                          {quest.description}
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-center gap-2">
                         <span className="text-sm flex items-center" style={{
                           color: isQuestCompleted(quest) ? '#666' : '#90EE90',
                           textShadow: isQuestCompleted(quest) ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90'
@@ -1307,45 +1312,46 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                           {quest.reward_notes || `+${quest.reward_heartcoins}`}
                           <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
                         </span>
-                        <button
-                          onClick={!profile ? handleLoginToComplete : undefined}
-                          disabled={!!profile && isQuestCompleted(quest)}
-                          className="px-3 py-2 text-xs rounded border transition-colors font-bold"
-                          style={{
-                            background: !profile
-                              ? 'rgba(100,100,100,0.3)'
-                              : isQuestCompleted(quest)
-                              ? 'rgba(0,255,0,0.2)'
-                              : 'rgba(255,255,255,0.1)',
-                            color: !profile
-                              ? '#666'
-                              : isQuestCompleted(quest)
-                              ? '#00FF00'
-                              : '#FFFFFF',
-                            borderColor: !profile
-                              ? 'rgba(100,100,100,0.6)'
-                              : isQuestCompleted(quest)
-                              ? '#00FF00'
-                              : 'rgba(255,255,255,0.6)',
-                            textShadow: !profile
-                              ? 'none'
-                              : isQuestCompleted(quest)
-                              ? '0 0 8px #00FF00, 0 0 16px #00FF00'
-                              : 'none',
-                            boxShadow: !profile
-                              ? 'none'
-                              : isQuestCompleted(quest)
-                              ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)'
-                              : 'none'
-                          }}
-                        >
-                          {!profile
-                            ? 'Log in to complete'
-                            : isQuestCompleted(quest)
-                            ? 'COMPLETED'
-                            : 'COMPLETE'}
-                        </button>
                       </div>
+                      <button
+                        onClick={!profile ? handleLoginToComplete : undefined}
+                        disabled={!!profile && isQuestCompleted(quest)}
+                        className="mt-3 px-3 py-2 text-xs rounded border transition-colors font-bold w-full hover:opacity-80"
+                        style={{
+                          background: !profile
+                            ? 'rgba(78,205,196,0.2)'
+                            : isQuestCompleted(quest)
+                            ? 'rgba(0,255,0,0.2)'
+                            : 'rgba(255,255,255,0.1)',
+                          color: !profile
+                            ? '#4ECDC4'
+                            : isQuestCompleted(quest)
+                            ? '#00FF00'
+                            : '#FFFFFF',
+                          borderColor: !profile
+                            ? '#4ECDC4'
+                            : isQuestCompleted(quest)
+                            ? '#00FF00'
+                            : 'rgba(255,255,255,0.6)',
+                          textShadow: !profile
+                            ? '0 0 8px rgba(78,205,196,0.5)'
+                            : isQuestCompleted(quest)
+                            ? '0 0 8px #00FF00, 0 0 16px #00FF00'
+                            : 'none',
+                          boxShadow: !profile
+                            ? 'none'
+                            : isQuestCompleted(quest)
+                            ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)'
+                            : 'none',
+                          cursor: !profile ? 'pointer' : 'default'
+                        }}
+                      >
+                        {!profile
+                          ? 'Log in to complete'
+                          : isQuestCompleted(quest)
+                          ? 'COMPLETED'
+                          : 'COMPLETE'}
+                      </button>
                     </div>
                   ))
                 ) : (
@@ -1649,29 +1655,28 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         {selectedElement !== null ? (
           <div className="relative">
             {/* Top Navigation Bar */}
-            <div className="flex items-center justify-between mb-6 relative z-30">
-              {/* Previous Card Arrow */}
+            <div className="flex items-center gap-3 mb-6 relative z-30">
+              {/* Back Button */}
               <button
-                className={`flex items-center justify-center w-10 h-10 rounded-full transition-colors cursor-pointer ${
-                  displayCards.length > 1
-                    ? 'text-[#4ECDC4] hover:text-[#4ECDC4] hover:bg-[#4ECDC4]/20'
-                    : 'text-white/30'
-                }`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (displayCards.length > 1) {
-                    handlePrevCard();
-                  }
+                onClick={handleBackToElementSelection}
+                onMouseEnter={() => {
+                  try { sfx.play('hover', 0.3); } catch {}
                 }}
-                style={{ pointerEvents: 'auto' }}
+                className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+                style={{
+                  backgroundColor: 'rgba(78,205,196,0.2)',
+                  border: '2px solid #4ECDC4',
+                  color: '#4ECDC4',
+                  boxShadow: '0 0 10px rgba(78,205,196,0.4)',
+                }}
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
 
               {/* Card Name Dropdown - shows cards in selected element */}
-              <div className="flex-1 ml-4">
+              <div className="flex-1">
                 <select
                   className="w-full bg-black/30 border border-white/20 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-white/40"
                   value={displayCardIndex}
@@ -1689,33 +1694,28 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               </div>
             </div>
 
-            {/* Card Display */}
-            <div className="relative flex items-center justify-center px-20">
-              {/* Left Navigation Arrow */}
+            {/* Card Display with Arrows */}
+            <div className="flex items-center justify-center gap-2" style={{ minHeight: '350px' }}>
+              {/* LEFT ARROW */}
               <button
-                onClick={handlePrevCard}
-                onMouseEnter={() => {
-                  if (displayCards.length > 1) {
-                    try { sfx.play('hover', 0.3); } catch {}
-                  }
-                }}
-                disabled={displayCards.length <= 1}
-                className={`absolute left-4 top-1/2 transform -translate-y-1/2 z-20 w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 border-2 ${
-                  displayCards.length > 1
-                    ? 'bg-[#4ECDC4]/20 border-[#4ECDC4] text-[#4ECDC4] hover:bg-[#4ECDC4]/40 hover:scale-110 cursor-pointer shadow-[0_0_15px_rgba(78,205,196,0.4)]'
-                    : 'bg-black/30 border-white/20 text-white/30 cursor-not-allowed'
-                }`}
+                onClick={(e) => { e.stopPropagation(); handlePrevCard(); }}
+                onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
                 style={{
-                  backdropFilter: 'blur(8px)'
+                  backgroundColor: 'rgba(78,205,196,0.2)',
+                  border: '2px solid #4ECDC4',
+                  color: '#4ECDC4',
+                  cursor: 'pointer',
+                  boxShadow: '0 0 15px rgba(78,205,196,0.5), 0 0 30px rgba(78,205,196,0.3)',
                 }}
               >
-                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
 
               {/* Current Card */}
-              <div className="text-center mx-8">
+              <div className="text-center flex-1 max-w-[280px]">
                 <div
                   className="relative w-64 h-80 mx-auto cursor-pointer"
                   onClick={() => {
@@ -1791,28 +1791,22 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 </div>
               </div>
 
-              {/* Buttons moved below the card area for consistent layout */}
-
-              {/* Right Navigation Arrow */}
+              {/* RIGHT ARROW - White Neon */}
               <button
-                onClick={handleNextCard}
-                onMouseEnter={() => {
-                  if (displayCards.length > 1) {
-                    try { sfx.play('hover', 0.3); } catch {}
-                  }
-                }}
-                disabled={displayCards.length <= 1}
-                className={`absolute right-4 top-1/2 transform -translate-y-1/2 z-20 w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 border-2 ${
-                  displayCards.length > 1
-                    ? 'bg-[#4ECDC4]/20 border-[#4ECDC4] text-[#4ECDC4] hover:bg-[#4ECDC4]/40 hover:scale-110 cursor-pointer shadow-[0_0_15px_rgba(78,205,196,0.4)]'
-                    : 'bg-black/30 border-white/20 text-white/30 cursor-not-allowed'
-                }`}
+                onClick={(e) => { e.stopPropagation(); handleNextCard(); }}
+                onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
                 style={{
-                  backdropFilter: 'blur(8px)'
+                  backgroundColor: 'rgba(255,255,255,0.25)',
+                  border: '2px solid white',
+                  color: 'white',
+                  cursor: 'pointer',
+                  boxShadow: '0 0 15px rgba(255,255,255,0.7), 0 0 30px rgba(255,255,255,0.5), 0 0 45px rgba(255,255,255,0.3)',
+                  filter: 'drop-shadow(0 0 8px white)',
                 }}
               >
-                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
               </button>
             </div>
@@ -1915,7 +1909,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               {/* Lightning Element */}
               <div
                 className="relative group cursor-pointer"
-                onClick={() => handleElementSelect('LIGHTNING')}
+                onClick={(e) => { e.stopPropagation(); handleElementSelect('LIGHTNING'); }}
                 onMouseEnter={() => {
                   try { sfx.play('change-channel', 0.5); } catch {}
                 }}
@@ -1929,14 +1923,14 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   />
                 </div>
                 <div className="text-center mt-2">
-                  <span className="text-yellow-400 font-bold text-sm">12</span>
+                  <span className="text-yellow-400 font-bold text-sm">{getElementCardCount('LIGHTNING')}</span>
                 </div>
               </div>
 
               {/* Darkness Element */}
               <div
                 className="relative group cursor-pointer"
-                onClick={() => handleElementSelect('DARKNESS')}
+                onClick={(e) => { e.stopPropagation(); handleElementSelect('DARKNESS'); }}
                 onMouseEnter={() => {
                   try { sfx.play('change-channel', 0.5); } catch {}
                 }}
@@ -1945,14 +1939,14 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   <div className="w-12 h-12 rounded-full border-2 border-purple-600 bg-gradient-to-br from-transparent to-purple-900/40" />
                 </div>
                 <div className="text-center mt-2">
-                  <span className="text-purple-400 font-bold text-sm">9</span>
+                  <span className="text-purple-400 font-bold text-sm">{getElementCardCount('DARKNESS')}</span>
                 </div>
               </div>
 
               {/* Water Element */}
               <div
                 className="relative group cursor-pointer"
-                onClick={() => handleElementSelect('WATER')}
+                onClick={(e) => { e.stopPropagation(); handleElementSelect('WATER'); }}
                 onMouseEnter={() => {
                   try { sfx.play('change-channel', 0.5); } catch {}
                 }}
@@ -1966,14 +1960,14 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   />
                 </div>
                 <div className="text-center mt-2">
-                  <span className="text-blue-400 font-bold text-sm">5</span>
+                  <span className="text-blue-400 font-bold text-sm">{getElementCardCount('WATER')}</span>
                 </div>
               </div>
 
               {/* Heart Element */}
               <div
                 className="relative group cursor-pointer"
-                onClick={() => handleElementSelect('HEART')}
+                onClick={(e) => { e.stopPropagation(); handleElementSelect('HEART'); }}
                 onMouseEnter={() => {
                   try { sfx.play('change-channel', 0.5); } catch {}
                 }}
@@ -1987,7 +1981,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   />
                 </div>
                 <div className="text-center mt-2">
-                  <span className="text-pink-400 font-bold text-sm">22</span>
+                  <span className="text-pink-400 font-bold text-sm">{getElementCardCount('HEART')}</span>
                 </div>
               </div>
             </div>
@@ -2225,7 +2219,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             e.stopPropagation();
                             handleNextCard();
                           }}
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/20 hover:bg-white/40 border-2 border-white rounded-full flex items-center justify-center text-white transition-all duration-200"
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/20 hover:bg-white/40 border-2 border-white rounded-full flex items-center justify-center text-white transition-all duration-200 hover:scale-110"
                           style={{
                             boxShadow: '0 0 15px rgba(255,255,255,0.6), 0 0 30px rgba(255,255,255,0.4), 0 0 45px rgba(255,255,255,0.2)',
                           }}
