@@ -189,9 +189,77 @@ export function useSoulJournalEntries(options: UseSoulJournalEntriesOptions = {}
   };
 }
 
-// Hook specifically for public entries (convenience wrapper)
+// Hook specifically for public entries - DOES NOT depend on auth/user state
+// This works for logged-out (anon) users
 export function usePublicSoulJournalEntries() {
-  return useSoulJournalEntries({ includePrivate: false });
+  const [entries, setEntries] = useState<SoulJournalEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
+
+  const fetchEntries = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      // Public feed query - no profiles join, no auth dependency
+      const { data, error: queryError } = await supabaseBrowser
+        .from('soul_journal_entries')
+        .select(`
+          entry_id,
+          user_id,
+          entry_text,
+          element,
+          entry_date,
+          created_at,
+          is_public,
+          stars_count,
+          author_name,
+          author_avatar_url
+        `)
+        .eq('is_public', true)
+        .not('entry_text', 'is', null)
+        .not('entry_text', 'eq', '')
+        .order('created_at', { ascending: false });
+
+      if (queryError) {
+        console.error('[usePublicSoulJournalEntries] Error:', queryError);
+        setError(`Failed to load entries: ${queryError.message}`);
+        return;
+      }
+
+      const mappedEntries: SoulJournalEntry[] = (data || []).map((entry: any) => ({
+        entry_id: entry.entry_id,
+        user_id: entry.user_id,
+        content: entry.entry_text || '',
+        is_public: true,
+        created_at: entry.created_at,
+        entry_date: entry.entry_date,
+        element: entry.element || 'heart',
+        entry_text: entry.entry_text,
+        stars_count: entry.stars_count ?? 0,
+        author_name: entry.author_name ?? null,
+        author_avatar_url: entry.author_avatar_url ?? null,
+        author: null // Not using profiles join for public feed
+      }));
+
+      setEntries(mappedEntries);
+    } catch (err) {
+      console.error('[usePublicSoulJournalEntries] Exception:', err);
+      setError(`Failed to load entries: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  }, []); // No dependencies - this query is static
+
+  useEffect(() => {
+    fetchEntries();
+  }, [fetchEntries]);
+
+  const refreshEntries = useCallback(() => {
+    fetchEntries();
+  }, [fetchEntries]);
+
+  return { entries, loading, error, refreshEntries };
 }
 
 // Hook specifically for a user's own entries (convenience wrapper)

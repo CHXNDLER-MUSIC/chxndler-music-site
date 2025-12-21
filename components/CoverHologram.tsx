@@ -634,15 +634,15 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
             className="absolute inset-0 flex items-center justify-center p-4"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Blue container with card - same width as blue display */}
+            {/* Blue container with card - fills the display area */}
             <div
               className="relative rounded-2xl p-4 flex flex-col items-center"
               style={{
                 background: 'rgba(25, 227, 255, 0.45)',
                 boxShadow: '0 0 60px rgba(25, 227, 255, 0.45), inset 0 0 0 1px rgba(25, 227, 255, 0.35)',
-                width: 'var(--display-width)',
-                maxHeight: '100%',
-                overflow: 'hidden',
+                width: 'var(--display-width, 90vw)',
+                height: '100%',
+                maxWidth: '100%',
               }}
             >
               {/* Close Button */}
@@ -652,7 +652,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                   setShowCard(false);
                 }}
                 onMouseEnter={() => { try { sfx.play('hover', 0.45); } catch {} }}
-                className="absolute -top-2 -right-2 w-8 h-8 bg-[#19E3FF] hover:bg-[#19E3FF]/80 rounded-full flex items-center justify-center text-black font-bold transition-all duration-200 z-10 shadow-[0_0_20px_rgba(25,227,255,0.8)]"
+                className="absolute top-2 right-2 w-8 h-8 bg-[#19E3FF] hover:bg-[#19E3FF]/80 rounded-full flex items-center justify-center text-black font-bold transition-all duration-200 z-10 shadow-[0_0_20px_rgba(25,227,255,0.8)]"
               >
                 ×
               </button>
@@ -707,16 +707,19 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
 
               {/* Card Image */}
               <div
-                className="relative flex-1"
+                className="relative card-float-animation"
                 style={{
-                  width: '100%',
-                  maxWidth: 'calc(var(--display-width) - 32px)',
-                  maxHeight: '100%',
-                  aspectRatio: '3 / 4'
+                  width: 'auto',
+                  height: '100%',
+                  maxWidth: '100%',
+                  maxHeight: 'calc(100% - 60px)',
+                  aspectRatio: '3 / 4',
+                  flex: '1 1 auto',
+                  minHeight: 0,
                 }}
               >
                 <TiltSpinCard
-                  className="relative w-full h-full"
+                  className="relative w-full h-full rounded-2xl overflow-hidden"
                   maxRotateX={10}
                   sensitivity={0.3}
                   returnDuration={400}
@@ -742,7 +745,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                   <img
                     src={explicitCardSrc || computedCardSrc}
                     alt={title}
-                    className="absolute inset-0 w-full h-full rounded-3xl object-contain pointer-events-none"
+                    className="absolute inset-0 w-full h-full rounded-2xl object-contain pointer-events-none"
                     style={{
                       backfaceVisibility: 'hidden',
                       transform: `rotateY(${cardRotation}deg)`,
@@ -763,7 +766,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                   <img
                     src={'/cards/BACK.webp'}
                     alt={`${title} card back`}
-                    className="absolute inset-0 w-full h-full rounded-3xl object-contain pointer-events-none"
+                    className="absolute inset-0 w-full h-full rounded-2xl object-contain pointer-events-none"
                     style={{
                       backfaceVisibility: 'hidden',
                       transform: `rotateY(${cardRotation + 180}deg)`,
@@ -1102,6 +1105,15 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
       ) : null}
 
       <style jsx>{`
+        /* Card floating animation */
+        .card-float-animation {
+          animation: cardFloat 3s ease-in-out infinite;
+        }
+        @keyframes cardFloat {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+        }
+
         /* Cover Hologram Hover Effects */
         .cover-hologram-container {
           /* Grow the whole container (image + border) on hover */

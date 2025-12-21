@@ -639,8 +639,8 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
         style={{
           position: 'absolute',
-          bottom: '12px',
-          left: '12px',
+          bottom: '20px',
+          left: '20px',
           width: '55px',
           height: '55px',
           background: 'rgba(0, 255, 255, 0.1)',
@@ -690,7 +690,7 @@ export default function JoinAliens({ visible = true } = {}) {
       <button
         onClick={() => {
           try { sfx.play('audio/click.mp3', 0.3); } catch {}
-          
+
           // Toggle VENMO/CARD options popup for $3
           if (showPaymentOptions) {
             setShowPaymentOptions(false);
@@ -703,8 +703,8 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
         style={{
           position: 'absolute',
-          bottom: '205px', // Position above $5 button
-          right: '12px',
+          bottom: '213px', // Position above $5 button
+          right: '20px',
           width: '55px',
           height: '55px',
           background: 'rgba(252, 84, 175, 0.1)',
@@ -743,7 +743,7 @@ export default function JoinAliens({ visible = true } = {}) {
       <button
         onClick={() => {
           try { sfx.play('audio/click.mp3', 0.3); } catch {}
-          
+
           // Toggle VENMO/CARD options popup for $5
           if (showPaymentOptions5) {
             setShowPaymentOptions5(false);
@@ -756,8 +756,8 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
         style={{
           position: 'absolute',
-          bottom: '140px', // Position above $10 button
-          right: '12px',
+          bottom: '148px', // Position above $10 button
+          right: '20px',
           width: '55px',
           height: '55px',
           background: 'rgba(252, 84, 175, 0.1)',
@@ -796,7 +796,7 @@ export default function JoinAliens({ visible = true } = {}) {
       <button
         onClick={() => {
           try { sfx.play('audio/click.mp3', 0.3); } catch {}
-          
+
           // Toggle VENMO/CARD options popup for $10
           if (showPaymentOptions10) {
             setShowPaymentOptions10(false);
@@ -809,8 +809,8 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
         style={{
           position: 'absolute',
-          bottom: '75px', // Position above $ button
-          right: '12px',
+          bottom: '83px', // Position above $ button
+          right: '20px',
           width: '55px',
           height: '55px',
           background: 'rgba(252, 84, 175, 0.1)',
@@ -855,8 +855,8 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
         style={{
           position: 'absolute',
-          bottom: '12px',
-          right: '12px',
+          bottom: '20px',
+          right: '20px',
           width: '55px',
           height: '55px',
           background: 'rgba(252, 84, 175, 0.1)',
@@ -896,8 +896,8 @@ export default function JoinAliens({ visible = true } = {}) {
       {showTipOptions && (
         <div style={{
           position: 'absolute',
-          bottom: '55px',
-          right: '8px',
+          bottom: '63px',
+          right: '16px',
           display: 'flex',
           flexDirection: 'column',
           gap: '6px',
@@ -1312,11 +1312,11 @@ export default function JoinAliens({ visible = true } = {}) {
 
       {/* Payment buttons popup */}
       {showPaymentOptions && (
-        <div 
+        <div
           style={{
             position: 'absolute',
-            bottom: '205px',
-            right: '80px',
+            bottom: '213px',
+            right: '88px',
             zIndex: 15,
             display: 'flex',
             gap: '10px',
@@ -1437,11 +1437,11 @@ export default function JoinAliens({ visible = true } = {}) {
 
       {/* Payment buttons popup for $5 */}
       {showPaymentOptions5 && (
-        <div 
+        <div
           style={{
             position: 'absolute',
-            bottom: '140px',
-            right: '80px',
+            bottom: '148px',
+            right: '88px',
             zIndex: 15,
             display: 'flex',
             gap: '10px',
@@ -1562,11 +1562,11 @@ export default function JoinAliens({ visible = true } = {}) {
 
       {/* Payment buttons popup for $10 */}
       {showPaymentOptions10 && (
-        <div 
+        <div
           style={{
             position: 'absolute',
-            bottom: '75px',
-            right: '80px',
+            bottom: '83px',
+            right: '88px',
             zIndex: 15,
             display: 'flex',
             gap: '10px',

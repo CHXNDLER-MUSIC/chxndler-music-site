@@ -129,14 +129,41 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Insert message with guest_id - DB trigger will fill username from guest_profiles
+    // First check if guest_id exists in guest_profiles
+    const { data: existingGuest } = await admin
+      .from('guest_profiles')
+      .select('guest_id, username')
+      .eq('guest_id', guest_id)
+      .single();
+
+    let guestUsername = existingGuest?.username;
+
+    // If guest doesn't exist, create a profile for them
+    if (!existingGuest) {
+      const alienNumber = Math.floor(Math.random() * 99999999) + 1;
+      guestUsername = `ALIEN${alienNumber.toString().padStart(8, '0')}`;
+
+      const { error: createError } = await admin
+        .from('guest_profiles')
+        .insert({
+          guest_id: guest_id,
+          username: guestUsername
+        });
+
+      if (createError) {
+        console.error('Error creating guest profile:', createError);
+        // Continue anyway - we'll send the username directly
+      }
+    }
+
+    // Insert message with guest_id and username as fallback
     const { data, error } = await admin
       .from('heart_signal_messages')
       .insert({
         guest_id: guest_id,
+        username: guestUsername || providedUsername || 'ALIEN',
         message: message.trim(),
         is_system: false
-        // DO NOT send username - DB trigger will fill it from guest_profiles
       })
       .select()
       .single();

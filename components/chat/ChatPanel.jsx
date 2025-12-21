@@ -1634,7 +1634,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   </span>
 
                                   {/* Action buttons below element */}
-                                  {selectedUser?.id !== 'anonymous' && user && profile && (
+                                  {user && profile && (
                                     <div className="mt-2 w-full flex items-center justify-center gap-2">
                                       {/* Binder Button */}
                                       <button

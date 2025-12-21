@@ -73,9 +73,9 @@ export default function UserList({ users, onUserClick, loading, currentUserProfi
     <div className="h-full overflow-y-auto px-0.5 py-2 space-y-2">
 
       {/* User List */}
-      {displayUsers?.length > 0 ? displayUsers.map((user) => (
+      {displayUsers?.length > 0 ? displayUsers.map((user, index) => (
         <UserListItem
-          key={user.id}
+          key={user.id || `user-${index}`}
           user={user}
           onClick={() => onUserClick(user.id)}
           currentUserProfile={currentUserProfile}

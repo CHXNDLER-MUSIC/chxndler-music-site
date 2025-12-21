@@ -2561,7 +2561,8 @@ const HUDPanel = React.memo(function HUDPanel({
                         zIndex: 6,
                         borderRadius: '8px',
                         padding: '4px 2px',
-                        backgroundColor: 'transparent'
+                        backgroundColor: 'transparent',
+                        pointerEvents: 'auto'
                       }}>
                       <button 
                         onClick={handlePlayPause}
@@ -7205,10 +7206,6 @@ const HUDPanel = React.memo(function HUDPanel({
           position: 'absolute', // Explicit positioning to avoid any layout conflicts
           overflow: 'visible' // Ensure waveform can overflow below
         }}>
-            {/* Waveform visualization above the dropdown */}
-            <div className="mb-2">
-              <SimpleWaveform className="opacity-70 hover:opacity-100 transition-opacity duration-300" />
-            </div>
             {/* Song dropdown only (outer container removed) */}
             <SongDropdown
               items={resolvedSongs}

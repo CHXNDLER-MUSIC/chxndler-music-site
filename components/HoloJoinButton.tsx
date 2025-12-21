@@ -1,6 +1,5 @@
 "use client";
 import React, { useRef } from "react";
-import { BEAM_TOP_RATIO, BEAM_WIDTH_RATIO, BEAM_HEIGHT_RATIO, BEAM_LEFT_OFFSET_RATIO } from "@/lib/joinBeam";
 import { sfx } from "@/lib/sfx";
 
 export default function HoloJoinButton({
@@ -34,7 +33,6 @@ export default function HoloJoinButton({
 
   return (
     <div className="join-wrap" style={{ width: size, height: size }}>
-      <div className="beam" aria-hidden />
       <button
         type="button"
         className={`hub ${isActive ? "hub-active" : ""}`}
@@ -58,11 +56,6 @@ export default function HoloJoinButton({
       </button>
       <style jsx>{`
         .join-wrap{ position: relative; }
-        .beam{ position:absolute; left:-${Math.round(size*BEAM_LEFT_OFFSET_RATIO)}px; top:${Math.round(size*BEAM_TOP_RATIO)}px; width:${Math.round(size*BEAM_WIDTH_RATIO)}px; height:${Math.round(size*BEAM_HEIGHT_RATIO)}px; pointer-events:none; mix-blend-mode:screen;
-          clip-path: polygon(50% 100%, 90% 0, 10% 0);
-          background: linear-gradient(180deg, ${hubColor}12, ${hubColor}22 30%, ${hubColor}08 70%, ${hubColor}00 100%);
-          filter: blur(6px);
-        }
         .hub{
           position:relative; display:grid; place-items:center; border-radius:9999px;
           /* Instagram-style black glass shell with neon */
