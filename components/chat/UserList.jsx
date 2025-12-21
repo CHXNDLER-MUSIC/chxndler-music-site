@@ -59,7 +59,7 @@ export default function UserList({ users, onUserClick, loading, currentUserProfi
   // Always show the user list - don't check for empty users
 
   return (
-    <div className="h-full overflow-y-auto p-2 space-y-2">
+    <div className="h-full overflow-y-auto px-1 py-2 space-y-2">
 
       {/* User List */}
       {displayUsers?.length > 0 ? displayUsers.map((user) => (
@@ -109,7 +109,7 @@ function UserListItem({ user, onClick, currentUserProfile }) {
         }
         onClick();
       }}
-      className="w-full p-2 rounded-lg transition-all duration-200 hover:scale-105 group"
+      className="w-full px-1 py-2 rounded-lg transition-all duration-200 hover:scale-105 group"
       style={{
         background: 'rgba(255, 255, 255, 0.05)',
         border: `2px solid ${elementColor}CC`,
@@ -161,14 +161,14 @@ function UserListItem({ user, onClick, currentUserProfile }) {
             />
           )}
           
-          <p 
+          <p
             className="text-base font-bold leading-tight truncate"
             style={{
               color: elementColor,
-              maxWidth: '90px'
+              maxWidth: '110px'
             }}
           >
-            {displayName.length > 14 ? displayName.slice(0, 13) + '…' : displayName}
+            {displayName.length > 16 ? displayName.slice(0, 15) + '…' : displayName}
           </p>
         </div>
       </div>

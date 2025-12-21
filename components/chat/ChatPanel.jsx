@@ -6,6 +6,7 @@ import { chatService } from '@/lib/supabase/chat';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { useProfile } from '@/contexts/ProfileContext';
 import { sfx } from '@/lib/sfx';
+import { getOrCreateGuestIdentity, getGuestIdentity } from '@/lib/supabase/guest';
 // import { useLiveStatus } from '@/hooks/useLiveStatus'; // Removed since chat is always available
 import UserList from './UserList';
 import MessageList from './MessageList';
@@ -21,37 +22,47 @@ import { TiltSpinCard } from '@/components/TiltSpinCard';
 // Debug flag to control console logging
 const DEBUG = process.env.NODE_ENV === 'development' && true;
 
-// Global alien name storage - persists across component remounts
-let globalAlienName = null;
+// Global guest identity cache - persists across component remounts
+let cachedGuestIdentity = null;
 
-// Function to get or create alien name
-const getGlobalAlienName = () => {
-  if (globalAlienName) {
-    return globalAlienName;
+// Function to get cached guest identity or load from localStorage
+const getCachedGuestIdentity = () => {
+  if (cachedGuestIdentity) {
+    return cachedGuestIdentity;
   }
-  
-  // Check session storage first
+
+  // Check localStorage for existing guest identity
+  if (typeof window !== 'undefined') {
+    const identity = getGuestIdentity();
+    if (identity) {
+      cachedGuestIdentity = identity;
+      DEBUG && console.log('🔥 Loaded guest identity from localStorage:', identity.username);
+      return identity;
+    }
+  }
+
+  return null;
+};
+
+// Function to get guest username (for display purposes - synchronous)
+const getGlobalAlienName = () => {
+  const identity = getCachedGuestIdentity();
+  if (identity) {
+    return identity.username;
+  }
+
+  // Fallback to sessionStorage for backwards compatibility
   if (typeof window !== 'undefined') {
     const stored = sessionStorage.getItem('alienName');
     if (stored) {
-      globalAlienName = stored;
       return stored;
     }
   }
-  
-  // Generate new alien name
+
+  // Generate temporary name (will be replaced when getOrCreateGuestIdentity is called)
   const alienNumber = Math.floor(Math.random() * 99999999) + 1;
   const paddedNumber = alienNumber.toString().padStart(8, '0');
-  const newAlienName = `ALIEN${paddedNumber}`;
-  
-  // Store globally and in session storage
-  globalAlienName = newAlienName;
-  if (typeof window !== 'undefined') {
-    sessionStorage.setItem('alienName', newAlienName);
-  }
-  
-  DEBUG && console.log('🔥 Generated global alien name:', newAlienName);
-  return newAlienName;
+  return `ALIEN${paddedNumber}`;
 };
 
 /**
@@ -479,12 +490,13 @@ export default function ChatPanel({ isOpen, onClose }) {
           const transformedMessages = result.messages.map(msg => ({
             id: msg.id,
             user_id: msg.user_id,
+            guest_id: msg.guest_id,
             message: msg.message,
             message_type: msg.is_system ? 'join' : 'message',
             created_at: msg.created_at,
             user_profile: {
               name: msg.username,
-              element: null,
+              element: msg.guest_id ? 'alien' : null, // Guests have alien element
               avatar_badge_id: null,
               profile_image_url: null
             }
@@ -531,17 +543,32 @@ export default function ChatPanel({ isOpen, onClose }) {
         };
         setChatUsers([authenticatedUser, ...databaseUsers.filter(u => u.id !== user.id)]);
       } else if (!user || !profile?.name) {
-        // For unauthenticated users, use anonymous user
-        DEBUG && console.log('🔥 InitializeChat: Using consistent alien name:', alienName);
-        const anonymousUser = {
-          id: 'anonymous',
-          name: alienName,
-          element: 'alien',
-          avatar_badge_id: null,
-          last_seen: new Date().toISOString()
-        };
-        DEBUG && console.log('🔥 Creating consistent anonymous user:', anonymousUser);
-        setChatUsers([anonymousUser, ...databaseUsers]);
+        // For unauthenticated users, get or create guest identity
+        try {
+          const guestIdentity = await getOrCreateGuestIdentity();
+          cachedGuestIdentity = guestIdentity;
+          DEBUG && console.log('🔥 InitializeChat: Using guest identity:', guestIdentity.username);
+          const guestUser = {
+            id: guestIdentity.guest_id,
+            name: guestIdentity.username,
+            element: 'alien',
+            avatar_badge_id: null,
+            last_seen: new Date().toISOString()
+          };
+          DEBUG && console.log('🔥 Creating guest user:', guestUser);
+          setChatUsers([guestUser, ...databaseUsers.filter(u => u.id !== guestIdentity.guest_id)]);
+        } catch (e) {
+          // Fallback to temporary alien name if guest identity creation fails
+          DEBUG && console.log('🔥 InitializeChat: Fallback to alien name:', alienName);
+          const anonymousUser = {
+            id: 'anonymous',
+            name: alienName,
+            element: 'alien',
+            avatar_badge_id: null,
+            last_seen: new Date().toISOString()
+          };
+          setChatUsers([anonymousUser, ...databaseUsers]);
+        }
       } else {
         setChatUsers(databaseUsers);
       }
@@ -555,66 +582,82 @@ export default function ChatPanel({ isOpen, onClose }) {
           (payload) => {
             DEBUG && console.log('🔥 Heart Signal realtime message:', payload);
             const msg = payload.new;
+
+            // Determine if this is a guest or authenticated user message
+            const isGuestMessage = !!msg.guest_id && !msg.user_id;
+            const senderId = msg.user_id || msg.guest_id;
+
             const newMessage = {
               id: msg.id,
               user_id: msg.user_id,
+              guest_id: msg.guest_id,
               message: msg.message,
               message_type: msg.is_system ? 'join' : 'message',
               created_at: msg.created_at,
               user_profile: {
                 name: msg.username,
-                element: null,
+                element: isGuestMessage ? 'alien' : null,
                 avatar_badge_id: null,
                 profile_image_url: null
               }
             };
 
-            // Replace any optimistic temp message that matches this one
+            // Replace any optimistic temp/guest message that matches this one
             setMessages(prev => {
               // If already present (by id), ignore
               if (prev.some(m => m.id === newMessage.id)) return prev;
 
               const withoutTempDupes = prev.filter(m => {
-                const isTemp = typeof m.id === 'string' && m.id.startsWith('temp-');
+                const isTemp = typeof m.id === 'string' && (m.id.startsWith('temp-') || m.id.startsWith('guest-'));
                 if (!isTemp) return true;
-                return !(m.user_id === newMessage.user_id && m.message === newMessage.message);
+                // Match by sender and message content
+                const msgSenderId = m.user_id || m.guest_id;
+                return !(msgSenderId === senderId && m.message === newMessage.message);
               });
               return [...withoutTempDupes, newMessage];
             });
 
-            // Play notification sound for new messages (not our own)
-            if (msg.user_id !== 'anonymous' && !msg.is_system) {
-              try {
-                const audio = new Audio('/notification.mp3');
-                audio.volume = 0.3;
-                audio.play().catch(error => {
-                  console.log('Notification sound failed:', error);
-                });
-              } catch (error) {
-                console.log('Audio creation failed:', error);
+            // Play notification sound for new messages (not system messages)
+            if (!msg.is_system) {
+              // Check if it's our own message (don't play sound for own messages)
+              const currentGuestId = getCachedGuestIdentity()?.guest_id;
+              const isOwnMessage = (user && msg.user_id === user.id) || (currentGuestId && msg.guest_id === currentGuestId);
+
+              if (!isOwnMessage) {
+                try {
+                  const audio = new Audio('/notification.mp3');
+                  audio.volume = 0.3;
+                  audio.play().catch(error => {
+                    console.log('Notification sound failed:', error);
+                  });
+                } catch (error) {
+                  console.log('Audio creation failed:', error);
+                }
               }
             }
 
-            // Update user list
-            setChatUsers(prev => {
-              const existingUser = prev.find(u => u.id === msg.user_id);
-              if (existingUser) {
-                return prev.map(u =>
-                  u.id === msg.user_id
-                    ? { ...u, last_seen: msg.created_at }
-                    : u
-                );
-              } else {
-                return [...prev, {
-                  id: msg.user_id,
-                  name: msg.username,
-                  element: null,
-                  avatar_badge_id: null,
-                  profile_image_url: null,
-                  last_seen: msg.created_at
-                }];
-              }
-            });
+            // Update user list with new sender
+            if (senderId) {
+              setChatUsers(prev => {
+                const existingUser = prev.find(u => u.id === senderId);
+                if (existingUser) {
+                  return prev.map(u =>
+                    u.id === senderId
+                      ? { ...u, last_seen: msg.created_at }
+                      : u
+                  );
+                } else {
+                  return [...prev, {
+                    id: senderId,
+                    name: msg.username,
+                    element: isGuestMessage ? 'alien' : null,
+                    avatar_badge_id: null,
+                    profile_image_url: null,
+                    last_seen: msg.created_at
+                  }];
+                }
+              });
+            }
           }
         )
         .on(
@@ -796,64 +839,80 @@ export default function ChatPanel({ isOpen, onClose }) {
       return; // Exit early for authenticated users
     }
     
-    // For anonymous users (unauthenticated or incomplete profiles), add message locally
-    const anonymousMessage = {
-      id: `anonymous-${Date.now()}`,
-      user_id: 'anonymous',
-      message: messageText.trim(),
-      message_type: 'message',
-      created_at: new Date().toISOString(),
-      user_profile: {
-        name: displayName,
-        element: 'alien',
-        avatar_badge_id: null
-      }
-    };
-    
-    DEBUG && console.log('🔥 Adding anonymous message locally:', anonymousMessage);
-    setMessages(prev => {
-      const newMessages = [...prev, anonymousMessage];
-      DEBUG && console.log('🔥 Updated messages:', newMessages);
-      return newMessages;
-    });
-    
-    // Ensure anonymous user is in the users list
-    setChatUsers(prev => {
-      const existingAnonymous = prev.find(u => u.id === 'anonymous');
-      if (!existingAnonymous) {
-        DEBUG && console.log('🔥 Adding anonymous user to list');
-        return [{
-          id: 'anonymous',
-          name: displayName,
-          element: 'alien',
-          avatar_badge_id: null,
-          last_seen: new Date().toISOString()
-        }, ...prev];
-      }
-      return prev;
-    });
-    
-    // Try to persist in background
+    // For anonymous users (unauthenticated or incomplete profiles), use guest identity
     try {
-      // Prefer API that writes to heart_signal_messages; will 401 if not authenticated
+      // Get or create stable guest identity
+      const guestIdentity = await getOrCreateGuestIdentity();
+      cachedGuestIdentity = guestIdentity; // Update cache
+
+      const guestMessage = {
+        id: `guest-${Date.now()}`,
+        user_id: null,
+        guest_id: guestIdentity.guest_id,
+        message: messageText.trim(),
+        message_type: 'message',
+        created_at: new Date().toISOString(),
+        user_profile: {
+          name: guestIdentity.username,
+          element: 'alien',
+          avatar_badge_id: null
+        }
+      };
+
+      DEBUG && console.log('🔥 Adding guest message locally:', guestMessage);
+      setMessages(prev => {
+        const newMessages = [...prev, guestMessage];
+        DEBUG && console.log('🔥 Updated messages:', newMessages);
+        return newMessages;
+      });
+
+      // Ensure guest user is in the users list
+      setChatUsers(prev => {
+        const existingGuest = prev.find(u => u.id === guestIdentity.guest_id || u.id === 'anonymous');
+        if (!existingGuest) {
+          DEBUG && console.log('🔥 Adding guest user to list');
+          return [{
+            id: guestIdentity.guest_id,
+            name: guestIdentity.username,
+            element: 'alien',
+            avatar_badge_id: null,
+            last_seen: new Date().toISOString()
+          }, ...prev];
+        } else if (existingGuest.id === 'anonymous') {
+          // Upgrade anonymous to proper guest
+          return prev.map(u => u.id === 'anonymous' ? {
+            id: guestIdentity.guest_id,
+            name: guestIdentity.username,
+            element: 'alien',
+            avatar_badge_id: null,
+            last_seen: new Date().toISOString()
+          } : u);
+        }
+        return prev;
+      });
+
+      // Persist to database via API with guest_id
       const response = await fetch('/api/heart-signal-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: messageText.trim(),
-          username: displayName,
+          guest_id: guestIdentity.guest_id,
           is_system: false,
+          // DO NOT send username - DB trigger will fill it from guest_profiles
         }),
       });
+
       if (!response.ok) {
-        // Fallback to legacy chat service for environments where API is unavailable
-        const msg = await chatService.sendMessage(messageText, 'message', displayName);
-        DEBUG && console.log('🔥 Fallback background service result:', msg);
+        const errorData = await response.json();
+        console.error('Failed to send guest message:', errorData?.error || 'Unknown error');
+        // Remove optimistic message on failure
+        setMessages(prev => prev.filter(m => m.id !== guestMessage.id));
       } else {
-        DEBUG && console.log('🔥 Background API persisted anonymous/auth-lite message');
+        DEBUG && console.log('🔥 Guest message persisted successfully');
       }
     } catch (error) {
-      DEBUG && console.log('🔥 Background persistence failed (expected for true anonymous):', error);
+      console.error('🔥 Guest message failed:', error);
     }
   };
 

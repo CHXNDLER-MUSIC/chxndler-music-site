@@ -243,15 +243,15 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
                   
                   {/* HeartCoins Display */}
                   <div className="flex items-center justify-center space-x-2 mb-4">
-                    <img 
-                      src="/elements/heart.webp" 
-                      alt="HeartCoin" 
+                    <img
+                      src="/elements/heart.webp"
+                      alt="HeartCoin"
                       className="w-8 h-8"
                       style={{
                         filter: 'drop-shadow(0 0 8px rgba(252, 84, 175, 0.8))'
                       }}
                     />
-                    <span 
+                    <span
                       className="text-2xl font-bold"
                       style={{
                         color: '#FC54AF',
@@ -261,6 +261,115 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
                       {profileData?.heartcoin_total || 0}
                     </span>
                     <span className="text-sm text-white/60 ml-1">HeartCoins</span>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex justify-center gap-3">
+                    {/* Send HeartCoin Button - only show for other users */}
+                    {!isOwnProfile && (
+                      <button
+                        onClick={() => {
+                          sfx.play('click', 0.8);
+                          // Dispatch event to open HeartCoin modal with recipient
+                          window.dispatchEvent(new CustomEvent('openSendHeartCoin', {
+                            detail: { recipient: user, recipientName: displayName }
+                          }));
+                          onClose();
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
+                        style={{
+                          background: 'rgba(252, 84, 175, 0.2)',
+                          border: '2px solid rgba(252, 84, 175, 0.6)',
+                          boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
+                        }}
+                      >
+                        <img
+                          src="/elements/heart-coin.webp"
+                          alt="HeartCoin"
+                          className="w-5 h-5"
+                          style={{
+                            filter: 'drop-shadow(0 0 4px rgba(252, 84, 175, 0.8))'
+                          }}
+                        />
+                        <span
+                          className="text-sm font-bold"
+                          style={{
+                            color: '#FC54AF',
+                            textShadow: '0 0 8px rgba(252, 84, 175, 0.6)'
+                          }}
+                        >
+                          Send
+                        </span>
+                      </button>
+                    )}
+
+                    {/* Binder Button */}
+                    <button
+                      onClick={() => {
+                        sfx.play('click', 0.8);
+                        // Dispatch event to open binder modal
+                        window.dispatchEvent(new CustomEvent('openDigitalBinder'));
+                        onClose();
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
+                      style={{
+                        background: 'rgba(255, 105, 180, 0.2)',
+                        border: '2px solid rgba(255, 105, 180, 0.6)',
+                        boxShadow: '0 0 15px rgba(255, 105, 180, 0.3)',
+                      }}
+                    >
+                      <img
+                        src="/elements/binder.webp"
+                        alt="Binder"
+                        className="w-5 h-5"
+                        style={{
+                          filter: 'drop-shadow(0 0 4px rgba(255, 105, 180, 0.8))'
+                        }}
+                      />
+                      <span
+                        className="text-sm font-bold"
+                        style={{
+                          color: '#FF69B4',
+                          textShadow: '0 0 8px rgba(255, 105, 180, 0.6)'
+                        }}
+                      >
+                        Binder
+                      </span>
+                    </button>
+
+                    {/* Badges Button */}
+                    <button
+                      onClick={() => {
+                        sfx.play('click', 0.8);
+                        // Dispatch event to open badges modal
+                        window.dispatchEvent(new CustomEvent('openBadgesModal'));
+                        onClose();
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
+                      style={{
+                        background: 'rgba(0, 191, 255, 0.2)',
+                        border: '2px solid rgba(0, 191, 255, 0.6)',
+                        boxShadow: '0 0 15px rgba(0, 191, 255, 0.3)',
+                      }}
+                    >
+                      <img
+                        src="/elements/badges.webp"
+                        alt="Badges"
+                        className="w-5 h-5"
+                        style={{
+                          filter: 'drop-shadow(0 0 4px rgba(0, 191, 255, 0.8))'
+                        }}
+                      />
+                      <span
+                        className="text-sm font-bold"
+                        style={{
+                          color: '#00BFFF',
+                          textShadow: '0 0 8px rgba(0, 191, 255, 0.6)'
+                        }}
+                      >
+                        Badges
+                      </span>
+                    </button>
                   </div>
                 </div>
               </div>

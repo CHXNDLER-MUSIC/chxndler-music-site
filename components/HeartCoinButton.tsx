@@ -1168,8 +1168,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const handleJournalEntry = () => {
     try { sfx.play('click', 0.6); } catch {}
     if (!dailyQuests.journalEntry) {
-      // Only close the HeartCoin display and open the journal popout
+      // Close the HeartCoin display and open the journal popout
       setOpen(false);
+      onClose?.();
       setTimeout(() => {
         try {
           setIsJournalOpen(true);
@@ -1586,7 +1587,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           <div
             className="heartcoin-hologram-container"
             style={{
-              width: 'min(85vw, 500px)',
+              width: 'min(92vw, 550px)',
               height: '50vh',
               padding: '10px 14px 14px 14px',
               borderRadius: 18,
@@ -1984,20 +1985,26 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             </div>
 
             {/* Journal Entry */}
-            <div className="flex items-center justify-between p-2 rounded border border-white/30 bg-white/10 flex-1 min-h-0">
-              <div>
-                <div className="text-xs font-bold" style={{ color: '#FFFFFF' }}>
-                  2. Journal Entry of the Day
+            <div className="flex flex-col p-2 rounded border border-white/30 bg-white/10 flex-1 min-h-0">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 mr-4">
+                  <div className="text-xs font-bold" style={{ color: '#FFFFFF' }}>
+                    2. Journal Entry of the Day
+                  </div>
+                  <div className="text-[10px]" style={{ color: '#FFFFFF', opacity: 0.8 }}>
+                    Answer today's journal prompt to earn one HEART coin.
+                  </div>
                 </div>
-                <div className="text-[10px]" style={{ color: '#FFFFFF', opacity: 0.8 }}>
-                  Answer today's journal prompt to earn one HEART coin.
-                </div>
+                <span className="text-sm flex items-center flex-shrink-0" style={{ color: dailyQuests.journalEntry ? '#666' : '#90EE90', textShadow: dailyQuests.journalEntry ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' }}>
+                  {dailyQuests.journalEntry ? '✓ +1' : '+1'}
+                  <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
+                </span>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="mt-2 flex justify-center">
                 <button
                   onClick={handleJournalEntry}
                   disabled={dailyQuests.journalEntry}
-                  className="px-2 py-1 text-xs rounded border transition-colors"
+                  className="px-3 py-1 text-xs rounded border transition-colors font-bold"
                   style={{
                     background: dailyQuests.journalEntry ? 'rgba(0,255,0,0.1)' : 'rgba(255,255,255,0.1)',
                     color: dailyQuests.journalEntry ? '#00FF00' : '#FFFFFF',
@@ -2008,10 +2015,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 >
                   {dailyQuests.journalEntry ? 'COMPLETED' : 'OPEN JOURNAL'}
                 </button>
-                <span className="text-sm flex items-center" style={{ color: dailyQuests.journalEntry ? '#666' : '#90EE90', textShadow: dailyQuests.journalEntry ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' }}>
-                  {dailyQuests.journalEntry ? '✓ +1' : '+1'}
-                  <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
-                </span>
               </div>
             </div>
           </div>
@@ -2019,7 +2022,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
           {/* Bonus Quests Tab Content */}
           {activeEarnTab === 'BONUS QUESTS' && (
-            <div className="mb-4">
+            <div>
               {bonusQuestsStatus === 'loading' ? (
                 <div className="text-center text-white py-4">Loading bonus quests...</div>
               ) : bonusQuestsStatus === 'error' ? (
@@ -2030,46 +2033,59 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 <div className="text-center text-white/60 py-4">No bonus quests available</div>
               ) : (
                 bonusQuests.map((quest, index) => (
-                  <div key={quest.id} className="flex items-center justify-between mb-2 p-2 rounded border border-white/30 bg-white/10">
-                    <div className="flex-1 mr-4">
-                      {quest.quest_key === 'ATTEND_LIVESTREAM' && showAutoTextBox ? (
-                        phraseValidationResult ? (
-                          <div className="text-xs font-bold flex items-center h-8" style={{ 
-                            color: '#FF69B4', 
-                            textShadow: '0 0 8px #FF69B4'
-                          }}>
-                            {phraseValidationResult === 'correct' ? 'CORRECT' : 'INCORRECT'}
-                          </div>
+                  <div key={quest.id} className={`flex flex-col px-2 py-1.5 rounded border border-white/30 bg-white/10 ${index < bonusQuests.length - 1 ? 'mb-1' : ''}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 mr-2">
+                        {quest.quest_key === 'ATTEND_LIVESTREAM' && showAutoTextBox ? (
+                          phraseValidationResult ? (
+                            <div className="text-xs font-bold flex items-center h-8" style={{
+                              color: '#FF69B4',
+                              textShadow: '0 0 8px #FF69B4'
+                            }}>
+                              {phraseValidationResult === 'correct' ? 'CORRECT' : 'INCORRECT'}
+                            </div>
+                          ) : (
+                            <textarea
+                              value={autoTextValue}
+                              onChange={(e) => setAutoTextValue(e.target.value)}
+                              placeholder="ENTER SECRET PHRASE"
+                              className="w-full h-8 px-2 py-1 text-xs rounded border bg-black/20 text-white placeholder-white/60 border-white/30 focus:border-white/60 focus:outline-none resize-none"
+                              autoFocus
+                              style={{ maxWidth: '200px' }}
+                            />
+                          )
                         ) : (
-                          <textarea
-                            value={autoTextValue}
-                            onChange={(e) => setAutoTextValue(e.target.value)}
-                            placeholder="ENTER SECRET PHRASE"
-                            className="w-full h-8 px-2 py-1 text-xs rounded border bg-black/20 text-white placeholder-white/60 border-white/30 focus:border-white/60 focus:outline-none resize-none"
-                            autoFocus
-                            style={{ maxWidth: '200px' }}
-                          />
-                        )
-                      ) : (
-                        <>
-                          <div className="text-xs font-bold" style={{ color: '#FFFFFF' }}>
-                            {index + 1}. {quest.title}
-                          </div>
-                          <div className="text-[10px]" style={{ color: '#FFFFFF', opacity: 0.8 }}>
-                            {quest.description}
-                          </div>
-                        </>
-                      )}
+                          <>
+                            <div className="text-xs font-bold" style={{ color: '#FFFFFF' }}>
+                              {index + 1}. {quest.title}
+                            </div>
+                            <div className="text-[10px]" style={{ color: '#FFFFFF', opacity: 0.8 }}>
+                              {quest.description}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <span className="text-base flex items-center flex-shrink-0" style={{
+                        color: isQuestCompleted(quest) ? '#666' : '#90EE90',
+                        textShadow: isQuestCompleted(quest) ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90'
+                      }}>
+                        {quest.reward_notes || `+${quest.reward_heartcoins}`}
+                        <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8 ml-1" />
+                      </span>
                     </div>
-                    <div className="flex items-center space-x-2 flex-shrink-0">
+                    <div className="mt-1 flex justify-center">
                       <button
                         onClick={() => {
                           // Play click sound for all button interactions
                           try { sfx.play('click', 0.6); } catch {}
 
-                          // If not logged in, open welcome home modal for login
+                          // If not logged in, close popout and open welcome home modal for login
                           if (!isLoggedIn) {
-                            window.dispatchEvent(new CustomEvent('openWelcomeHomeModal'));
+                            setOpen(false);
+                            onClose?.();
+                            setTimeout(() => {
+                              window.dispatchEvent(new CustomEvent('openWelcomeHomeModal'));
+                            }, 150);
                             return;
                           }
 
@@ -2268,13 +2284,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       : 'ENTER PHRASE')
                                 : 'COMPLETE')}
                       </button>
-                      <span className="text-sm flex items-center" style={{ 
-                        color: isQuestCompleted(quest) ? '#666' : '#90EE90', 
-                        textShadow: isQuestCompleted(quest) ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' 
-                      }}>
-                        {quest.reward_notes || `+${quest.reward_heartcoins}`}
-                        <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
-                      </span>
                     </div>
                     {/* Secret phrase input field */}
                     {quest.quest_key === 'SECRET_PHRASE' && secretPhraseInputVisible === quest.id && (
@@ -2368,8 +2377,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               {purchaseDraft && showHeartCoinPurchase ? (
                                 /* User at top, Cost positioned above CONFIRM button */
                                 <div className="flex flex-col items-center h-full">
-                                  {/* User Section - at top */}
-                                  <div className="flex flex-col items-center pt-4">
+                                  {/* Item Title - at very top */}
+                                  <div className="text-white/70 text-sm mb-2" style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}>
+                                    {purchaseDraft?.itemName?.toUpperCase()}
+                                  </div>
+                                  {/* User Section - below title */}
+                                  <div className="flex flex-col items-center pt-2">
                                     <div className="flex items-center gap-3">
                                       <div 
                                         className="font-bold text-white text-xl"
@@ -2417,10 +2430,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       >
                                         {purchaseDraft?.uiCost ?? 0}
                                       </div>
-                                    </div>
-                                    {/* Show item name from purchaseDraft for clarity */}
-                                    <div className="text-white/70 text-sm mt-2" style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}>
-                                      {purchaseDraft?.itemName?.toUpperCase()}
                                     </div>
                                   </div>
                                 </div>
@@ -2846,214 +2855,27 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
                               {/* Card Details - Below Image */}
                               <div className="w-full max-w-md">
-                                {!showPhysicalForm && !showDigitalForm ? (
-                                  <>
-                                    {/* Description - Below Image */}
-                                    <p
-                                      className="text-sm mb-3 leading-relaxed text-center max-w-lg mx-auto"
-                                      style={{
-                                        color: '#FFFFFF',
-                                        textShadow: '0 0 4px rgba(255,255,255,0.6)'
-                                      }}
-                                    >
-                                      {card.description}
-                                    </p>
+                                {/* Description - only show when no form is active */}
+                                {!showPhysicalForm && !showDigitalForm && !showPhysicalConfirm && (
+                                  <p
+                                    className="text-sm mb-3 leading-relaxed text-center max-w-lg mx-auto"
+                                    style={{
+                                      color: '#FFFFFF',
+                                      textShadow: '0 0 4px rgba(255,255,255,0.6)'
+                                    }}
+                                  >
+                                    {card.description}
+                                  </p>
+                                )}
 
-                                    {/* Purchase buttons - In normal flow */}
-                                    <div className="flex justify-center gap-4 pb-2">
-                                      <button
-                                        className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg border transition-colors text-sm font-semibold hover:scale-105 whitespace-nowrap flex-1 max-w-[180px] ${
-                                          showDigitalForm
-                                            ? 'border-blue-400/80 bg-blue-400/30'
-                                            : 'border-blue-500/60 bg-blue-500/20 hover:bg-blue-500/30'
-                                        }`}
-                                        style={{
-                                          color: showDigitalForm ? '#87CEEB' : '#00BFFF',
-                                          textShadow: showDigitalForm
-                                            ? '0 0 6px rgba(135,206,235,0.8)'
-                                            : '0 0 4px rgba(0,191,255,0.8)',
-                                          boxShadow: showDigitalForm ? '0 0 15px rgba(0,191,255,0.4)' : 'none'
-                                        }}
-                                        onMouseEnter={() => {
-                                          try { sfx.play('hover', 0.3); } catch {}
-                                        }}
-                                        onClick={() => {
-                                          try { sfx.play('click', 0.7); } catch {}
-                                          setShowDigitalForm(!showDigitalForm);
-                                          setShowPhysicalForm(false);
-                                          setShowPhysicalConfirm(false);
-                                        }}
-                                      >
-                                        <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5 flex-shrink-0" />
-                                        <span>{card.digitalCost} DIGITAL</span>
-                                      </button>
-
-                                      <button
-                                        className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg border transition-colors text-sm font-semibold hover:scale-105 whitespace-nowrap flex-1 max-w-[180px] ${
-                                          showPhysicalForm || showPhysicalConfirm
-                                            ? 'border-purple-400/80 bg-purple-400/30'
-                                            : 'border-purple-500/60 bg-purple-500/20 hover:bg-purple-500/30'
-                                        }`}
-                                        style={{
-                                          color: showPhysicalForm || showPhysicalConfirm ? '#E6E6FA' : '#DA70D6',
-                                          textShadow: showPhysicalForm || showPhysicalConfirm
-                                            ? '0 0 6px rgba(230,230,250,0.8)'
-                                            : '0 0 4px rgba(218,112,214,0.8)',
-                                          boxShadow: showPhysicalForm || showPhysicalConfirm ? '0 0 15px rgba(218,112,214,0.4)' : 'none'
-                                        }}
-                                        onMouseEnter={() => {
-                                          try { sfx.play('hover', 0.3); } catch {}
-                                        }}
-                                        onClick={() => {
-                                          try { sfx.play('click', 0.7); } catch {}
-                                          setShowPhysicalForm(!showPhysicalForm);
-                                          setShowPhysicalConfirm(false);
-                                          setShowDigitalForm(false);
-                                        }}
-                                      >
-                                        <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5 flex-shrink-0" />
-                                        <span>{card.physicalCost} PHYSICAL</span>
-                                      </button>
-                                    </div>
-                                  </>
-                                ) : showPhysicalConfirm ? (
-                                  /* Physical Purchase Confirmation */
-                                  <div className="text-center">
-                                    {/* User and Cost - Side by Side */}
-                                    <div className="flex justify-between items-start mb-2">
-                                      {/* User Section */}
-                                      <div className="flex flex-col items-center flex-1">
-                                        <div 
-                                          className="font-bold text-white text-lg mb-1"
-                                          style={{
-                                            textShadow: '0 0 4px rgba(255,255,255,0.6)'
-                                          }}
-                                        >
-                                          User
-                                        </div>
-                                        
-                                        {/* Current Heart Coins */}
-                                        <div className="flex flex-col items-center space-y-1">
-                                          <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
-                                          <div 
-                                            className="text-xl font-bold"
-                                            style={{ 
-                                              color: '#FFFFFF', 
-                                              textShadow: '0 0 6px rgba(255,255,255,0.8)' 
-                                            }}
-                                          >
-                                            {profile?.id ? heartCoins : 0}
-                                          </div>
-                                        </div>
-                                      </div>
-                                      {/* Cost Section */}
-                                      <div className="flex flex-col items-center flex-1">
-                                        <div 
-                                          className="font-bold text-white text-lg mb-1"
-                                          style={{
-                                            textShadow: '0 0 4px rgba(255,255,255,0.6)'
-                                          }}
-                                        >
-                                          Cost
-                                        </div>
-                                        
-                                        <div className="flex flex-col items-center space-y-1">
-                                          <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-12 h-12" />
-                                          <div 
-                                            className="text-xl font-bold"
-                                            style={{ 
-                                              color: '#FFFFFF', 
-                                              textShadow: '0 0 6px rgba(255,255,255,0.8)' 
-                                            }}
-                                          >
-                                            {card.physicalCost || 'undefined'}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    <div 
-                                      className="text-sm mb-4"
-                                      style={{ 
-                                        color: heartCoins >= card.physicalCost ? '#90EE90' : '#FF6B6B', 
-                                        textShadow: heartCoins >= card.physicalCost 
-                                          ? '0 0 4px rgba(144,238,144,0.8)' 
-                                          : '0 0 4px rgba(255,107,107,0.8)'
-                                      }}
-                                    >
-                                      {(profile?.id ? heartCoins : 0) >= card.physicalCost 
-                                        ? '' 
-                                        : ''}
-                                    </div>
-
-                                    <button 
-                                      className="w-full px-4 py-2 rounded border transition-colors mb-2"
-                                      style={{ 
-                                        backgroundColor: (profile?.id ? heartCoins : 0) >= card.physicalCost 
-                                          ? 'rgba(0,255,0,0.2)' 
-                                          : 'rgba(255,0,0,0.2)',
-                                        borderColor: (profile?.id ? heartCoins : 0) >= card.physicalCost 
-                                          ? 'rgba(0,255,0,0.6)' 
-                                          : 'rgba(255,0,0,0.6)',
-                                        color: (profile?.id ? heartCoins : 0) >= card.physicalCost ? '#90EE90' : '#FF6B6B', 
-                                        textShadow: (profile?.id ? heartCoins : 0) >= card.physicalCost 
-                                          ? '0 0 4px rgba(144,238,144,0.8)' 
-                                          : '0 0 4px rgba(255,107,107,0.8)',
-                                        fontWeight: 'bold'
-                                      }}
-                                      disabled={(profile?.id ? heartCoins : 0) < card.physicalCost}
-                                      onClick={async () => {
-                                        try { sfx.play('click', 0.8); } catch {}
-                                        if ((profile?.id ? heartCoins : 0) >= card.physicalCost) {
-                                          // Find the matching PHYSICAL_ITEM
-                                          const physicalItem = PHYSICAL_ITEMS.find(item => 
-                                            item.title.toLowerCase() === card.card_name.toLowerCase() ||
-                                            item.slug.toLowerCase() === card.card_name.toLowerCase().replace(/\s+/g, '-')
-                                          );
-                                          
-                                          if (physicalItem) {
-                                            try {
-                                              // Purchase the item first
-                                              await handlePurchaseWithHeartCoins(physicalItem);
-                                              
-                                              // Play success sound
-                                              try { 
-                                                const audio = new Audio('/audio/card-ding.mp3');
-                                                audio.volume = 0.6;
-                                                audio.play(); 
-                                              } catch {}
-                                              
-                                              // Set selected item for shipping form
-                                              setSelectedItem(physicalItem);
-                                              
-                                              // Transition to shipping step
-                                              setShowPhysicalConfirm(false);
-                                              setShowPhysicalForm(false);
-                                              setStep('shipping');
-                                            } catch (error) {
-                                              console.error('Purchase failed:', error);
-                                              // Don't show form if purchase fails
-                                            }
-                                          } else {
-                                            // Fallback to old behavior if no physical item found
-                                            setShowPhysicalConfirm(false);
-                                            setShowPhysicalForm(true);
-                                          }
-                                        }
-                                      }}
-                                    >
-                                      CONFIRM
-                                    </button>
-
-                                  </div>
-                                ) : showPhysicalForm ? (
-                                  /* Physical Purchase Form */
-                                  <div className="text-center">
+                                {/* User/Cost display - show when digital or physical form is active */}
+                                {(showDigitalForm || showPhysicalForm) && (
+                                  <div className="text-center mb-3">
                                     {/* User and Cost - Stacked Layout */}
-                                    <div className="mb-3">
+                                    <div className="mb-2">
                                       {/* User Row: User | Heart Coin | Balance */}
-                                      <div className="flex items-center justify-center gap-3 mb-4">
-                                        <div 
+                                      <div className="flex items-center justify-center gap-3 mb-3">
+                                        <div
                                           className="font-bold text-white text-lg"
                                           style={{
                                             textShadow: '0 0 4px rgba(255,255,255,0.6)'
@@ -3062,20 +2884,20 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                           User
                                         </div>
                                         <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-8 h-8" />
-                                        <div 
+                                        <div
                                           className="text-xl font-bold"
-                                          style={{ 
-                                            color: '#FFFFFF', 
-                                            textShadow: '0 0 6px rgba(255,255,255,0.8)' 
+                                          style={{
+                                            color: '#FFFFFF',
+                                            textShadow: '0 0 6px rgba(255,255,255,0.8)'
                                           }}
                                         >
                                           {profile?.id ? heartCoins : 0}
                                         </div>
                                       </div>
-                                      
+
                                       {/* Cost Row: Cost | Heart Coin | Price */}
                                       <div className="flex items-center justify-center gap-3">
-                                        <div 
+                                        <div
                                           className="font-bold text-white text-lg"
                                           style={{
                                             textShadow: '0 0 4px rgba(255,255,255,0.6)'
@@ -3084,239 +2906,103 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                           Cost
                                         </div>
                                         <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-8 h-8" />
-                                        <div 
+                                        <div
                                           className="text-xl font-bold"
-                                          style={{ 
-                                            color: '#FFFFFF', 
-                                            textShadow: '0 0 6px rgba(255,255,255,0.8)' 
+                                          style={{
+                                            color: '#FFFFFF',
+                                            textShadow: '0 0 6px rgba(255,255,255,0.8)'
                                           }}
                                         >
-                                          {card.physicalCost}
+                                          {showDigitalForm ? card.digitalCost : card.physicalCost}
                                         </div>
                                       </div>
                                     </div>
-
-                                    {/* Status Message */}
-                                    <div 
-                                      className="text-sm mb-4"
-                                      style={{ 
-                                        color: heartCoins >= card.physicalCost ? '#90EE90' : '#FF6B6B', 
-                                        textShadow: heartCoins >= card.physicalCost 
-                                          ? '0 0 4px rgba(144,238,144,0.8)' 
-                                          : '0 0 4px rgba(255,107,107,0.8)'
-                                      }}
-                                    >
-                                      {(profile?.id ? heartCoins : 0) >= card.physicalCost 
-                                        ? '' 
-                                        : ''}
-                                    </div>
-
-                                    <button 
-                                      className="w-full px-4 py-2 rounded border transition-colors"
-                                      style={{ 
-                                        backgroundColor: (profile?.id ? heartCoins : 0) >= card.physicalCost 
-                                          ? 'rgba(0,255,0,0.2)' 
-                                          : 'rgba(255,0,0,0.2)',
-                                        borderColor: (profile?.id ? heartCoins : 0) >= card.physicalCost 
-                                          ? 'rgba(0,255,0,0.6)' 
-                                          : 'rgba(255,0,0,0.6)',
-                                        color: (profile?.id ? heartCoins : 0) >= card.physicalCost ? '#90EE90' : '#FF6B6B',
-                                        textShadow: (profile?.id ? heartCoins : 0) >= card.physicalCost 
-                                          ? '0 0 4px rgba(144,238,144,0.8)' 
-                                          : '0 0 4px rgba(255,107,107,0.8)',
-                                        fontWeight: 'bold'
-                                      }}
-                                      disabled={(profile?.id ? heartCoins : 0) < card.physicalCost}
-                                      onClick={() => {
-                                        try { sfx.play('click', 0.8); } catch {}
-                                        // Handle physical purchase logic here
-                                        console.log('Physical purchase confirmed');
-                                      }}
-                                    >
-                                      CONFIRM
-                                    </button>
                                   </div>
-                                ) : showDigitalForm ? (
-                                  /* Digital Purchase Form */
-                                  <div className="text-center">
-                                    {/* User and Cost - Stacked Layout */}
-                                    <div className="mb-3">
-                                      {/* User Row: User | Heart Coin | Balance */}
-                                      <div className="flex items-center justify-center gap-3 mb-4">
-                                        <div 
-                                          className="font-bold text-white text-lg"
-                                          style={{
-                                            textShadow: '0 0 4px rgba(255,255,255,0.6)'
-                                          }}
-                                        >
-                                          User
-                                        </div>
-                                        <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-8 h-8" />
-                                        <div 
-                                          className="text-xl font-bold"
-                                          style={{ 
-                                            color: '#FFFFFF', 
-                                            textShadow: '0 0 6px rgba(255,255,255,0.8)' 
-                                          }}
-                                        >
-                                          {profile?.id ? heartCoins : 0}
-                                        </div>
-                                      </div>
-                                      
-                                      {/* Cost Row: Cost | Heart Coin | Price */}
-                                      <div className="flex items-center justify-center gap-3">
-                                        <div 
-                                          className="font-bold text-white text-lg"
-                                          style={{
-                                            textShadow: '0 0 4px rgba(255,255,255,0.6)'
-                                          }}
-                                        >
-                                          Cost
-                                        </div>
-                                        <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-8 h-8" />
-                                        <div 
-                                          className="text-xl font-bold"
-                                          style={{ 
-                                            color: '#FFFFFF', 
-                                            textShadow: '0 0 6px rgba(255,255,255,0.8)' 
-                                          }}
-                                        >
-                                          {card.digitalCost}
-                                        </div>
-                                      </div>
-                                    </div>
+                                )}
 
-                                    {/* Status Message */}
-                                    <div 
-                                      className="text-sm mb-2"
-                                      style={{ 
-                                        color: heartCoins >= card.digitalCost ? '#90EE90' : '#FF6B6B', 
-                                        textShadow: heartCoins >= card.digitalCost 
-                                          ? '0 0 4px rgba(144,238,144,0.8)' 
-                                          : '0 0 4px rgba(255,107,107,0.8)'
-                                      }}
-                                    >
-                                      {(profile?.id ? heartCoins : 0) >= card.digitalCost 
-                                        ? '' 
-                                        : ''}
-                                    </div>
+                                {/* Confirm button - only show when a form is active, above purchase buttons */}
+                                {(showDigitalForm || showPhysicalForm) && (
+                                  <button
+                                    className="w-full px-4 py-2 rounded border transition-colors mb-3"
+                                    style={{
+                                      backgroundColor: (profile?.id ? heartCoins : 0) >= (showDigitalForm ? card.digitalCost : card.physicalCost)
+                                        ? 'rgba(0,255,0,0.2)'
+                                        : 'rgba(255,0,0,0.2)',
+                                      borderColor: (profile?.id ? heartCoins : 0) >= (showDigitalForm ? card.digitalCost : card.physicalCost)
+                                        ? 'rgba(0,255,0,0.6)'
+                                        : 'rgba(255,0,0,0.6)',
+                                      color: (profile?.id ? heartCoins : 0) >= (showDigitalForm ? card.digitalCost : card.physicalCost) ? '#90EE90' : '#FF6B6B',
+                                      textShadow: (profile?.id ? heartCoins : 0) >= (showDigitalForm ? card.digitalCost : card.physicalCost)
+                                        ? '0 0 4px rgba(144,238,144,0.8)'
+                                        : '0 0 4px rgba(255,107,107,0.8)',
+                                      fontWeight: 'bold'
+                                    }}
+                                    disabled={(profile?.id ? heartCoins : 0) < (showDigitalForm ? card.digitalCost : card.physicalCost)}
+                                    onClick={() => {
+                                      try { sfx.play('click', 0.8); } catch {}
+                                      console.log(showDigitalForm ? 'Digital purchase confirmed' : 'Physical purchase confirmed');
+                                    }}
+                                  >
+                                    CONFIRM
+                                  </button>
+                                )}
 
-                                    <button 
-                                      className="w-full px-4 py-2 rounded border transition-colors"
-                                      style={{ 
-                                        backgroundColor: (profile?.id ? heartCoins : 0) >= card.digitalCost 
-                                          ? 'rgba(0,255,0,0.2)' 
-                                          : 'rgba(255,0,0,0.2)',
-                                        borderColor: (profile?.id ? heartCoins : 0) >= card.digitalCost 
-                                          ? 'rgba(0,255,0,0.6)' 
-                                          : 'rgba(255,0,0,0.6)',
-                                        color: (profile?.id ? heartCoins : 0) >= card.digitalCost ? '#90EE90' : '#FF6B6B',
-                                        textShadow: (profile?.id ? heartCoins : 0) >= card.digitalCost 
-                                          ? '0 0 4px rgba(144,238,144,0.8)' 
-                                          : '0 0 4px rgba(255,107,107,0.8)',
-                                        fontWeight: 'bold'
-                                      }}
-                                      disabled={(profile?.id ? heartCoins : 0) < card.digitalCost}
-                                      onClick={() => {
-                                        try { sfx.play('click', 0.8); } catch {}
-                                        // Handle digital purchase logic here
-                                        console.log('Digital purchase confirmed');
-                                      }}
-                                    >
-                                      CONFIRM
-                                    </button>
-                                  </div>
-                                ) : showPhysicalConfirm ? (
-                                  /* Physical Purchase Form - Same as Digital */
-                                  <div className="text-center">
-                                    {/* User and Cost - Stacked Layout */}
-                                    <div className="mb-3">
-                                      {/* User Row: User | Heart Coin | Balance */}
-                                      <div className="flex items-center justify-center gap-3 mb-4">
-                                        <div 
-                                          className="font-bold text-white text-lg"
-                                          style={{
-                                            textShadow: '0 0 4px rgba(255,255,255,0.6)'
-                                          }}
-                                        >
-                                          User
-                                        </div>
-                                        <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-8 h-8" />
-                                        <div 
-                                          className="text-xl font-bold"
-                                          style={{ 
-                                            color: '#FFFFFF', 
-                                            textShadow: '0 0 6px rgba(255,255,255,0.8)' 
-                                          }}
-                                        >
-                                          {profile?.id ? heartCoins : 0}
-                                        </div>
-                                      </div>
-                                      
-                                      {/* Cost Row: Cost | Heart Coin | Price */}
-                                      <div className="flex items-center justify-center gap-3">
-                                        <div 
-                                          className="font-bold text-white text-lg"
-                                          style={{
-                                            textShadow: '0 0 4px rgba(255,255,255,0.6)'
-                                          }}
-                                        >
-                                          Cost
-                                        </div>
-                                        <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-8 h-8" />
-                                        <div 
-                                          className="text-xl font-bold"
-                                          style={{ 
-                                            color: '#FFFFFF', 
-                                            textShadow: '0 0 6px rgba(255,255,255,0.8)' 
-                                          }}
-                                        >
-                                          {card.physicalCost}
-                                        </div>
-                                      </div>
-                                    </div>
+                                {/* Purchase buttons - Always visible */}
+                                <div className="flex justify-center gap-4 pb-2">
+                                  <button
+                                    className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg border transition-colors text-sm font-semibold hover:scale-105 whitespace-nowrap flex-1 max-w-[180px] ${
+                                      showDigitalForm
+                                        ? 'border-blue-400/80 bg-blue-400/30'
+                                        : 'border-blue-500/60 bg-blue-500/20 hover:bg-blue-500/30'
+                                    }`}
+                                    style={{
+                                      color: showDigitalForm ? '#87CEEB' : '#00BFFF',
+                                      textShadow: showDigitalForm
+                                        ? '0 0 6px rgba(135,206,235,0.8)'
+                                        : '0 0 4px rgba(0,191,255,0.8)',
+                                      boxShadow: showDigitalForm ? '0 0 15px rgba(0,191,255,0.4)' : 'none'
+                                    }}
+                                    onMouseEnter={() => {
+                                      try { sfx.play('hover', 0.3); } catch {}
+                                    }}
+                                    onClick={() => {
+                                      try { sfx.play('click', 0.7); } catch {}
+                                      setShowDigitalForm(!showDigitalForm);
+                                      setShowPhysicalForm(false);
+                                      setShowPhysicalConfirm(false);
+                                    }}
+                                  >
+                                    <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5 flex-shrink-0" />
+                                    <span>{card.digitalCost} DIGITAL</span>
+                                  </button>
 
-                                    {/* Status Message */}
-                                    <div 
-                                      className="text-sm mb-4"
-                                      style={{ 
-                                        color: heartCoins >= card.physicalCost ? '#90EE90' : '#FF6B6B', 
-                                        textShadow: heartCoins >= card.physicalCost 
-                                          ? '0 0 4px rgba(144,238,144,0.8)' 
-                                          : '0 0 4px rgba(255,107,107,0.8)'
-                                      }}
-                                    >
-                                      {(profile?.id ? heartCoins : 0) >= card.physicalCost 
-                                        ? '' 
-                                        : ''}
-                                    </div>
-
-                                    <button 
-                                      className="w-full px-4 py-2 rounded border transition-colors"
-                                      style={{ 
-                                        backgroundColor: (profile?.id ? heartCoins : 0) >= card.physicalCost 
-                                          ? 'rgba(0,255,0,0.2)' 
-                                          : 'rgba(255,0,0,0.2)',
-                                        borderColor: (profile?.id ? heartCoins : 0) >= card.physicalCost 
-                                          ? 'rgba(0,255,0,0.6)' 
-                                          : 'rgba(255,0,0,0.6)',
-                                        color: (profile?.id ? heartCoins : 0) >= card.physicalCost ? '#90EE90' : '#FF6B6B',
-                                        textShadow: (profile?.id ? heartCoins : 0) >= card.physicalCost 
-                                          ? '0 0 4px rgba(144,238,144,0.8)' 
-                                          : '0 0 4px rgba(255,107,107,0.8)',
-                                        fontWeight: 'bold'
-                                      }}
-                                      disabled={(profile?.id ? heartCoins : 0) < card.physicalCost}
-                                      onClick={() => {
-                                        try { sfx.play('click', 0.8); } catch {}
-                                        // Handle physical purchase logic here
-                                        console.log('Physical purchase confirmed');
-                                      }}
-                                    >
-                                      CONFIRM
-                                    </button>
-                                  </div>
-                                ) : null}
+                                  <button
+                                    className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg border transition-colors text-sm font-semibold hover:scale-105 whitespace-nowrap flex-1 max-w-[180px] ${
+                                      showPhysicalForm || showPhysicalConfirm
+                                        ? 'border-purple-400/80 bg-purple-400/30'
+                                        : 'border-purple-500/60 bg-purple-500/20 hover:bg-purple-500/30'
+                                    }`}
+                                    style={{
+                                      color: showPhysicalForm || showPhysicalConfirm ? '#E6E6FA' : '#DA70D6',
+                                      textShadow: showPhysicalForm || showPhysicalConfirm
+                                        ? '0 0 6px rgba(230,230,250,0.8)'
+                                        : '0 0 4px rgba(218,112,214,0.8)',
+                                      boxShadow: showPhysicalForm || showPhysicalConfirm ? '0 0 15px rgba(218,112,214,0.4)' : 'none'
+                                    }}
+                                    onMouseEnter={() => {
+                                      try { sfx.play('hover', 0.3); } catch {}
+                                    }}
+                                    onClick={() => {
+                                      try { sfx.play('click', 0.7); } catch {}
+                                      setShowPhysicalForm(!showPhysicalForm);
+                                      setShowPhysicalConfirm(false);
+                                      setShowDigitalForm(false);
+                                    }}
+                                  >
+                                    <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5 flex-shrink-0" />
+                                    <span>{card.physicalCost} PHYSICAL</span>
+                                  </button>
+                                </div>
 
                               </div>
                             </div>
@@ -3514,6 +3200,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             >
               <div
                 className="relative w-56 mx-4"
+                style={{
+                  animation: 'cardPulse 2s ease-in-out infinite',
+                }}
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* TiltSpinCard wrapper for 360° drag-to-spin interaction */}
@@ -3547,7 +3236,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   <img
                     src={enlargedCard.artwork_url || `/cards/${enlargedCard.card_name}.webp`}
                     alt={enlargedCard.card_name}
-                    className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
+                    className="absolute inset-0 w-full h-full rounded-lg shadow-2xl object-contain pointer-events-none"
                     style={{
                       filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
                       backfaceVisibility: 'hidden',
@@ -3560,7 +3249,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   <img
                     src="/cards/BACK.webp"
                     alt="Card back"
-                    className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
+                    className="absolute inset-0 w-full h-full rounded-lg shadow-2xl object-contain pointer-events-none"
                     style={{
                       filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
                       backfaceVisibility: 'hidden',
