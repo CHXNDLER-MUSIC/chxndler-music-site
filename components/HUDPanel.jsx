@@ -7212,6 +7212,9 @@ const HUDPanel = React.memo(function HUDPanel({
               initialActiveId={active || resolvedSongs[0]?.id}
               currentId={currentId}
               onChange={(id) => {
+                // IMMEDIATELY close blue display when song is selected from dropdown
+                onCloseBlueDisplay?.();
+
                 setActive(id);
 
                 // Load the selected track into the audio provider for play/pause button
@@ -7241,7 +7244,7 @@ const HUDPanel = React.memo(function HUDPanel({
                 } catch (error) {
                   if (DEBUG_MEDIA) dwarn('HUDPanel: failed to stop intro VO', error);
                 }
-                
+
                 // Let DashboardApp.onSongChange handle the complete warp sequence
                 onSongChange?.(id);
                 // Stay in place; DashboardApp.onSongChange handles switch without spotlight/route

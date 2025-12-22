@@ -848,8 +848,14 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 try { sfx.play('click', 0.8); } catch {}
                 setShowHistory(!showHistory);
               }}
-              onMouseEnter={() => {
+              onMouseEnter={(e) => {
                 try { sfx.play('hover', 0.6); } catch {}
+                e.currentTarget.style.boxShadow = '0 0 20px #00FFFF, 0 0 40px #00FFFF80, 0 0 60px #00FFFF60';
+                e.currentTarget.style.textShadow = '0 0 12px #00FFFF, 0 0 20px #00FFFF, 0 0 35px #00FFFF';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = '0 0 15px #00FFFF, 0 0 30px #00FFFF60';
+                e.currentTarget.style.textShadow = '0 0 8px #00FFFF, 0 0 15px #00FFFF, 0 0 25px #00FFFF';
               }}
               className="absolute left-2 top-1/2 transform -translate-y-1/2 text-sm font-semibold transition-all duration-200 hover:opacity-100 hover:scale-105 px-3 py-1.5 rounded z-20"
               style={{
@@ -1293,6 +1299,15 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   try { sfx.play('click', 0.8); } catch {}
                   setShowHistory(!showHistory);
                 }}
+                onMouseEnter={(e) => {
+                  try { sfx.play('hover', 0.6); } catch {}
+                  e.currentTarget.style.boxShadow = '0 0 20px #00FFFF, 0 0 40px #00FFFF80, 0 0 60px #00FFFF60';
+                  e.currentTarget.style.textShadow = '0 0 12px #00FFFF, 0 0 20px #00FFFF, 0 0 35px #00FFFF';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = '0 0 15px #00FFFF, 0 0 30px #00FFFF60';
+                  e.currentTarget.style.textShadow = '0 0 8px #00FFFF, 0 0 15px #00FFFF, 0 0 25px #00FFFF';
+                }}
                 className="absolute top-0 left-0 text-base font-semibold transition-all duration-200 hover:opacity-100 hover:scale-105 px-3 py-1.5 rounded"
                 style={{
                   color: '#00FFFF',
@@ -1327,13 +1342,13 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   } catch (e) {
                     console.log('SFX not available');
                   }
-                  
+
                   const newPrivacySetting = !journalState.isPrivate;
                   setJournalState(prev => ({ ...prev, isPrivate: newPrivacySetting }));
-                  
+
                   // If entry is already submitted, update it in the database
                   if (journalState.isSubmitted && journalEntries && dailyPrompt) {
-                    const todayEntry = journalEntries.find(entry => 
+                    const todayEntry = journalEntries.find(entry =>
                       entry.entry_date === today && entry.element === dailyPrompt.element
                     );
                     if (todayEntry) {
@@ -1346,6 +1361,18 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                       }
                     }
                   }
+                }}
+                onMouseEnter={(e) => {
+                  try { sfx.play('hover', 0.6); } catch {}
+                  const color = journalState.isPrivate ? '#FF69B4' : '#00FF00';
+                  e.currentTarget.style.transform = 'scale(1.08)';
+                  e.currentTarget.style.boxShadow = `0 0 20px ${color}, 0 0 35px ${color}80, 0 0 50px ${color}60`;
+                  e.currentTarget.style.textShadow = `0 0 10px ${color}, 0 0 18px ${color}, 0 0 28px ${color}`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.boxShadow = '';
+                  e.currentTarget.style.textShadow = journalState.isPrivate ? '0 0 4px #FF69B4' : '0 0 8px #00FF00, 0 0 15px #00FF00';
                 }}
                 className="absolute top-0 right-0 px-3 py-1 rounded text-sm font-semibold transition-all duration-200 z-10"
                 style={{

@@ -675,56 +675,40 @@ export default function Pure3DPlanets({
     if (!focusSongId || !cameraRef.current || !controlsRef.current) return;
 
     const key = String(focusSongId).toLowerCase();
-    const mesh = songMeshMapRef.current.get(key);
+    let mesh = songMeshMapRef.current.get(key);
+
     if (!mesh) {
       // Try fallback: some items may use ids without dashes or with slight variations
       const alt = key.replace(/'/g, '');
-      const altMesh = songMeshMapRef.current.get(alt);
-      if (!altMesh) return;
-      // Use alt match
-      const target = new THREE.Vector3();
-      altMesh.getWorldPosition(target);
-      focusCameraOn(target);
-      return;
+      mesh = songMeshMapRef.current.get(alt);
+      if (!mesh) {
+        debug(`focusSongId: mesh not found for key '${key}' or alt '${alt}'`);
+        return;
+      }
     }
 
-    const target = new THREE.Vector3();
-    mesh.getWorldPosition(target);
-    focusCameraOn(target);
+    const targetPos = new THREE.Vector3();
+    mesh.getWorldPosition(targetPos);
 
-    function focusCameraOn(targetPos: THREE.Vector3) {
-      const camera = cameraRef.current!;
-      const controls = controlsRef.current!;
+    debug(`focusSongId: focusing on '${key}' at position`, targetPos.toArray());
 
-      // Compute a camera end position offset from the target, keeping a sensible viewing distance
-      const currentPos = camera.position.clone();
-      const startTarget = controls.target.clone();
+    // Compute camera end position offset from the target
+    // Position camera behind and above the planet, looking at it
+    const center = new THREE.Vector3(0, 12, 0); // Sun position
+    const dir = targetPos.clone().sub(center).normalize();
+    const distance = 10; // Distance from the song planet
+    const endCamPos = targetPos.clone()
+      .add(dir.clone().multiplyScalar(distance))
+      .add(new THREE.Vector3(0, 4, 0)); // Slightly above
 
-      // Offset: back away from the target along the vector from center to target, and a bit up
-      const center = new THREE.Vector3(0, 12, 0);
-      const dir = targetPos.clone().sub(center).normalize();
-      const distance = 10; // closer distance from the song planet
-      const endCamPos = targetPos.clone().add(dir.clone().multiplyScalar( distance )).add(new THREE.Vector3(0, 4, 0));
+    // Set the desired camera position and look-at target
+    // The main animation loop will smoothly lerp to these positions
+    desiredCameraPosRef.current = endCamPos;
+    desiredLookAtRef.current = targetPos.clone();
 
-      const endTarget = targetPos.clone();
-
-      const duration = 1300; // ~1.3s
-      const startTime = performance.now();
-
-      const animate = () => {
-        const elapsed = performance.now() - startTime;
-        const t = Math.min(elapsed / duration, 1);
-        const eased = 1 - Math.pow(1 - t, 3);
-
-        camera.position.lerpVectors(currentPos, endCamPos, eased);
-        controls.target.lerpVectors(startTarget, endTarget, eased);
-        controls.update();
-
-        if (t < 1) requestAnimationFrame(animate);
-      };
-
-      requestAnimationFrame(animate);
-    }
+    // Also update the rest position so the camera stays there after animation
+    restCameraPositionRef.current = endCamPos.clone();
+    restCameraTargetRef.current = targetPos.clone();
   }, [focusSongId]);
 
   if (!isClient) {

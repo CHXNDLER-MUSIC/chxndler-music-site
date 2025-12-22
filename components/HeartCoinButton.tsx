@@ -816,14 +816,16 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     return (quest.times_completed > 0 && quest.max_total_completions === 1) || completedQuests.has(quest.id);
   };
 
-  // Redeem secret phrase via Supabase RPC (for ATTEND_LIVESTREAM quest)
-  const redeemAttendLivestreamPhrase = async (phrase: string): Promise<{ status: string; reward?: number }> => {
+  // Redeem secret phrase via Supabase RPC (daily secret phrase)
+  const redeemDailySecretPhrase = async (phrase: string): Promise<{ status: string; reward?: number }> => {
     const trimmed = phrase.trim().toLowerCase();
     if (!trimmed) return { status: 'invalid' };
 
     try {
+      const p_phrase = trimmed;
+      console.log('[SECRET_PHRASE] sending', { p_phrase });
       const { data, error } = await supabaseBrowser.rpc("redeem_daily_secret_phrase", {
-        p_phrase: trimmed
+        p_phrase
       });
 
       if (error) {
@@ -850,7 +852,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         reward: row?.granted_amount || 0
       };
     } catch (error: any) {
-      console.error('Error redeeming ATTEND_LIVESTREAM phrase:', {
+      console.error('Error redeeming daily secret phrase:', {
         message: error?.message,
         details: error?.details,
         hint: error?.hint,
@@ -2161,7 +2163,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               } else {
                                 // Redeem the secret phrase via RPC
                                 setSecretPhraseLoading(true);
-                                redeemAttendLivestreamPhrase(autoTextValue).then(async (result) => {
+                                redeemDailySecretPhrase(autoTextValue).then(async (result) => {
                                   const status = result.status;
 
                                   if (status === 'success' || status === 'redeemed') {
@@ -3391,12 +3393,49 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 }
               `}</style>
               <div
-                className="relative w-64 mx-4"
+                className="relative w-64 mx-4 flex flex-col items-center"
                 style={{
                   animation: 'merchFloat 2.5s ease-in-out infinite',
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
+                {/* PAY WITH HeartCoin button - above image */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    try { sfx.play('click', 0.6); } catch {}
+                    // Find the corresponding merchItem by slug
+                    const currentMerchItem = merchItems.find(item => item.slug === enlargedMerchItem.slug);
+
+                    if (currentMerchItem) {
+                      const idempotencyKey = `${currentMerchItem.id}-${userId}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+                      const draft: PurchaseDraft = {
+                        merchItemId: currentMerchItem.id,
+                        clientSlug: currentMerchItem.slug,
+                        quantity: 1,
+                        uiCost: currentMerchItem.price_heartcoins,
+                        source: 'MERCH',
+                        itemName: currentMerchItem.name,
+                        idempotencyKey,
+                      };
+                      console.log('[PURCHASE] PAY WITH clicked from enlarged modal, draft created', {
+                        idempotencyKey: draft.idempotencyKey,
+                        merchItemId: draft.merchItemId,
+                        itemName: draft.itemName,
+                      });
+                      setPurchaseDraft(draft);
+                    }
+                    setShowHeartCoinPurchase(true);
+                  }}
+                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                  className="mb-4 px-6 py-3 rounded border border-yellow-500/60 bg-yellow-500/20 hover:bg-yellow-500/30 transition-all duration-200 text-white font-semibold text-sm flex items-center gap-2 whitespace-nowrap"
+                  style={{ textShadow: '0 0 4px rgba(255,215,0,0.6)', boxShadow: '0 0 12px rgba(255,215,0,0.3)' }}
+                >
+                  PAY WITH
+                  <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5" />
+                  {enlargedMerchItem.priceHeartCoins}
+                </button>
+
                 {/* TiltSpinCard wrapper for 3D rotation - no visible styling */}
                 <TiltSpinCard
                   className="relative w-full h-[320px]"

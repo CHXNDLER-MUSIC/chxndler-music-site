@@ -723,7 +723,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="px-4 pt-1 pb-0 border-t border-purple-500/30 space-y-1" style={{ marginBottom: '-12px' }}>
+      <div className="px-4 pt-0 pb-0 border-t border-purple-500/30" style={{ marginBottom: '-12px' }}>
         <div className="text-center">
           <div
             style={{

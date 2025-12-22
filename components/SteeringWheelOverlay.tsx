@@ -183,6 +183,8 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
         setActiveBeamColor('blue');
       }, 400);
     } else {
+      // Close any open modals before opening live signal display
+      try { window.dispatchEvent(new CustomEvent('closeAllModals')); } catch {}
       // Open pink display with Twitch embed
       setActiveBeamColor('pink');
       onBeamColorChange?.('pink');

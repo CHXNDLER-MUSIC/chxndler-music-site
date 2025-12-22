@@ -312,6 +312,7 @@ export default function ChatPanel({ isOpen, onClose }) {
   const [binderStartIndex, setBinderStartIndex] = useState(0);
   const [selectedCardPopup, setSelectedCardPopup] = useState(null);
   const [cardFlipped, setCardFlipped] = useState(false);
+  const [selectedUserCards, setSelectedUserCards] = useState([]); // Cards owned by the selected user profile
   const [cardRotation, setCardRotation] = useState(0); // Card 3D rotation
   const [isCardAnimatingFlip, setIsCardAnimatingFlip] = useState(false);
   const [selectedBadgePopup, setSelectedBadgePopup] = useState(null);
@@ -359,12 +360,14 @@ export default function ChatPanel({ isOpen, onClose }) {
       initializeChat();
       // Reset profile-related states when chat opens
       setSelectedUser(null);
+      setSelectedUserCards([]);
       setShowUserBadges(false);
       setShowUserBinder(false);
       setShowSendHeartCoin(false);
       setSelectedCardPopup(null);
       setSelectedBadgePopup(null);
       setCardFlipped(false);
+      setBinderStartIndex(0);
     } else {
       cleanupChat();
     }
@@ -956,9 +959,11 @@ export default function ChatPanel({ isOpen, onClose }) {
     if (selectedUser && selectedUser.id === userId) {
       DEBUG && console.log('🔥 Closing profile for same user');
       setSelectedUser(null);
+      setSelectedUserCards([]);
       setShowUserBadges(false);
       setShowUserBinder(false);
       setShowSendHeartCoin(false);
+      setBinderStartIndex(0);
       return;
     }
     
@@ -984,7 +989,41 @@ export default function ChatPanel({ isOpen, onClose }) {
       setShowUserBinder(false); // Reset binder view when switching users
       setShowSendHeartCoin(false); // Reset heart coin view when switching users
       setIsUserPanelCollapsed(true); // Auto-collapse left panel when profile opens
+      setSelectedUserCards([]); // Reset cards when switching users
+      setBinderStartIndex(0); // Reset binder pagination
       DEBUG && console.log('🔥 Set selected user:', user);
+
+      // Fetch selected user's cards (skip for anonymous users)
+      if (userId !== 'anonymous') {
+        (async () => {
+          try {
+            const { data: userCards, error } = await supabaseClient
+              .from('user_cards')
+              .select(`
+                id,
+                card_id,
+                acquired_at,
+                cards (
+                  id,
+                  card_name,
+                  element,
+                  rarity,
+                  image_url
+                )
+              `)
+              .eq('user_id', userId);
+
+            if (error) {
+              DEBUG && console.log('🔥 Error fetching user cards:', error);
+            } else {
+              DEBUG && console.log('🔥 Fetched user cards:', userCards);
+              setSelectedUserCards(userCards || []);
+            }
+          } catch (err) {
+            DEBUG && console.log('🔥 Exception fetching user cards:', err);
+          }
+        })();
+      }
     } else {
       DEBUG && console.log('🔥 No user found for ID:', userId);
     }
@@ -1776,9 +1815,11 @@ export default function ChatPanel({ isOpen, onClose }) {
                               console.log('Close audio creation failed:', error);
                             }
                             setSelectedUser(null);
+                            setSelectedUserCards([]);
                             setShowUserBadges(false);
                             setShowUserBinder(false);
                             setShowSendHeartCoin(false);
+                            setBinderStartIndex(0);
                           }}
                           onMouseEnter={() => {
                             try { sfx.play('hover', 0.3); } catch {}
@@ -2172,19 +2213,31 @@ export default function ChatPanel({ isOpen, onClose }) {
 
                             {/* Cards Grid */}
                             <div className="flex-1 grid grid-cols-4 gap-3">
-                              {/* Display user's owned cards from songCollection */}
+                              {/* Display selected user's owned cards */}
                               {Array.from({ length: 4 }, (_, index) => {
-                                // Get owned cards by filtering songCollection
-                                const ownedCards = songCollection.filter(song => isCardOwned(song.name));
-                                
-                                // Always include CHXNDLER as first card for everyone
+                                // Build cards to show based on selected user
+                                // CHXNDLER card is always first (everyone has it)
                                 const chxndlerCard = songCollection.find(song => song.name === 'CHXNDLER');
-                                const cardsToShow = [chxndlerCard, ...ownedCards.filter(card => card.name !== 'CHXNDLER')];
-                                
+
+                                let cardsToShow = [];
+
+                                // For anonymous users: only show CHXNDLER
+                                if (selectedUser?.id === 'anonymous') {
+                                  cardsToShow = [chxndlerCard];
+                                } else {
+                                  // For authenticated users: show their owned cards from selectedUserCards
+                                  // Convert selectedUserCards to display format
+                                  const ownedCardNames = selectedUserCards.map(uc => uc.cards?.card_name).filter(Boolean);
+                                  const ownedCards = songCollection.filter(song =>
+                                    ownedCardNames.includes(song.name) && song.name !== 'CHXNDLER'
+                                  );
+                                  cardsToShow = [chxndlerCard, ...ownedCards];
+                                }
+
                                 const cardIndex = binderStartIndex + index;
                                 const cardSong = cardsToShow[cardIndex];
                                 const hasCard = !!cardSong;
-                                
+
                                 const elementDisplay = cardSong ? getElementDisplay(cardSong.element) : null;
                                 
                                 return (
@@ -2298,10 +2351,18 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 } catch (error) {
                                   console.log('Click audio creation failed:', error);
                                 }
-                                // Get owned cards count for pagination
-                                const ownedCards = songCollection.filter(song => isCardOwned(song.name));
+                                // Get owned cards count for pagination based on selected user
                                 const chxndlerCard = songCollection.find(song => song.name === 'CHXNDLER');
-                                const cardsToShow = [chxndlerCard, ...ownedCards.filter(card => card.name !== 'CHXNDLER')];
+                                let cardsToShow = [];
+                                if (selectedUser?.id === 'anonymous') {
+                                  cardsToShow = [chxndlerCard];
+                                } else {
+                                  const ownedCardNames = selectedUserCards.map(uc => uc.cards?.card_name).filter(Boolean);
+                                  const ownedCards = songCollection.filter(song =>
+                                    ownedCardNames.includes(song.name) && song.name !== 'CHXNDLER'
+                                  );
+                                  cardsToShow = [chxndlerCard, ...ownedCards];
+                                }
                                 const totalCards = cardsToShow.length;
                                 setBinderStartIndex(Math.min(Math.max(0, totalCards - 5), binderStartIndex + 5));
                               }}
@@ -2309,10 +2370,18 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 try { sfx.play('hover', 0.3); } catch {}
                               }}
                               disabled={(() => {
-                                const ownedCards = songCollection.filter(song => isCardOwned(song.name));
                                 const chxndlerCard = songCollection.find(song => song.name === 'CHXNDLER');
-                                const cardsToShow = [chxndlerCard, ...ownedCards.filter(card => card.name !== 'CHXNDLER')];
-                                return binderStartIndex + 5 >= cardsToShow.length;
+                                let cardsToShow = [];
+                                if (selectedUser?.id === 'anonymous') {
+                                  cardsToShow = [chxndlerCard];
+                                } else {
+                                  const ownedCardNames = selectedUserCards.map(uc => uc.cards?.card_name).filter(Boolean);
+                                  const ownedCards = songCollection.filter(song =>
+                                    ownedCardNames.includes(song.name) && song.name !== 'CHXNDLER'
+                                  );
+                                  cardsToShow = [chxndlerCard, ...ownedCards];
+                                }
+                                return binderStartIndex + 4 >= cardsToShow.length;
                               })()}
                               className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
                               style={{

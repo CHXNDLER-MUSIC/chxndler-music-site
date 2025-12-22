@@ -1030,7 +1030,10 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                         }}
                       >
                         <div className="relative w-full h-full p-1.5">
-                          {hasCard && collectedCard?.cards ? (
+                          {isSecondSlotEmpty ? (
+                            /* 2nd slot is always empty with no content */
+                            <div className="w-full h-full rounded" />
+                          ) : hasCard && collectedCard?.cards ? (
                             <>
                               {(() => {
                                 // Create a card object to check gate state

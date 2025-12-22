@@ -78,6 +78,31 @@ export default function PublicJournalFeed() {
     checkAuth();
   }, []);
 
+  // Preload spin audio
+  useEffect(() => {
+    spinAudioRef.current = new Audio('/sfx/spin.mp3');
+    spinAudioRef.current.volume = 0.5;
+  }, []);
+
+  // Reset card state when enlarged card changes
+  useEffect(() => {
+    if (enlargedCard) {
+      setIsCardFlipped(false);
+      setSpinRotation(0);
+    }
+  }, [enlargedCard]);
+
+  // Handle card click - spin 180 degrees
+  const handleCardSpin = () => {
+    // Play spin sound
+    if (spinAudioRef.current) {
+      spinAudioRef.current.currentTime = 0;
+      spinAudioRef.current.play().catch(() => {});
+    }
+    // Toggle flip state (adds 180 degrees)
+    setIsCardFlipped(prev => !prev);
+  };
+
   const handleToggleStar = async (entryId: string) => {
     // Require authentication to star entries
     if (!currentUserId) {
@@ -160,7 +185,199 @@ export default function PublicJournalFeed() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 relative">
+      {/* Full-screen Enlarged Card Overlay */}
+      {enlargedCard && (
+        <div
+          className="absolute inset-0 z-50 flex flex-col items-center justify-center p-4"
+          style={{
+            background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.98) 100%)',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          {/* Close button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              try { sfx.play('click', 0.4); } catch {}
+              setEnlargedCard(null);
+            }}
+            onMouseEnter={() => {
+              try { sfx.play('hover', 0.6); } catch {}
+            }}
+            className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 z-10"
+            style={{
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+
+          {/* Rarity label */}
+          <div
+            className="text-xs font-bold uppercase tracking-wider mb-4 px-4 py-1.5 rounded-full"
+            style={{
+              color: RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4',
+              background: RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.bg || 'rgba(255, 105, 180, 0.2)',
+              border: `1px solid ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4'}60`,
+              textShadow: `0 0 10px ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4'}`,
+              boxShadow: `0 0 20px ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.glow || '#FF69B440'}`
+            }}
+          >
+            {enlargedCard.card.rarity?.toUpperCase() || 'COMMON'}
+          </div>
+
+          {/* Interactive Card with TiltSpinCard */}
+          <TiltSpinCard
+            enableSpin={true}
+            spinSensitivity={0.8}
+            maxRotateX={15}
+            maxRotateY={25}
+            onRotationChange={(rotation) => setSpinRotation(rotation)}
+            onClick={handleCardSpin}
+            className="cursor-grab active:cursor-grabbing"
+            style={{
+              animation: 'cardPulse 3s ease-in-out infinite',
+            }}
+          >
+            <div
+              className="relative rounded-2xl overflow-hidden"
+              style={{
+                width: 'min(70vw, 280px)',
+                aspectRatio: '3/4',
+                boxShadow: `
+                  0 0 60px ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.glow || '#FF69B440'},
+                  0 20px 40px rgba(0,0,0,0.5),
+                  inset 0 0 30px rgba(255,255,255,0.1)
+                `,
+                border: `3px solid ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4'}60`,
+                transform: `rotateY(${spinRotation + (isCardFlipped ? 180 : 0)}deg)`,
+                transition: isCardFlipped !== undefined ? 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                transformStyle: 'preserve-3d',
+              }}
+            >
+              {/* Card front */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  backfaceVisibility: 'hidden',
+                }}
+              >
+                <img
+                  src={enlargedCard.card.artwork_url || '/cards/default-card.webp'}
+                  alt={enlargedCard.card.card_name}
+                  className="w-full h-full object-cover"
+                  draggable={false}
+                  onError={(e) => {
+                    e.currentTarget.src = '/cards/default-card.webp';
+                  }}
+                />
+                {/* Holographic overlay */}
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background: `linear-gradient(
+                      ${135 + (spinRotation % 360)}deg,
+                      transparent 0%,
+                      rgba(255,255,255,0.1) 25%,
+                      transparent 50%,
+                      rgba(255,255,255,0.15) 75%,
+                      transparent 100%
+                    )`,
+                    mixBlendMode: 'overlay',
+                  }}
+                />
+              </div>
+
+              {/* Card back */}
+              <div
+                className="absolute inset-0 flex items-center justify-center"
+                style={{
+                  backfaceVisibility: 'hidden',
+                  transform: 'rotateY(180deg)',
+                  background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+                }}
+              >
+                <div
+                  className="text-4xl font-bold"
+                  style={{
+                    color: RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4',
+                    textShadow: `0 0 30px ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4'}`,
+                  }}
+                >
+                  ✧
+                </div>
+              </div>
+            </div>
+          </TiltSpinCard>
+
+          {/* Card name */}
+          <h3
+            className="text-2xl font-bold text-center mt-6 mb-2"
+            style={{
+              color: RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4',
+              textShadow: `0 0 20px ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4'}80`
+            }}
+          >
+            {enlargedCard.card.card_name}
+          </h3>
+
+          {/* Element badge */}
+          <div
+            className="text-sm font-medium uppercase tracking-wider px-4 py-1.5 rounded-full mb-6"
+            style={{
+              color: ELEMENT_COLORS[enlargedCard.card.element?.toLowerCase()]?.color || '#FFFFFF',
+              background: 'rgba(0, 0, 0, 0.5)',
+              border: `1px solid ${ELEMENT_COLORS[enlargedCard.card.element?.toLowerCase()]?.color || '#FFFFFF'}40`,
+              textShadow: `0 0 8px ${ELEMENT_COLORS[enlargedCard.card.element?.toLowerCase()]?.glow || '#FFFFFF'}`
+            }}
+          >
+            {enlargedCard.card.element?.toUpperCase() || 'UNKNOWN'}
+          </div>
+
+          {/* Hint text */}
+          <div className="text-white/40 text-xs text-center">
+            Drag to spin • Tap to flip
+          </div>
+
+          {/* Back to Collection button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              try { sfx.play('click', 0.4); } catch {}
+              setEnlargedCard(null);
+            }}
+            onMouseEnter={() => {
+              try { sfx.play('hover', 0.6); } catch {}
+            }}
+            className="mt-4 px-6 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105"
+            style={{
+              background: 'rgba(255, 105, 180, 0.2)',
+              border: '1px solid #FF69B460',
+              color: '#FF69B4',
+              textShadow: '0 0 8px #FF69B4'
+            }}
+          >
+            Back to Collection
+          </button>
+        </div>
+      )}
+
+      {/* CSS for pulsing animation */}
+      <style jsx>{`
+        @keyframes cardPulse {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-8px);
+          }
+        }
+      `}</style>
+
       {entries.length === 0 ? (
         <div className="text-center p-8 text-white/60">
           <div className="text-lg mb-2">🌍 No Public Journal Entries</div>
@@ -412,120 +629,6 @@ export default function PublicJournalFeed() {
                             setEnlargedCard({ entryId: entry.entry_id, card });
                           }}
                         />
-                      </div>
-                    )}
-
-                    {/* Enlarged Card View - Full display when a card is clicked */}
-                    {enlargedCard?.entryId === entry.entry_id && (
-                      <div
-                        className="relative rounded-lg p-4 mb-2 animate-in fade-in zoom-in-95 duration-200"
-                        style={{
-                          background: 'rgba(0, 0, 0, 0.95)',
-                          border: `2px solid ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4'}`,
-                          boxShadow: `0 0 30px ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.glow || '#FF69B440'}, inset 0 0 60px rgba(0,0,0,0.5)`
-                        }}
-                      >
-                        {/* Close button */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            try { sfx.play('click', 0.4); } catch {}
-                            setEnlargedCard(null);
-                          }}
-                          onMouseEnter={() => {
-                            try { sfx.play('hover', 0.6); } catch {}
-                          }}
-                          className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 z-10"
-                          style={{
-                            background: 'rgba(255, 255, 255, 0.1)',
-                            border: '1px solid rgba(255, 255, 255, 0.3)',
-                          }}
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                            <path d="M18 6L6 18M6 6l12 12" />
-                          </svg>
-                        </button>
-
-                        {/* Card display */}
-                        <div className="flex flex-col items-center">
-                          {/* Rarity label */}
-                          <div
-                            className="text-xs font-bold uppercase tracking-wider mb-2 px-3 py-1 rounded-full"
-                            style={{
-                              color: RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4',
-                              background: RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.bg || 'rgba(255, 105, 180, 0.2)',
-                              border: `1px solid ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4'}40`,
-                              textShadow: `0 0 10px ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4'}`
-                            }}
-                          >
-                            {enlargedCard.card.rarity?.toUpperCase() || 'COMMON'}
-                          </div>
-
-                          {/* Card image - large */}
-                          <div
-                            className="relative rounded-xl overflow-hidden mb-3"
-                            style={{
-                              width: '100%',
-                              maxWidth: '280px',
-                              aspectRatio: '3/4',
-                              boxShadow: `0 0 40px ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.glow || '#FF69B440'}`
-                            }}
-                          >
-                            <img
-                              src={enlargedCard.card.artwork_url || '/cards/default-card.webp'}
-                              alt={enlargedCard.card.card_name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.src = '/cards/default-card.webp';
-                              }}
-                            />
-                          </div>
-
-                          {/* Card name */}
-                          <h3
-                            className="text-xl font-bold text-center mb-1"
-                            style={{
-                              color: RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4',
-                              textShadow: `0 0 15px ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4'}80`
-                            }}
-                          >
-                            {enlargedCard.card.card_name}
-                          </h3>
-
-                          {/* Element badge */}
-                          <div
-                            className="text-sm font-medium uppercase tracking-wider px-3 py-1 rounded-full"
-                            style={{
-                              color: ELEMENT_COLORS[enlargedCard.card.element?.toLowerCase()]?.color || '#FFFFFF',
-                              background: 'rgba(0, 0, 0, 0.4)',
-                              border: `1px solid ${ELEMENT_COLORS[enlargedCard.card.element?.toLowerCase()]?.color || '#FFFFFF'}40`,
-                              textShadow: `0 0 8px ${ELEMENT_COLORS[enlargedCard.card.element?.toLowerCase()]?.glow || '#FFFFFF'}`
-                            }}
-                          >
-                            {enlargedCard.card.element?.toUpperCase() || 'UNKNOWN'}
-                          </div>
-
-                          {/* Back to Collection button */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              try { sfx.play('click', 0.4); } catch {}
-                              setEnlargedCard(null);
-                            }}
-                            onMouseEnter={() => {
-                              try { sfx.play('hover', 0.6); } catch {}
-                            }}
-                            className="mt-4 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105"
-                            style={{
-                              background: 'rgba(255, 105, 180, 0.2)',
-                              border: '1px solid #FF69B460',
-                              color: '#FF69B4',
-                              textShadow: '0 0 8px #FF69B4'
-                            }}
-                          >
-                            Back to Collection
-                          </button>
-                        </div>
                       </div>
                     )}
 
