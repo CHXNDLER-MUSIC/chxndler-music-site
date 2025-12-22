@@ -42,6 +42,7 @@ export default function Pure3DPlanets({
   const [isClient, setIsClient] = useState(false);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
   // Track when the user is interacting so we don't snap back
   const isUserInteractingRef = useRef(false);
   // Keep references to song meshes by slug/id for camera focusing
@@ -102,6 +103,7 @@ export default function Pure3DPlanets({
 
     // Scene setup
     const scene = new THREE.Scene();
+    sceneRef.current = scene;
 
     // Camera
     const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
@@ -550,6 +552,17 @@ export default function Pure3DPlanets({
         }
       }
 
+      // Pulse animation for the focused song glow (cyan highlight)
+      if (songGlowSpriteRef.current && songGlowSpriteRef.current.material) {
+        // Pulse opacity using sine wave: 0.4 to 0.7 range
+        const songPulseOpacity = 0.55 + Math.sin(elapsed * 2.5) * 0.15;
+        (songGlowSpriteRef.current.material as THREE.SpriteMaterial).opacity = songPulseOpacity;
+
+        // Pulse scale slightly: 4.5 to 5.5 range
+        const songPulseScale = 5.0 + Math.sin(elapsed * 1.8) * 0.5;
+        songGlowSpriteRef.current.scale.set(songPulseScale, songPulseScale, 1);
+      }
+
       // Camera lerp for smooth easing (hover bias and cinematic focus)
       // Do NOT override user interaction; only lerp when the user is not actively moving the camera
       if (!isUserInteractingRef.current) {
@@ -608,6 +621,18 @@ export default function Pure3DPlanets({
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
+      // Clear focused song glow
+      try {
+        if (songGlowSpriteRef.current) {
+          songGlowSpriteRef.current.parent?.remove(songGlowSpriteRef.current);
+          // Dispose texture and material properly
+          const mat = songGlowSpriteRef.current.material as THREE.SpriteMaterial;
+          if (mat?.map) mat.map.dispose();
+          mat?.dispose();
+          songGlowSpriteRef.current = null;
+        }
+        focusedSongSlugRef.current = null;
+      } catch {}
       // Clear maps on teardown
       try { songMeshMapRef.current.clear(); } catch {}
       try { glowSpriteMapRef.current.clear(); } catch {}
@@ -729,8 +754,13 @@ export default function Pure3DPlanets({
   }, [focusElement]);
 
   // Focus camera on a specific song's planet when requested
+  // Depends on sceneReady to ensure camera/controls/meshes are available
   useEffect(() => {
-    if (!focusSongId || !cameraRef.current || !controlsRef.current) return;
+    // Early exit if scene not ready or no focus target
+    if (!sceneReady || !focusSongId || !cameraRef.current || !controlsRef.current) {
+      debug(`focusSongId effect: early exit - sceneReady=${sceneReady}, focusSongId=${focusSongId}`);
+      return;
+    }
 
     const key = String(focusSongId).toLowerCase();
     let mesh = songMeshMapRef.current.get(key);
@@ -740,7 +770,7 @@ export default function Pure3DPlanets({
       const alt = key.replace(/'/g, '');
       mesh = songMeshMapRef.current.get(alt);
       if (!mesh) {
-        debug(`focusSongId: mesh not found for key '${key}' or alt '${alt}'`);
+        debug(`focusSongId: mesh not found for key '${key}' or alt '${alt}'. Available keys:`, Array.from(songMeshMapRef.current.keys()));
         return;
       }
     }
@@ -750,14 +780,64 @@ export default function Pure3DPlanets({
 
     debug(`focusSongId: focusing on '${key}' at position`, targetPos.toArray());
 
+    // Remove previous glow sprite if exists and focus changed
+    if (songGlowSpriteRef.current && focusedSongSlugRef.current !== key) {
+      try {
+        songGlowSpriteRef.current.parent?.remove(songGlowSpriteRef.current);
+        // Dispose texture and material properly
+        const mat = songGlowSpriteRef.current.material as THREE.SpriteMaterial;
+        if (mat.map) mat.map.dispose();
+        mat.dispose();
+        songGlowSpriteRef.current = null;
+      } catch {}
+    }
+
+    // Add highlight glow sprite to the focused song planet
+    if (sceneRef.current && mesh && focusedSongSlugRef.current !== key) {
+      // Create a programmatic radial gradient glow texture
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+        gradient.addColorStop(0, 'rgba(0, 255, 255, 1)'); // Cyan center
+        gradient.addColorStop(0.3, 'rgba(0, 255, 255, 0.6)');
+        gradient.addColorStop(0.6, 'rgba(0, 200, 255, 0.3)');
+        gradient.addColorStop(1, 'rgba(0, 150, 255, 0)'); // Fade to transparent
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 128, 128);
+      }
+      const glowTexture = new THREE.CanvasTexture(canvas);
+      glowTexture.needsUpdate = true;
+
+      const glowMaterial = new THREE.SpriteMaterial({
+        map: glowTexture,
+        transparent: true,
+        depthWrite: false,
+        opacity: 0.6,
+        blending: THREE.AdditiveBlending,
+      });
+      const glowSprite = new THREE.Sprite(glowMaterial);
+      glowSprite.scale.set(5, 5, 1); // Slightly larger than song sphere (radius 1.2)
+      glowSprite.renderOrder = -1;
+      // Position glow at same local position as mesh (will follow orbit)
+      glowSprite.position.copy(mesh.position);
+      // Add to same parent group so it orbits together
+      mesh.parent?.add(glowSprite);
+      songGlowSpriteRef.current = glowSprite;
+      focusedSongSlugRef.current = key;
+      debug(`focusSongId: added glow sprite for '${key}'`);
+    }
+
     // Compute camera end position offset from the target
     // Position camera behind and above the planet, looking at it
     const center = new THREE.Vector3(0, 12, 0); // Sun position
     const dir = targetPos.clone().sub(center).normalize();
-    const distance = 10; // Distance from the song planet
+    const distance = 8; // Closer distance for better view of the selected song planet
     const endCamPos = targetPos.clone()
       .add(dir.clone().multiplyScalar(distance))
-      .add(new THREE.Vector3(0, 4, 0)); // Slightly above
+      .add(new THREE.Vector3(0, 3, 0)); // Slightly above
 
     // Set the desired camera position and look-at target
     // The main animation loop will smoothly lerp to these positions
@@ -767,7 +847,15 @@ export default function Pure3DPlanets({
     // Also update the rest position so the camera stays there after animation
     restCameraPositionRef.current = endCamPos.clone();
     restCameraTargetRef.current = targetPos.clone();
-  }, [focusSongId]);
+
+    debug(`focusSongId: camera will animate to`, endCamPos.toArray(), 'looking at', targetPos.toArray());
+
+    // Cleanup glow on effect unmount or when focusSongId changes
+    return () => {
+      // Only cleanup if this specific effect is being torn down
+      // (not when component is just updating)
+    };
+  }, [focusSongId, sceneReady]);
 
   if (!isClient) {
     // Return empty container to prevent flash of loading text
