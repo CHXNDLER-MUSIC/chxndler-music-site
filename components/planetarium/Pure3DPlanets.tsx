@@ -4,9 +4,28 @@ import React, { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three-stdlib';
 import { debug } from '@/lib/logger';
-import { applyHologramGrid, setGridTime } from '@/utils/hologramGrid';
+import {
+  createHologramMaterial,
+  updateHologramTime,
+} from '@/utils/hologramPlanetMaterial';
+import {
+  createSongHaloSprite,
+  updateHaloAnimation,
+  disposeHaloResources,
+} from '@/utils/hologramHalo';
+import Image from 'next/image';
 
 export type ElementType = 'heart' | 'water' | 'lightning' | 'darkness';
+
+// Popup state for clicked planets
+interface PlanetPopup {
+  x: number;
+  y: number;
+  name: string;
+  element: ElementType | 'center';
+  slug: string;
+  isSong: boolean;
+}
 
 export interface Pure3DPlanetsProps {
   songs: any[];
@@ -55,6 +74,10 @@ export default function Pure3DPlanets({
   // Element of Day state
   const [hoveredElement, setHoveredElement] = useState<ElementType | null>(null);
   const [isCinematic, setIsCinematic] = useState(false);
+
+  // Planet popup state
+  const [planetPopup, setPlanetPopup] = useState<PlanetPopup | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const isCinematicRef = useRef(false); // Ref version for animation loop access
   const restCameraPositionRef = useRef<THREE.Vector3 | null>(null);
   const restCameraTargetRef = useRef<THREE.Vector3 | null>(null);
@@ -119,6 +142,7 @@ export default function Pure3DPlanets({
     renderer.setPixelRatio(quality === 'high' ? Math.min(window.devicePixelRatio, 2) : 1);
     renderer.setClearColor(0x000000, 0);
     container.appendChild(renderer.domElement);
+    rendererRef.current = renderer;
     // Enable pointer events on canvas for OrbitControls and click detection
     renderer.domElement.style.pointerEvents = 'auto';
 
@@ -231,23 +255,44 @@ export default function Pure3DPlanets({
 
     const orbitGroups: { group: THREE.Group; speed: number }[] = [];
 
-    // Create song as a colored sphere
-    const createSongSphere = (color: number, scale: number, position: [number, number, number]) => {
-      const geometry = new THREE.SphereGeometry(scale, 16, 16);
-      const material = new THREE.MeshStandardMaterial({
-        color: color,
-        emissive: color,
-        emissiveIntensity: 0.3,
-        metalness: 0.2,
-        roughness: 0.6
+    // Track all song halos for animation
+    const songHaloSprites: THREE.Sprite[] = [];
+
+    // Create song as a hologram sphere with halo
+    const createSongSphere = (
+      elementId: string,
+      scale: number,
+      position: [number, number, number],
+      isReleased: boolean
+    ) => {
+      const geometry = new THREE.SphereGeometry(scale, 24, 24);
+
+      // Use hologram material with element-specific preset
+      // Unreleased songs get a dimmed/grey version
+      const presetName = isReleased ? elementId : 'center';
+      const material = createHologramMaterial(presetName, {
+        alpha: isReleased ? 0.92 : 0.6,
+        shimmerStrength: isReleased ? 0.15 : 0.05,
+        rimStrength: isReleased ? 1.2 : 0.6,
       });
-      // Inject hologram grid overlay into this material
-      applyHologramGrid(material);
+
+      // Dim unreleased songs
+      if (!isReleased) {
+        material.uniforms.uColor.value = new THREE.Color(0x666666);
+        material.uniforms.uAccent.value = new THREE.Color(0x888888);
+      }
 
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.set(...position);
 
-      return mesh;
+      // Create halo sprite behind the planet
+      const haloScale = scale * 2.5; // Halo ~2.5x the planet radius
+      const halo = createSongHaloSprite(elementId, haloScale, isReleased ? 0.25 : 0.1);
+      halo.position.set(...position);
+      songHaloSprites.push(halo);
+
+      // Return both mesh and halo to be added to the group
+      return { mesh, halo };
     };
 
     // Song orbit groups for animation
@@ -292,15 +337,16 @@ export default function Pure3DPlanets({
 
           const songSlug = song.slug || song.id;
           const isReleased = song.is_released !== false; // Default to released if not specified
-          const sphereColor = isReleased ? p.glow : 0x666666; // Grey for unreleased
 
           debug(`Adding song sphere: ${song.title} (${songSlug}) orbiting ${p.id} - ${isReleased ? 'released' : 'unreleased'}`);
-          const songSphere = createSongSphere(sphereColor, 1.2, [songX, 0, songZ]);
+          const { mesh: songSphere, halo: songHalo } = createSongSphere(p.id, 1.2, [songX, 0, songZ], isReleased);
           // Tag mesh for identification and store a reference for focusing
           try {
             (songSphere as any).userData = { slug: songSlug, element: p.id };
             songMeshMapRef.current.set(String(songSlug).toLowerCase(), songSphere);
           } catch {}
+          // Add halo first (renders behind), then sphere
+          songGroup.add(songHalo);
           songGroup.add(songSphere);
         });
 
@@ -357,6 +403,26 @@ export default function Pure3DPlanets({
       return restPos.clone().add(dir.multiplyScalar(biasStrength));
     };
 
+    // Helper to project 3D position to screen coordinates
+    const projectToScreen = (worldPos: THREE.Vector3): { x: number; y: number } => {
+      const vector = worldPos.clone();
+      vector.project(camera);
+      const rect = container.getBoundingClientRect();
+      return {
+        x: ((vector.x + 1) / 2) * rect.width,
+        y: ((-vector.y + 1) / 2) * rect.height
+      };
+    };
+
+    // Element display names
+    const elementNames: Record<string, string> = {
+      center: 'Heart Sun',
+      heart: 'Heart',
+      water: 'Water',
+      lightning: 'Lightning',
+      darkness: 'Darkness'
+    };
+
     // Click handler
     const handleClick = async (event: MouseEvent) => {
       // Stop event from bubbling up to parent elements (prevents HUD toggle)
@@ -372,9 +438,18 @@ export default function Pure3DPlanets({
 
       if (intersects.length > 0) {
         const obj = intersects[0].object as any;
+        const intersectionPoint = intersects[0].point;
 
         if (obj === sun) {
-          onPlanetSelect?.('center');
+          const screenPos = projectToScreen(intersectionPoint);
+          setPlanetPopup({
+            x: screenPos.x,
+            y: screenPos.y,
+            name: 'Heart Sun',
+            element: 'center',
+            slug: 'center',
+            isSong: false
+          });
           return;
         }
 
@@ -417,24 +492,57 @@ export default function Pure3DPlanets({
             return;
           }
 
-          // Non-daily elements: call onPlanetSelect but no reward
-          onPlanetSelect?.(elementId);
+          // Show popup for element planet
+          const screenPos = projectToScreen(intersectionPoint);
+          setPlanetPopup({
+            x: screenPos.x,
+            y: screenPos.y,
+            name: elementNames[elementId] || elementId,
+            element: elementId,
+            slug: elementId,
+            isSong: false
+          });
           return;
         }
 
         // Check for song planets
         const songSlug = obj.userData?.slug;
+        const songElement = obj.userData?.element as ElementType | undefined;
         if (songSlug) {
-          onPlanetSelect?.(songSlug);
+          // Find the song title from the songs array
+          const song = songs.find((s: any) => (s.slug || s.id) === songSlug);
+          const songTitle = song?.title || songSlug;
+
+          const screenPos = projectToScreen(intersectionPoint);
+          setPlanetPopup({
+            x: screenPos.x,
+            y: screenPos.y,
+            name: songTitle,
+            element: songElement || 'heart',
+            slug: songSlug,
+            isSong: true
+          });
           return;
         }
 
         // Fallback: check orbit groups for element click
         orbitGroups.forEach((og, idx) => {
           if (og.group.children.includes(obj)) {
-            onPlanetSelect?.(planets[idx].id);
+            const elementId = planets[idx].id as ElementType;
+            const screenPos = projectToScreen(intersectionPoint);
+            setPlanetPopup({
+              x: screenPos.x,
+              y: screenPos.y,
+              name: elementNames[elementId] || elementId,
+              element: elementId,
+              slug: elementId,
+              isSong: false
+            });
           }
         });
+      } else {
+        // Clicked on empty space - dismiss popup
+        setPlanetPopup(null);
       }
     };
 
@@ -515,8 +623,8 @@ export default function Pure3DPlanets({
     const animate = () => {
       animationId = requestAnimationFrame(animate);
       const elapsed = clock.getElapsedTime();
-      // Drive the shared hologram grid time uniform
-      setGridTime(elapsed);
+      // Drive the shared hologram planet time uniform
+      updateHologramTime(elapsed);
 
       // Rotate sun
       sun.rotation.y = elapsed * 0.5;
@@ -529,6 +637,11 @@ export default function Pure3DPlanets({
       // Orbit songs around their element planets
       songOrbitGroups.forEach(sg => {
         sg.group.rotation.y = elapsed * sg.speed;
+      });
+
+      // Animate song halo sprites (subtle pulse)
+      songHaloSprites.forEach(halo => {
+        updateHaloAnimation(halo, elapsed, 1.2, 0.12);
       });
 
       // Pulse animation for the daily element glow (only when not claimed)
@@ -618,6 +731,7 @@ export default function Pure3DPlanets({
       } catch {}
       controls.dispose();
       renderer.dispose();
+      rendererRef.current = null;
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
@@ -637,6 +751,8 @@ export default function Pure3DPlanets({
       try { songMeshMapRef.current.clear(); } catch {}
       try { glowSpriteMapRef.current.clear(); } catch {}
       try { elementSpriteMapRef.current.clear(); } catch {}
+      // Dispose shared halo resources
+      disposeHaloResources();
     };
   // Only rebuild when songs are first loaded (length changes from 0)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -870,6 +986,32 @@ export default function Pure3DPlanets({
     );
   }
 
+  // Handle warp button click
+  const handleWarpClick = () => {
+    if (planetPopup) {
+      onPlanetSelect?.(planetPopup.slug);
+      setPlanetPopup(null);
+    }
+  };
+
+  // Get element icon path
+  const getElementIconPath = (element: ElementType | 'center'): string => {
+    if (element === 'center') return '/elements/heart.webp';
+    return `/elements/${element}.webp`;
+  };
+
+  // Get element color for glow
+  const getElementColor = (element: ElementType | 'center'): string => {
+    const colors: Record<string, string> = {
+      center: '#FC54AF',
+      heart: '#FC54AF',
+      water: '#38B6FF',
+      lightning: '#F2EF1D',
+      darkness: '#6A4C93'
+    };
+    return colors[element] || '#FC54AF';
+  };
+
   return (
     <div
       ref={containerRef}
@@ -877,8 +1019,125 @@ export default function Pure3DPlanets({
         width: '100%',
         height: '100%',
         minHeight: '400px',
-        pointerEvents: 'none' // Let clicks pass through to elements below; canvas will handle its own events
+        pointerEvents: 'none', // Let clicks pass through to elements below; canvas will handle its own events
+        position: 'relative'
       }}
-    />
+    >
+      {/* Planet Popup */}
+      {planetPopup && (
+        <div
+          style={{
+            position: 'absolute',
+            left: planetPopup.x,
+            top: planetPopup.y,
+            transform: 'translate(-50%, -100%) translateY(-20px)',
+            pointerEvents: 'auto',
+            zIndex: 100,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          {/* Warp Button */}
+          <button
+            onClick={handleWarpClick}
+            style={{
+              background: `linear-gradient(135deg, ${getElementColor(planetPopup.element)}cc, ${getElementColor(planetPopup.element)}88)`,
+              border: `2px solid ${getElementColor(planetPopup.element)}`,
+              borderRadius: '24px',
+              padding: '8px 24px',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: '14px',
+              textTransform: 'uppercase',
+              letterSpacing: '2px',
+              cursor: 'pointer',
+              boxShadow: `
+                0 0 10px ${getElementColor(planetPopup.element)}80,
+                0 0 20px ${getElementColor(planetPopup.element)}60,
+                0 0 30px ${getElementColor(planetPopup.element)}40,
+                0 0 40px ${getElementColor(planetPopup.element)}20,
+                inset 0 0 10px ${getElementColor(planetPopup.element)}40
+              `,
+              animation: 'warpGlow 1.5s ease-in-out infinite alternate',
+              textShadow: `0 0 10px ${getElementColor(planetPopup.element)}`
+            }}
+          >
+            Warp
+          </button>
+
+          {/* Planet Info Card */}
+          <div
+            style={{
+              background: 'rgba(0, 0, 0, 0.85)',
+              backdropFilter: 'blur(10px)',
+              border: `1px solid ${getElementColor(planetPopup.element)}60`,
+              borderRadius: '12px',
+              padding: '12px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              boxShadow: `0 4px 20px rgba(0, 0, 0, 0.5), 0 0 15px ${getElementColor(planetPopup.element)}30`
+            }}
+          >
+            {/* Element Icon */}
+            <div
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                overflow: 'hidden',
+                boxShadow: `0 0 8px ${getElementColor(planetPopup.element)}80`,
+                flexShrink: 0
+              }}
+            >
+              <Image
+                src={getElementIconPath(planetPopup.element)}
+                alt={planetPopup.element}
+                width={32}
+                height={32}
+                style={{ objectFit: 'cover' }}
+              />
+            </div>
+
+            {/* Planet Name */}
+            <span
+              style={{
+                color: '#fff',
+                fontWeight: 600,
+                fontSize: '14px',
+                textShadow: `0 0 8px ${getElementColor(planetPopup.element)}60`,
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {planetPopup.name}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Keyframes for warp button glow animation */}
+      <style jsx>{`
+        @keyframes warpGlow {
+          0% {
+            box-shadow:
+              0 0 10px ${planetPopup ? getElementColor(planetPopup.element) : '#FC54AF'}80,
+              0 0 20px ${planetPopup ? getElementColor(planetPopup.element) : '#FC54AF'}60,
+              0 0 30px ${planetPopup ? getElementColor(planetPopup.element) : '#FC54AF'}40,
+              0 0 40px ${planetPopup ? getElementColor(planetPopup.element) : '#FC54AF'}20,
+              inset 0 0 10px ${planetPopup ? getElementColor(planetPopup.element) : '#FC54AF'}40;
+          }
+          100% {
+            box-shadow:
+              0 0 15px ${planetPopup ? getElementColor(planetPopup.element) : '#FC54AF'}90,
+              0 0 30px ${planetPopup ? getElementColor(planetPopup.element) : '#FC54AF'}70,
+              0 0 45px ${planetPopup ? getElementColor(planetPopup.element) : '#FC54AF'}50,
+              0 0 60px ${planetPopup ? getElementColor(planetPopup.element) : '#FC54AF'}30,
+              inset 0 0 15px ${planetPopup ? getElementColor(planetPopup.element) : '#FC54AF'}50;
+          }
+        }
+      `}</style>
+    </div>
   );
 }
