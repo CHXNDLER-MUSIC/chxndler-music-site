@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePublicSoulJournalEntries } from "@/hooks/useSoulJournalEntries";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { getDisplayDateString } from "@/utils/dateHelpers";
@@ -8,6 +8,7 @@ import { sfx } from "@/lib/sfx";
 import Image from 'next/image';
 import UserBadges from "./UserBadges";
 import UserCards from "./UserCards";
+import TiltSpinCard from "./TiltSpinCard";
 
 const ELEMENT_COLORS: Record<string, { color: string; glow: string; emoji: string; label: string }> = {
   heart: { color: "#F91880", glow: "#F918B0", emoji: "💖", label: "HEART" },
@@ -46,6 +47,9 @@ export default function PublicJournalFeed() {
   const [showBadgesModal, setShowBadgesModal] = useState<{[key: string]: boolean}>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [enlargedCard, setEnlargedCard] = useState<{ entryId: string; card: CardData } | null>(null);
+  const [isCardFlipped, setIsCardFlipped] = useState(false);
+  const [spinRotation, setSpinRotation] = useState(0);
+  const spinAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Check auth state only for starring functionality (not for viewing)
   useEffect(() => {

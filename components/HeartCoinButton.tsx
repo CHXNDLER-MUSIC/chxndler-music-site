@@ -827,7 +827,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       });
 
       if (error) {
-        console.error("SECRET_PHRASE RPC error:", error);
+        console.error('Secret phrase RPC error:', {
+          message: (error as any)?.message,
+          details: (error as any)?.details,
+          hint: (error as any)?.hint,
+          code: (error as any)?.code,
+        });
         const msg = error.message?.toLowerCase() || '';
         if (msg.includes('not authenticated')) {
           return { status: 'not_authenticated' };
@@ -844,8 +849,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         status: 'success',
         reward: row?.granted_amount || 0
       };
-    } catch (error) {
-      console.error('Error redeeming ATTEND_LIVESTREAM phrase:', error);
+    } catch (error: any) {
+      console.error('Error redeeming ATTEND_LIVESTREAM phrase:', {
+        message: error?.message,
+        details: error?.details,
+        hint: error?.hint,
+        code: error?.code,
+      });
       return { status: 'error' };
     }
   };
@@ -1024,16 +1034,22 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     }
 
     const phraseTrimmed = secretPhraseValue.trim();
+    const phraseLower = phraseTrimmed.toLowerCase();
     setSecretPhraseLoading(true);
 
     try {
       const { data, error } = await supabaseBrowser.rpc(
         'redeem_secret_phrase',
-        { p_phrase: phraseTrimmed }
+        { p_phrase: phraseLower }
       );
 
       if (error) {
-        console.error('Secret phrase RPC error:', error);
+        console.error('Secret phrase RPC error:', {
+          message: (error as any)?.message,
+          details: (error as any)?.details,
+          hint: (error as any)?.hint,
+          code: (error as any)?.code,
+        });
         setCheckInMessage('Failed to redeem secret phrase');
         setStatusType('error');
         setTimeout(() => {
@@ -1069,14 +1085,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
         try { sfx.play('click', 0.7); } catch {}
       } else if (status === 'already_redeemed' || status === 'already_checked_in') {
-        setCheckInMessage('Already checked in');
+        setCheckInMessage('Already redeemed');
         setStatusType('error');
         setTimeout(() => {
           setCheckInMessage("");
           setStatusType('idle');
         }, 3000);
       } else if (status === 'invalid' || status === 'incorrect') {
-        setCheckInMessage('Incorrect secret phrase');
+        setCheckInMessage('Incorrect phrase');
         setStatusType('error');
         setTimeout(() => {
           setCheckInMessage("");
@@ -1099,8 +1115,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           setStatusType('idle');
         }, 3000);
       }
-    } catch (error) {
-      console.error('Secret phrase quest error:', error);
+    } catch (error: any) {
+      console.error('Secret phrase quest error:', {
+        message: error?.message,
+        details: error?.details,
+        hint: error?.hint,
+        code: error?.code,
+      });
       setCheckInMessage('Failed to redeem secret phrase');
       setStatusType('error');
       setTimeout(() => {
@@ -2098,12 +2119,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       </div>
                       <div className="flex flex-col items-center flex-shrink-0">
                         <span className="text-[10px] font-bold" style={{
-                          color: isQuestCompleted(quest) ? '#666' : '#90EE90',
-                          textShadow: isQuestCompleted(quest) ? 'none' : '0 0 6px #90EE90'
+                          color: (isQuestCompleted(quest) && quest.quest_key !== 'INVITE_FRIEND') ? '#666' : '#90EE90',
+                          textShadow: (isQuestCompleted(quest) && quest.quest_key !== 'INVITE_FRIEND') ? 'none' : '0 0 6px #90EE90'
                         }}>Earn</span>
                         <div className="flex items-center" style={{
-                          color: isQuestCompleted(quest) ? '#666' : '#90EE90',
-                          textShadow: isQuestCompleted(quest) ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90'
+                          color: (isQuestCompleted(quest) && quest.quest_key !== 'INVITE_FRIEND') ? '#666' : '#90EE90',
+                          textShadow: (isQuestCompleted(quest) && quest.quest_key !== 'INVITE_FRIEND') ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90'
                         }}>
                           <span className="text-base">{quest.reward_notes || `+${quest.reward_heartcoins}`}</span>
                           <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8 ml-1" />
@@ -2168,7 +2189,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     // Already redeemed - show "Already checked in"
                                     setPhraseValidationResult('incorrect');
                                     try { sfx.play('change-channel', 0.6); } catch {}
-                                    setCheckInMessage('Already checked in');
+                                    setCheckInMessage('Already redeemed');
                                     setStatusType('error');
                                     setTimeout(() => {
                                       setPhraseValidationResult(null);
@@ -2248,12 +2269,19 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             e.currentTarget.style.textShadow = '0 0 8px rgba(78,205,196,0.5)';
                           }
                         }}
-                        disabled={isLoggedIn && ((!quest.can_complete && !inviteFriendShared) || isQuestCompleted(quest) || (quest.quest_key === 'SECRET_PHRASE' && secretPhraseLoading))}
+                        disabled={
+                          isLoggedIn && (
+                            (!quest.can_complete && !inviteFriendShared) ||
+                            isQuestCompleted(quest) ||
+                            (quest.quest_key === 'SECRET_PHRASE' && secretPhraseLoading) ||
+                            (quest.quest_key === 'ATTEND_LIVESTREAM' && secretPhraseLoading)
+                          )
+                        }
                         className="px-2 py-1 text-xs rounded border font-bold transition-all duration-200"
                         style={{
                           background: !isLoggedIn
                             ? 'rgba(78,205,196,0.2)'
-                            : isQuestCompleted(quest)
+                            : isQuestCompleted(quest) || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
                             ? 'rgba(0,255,0,0.2)'
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? 'rgba(0,0,0,0.3)'
@@ -2264,7 +2292,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   : 'rgba(100,100,100,0.3)',
                           color: !isLoggedIn
                             ? '#4ECDC4'
-                            : isQuestCompleted(quest)
+                            : isQuestCompleted(quest) || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
                             ? '#00FF00'
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? '#F2EF1D'
@@ -2277,7 +2305,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     : '#666',
                           borderColor: !isLoggedIn
                             ? '#4ECDC4'
-                            : isQuestCompleted(quest)
+                            : isQuestCompleted(quest) || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
                             ? '#00FF00'
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? '#F2EF1D'
@@ -2288,7 +2316,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   : quest.can_complete
                                     ? 'rgba(255,255,255,0.6)'
                                     : 'rgba(100,100,100,0.6)',
-                          borderWidth: isQuestCompleted(quest)
+                          borderWidth: isQuestCompleted(quest) || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
                             ? '2px'
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? '2px'
@@ -2297,7 +2325,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 : '1px',
                           textShadow: !isLoggedIn
                             ? '0 0 8px rgba(78,205,196,0.5)'
-                            : isQuestCompleted(quest)
+                            : isQuestCompleted(quest) || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
                             ? '0 0 8px #00FF00, 0 0 16px #00FF00'
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? '0 0 10px #F2EF1D'
@@ -2308,7 +2336,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   : 'none',
                           boxShadow: !isLoggedIn
                             ? 'none'
-                            : isQuestCompleted(quest)
+                            : isQuestCompleted(quest) || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
                             ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)'
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? '0 0 20px rgba(242,239,29,0.8), inset 0 0 10px rgba(242,239,29,0.2)'
@@ -2322,14 +2350,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       >
                         {!isLoggedIn
                           ? 'Log in to complete'
-                          : (isQuestCompleted(quest)
-                            ? 'COMPLETED' 
-                            : quest.quest_key === 'ATTEND_LIVESTREAM' 
+                          : (isQuestCompleted(quest) || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
+                            ? 'COMPLETED'
+                            : quest.quest_key === 'ATTEND_LIVESTREAM'
                               ? (phraseValidationResult === 'correct' ? 'COMPLETED' : attendLivestreamConfirming ? 'CONFIRM' : 'CHECK IN')
-                              : quest.quest_key === 'INVITE_FRIEND' 
+                              : quest.quest_key === 'INVITE_FRIEND'
                                 ? (inviteFriendShared ? 'CONFIRM' : 'INVITE FRIEND')
                                 : quest.quest_key === 'SECRET_PHRASE'
-                                  ? (secretPhraseInputVisible === quest.id 
+                                  ? (secretPhraseInputVisible === quest.id
                                       ? (secretPhraseLoading ? 'SUBMITTING...' : 'SUBMIT')
                                       : 'ENTER PHRASE')
                                 : 'COMPLETE')}

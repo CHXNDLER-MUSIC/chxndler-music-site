@@ -937,25 +937,40 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     // Check if there's a collected card for this slot
                     const collectedCard = profile?.cards?.[index];
                     const hasCard = !!collectedCard?.cards;
-                    
+
                     // Use card_slots to determine locked slots
                     const cardSlots = profile?.card_slots ?? 0;
                     const isLockedSlot = index >= cardSlots;
-                    
+
                     // Show CHXNDLER card in first slot if no card is there
                     const isFirstSlotWithChxndler = index === 0 && !hasCard;
+
+                    // Force 2nd slot (index 1) to always be empty with dotted border
+                    const isSecondSlotEmpty = index === 1;
 
                     return (
                       <div
                         key={`slot-${index}`}
                         className={`rounded-lg border transition-all duration-300 w-28 h-36 bg-black/30 ${
-                          isLockedSlot
+                          isSecondSlotEmpty
+                            ? 'border-white/10 cursor-pointer hover:scale-105'
+                            : isLockedSlot
                             ? 'border-white/5 cursor-default'
                             : hasCard || isFirstSlotWithChxndler
                             ? 'border-white/10 cursor-pointer hover:scale-105'
                             : 'border-white/10 cursor-pointer hover:scale-105'
                         }`}
                         onClick={() => {
+                          // 2nd slot is always empty - open HeartCoin modal
+                          if (isSecondSlotEmpty) {
+                            try { sfx.play('click', 0.4); } catch {}
+                            try {
+                              window.dispatchEvent(new CustomEvent('openHeartCoinCards', {
+                                detail: { source: 'binder_empty_slot' }
+                              }));
+                            } catch {}
+                            return;
+                          }
                           // CHXNDLER card is always clickable (first slot fallback)
                           if (isFirstSlotWithChxndler) {
                             try { sfx.play('card-ding', 0.45); } catch {}
@@ -994,19 +1009,23 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           }
                         }}
                         onMouseEnter={() => {
-                          if (isFirstSlotWithChxndler || !isLockedSlot) {
+                          if (isSecondSlotEmpty || isFirstSlotWithChxndler || !isLockedSlot) {
                             try { sfx.play('hover', 0.3); } catch {}
                           }
                         }}
                         style={{
-                          boxShadow: hasCard || isFirstSlotWithChxndler
-                            ? '0 0 20px rgba(255,105,180,0.6), 0 0 30px rgba(255,105,180,0.4)' 
+                          boxShadow: isSecondSlotEmpty
+                            ? 'none'
+                            : hasCard || isFirstSlotWithChxndler
+                            ? '0 0 25px rgba(255,105,180,0.8), 0 0 40px rgba(255,105,180,0.6), 0 0 60px rgba(255,105,180,0.4)'
                             : !hasCard && !isFirstSlotWithChxndler && !isLockedSlot
                             ? '0 0 15px rgba(255,105,180,0.4), 0 0 25px rgba(255,105,180,0.2), 0 0 35px rgba(255,105,180,0.1)'
                             : '0 0 5px rgba(255,105,180,0.1)',
                           aspectRatio: '2/3',
-                          border: !hasCard && !isFirstSlotWithChxndler && !isLockedSlot
-                            ? '2px dotted rgba(255,105,180,0.5)' 
+                          border: isSecondSlotEmpty
+                            ? '2px dotted rgba(255,105,180,0.5)'
+                            : !hasCard && !isFirstSlotWithChxndler && !isLockedSlot
+                            ? '2px dotted rgba(255,105,180,0.5)'
                             : undefined
                         }}
                       >

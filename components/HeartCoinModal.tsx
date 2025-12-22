@@ -151,7 +151,8 @@ const storeItems: StoreItem[] = [
 
 export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWelcomeHome, initialTab = 'earn', availableCards = [], currentCardIndex = 0, onCardNavigation }: Props) {
   const { profile, loading: profileLoading, refreshProfile } = useProfile();
-  const { bonusQuests, isLoading: questsLoading } = useBonusQuests();
+  const { quests: bonusQuests, status: questsStatus } = useBonusQuests();
+  const questsLoading = questsStatus === 'loading';
   const { items: merchItems, loading: merchLoading } = useMerchItems('physical');
   const { purchaseWithHeartCoins, isProcessing } = useMerchPurchase();
   const { elementOfDay } = usePlanetRewardsContext();
@@ -452,9 +453,17 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     return allCards.filter(card => (card.element || '').toUpperCase() === element.toUpperCase()).length;
   };
 
-  // Helper function to check if quest is completed
+  // Helper function to check if quest is completed (for daily quests, check can_complete)
   const isQuestCompleted = (quest: BonusQuestWithCompletion): boolean => {
-    return quest.completion !== null && quest.completion !== undefined;
+    // For one-time quests (max_total_completions === 1), check if already completed
+    if (quest.max_total_completions === 1 && quest.times_completed > 0) {
+      return true;
+    }
+    // For daily repeatable quests like INVITE_FRIEND, check if cannot complete today
+    if (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete) {
+      return true;
+    }
+    return false;
   };
 
   // Form validation function
@@ -2155,7 +2164,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
             onClick={(e) => e.stopPropagation()}
           >
             <div
-              className="relative bg-gray-900 border border-gray-600 rounded-lg p-6 max-w-2xl max-h-[90vh] overflow-hidden"
+              className="relative bg-gray-900 border border-gray-600 rounded-lg p-6 max-w-2xl max-h-[90vh] overflow-auto"
               style={{
                 background: 'rgba(17, 24, 39, 0.95)',
                 backdropFilter: 'blur(20px)',
@@ -2180,8 +2189,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   <div
                     className="relative w-full"
                     style={{
-                      height: '70vh',
-                      maxWidth: '400px'
+                      height: '55vh',
+                      maxWidth: '350px'
                     }}
                   >
                     {/* TiltSpinCard wrapper for 360° drag-to-spin interaction */}
@@ -2286,6 +2295,43 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     )}
                   </div>
                 </div>
+              </div>
+
+              {/* HeartCoin Purchase Buttons */}
+              <div className="flex flex-col gap-3 mt-4">
+                {/* Digital Purchase Button - 5 HeartCoins */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Handle digital purchase
+                  }}
+                  className="w-full py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 rounded-lg flex items-center justify-center gap-2 text-white font-bold transition-all duration-200 shadow-lg hover:shadow-cyan-500/30"
+                  style={{
+                    boxShadow: '0 0 15px rgba(6, 182, 212, 0.3)',
+                  }}
+                >
+                  <img src="/heartcoin.webp" alt="HeartCoin" className="w-5 h-5" />
+                  <span>5 HEARTCOIN</span>
+                  <span className="text-white/80">|</span>
+                  <span className="text-cyan-200">DIGITAL</span>
+                </button>
+
+                {/* Physical Purchase Button - 20 HeartCoins */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Handle physical purchase
+                  }}
+                  className="w-full py-3 px-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 rounded-lg flex items-center justify-center gap-2 text-white font-bold transition-all duration-200 shadow-lg hover:shadow-amber-500/30"
+                  style={{
+                    boxShadow: '0 0 15px rgba(245, 158, 11, 0.3)',
+                  }}
+                >
+                  <img src="/heartcoin.webp" alt="HeartCoin" className="w-5 h-5" />
+                  <span>20 HEARTCOIN</span>
+                  <span className="text-white/80">|</span>
+                  <span className="text-amber-200">PHYSICAL</span>
+                </button>
               </div>
             </div>
           </div>
