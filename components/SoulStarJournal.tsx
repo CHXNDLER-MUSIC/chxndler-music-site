@@ -638,7 +638,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
   return (
     <div
-      className="fixed z-[2147483647] flex items-stretch justify-center"
+      className="fixed z-[2147483647] flex items-stretch justify-center pointer-events-none"
       style={{
         top: 0,
         left: 0,
@@ -653,7 +653,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       {/* Card popup - match Binder popout visuals */}
       {cardOpen && selectedCard && (
         <div
-          className="absolute inset-0 flex items-start justify-center z-50"
+          className="absolute inset-0 flex items-start justify-center z-50 pointer-events-auto"
           style={{ paddingTop: '56px', paddingLeft: '16px', paddingRight: '20px' }}
           onClick={() => {
             try { sfx.play('close', 0.8); } catch {}
@@ -827,11 +827,11 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       {showHistory ? (
         /* Full Log View - Public or Private based on activeTab */
         <div
-          className="w-full max-w-4xl sm:min-w-[460px] mx-auto"
+          className="w-full max-w-4xl sm:min-w-[460px] mx-auto pointer-events-auto"
           style={{
-            height: '100%', 
-            overflowY: 'auto', 
-            display: 'flex', 
+            height: '100%',
+            overflowY: 'auto',
+            display: 'flex',
             flexDirection: 'column',
             background: 'rgba(0, 0, 0, 0.7)',
             border: `1px solid ${elementTheme.color}60`,
@@ -1218,7 +1218,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       ) : (
         /* Today's Journal Interface */
         <div
-          className="w-full max-w-4xl sm:min-w-[460px] mx-auto"
+          className="w-full max-w-4xl sm:min-w-[460px] mx-auto pointer-events-auto"
           style={{
             height: '100%',
             overflowY: 'auto',
@@ -1650,7 +1650,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       {/* Enlarged Badge Popup Modal - contained within journal panel bounds */}
       {enlargedBadge && (
         <div
-          className="absolute inset-0 flex items-start justify-center z-50"
+          className="absolute inset-0 flex items-start justify-center z-50 pointer-events-auto"
           style={{ paddingTop: '56px', paddingLeft: '16px', paddingRight: '20px' }}
           onClick={() => {
             setEnlargedBadge(null);
