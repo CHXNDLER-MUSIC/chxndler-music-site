@@ -1,9 +1,10 @@
 'use client';
 
-import React, { forwardRef, useMemo } from 'react';
+import React, { forwardRef, useMemo, useEffect, useRef } from 'react';
 import { useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ACTIVE_GLOW_COLOR, ACTIVE_GLOW_OPACITY, ACTIVE_GLOW_SCALE } from './planetarium/assets';
+import { applyHologramGrid } from '@/utils/hologramGrid';
 
 interface ElementPlanetProps {
   texturePath: string;
@@ -108,6 +109,7 @@ const createDarknessGeometry = (size: number) => {
 export const ElementPlanet = forwardRef<THREE.Group, ElementPlanetProps>(
   ({ texturePath, position, size = 4, scale = 1, isActive = false, children, elementId }, ref) => {
     const texture = useLoader(THREE.TextureLoader, texturePath);
+    const matRef = useRef<THREE.MeshStandardMaterial | null>(null);
 
     // Configure texture for transparency
     texture.colorSpace = THREE.SRGBColorSpace;
@@ -149,10 +151,18 @@ export const ElementPlanet = forwardRef<THREE.Group, ElementPlanetProps>(
 
     const rotation = getRotation();
 
+    useEffect(() => {
+      if (matRef.current) {
+        applyHologramGrid(matRef.current);
+        matRef.current.needsUpdate = true;
+      }
+    }, []);
+
     return (
       <group ref={ref} position={position} scale={scale} rotation={rotation}>
         <mesh geometry={geometry}>
           <meshStandardMaterial
+            ref={matRef as any}
             map={texture}
             transparent={true}
             alphaTest={0.2}

@@ -7,6 +7,7 @@ import * as THREE from "three";
 import HeartStarPlanet from "./HeartStarPlanet";
 import StyledElementPlanet from "./holo/StyledElementPlanet";
 import { getElementalPlanetTexture } from "@/lib/elementalPlanets";
+import { applyHologramGrid, setGridTime } from "@/utils/hologramGrid";
 
 type ElementKey = "water" | "heart" | "lightning" | "darkness";
 
@@ -72,12 +73,21 @@ const SongPlanet: React.FC<{
   const size = song.size ?? 0.4;
   const color = song.color ?? parent?.color ?? "#FC54AF";
   const released = song.released ?? true;
+  const matRef = React.useRef<THREE.MeshStandardMaterial | null>(null);
+
+  React.useEffect(() => {
+    if (matRef.current) {
+      applyHologramGrid(matRef.current);
+      matRef.current.needsUpdate = true;
+    }
+  }, []);
 
   return (
     <group position={pos}>
       <mesh>
         <sphereGeometry args={[size, 24, 24]} />
         <meshStandardMaterial
+          ref={matRef as any}
           color={color}
           emissive={color}
           emissiveIntensity={released ? 0.4 : 0.1}
@@ -103,6 +113,8 @@ export const PlanetSystem: React.FC<PlanetSystemProps> = ({
 
   useFrame((state, delta) => {
     timeRef.current += delta;
+    // Drive the shared hologram grid time uniform
+    setGridTime(timeRef.current);
   });
 
   const elapsedTime = timeRef.current;

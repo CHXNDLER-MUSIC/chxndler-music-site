@@ -110,6 +110,19 @@ export function useUserCards(viewedUserId?: string): UseUserCardsResult {
     fetchCards();
   }, [fetchCards]);
 
+  // Listen for global refresh events so all containers update after purchases
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handler = () => { fetchCards(); };
+    const binderHandler = () => { fetchCards(); };
+    window.addEventListener('userCards:refresh', handler as EventListener);
+    window.addEventListener('binder:refresh', binderHandler as EventListener);
+    return () => {
+      window.removeEventListener('userCards:refresh', handler as EventListener);
+      window.removeEventListener('binder:refresh', binderHandler as EventListener);
+    };
+  }, [fetchCards]);
+
   return useMemo(() => ({
     cards,
     loading,
@@ -118,4 +131,3 @@ export function useUserCards(viewedUserId?: string): UseUserCardsResult {
     refresh: fetchCards,
   }), [cards, loading, error, isOwner, fetchCards]);
 }
-

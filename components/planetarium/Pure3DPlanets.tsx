@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three-stdlib';
 import { debug } from '@/lib/logger';
+import { applyHologramGrid, setGridTime } from '@/utils/hologramGrid';
 
 export type ElementType = 'heart' | 'water' | 'lightning' | 'darkness';
 
@@ -59,6 +60,13 @@ export default function Pure3DPlanets({
   const desiredCameraPosRef = useRef<THREE.Vector3 | null>(null);
   const desiredLookAtRef = useRef<THREE.Vector3 | null>(null);
   const initialBiasDoneRef = useRef(false);
+
+  // Track when the scene is fully built and ready for camera operations
+  const [sceneReady, setSceneReady] = useState(false);
+  // Track currently focused song for highlight effects
+  const focusedSongSlugRef = useRef<string | null>(null);
+  // Keep reference to glow sprite for focused song
+  const songGlowSpriteRef = useRef<THREE.Sprite | null>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -231,6 +239,8 @@ export default function Pure3DPlanets({
         metalness: 0.2,
         roughness: 0.6
       });
+      // Inject hologram grid overlay into this material
+      applyHologramGrid(material);
 
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.set(...position);
@@ -503,6 +513,8 @@ export default function Pure3DPlanets({
     const animate = () => {
       animationId = requestAnimationFrame(animate);
       const elapsed = clock.getElapsedTime();
+      // Drive the shared hologram grid time uniform
+      setGridTime(elapsed);
 
       // Rotate sun
       sun.rotation.y = elapsed * 0.5;
@@ -560,6 +572,10 @@ export default function Pure3DPlanets({
 
     animate();
 
+    // Mark scene as ready for camera operations (focusSongId effect depends on this)
+    setSceneReady(true);
+    debug('Scene setup complete, sceneReady = true');
+
     // Handle resize
     const handleResize = () => {
       const w = container.clientWidth;
@@ -573,6 +589,8 @@ export default function Pure3DPlanets({
 
     // Cleanup
     return () => {
+      // Reset scene ready state on cleanup
+      setSceneReady(false);
       cancelAnimationFrame(animationId);
       window.removeEventListener('resize', handleResize);
       container.removeEventListener('click', handleClick);

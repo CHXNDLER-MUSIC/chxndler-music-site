@@ -10,6 +10,7 @@ import {
   SongPlanet 
 } from './planet-data';
 import { ElementPlanet } from './ElementPlanet';
+import { applyHologramGrid, setGridTime } from '@/utils/hologramGrid';
 
 // Import Three.js and R3F hooks dynamically to avoid SSR issues
 let useFrame: any;
@@ -38,6 +39,7 @@ function CenterPlanet() {
   const meshRef = useRef<THREE.Mesh>(null);
   const centerTexture = useTexture('/textures/center-planet.webp');
   const { updatePosition, activePlanetId } = usePlanetPositions();
+  const matRef = useRef<THREE.MeshStandardMaterial | null>(null);
 
   useFrame(() => {
     if (meshRef.current) {
@@ -50,12 +52,20 @@ function CenterPlanet() {
     }
   });
 
+  React.useEffect(() => {
+    if (matRef.current) {
+      applyHologramGrid(matRef.current);
+      matRef.current.needsUpdate = true;
+    }
+  }, []);
+
   const isActive = activePlanetId === centerPlanet.id;
 
   return (
     <mesh ref={meshRef} position={[0, 0, 0]} scale={isActive ? 1.2 : 1}>
       <sphereGeometry args={[3.5, 32, 32]} />
       <meshStandardMaterial 
+        ref={matRef as any}
         map={centerTexture} 
         emissive={isActive ? new THREE.Color(0x444444) : new THREE.Color(0x000000)}
       />
@@ -113,6 +123,7 @@ function SongPlanetMesh({ song }: { song: SongPlanet }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const texture = song.texturePath ? useTexture(song.texturePath) : null;
   const { updatePosition, activePlanetId, positions } = usePlanetPositions();
+  const matRef = useRef<THREE.MeshStandardMaterial | null>(null);
 
   useFrame(({ clock }) => {
     if (meshRef.current) {
@@ -141,10 +152,18 @@ function SongPlanetMesh({ song }: { song: SongPlanet }) {
   const isActive = activePlanetId === song.id;
   const scale = song.released ? (isActive ? 1.3 : 1) : (isActive ? 1.1 : 0.8);
 
+  React.useEffect(() => {
+    if (matRef.current) {
+      applyHologramGrid(matRef.current);
+      matRef.current.needsUpdate = true;
+    }
+  }, []);
+
   return (
     <mesh ref={meshRef} scale={scale}>
       <sphereGeometry args={[1, 16, 16]} />
       <meshStandardMaterial 
+        ref={matRef as any}
         map={texture}
         color={song.released ? 0xffffff : 0x666666}
         opacity={song.released ? 1 : 0.7}
@@ -169,7 +188,9 @@ function SongPlanetMesh({ song }: { song: SongPlanet }) {
 export function PlanetSceneContents({ zoomLevel }: PlanetSceneContentsProps) {
   const { camera } = useThree();
 
-  useFrame(() => {
+  useFrame((state: any) => {
+    // Drive the shared hologram grid time uniform from this scene's clock
+    setGridTime(state.clock.getElapsedTime());
     const baseDistance = 30;
     const targetDistance = baseDistance / zoomLevel;
     const currentDistance = camera.position.length();

@@ -6,6 +6,7 @@ import { Mesh, AdditiveBlending, TextureLoader } from "three";
 import * as THREE from "three";
 import { ELEMENT_STYLES, ElementKey } from "@/utils/planetStyles";
 import { getElementalPlanetTexture } from "@/lib/elementalPlanets";
+import { applyHologramGrid, setGridTime } from "@/utils/hologramGrid";
 
 interface StyledElementPlanetProps {
   elementKey: ElementKey;
@@ -21,6 +22,7 @@ export default function StyledElementPlanet({
   console.log(`🌍 Rendering StyledElementPlanet: ${elementKey} at position:`, position, `radius: ${radius}`);
   
   const planetRef = useRef<Mesh>(null);
+  const planetMatRef = useRef<THREE.MeshStandardMaterial | null>(null);
   const glowRef = useRef<Mesh>(null);
   const time = useRef(0);
   const [texture, setTexture] = useState<THREE.Texture | null>(null);
@@ -91,6 +93,8 @@ export default function StyledElementPlanet({
   
   useFrame((state) => {
     time.current = state.clock.elapsedTime;
+    // Update shared grid time uniform from this scene clock
+    setGridTime(time.current);
     
     if (!planetRef.current) return;
     
@@ -115,6 +119,14 @@ export default function StyledElementPlanet({
     // Slow rotation for all element planets
     planetRef.current.rotation.y += 0.005;
   });
+
+  // Attach hologram grid overlay to the planet's material
+  useEffect(() => {
+    if (planetMatRef.current) {
+      applyHologramGrid(planetMatRef.current);
+      planetMatRef.current.needsUpdate = true;
+    }
+  }, []);
   
   return (
     <group position={position}>
@@ -134,6 +146,7 @@ export default function StyledElementPlanet({
       <mesh ref={planetRef} renderOrder={1}>
         <sphereGeometry args={[radius, 32, 32]} />
         <meshStandardMaterial
+          ref={planetMatRef as any}
           map={texture}
           color={texture ? "#ffffff" : styles.coreColor}
           emissive={elementKey === "darkness" ? styles.rimColor : styles.innerGlow}

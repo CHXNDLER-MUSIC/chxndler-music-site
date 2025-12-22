@@ -1261,10 +1261,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   };
 
   // Confirm handler for DIGITAL card purchases via Supabase RPC
-  const handleConfirmCardPurchase = async () => {
+  // Accepts an optional card to support confirm from non-enlarged view
+  const handleConfirmCardPurchase = async (targetCard?: Card) => {
     console.log('[CARD PURCHASE] Confirm clicked', {
-      card: enlargedCard?.card_name,
-      cardId: enlargedCard?.id,
+      card: (targetCard || enlargedCard)?.card_name,
+      cardId: (targetCard || enlargedCard)?.id,
       type: showCardConfirm,
       cost: showCardConfirm === 'digital' ? (enlargedCard?.digitalCost || 5) : (enlargedCard?.physicalCost || 20),
       heartCoins,
@@ -1272,13 +1273,19 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       inFlightRef: cardPurchaseInFlightRef.current,
     });
 
+    const selectedCard = targetCard || enlargedCard;
+    const selectedCardId = selectedCard?.id;
+    console.log('[CARD PURCHASE] selectedCardId', selectedCardId);
+
     // Guards with logs for every early return
     if (isPurchasing) {
       console.warn('[CARD PURCHASE] GUARD: isPurchasing already true');
+      console.warn('[CARD PURCHASE] blocked: isPurchasing');
       return;
     }
     if (cardPurchaseInFlightRef.current) {
       console.warn('[CARD PURCHASE] GUARD: cardPurchaseInFlightRef already true');
+      console.warn('[CARD PURCHASE] blocked: inFlightRef');
       return;
     }
     if (!profile?.id) {
@@ -1286,22 +1293,23 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Please log in to buy cards', type: 'error' } })); } catch {}
       return;
     }
-    if (!enlargedCard?.id) {
+    if (!selectedCardId) {
       console.warn('[CARD PURCHASE] GUARD: missing selectedCardId');
+      console.warn('[CARD PURCHASE] blocked: missing selectedCardId');
       try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'No card selected', type: 'error' } })); } catch {}
       return;
     }
-    if (showCardConfirm !== 'digital') {
+    if (showCardConfirm !== 'digital' && !targetCard) {
       console.warn('[CARD PURCHASE] GUARD: confirm type is not digital');
       return;
     }
-    const cost = enlargedCard?.digitalCost || 5;
+    const cost = selectedCard?.digitalCost || 5;
     if (heartCoins == null) {
       console.warn('[CARD PURCHASE] GUARD: missing balance in UI');
     }
     if ((profile?.heartcoin_balance ?? heartCoins ?? 0) < cost) {
       console.warn('[CARD PURCHASE] GUARD: insufficient balance', { balance: profile?.heartcoin_balance ?? heartCoins ?? 0, cost });
-      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Not enough HeartCoins', type: 'error' } })); } catch {}
+      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Insufficient HeartCoins', type: 'error' } })); } catch {}
       return;
     }
 
@@ -1312,7 +1320,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
     try {
       // Single authoritative call to backend
-      const { data, error } = await supabaseBrowser.rpc('purchase_digital_card', { p_card_id: enlargedCard.id });
+      const { data, error } = await supabaseBrowser.rpc('purchase_digital_card', { p_card_id: selectedCardId });
 
       if (error) {
         console.error('[CARD PURCHASE] RPC error', {
@@ -1333,6 +1341,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         return; // Early return on error; finally will reset flags
       }
 
+      console.log('[CARD PURCHASE] RPC success', data);
       // Success path: update local UI balance immediately if returned
       const newBalance = (data as any)?.new_balance as number | undefined;
       if (typeof newBalance === 'number') {
@@ -1357,7 +1366,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       setEnlargedCard(null);
 
       // Success toast
-      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Card purchased', type: 'success' } })); } catch {}
+      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: `Card acquired${selectedCard?.card_name ? `: ${selectedCard.card_name}` : ''}`, type: 'success' } })); } catch {}
     } catch (err: any) {
       console.error('[CARD PURCHASE] Unexpected error', err);
       const message = err?.message || 'Unexpected error during purchase';
@@ -3151,7 +3160,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     disabled={(profile?.id ? heartCoins : 0) < (showDigitalForm ? card.digitalCost : card.physicalCost)}
                                     onClick={() => {
                                       try { sfx.play('click', 0.8); } catch {}
-                                      console.log(showDigitalForm ? 'Digital purchase confirmed' : 'Physical purchase confirmed');
+                                      if (showDigitalForm) {
+                                        // Trigger the unified digital purchase handler with this card
+                                        handleConfirmCardPurchase(card);
+                                      } else {
+                                        console.warn('[CARD PURCHASE] GUARD: physical confirm clicked in list view, no handler here');
+                                        try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Physical purchase flow coming soon', type: 'info' } })); } catch {}
+                                      }
                                     }}
                                   >
                                     CONFIRM
