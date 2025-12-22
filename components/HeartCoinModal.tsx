@@ -1935,7 +1935,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   try { sfx.play('change-channel', 0.5); } catch {}
                 }}
               >
-                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-purple-900/30 to-black/40 rounded-full border-2 border-purple-600/40 flex items-center justify-center transition-all duration-300 hover:border-purple-400 hover:shadow-[0_0_20px_rgba(138,43,226,0.6)] hover:scale-105">
+                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-purple-900/30 to-black/40 rounded-full border-2 border-purple-600/40 flex items-center justify-center transition-all duration-300 hover:border-white hover:shadow-[0_0_20px_rgba(255,255,255,0.6)] hover:scale-105">
                   <div className="w-12 h-12 rounded-full border-2 border-purple-600 bg-gradient-to-br from-transparent to-purple-900/40" />
                 </div>
                 <div className="text-center mt-2">
