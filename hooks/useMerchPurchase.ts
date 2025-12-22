@@ -82,6 +82,8 @@ export function useMerchPurchase() {
       merchItemId,        // -> p_merch_item_id
       quantity,           // -> p_quantity
       idempotencyKey,     // -> p_client_request_id
+      // Explicitly declare paymentType for server normalization/logging
+      paymentType: 'heartcoins' as const,
     };
 
     console.log('[useMerchPurchase] Initiating purchase (single API call):', payload);
@@ -112,8 +114,9 @@ export function useMerchPurchase() {
       let result: any;
       try {
         const responseText = await response.text();
-        console.log('[useMerchPurchase] Response text (first 500 chars):', responseText.slice(0, 500));
-        result = JSON.parse(responseText);
+        // Log full body safely (truncate to avoid massive output)
+        console.log('[useMerchPurchase] Response text (first 1500 chars):', responseText.slice(0, 1500));
+        result = responseText ? JSON.parse(responseText) : {};
       } catch (parseError) {
         console.error('[useMerchPurchase] Failed to parse response as JSON:', parseError);
         throw new Error(`Server returned invalid response: ${parseError instanceof Error ? parseError.message : 'Parse error'}`);
@@ -127,6 +130,28 @@ export function useMerchPurchase() {
       });
 
       if (!response.ok) {
+        // Handle idempotency as success if server indicates already processed
+        if (
+          response.status === 409 ||
+          result?.idempotent === true ||
+          (typeof result?.message === 'string' && result.message.toLowerCase().includes('already processed'))
+        ) {
+          console.warn('[useMerchPurchase] Treating idempotent response as success', {
+            status: response.status,
+            result,
+          });
+          const normalized = Array.isArray(result) ? result[0] : result || {};
+          return {
+            success: true,
+            message: normalized?.message || 'Already processed',
+            order_id: normalized?.order_id ?? null,
+            user_id: normalized?.user_id ?? null,
+            heartcoins_before: normalized?.heartcoins_before ?? null,
+            heartcoins_after: normalized?.heartcoins_after ?? null,
+            amount_spent: normalized?.amount_spent ?? normalized?.total_heartcoins ?? 0,
+          } as PurchaseWithHeartcoinsResult;
+        }
+
         const errorMessage = result?.error || result?.message || 'Purchase failed';
         console.error('[useMerchPurchase] Purchase failed response JSON:', {
           payload_sent: payload,

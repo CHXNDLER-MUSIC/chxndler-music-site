@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import Pure3DPlanets from './Pure3DPlanets';
 import { useSongs } from '@/hooks/useSongs';
 import { useFocusElementOfDay } from '@/hooks/useFocusElementOfDay';
+import { useElementOfDayClaim } from '@/hooks/useElementOfDayClaim';
 
 interface ClientPlanetSceneProps {
   zoomLevel: number;
@@ -30,6 +31,9 @@ export default function ClientPlanetScene({
 }: ClientPlanetSceneProps) {
   const { songs, songsByElement, loading, error } = useSongs();
   const { focusElement } = useFocusElementOfDay();
+  const { loading: eodLoading, element, isClaimed, claim } = useElementOfDayClaim();
+  const [optimisticClaimed, setOptimisticClaimed] = useState(false);
+  const [isClaiming, setIsClaiming] = useState(false);
   const quality = getDeviceQuality();
 
   console.log('ClientPlanetScene render:', { loading, error: error?.message, songsCount: songs.length, quality });
@@ -58,6 +62,50 @@ export default function ClientPlanetScene({
 
   console.log('ClientPlanetScene rendering Pure3DPlanets with:', { songs: songs.length, quality });
 
+  // Prefer element_of_day from DB; fallback to focus element source if needed
+  const glowingElement = useMemo(() => element ?? focusElement ?? null, [element, focusElement]);
+  const hasClaimed = useMemo(() => isClaimed || optimisticClaimed, [isClaimed, optimisticClaimed]);
+
+  const handleDailyPlanetClick = useCallback(async () => {
+    if (!glowingElement || hasClaimed || isClaiming) return null;
+    setIsClaiming(true);
+    // Optimistically stop glowing
+    setOptimisticClaimed(true);
+    try {
+      const resp = await claim();
+      const elemLabel = (glowingElement || '').toUpperCase();
+      if (!resp) {
+        // Error path
+        setOptimisticClaimed(false);
+        if (typeof window !== 'undefined') {
+          try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: `Couldn’t claim reward`, type: 'error' } })); } catch {}
+        }
+        return null;
+      }
+      if (resp.already_claimed) {
+        // Keep claimed, show already claimed toast
+        if (typeof window !== 'undefined') {
+          try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: `Already claimed today`, type: 'info' } })); } catch {}
+        }
+        return resp;
+      }
+      if (resp.ok) {
+        if (typeof window !== 'undefined') {
+          try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: `Claimed today’s ${elemLabel} reward`, type: 'success' } })); } catch {}
+        }
+        return resp;
+      }
+      // Not ok and not already claimed: revert
+      setOptimisticClaimed(false);
+      if (typeof window !== 'undefined') {
+        try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: `Couldn’t claim reward`, type: 'error' } })); } catch {}
+      }
+      return resp;
+    } finally {
+      setIsClaiming(false);
+    }
+  }, [glowingElement, hasClaimed, isClaiming, claim]);
+
   return (
     <Pure3DPlanets
       songs={songs}
@@ -66,6 +114,12 @@ export default function ClientPlanetScene({
       onPlanetSelect={onPlanetSelect}
       quality={quality}
       focusElement={focusElement}
+      // Element of the Day glow and click
+      glowingElement={glowingElement}
+      glowActive={!!glowingElement}
+      hasClaimedElementOfDay={hasClaimed}
+      isClaimingReward={isClaiming}
+      onDailyPlanetClick={handleDailyPlanetClick}
     />
   );
 }

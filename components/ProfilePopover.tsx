@@ -611,7 +611,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
         style={{
           zIndex: 2147483648,
           pointerEvents: 'none',
-          paddingTop: '220px'
+          paddingTop: '220px',
+          // Ensure glow does not extend into the light beam area
+          bottom: 'var(--light-beam-boundary)'
         }}
       >
         <div
@@ -629,7 +631,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
         className="fixed inset-0 flex items-start justify-center"
         style={{
           zIndex: 2147483648,
-          paddingTop: '80px'
+          paddingTop: '80px',
+          // Constrain the modal to end at the light beam boundary
+          bottom: 'var(--light-beam-boundary)'
         }}
       >
         <div

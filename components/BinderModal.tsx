@@ -10,6 +10,7 @@ import PopoutShell from "@/components/PopoutShell";
 import { triggerCardCelebration } from "@/utils/cardCelebration";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import TiltSpinCard from "@/components/TiltSpinCard";
+import { useUserCards } from "@/hooks/useUserCards";
 
 // Add keyframes for pulsing animation
 const pulseKeyframes = `
@@ -93,6 +94,7 @@ interface PhysicalCardOrder {
 
 export default function BinderModal({ open, onClose, preselectedCard, preselectedElement, pulsingCards = false, onOpenHeartCoin }: Props) {
   const { profile, updateProfile } = useProfile();
+  const { cards: ownedCards } = useUserCards(profile?.id);
   const [cardOpen, setCardOpen] = useState(false);
   const [showFullCollection, setShowFullCollection] = useState(false);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
@@ -195,15 +197,15 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
   };
 
   const isCardOwned = (cardName: string) => {
-    if (!profile?.cards) return false;
-    return profile.cards.some(cardRow => cardRow.cards.card_name === cardName);
+    if (!ownedCards) return false;
+    return ownedCards.some(cardRow => cardRow.cards.card_name === cardName);
   };
 
   // Helper to get user's owned cards in the format expected by getCardGateState
   const getUserCards = () => {
-    if (!profile?.cards) return [];
-    return profile.cards.map(cardRow => ({
-      user_id: profile.id || '',
+    if (!ownedCards) return [];
+    return ownedCards.map(cardRow => ({
+      user_id: profile?.id || '',
       card_id: cardRow.cards.id || '',
       card_name: cardRow.cards.card_name
     }));
@@ -345,8 +347,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     
     let filteredSongs = songCollection;
     
-    // Filter by element first
-    filteredSongs = filteredSongs.filter(song => song.element === selectedElement);
+    // Filter by element first (include global 'ALL' cards in every tab)
+    filteredSongs = filteredSongs.filter(song => song.element === selectedElement || song.element === 'ALL');
     
     // Then filter by specific card name if not showing all
     if (selectedCardName !== 'All' && selectedCardName) {
@@ -393,11 +395,22 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     
     // Get all cards that belong to the selected element
     const elementCards = songCollection
-      .filter(song => song.element === selectedElement)
+      .filter(song => song.element === selectedElement || song.element === 'ALL')
       .map(song => song.name);
     
     return elementCards;
   };
+
+  // Temporary debug to print final card names rendered in Binder (owned subset for the current element)
+  useEffect(() => {
+    try {
+      if (!selectedElement) return;
+      const names = (ownedCards || [])
+        .filter(c => c.cards && (c.cards.element === selectedElement || c.cards.element === 'ALL'))
+        .map(c => c.cards.card_name);
+      console.debug('[CardDataDebug] Binder owned names for element', selectedElement, ':', names);
+    } catch {}
+  }, [ownedCards, selectedElement]);
 
   // Helper functions for purchase flow
   const getCost = (type: 'digital' | 'physical') => {
@@ -2498,7 +2511,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                                 fontWeight: 'bold'
                               }}
                             >
-                              {songCollection.filter(song => song.element === element).length}
+                              {songCollection.filter(song => song.element === element || song.element === 'ALL').length}
                             </div>
                           </div>
                         </div>

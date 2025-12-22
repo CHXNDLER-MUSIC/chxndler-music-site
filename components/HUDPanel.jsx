@@ -146,6 +146,7 @@ const HUDPanel = React.memo(function HUDPanel({
   // Temporary kill-switch to disable 3D planets for performance testing
   // Set to true to disable. You can also override at runtime by setting
   // localStorage.DISABLE_3D_PLANETS = '0' and refreshing.
+  // Enable 3D planets by default so they appear in the HUD
   const DISABLE_3D_PLANETS_DEFAULT = false;
   const disable3DPlanets = (() => {
     try {

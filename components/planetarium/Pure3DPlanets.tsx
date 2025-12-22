@@ -176,7 +176,13 @@ export default function Pure3DPlanets({
 
       const sprite = new THREE.Sprite(material);
       sprite.position.set(...position);
-      sprite.scale.set(scale * 5, scale * 5, 1);
+      const baseScale = scale * 5;
+      sprite.scale.set(baseScale, baseScale, 1);
+      // Stash base scale for pulsing
+      (sprite as any).userData = {
+        ...(sprite as any).userData,
+        baseScale,
+      };
 
       return sprite;
     };
@@ -523,6 +529,13 @@ export default function Pure3DPlanets({
           const scaleValue = 6.0 + Math.sin(elapsed * 2) * 0.3;
           glowSprite.scale.set(scaleValue, scaleValue, 1);
         }
+        // Also add a very subtle pulse to the target planet sprite
+        const planetSprite = elementSpriteMapRef.current.get(glowingElement);
+        if (planetSprite) {
+          const baseScale = (planetSprite as any).userData?.baseScale || planetSprite.scale.x || 9;
+          const s = 1 + Math.sin(elapsed * 2) * 0.02;
+          planetSprite.scale.set(baseScale * s, baseScale * s, 1);
+        }
       }
 
       // Camera lerp for smooth easing (hover bias and cinematic focus)
@@ -586,15 +599,42 @@ export default function Pure3DPlanets({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClient, quality, songs.length]);
 
-  // Toggle glow visibility when props change without rebuilding the scene
-  useEffect(() => {
-    try {
-      glowSpriteMapRef.current.forEach((sprite, id) => {
-        // Only show glow for the daily element when not claimed
-        sprite.visible = !!(glowActive && glowingElement === id && !hasClaimedElementOfDay);
-      });
-    } catch {}
-  }, [glowingElement, glowActive, hasClaimedElementOfDay]);
+    // Toggle glow visibility when props change without rebuilding the scene
+    useEffect(() => {
+      try {
+        glowSpriteMapRef.current.forEach((sprite, id) => {
+          // Only show glow for the daily element when not claimed
+          sprite.visible = !!(glowActive && glowingElement === id && !hasClaimedElementOfDay);
+        });
+      } catch {}
+    }, [glowingElement, glowActive, hasClaimedElementOfDay]);
+
+    // Smoothly fade out the halo when claimed
+    const prevClaimRef = React.useRef<boolean>(hasClaimedElementOfDay);
+    useEffect(() => {
+      const prev = prevClaimRef.current;
+      prevClaimRef.current = hasClaimedElementOfDay;
+      if (!prev && hasClaimedElementOfDay && glowingElement) {
+        const sprite = glowSpriteMapRef.current.get(glowingElement);
+        if (sprite && sprite.material) {
+          const mat = sprite.material as THREE.SpriteMaterial;
+          let startOpacity = mat.opacity ?? 0.4;
+          let start: number | null = null;
+          const duration = 250; // ms
+          const fade = (ts: number) => {
+            if (start === null) start = ts;
+            const t = Math.min(1, (ts - start) / duration);
+            mat.opacity = startOpacity * (1 - t);
+            if (t < 1) {
+              requestAnimationFrame(fade);
+            } else {
+              sprite.visible = false;
+            }
+          };
+          requestAnimationFrame(fade);
+        }
+      }
+    }, [hasClaimedElementOfDay, glowingElement]);
 
   // Camera focus effect - animate camera to focus on the element of the day
   useEffect(() => {

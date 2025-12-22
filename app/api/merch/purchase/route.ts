@@ -5,17 +5,45 @@ import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
 // UUID validation regex
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+// Defensive normalization for payment types
+function normalizePaymentType(input: unknown): 'heartcoins' | 'stripe' {
+  const v = String(input || '').trim().toLowerCase();
+  if (v === 'heartcoins') return 'heartcoins';
+  if (v === 'stripe') return 'stripe';
+  // Default to heartcoins for this endpoint; throw for unexpected values in case of future misuse
+  if (v && v !== 'usd' && v !== 'heartcoin' && v !== 'heart_coins' && v !== 'heart-coins') {
+    throw new Error(`Invalid paymentType: ${v}. Allowed: heartcoins|stripe`);
+  }
+  return 'heartcoins';
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     // v4 only needs: merchItemId, quantity, idempotencyKey
     // Do NOT extract or send: order_type, clientSlug, userId - v4 handles these internally
-    const { merchItemId, quantity = 1, idempotencyKey, paymentType } = body;
+    const { merchItemId, quantity = 1 } = body;
+    // Accept both idempotencyKey and clientRequestId (backwards compatibility)
+    const idempotencyKey: string | undefined = body?.idempotencyKey ?? body?.clientRequestId;
+    // Normalize payment type to allowed values
+    let normalizedPaymentType: 'heartcoins' | 'stripe';
+    try {
+      normalizedPaymentType = normalizePaymentType(body?.paymentType);
+    } catch (e) {
+      return NextResponse.json(
+        { success: false, error: e instanceof Error ? e.message : 'Invalid paymentType' },
+        { status: 400 }
+      );
+    }
+    console.log('[PURCHASE] Incoming request:', {
+      merchItemId,
+      quantity,
+      idempotencyKey,
+      paymentType_normalized: normalizedPaymentType,
+    });
 
-    console.log('[PURCHASE] Incoming request:', { merchItemId, quantity, idempotencyKey });
-
-    // USD not supported in this route
-    if (paymentType === 'USD') {
+    // Stripe not supported in this route
+    if (normalizedPaymentType === 'stripe') {
       return NextResponse.json(
         { success: false, error: 'Use /api/checkout for Stripe payments.', errorCode: 'WRONG_ENDPOINT' },
         { status: 400 }
@@ -70,7 +98,10 @@ export async function POST(request: NextRequest) {
       p_quantity: quantity,
       p_client_request_id: idempotencyKey,
     };
-    console.log('[PURCHASE] RPC call: purchase_merch_with_heartcoins_v4', rpcParams);
+    console.log('[PURCHASE] RPC call: purchase_merch_with_heartcoins_v4', {
+      ...rpcParams,
+      expected_payment_type: normalizedPaymentType,
+    });
 
     const { data: rpcResult, error: rpcError } = await supabase.rpc(
       'purchase_merch_with_heartcoins_v4',
@@ -81,6 +112,9 @@ export async function POST(request: NextRequest) {
 
     if (rpcError) {
       console.error('[PURCHASE] RPC error:', rpcError);
+      if (rpcError.message?.includes('orders_payment_type_valid')) {
+        console.error('[PURCHASE] Constraint failure indicates bad payment_type in DB insert. Expected "heartcoins".');
+      }
 
       // Parse known error messages
       if (rpcError.message?.includes('INSUFFICIENT_HEARTCOINS')) {
@@ -110,7 +144,7 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.json(
-        { success: false, error: rpcError.message || 'Purchase failed', errorCode: 'RPC_FAILED' },
+        { success: false, error: rpcError.message || 'Purchase failed', errorCode: 'RPC_FAILED', payment_type_normalized: normalizedPaymentType },
         { status: 400 }
       );
     }
@@ -121,21 +155,67 @@ export async function POST(request: NextRequest) {
     // Treat "Already processed" as success (idempotency)
     if (result?.message === 'Already processed' || result?.idempotent) {
       console.log('[PURCHASE] Idempotent success:', result);
+      // Defensive: normalize payment_type on the order if present
+      try {
+        if (result?.order_id) {
+          const orderId = String(result.order_id);
+          const { data: orderRow } = await supabase
+            .from('orders')
+            .select('id, payment_type')
+            .eq('id', orderId)
+            .maybeSingle();
+          console.log('[PURCHASE] Existing order payment_type:', { orderId, payment_type: (orderRow as any)?.payment_type });
+          if ((orderRow as any)?.payment_type !== normalizedPaymentType) {
+            const { error: upErr } = await supabase
+              .from('orders')
+              .update({ payment_type: normalizedPaymentType })
+              .eq('id', orderId);
+            if (upErr) console.warn('[PURCHASE] Failed to normalize payment_type on idempotent order:', upErr);
+            else console.log('[PURCHASE] Normalized payment_type on idempotent order to', normalizedPaymentType);
+          }
+        }
+      } catch (normErr) {
+        console.warn('[PURCHASE] Normalization step failed (idempotent):', normErr);
+      }
       return NextResponse.json({
         success: true,
         order_id: result.order_id ? String(result.order_id) : null,
         amount_spent: result.amount_spent || result.total_heartcoins || 0,
         idempotent: true,
+        payment_type: normalizedPaymentType,
       });
     }
 
     // Normal success
     if (result?.success) {
       console.log('[PURCHASE] Success:', result);
+      // Defensive: normalize payment_type on the order if present
+      try {
+        if (result?.order_id) {
+          const orderId = String(result.order_id);
+          const { data: orderRow } = await supabase
+            .from('orders')
+            .select('id, payment_type')
+            .eq('id', orderId)
+            .maybeSingle();
+          console.log('[PURCHASE] Existing order payment_type:', { orderId, payment_type: (orderRow as any)?.payment_type });
+          if ((orderRow as any)?.payment_type !== normalizedPaymentType) {
+            const { error: upErr } = await supabase
+              .from('orders')
+              .update({ payment_type: normalizedPaymentType })
+              .eq('id', orderId);
+            if (upErr) console.warn('[PURCHASE] Failed to normalize payment_type:', upErr);
+            else console.log('[PURCHASE] Normalized payment_type to', normalizedPaymentType);
+          }
+        }
+      } catch (normErr) {
+        console.warn('[PURCHASE] Normalization step failed:', normErr);
+      }
       return NextResponse.json({
         success: true,
         order_id: result.order_id ? String(result.order_id) : null,
         amount_spent: result.amount_spent || result.total_heartcoins || 0,
+        payment_type: normalizedPaymentType,
       });
     }
 

@@ -7,6 +7,7 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { track } from "@/lib/analytics";
 import { useBonusQuests } from '@/hooks/useBonusQuests';
+import { useUserCards } from "@/hooks/useUserCards";
 import { BonusQuestWithCompletion } from '@/types/bonusQuests';
 import { useMerchItems } from '@/hooks/useMerchItems';
 import { useMerchPurchase } from '@/hooks/useMerchPurchase';
@@ -16,21 +17,28 @@ import { usePlanetRewardsContext } from '@/components/PlanetRewardsProvider';
 import { getElementalPlanetImage } from '@/lib/elementalPlanets';
 
 // Helper function to convert MerchItem to StoreItem for backward compatibility
-const merchItemToStoreItem = (merchItem: MerchItem): StoreItem => ({
-  id: merchItem.slug,
-  slug: merchItem.slug,
-  title: merchItem.name,
-  description: merchItem.description || '',
-  image: merchItem.image_url || '',
-  image2: merchItem.image_url_2 || undefined,
-  priceUsd: merchItem.cost_usd || 0,
-  priceHeartCoins: merchItem.price_heartcoins,
-  cost: merchItem.price_heartcoins,
-  physicalCost: merchItem.price_heartcoins,
-  stripeUrl: merchItem.stripe_url || '',
-  is_released: merchItem.is_active,
-  min_tier: merchItem.min_tier || 'wanderer'
-});
+const merchItemToStoreItem = (merchItem: MerchItem): StoreItem => {
+  // Special-case: beanie back image should use profile_url_2 when available
+  const backImage = merchItem.slug === 'beanie'
+    ? ((merchItem as any).profile_url_2 || merchItem.image_url_2)
+    : merchItem.image_url_2;
+
+  return {
+    id: merchItem.slug,
+    slug: merchItem.slug,
+    title: merchItem.name,
+    description: merchItem.description || '',
+    image: merchItem.image_url || '',
+    image2: backImage || undefined,
+    priceUsd: merchItem.cost_usd || 0,
+    priceHeartCoins: merchItem.price_heartcoins,
+    cost: merchItem.price_heartcoins,
+    physicalCost: merchItem.price_heartcoins,
+    stripeUrl: merchItem.stripe_url || '',
+    is_released: merchItem.is_active,
+    min_tier: merchItem.min_tier || 'wanderer'
+  };
+};
 
 // Store item interface
 interface StoreItem {
@@ -283,8 +291,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [showPhysicalConfirm, setShowPhysicalConfirm] = useState(false);
   const [showDigitalForm, setShowDigitalForm] = useState(false);
   const [currentMerchIndex, setCurrentMerchIndex] = useState(0);
-  // Enlarged merch modal state (must be defined before effects referencing it)
-  const [enlargedMerchItem, setEnlargedMerchItem] = useState<StoreItem | null>(null);
+  // Enlarged merch modal state - single source of truth for merch selection
+  // Use full MerchItem object so confirm payload and UI stay in sync
+  const [activeMerchItem, setActiveMerchItem] = useState<MerchItem | null>(null);
   const [showEnlargedConfirm, setShowEnlargedConfirm] = useState(false);
   
   const [inviteFriendShared, setInviteFriendShared] = useState(false);
@@ -326,6 +335,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // useRef for SYNCHRONOUS check - not affected by React's async state batching
   // This ref is checked immediately and blocks duplicate calls before any async work
   const purchaseInFlightRef = useRef(false);
+  // Separate in-flight ref for card purchases to avoid cross-interference with merch
+  const cardPurchaseInFlightRef = useRef(false);
   // useState for UI reactivity (button disabled state, showing "PROCESSING...")
   const [isPurchasing, setIsPurchasing] = useState(false);
   // Store idempotencyKey in ref to ensure it's stable across re-renders
@@ -536,7 +547,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!open || activeTab !== 'USE' || activeUseTab !== 'MERCH') return;
       // Only in main MERCH view (not enlarged modal)
-      if (enlargedMerchItem) return;
+      if (activeMerchItem) return;
       // Ignore when typing in inputs/textareas/contenteditable
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
@@ -556,7 +567,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, activeTab, activeUseTab, PHYSICAL_ITEMS.length, enlargedMerchItem]);
+  }, [open, activeTab, activeUseTab, PHYSICAL_ITEMS.length, activeMerchItem]);
 
   // Mobile swipe navigation for MERCH items (← / → via swipe)
   const touchStartXRef = useRef<number | null>(null);
@@ -564,7 +575,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const touchStartTimeRef = useRef<number | null>(null);
 
   const handleMerchTouchStart = (e: React.TouchEvent) => {
-    if (!open || activeTab !== 'USE' || activeUseTab !== 'MERCH' || enlargedMerchItem) return;
+    if (!open || activeTab !== 'USE' || activeUseTab !== 'MERCH' || activeMerchItem) return;
     if (e.touches.length !== 1) return;
     const t = e.touches[0];
     touchStartXRef.current = t.clientX;
@@ -573,7 +584,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   };
 
   const handleMerchTouchEnd = (e: React.TouchEvent) => {
-    if (!open || activeTab !== 'USE' || activeUseTab !== 'MERCH' || enlargedMerchItem) return;
+    if (!open || activeTab !== 'USE' || activeUseTab !== 'MERCH' || activeMerchItem) return;
     const startX = touchStartXRef.current;
     const startY = touchStartYRef.current;
     const startTime = touchStartTimeRef.current;
@@ -795,10 +806,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [isAnimatingFlip, setIsAnimatingFlip] = useState(false); // For smooth flip transition
   const [merchRotation, setMerchRotation] = useState(0); // For merch 360° spin mode
   const [isMerchAnimatingFlip, setIsMerchAnimatingFlip] = useState(false); // For merch flip transition
-  // enlargedMerchItem state is declared earlier for effect ordering
+  // activeMerchItem state is declared earlier for effect ordering
   const [showCheckInSuccess, setShowCheckInSuccess] = useState(false);
   const [isSubmittingPhrase, setIsSubmittingPhrase] = useState(false);
   const [statusType, setStatusType] = useState<'idle' | 'success' | 'error'>('idle');
+  // Hook to allow explicit user_cards refresh after purchases
+  const { refresh: refreshUserCards } = useUserCards(profile?.id);
   
   // State for secret phrase quest
   const [secretPhraseInputVisible, setSecretPhraseInputVisible] = useState<string | null>(null);
@@ -830,7 +843,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
     try {
       const { data, error } = await supabaseBrowser.rpc('redeem_daily_secret_phrase', {
-        p_phrase: cleaned,
+        input_phrase: cleaned,
       });
 
       if (error) {
@@ -845,7 +858,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         });
 
         // Error mapping per requirements
-        if (status === 409 || code === '23505') {
+        if (code === 'P0003' || status === 409 || code === '23505') {
           return { status: 'already_redeemed' };
         }
         if (code === 'P0002') {
@@ -860,11 +873,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       const row = Array.isArray(data) ? data[0] : data;
 
       try {
-        console.log('[SECRET_PHRASE] redeemed payload:', {
-          reward: row?.reward ?? row?.granted_amount ?? 0,
-          active_date: row?.active_date ?? row?.activeDate ?? null,
-          raw: row,
-        });
+        if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
+          console.debug('[secret-phrase]', {
+            ok: true,
+            day: row?.active_date ?? row?.activeDate ?? row?.day ?? null,
+            reward: row?.reward ?? row?.granted_amount ?? 0,
+          });
+        }
       } catch {}
 
       return {
@@ -1062,18 +1077,35 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
     try {
       const { data, error } = await supabaseBrowser.rpc(
-        'redeem_secret_phrase',
-        { p_phrase: phraseLower }
+        'redeem_daily_secret_phrase',
+        { input_phrase: phraseLower }
       );
 
       if (error) {
+        const status = (error as any)?.status ?? (error as any)?.statusCode;
+        const code = (error as any)?.code as string | undefined;
         console.error('Secret phrase RPC error:', {
+          status,
           message: (error as any)?.message,
           details: (error as any)?.details,
           hint: (error as any)?.hint,
-          code: (error as any)?.code,
+          code,
         });
-        setCheckInMessage('Failed to redeem secret phrase');
+
+        if (code === 'P0002') {
+          setCheckInMessage('Incorrect secret phrase for today.');
+          try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Incorrect secret phrase for today.', type: 'error' } })); } catch {}
+        } else if (code === 'P0003' || status === 409 || code === '23505') {
+          setCheckInMessage('Already redeemed today.');
+          try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Already redeemed today.', type: 'info' } })); } catch {}
+        } else if (code === 'P0001') {
+          setCheckInMessage('Log in to redeem.');
+          try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Log in to redeem.', type: 'error' } })); } catch {}
+          // Prompt login modal
+          try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('openWelcomeHomeModal')); } catch {}
+        } else {
+          setCheckInMessage('Failed to redeem secret phrase');
+        }
         setStatusType('error');
         setTimeout(() => {
           setCheckInMessage("");
@@ -1083,61 +1115,36 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       }
 
       // Normalize RPC response shape (array or single object)
-      const result = (Array.isArray(data) ? data[0] : data) as { status?: string; awarded?: number; reward?: number } | null;
-      const status = result?.status;
+      const result = (Array.isArray(data) ? data[0] : data) as { reward?: number; granted_amount?: number; day?: string; active_date?: string } | null;
+      const reward = result?.reward ?? result?.granted_amount ?? 0;
 
-      if (status === 'success' || status === 'redeemed') {
-        const reward = result?.awarded ?? result?.reward ?? 0;
-        setSecretPhraseValue('');
-        setSecretPhraseInputVisible(null);
-        setCheckInMessage(`Secret phrase accepted! +${reward} HeartCoins`);
-        setStatusType('success');
-        setShowCheckInSuccess(true);
+      setSecretPhraseValue('');
+      setSecretPhraseInputVisible(null);
+      setCheckInMessage(`Secret phrase accepted! +${reward} HeartCoins`);
+      setStatusType('success');
+      setShowCheckInSuccess(true);
 
-        // Refresh profile to update HeartCoins balance
-        await refreshProfile();
+      // dev-only debug
+      try {
+        if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
+          console.debug('[secret-phrase]', { ok: true, day: result?.active_date ?? (result as any)?.day ?? null, reward });
+        }
+      } catch {}
 
-        // Also refresh quests to update completion status
-        await refetchQuests();
+      // Refresh profile to update HeartCoins balance
+      await refreshProfile();
 
-        setTimeout(() => {
-          setShowCheckInSuccess(false);
-          setCheckInMessage("");
-          setStatusType('idle');
-        }, 3000);
+      // Also refresh quests to update completion status
+      await refetchQuests();
 
-        try { sfx.play('click', 0.7); } catch {}
-      } else if (status === 'already_redeemed' || status === 'already_checked_in') {
-        setCheckInMessage('Already redeemed');
-        setStatusType('error');
-        setTimeout(() => {
-          setCheckInMessage("");
-          setStatusType('idle');
-        }, 3000);
-      } else if (status === 'invalid' || status === 'incorrect') {
-        setCheckInMessage('Incorrect phrase');
-        setStatusType('error');
-        setTimeout(() => {
-          setCheckInMessage("");
-          setStatusType('idle');
-        }, 3000);
-      } else if (status === 'not_authenticated') {
-        setCheckInMessage('Please log in to redeem');
-        setStatusType('error');
-        setTimeout(() => {
-          setCheckInMessage("");
-          setStatusType('idle');
-        }, 3000);
-      } else {
-        // Unknown status
-        console.warn('Unknown secret phrase status:', result);
-        setCheckInMessage('Failed to redeem secret phrase');
-        setStatusType('error');
-        setTimeout(() => {
-          setCheckInMessage("");
-          setStatusType('idle');
-        }, 3000);
-      }
+      setTimeout(() => {
+        setShowCheckInSuccess(false);
+        setCheckInMessage("");
+        setStatusType('idle');
+      }, 3000);
+
+      try { sfx.play('click', 0.7); } catch {}
+      try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: `Redeemed +${reward} HeartCoins`, type: 'success' } })); } catch {}
     } catch (error: any) {
       console.error('Secret phrase quest error:', {
         message: error?.message,
@@ -1253,6 +1260,116 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     // Don't call onOpenBlueDisplay here - let the store open instead
   };
 
+  // Confirm handler for DIGITAL card purchases via Supabase RPC
+  const handleConfirmCardPurchase = async () => {
+    console.log('[CARD PURCHASE] Confirm clicked', {
+      card: enlargedCard?.card_name,
+      cardId: enlargedCard?.id,
+      type: showCardConfirm,
+      cost: showCardConfirm === 'digital' ? (enlargedCard?.digitalCost || 5) : (enlargedCard?.physicalCost || 20),
+      heartCoins,
+      isPurchasing,
+      inFlightRef: cardPurchaseInFlightRef.current,
+    });
+
+    // Guards with logs for every early return
+    if (isPurchasing) {
+      console.warn('[CARD PURCHASE] GUARD: isPurchasing already true');
+      return;
+    }
+    if (cardPurchaseInFlightRef.current) {
+      console.warn('[CARD PURCHASE] GUARD: cardPurchaseInFlightRef already true');
+      return;
+    }
+    if (!profile?.id) {
+      console.warn('[CARD PURCHASE] GUARD: missing profile/user');
+      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Please log in to buy cards', type: 'error' } })); } catch {}
+      return;
+    }
+    if (!enlargedCard?.id) {
+      console.warn('[CARD PURCHASE] GUARD: missing selectedCardId');
+      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'No card selected', type: 'error' } })); } catch {}
+      return;
+    }
+    if (showCardConfirm !== 'digital') {
+      console.warn('[CARD PURCHASE] GUARD: confirm type is not digital');
+      return;
+    }
+    const cost = enlargedCard?.digitalCost || 5;
+    if (heartCoins == null) {
+      console.warn('[CARD PURCHASE] GUARD: missing balance in UI');
+    }
+    if ((profile?.heartcoin_balance ?? heartCoins ?? 0) < cost) {
+      console.warn('[CARD PURCHASE] GUARD: insufficient balance', { balance: profile?.heartcoin_balance ?? heartCoins ?? 0, cost });
+      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Not enough HeartCoins', type: 'error' } })); } catch {}
+      return;
+    }
+
+    // Set in-flight BEFORE any async work and ensure reset in finally
+    cardPurchaseInFlightRef.current = true;
+    setIsPurchasing(true);
+    console.log('[CARD PURCHASE] In-flight set TRUE');
+
+    try {
+      // Single authoritative call to backend
+      const { data, error } = await supabaseBrowser.rpc('purchase_digital_card', { p_card_id: enlargedCard.id });
+
+      if (error) {
+        console.error('[CARD PURCHASE] RPC error', {
+          message: (error as any)?.message,
+          code: (error as any)?.code,
+          details: (error as any)?.details,
+          hint: (error as any)?.hint,
+          full: error,
+        });
+
+        const msg = (error as any)?.message?.toLowerCase?.() || '';
+        const alreadyOwned = msg.includes('already') || msg.includes('owned') || msg.includes('conflict') || msg.includes('duplicate');
+        if (alreadyOwned) {
+          try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Already owned', type: 'info' } })); } catch {}
+        } else {
+          try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Couldn’t complete purchase', type: 'error' } })); } catch {}
+        }
+        return; // Early return on error; finally will reset flags
+      }
+
+      // Success path: update local UI balance immediately if returned
+      const newBalance = (data as any)?.new_balance as number | undefined;
+      if (typeof newBalance === 'number') {
+        setHeartCoins(newBalance);
+        onHeartCoinsChange?.(newBalance);
+      }
+      try { sfx.play('card-ding', 0.8); } catch {}
+
+      // Kick off refreshes from single source of truth
+      const refreshes: Promise<any>[] = [];
+      try { refreshes.push(refreshProfile()); } catch {}
+      try { if (typeof refreshUserCards === 'function') refreshes.push(refreshUserCards()); } catch {}
+      // Fire-and-forget binder/public views to re-query if they listen
+      try { window.dispatchEvent(new CustomEvent('userCards:refresh')); } catch {}
+      try { window.dispatchEvent(new CustomEvent('binder:refresh')); } catch {}
+
+      // Begin refresh before closing modal (avoid closing too early)
+      try { await Promise.race([Promise.allSettled(refreshes), new Promise(res => setTimeout(res, 300))]); } catch {}
+
+      // Close confirm and modal state after starting refresh
+      setShowCardConfirm(null);
+      setEnlargedCard(null);
+
+      // Success toast
+      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Card purchased', type: 'success' } })); } catch {}
+    } catch (err: any) {
+      console.error('[CARD PURCHASE] Unexpected error', err);
+      const message = err?.message || 'Unexpected error during purchase';
+      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message, type: 'error' } })); } catch {}
+    } finally {
+      // Always reset flags so it can’t fail silently
+      cardPurchaseInFlightRef.current = false;
+      setIsPurchasing(false);
+      console.log('[CARD PURCHASE] In-flight reset FALSE');
+    }
+  };
+
   // Store functionality
   const handleSelectItem = (item: StoreItem) => {
     setSelectedItem(item);
@@ -1290,17 +1407,22 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // MAIN PURCHASE HANDLER - SINGLE FUNCTION FOR API CALL
   // This is the ONLY place where purchaseWithHeartCoins is called
   // ============================================================
-  const handleConfirmPurchase = async () => {
-    // ============================================================
+  const handleConfirmPurchase = async (item?: MerchItem) => {
+    // Entry log for debugging silent exits
+    console.log('[PURCHASE] handleConfirmPurchase ENTER', {
+      isPurchasing,
+      inFlightRef: purchaseInFlightRef.current,
+      itemId: item?.id || null,
+      itemName: item?.name || null,
+    });
+
     // CRITICAL: Synchronous ref check FIRST - prevents double-submit
-    // This check is NOT affected by React's async state batching
-    // ============================================================
     if (purchaseInFlightRef.current) {
       console.warn('[PURCHASE] BLOCKED: Purchase already in flight (ref check in handleConfirmPurchase)');
       return;
     }
 
-    // Also check state (belt and suspenders)
+    // Also check state
     if (isPurchasing) {
       console.warn('[PURCHASE] BLOCKED: isPurchasing state is true');
       return;
@@ -1311,8 +1433,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       return;
     }
 
-    if (!purchaseDraft) {
-      console.error('[PURCHASE] No purchaseDraft available');
+    if (!item && !purchaseDraft) {
+      console.error('[PURCHASE] No item or purchaseDraft available');
       return;
     }
 
@@ -1327,15 +1449,27 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     // Clear any previous errors
     clearError();
 
-    // Use idempotencyKey from draft - generated once when PAY WITH was clicked
-    // Also store in ref to ensure stability
-    const { idempotencyKey, merchItemId, quantity, clientSlug } = purchaseDraft;
+    // Build payload: prefer explicit item, fallback to draft
+    let idempotencyKey = currentIdempotencyKeyRef.current || (typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}-xxxx-4xxx-yxxx-xxxxxxxxxxxx`.replace(/[xy]/g, c => {
+          const r = (Math.random() * 16) | 0;
+          const v = c === 'x' ? r : (r & 0x3) | 0x8;
+          return v.toString(16);
+        }));
+    const chosen = item ? { id: item.id, slug: item.slug, name: item.name } : null;
+    const merchItemId = item?.id || purchaseDraft!.merchItemId;
+    const quantity = 1;
+    const clientSlug = chosen?.slug || purchaseDraft?.clientSlug;
+    const itemName = chosen?.name || purchaseDraft?.itemName;
     currentIdempotencyKeyRef.current = idempotencyKey;
 
-    console.log('[PURCHASE] handleConfirmPurchase calling API (SINGLE CALL)', {
-      idempotencyKey,
+    console.log('[PURCHASE] calling API payload', {
       merchItemId,
       quantity,
+      idempotencyKey,
+      clientSlug,
+      itemName,
       userBalance: profile.heartcoin_balance,
     });
 
@@ -1343,12 +1477,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       // ============================================================
       // SINGLE API CALL - purchaseWithHeartCoins has its own ref guard
       // ============================================================
-      const purchaseResult = await purchaseWithHeartCoins({
-        merchItemId,
-        quantity,
-        clientSlug,
-        idempotencyKey,
-      });
+      const purchaseResult = await purchaseWithHeartCoins({ merchItemId, quantity, clientSlug, idempotencyKey });
+      console.log('[PURCHASE] API returned', purchaseResult);
 
       if (purchaseResult && purchaseResult.success) {
         console.log('[PURCHASE] Success, order created:', purchaseResult.order_id);
@@ -1363,24 +1493,38 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         await refreshProfile();
         console.log('[PURCHASE] Profile refreshed; new balance from Supabase');
 
-        // Clear purchaseDraft after successful purchase
+        // Success toast and inventory refresh event
+        try {
+          const name = itemName || 'item';
+          window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: `Purchased ${name}`, type: 'success' } }));
+        } catch {}
+        try { window.dispatchEvent(new CustomEvent('inventory:refresh')); } catch {}
+
+        // Close enlarged modal and clear draft
+        setActiveMerchItem(null);
+        setShowEnlargedConfirm(false);
         setPurchaseDraft(null);
         setShowHeartCoinPurchase(false);
         currentIdempotencyKeyRef.current = null;
 
       } else {
-        // Error is handled by the hook, but we can show it in our UI
+        // Error is handled by the hook; show toast and subtle inline message
         console.error('[PURCHASE] Failed:', purchaseError);
-        setCheckInMessage(purchaseError || "Purchase failed");
+        try {
+          window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: purchaseError || 'Purchase failed', type: 'error' } }));
+        } catch {}
+        setCheckInMessage(purchaseError || 'Purchase failed');
         setStatusType('error');
         setTimeout(() => {
           setCheckInMessage("");
           setStatusType('idle');
         }, 3000);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('[PURCHASE] Unexpected error:', err);
-      setCheckInMessage("Purchase failed unexpectedly");
+      const message = err?.message || 'Purchase failed unexpectedly';
+      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message, type: 'error' } })); } catch {}
+      setCheckInMessage(message);
       setStatusType('error');
       setTimeout(() => {
         setCheckInMessage("");
@@ -1690,6 +1834,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               setIsFromCollectCard(false);
               setEnlargedCard(null);
               setIsEnlargedCardFlipped(false);
+              // Clear any active merch selection to prevent stale state
+              setActiveMerchItem(null);
               try { onClose?.(); } catch {}
             }}
             className="absolute top-2 right-4 text-white hover:text-gray-200 cursor-pointer w-8 h-8 rounded-full border border-white/80 flex items-center justify-center"
@@ -2001,7 +2147,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           {activeEarnTab === 'DAILY QUESTS' && (
             <div className="mb-4 flex-1 min-h-0 flex flex-col gap-2">
             {/* Element of the Day */}
-            <div className="flex items-center justify-between p-2 rounded border border-white/30 bg-white/10 flex-1 min-h-0">
+            <div className="p-2 rounded border border-white/30 bg-white/10 flex-1 min-h-0 relative">
+              <div
+                className="absolute top-2 right-2 flex items-center"
+                style={{ color: dailyQuests.elementTapped ? '#666' : '#90EE90', textShadow: dailyQuests.elementTapped ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' }}
+              >
+                <span className="text-sm">{dailyQuests.elementTapped ? '✓ +1' : '+1'}</span>
+                <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8 ml-2" />
+              </div>
               <div>
                 <div className="text-sm font-bold" style={{ color: '#FFFFFF' }}>
                   1. Tap the Element of the Day
@@ -2010,31 +2163,21 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   Receive a random reward: HeartCoins, relics, or binder slot unlocks.
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="mt-2 flex flex-col items-center">
                 <button
                   onClick={handleElementTap}
                   disabled={dailyQuests.elementTapped}
-                  className="flex items-center space-x-1"
+                  className="flex items-center"
                 >
                   <img
                     src={getElementIcon(elementOfDay || 'heart')}
                     alt={`${elementOfDay || 'heart'} element`}
-                    className="w-8 h-8 rounded-full object-cover"
+                    className="w-16 h-16 rounded-full object-cover"
                     style={{
-                      filter: dailyQuests.elementTapped ? 'grayscale(1)' : 'drop-shadow(0 0 8px rgba(255,215,0,0.8))'
+                      filter: dailyQuests.elementTapped ? 'grayscale(1)' : 'drop-shadow(0 0 10px rgba(255,215,0,0.9))'
                     }}
                   />
                 </button>
-                <div className="flex flex-col items-center">
-                  <span className="text-[10px] font-bold" style={{
-                    color: dailyQuests.elementTapped ? '#666' : '#90EE90',
-                    textShadow: dailyQuests.elementTapped ? 'none' : '0 0 6px #90EE90'
-                  }}>Earn</span>
-                  <div className="flex items-center" style={{ color: dailyQuests.elementTapped ? '#666' : '#90EE90', textShadow: dailyQuests.elementTapped ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' }}>
-                    <span className="text-sm">{dailyQuests.elementTapped ? '✓ +1' : '+1'}</span>
-                    <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8 ml-2" />
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -2142,10 +2285,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         )}
                       </div>
                       <div className="flex flex-col items-center flex-shrink-0">
-                        <span className="text-[10px] font-bold" style={{
-                          color: (isQuestCompleted(quest) && quest.quest_key !== 'INVITE_FRIEND') ? '#666' : '#90EE90',
-                          textShadow: (isQuestCompleted(quest) && quest.quest_key !== 'INVITE_FRIEND') ? 'none' : '0 0 6px #90EE90'
-                        }}>Earn</span>
                         <div className="flex items-center" style={{
                           color: (isQuestCompleted(quest) && quest.quest_key !== 'INVITE_FRIEND') ? '#666' : '#90EE90',
                           textShadow: (isQuestCompleted(quest) && quest.quest_key !== 'INVITE_FRIEND') ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90'
@@ -2191,7 +2330,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   // Normalize phrase: trim, collapse spaces, lowercase
                                   const inputPhrase = autoTextValue.trim().replace(/\s+/g, ' ').toLowerCase();
                                   try {
-                                    const { data, error } = await supabaseBrowser.rpc('redeem_daily_secret_phrase', { p_phrase: inputPhrase });
+                                    const { data, error } = await supabaseBrowser.rpc('redeem_daily_secret_phrase', { input_phrase: inputPhrase });
                                     if (error) {
                                       const status = (error as any)?.status ?? (error as any)?.statusCode;
                                       const code = (error as any)?.code;
@@ -2203,25 +2342,27 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                         code,
                                       });
 
-                                      if (status === 409 || code === '23505') {
+                                      if (code === 'P0003' || status === 409 || code === '23505') {
                                         setPhraseStatus('already');
                                         setPhraseValidationResult('already');
                                         try { sfx.play('change-channel', 0.6); } catch {}
-                                        setCheckInMessage('Already redeemed.');
-                                        try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Already redeemed.', type: 'error' } })); } catch {}
+                                        setCheckInMessage('Already redeemed today.');
+                                        try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Already redeemed today.', type: 'info' } })); } catch {}
                                         setStatusType('error');
                                       } else if (code === 'P0002') {
                                         setPhraseStatus('incorrect');
                                         setPhraseValidationResult('incorrect');
                                         try { sfx.play('change-channel', 0.6); } catch {}
-                                        setCheckInMessage('Incorrect secret phrase.');
-                                        try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Incorrect secret phrase.', type: 'error' } })); } catch {}
+                                        setCheckInMessage('Incorrect secret phrase for today.');
+                                        try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Incorrect secret phrase for today.', type: 'error' } })); } catch {}
                                         setStatusType('error');
                                       } else if (code === 'P0001') {
                                         setPhraseStatus('error');
                                         setPhraseValidationResult('incorrect');
-                                        setCheckInMessage('You must be logged in.');
-                                        try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'You must be logged in.', type: 'error' } })); } catch {}
+                                        setCheckInMessage('Log in to redeem.');
+                                        try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Log in to redeem.', type: 'error' } })); } catch {}
+                                        // Prompt login modal
+                                        try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('openWelcomeHomeModal')); } catch {}
                                         setStatusType('error');
                                       } else {
                                         setPhraseStatus('error');
@@ -2243,7 +2384,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     setCheckInMessage(`Secret phrase accepted! +${reward} HeartCoins`);
                                     setStatusType('success');
                                     setShowCheckInSuccess(true);
-                                    try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: `Redeemed! +${reward} HeartCoins`, type: 'success' } })); } catch {}
+                                    // dev-only debug
+                                    try {
+                                      if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
+                                        console.debug('[secret-phrase]', { ok: true, day: row?.active_date ?? (row as any)?.day ?? null, reward });
+                                      }
+                                    } catch {}
+                                    try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: `Redeemed +${reward} HeartCoins`, type: 'success' } })); } catch {}
                                     await refreshProfile();
                                     await refetchQuests();
                                   } catch (error: any) {
@@ -2570,7 +2717,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       }}
                                       onClick={() => {
                                         try { sfx.play('click', 0.8); } catch {}
-                                        setEnlargedMerchItem(PHYSICAL_ITEMS[currentMerchIndex]);
+                                        const clicked = merchItems[currentMerchIndex];
+                                        if (clicked) {
+                                          console.log('[MERCH] Tile clicked', { id: clicked.id, name: clicked.name });
+                                          setActiveMerchItem(clicked);
+                                        }
                                       }}
                                     >
                                       <img
@@ -2654,35 +2805,16 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             textShadow: '0 0 4px rgba(144,238,144,0.8)',
                             boxShadow: '0 0 8px rgba(0,255,0,0.3)'
                           }}
-                          onClick={() => {
-                            // ============================================================
-                            // CRITICAL: Synchronous ref check FIRST
-                            // This prevents double-submit from StrictMode/FastRefresh
-                            // ============================================================
-                            if (purchaseInFlightRef.current) {
-                              console.warn('[PURCHASE] BLOCKED in onClick: ref already true');
-                              return;
-                            }
-                            if (isPurchasing) {
-                              console.warn('[PURCHASE] BLOCKED in onClick: state already true');
-                              return;
-                            }
-                            if (!purchaseDraft) {
-                              console.error('[PURCHASE] No purchaseDraft available');
-                              return;
-                            }
-                            // Do NOT set state here - handleConfirmPurchase does it
-                            // Just log and call the handler
-                            console.log('[PURCHASE] CONFIRM clicked, calling handler', {
-                              idempotencyKey: purchaseDraft.idempotencyKey,
-                              merchItemId: purchaseDraft.merchItemId,
-                            });
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Single entrypoint: handler manages in-flight guard & logging
+                            console.log('[PURCHASE] CONFIRM clicked, calling handler from bottom confirm');
                             handleConfirmPurchase();
                           }}
                           onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
                           disabled={isPurchasing || isProcessing}
                         >
-                          {isPurchasing || isProcessing ? 'PROCESSING...' : 'CONFIRM'}
+                          {isPurchasing || isProcessing ? 'Processing...' : 'CONFIRM'}
                         </button>
                       ) : (
                         <button
@@ -3328,13 +3460,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       onClick={(e) => {
                         e.stopPropagation();
                         try { sfx.play('click', 0.6); } catch {}
-                        // TODO: Handle card purchase confirmation
-                        console.log('[CARD PURCHASE] Confirm clicked', {
-                          card: enlargedCard.card_name,
-                          type: showCardConfirm,
-                          cost: showCardConfirm === 'digital' ? (enlargedCard.digitalCost || 5) : (enlargedCard.physicalCost || 20)
-                        });
-                        setShowCardConfirm(null);
+                        // Digital purchase confirm handler (physical handled elsewhere)
+                        if (showCardConfirm === 'digital') {
+                          handleConfirmCardPurchase();
+                        } else {
+                          console.warn('[CARD PURCHASE] GUARD: physical confirm clicked in HeartCoinButton, no handler here');
+                          try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Physical purchase flow coming soon', type: 'info' } })); } catch {}
+                        }
                       }}
                       disabled={heartCoins < (showCardConfirm === 'digital' ? (enlargedCard.digitalCost || 5) : (enlargedCard.physicalCost || 20))}
                       onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
@@ -3418,11 +3550,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           )}
 
           {/* Enlarged Merchandise Modal */}
-          {enlargedMerchItem && (
+          {activeMerchItem && (
             <div
               className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 rounded-lg"
               onClick={() => {
-                setEnlargedMerchItem(null);
+                setActiveMerchItem(null);
                 setMerchRotation(0);
                 setShowEnlargedConfirm(false);
               }}
@@ -3444,7 +3576,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 onClick={(e) => {
                   e.stopPropagation();
                   try { sfx.play('close', 0.7); } catch {}
-                  setEnlargedMerchItem(null);
+                  setActiveMerchItem(null);
                   setMerchRotation(0);
                   setShowEnlargedConfirm(false);
                 }}
@@ -3468,7 +3600,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       className="text-xl font-bold text-white text-center uppercase"
                       style={{ textShadow: '0 0 10px rgba(255,255,255,0.8)' }}
                     >
-                      {enlargedMerchItem.title}
+                      {activeMerchItem.name}
                     </div>
 
                     {/* User Balance */}
@@ -3491,7 +3623,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         className="text-lg font-bold"
                         style={{ textShadow: '0 0 8px rgba(255,215,0,0.8)' }}
                       >
-                        {enlargedMerchItem.priceHeartCoins}
+                        {activeMerchItem.price_heartcoins}
                       </span>
                     </div>
 
@@ -3500,47 +3632,27 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       onClick={(e) => {
                         e.stopPropagation();
                         try { sfx.play('click', 0.6); } catch {}
-                        // Find the corresponding merchItem by slug
-                        const currentMerchItem = merchItems.find(item => item.slug === enlargedMerchItem.slug);
-
-                        if (currentMerchItem) {
-                          const idempotencyKey = `${currentMerchItem.id}-${profile?.id}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-                          const draft: PurchaseDraft = {
-                            merchItemId: currentMerchItem.id,
-                            clientSlug: currentMerchItem.slug,
-                            quantity: 1,
-                            uiCost: currentMerchItem.price_heartcoins,
-                            source: 'MERCH',
-                            itemName: currentMerchItem.name,
-                            idempotencyKey,
-                          };
-                          console.log('[PURCHASE] CONFIRM clicked from enlarged modal, draft created', {
-                            idempotencyKey: draft.idempotencyKey,
-                            merchItemId: draft.merchItemId,
-                            itemName: draft.itemName,
-                          });
-                          setPurchaseDraft(draft);
-                        }
-                        setShowHeartCoinPurchase(true);
-                        setShowEnlargedConfirm(false);
+                        if (!activeMerchItem) return;
+                        // Single entrypoint: handler manages idempotency and logging
+                        handleConfirmPurchase(activeMerchItem);
                       }}
-                      disabled={heartCoins < enlargedMerchItem.priceHeartCoins}
+                      disabled={isPurchasing || heartCoins < (activeMerchItem?.price_heartcoins || 0)}
                       onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
                       className={`px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg hover:scale-110 ${
-                        heartCoins >= enlargedMerchItem.priceHeartCoins
+                        !isPurchasing && heartCoins >= (activeMerchItem?.price_heartcoins || 0)
                           ? 'border-green-500/60 bg-green-500/20 hover:bg-green-500/40 hover:border-green-400 hover:shadow-[0_0_30px_rgba(34,197,94,0.8)]'
                           : 'border-red-500/60 bg-red-500/20 cursor-not-allowed opacity-70 hover:shadow-[0_0_30px_rgba(239,68,68,0.8)]'
                       }`}
-                      style={heartCoins >= enlargedMerchItem.priceHeartCoins
+                      style={!isPurchasing && heartCoins >= (activeMerchItem?.price_heartcoins || 0)
                         ? { textShadow: '0 0 8px rgba(34,197,94,0.8)', boxShadow: '0 0 15px rgba(34,197,94,0.4)' }
                         : { textShadow: '0 0 8px rgba(239,68,68,0.8)', boxShadow: '0 0 15px rgba(239,68,68,0.4)' }
                       }
                     >
-                      CONFIRM
+                      {isPurchasing ? 'Processing...' : 'CONFIRM'}
                     </button>
 
                     {/* Not enough coins message */}
-                    {heartCoins < enlargedMerchItem.priceHeartCoins && (
+                    {heartCoins < (activeMerchItem?.price_heartcoins || 0) && (
                       <div className="text-red-400 text-xs" style={{ textShadow: '0 0 6px rgba(239,68,68,0.6)' }}>Not enough Heart Coins</div>
                     )}
                   </div>
@@ -3560,7 +3672,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     >
                       PAY WITH
                       <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5" />
-                      {enlargedMerchItem.priceHeartCoins}
+                      {activeMerchItem.price_heartcoins}
                     </button>
 
                     {/* TiltSpinCard wrapper for 3D rotation - with floating animation */}
@@ -3594,8 +3706,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       >
                         {/* Merchandise Image - Front */}
                         <img
-                          src={enlargedMerchItem.image}
-                          alt={enlargedMerchItem.title}
+                          src={activeMerchItem.image_url}
+                          alt={activeMerchItem.name}
                           className="absolute inset-0 w-full h-full object-contain pointer-events-none"
                           style={{
                             filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.3))',
@@ -3605,8 +3717,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         />
                         {/* Merchandise Image - Back */}
                         <img
-                          src={enlargedMerchItem.image2 || enlargedMerchItem.image}
-                          alt={`${enlargedMerchItem.title} back`}
+                          src={(activeMerchItem.slug === 'beanie' ? ((activeMerchItem as any).profile_url_2 || activeMerchItem.image_url_2) : activeMerchItem.image_url_2) || activeMerchItem.image_url}
+                          alt={`${activeMerchItem.name} back`}
                           className="absolute inset-0 w-full h-full object-contain pointer-events-none"
                           style={{
                             filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.3))',
@@ -3624,15 +3736,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         e.stopPropagation();
                         try { sfx.play('click', 0.6); } catch {}
                         // Open Stripe checkout in new tab
-                        if (enlargedMerchItem.stripeUrl) {
-                          window.open(enlargedMerchItem.stripeUrl, '_blank');
+                        if (activeMerchItem.stripe_url) {
+                          window.open(activeMerchItem.stripe_url, '_blank');
                         }
                       }}
                       onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
                       className="-mt-10 px-6 py-3 rounded border border-green-500/60 bg-green-500/20 hover:bg-green-500/40 hover:scale-110 hover:border-green-400 hover:shadow-[0_0_25px_rgba(34,197,94,0.7)] transition-all duration-200 text-white font-semibold text-sm flex items-center gap-2 whitespace-nowrap z-20 relative"
                       style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)', boxShadow: '0 0 12px rgba(34,197,94,0.3)' }}
                     >
-                      PAY WITH ${enlargedMerchItem.priceUsd}
+                      PAY WITH ${activeMerchItem.cost_usd || 0}
                     </button>
                   </>
                 )}
