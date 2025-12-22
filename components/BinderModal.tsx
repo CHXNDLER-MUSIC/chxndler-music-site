@@ -956,6 +956,19 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                             : 'border-white/10 cursor-pointer hover:scale-105'
                         }`}
                         onClick={() => {
+                          // CHXNDLER card is always clickable (first slot fallback)
+                          if (isFirstSlotWithChxndler) {
+                            try { sfx.play('card-ding', 0.45); } catch {}
+                            setSelectedCard({
+                              name: 'CHXNDLER',
+                              image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
+                              rarity: 'Common',
+                              element: 'ALL'
+                            });
+                            setCardRotation(0);
+                            setCardOpen(true);
+                            return;
+                          }
                           if (isLockedSlot) {
                             // Do nothing for locked slots
                             return;
@@ -970,17 +983,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                             });
                             setCardRotation(0);
                             setCardOpen(true);
-                          } else if (isFirstSlotWithChxndler) {
-                            try { sfx.play('card-ding', 0.45); } catch {}
-                            setSelectedCard({
-                              name: 'CHXNDLER',
-                              image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
-                              rarity: 'Common',
-                              element: 'ALL'
-                            });
-                            setCardRotation(0);
-                            setCardOpen(true);
-                          } else if (!hasCard && !isFirstSlotWithChxndler && !isLockedSlot) {
+                          } else if (!hasCard && !isLockedSlot) {
                             // Empty slot: open HeartCoin modal with CARDS tab
                             try { sfx.play('click', 0.4); } catch {}
                             try {
@@ -991,7 +994,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                           }
                         }}
                         onMouseEnter={() => {
-                          if (!isLockedSlot) {
+                          if (isFirstSlotWithChxndler || !isLockedSlot) {
                             try { sfx.play('hover', 0.3); } catch {}
                           }
                         }}

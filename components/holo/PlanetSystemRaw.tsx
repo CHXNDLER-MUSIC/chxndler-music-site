@@ -1916,13 +1916,16 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       if (centralPlanet.mesh) {
         const hovered = !!hov && centralPlanet.id === hov;
         const focused = !!centralPlanet.id; // Planet is focused when it's the central planet
-        const osc = hovered ? (1 + 0.08 * Math.sin(t * 3.5)) : (focused ? (1 + 0.04 * Math.sin(t * 2.0)) : 1);
-        const targetScale = (hovered ? 2.2 : (focused ? 2.0 : 1.6)) * osc; // Central planet is much larger and pulses when focused
+        // Enhanced hover: stronger pulse oscillation
+        const osc = hovered ? (1 + 0.14 * Math.sin(t * 3.5)) : (focused ? (1 + 0.04 * Math.sin(t * 2.0)) : 1);
+        const targetScale = (hovered ? 2.4 : (focused ? 2.0 : 1.6)) * osc; // Central planet is much larger and pulses when focused
         const ms = centralPlanet.mesh.scale;
-        ms.x += (targetScale - ms.x) * 0.18;
+        ms.x += (targetScale - ms.x) * 0.15;
         ms.y = ms.x; ms.z = ms.x;
-        // Position central planet at TRUE center
-        centralPlanet.mesh.position.set(0, 0, 0);
+
+        // Vertical bob for central planet when hovered
+        const yBob = hovered ? Math.sin(t * 2.5) * 3.0 : 0;
+        centralPlanet.mesh.position.set(0, yBob, 0);
         // Gentle rotation for the central planet
         centralPlanet.mesh.rotation.y += 0.003;
         // Keep heart planets right-side up
@@ -1942,7 +1945,9 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
               const childU: any = (child.material as any).uniforms;
               if (childU && childU.uTime) { childU.uTime.value = t; }
               if (childU && childU.uGlow) {
-                childU.uGlow.value += (((hovered ? 1.8 : 1.2)) - childU.uGlow.value) * 0.18;
+                // Enhanced glow for central planet on hover
+                const targetGlow = hovered ? 3.0 : 1.2;
+                childU.uGlow.value += (targetGlow - childU.uGlow.value) * 0.15;
               }
               
               // Update cloud layers on central planet
@@ -2032,11 +2037,21 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
         }
         
         const hovered = !!hov && s.id === hov;
-        const osc = hovered ? (1 + 0.06 * Math.sin(t * 3.2)) : 1;
-        const targetScale = (hovered ? 1.16 : 1.0) * osc;
+        // Enhanced hover effect: stronger pulse, larger scale, vertical bob
+        const osc = hovered ? (1 + 0.12 * Math.sin(t * 3.2)) : 1;
+        const targetScale = (hovered ? 1.35 : 1.0) * osc;
         const ms = s.mesh.scale;
-        ms.x += (targetScale - ms.x) * 0.18;
+        ms.x += (targetScale - ms.x) * 0.15;
         ms.y = ms.x; ms.z = ms.x;
+
+        // Vertical pulsing (up/down bob) when hovered
+        if (hovered) {
+          const yBob = Math.sin(t * 2.5) * 2.5; // Gentle vertical oscillation
+          s.mesh.position.y += (yBob - s.mesh.position.y) * 0.12;
+        } else {
+          // Return to neutral Y position
+          s.mesh.position.y += (0 - s.mesh.position.y) * 0.1;
+        }
         
         // Update planet shader uniforms
         try {
@@ -2047,11 +2062,13 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
             u.uTime.value = t;
           }
           
-          // Update atmosphere if present
+          // Update atmosphere if present - enhanced glow on hover
           if (s.atmosphereMesh && s.atmosphereMesh.material) {
             const atmU: any = (s.atmosphereMesh.material as any).uniforms;
             if (atmU && atmU.uGlow) {
-              atmU.uGlow.value += (((hovered ? 1.5 : 1.0)) - atmU.uGlow.value) * 0.18;
+              // Much stronger glow when hovered (2.8x vs 1.0x)
+              const targetGlow = hovered ? 2.8 : 1.0;
+              atmU.uGlow.value += (targetGlow - atmU.uGlow.value) * 0.15;
             }
           }
           

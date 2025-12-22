@@ -48,6 +48,18 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
     }
   }, [isLoggedIn]);
 
+  // Listen for closeWelcomeHomeModal event (e.g., when hamburger menu is clicked)
+  useEffect(() => {
+    const handleCloseWelcomeHomeModal = () => {
+      if (open) {
+        onClose();
+      }
+    };
+
+    window.addEventListener('closeWelcomeHomeModal', handleCloseWelcomeHomeModal);
+    return () => window.removeEventListener('closeWelcomeHomeModal', handleCloseWelcomeHomeModal);
+  }, [open, onClose]);
+
   // Safety check: Never show welcome modal for logged-in users
   if (isLoggedIn) {
     return null;
@@ -156,15 +168,15 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
       </div>
       
       {/* Welcome Modal - holographic popup */}
-      <div 
-        className="fixed inset-0 flex items-center justify-center"
+      <div
+        className="fixed inset-0 flex items-center justify-center pointer-events-none"
         style={{
           zIndex: 2147483648,
           marginTop: '-220px'
         }}
       >
         <div
-          className="welcome-hologram-container"
+          className="welcome-hologram-container pointer-events-auto"
           style={{
             width: 'min(92vw, 700px)',
             minHeight: 'auto',

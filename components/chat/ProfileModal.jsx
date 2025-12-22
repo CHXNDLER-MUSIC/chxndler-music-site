@@ -229,10 +229,10 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
                   </button>
                 </div>
 
-                {/* User Name and HeartCoins */}
+                {/* User Name and Element/ALIEN Indicator */}
                 <div className="text-center mb-6">
-                  <h2 
-                    className="text-2xl font-bold mb-3"
+                  <h2
+                    className="text-2xl font-bold mb-2"
                     style={{
                       color: elementColor,
                       textShadow: `0 0 15px ${elementColor}60`
@@ -240,31 +240,51 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
                   >
                     {displayName}
                   </h2>
-                  
-                  {/* HeartCoins Display */}
-                  <div className="flex items-center justify-center space-x-2 mb-4">
-                    <img
-                      src="/elements/heart.webp"
-                      alt="HeartCoin"
-                      className="w-8 h-8"
-                      style={{
-                        filter: 'drop-shadow(0 0 8px rgba(252, 84, 175, 0.8))'
-                      }}
-                    />
-                    <span
-                      className="text-2xl font-bold"
-                      style={{
-                        color: '#FC54AF',
-                        textShadow: '0 0 10px rgba(252, 84, 175, 0.8)'
-                      }}
-                    >
-                      {profileData?.heartcoin_total || 0}
-                    </span>
-                    <span className="text-sm text-white/60 ml-1">HeartCoins</span>
+
+                  {/* Element/ALIEN Indicator */}
+                  <div className="flex items-center justify-center gap-2 mb-4">
+                    {user.element ? (
+                      <>
+                        <ElementIcon
+                          name={user.element}
+                          width={24}
+                          height={24}
+                        />
+                        <span
+                          className="text-sm font-semibold uppercase"
+                          style={{
+                            color: elementColor,
+                            textShadow: `0 0 8px ${elementColor}60`
+                          }}
+                        >
+                          {user.element}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <img
+                          src="/elements/alien.webp"
+                          alt="Alien"
+                          className="w-6 h-6"
+                          style={{
+                            filter: 'drop-shadow(0 0 6px rgba(0, 255, 127, 0.8))'
+                          }}
+                        />
+                        <span
+                          className="text-sm font-semibold"
+                          style={{
+                            color: '#00FF7F',
+                            textShadow: '0 0 8px rgba(0, 255, 127, 0.6)'
+                          }}
+                        >
+                          ALIEN
+                        </span>
+                      </>
+                    )}
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex justify-center gap-3">
+                  {/* Action Buttons - Binder, Badges, Send HeartCoin */}
+                  <div className="flex justify-center gap-3 mb-4">
                     {/* Send HeartCoin Button - only show for other users */}
                     {!isOwnProfile && (
                       <button
@@ -370,6 +390,28 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
                         Badges
                       </span>
                     </button>
+                  </div>
+
+                  {/* HeartCoins Display */}
+                  <div className="flex items-center justify-center space-x-2 mt-4">
+                    <img
+                      src="/elements/heart.webp"
+                      alt="HeartCoin"
+                      className="w-8 h-8"
+                      style={{
+                        filter: 'drop-shadow(0 0 8px rgba(252, 84, 175, 0.8))'
+                      }}
+                    />
+                    <span
+                      className="text-2xl font-bold"
+                      style={{
+                        color: '#FC54AF',
+                        textShadow: '0 0 10px rgba(252, 84, 175, 0.8)'
+                      }}
+                    >
+                      {profileData?.heartcoin_total || 0}
+                    </span>
+                    <span className="text-sm text-white/60 ml-1">HeartCoins</span>
                   </div>
                 </div>
               </div>

@@ -16,6 +16,26 @@ const ELEMENT_COLORS: Record<string, { color: string; glow: string; emoji: strin
   darkness: { color: "#FFFFFF", glow: "#E0E0E0", emoji: "🌑", label: "DARKNESS" },
 };
 
+// Type for card data from UserCards
+type CardData = {
+  id: string;
+  card_name: string;
+  element: string;
+  rarity: string;
+  is_released?: boolean;
+  min_tier?: string;
+  artwork_url?: string;
+};
+
+// Rarity colors for card display
+const RARITY_COLORS: Record<string, { bg: string; border: string; glow: string }> = {
+  common: { bg: 'rgba(156, 163, 175, 0.2)', border: '#9CA3AF', glow: '#9CA3AF40' },
+  uncommon: { bg: 'rgba(34, 197, 94, 0.2)', border: '#22C55E', glow: '#22C55E40' },
+  rare: { bg: 'rgba(59, 130, 246, 0.2)', border: '#3B82F6', glow: '#3B82F640' },
+  epic: { bg: 'rgba(168, 85, 247, 0.2)', border: '#A855F7', glow: '#A855F740' },
+  legendary: { bg: 'rgba(251, 191, 36, 0.2)', border: '#FBBF24', glow: '#FBBF2440' },
+};
+
 export default function PublicJournalFeed() {
   // Public feed - no auth dependency for viewing entries
   const { entries, loading, error, refreshEntries } = usePublicSoulJournalEntries();
@@ -25,6 +45,7 @@ export default function PublicJournalFeed() {
   const [showIntegratedBinder, setShowIntegratedBinder] = useState<{[key: string]: boolean}>({});
   const [showBadgesModal, setShowBadgesModal] = useState<{[key: string]: boolean}>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [enlargedCard, setEnlargedCard] = useState<{ entryId: string; card: CardData } | null>(null);
 
   // Check auth state only for starring functionality (not for viewing)
   useEffect(() => {
@@ -367,8 +388,8 @@ export default function PublicJournalFeed() {
                       </div>
                     </div>
 
-                    {/* Integrated Binder Display - Show when BINDER is clicked */}
-                    {showIntegratedBinder[entry.entry_id] && (
+                    {/* Integrated Binder Display - Show when BINDER is clicked, hide when card is enlarged */}
+                    {showIntegratedBinder[entry.entry_id] && enlargedCard?.entryId !== entry.entry_id && (
                       <div
                         className="rounded-lg px-3 py-2 mb-2"
                         style={{
@@ -382,7 +403,125 @@ export default function PublicJournalFeed() {
                           embedded={true}
                           showTitle={true}
                           maxCards={4}
+                          onCardClick={(card) => {
+                            try { sfx.play('card-ding', 0.5); } catch {}
+                            setEnlargedCard({ entryId: entry.entry_id, card });
+                          }}
                         />
+                      </div>
+                    )}
+
+                    {/* Enlarged Card View - Full display when a card is clicked */}
+                    {enlargedCard?.entryId === entry.entry_id && (
+                      <div
+                        className="relative rounded-lg p-4 mb-2 animate-in fade-in zoom-in-95 duration-200"
+                        style={{
+                          background: 'rgba(0, 0, 0, 0.95)',
+                          border: `2px solid ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4'}`,
+                          boxShadow: `0 0 30px ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.glow || '#FF69B440'}, inset 0 0 60px rgba(0,0,0,0.5)`
+                        }}
+                      >
+                        {/* Close button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            try { sfx.play('click', 0.4); } catch {}
+                            setEnlargedCard(null);
+                          }}
+                          onMouseEnter={() => {
+                            try { sfx.play('hover', 0.6); } catch {}
+                          }}
+                          className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 z-10"
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.1)',
+                            border: '1px solid rgba(255, 255, 255, 0.3)',
+                          }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                          </svg>
+                        </button>
+
+                        {/* Card display */}
+                        <div className="flex flex-col items-center">
+                          {/* Rarity label */}
+                          <div
+                            className="text-xs font-bold uppercase tracking-wider mb-2 px-3 py-1 rounded-full"
+                            style={{
+                              color: RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4',
+                              background: RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.bg || 'rgba(255, 105, 180, 0.2)',
+                              border: `1px solid ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4'}40`,
+                              textShadow: `0 0 10px ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4'}`
+                            }}
+                          >
+                            {enlargedCard.card.rarity?.toUpperCase() || 'COMMON'}
+                          </div>
+
+                          {/* Card image - large */}
+                          <div
+                            className="relative rounded-xl overflow-hidden mb-3"
+                            style={{
+                              width: '100%',
+                              maxWidth: '280px',
+                              aspectRatio: '3/4',
+                              boxShadow: `0 0 40px ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.glow || '#FF69B440'}`
+                            }}
+                          >
+                            <img
+                              src={enlargedCard.card.artwork_url || '/cards/default-card.webp'}
+                              alt={enlargedCard.card.card_name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = '/cards/default-card.webp';
+                              }}
+                            />
+                          </div>
+
+                          {/* Card name */}
+                          <h3
+                            className="text-xl font-bold text-center mb-1"
+                            style={{
+                              color: RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4',
+                              textShadow: `0 0 15px ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4'}80`
+                            }}
+                          >
+                            {enlargedCard.card.card_name}
+                          </h3>
+
+                          {/* Element badge */}
+                          <div
+                            className="text-sm font-medium uppercase tracking-wider px-3 py-1 rounded-full"
+                            style={{
+                              color: ELEMENT_COLORS[enlargedCard.card.element?.toLowerCase()]?.color || '#FFFFFF',
+                              background: 'rgba(0, 0, 0, 0.4)',
+                              border: `1px solid ${ELEMENT_COLORS[enlargedCard.card.element?.toLowerCase()]?.color || '#FFFFFF'}40`,
+                              textShadow: `0 0 8px ${ELEMENT_COLORS[enlargedCard.card.element?.toLowerCase()]?.glow || '#FFFFFF'}`
+                            }}
+                          >
+                            {enlargedCard.card.element?.toUpperCase() || 'UNKNOWN'}
+                          </div>
+
+                          {/* Back to Collection button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              try { sfx.play('click', 0.4); } catch {}
+                              setEnlargedCard(null);
+                            }}
+                            onMouseEnter={() => {
+                              try { sfx.play('hover', 0.6); } catch {}
+                            }}
+                            className="mt-4 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105"
+                            style={{
+                              background: 'rgba(255, 105, 180, 0.2)',
+                              border: '1px solid #FF69B460',
+                              color: '#FF69B4',
+                              textShadow: '0 0 8px #FF69B4'
+                            }}
+                          >
+                            Back to Collection
+                          </button>
+                        </div>
                       </div>
                     )}
 

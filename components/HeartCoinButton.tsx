@@ -472,6 +472,21 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     return () => window.removeEventListener('openHeartCoinCards', handleOpenHeartCoinCards as EventListener);
   }, []);
 
+  // Listen for closeHeartCoinModal event (e.g., when login button is clicked)
+  useEffect(() => {
+    const handleCloseHeartCoinModal = () => {
+      if (open) {
+        setOpen(false);
+        setIsFromHamburger(false);
+        setIsFromCollectCard(false);
+        try { onClose?.(); } catch {}
+      }
+    };
+
+    window.addEventListener('closeHeartCoinModal', handleCloseHeartCoinModal);
+    return () => window.removeEventListener('closeHeartCoinModal', handleCloseHeartCoinModal);
+  }, [open, onClose]);
+
   // Fetch cards from Supabase
   const fetchCards = useCallback(async () => {
     setIsLoadingCards(true);
@@ -1567,8 +1582,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       
       {/* Heart Coins Modal */}
       {open && (
-        <div 
-          className="fixed inset-0 z-[2147483647] flex items-start justify-center"
+        <div
+          className="fixed inset-0 z-[2147483647] flex items-start justify-center pointer-events-none"
           style={{
             paddingTop: '80px'
           }}

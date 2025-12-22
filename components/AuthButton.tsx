@@ -116,7 +116,8 @@ export default function AuthButton() {
 
     switch (buttonMode) {
       case 'login':
-        // Mode A: Not logged in - show Welcome Home modal
+        // Mode A: Not logged in - close any open modals first, then show Welcome Home modal
+        window.dispatchEvent(new CustomEvent('closeHeartCoinModal'));
         setShowWelcomeHome(true);
         break;
         
