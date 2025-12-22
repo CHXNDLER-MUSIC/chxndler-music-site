@@ -638,7 +638,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
                         fontWeight: 600
                       }}
                       title="View profile"
-                      disabled={!msg?.user_id || isSystemMsg}
+                      disabled={!msg?.user_id}
                     >
                       {displayName}
                     </button>
@@ -656,7 +656,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
                       className="text-sm break-words"
                       style={{ color: '#C084FC', textAlign: 'left' }}
                       title="View profile"
-                      disabled={!msg?.user_id || isSystemMsg}
+                      disabled={!msg?.user_id}
                     >
                       {msg.message}
                     </button>
@@ -796,7 +796,11 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
         isOwnProfile={!!(user?.id && selectedUser?.id && user.id === selectedUser.id)}
       />
 
-      <div className="p-4 border-t border-purple-500/30 mt-4">
+      <div
+        className="p-4 border-t border-purple-500/30 mt-4"
+        // Ensure the input area isn't overlapped by iOS home indicator/toolbars
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.5rem)' }}
+      >
         <div className="flex gap-2">
           <input
             type="text"

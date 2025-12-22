@@ -262,7 +262,11 @@ export default function SignalChat({
             animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, x: 50, y: 50 }}
             transition={{ duration: 0.3 }}
-            className="fixed bottom-24 right-6 w-80 h-96 bg-black/95 border border-purple-500/50 rounded-lg shadow-2xl z-40 flex flex-col"
+            className="fixed right-4 sm:right-6 w-[90vw] max-w-[20rem] sm:w-80 h-[60vh] sm:h-96 bg-black/95 border border-purple-500/50 rounded-lg shadow-2xl z-40 flex flex-col"
+            // Keep the panel above the toggle and respect safe-area on mobile
+            style={{
+              bottom: 'calc(env(safe-area-inset-bottom, 0px) + 6rem)'
+            }}
           >
             {/* Header */}
             <div className="p-3 border-b border-purple-500/30 flex items-center justify-between">
@@ -308,7 +312,7 @@ export default function SignalChat({
                           className="font-medium text-left"
                           style={{ color: getUserTextColor(msg.user_id) }}
                           title="View profile"
-                          disabled={!msg?.user_id || isSystemMsg}
+                          disabled={!msg?.user_id}
                         >
                           {displayName}
                         </button>
@@ -326,7 +330,7 @@ export default function SignalChat({
                           className="break-words text-left"
                           style={{ color: getUserTextColor(msg.user_id) }}
                           title="View profile"
-                          disabled={!msg?.user_id || isSystemMsg}
+                          disabled={!msg?.user_id}
                         >
                           {msg.message}
                         </button>
@@ -341,7 +345,11 @@ export default function SignalChat({
             </div>
 
             {/* Input */}
-            <div className="p-3 border-t border-purple-500/30">
+            <div
+              className="p-3 border-t border-purple-500/30"
+              // Prevent iOS home indicator/toolbar from overlapping the input
+              style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.25rem)' }}
+            >
               <div className="flex gap-2">
                 <input
                   type="text"

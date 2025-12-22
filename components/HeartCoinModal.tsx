@@ -1438,6 +1438,19 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 {message}
               </div>
             )}
+
+            {/* USE: Description toggle (exactly matches EARN copy) */}
+            <div className="text-center mb-4">
+              {showHeartCoinDescription ? (
+                <div className="text-white/80 text-sm leading-relaxed space-y-2">
+                  <p>HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting, and showing up.</p>
+                  <p>Complete quests. Attend community events. Engage with the Heartverse.</p>
+                  <p>Use your HeartCoins to unlock collectibles and cards, and deepen your place in the community.</p>
+                </div>
+              ) : (
+                <p className="text-white/80 text-sm">HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting, and showing up.</p>
+              )}
+            </div>
             
             {/* Store Items Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[60vh] overflow-y-auto pr-2">
@@ -1660,6 +1673,18 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       </div>
     ) : isUseMode && activeTab === 'cards' ? (
       <div>
+        {/* USE: Description toggle (exactly matches EARN copy) */}
+        <div className="text-center mb-4">
+          {showHeartCoinDescription ? (
+            <div className="text-white/80 text-sm leading-relaxed space-y-2">
+              <p>HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting, and showing up.</p>
+              <p>Complete quests. Attend community events. Engage with the Heartverse.</p>
+              <p>Use your HeartCoins to unlock collectibles and cards, and deepen your place in the community.</p>
+            </div>
+          ) : (
+            <p className="text-white/80 text-sm">HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting, and showing up.</p>
+          )}
+        </div>
         {/* Show card view if an element is selected */}
         {selectedElement !== null ? (
           <div className="relative">

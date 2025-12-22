@@ -2563,8 +2563,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     {PHYSICAL_ITEMS[currentMerchIndex].title.toUpperCase()}
                                   </div>
                                   <div className="relative flex items-center justify-center">
-                                    <div 
-                                      className="w-28 h-28 -mt-1 flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-200"
+                                    <div
+                                      className="w-36 h-36 -mt-1 flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-200"
                                       onMouseEnter={() => {
                                         try { sfx.play('hover', 0.3); } catch {}
                                       }}
@@ -2612,7 +2612,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       <span className="text-white text-sm font-bold">→</span>
                                     </button>
                                   </div>
-                                  {/* Item index moved near description below */}
+                                  {/* Item index: place directly under image */}
+                                  <div className="mt-1 text-center text-white/70 text-xs" style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}>
+                                    {currentMerchIndex + 1} of {PHYSICAL_ITEMS.length}
+                                  </div>
                                   
                                   {/* PAY WITH $ button moved to bottom action bar */}
                                 </div>
@@ -2628,13 +2631,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     </div>
                   )}
 
-                  {/* Bottom description and index above action bar - Only show when NOT in heart coin purchase mode */}
+                  {/* Bottom description (removed PAY WITH button) - Only show when NOT in heart coin purchase mode */}
                   {activeUseTab === 'MERCH' && PHYSICAL_ITEMS[currentMerchIndex] && !purchaseDraft && (
-                    <div className="absolute left-6 right-6 bottom-16" style={{ lineHeight: '1.3' }}>
-                      <div className="text-center text-white/70 text-xs mb-1" style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}>
-                        {currentMerchIndex + 1} of {PHYSICAL_ITEMS.length}
-                      </div>
-                      <div className="text-xs text-white/90" style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}>
+                    <div className="absolute left-6 right-6 bottom-4" style={{ lineHeight: '1.3' }}>
+                      <div className="text-xs text-white/90 mb-2" style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}>
                         {PHYSICAL_ITEMS[currentMerchIndex].description}
                       </div>
                     </div>
@@ -2642,7 +2642,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
                   {/* CONFIRM button for heart coin purchase - renders from purchaseDraft */}
                   {activeUseTab === 'MERCH' && purchaseDraft && showHeartCoinPurchase && (
-                    <div className="absolute left-6 right-6 bottom-16">
+                    <div className="absolute left-6 right-6 bottom-4">
                       {/* Check balance against purchaseDraft.uiCost (server is authoritative for actual deduction) */}
                       {(profile?.id ? heartCoins : 0) >= (purchaseDraft.uiCost || 0) ? (
                         <button
@@ -2702,73 +2702,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     </div>
                   )}
 
-                  {/* Bottom action bar for MERCH payments */}
-                  {activeUseTab === 'MERCH' && PHYSICAL_ITEMS[currentMerchIndex] && (
-                    <div className="absolute left-6 right-6 bottom-4 flex gap-2">
-                      <button
-                        onClick={() => {
-                          try { sfx.play('click', 0.6); } catch {}
-                          window.open(PHYSICAL_ITEMS[currentMerchIndex].stripeUrl, '_blank');
-                        }}
-                        onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-                        className="flex-1 px-4 py-3 rounded border border-green-500/60 bg-green-500/20 hover:bg-green-500/40 hover:scale-105 hover:border-green-400 hover:shadow-[0_0_25px_rgba(34,197,94,0.7)] transition-all duration-200 text-white font-semibold text-xs whitespace-nowrap"
-                        style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)', boxShadow: '0 0 8px rgba(34,197,94,0.3)' }}
-                      >
-                        PAY WITH ${PHYSICAL_ITEMS[currentMerchIndex].priceUsd % 1 === 0 ? PHYSICAL_ITEMS[currentMerchIndex].priceUsd.toFixed(0) : PHYSICAL_ITEMS[currentMerchIndex].priceUsd.toFixed(1)}
-                      </button>
-                      <button
-                        onClick={() => {
-                          try { sfx.play('click', 0.6); } catch {}
-                          // Get the CURRENT displayed MerchItem at this exact moment
-                          const currentMerchItem = merchItems[currentMerchIndex];
-
-                          // Toggle off if already showing for this item
-                          if (purchaseDraft && purchaseDraft.merchItemId === currentMerchItem?.id) {
-                            console.log('[PURCHASE] Toggling off purchaseDraft');
-                            setPurchaseDraft(null);
-                            setShowHeartCoinPurchase(false);
-                            return;
-                          }
-
-                          // Create purchaseDraft from CURRENT displayed item - this is the source of truth
-                          if (currentMerchItem) {
-                            // Generate idempotencyKey ONCE here - reused on confirm, never regenerated
-                            const idempotencyKey = crypto.randomUUID();
-                            const draft: PurchaseDraft = {
-                              merchItemId: currentMerchItem.id,  // Use .id NOT .merch_item_id
-                              clientSlug: currentMerchItem.slug,
-                              quantity: 1,
-                              uiCost: currentMerchItem.price_heartcoins,
-                              source: 'MERCH',
-                              itemName: currentMerchItem.name,
-                              idempotencyKey,  // Stored on draft, not regenerated on confirm
-                            };
-                            console.log('[PURCHASE] PAY WITH clicked, draft created', {
-                              idempotencyKey: draft.idempotencyKey,
-                              merchItemId: draft.merchItemId,
-                              itemName: draft.itemName,
-                            });
-                            setPurchaseDraft(draft);
-                            setSelectedItem(PHYSICAL_ITEMS[currentMerchIndex]);
-                            setShowHeartCoinPurchase(true);
-                          }
-                        }}
-                        onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-                        disabled={isPurchasing}
-                        className={`flex-1 px-4 py-3 rounded border cursor-pointer transition-all duration-200 text-white font-semibold flex items-center justify-center gap-1 text-xs whitespace-nowrap hover:scale-105 ${
-                          isPurchasing ? 'opacity-50 cursor-not-allowed' : ''
-                        } ${
-                          purchaseDraft && purchaseDraft.merchItemId === merchItems[currentMerchIndex]?.id
-                            ? 'border-yellow-400 bg-yellow-500/40 shadow-[0_0_20px_rgba(255,215,0,0.6)]'
-                            : 'border-yellow-500/60 bg-yellow-500/20 hover:bg-yellow-500/40 hover:border-yellow-400 hover:shadow-[0_0_25px_rgba(255,215,0,0.7)]'
-                        }`}
-                      >
-                        PAY WITH
-                        <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-4 h-4" />
-                        {PHYSICAL_ITEMS[currentMerchIndex].priceHeartCoins}
-                      </button>
-                    </div>
-                  )}
 
                   {/* CARDS Tab Content */}
                   {activeUseTab === 'CARDS' && (
@@ -2923,14 +2856,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   {/* Single Card Display */}
                             <div key={card.id} className="flex flex-col items-center text-center max-w-full h-full" onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}>
 
-                              {/* Card Index Indicator - moved above image */}
-                              <div
-                                className="text-center text-white/70 text-xs mb-2"
-                                style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}
-                              >
-                                {currentCardIndex + 1} of {filteredCards.length}
-                              </div>
-
                               {/* Card Image with Navigation Arrows */}
                               <div className="flex items-center justify-center gap-4 mb-4">
                                 {/* Left Arrow - Always visible */}
@@ -2943,7 +2868,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   }}
                                   className={`w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center transition-all duration-200 border-2 ${
                                     filteredCards.length > 1
-                                      ? 'text-white hover:text-yellow-400 border-white/30 hover:border-yellow-400/60'
+                                      ? 'text-white hover:text-yellow-400 border-white/30 hover:border-yellow-400/60 hover:scale-125'
                                       : 'text-white/30 border-white/10 cursor-default'
                                   }`}
                                   style={{
@@ -2987,7 +2912,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 }}
                                 className={`w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center transition-all duration-200 border-2 ${
                                   filteredCards.length > 1
-                                    ? 'text-white hover:text-yellow-400 border-white/30 hover:border-yellow-400/60'
+                                    ? 'text-white hover:text-yellow-400 border-white/30 hover:border-yellow-400/60 hover:scale-125'
                                     : 'text-white/30 border-white/10 cursor-default'
                                 }`}
                                 style={{
@@ -2998,6 +2923,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 <span style={{ fontSize: '20px' }}>→</span>
                               </button>
                             </div>
+
+                              {/* Card Index Indicator - below image */}
+                              <div
+                                className="text-center text-white/70 text-xs mb-2"
+                                style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}
+                              >
+                                {currentCardIndex + 1} of {filteredCards.length}
+                              </div>
 
                               {/* Card Details - Below Image */}
                               <div className="w-full max-w-md flex-1 flex flex-col justify-end">

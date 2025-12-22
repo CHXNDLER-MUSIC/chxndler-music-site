@@ -1003,15 +1003,17 @@ export default function ChatPanel({ isOpen, onClose }) {
                 id,
                 card_id,
                 acquired_at,
+                is_public,
                 cards (
                   id,
                   card_name,
                   element,
                   rarity,
-                  image_url
+                  artwork_url
                 )
               `)
-              .eq('user_id', userId);
+              .eq('user_id', userId)
+              .eq('is_public', true);
 
             if (error) {
               DEBUG && console.log('🔥 Error fetching user cards:', error);
