@@ -20,6 +20,7 @@ import { TourProvider } from "@/contexts/TourContext";
 import { MenuStateProvider } from "@/contexts/MenuStateContext";
 import CustomCursor from "@/components/CustomCursor";
 import HeartCoinCelebration from "@/components/HeartCoinCelebration";
+import MerchCelebration from "@/components/MerchCelebration";
 import BadgeCelebration from "@/components/BadgeCelebration";
 import CardCelebration from "@/components/CardCelebration";
 import BadgeCelebrationController from "@/components/BadgeCelebrationController";
@@ -159,6 +160,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
             <CardCelebration />
             <HeartCoinCelebration />
+            <MerchCelebration />
             <BadgeCelebration />
             <BadgeCelebrationController />
                   </PlanetRewardsProvider>

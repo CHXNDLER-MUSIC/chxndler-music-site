@@ -14,6 +14,7 @@ import {
   disposeHaloResources,
 } from '@/utils/hologramHalo';
 import Image from 'next/image';
+import { sfx } from '@/lib/sfx';
 
 export type ElementType = 'heart' | 'water' | 'lightning' | 'darkness';
 
@@ -25,6 +26,8 @@ interface PlanetPopup {
   element: ElementType | 'center';
   slug: string;
   isSong: boolean;
+  // Reference to the 3D object for position tracking
+  targetObject?: THREE.Object3D;
 }
 
 export interface Pure3DPlanetsProps {
@@ -92,9 +95,22 @@ export default function Pure3DPlanets({
   // Keep reference to glow sprite for focused song
   const songGlowSpriteRef = useRef<THREE.Sprite | null>(null);
 
+  // Track selected planet for visual effects (glow, scale, oscillate)
+  const selectedPlanetRef = useRef<THREE.Object3D | null>(null);
+  const selectedPlanetBaseScaleRef = useRef<THREE.Vector3 | null>(null);
+  const selectedPlanetBaseYRef = useRef<number | null>(null);
+  const selectedGlowSpriteRef = useRef<THREE.Sprite | null>(null);
+  // Store popup state in a ref for animation loop access
+  const planetPopupRef = useRef<PlanetPopup | null>(null);
+
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // Sync popup ref with state for animation loop access
+  useEffect(() => {
+    planetPopupRef.current = planetPopup;
+  }, [planetPopup]);
 
   // Sync isCinematic ref with state for animation loop access
   useEffect(() => {
@@ -228,13 +244,13 @@ export default function Pure3DPlanets({
         map: texture,
         transparent: true,
         depthWrite: false,
-        opacity: 0.45,
+        opacity: 0.7,
         blending: THREE.AdditiveBlending,
         color: 0xffffff,
       });
       const sprite = new THREE.Sprite(material);
       sprite.position.set(...position);
-      sprite.scale.set(scale * 6.2, scale * 6.2, 1);
+      sprite.scale.set(scale * 7.5, scale * 7.5, 1);
       sprite.renderOrder = -1;
       return sprite as THREE.Sprite;
     };
@@ -243,6 +259,136 @@ export default function Pure3DPlanets({
     const sunY = 12;
     const sun = createElementSprite('/textures/center-planet.webp', 2.5, [0, sunY, 0], 0xff69b4);
     scene.add(sun);
+
+    // === HOLOGRAM GRID FLOOR ===
+    // Create a holographic grid floor beneath the planets
+    const createHologramGridFloor = () => {
+      const gridSize = 120; // World units
+      const cellSize = 3; // Size of each grid cell
+      const textureSize = 64;
+      const lineColor = '#33e9ff';
+      const lineAlpha = 0.7;
+
+      // Create grid texture
+      const canvas = document.createElement('canvas');
+      canvas.width = textureSize;
+      canvas.height = textureSize;
+      const ctx = canvas.getContext('2d')!;
+
+      // Transparent background
+      ctx.clearRect(0, 0, textureSize, textureSize);
+
+      // Draw grid lines (top and left edges only to avoid double lines at seams)
+      ctx.strokeStyle = lineColor;
+
+      // Soft glow outer line
+      ctx.globalAlpha = lineAlpha * 0.25;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0.5, 0.5);
+      ctx.lineTo(textureSize - 0.5, 0.5);
+      ctx.moveTo(0.5, 0.5);
+      ctx.lineTo(0.5, textureSize - 0.5);
+      ctx.stroke();
+
+      // Crisp main line
+      ctx.globalAlpha = lineAlpha;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0.5, 0.5);
+      ctx.lineTo(textureSize - 0.5, 0.5);
+      ctx.moveTo(0.5, 0.5);
+      ctx.lineTo(0.5, textureSize - 0.5);
+      ctx.stroke();
+
+      const gridTexture = new THREE.CanvasTexture(canvas);
+      gridTexture.wrapS = THREE.RepeatWrapping;
+      gridTexture.wrapT = THREE.RepeatWrapping;
+      gridTexture.minFilter = THREE.LinearMipMapLinearFilter;
+      gridTexture.magFilter = THREE.NearestFilter;
+      gridTexture.generateMipmaps = true;
+      gridTexture.colorSpace = THREE.SRGBColorSpace;
+
+      // Set repeat based on grid size and cell size
+      const repeatCount = Math.floor(gridSize / cellSize);
+      gridTexture.repeat.set(repeatCount, repeatCount);
+      gridTexture.needsUpdate = true;
+
+      // Primary grid plane (horizontal, lying flat on XZ plane)
+      const gridGeometry = new THREE.PlaneGeometry(gridSize, gridSize, 1, 1);
+      const gridMaterial = new THREE.MeshBasicMaterial({
+        map: gridTexture,
+        transparent: true,
+        opacity: 0.22,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        color: new THREE.Color(0x33e9ff),
+      });
+
+      const gridMesh = new THREE.Mesh(gridGeometry, gridMaterial);
+      // Rotate to lie flat (horizontal) and position below the orbital plane
+      gridMesh.rotation.x = -Math.PI / 2;
+      gridMesh.position.y = -5; // Below the orbital plane
+      gridMesh.renderOrder = -100;
+
+      // Secondary fainter grid layer for depth effect
+      const gridMaterial2 = new THREE.MeshBasicMaterial({
+        map: gridTexture,
+        transparent: true,
+        opacity: 0.1,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        color: new THREE.Color(0x29d9ff),
+      });
+
+      const gridMesh2 = new THREE.Mesh(gridGeometry.clone(), gridMaterial2);
+      gridMesh2.rotation.x = -Math.PI / 2;
+      gridMesh2.position.y = -5.5; // Slightly below primary grid
+      gridMesh2.renderOrder = -101;
+
+      // Create a circular fade-out gradient overlay to make grid fade at edges
+      const fadeCanvas = document.createElement('canvas');
+      fadeCanvas.width = 256;
+      fadeCanvas.height = 256;
+      const fadeCtx = fadeCanvas.getContext('2d')!;
+      const fadeGradient = fadeCtx.createRadialGradient(128, 128, 0, 128, 128, 128);
+      fadeGradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+      fadeGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.8)');
+      fadeGradient.addColorStop(0.8, 'rgba(255, 255, 255, 0.3)');
+      fadeGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      fadeCtx.fillStyle = fadeGradient;
+      fadeCtx.fillRect(0, 0, 256, 256);
+
+      const fadeTexture = new THREE.CanvasTexture(fadeCanvas);
+      fadeTexture.needsUpdate = true;
+
+      // Fade plane to mask grid edges
+      const fadeMaterial = new THREE.MeshBasicMaterial({
+        map: fadeTexture,
+        transparent: true,
+        opacity: 1,
+        depthWrite: false,
+        blending: THREE.MultiplyBlending,
+        side: THREE.DoubleSide,
+      });
+
+      const fadeMesh = new THREE.Mesh(new THREE.PlaneGeometry(gridSize * 1.2, gridSize * 1.2), fadeMaterial);
+      fadeMesh.rotation.x = -Math.PI / 2;
+      fadeMesh.position.y = -4.9;
+      fadeMesh.renderOrder = -99;
+
+      const gridGroup = new THREE.Group();
+      gridGroup.add(gridMesh2);
+      gridGroup.add(gridMesh);
+      // Note: Multiply blending for fade doesn't work well with additive, skip fade mask
+
+      return { group: gridGroup, texture: gridTexture };
+    };
+
+    const hologramGrid = createHologramGridFloor();
+    scene.add(hologramGrid.group);
 
     // Orbiting planets evenly spaced (90 degrees apart) around the sun
     const orbitRadius = 18;
@@ -416,11 +562,94 @@ export default function Pure3DPlanets({
 
     // Element display names
     const elementNames: Record<string, string> = {
-      center: 'Heart Sun',
+      center: 'Heartverse',
       heart: 'Heart',
       water: 'Water',
       lightning: 'Lightning',
       darkness: 'Darkness'
+    };
+
+    // Get element color for glow (used in click handler)
+    const getElementColor = (element: ElementType | 'center'): string => {
+      const colors: Record<string, string> = {
+        center: '#FC54AF',
+        heart: '#FC54AF',
+        water: '#38B6FF',
+        lightning: '#F2EF1D',
+        darkness: '#6A4C93'
+      };
+      return colors[element] || '#FC54AF';
+    };
+
+    // Helper to clear previous selection effects
+    const clearSelectionEffects = () => {
+      // Restore previous selected planet scale and position
+      if (selectedPlanetRef.current && selectedPlanetBaseScaleRef.current) {
+        selectedPlanetRef.current.scale.copy(selectedPlanetBaseScaleRef.current);
+      }
+      if (selectedPlanetRef.current && selectedPlanetBaseYRef.current !== null) {
+        selectedPlanetRef.current.position.y = selectedPlanetBaseYRef.current;
+      }
+      // Remove previous selection glow
+      if (selectedGlowSpriteRef.current) {
+        selectedGlowSpriteRef.current.parent?.remove(selectedGlowSpriteRef.current);
+        try {
+          const mat = selectedGlowSpriteRef.current.material as THREE.SpriteMaterial;
+          if (mat?.map) mat.map.dispose();
+          mat?.dispose();
+        } catch {}
+        selectedGlowSpriteRef.current = null;
+      }
+      selectedPlanetRef.current = null;
+      selectedPlanetBaseScaleRef.current = null;
+      selectedPlanetBaseYRef.current = null;
+    };
+
+    // Helper to set up selection effects on a planet
+    const setupSelectionEffects = (obj: THREE.Object3D, glowColor: string) => {
+      clearSelectionEffects();
+
+      selectedPlanetRef.current = obj;
+      selectedPlanetBaseScaleRef.current = obj.scale.clone();
+      selectedPlanetBaseYRef.current = obj.position.y;
+
+      // Create glow sprite for the selected planet
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+        // Parse hex color to rgb
+        const hex = glowColor.replace('#', '');
+        const r = parseInt(hex.slice(0, 2), 16);
+        const g = parseInt(hex.slice(2, 4), 16);
+        const b = parseInt(hex.slice(4, 6), 16);
+        gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 1)`);
+        gradient.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, 0.6)`);
+        gradient.addColorStop(0.6, `rgba(${r}, ${g}, ${b}, 0.3)`);
+        gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 128, 128);
+      }
+      const glowTexture = new THREE.CanvasTexture(canvas);
+      glowTexture.needsUpdate = true;
+
+      const glowMaterial = new THREE.SpriteMaterial({
+        map: glowTexture,
+        transparent: true,
+        depthWrite: false,
+        opacity: 0.7,
+        blending: THREE.AdditiveBlending,
+      });
+      const glowSprite = new THREE.Sprite(glowMaterial);
+      // Scale based on object size
+      const baseScale = Math.max(obj.scale.x, obj.scale.y, obj.scale.z);
+      glowSprite.scale.set(baseScale * 2.5, baseScale * 2.5, 1);
+      glowSprite.renderOrder = -1;
+      glowSprite.position.copy(obj.position);
+      obj.parent?.add(glowSprite);
+      selectedGlowSpriteRef.current = glowSprite;
     };
 
     // Click handler
@@ -440,15 +669,20 @@ export default function Pure3DPlanets({
         const obj = intersects[0].object as any;
         const intersectionPoint = intersects[0].point;
 
+        // Play click sound
+        try { sfx.play('click', 0.5); } catch {}
+
         if (obj === sun) {
           const screenPos = projectToScreen(intersectionPoint);
+          setupSelectionEffects(obj, '#FC54AF');
           setPlanetPopup({
             x: screenPos.x,
             y: screenPos.y,
-            name: 'Heart Sun',
+            name: 'Heartverse',
             element: 'center',
             slug: 'center',
-            isSong: false
+            isSong: false,
+            targetObject: obj
           });
           return;
         }
@@ -494,13 +728,15 @@ export default function Pure3DPlanets({
 
           // Show popup for element planet
           const screenPos = projectToScreen(intersectionPoint);
+          setupSelectionEffects(obj, getElementColor(elementId));
           setPlanetPopup({
             x: screenPos.x,
             y: screenPos.y,
             name: elementNames[elementId] || elementId,
             element: elementId,
             slug: elementId,
-            isSong: false
+            isSong: false,
+            targetObject: obj
           });
           return;
         }
@@ -514,13 +750,15 @@ export default function Pure3DPlanets({
           const songTitle = song?.title || songSlug;
 
           const screenPos = projectToScreen(intersectionPoint);
+          setupSelectionEffects(obj, getElementColor(songElement || 'heart'));
           setPlanetPopup({
             x: screenPos.x,
             y: screenPos.y,
             name: songTitle,
             element: songElement || 'heart',
             slug: songSlug,
-            isSong: true
+            isSong: true,
+            targetObject: obj
           });
           return;
         }
@@ -530,18 +768,21 @@ export default function Pure3DPlanets({
           if (og.group.children.includes(obj)) {
             const elementId = planets[idx].id as ElementType;
             const screenPos = projectToScreen(intersectionPoint);
+            setupSelectionEffects(obj, getElementColor(elementId));
             setPlanetPopup({
               x: screenPos.x,
               y: screenPos.y,
               name: elementNames[elementId] || elementId,
               element: elementId,
               slug: elementId,
-              isSong: false
+              isSong: false,
+              targetObject: obj
             });
           }
         });
       } else {
-        // Clicked on empty space - dismiss popup
+        // Clicked on empty space - dismiss popup and clear selection effects
+        clearSelectionEffects();
         setPlanetPopup(null);
       }
     };
@@ -644,23 +885,38 @@ export default function Pure3DPlanets({
         updateHaloAnimation(halo, elapsed, 1.2, 0.12);
       });
 
+      // Animate hologram grid floor
+      if (hologramGrid.texture) {
+        // Subtle opacity pulse on grid
+        const gridPulse = 0.18 + Math.sin(elapsed * 0.8) * 0.04;
+        hologramGrid.group.children.forEach((child, idx) => {
+          if ((child as THREE.Mesh).material) {
+            const mat = (child as THREE.Mesh).material as THREE.MeshBasicMaterial;
+            mat.opacity = idx === 0 ? gridPulse * 0.5 : gridPulse;
+          }
+        });
+
+        // Slowly scroll the grid texture for scanning effect
+        hologramGrid.texture.offset.y = (elapsed * 0.02) % 1;
+      }
+
       // Pulse animation for the daily element glow (only when not claimed)
       if (glowingElement && !hasClaimedElementOfDay) {
         const glowSprite = glowSpriteMapRef.current.get(glowingElement);
         if (glowSprite && glowSprite.material) {
-          // Pulse opacity using sine wave: 0.3 to 0.6 range for subtle effect
-          const pulseValue = 0.35 + Math.sin(elapsed * 3) * 0.15;
+          // Stronger pulse opacity: 0.5 to 0.9 range for prominent glow
+          const pulseValue = 0.7 + Math.sin(elapsed * 2.5) * 0.2;
           (glowSprite.material as THREE.SpriteMaterial).opacity = pulseValue;
 
-          // Pulse scale slightly: 6.0 to 6.5 range
-          const scaleValue = 6.0 + Math.sin(elapsed * 2) * 0.3;
+          // Larger pulse scale: 7.0 to 9.0 range for breathing effect
+          const scaleValue = 8.0 + Math.sin(elapsed * 1.8) * 1.0;
           glowSprite.scale.set(scaleValue, scaleValue, 1);
         }
-        // Also add a very subtle pulse to the target planet sprite
+        // Add a more noticeable pulse to the target planet sprite
         const planetSprite = elementSpriteMapRef.current.get(glowingElement);
         if (planetSprite) {
           const baseScale = (planetSprite as any).userData?.baseScale || planetSprite.scale.x || 9;
-          const s = 1 + Math.sin(elapsed * 2) * 0.02;
+          const s = 1 + Math.sin(elapsed * 2) * 0.05;
           planetSprite.scale.set(baseScale * s, baseScale * s, 1);
         }
       }
@@ -674,6 +930,45 @@ export default function Pure3DPlanets({
         // Pulse scale slightly: 4.5 to 5.5 range
         const songPulseScale = 5.0 + Math.sin(elapsed * 1.8) * 0.5;
         songGlowSpriteRef.current.scale.set(songPulseScale, songPulseScale, 1);
+      }
+
+      // Animate selected planet: scale pulse, oscillate up/down, glow pulse
+      if (selectedPlanetRef.current && selectedPlanetBaseScaleRef.current && selectedPlanetBaseYRef.current !== null) {
+        const baseSc = selectedPlanetBaseScaleRef.current;
+        const baseY = selectedPlanetBaseYRef.current;
+
+        // Scale pulse: 1.0 to 1.15 range
+        const scaleFactor = 1.0 + Math.sin(elapsed * 2.5) * 0.075 + 0.075; // 1.0 to 1.15
+        selectedPlanetRef.current.scale.set(
+          baseSc.x * scaleFactor,
+          baseSc.y * scaleFactor,
+          baseSc.z * scaleFactor
+        );
+
+        // Oscillate up/down: subtle bob of 0.3 units
+        const yOffset = Math.sin(elapsed * 2) * 0.3;
+        selectedPlanetRef.current.position.y = baseY + yOffset;
+
+        // Also update the glow sprite position to match
+        if (selectedGlowSpriteRef.current) {
+          selectedGlowSpriteRef.current.position.y = baseY + yOffset;
+
+          // Pulse glow opacity and scale
+          const glowOpacity = 0.5 + Math.sin(elapsed * 3) * 0.2;
+          (selectedGlowSpriteRef.current.material as THREE.SpriteMaterial).opacity = glowOpacity;
+
+          const glowScale = baseSc.x * scaleFactor * 2.5 + Math.sin(elapsed * 2) * 0.5;
+          selectedGlowSpriteRef.current.scale.set(glowScale, glowScale, 1);
+        }
+      }
+
+      // Update popup position to track planet as it rotates
+      if (planetPopupRef.current && planetPopupRef.current.targetObject) {
+        const worldPos = new THREE.Vector3();
+        planetPopupRef.current.targetObject.getWorldPosition(worldPos);
+        const screenPos = projectToScreen(worldPos);
+        // Update popup state with new position
+        setPlanetPopup(prev => prev ? { ...prev, x: screenPos.x, y: screenPos.y } : null);
       }
 
       // Camera lerp for smooth easing (hover bias and cinematic focus)
@@ -747,6 +1042,28 @@ export default function Pure3DPlanets({
         }
         focusedSongSlugRef.current = null;
       } catch {}
+      // Clear selected planet glow and refs
+      try {
+        if (selectedGlowSpriteRef.current) {
+          selectedGlowSpriteRef.current.parent?.remove(selectedGlowSpriteRef.current);
+          const mat = selectedGlowSpriteRef.current.material as THREE.SpriteMaterial;
+          if (mat?.map) mat.map.dispose();
+          mat?.dispose();
+          selectedGlowSpriteRef.current = null;
+        }
+        selectedPlanetRef.current = null;
+        selectedPlanetBaseScaleRef.current = null;
+        selectedPlanetBaseYRef.current = null;
+      } catch {}
+      // Dispose hologram grid textures and materials
+      try {
+        if (hologramGrid.texture) hologramGrid.texture.dispose();
+        hologramGrid.group.children.forEach(child => {
+          const mesh = child as THREE.Mesh;
+          if (mesh.material) (mesh.material as THREE.Material).dispose();
+          if (mesh.geometry) mesh.geometry.dispose();
+        });
+      } catch {}
       // Clear maps on teardown
       try { songMeshMapRef.current.clear(); } catch {}
       try { glowSpriteMapRef.current.clear(); } catch {}
@@ -777,7 +1094,7 @@ export default function Pure3DPlanets({
         const sprite = glowSpriteMapRef.current.get(glowingElement);
         if (sprite && sprite.material) {
           const mat = sprite.material as THREE.SpriteMaterial;
-          let startOpacity = mat.opacity ?? 0.4;
+          let startOpacity = mat.opacity ?? 0.7;
           let start: number | null = null;
           const duration = 250; // ms
           const fade = (ts: number) => {
@@ -986,12 +1303,64 @@ export default function Pure3DPlanets({
     );
   }
 
-  // Handle warp button click
-  const handleWarpClick = () => {
-    if (planetPopup) {
-      onPlanetSelect?.(planetPopup.slug);
-      setPlanetPopup(null);
+  // Handle warp button click - triggers warp effect same as song dropdown
+  const handleWarpClick = async () => {
+    if (!planetPopup) return;
+
+    const slug = planetPopup.slug;
+
+    // Close the popup immediately
+    setPlanetPopup(null);
+
+    // Clear selection effects
+    if (selectedGlowSpriteRef.current) {
+      selectedGlowSpriteRef.current.parent?.remove(selectedGlowSpriteRef.current);
+      try {
+        const mat = selectedGlowSpriteRef.current.material as THREE.SpriteMaterial;
+        if (mat?.map) mat.map.dispose();
+        mat?.dispose();
+      } catch {}
+      selectedGlowSpriteRef.current = null;
     }
+    // Restore original scale/position
+    if (selectedPlanetRef.current && selectedPlanetBaseScaleRef.current) {
+      selectedPlanetRef.current.scale.copy(selectedPlanetBaseScaleRef.current);
+    }
+    if (selectedPlanetRef.current && selectedPlanetBaseYRef.current !== null) {
+      selectedPlanetRef.current.position.y = selectedPlanetBaseYRef.current;
+    }
+    selectedPlanetRef.current = null;
+    selectedPlanetBaseScaleRef.current = null;
+    selectedPlanetBaseYRef.current = null;
+
+    // Trigger warp effect via playerStore (hide planets during warp)
+    try {
+      const { playerStore } = await import("@/store/usePlayerStore");
+      const st = playerStore.getState();
+      if (st) {
+        st.setMain(slug);
+        st.setPlanetDisplayMode('hidden');
+        st.setPlanetsVisible(false);
+      }
+    } catch {}
+
+    // Play warp SFX
+    try {
+      await sfx.playAndWait('warp', 0.75);
+    } catch {}
+
+    // Reveal planets after warp
+    try {
+      const { playerStore } = await import("@/store/usePlayerStore");
+      const st = playerStore.getState();
+      if (st) {
+        st.setPlanetDisplayMode('single');
+        st.setPlanetsVisible(true);
+      }
+    } catch {}
+
+    // Call the original onPlanetSelect callback
+    onPlanetSelect?.(slug);
   };
 
   // Get element icon path

@@ -70,12 +70,18 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
             ×
           </button>
 
-          <h2 
-            className={`relative text-xl font-bold tracking-wider text-white drop-shadow mb-1 ${onTitleClick ? 'cursor-pointer hover:text-[#FC54AF] transition-colors duration-200' : ''}`}
-            onClick={onTitleClick}
-          >
+          <h2 className="relative text-xl font-bold tracking-wider text-white drop-shadow mb-1">
             {icon && <span className="popup-icon">{icon}</span>}
-            {title}
+            {onTitleClick ? (
+              <span
+                className="cursor-pointer hover:text-[#FC54AF] transition-colors duration-200"
+                onClick={onTitleClick}
+              >
+                {title}
+              </span>
+            ) : (
+              title
+            )}
             {headerContent && <div className="header-content">{headerContent}</div>}
           </h2>
           

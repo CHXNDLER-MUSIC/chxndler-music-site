@@ -14,6 +14,7 @@ import { MerchItem } from '@/types/merch';
 import TiltSpinCard from '@/components/TiltSpinCard';
 import { usePlanetRewardsContext } from '@/components/PlanetRewardsProvider';
 import { getElementalPlanetImage } from '@/lib/elementalPlanets';
+import { triggerMerchCelebration } from '@/utils/merchCelebration';
 
 type Props = {
   open: boolean;
@@ -170,6 +171,10 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   const [showShippingForm, setShowShippingForm] = useState(false);
   const [pendingPurchase, setPendingPurchase] = useState<PendingPurchase | null>(null);
   const isSubmittingRef = useRef(false);
+
+  // Post-purchase shipping states (purchase already completed, awaiting shipping info)
+  const [completedOrderId, setCompletedOrderId] = useState<string | null>(null);
+  const [purchasedItemInfo, setPurchasedItemInfo] = useState<{ name: string; image: string; cost: number } | null>(null);
   
   // Shipping form states
   const [shippingInfo, setShippingInfo] = useState({
@@ -655,8 +660,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     window.open(stripeUrl, '_blank');
   };
 
-  // Show shipping form for HeartCoin purchase
-  const handleHeartCoinPurchaseConfirm = (item: StoreItem) => {
+  // Purchase merch item immediately, then show shipping form
+  const handleHeartCoinPurchaseConfirm = async (item: StoreItem) => {
     if (!profile) {
       setError("Please sign in to make purchases");
       return;
@@ -667,36 +672,93 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       return;
     }
 
-    // Create frozen purchase snapshot with unique client request ID
+    // Prevent double-submit
+    if (isSubmittingRef.current || modalLoading) {
+      return;
+    }
+
+    isSubmittingRef.current = true;
+    setModalLoading(true);
+    setError(null);
+    setMessage(null);
+
+    // Create unique client request ID for idempotency
     const clientRequestId = crypto.randomUUID();
-    const purchase: PendingPurchase = {
+
+    console.log('[MERCH PURCHASE] Initiating immediate purchase:', {
       merchItemId: item.merch_item_id,
       name: item.name,
       cost: item.heartCoin,
-      quantity: 1,
       clientRequestId
-    };
-
-    console.log('[MERCH PURCHASE] Created pendingPurchase snapshot:', {
-      merchItemId: purchase.merchItemId,
-      name: purchase.name,
-      cost: purchase.cost,
-      quantity: purchase.quantity,
-      clientRequestId: purchase.clientRequestId
     });
 
-    setPendingPurchase(purchase);
-    setSelectedItem(item);
-    setShowShippingForm(true);
-    setError(null);
-    setMessage(null);
-    setValidationErrors({});
+    try {
+      // Make the purchase API call immediately
+      const payload = {
+        merchItemId: item.merch_item_id,
+        quantity: 1,
+        clientRequestId
+      };
+
+      const response = await fetch('/api/merch/purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      console.log('[MERCH PURCHASE] Purchase response:', {
+        status: response.status,
+        ok: response.ok,
+        result
+      });
+
+      if (!response.ok) {
+        console.error('[MERCH PURCHASE] Purchase API error:', result);
+        setError(result.error || result.message || 'Purchase failed. Please try again.');
+        return;
+      }
+
+      // Handle array return shape from TABLE-returning RPC
+      const normalizedResult = Array.isArray(result) ? result[0] : result;
+
+      if (!normalizedResult?.success && !normalizedResult?.order_id) {
+        console.error('[MERCH PURCHASE] Purchase returned failure:', normalizedResult);
+        setError(normalizedResult?.message || 'Purchase failed. Please try again.');
+        return;
+      }
+
+      const orderId = normalizedResult.order_id || result.order_id;
+
+      console.log('[MERCH PURCHASE] Purchase successful! Order ID:', orderId);
+
+      // Refresh profile to get updated HeartCoin balance
+      await refreshProfile();
+
+      // Store order info and show shipping form
+      setCompletedOrderId(orderId);
+      setPurchasedItemInfo({
+        name: item.name,
+        image: item.image,
+        cost: item.heartCoin
+      });
+      setShowShippingForm(true);
+      setValidationErrors({});
+      setMessage(`Purchase complete! Please enter your shipping details.`);
+
+    } catch (error: any) {
+      console.error('[MERCH PURCHASE] Purchase error:', error);
+      setError(error?.message || `Failed to purchase ${item.name}`);
+    } finally {
+      setModalLoading(false);
+      isSubmittingRef.current = false;
+    }
   };
 
-  // Confirm purchase and create order with shipping info
+  // Confirm shipping info for already-completed purchase (new flow)
+  // OR handle card purchases with the old flow (pendingPurchase)
   const handleConfirmPurchase = async () => {
-    // CRITICAL: Use pendingPurchase instead of selectedItem to prevent state drift
-    if (!pendingPurchase || !profile) return;
     if (modalLoading) return; // in-flight guard
 
     // Double-submit protection
@@ -717,7 +779,84 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     setMessage(null);
 
     try {
-      // Check if this is a card purchase (merch_item_id contains 'card' or is a card-like identifier)
+      // NEW FLOW: Purchase already completed, just update shipping info
+      if (completedOrderId && purchasedItemInfo) {
+        console.log('[MERCH SHIPPING] Updating shipping for order:', completedOrderId);
+
+        const response = await fetch('/api/merch/updateShipping', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: completedOrderId,
+            fullName: shippingInfo.fullName,
+            addressLine1: shippingInfo.addressLine1,
+            addressLine2: shippingInfo.addressLine2,
+            city: shippingInfo.city,
+            state: shippingInfo.state,
+            zip: shippingInfo.zip,
+            country: shippingInfo.country
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          console.error('[MERCH SHIPPING] Update shipping error:', result);
+          setError(result.error || 'Failed to save shipping information. Please try again.');
+          return;
+        }
+
+        console.log('[MERCH SHIPPING] Shipping info updated successfully');
+
+        // Send confirmation email
+        try {
+          const emailResponse = await fetch('/api/orders/send-confirmation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orderId: completedOrderId,
+              shippingInfo: shippingInfo
+            }),
+          });
+
+          const emailResult = await emailResponse.json();
+          if (emailResult.emailSent) {
+            console.log('Order confirmation email sent successfully');
+          }
+        } catch (emailError) {
+          console.error('Failed to send confirmation email:', emailError);
+        }
+
+        // Clear purchase state
+        setShowShippingForm(false);
+        setSelectedItem(null);
+        setCompletedOrderId(null);
+        setShippingInfo({
+          fullName: '',
+          addressLine1: '',
+          addressLine2: '',
+          city: '',
+          state: '',
+          zip: '',
+          country: 'United States'
+        });
+        setValidationErrors({});
+        setMessage(null);
+        setError(null);
+
+        // Trigger celebration with merch item image
+        triggerMerchCelebration(purchasedItemInfo.name, purchasedItemInfo.image);
+
+        // Clear purchased item info after triggering celebration
+        setPurchasedItemInfo(null);
+
+        return;
+      }
+
+      // OLD FLOW: Card purchases (pendingPurchase is set)
+      if (!pendingPurchase || !profile) return;
+
+      // Check if this is a card purchase
       const isCardPurchase = pendingPurchase.merchItemId === 'physical-card' ||
                             pendingPurchase.merchItemId === 'digital-card' ||
                             pendingPurchase.name.includes('(Physical)') ||
@@ -773,106 +912,18 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
             }
           } catch (emailError) {
             console.error('Failed to send card confirmation email:', emailError);
-            // Don't fail the purchase if email fails
-          }
-        }
-      } else {
-        // Use merch purchase API for regular merch items
-        // CRITICAL: Send ONLY data from pendingPurchase snapshot
-        const payload = {
-          merchItemId: pendingPurchase.merchItemId,
-          quantity: pendingPurchase.quantity,
-          clientRequestId: pendingPurchase.clientRequestId
-        };
-
-        console.log('[MERCH PURCHASE] Sending payload to /api/merch/purchase:', {
-          merchItemId: payload.merchItemId,
-          quantity: payload.quantity,
-          clientRequestId: payload.clientRequestId,
-          expectedCost: pendingPurchase.cost
-        });
-
-        const response = await fetch('/api/merch/purchase', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        });
-
-        result = await response.json();
-
-        // Log the API response
-        console.log('[MERCH PURCHASE] Received response from /api/merch/purchase:', {
-          status: response.status,
-          ok: response.ok,
-          error: response.ok ? null : result.error,
-          result
-        });
-
-        if (!response.ok) {
-          console.error('[MERCH PURCHASE] Purchase API error:', result);
-          setError(result.error || result.message || 'Purchase failed. Please try again.');
-          return;
-        }
-
-        // Handle array return shape from TABLE-returning RPC
-        const normalizedResult = Array.isArray(result) ? result[0] : result;
-
-        // Check if we actually got a successful result
-        if (!normalizedResult?.success) {
-          console.error('[MERCH PURCHASE] Purchase returned failure:', normalizedResult);
-          setError(normalizedResult?.message || 'Purchase failed. Please try again.');
-          return;
-        }
-
-        // Use the normalized result for the rest of the flow
-        result = normalizedResult;
-
-        console.log('[MERCH PURCHASE] Purchase successful:', {
-          order_id: result.order_id,
-          clientRequestId: pendingPurchase.clientRequestId,
-          heartcoins_before: result.heartcoins_before,
-          heartcoins_after: result.heartcoins_after,
-          amount_spent: result.amount_spent
-        });
-
-        // Send confirmation email for merch
-        if (result.order_id) {
-          try {
-            const emailResponse = await fetch('/api/orders/send-confirmation', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                orderId: result.order_id,
-                shippingInfo: shippingInfo
-              }),
-            });
-
-            const emailResult = await emailResponse.json();
-            if (emailResult.emailSent) {
-              console.log('Order confirmation email sent successfully');
-            } else {
-              console.warn('Order confirmation email failed to send');
-            }
-          } catch (emailError) {
-            console.error('Failed to send confirmation email:', emailError);
-            // Don't fail the purchase if email fails
           }
         }
       }
 
-      // Success! Use backend response for new balance (don't guess)
-      const balanceInfo = result.heartcoins_after != null
+      // Success for card purchases
+      const balanceInfo = result?.heartcoins_after != null
         ? ` Your new balance is ${result.heartcoins_after} HeartCoins.`
         : '';
       setMessage(`Successfully purchased ${pendingPurchase.name}!${balanceInfo} Your order has been placed and a confirmation email has been sent.`);
 
       // Refresh profile to get actual balance from backend
       await refreshProfile();
-      console.log('[MERCH PURCHASE] Profile refreshed; new balance updated from backend');
 
       // Clear purchase state
       setShowShippingForm(false);
@@ -890,8 +941,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       setValidationErrors({});
 
     } catch (error: any) {
-      console.error('[MERCH PURCHASE] Purchase error:', error);
-      setError(error?.message || `Failed to purchase ${pendingPurchase.name}`);
+      console.error('[MERCH PURCHASE] Error:', error);
+      setError(error?.message || 'An error occurred. Please try again.');
     } finally {
       setModalLoading(false);
       isSubmittingRef.current = false;
@@ -1037,6 +1088,12 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         }
 
         setMessage(`Successfully purchased digital ${currentCard.card_name || currentCard.cards?.card_name || 'card'}! A confirmation email has been sent.`);
+
+        // Trigger celebration for digital card purchase
+        const cardName = currentCard.card_name || currentCard.cards?.card_name || 'Card';
+        const cardImage = currentCard.artwork_url || `/cards/${cardName}.webp`;
+        triggerMerchCelebration(`${cardName} (Digital)`, cardImage);
+
         try { await refreshProfile(); } catch {}
         // Refresh profile to update balance
         await refreshProfile();
@@ -2365,7 +2422,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
 
       {/* Shipping Information Form Modal */}
-      {showShippingForm && pendingPurchase && (
+      {showShippingForm && (completedOrderId && purchasedItemInfo || pendingPurchase) && (
         <div
           className="fixed inset-0 z-[2147483648] bg-black bg-opacity-90"
           style={{
@@ -2385,8 +2442,31 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               }}
             >
               <div className="text-center space-y-6">
-                <h3 className="text-xl font-bold text-white mb-4">Shipping Information</h3>
-                <p className="text-white/80 text-sm">Please provide your shipping details for: <strong>{pendingPurchase.name}</strong> ({pendingPurchase.cost} HeartCoins)</p>
+                {/* Show purchased item image for new flow */}
+                {purchasedItemInfo && (
+                  <div className="flex flex-col items-center mb-4">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-[#4ECDC4]/20 rounded-full blur-xl" />
+                      <img
+                        src={purchasedItemInfo.image}
+                        alt={purchasedItemInfo.name}
+                        className="w-24 h-24 object-contain relative z-10"
+                      />
+                    </div>
+                    <div className="mt-2 px-3 py-1 bg-green-500/20 border border-green-500/50 rounded-full">
+                      <span className="text-green-400 text-xs font-bold">PURCHASE COMPLETE</span>
+                    </div>
+                  </div>
+                )}
+                <h3 className="text-xl font-bold text-white mb-4">
+                  {purchasedItemInfo ? 'Enter Shipping Details' : 'Shipping Information'}
+                </h3>
+                <p className="text-white/80 text-sm">
+                  {purchasedItemInfo
+                    ? <>Your <strong>{purchasedItemInfo.name}</strong> is ready! Please provide your shipping address.</>
+                    : <>Please provide your shipping details for: <strong>{pendingPurchase?.name}</strong> ({pendingPurchase?.cost} HeartCoins)</>
+                  }
+                </p>
                 
                 <div className="space-y-4 text-left">
                   <div>
@@ -2539,12 +2619,16 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         setShowShippingForm(false);
                         setSelectedItem(null);
                         setPendingPurchase(null);
+                        setCompletedOrderId(null);
+                        setPurchasedItemInfo(null);
                         setValidationErrors({});
+                        setMessage(null);
+                        setError(null);
                         isSubmittingRef.current = false;
                       }}
                       className="flex-1 py-2 px-4 rounded-lg font-bold text-sm border border-gray-500 text-gray-300 hover:bg-gray-800 transition-all duration-200"
                     >
-                      Cancel
+                      {purchasedItemInfo ? 'Skip for Now' : 'Cancel'}
                     </button>
                     <button
                       type="button"
@@ -2555,7 +2639,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         boxShadow: modalLoading ? undefined : '0 0 15px rgba(78, 205, 196, 0.4)'
                       }}
                     >
-                      {modalLoading ? 'Processing...' : 'Confirm Purchase'}
+                      {modalLoading ? 'Processing...' : (purchasedItemInfo ? 'Confirm Shipping' : 'Confirm Purchase')}
                     </button>
                   </div>
                 </div>

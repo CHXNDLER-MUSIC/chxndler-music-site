@@ -7,6 +7,8 @@ import { useTour } from '@/contexts/TourContext';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { elementIcons } from '@/lib/elementIcons';
 import { sfx } from '@/lib/sfx';
+import { MerchItem } from '@/types/merch';
+import { TiltSpinCard } from '@/components/TiltSpinCard';
 
 interface Badge {
   id: string;
@@ -54,7 +56,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
   const { start: startTour } = useTour();
   
   const [allRelics, setAllRelics] = useState<Relic[]>([]);
-  
+  const [allMerch, setAllMerch] = useState<MerchItem[]>([]);
+  const [userMerchDates, setUserMerchDates] = useState<Record<string, string>>({});
+
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -69,6 +73,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
   const [showRelicsInline, setShowRelicsInline] = useState(false);
   const [selectedRelicInline, setSelectedRelicInline] = useState<string | null>(null);
   const [selectedRelicModal, setSelectedRelicModal] = useState<string | null>(null);
+  const [showMerchInline, setShowMerchInline] = useState(false);
+  const [selectedMerchInline, setSelectedMerchInline] = useState<MerchItem | null>(null);
+  const [merchRotation, setMerchRotation] = useState(0);
   const [showElementInfo, setShowElementInfo] = useState(false);
   const [currentElementIndex, setCurrentElementIndex] = useState(0);
 
@@ -132,6 +139,10 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
           setIsEditingName(false);
         } else if (showElementInfo) {
           setShowElementInfo(false);
+        } else if (showMerchInline) {
+          setShowMerchInline(false);
+          setSelectedMerchInline(null);
+          setMerchRotation(0);
         } else if (showRelicsInline) {
           setShowRelicsInline(false);
         } else if (showRelicsModal) {
@@ -148,6 +159,10 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
       if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
         if (showElementInfo) {
           setShowElementInfo(false);
+        } else if (showMerchInline) {
+          setShowMerchInline(false);
+          setSelectedMerchInline(null);
+          setMerchRotation(0);
         } else if (showRelicsInline) {
           setShowRelicsInline(false);
         } else if (showRelicsModal) {
@@ -165,7 +180,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
       document.removeEventListener('keydown', handleEscape);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, onClose, showElementMenu, showRelicsModal, showElementInfo, showRelicsInline, isEditingName, profile]);
+  }, [isOpen, onClose, showElementMenu, showRelicsModal, showElementInfo, showRelicsInline, showMerchInline, isEditingName, profile]);
 
   // Helper to get element image URL
   const getElementImageUrl = (element: string | null): string => {
@@ -344,6 +359,52 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
     }
   };
 
+  // Fetch all merch items from database
+  const fetchAllMerch = async () => {
+    try {
+      const response = await fetch('/api/merch/items');
+      if (!response.ok) {
+        console.error('Error fetching merch items');
+        setAllMerch([]);
+        return;
+      }
+      const data = await response.json();
+      setAllMerch(data.data || []);
+    } catch (error) {
+      console.log('Error fetching merch items:', error);
+      setAllMerch([]);
+    }
+  };
+
+  // Fetch user's merch order dates
+  const fetchUserMerchDates = async () => {
+    if (!user) return;
+    try {
+      const { data: orders, error } = await supabaseBrowser
+        .from('orders')
+        .select('merch_item_id, item_id, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.log('Error fetching user orders:', error);
+        return;
+      }
+
+      // Build a map of merch item ID to collection date
+      const dateMap: Record<string, string> = {};
+      orders?.forEach(order => {
+        const merchId = order.merch_item_id || order.item_id;
+        if (merchId && !dateMap[merchId]) {
+          dateMap[merchId] = order.created_at;
+        }
+      });
+      setUserMerchDates(dateMap);
+    } catch (error) {
+      console.log('Error fetching user merch dates:', error);
+    }
+  };
+
   // Fetch user's unlocked badges and relics
   const fetchUnlockedItems = async () => {
     if (!user) return;
@@ -416,6 +477,12 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
       // Fetch all relics for the grid display
       await fetchAllRelics();
 
+      // Fetch all merch items for the grid display
+      await fetchAllMerch();
+
+      // Fetch user's merch collection dates
+      await fetchUserMerchDates();
+
       // Build available images array
       buildAvailableImages(badgeResult.data || [], relicResult.data || []);
     } catch (error) {
@@ -423,6 +490,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
       setUserRelics([]);
       setUserBadges([]);
       setAllRelics([]);
+      setAllMerch([]);
     } finally {
       setLoading(false);
     }
@@ -971,28 +1039,53 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               </div>
             </div>
             
-            {/* Right side - Relics button and stats */}
+            {/* Right side - Relics/Merch buttons and stats */}
             <div className="flex flex-col items-center gap-2">
-              {/* Relics button */}
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => { setShowRelicsInline(true); try { sfx.play('click', 0.6); } catch {} }}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowRelicsInline(true); try { sfx.play('click', 0.6); } catch {} } }}
-                onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-                className="w-16 h-16 transition-transform hover:scale-[1.08] flex items-center justify-center cursor-pointer select-none flex-shrink-0"
-                style={{ background: 'transparent', backgroundColor: 'transparent', border: 'none', boxShadow: 'none', outline: 'none' }}
-                title="View your relics"
-              >
-                <img
-                  src="/elements/relics.webp"
-                  alt="Relics"
-                  className="w-14 h-14 object-contain"
-                  onError={(e) => {
-                    const target = e.currentTarget as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
-                />
+              {/* Relics and Merch buttons row */}
+              <div className="flex items-center gap-2">
+                {/* Relics button */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => { setShowRelicsInline(true); setShowMerchInline(false); try { sfx.play('click', 0.6); } catch {} }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowRelicsInline(true); setShowMerchInline(false); try { sfx.play('click', 0.6); } catch {} } }}
+                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                  className="w-14 h-14 transition-transform hover:scale-[1.08] flex items-center justify-center cursor-pointer select-none flex-shrink-0"
+                  style={{ background: 'transparent', backgroundColor: 'transparent', border: 'none', boxShadow: 'none', outline: 'none' }}
+                  title="View your relics"
+                >
+                  <img
+                    src="/elements/relics.webp"
+                    alt="Relics"
+                    className="w-12 h-12 object-contain"
+                    onError={(e) => {
+                      const target = e.currentTarget as HTMLImageElement;
+                      target.style.display = 'none';
+                    }}
+                  />
+                </div>
+
+                {/* Merch button */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => { setShowMerchInline(true); setShowRelicsInline(false); try { sfx.play('click', 0.6); } catch {} }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowMerchInline(true); setShowRelicsInline(false); try { sfx.play('click', 0.6); } catch {} } }}
+                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                  className="w-14 h-14 transition-transform hover:scale-[1.08] flex items-center justify-center cursor-pointer select-none flex-shrink-0"
+                  style={{ background: 'transparent', backgroundColor: 'transparent', border: 'none', boxShadow: 'none', outline: 'none' }}
+                  title="View merch"
+                >
+                  <img
+                    src="/elements/merch.webp"
+                    alt="Merch"
+                    className="w-12 h-12 object-contain"
+                    onError={(e) => {
+                      const target = e.currentTarget as HTMLImageElement;
+                      target.style.display = 'none';
+                    }}
+                  />
+                </div>
               </div>
               
               {/* Daily Streak and Heart Coins under relics */}
@@ -1377,6 +1470,195 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
             </div>
           )}
 
+          {/* Merch Collection - Full Overlay */}
+          {showMerchInline && (
+            <div
+              className="absolute inset-0 p-4 rounded-lg bg-black/90 backdrop-blur-md"
+              style={{
+                zIndex: 15,
+                borderRadius: 18,
+                border: '1px solid rgba(0,255,255,0.55)'
+              }}
+            >
+              {/* Close button */}
+              <button
+                onClick={() => {
+                  setShowMerchInline(false);
+                  setSelectedMerchInline(null);
+                  setMerchRotation(0);
+                  try { sfx.play('close', 0.6); } catch {}
+                }}
+                onMouseEnter={() => {
+                  try { sfx.play('hover', 0.3); } catch {}
+                }}
+                className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+                style={{
+                  background: 'rgba(0,255,255,0.2)',
+                  border: '1px solid rgba(0,255,255,0.6)',
+                  color: '#00FFFF',
+                  boxShadow: '0 0 10px rgba(0,255,255,0.3)',
+                  fontSize: '12px',
+                  fontWeight: 'bold'
+                }}
+              >
+                ×
+              </button>
+
+              {/* Header */}
+              <div
+                className="text-center mb-2"
+                style={{
+                  color: '#00FFFF',
+                  textShadow: '0 0 8px rgba(0,255,255,0.6)',
+                  fontSize: '18px',
+                  fontWeight: 'bold'
+                }}
+              >
+                MERCH COLLECTION
+              </div>
+
+              {/* Info text - moved below header */}
+              <div className="text-center mb-2">
+                <p className="text-sm text-white" style={{ textShadow: '0 0 8px rgba(255,255,255,0.85)' }}>
+                  Browse exclusive merchandise from the Heartverse
+                </p>
+              </div>
+
+              {/* Merch Grid / Expanded View - Inline */}
+              {selectedMerchInline ? (
+                <div className="mb-4 relative rounded-lg overflow-hidden border border-cyan-400/60" style={{ boxShadow: '0 0 15px rgba(0,255,255,0.25)' }}>
+                  {/* Controls above the image */}
+                  <div className="flex flex-col gap-1 p-2 border-b border-cyan-400/40 bg-black/40">
+                    <div className="flex items-center justify-between gap-2">
+                      <span
+                        className="text-sm font-semibold truncate"
+                        style={{ color: '#00FFFF', textShadow: '0 0 6px rgba(0,255,255,0.8)' }}
+                      >
+                        {selectedMerchInline.name}
+                      </span>
+                      {selectedMerchInline.price_heartcoins > 0 && (
+                        <span
+                          className="text-xs font-semibold px-2 py-1 rounded flex-shrink-0"
+                          style={{
+                            background: 'rgba(255,215,0,0.2)',
+                            border: '1px solid rgba(255,215,0,0.6)',
+                            color: '#FFD700'
+                          }}
+                        >
+                          {selectedMerchInline.price_heartcoins} HC
+                        </span>
+                      )}
+                    </div>
+                    {userMerchDates[selectedMerchInline.id] && (
+                      <span
+                        className="text-xs"
+                        style={{ color: 'rgba(255,255,255,0.7)' }}
+                      >
+                        Collected: {new Date(userMerchDates[selectedMerchInline.id]).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative w-full flex items-center justify-center" style={{ aspectRatio: '1 / 1' }}>
+                    <TiltSpinCard
+                      className="relative w-full h-full"
+                      maxRotateX={10}
+                      sensitivity={0.3}
+                      returnDuration={400}
+                      enableSpin={true}
+                      spinSensitivity={0.8}
+                      onRotationChange={setMerchRotation}
+                      onClick={() => {
+                        try { sfx.play('flip', 0.8); } catch {}
+                        setMerchRotation(prev => prev + 180);
+                      }}
+                    >
+                      <img
+                        src={selectedMerchInline.image_url || ''}
+                        alt={selectedMerchInline.name}
+                        className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                        style={{
+                          transform: `rotateY(${merchRotation}deg)`,
+                          transition: 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+                        }}
+                        draggable={false}
+                      />
+                    </TiltSpinCard>
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/20 pointer-events-none" />
+                  </div>
+                  <div className="flex items-center justify-between gap-2 p-2">
+                    <button
+                      onClick={() => { setSelectedMerchInline(null); setMerchRotation(0); try { sfx.play('close', 0.6); } catch {} }}
+                      className="px-3 py-1.5 rounded-md text-xs font-semibold transition-all"
+                      style={{
+                        background: 'rgba(0,255,255,0.15)',
+                        border: '1px solid rgba(0,255,255,0.5)',
+                        color: '#00FFFF'
+                      }}
+                    >
+                      Back to Grid
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-4 gap-3 mb-1" style={{ maxWidth: '320px', marginLeft: 'auto', marginRight: 'auto' }}>
+                  {(allMerch.length > 0 ? allMerch.slice(0, 16) : Array.from({ length: 16 }, (_, i) => ({
+                    id: `placeholder-${i}`,
+                    name: `Merch ${i + 1}`,
+                    slug: `merch-${i + 1}`,
+                    description: null,
+                    image_url: null,
+                    image_url_2: null,
+                    cost_usd: null,
+                    price_heartcoins: 0,
+                    stripe_url: null,
+                    is_active: true,
+                    min_tier: null,
+                    category: 'physical' as const,
+                    created_at: '',
+                    updated_at: ''
+                  }))).map((item, i) => {
+                    const hasImage = Boolean(item.image_url);
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => { if (hasImage) { setSelectedMerchInline(item as MerchItem); try { sfx.play('click', 0.6); } catch {} } }}
+                        key={`merch-inline-${item.id}`}
+                        className="aspect-square rounded-lg border border-white/20 bg-black/40 relative overflow-hidden transition-transform hover:scale-[1.03] disabled:opacity-60 disabled:cursor-not-allowed"
+                        style={{
+                          minHeight: '68px'
+                        }}
+                        disabled={!hasImage}
+                        title={hasImage ? `View ${item.name}` : item.name || `Merch ${i + 1}`}
+                      >
+                        {hasImage ? (
+                          <img
+                            src={item.image_url!}
+                            alt={item.name || `Merch ${i + 1}`}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.currentTarget as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-white/30 text-xs">🛍️</div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
+                        <div
+                          className="absolute bottom-0.5 right-0.5 text-xs text-white/40"
+                          style={{ fontSize: '8px' }}
+                        >
+                          {String(i + 1).padStart(2, '0')}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+            </div>
+          )}
+
           {/* Element Info Display - Full Overlay */}
           {showElementInfo && profile?.element && (
             <div 
@@ -1565,8 +1847,8 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
           )}
 
 
-          {/* Start Tour Button - Only show when relics, element menu, and element info are not displayed */}
-          {!showRelicsInline && !showElementMenu && !showElementInfo && (
+          {/* Start Tour Button - Only show when relics, merch, element menu, and element info are not displayed */}
+          {!showRelicsInline && !showMerchInline && !showElementMenu && !showElementInfo && (
             <div className="mt-4 pt-3" style={{
               borderTop: '1px solid rgba(0,255,255,0.2)'
             }}>

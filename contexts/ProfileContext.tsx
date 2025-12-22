@@ -719,6 +719,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         user_id: user.id,
         entry_date: entry.entry_date,
         element: entry.element,
+        // Denormalize author info for public feed display
+        author_name: profile?.name || null,
+        author_avatar_url: profile?.profile_image_url || null,
       };
 
       // Add prompt_id if provided and valid

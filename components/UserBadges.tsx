@@ -172,34 +172,16 @@ export default function UserBadges({
 
         setAllBadges(badgesResponse.data || []);
 
-        // Try fetching user badges - may fail due to RLS for other users
+        // Fetch user badges via API route to bypass RLS
+        // This allows viewing other users' badges in the public journal feed
         try {
-          const userBadgesResponse = await supabaseBrowser
-            .from('user_badges')
-            .select(`
-              id,
-              badge_id,
-              earned_at,
-              awarded_at,
-              badges (
-                id,
-                slug,
-                badge_name,
-                icon_url,
-                description,
-                category,
-                requirement_type,
-                requirement_count,
-                requirement_text
-              )
-            `)
-            .eq('user_id', userId);
+          const response = await fetch(`/api/public-badges?userId=${userId}`);
+          const data = await response.json();
 
-          if (userBadgesResponse.error) {
-            // Don't show error - just show empty badges
-            setUserBadges([]);
+          if (data.badges && Array.isArray(data.badges)) {
+            setUserBadges(data.badges);
           } else {
-            setUserBadges(userBadgesResponse.data || []);
+            setUserBadges([]);
           }
         } catch {
           // If user badges fetch fails for any reason, show empty state

@@ -461,12 +461,15 @@ export default function PublicJournalFeed() {
                   }}
                 >
                   <img
-                    src={(entry.author_avatar_url || authorOverrides[entry.user_id]?.avatar) ?? "/elements/alien.webp"}
+                    src={(entry.author_avatar_url || authorOverrides[entry.user_id]?.avatar) || "/elements/alien.webp"}
                     alt="User"
                     className="w-8 h-8 rounded-full object-cover"
                     style={{
                       border: `1px solid ${entryTheme.color}60`,
                       boxShadow: `0 0 4px ${entryTheme.color}30`
+                    }}
+                    onError={(e) => {
+                      e.currentTarget.src = '/elements/alien.webp';
                     }}
                   />
                   <div className="text-sm font-medium text-white">
@@ -550,12 +553,15 @@ export default function PublicJournalFeed() {
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-start">
                           <img
-                            src={(entry.author_avatar_url || authorOverrides[entry.user_id]?.avatar) ?? "/elements/alien.webp"}
+                            src={(entry.author_avatar_url || authorOverrides[entry.user_id]?.avatar) || "/elements/alien.webp"}
                             alt="User"
                             className="w-16 h-16 rounded-full object-cover mr-3"
                             style={{
                               border: `3px solid ${entryTheme.color}60`,
                               boxShadow: `0 0 12px ${entryTheme.color}30`
+                            }}
+                            onError={(e) => {
+                              e.currentTarget.src = '/elements/alien.webp';
                             }}
                           />
                           <div className="flex flex-col">
