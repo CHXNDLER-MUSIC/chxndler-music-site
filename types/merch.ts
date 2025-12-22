@@ -50,13 +50,13 @@ export interface PurchaseWithHeartcoinsResult {
 
 export interface ShippingInfo {
   orderId: string; // pass through order_id from purchase result
-  fullName: string;
-  addressLine1: string;
-  addressLine2?: string;
-  city: string;
-  state: string;
-  zip: string;
-  country: string;
+  shipping_full_name: string;
+  shipping_address_line1: string;
+  shipping_address_line2?: string;
+  shipping_city: string;
+  shipping_state: string;
+  shipping_zip: string;
+  shipping_country: string;
 }
 
 export interface ShippingUpdateResponse {

@@ -208,6 +208,8 @@ export function useMerchPurchase() {
     setIsProcessing(true);
     setError(null);
 
+    console.log('[SHIPPING] using orders.id', shippingInfo.orderId);
+
     try {
       let response: Response;
       try {
@@ -219,7 +221,7 @@ export function useMerchPurchase() {
           body: JSON.stringify(shippingInfo),
         });
       } catch (fetchError) {
-        console.error('[updateShipping] Fetch failed (network error):', fetchError);
+        console.error('[SHIPPING] Fetch failed (network error):', fetchError);
         throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Failed to connect to server'}`);
       }
 
@@ -228,7 +230,7 @@ export function useMerchPurchase() {
         const responseText = await response.text();
         result = JSON.parse(responseText);
       } catch (parseError) {
-        console.error('[updateShipping] Failed to parse response as JSON:', parseError);
+        console.error('[SHIPPING] Failed to parse response as JSON:', parseError);
         throw new Error(`Server returned invalid response: ${parseError instanceof Error ? parseError.message : 'Parse error'}`);
       }
 
@@ -237,12 +239,12 @@ export function useMerchPurchase() {
         throw new Error(`Shipping update failed (${response.status}): ${errorMessage}`);
       }
 
-      console.log('Shipping update successful:', result.data);
-      return result.data as ShippingUpdateResponse;
+      console.log('[SHIPPING] Shipping saved for order:', shippingInfo.orderId);
+      return { success: true } as ShippingUpdateResponse;
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update shipping information';
-      console.error('Shipping update error:', errorMessage);
+      console.error('[SHIPPING] Shipping update error:', errorMessage);
       setError(errorMessage);
       return null;
     } finally {

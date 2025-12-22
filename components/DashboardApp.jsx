@@ -240,6 +240,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [pendingTrackPlay, setPendingTrackPlay] = useState(false);
   // Track which YouTube sky has been armed by playback (keep looping even if audio pauses)
   const [ytSkyStartedSlug, setYtSkyStartedSlug] = useState(null);
+  // YouTube URL for element planet warps (WATER, CENTER, HEART, DARKNESS, LIGHTNING)
+  const [elementWarpYoutubeUrl, setElementWarpYoutubeUrl] = useState(null);
   // Hide 3D planets during warp when a song is selected; reveal on warp SFX end
   const [hidePlanetsForSelection, setHidePlanetsForSelection] = useState(false);
   const [pendingOverlayReveal, setPendingOverlayReveal] = useState(false); // wait to show overlay until warp SFX ends
@@ -1562,6 +1564,37 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     window.addEventListener('tour:skipped', handleTourSkipped);
     return () => {
       window.removeEventListener('tour:skipped', handleTourSkipped);
+    };
+  }, []);
+
+  // Listen for planet:warp event to trigger warp visual effect for element planets
+  React.useEffect(() => {
+    const handlePlanetWarp = (e) => {
+      const { element, isDailyElement, isCenterPlanet } = e.detail || {};
+      if (process.env.NODE_ENV === "development") {
+        console.log('🌍 planet:warp event received:', { element, isDailyElement, isCenterPlanet });
+      }
+
+      // Trigger warp visual effect (lightspeed overlay)
+      // Don't change songs - just show the warp animation
+      setWarpActive(true);
+      buttonRevealTriggeredRef.current = false;
+
+      setTimeout(() => {
+        setAllowWarp(true);
+        setFlySignal((n) => n + 1);
+
+        // Backup timer to reset warp state
+        setTimeout(() => {
+          setWarpActive(false);
+          setAllowWarp(false);
+        }, WARP_DURATION_MS + 500);
+      }, 100); // Small delay for visual smoothness
+    };
+
+    window.addEventListener('planet:warp', handlePlanetWarp);
+    return () => {
+      window.removeEventListener('planet:warp', handlePlanetWarp);
     };
   }, []);
 

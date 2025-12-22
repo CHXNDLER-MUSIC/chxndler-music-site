@@ -1526,16 +1526,27 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
 
               {/* Merch Grid / Expanded View - Inline */}
               {selectedMerchInline ? (
-                <div className="mb-4 relative rounded-lg overflow-hidden border border-cyan-400/60" style={{ boxShadow: '0 0 15px rgba(0,255,255,0.25)' }}>
-                  {/* Controls above the image */}
-                  <div className="flex flex-col gap-1 p-2 border-b border-cyan-400/40 bg-black/40">
-                    <div className="flex items-center justify-between gap-2">
+                <div className="mb-4 relative rounded-lg overflow-hidden border border-cyan-400/60 flex flex-col" style={{ boxShadow: '0 0 15px rgba(0,255,255,0.25)', maxHeight: 'calc(100% - 80px)' }}>
+                  {/* Header with Back to Grid button */}
+                  <div className="flex items-center justify-between p-2 border-b border-cyan-400/40 bg-black/40 flex-shrink-0">
+                    <div className="flex-1" /> {/* Spacer for centering */}
+                    <div className="flex flex-col items-center flex-1">
                       <span
-                        className="text-sm font-semibold truncate"
-                        style={{ color: '#00FFFF', textShadow: '0 0 6px rgba(0,255,255,0.8)' }}
+                        className="text-lg font-bold text-center"
+                        style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.8)' }}
                       >
                         {selectedMerchInline.name}
                       </span>
+                      {userMerchDates[selectedMerchInline.id] && (
+                        <span
+                          className="text-xs"
+                          style={{ color: 'rgba(255,255,255,0.7)' }}
+                        >
+                          Collected: {new Date(userMerchDates[selectedMerchInline.id]).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 flex-1 justify-end">
                       {selectedMerchInline.price_heartcoins > 0 && (
                         <span
                           className="text-xs font-semibold px-2 py-1 rounded flex-shrink-0"
@@ -1548,19 +1559,22 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                           {selectedMerchInline.price_heartcoins} HC
                         </span>
                       )}
-                    </div>
-                    {userMerchDates[selectedMerchInline.id] && (
-                      <span
-                        className="text-xs"
-                        style={{ color: 'rgba(255,255,255,0.7)' }}
+                      <button
+                        onClick={() => { setSelectedMerchInline(null); setMerchRotation(0); try { sfx.play('close', 0.6); } catch {} }}
+                        className="px-2 py-1 rounded-md text-xs font-semibold transition-all hover:scale-105"
+                        style={{
+                          background: 'rgba(0,255,255,0.15)',
+                          border: '1px solid rgba(0,255,255,0.5)',
+                          color: '#00FFFF'
+                        }}
                       >
-                        Collected: {new Date(userMerchDates[selectedMerchInline.id]).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </span>
-                    )}
+                        Back to Grid
+                      </button>
+                    </div>
                   </div>
-                  <div className="relative w-full flex items-center justify-center" style={{ aspectRatio: '1 / 1' }}>
+                  <div className="relative flex-1 min-h-0 flex items-center justify-center overflow-hidden">
                     <TiltSpinCard
-                      className="relative w-full h-full"
+                      className="relative w-full h-full max-h-full"
                       maxRotateX={10}
                       sensitivity={0.3}
                       returnDuration={400}
@@ -1575,28 +1589,16 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                       <img
                         src={selectedMerchInline.image_url || ''}
                         alt={selectedMerchInline.name}
-                        className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                        className="w-full h-full object-contain rounded-lg"
                         style={{
                           transform: `rotateY(${merchRotation}deg)`,
                           transition: 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+                          maxHeight: '100%',
                         }}
                         draggable={false}
                       />
                     </TiltSpinCard>
                     <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/20 pointer-events-none" />
-                  </div>
-                  <div className="flex items-center justify-between gap-2 p-2">
-                    <button
-                      onClick={() => { setSelectedMerchInline(null); setMerchRotation(0); try { sfx.play('close', 0.6); } catch {} }}
-                      className="px-3 py-1.5 rounded-md text-xs font-semibold transition-all"
-                      style={{
-                        background: 'rgba(0,255,255,0.15)',
-                        border: '1px solid rgba(0,255,255,0.5)',
-                        color: '#00FFFF'
-                      }}
-                    >
-                      Back to Grid
-                    </button>
                   </div>
                 </div>
               ) : (

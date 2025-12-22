@@ -4,16 +4,18 @@ import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
 
 export async function POST(request: NextRequest) {
   try {
-    const { 
-      orderId, 
-      fullName, 
-      addressLine1, 
-      addressLine2, 
-      city, 
-      state, 
-      zip, 
-      country = 'United States' 
+    const {
+      orderId,
+      shipping_full_name,
+      shipping_address_line1,
+      shipping_address_line2,
+      shipping_city,
+      shipping_state,
+      shipping_zip,
+      shipping_country
     } = await request.json();
+
+    console.log('[SHIPPING] using orders.id', orderId);
 
     // Validate required fields
     if (!orderId) {
@@ -23,45 +25,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!fullName || !fullName.trim()) {
+    if (!shipping_full_name || !shipping_full_name.trim()) {
       return NextResponse.json(
         { error: 'Full name is required' },
         { status: 400 }
       );
     }
 
-    if (!addressLine1 || !addressLine1.trim()) {
+    if (!shipping_address_line1 || !shipping_address_line1.trim()) {
       return NextResponse.json(
         { error: 'Address line 1 is required' },
         { status: 400 }
       );
     }
 
-    if (!city || !city.trim()) {
+    if (!shipping_city || !shipping_city.trim()) {
       return NextResponse.json(
         { error: 'City is required' },
         { status: 400 }
       );
     }
 
-    if (!state || !state.trim()) {
+    if (!shipping_state || !shipping_state.trim()) {
       return NextResponse.json(
         { error: 'State is required' },
         { status: 400 }
       );
     }
 
-    if (!zip || !zip.trim()) {
+    if (!shipping_zip || !shipping_zip.trim()) {
       return NextResponse.json(
         { error: 'ZIP code is required' },
         { status: 400 }
       );
     }
 
-    // Get user from session
+    // Get user from session - do NOT trust user_id from request body
     const cookieStore = await cookies();
     const token = cookieStore.get('sb-access-token')?.value || '';
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -71,81 +73,40 @@ export async function POST(request: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json(
-        { error: 'Authentication required' },
+        { error: 'Not authenticated' },
         { status: 401 }
       );
     }
 
     console.log(`[SHIPPING] User ${user.id} updating shipping info for order ${orderId}`);
 
-    // Call the RPC function to update shipping information
-    const { data: result, error: rpcError } = await supabase
-      .rpc('update_order_shipping', {
-        p_user_id: user.id,
-        p_order_id: orderId,
-        p_shipping_full_name: fullName,
-        p_shipping_address_line1: addressLine1,
-        p_shipping_address_line2: addressLine2 || null,
-        p_shipping_city: city,
-        p_shipping_state: state,
-        p_shipping_zip: zip,
-        p_shipping_country: country
-      });
+    // Call the RPC with exact parameter names
+    const { error: rpcError } = await supabase.rpc('update_order_shipping', {
+      p_order_id: orderId,
+      p_shipping_full_name: shipping_full_name,
+      p_shipping_address_line1: shipping_address_line1,
+      p_shipping_address_line2: shipping_address_line2 ?? null,
+      p_shipping_city: shipping_city,
+      p_shipping_state: shipping_state,
+      p_shipping_zip: shipping_zip,
+      p_shipping_country: shipping_country,
+      p_user_id: user.id
+    });
 
     if (rpcError) {
-      console.error('[SHIPPING] RPC Error:', rpcError);
-      
-      // Handle specific error types with user-friendly messages
-      if (rpcError.message?.includes('ORDER_NOT_FOUND')) {
-        return NextResponse.json(
-          { 
-            error: 'Order not found or does not belong to you.',
-            errorCode: 'ORDER_NOT_FOUND'
-          },
-          { status: 404 }
-        );
-      }
-      
-      if (rpcError.message?.includes('INVALID_ORDER_STATE')) {
-        const match = rpcError.message.match(/Order is in (\w+) state/);
-        const status = match ? match[1] : 'invalid';
-        return NextResponse.json(
-          { 
-            error: `Cannot update shipping info. Order is in '${status}' state.`,
-            errorCode: 'INVALID_ORDER_STATE'
-          },
-          { status: 400 }
-        );
-      }
-
-      if (rpcError.message?.includes('MISSING_FIELD')) {
-        const match = rpcError.message.match(/MISSING_FIELD: (.+)/);
-        const field = match ? match[1] : 'Required field';
-        return NextResponse.json(
-          { 
-            error: `${field} is required.`,
-            errorCode: 'MISSING_FIELD'
-          },
-          { status: 400 }
-        );
-      }
-      
+      console.error('[SHIPPING RPC ERROR]', rpcError);
       return NextResponse.json(
-        { 
-          error: rpcError.message || 'Failed to update shipping information',
-          errorCode: 'SHIPPING_UPDATE_FAILED'
+        {
+          error: rpcError.message,
+          details: rpcError.details
         },
         { status: 400 }
       );
     }
 
-    console.log(`[SHIPPING] Success - Order ${orderId} shipping info updated`);
+    console.log('[SHIPPING] Shipping saved for order:', orderId);
 
-    return NextResponse.json({
-      success: true,
-      data: result,
-      message: 'Shipping information updated successfully! Your order is being prepared for fulfillment.'
-    });
+    return NextResponse.json({ success: true });
 
   } catch (error) {
     console.error('[SHIPPING] Unexpected error:', error);

@@ -28,6 +28,8 @@ interface PlanetPopup {
   isSong: boolean;
   // Reference to the 3D object for position tracking
   targetObject?: THREE.Object3D;
+  // Flag for element of the day - warp will trigger reward claim
+  isDailyElement?: boolean;
 }
 
 export interface Pure3DPlanetsProps {
@@ -35,6 +37,8 @@ export interface Pure3DPlanetsProps {
   songsByElement: Record<string, any[]>;
   zoomLevel: number;
   onPlanetSelect?: (planetId: string) => void;
+  // Called when WARP button is clicked on a song planet - triggers full warp sequence
+  onSongChange?: (songId: string) => void;
   quality: 'low' | 'high';
   focusElement?: ElementType | null;
   // New: focus camera on a specific song's planet (by slug/id)
@@ -52,6 +56,7 @@ export default function Pure3DPlanets({
   songsByElement: propSongsByElement,
   quality,
   onPlanetSelect,
+  onSongChange,
   focusElement,
   focusSongId,
   glowingElement = null,
@@ -690,45 +695,13 @@ export default function Pure3DPlanets({
         // Check if this is an element planet
         const elementId = obj.userData?.elementId as ElementType | undefined;
         if (elementId) {
-          // Only allow clicking the element of the day for rewards
-          if (elementId === glowingElement && !hasClaimedElementOfDay && !isClaimingReward && !isCinematicRef.current && onDailyPlanetClick) {
-            // Start cinematic sequence
-            isCinematicRef.current = true;
-            setIsCinematic(true);
-
-            // Get planet world position
-            const planetPos = getElementWorldPosition(elementId);
-            if (planetPos) {
-              const { camPos, lookAt } = getCinematicCameraTarget(planetPos);
-              desiredCameraPosRef.current = camPos;
-              desiredLookAtRef.current = lookAt;
-            }
-
-            try {
-              // Call the reward claim function
-              await onDailyPlanetClick(elementId);
-            } catch (err) {
-              console.error('Failed to claim element of day reward:', err);
-            }
-
-            // After a short beat, return camera to rest position
-            setTimeout(() => {
-              if (restCameraPositionRef.current && restCameraTargetRef.current) {
-                desiredCameraPosRef.current = restCameraPositionRef.current.clone();
-                desiredLookAtRef.current = restCameraTargetRef.current.clone();
-              }
-              setTimeout(() => {
-                isCinematicRef.current = false;
-                setIsCinematic(false);
-              }, 800);
-            }, 700);
-
-            return;
-          }
-
-          // Show popup for element planet
+          // Show popup for element planet (including daily element - warp button will trigger reward claim)
           const screenPos = projectToScreen(intersectionPoint);
           setupSelectionEffects(obj, getElementColor(elementId));
+
+          // Flag if this is the daily element planet for special warp handling
+          const isDailyElement = elementId === glowingElement && !hasClaimedElementOfDay;
+
           setPlanetPopup({
             x: screenPos.x,
             y: screenPos.y,
@@ -736,7 +709,8 @@ export default function Pure3DPlanets({
             element: elementId,
             slug: elementId,
             isSong: false,
-            targetObject: obj
+            targetObject: obj,
+            isDailyElement // Pass this flag so warp knows to claim reward
           });
           return;
         }
@@ -1307,7 +1281,14 @@ export default function Pure3DPlanets({
   const handleWarpClick = async () => {
     if (!planetPopup) return;
 
-    const slug = planetPopup.slug;
+    const { slug, isSong, isDailyElement, element } = planetPopup;
+
+    // Play warp sound effect and set global flag so SkyboxVideo doesn't play it again
+    try {
+      sfx.play('warp', 0.8);
+      // Set global flag to prevent double warp sound in SkyboxVideo
+      (window as any).__WARP_SOUND_PLAYED = true;
+    } catch {}
 
     // Close the popup immediately
     setPlanetPopup(null);
@@ -1333,34 +1314,48 @@ export default function Pure3DPlanets({
     selectedPlanetBaseScaleRef.current = null;
     selectedPlanetBaseYRef.current = null;
 
-    // Trigger warp effect via playerStore (hide planets during warp)
-    try {
-      const { playerStore } = await import("@/store/usePlayerStore");
-      const st = playerStore.getState();
-      if (st) {
-        st.setMain(slug);
-        st.setPlanetDisplayMode('hidden');
-        st.setPlanetsVisible(false);
+    // Use the isSong flag set when the popup was created - this is more reliable
+    // than checking against element names since it was determined at click time
+    if (isSong && onSongChange) {
+      // For song planets, trigger full warp sequence via onSongChange
+      // This calls DashboardApp.onSongChange which handles:
+      // - Lightspeed visual effect (via flySignal)
+      // - Warp audio
+      // - Planet visibility
+      // - Sky change
+      // - Song playback
+      debug('WARP button clicked - triggering onSongChange for:', slug);
+      onSongChange(slug);
+    } else {
+      // For element planets (including daily element and center), trigger warp visual effect
+      // Dispatch event that DashboardApp listens for to trigger the lightspeed visual
+      debug('WARP button clicked - triggering warp for element:', slug);
+      try {
+        window.dispatchEvent(new CustomEvent('planet:warp', {
+          detail: {
+            element: slug,
+            isDailyElement,
+            isCenterPlanet: element === 'center'
+          }
+        }));
+      } catch (e) {
+        console.warn('Could not dispatch planet:warp event:', e);
       }
-    } catch {}
 
-    // Play warp SFX
-    try {
-      await sfx.playAndWait('warp', 0.75);
-    } catch {}
-
-    // Reveal planets after warp
-    try {
-      const { playerStore } = await import("@/store/usePlayerStore");
-      const st = playerStore.getState();
-      if (st) {
-        st.setPlanetDisplayMode('single');
-        st.setPlanetsVisible(true);
+      // After warp visual starts, handle element-specific actions
+      if (isDailyElement && onDailyPlanetClick && element !== 'center') {
+        // For the daily element planet, claim the reward after warp effect
+        debug('WARP button clicked - claiming daily element reward for:', element);
+        try {
+          await onDailyPlanetClick(element as ElementType);
+        } catch (err) {
+          console.error('Failed to claim element of day reward:', err);
+        }
+      } else {
+        // For other element planets, call onPlanetSelect
+        onPlanetSelect?.(slug);
       }
-    } catch {}
-
-    // Call the original onPlanetSelect callback
-    onPlanetSelect?.(slug);
+    }
   };
 
   // Get element icon path

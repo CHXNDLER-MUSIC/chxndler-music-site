@@ -221,6 +221,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   const [isAnimatingFlip, setIsAnimatingFlip] = useState(false); // For smooth flip transition
   // Toggle purchase preview (replaces card image with balance vs cost)
   const [selectedPurchaseType, setSelectedPurchaseType] = useState<null | 'digital' | 'physical'>(null);
+  // Physical card confirmation in enlarged card view (for 20 PHYSICAL button)
+  const [showEnlargedCardConfirm, setShowEnlargedCardConfirm] = useState(false);
 
   // Element selection and internal cards state for CARDS tab
   const [selectedElement, setSelectedElement] = useState<'LIGHTNING' | 'WATER' | 'HEART' | 'DARKNESS' | null>(null);
@@ -1104,6 +1106,122 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       } finally {
         setModalLoading(false);
       }
+    }
+  };
+
+  // Handle physical card purchase from enlarged card view (20 HeartCoins)
+  // This follows the merch flow: purchase first, then show shipping form
+  const handlePhysicalCardPurchaseConfirm = async () => {
+    const physicalCardCost = 20; // 20 HeartCoins for physical card in enlarged view
+
+    if (!profile) {
+      setError("Please sign in to make purchases");
+      return;
+    }
+
+    const currentCard = displayCards[displayCardIndex];
+    if (!currentCard) {
+      setError("No card selected");
+      return;
+    }
+
+    if ((profile.heartcoin_balance || 0) < physicalCardCost) {
+      setError(`Insufficient HeartCoins! You need ${physicalCardCost} but only have ${profile.heartcoin_balance || 0}`);
+      return;
+    }
+
+    // Prevent double-submit
+    if (isSubmittingRef.current || modalLoading) {
+      return;
+    }
+
+    isSubmittingRef.current = true;
+    setModalLoading(true);
+    setError(null);
+    setMessage(null);
+
+    // Create unique client request ID for idempotency
+    const clientRequestId = crypto.randomUUID();
+    const cardName = currentCard.card_name || currentCard.cards?.card_name || 'Card';
+    const cardImage = currentCard.artwork_url || `/cards/${cardName}.webp`;
+
+    console.log('[PHYSICAL CARD PURCHASE] Initiating immediate purchase:', {
+      cardName,
+      cost: physicalCardCost,
+      clientRequestId
+    });
+
+    try {
+      // Make the purchase API call immediately (like merch flow)
+      const payload = {
+        merchItemId: currentCard.id || currentCard.card_id || 'physical-card',
+        quantity: 1,
+        idempotencyKey: clientRequestId,
+        paymentType: 'heartcoins' as const,
+        isPhysicalCard: true,
+        cardName: cardName,
+        heartCoinCost: physicalCardCost
+      };
+
+      const response = await fetch('/api/merch/purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      console.log('[PHYSICAL CARD PURCHASE] Purchase response:', {
+        status: response.status,
+        ok: response.ok,
+        result
+      });
+
+      if (!response.ok) {
+        console.error('[PHYSICAL CARD PURCHASE] Purchase API error:', result);
+        setError(result.error || result.message || 'Purchase failed. Please try again.');
+        return;
+      }
+
+      // Handle array return shape from TABLE-returning RPC
+      const normalizedResult = Array.isArray(result) ? result[0] : result;
+
+      if (!normalizedResult?.success && !normalizedResult?.order_id) {
+        console.error('[PHYSICAL CARD PURCHASE] Purchase returned failure:', normalizedResult);
+        setError(normalizedResult?.message || 'Purchase failed. Please try again.');
+        return;
+      }
+
+      const orderId = normalizedResult.order_id || result.order_id;
+
+      console.log('[PHYSICAL CARD PURCHASE] Purchase successful! Order ID:', orderId);
+
+      // Refresh profile to get updated HeartCoin balance
+      await refreshProfile();
+
+      // Store order info and show shipping form (like merch flow)
+      setCompletedOrderId(orderId);
+      setPurchasedItemInfo({
+        name: `${cardName} (Physical Card)`,
+        image: cardImage,
+        cost: physicalCardCost
+      });
+
+      // Close the enlarged card view and confirmation
+      setEnlargedCard(null);
+      setShowEnlargedCardConfirm(false);
+
+      // Show the shipping form
+      setShowShippingForm(true);
+      setValidationErrors({});
+      setMessage(`Purchase complete! Please enter your shipping details.`);
+
+    } catch (error: any) {
+      console.error('[PHYSICAL CARD PURCHASE] Purchase error:', error);
+      setError(error?.message || `Failed to purchase ${cardName}`);
+    } finally {
+      setModalLoading(false);
+      isSubmittingRef.current = false;
     }
   };
 
@@ -2236,6 +2354,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
             setEnlargedCard(null);
             setIsEnlargedCardFlipped(false);
             setCardRotation(0); // Reset rotation when closing
+            setShowEnlargedCardConfirm(false); // Reset confirmation state
           }}
           style={{
             backdropFilter: 'blur(8px)',
@@ -2259,6 +2378,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   setEnlargedCard(null);
                   setIsEnlargedCardFlipped(false);
                   setCardRotation(0); // Reset rotation when closing
+                  setShowEnlargedCardConfirm(false); // Reset confirmation state
                 }}
                 className="absolute top-2 right-2 w-8 h-8 bg-gray-700 hover:bg-gray-600 rounded-full flex items-center justify-center text-gray-300 hover:text-white transition-all duration-200 z-10"
               >
@@ -2381,39 +2501,120 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
               {/* HeartCoin Purchase Buttons */}
               <div className="flex flex-col gap-3 mt-4">
-                {/* Digital Purchase Button - 5 HeartCoins */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Handle digital purchase
-                  }}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 rounded-lg flex items-center justify-center gap-2 text-white font-bold transition-all duration-200 shadow-lg hover:shadow-cyan-500/30"
-                  style={{
-                    boxShadow: '0 0 15px rgba(6, 182, 212, 0.3)',
-                  }}
-                >
-                  <img src="/heartcoin.webp" alt="HeartCoin" className="w-5 h-5" />
-                  <span>5 HEARTCOIN</span>
-                  <span className="text-white/80">|</span>
-                  <span className="text-cyan-200">DIGITAL</span>
-                </button>
+                {!showEnlargedCardConfirm ? (
+                  <>
+                    {/* Digital Purchase Button - 5 HeartCoins */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Handle digital purchase (use existing flow)
+                        setSelectedPurchaseType('digital');
+                        handleCardPurchase('digital');
+                      }}
+                      disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < 5}
+                      className={`w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 text-white font-bold transition-all duration-200 shadow-lg ${
+                        modalLoading || !profile || (profile.heartcoin_balance || 0) < 5
+                          ? 'bg-gray-500 cursor-not-allowed opacity-50'
+                          : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 hover:shadow-cyan-500/30'
+                      }`}
+                      style={{
+                        boxShadow: modalLoading || !profile || (profile.heartcoin_balance || 0) < 5 ? undefined : '0 0 15px rgba(6, 182, 212, 0.3)',
+                      }}
+                    >
+                      <img src="/heartcoin.webp" alt="HeartCoin" className="w-5 h-5" />
+                      <span>5 HEARTCOIN</span>
+                      <span className="text-white/80">|</span>
+                      <span className="text-cyan-200">DIGITAL</span>
+                    </button>
 
-                {/* Physical Purchase Button - 20 HeartCoins */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Handle physical purchase
-                  }}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 rounded-lg flex items-center justify-center gap-2 text-white font-bold transition-all duration-200 shadow-lg hover:shadow-amber-500/30"
-                  style={{
-                    boxShadow: '0 0 15px rgba(245, 158, 11, 0.3)',
-                  }}
-                >
-                  <img src="/heartcoin.webp" alt="HeartCoin" className="w-5 h-5" />
-                  <span>20 HEARTCOIN</span>
-                  <span className="text-white/80">|</span>
-                  <span className="text-amber-200">PHYSICAL</span>
-                </button>
+                    {/* Physical Purchase Button - 20 HeartCoins */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        try { sfx.play('click', 0.4); } catch {}
+                        setShowEnlargedCardConfirm(true);
+                      }}
+                      disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < 20}
+                      className={`w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 text-white font-bold transition-all duration-200 shadow-lg ${
+                        modalLoading || !profile || (profile.heartcoin_balance || 0) < 20
+                          ? 'bg-gray-500 cursor-not-allowed opacity-50'
+                          : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 hover:shadow-amber-500/30'
+                      }`}
+                      style={{
+                        boxShadow: modalLoading || !profile || (profile.heartcoin_balance || 0) < 20 ? undefined : '0 0 15px rgba(245, 158, 11, 0.3)',
+                      }}
+                    >
+                      <img src="/heartcoin.webp" alt="HeartCoin" className="w-5 h-5" />
+                      <span>20 HEARTCOIN</span>
+                      <span className="text-white/80">|</span>
+                      <span className="text-amber-200">PHYSICAL</span>
+                    </button>
+                  </>
+                ) : (
+                  /* Confirmation UI for physical card purchase */
+                  <div className="bg-black/60 border border-amber-500/50 rounded-lg p-4">
+                    <div className="text-center mb-4">
+                      <div className="text-amber-200 text-sm font-bold mb-2">CONFIRM PHYSICAL CARD PURCHASE</div>
+                      <div className="text-white/80 text-xs">{displayCards[displayCardIndex]?.card_name || 'Card'}</div>
+                    </div>
+
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="text-center flex-1">
+                        <div className="text-white/60 text-xs mb-1">Your Balance</div>
+                        <div className="flex items-center justify-center gap-2">
+                          <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-5 h-5" />
+                          <span className="text-white font-bold">{profile?.heartcoin_balance ?? 0}</span>
+                        </div>
+                      </div>
+                      <div className="text-white/40 text-lg">→</div>
+                      <div className="text-center flex-1">
+                        <div className="text-white/60 text-xs mb-1">Cost</div>
+                        <div className="flex items-center justify-center gap-2">
+                          <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-5 h-5" />
+                          <span className="text-amber-300 font-bold">20</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {error && (
+                      <div className="text-red-400 text-xs text-center mb-3 bg-red-500/10 border border-red-500/30 rounded p-2">
+                        {error}
+                      </div>
+                    )}
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          try { sfx.play('close', 0.3); } catch {}
+                          setShowEnlargedCardConfirm(false);
+                          setError(null);
+                        }}
+                        className="flex-1 py-2 px-4 rounded-lg font-bold text-sm border border-white/30 text-white/80 hover:bg-white/10 transition-all duration-200"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          try { sfx.play('click', 0.5); } catch {}
+                          handlePhysicalCardPurchaseConfirm();
+                        }}
+                        disabled={modalLoading}
+                        className={`flex-1 py-2 px-4 rounded-lg font-bold text-sm transition-all duration-200 ${
+                          modalLoading
+                            ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-400 hover:to-orange-400'
+                        }`}
+                        style={{
+                          boxShadow: modalLoading ? undefined : '0 0 15px rgba(245, 158, 11, 0.4)',
+                        }}
+                      >
+                        {modalLoading ? 'Processing...' : 'CONFIRM'}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

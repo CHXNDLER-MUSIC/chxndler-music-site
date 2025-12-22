@@ -312,6 +312,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // Purchase flow states
   const [step, setStep] = useState<'confirm' | 'shipping' | 'done'>('confirm');
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
+  // Shipping status: idle, saving, success, error
+  const [shippingStatus, setShippingStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [shippingForm, setShippingForm] = useState({
     full_name: '',
     address_line1: '',
@@ -1671,27 +1673,29 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       }
 
       const orderId = purchaseResult.order_id;
-      console.log('[SHIPPING] Purchase successful, order:', orderId);
+      console.log('[PURCHASE] orders.id', orderId);
       setCurrentOrderId(orderId);
 
       // Refresh profile to update HeartCoin balance
       await refreshProfile();
 
       // Step 2: Update shipping info
-      console.log('[SHIPPING] Updating shipping for order:', orderId);
+      console.log('[SHIPPING] using orders.id', orderId);
+      setShippingStatus('saving');
       const updateResult = await updateShipping({
         orderId: orderId,
-        fullName: shippingForm.full_name,
-        addressLine1: shippingForm.address_line1,
-        addressLine2: shippingForm.address_line2,
-        city: shippingForm.city,
-        state: shippingForm.state,
-        zip: shippingForm.zip,
-        country: shippingForm.country || 'United States'
+        shipping_full_name: shippingForm.full_name,
+        shipping_address_line1: shippingForm.address_line1,
+        shipping_address_line2: shippingForm.address_line2 || undefined,
+        shipping_city: shippingForm.city,
+        shipping_state: shippingForm.state,
+        shipping_zip: shippingForm.zip,
+        shipping_country: shippingForm.country || 'United States'
       });
 
       if (updateResult) {
-        console.log('[SHIPPING] Shipping update successful:', updateResult);
+        console.log('[SHIPPING] Shipping saved for order:', orderId);
+        setShippingStatus('success');
 
         // Play success sound
         try { sfx.play('card-ding', 0.8); } catch {}
@@ -1708,41 +1712,44 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           triggerMerchCelebration(purchaseDraft.itemName || 'item', purchaseDraft.image || '');
         } catch {}
 
-        // Success behaviour - clear all purchase/shipping state
-        setStep('confirm');
-        setCurrentOrderId(null);
-        setPurchaseDraft(null);
-        setShowHeartCoinPurchase(false);
-        setShippingForm({
-          full_name: '',
-          address_line1: '',
-          address_line2: '',
-          city: '',
-          state: '',
-          zip: '',
-          county: '',
-          country: ''
-        });
-        currentIdempotencyKeyRef.current = null;
-
-        // Close the modal and show success message
-        setOpen(false);
-        setCheckInMessage("Order confirmed! Your artifact is on its way through the Heartverse.");
+        // Show success message
+        setCheckInMessage("Shipping info saved successfully.");
         setStatusType('success');
+
+        // Delay cleanup to show success message
         setTimeout(() => {
+          // Success behaviour - clear all purchase/shipping state
+          setStep('confirm');
+          setCurrentOrderId(null);
+          setPurchaseDraft(null);
+          setShowHeartCoinPurchase(false);
+          setShippingForm({
+            full_name: '',
+            address_line1: '',
+            address_line2: '',
+            city: '',
+            state: '',
+            zip: '',
+            county: '',
+            country: ''
+          });
+          setShippingStatus('idle');
+          currentIdempotencyKeyRef.current = null;
+
+          // Close the modal
+          setOpen(false);
           setCheckInMessage("");
           setStatusType('idle');
-        }, 3000);
+        }, 2000);
 
       } else {
         // Shipping update failed but purchase succeeded
         console.error('[SHIPPING] Shipping update failed but purchase succeeded');
-        setCheckInMessage(purchaseError || "Purchase successful! Please contact support to update shipping.");
+        setShippingStatus('error');
+        setCheckInMessage("Purchase complete, but shipping info failed to save. Please retry.");
         setStatusType('error');
-        setTimeout(() => {
-          setCheckInMessage("");
-          setStatusType('idle');
-        }, 5000);
+        // Do NOT clear currentOrderId - user needs it for retry
+        // Do NOT reset purchaseInFlightRef here - allow retry
       }
     } catch (err: any) {
       console.error('[SHIPPING] Unexpected error:', err);
@@ -1764,6 +1771,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const resetPurchaseFlow = () => {
     setStep('confirm');
     setCurrentOrderId(null);
+    setShippingStatus('idle');
     setShippingForm({
       full_name: '',
       address_line1: '',
@@ -1774,6 +1782,91 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       county: '',
       country: ''
     });
+  };
+
+  // Retry shipping function - only retries shipping, does NOT re-run purchase
+  const retryShipping = async () => {
+    if (!currentOrderId) {
+      console.error('[SHIPPING] No order ID for retry');
+      return;
+    }
+
+    // Validate shipping form
+    if (!shippingForm.full_name || !shippingForm.address_line1 || !shippingForm.city || !shippingForm.state || !shippingForm.zip || !shippingForm.country) {
+      setCheckInMessage("Please fill in all required shipping fields");
+      setStatusType('error');
+      setTimeout(() => {
+        setCheckInMessage("");
+        setStatusType('idle');
+      }, 3000);
+      return;
+    }
+
+    console.log('[SHIPPING] using orders.id', currentOrderId);
+    setShippingStatus('saving');
+    clearError();
+
+    try {
+      const updateResult = await updateShipping({
+        orderId: currentOrderId,
+        shipping_full_name: shippingForm.full_name,
+        shipping_address_line1: shippingForm.address_line1,
+        shipping_address_line2: shippingForm.address_line2 || undefined,
+        shipping_city: shippingForm.city,
+        shipping_state: shippingForm.state,
+        shipping_zip: shippingForm.zip,
+        shipping_country: shippingForm.country || 'United States'
+      });
+
+      if (updateResult) {
+        console.log('[SHIPPING] Shipping saved for order:', currentOrderId);
+        setShippingStatus('success');
+
+        // Play success sound
+        try { sfx.play('card-ding', 0.8); } catch {}
+
+        // Success message
+        setCheckInMessage("Shipping info saved successfully.");
+        setStatusType('success');
+
+        // Delay cleanup to show success message
+        setTimeout(() => {
+          // Clear all purchase/shipping state
+          setStep('confirm');
+          setCurrentOrderId(null);
+          setPurchaseDraft(null);
+          setShowHeartCoinPurchase(false);
+          setShippingForm({
+            full_name: '',
+            address_line1: '',
+            address_line2: '',
+            city: '',
+            state: '',
+            zip: '',
+            county: '',
+            country: ''
+          });
+          setShippingStatus('idle');
+          currentIdempotencyKeyRef.current = null;
+
+          // Close the modal
+          setOpen(false);
+          setCheckInMessage("");
+          setStatusType('idle');
+        }, 2000);
+
+      } else {
+        console.error('[SHIPPING] Retry failed');
+        setShippingStatus('error');
+        setCheckInMessage("Shipping info failed to save. Please retry.");
+        setStatusType('error');
+      }
+    } catch (err: any) {
+      console.error('[SHIPPING] Retry error:', err);
+      setShippingStatus('error');
+      setCheckInMessage(err?.message || "Shipping info failed to save. Please retry.");
+      setStatusType('error');
+    }
   };
 
 
@@ -3024,25 +3117,32 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   {activeUseTab === 'MERCH' && purchaseDraft && showHeartCoinPurchase && (
                     <div className="absolute left-6 right-6 bottom-4">
                       {step === 'shipping' ? (
-                        /* CONFIRM SHIPPING button */
+                        /* CONFIRM SHIPPING or RETRY SHIPPING button based on shippingStatus */
                         <button
-                          className={`w-full px-4 py-3 rounded border transition-colors text-center font-bold text-lg ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          className={`w-full px-4 py-3 rounded border transition-colors text-center font-bold text-lg ${(isProcessing || shippingStatus === 'saving') ? 'opacity-50 cursor-not-allowed' : ''}`}
                           style={{
-                            backgroundColor: 'rgba(0,255,0,0.2)',
-                            borderColor: 'rgba(0,255,0,0.6)',
-                            color: '#90EE90',
-                            textShadow: '0 0 4px rgba(144,238,144,0.8)',
-                            boxShadow: '0 0 8px rgba(0,255,0,0.3)'
+                            backgroundColor: shippingStatus === 'error' ? 'rgba(255,165,0,0.2)' : 'rgba(0,255,0,0.2)',
+                            borderColor: shippingStatus === 'error' ? 'rgba(255,165,0,0.6)' : 'rgba(0,255,0,0.6)',
+                            color: shippingStatus === 'error' ? '#FFB347' : '#90EE90',
+                            textShadow: shippingStatus === 'error' ? '0 0 4px rgba(255,179,71,0.8)' : '0 0 4px rgba(144,238,144,0.8)',
+                            boxShadow: shippingStatus === 'error' ? '0 0 8px rgba(255,165,0,0.3)' : '0 0 8px rgba(0,255,0,0.3)'
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            console.log('[SHIPPING] CONFIRM SHIPPING clicked');
-                            handleConfirmShipping();
+                            if (shippingStatus === 'error') {
+                              console.log('[SHIPPING] RETRY SHIPPING clicked');
+                              retryShipping();
+                            } else {
+                              console.log('[SHIPPING] CONFIRM SHIPPING clicked');
+                              handleConfirmShipping();
+                            }
                           }}
                           onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-                          disabled={isProcessing || !shippingForm.full_name || !shippingForm.address_line1 || !shippingForm.city || !shippingForm.state || !shippingForm.zip || !shippingForm.country}
+                          disabled={isProcessing || shippingStatus === 'saving' || !shippingForm.full_name || !shippingForm.address_line1 || !shippingForm.city || !shippingForm.state || !shippingForm.zip || !shippingForm.country}
                         >
-                          {isProcessing ? 'Processing...' : 'CONFIRM SHIPPING'}
+                          {shippingStatus === 'saving' ? 'Saving...' :
+                           shippingStatus === 'error' ? 'RETRY SHIPPING' :
+                           isProcessing ? 'Processing...' : 'CONFIRM SHIPPING'}
                         </button>
                       ) : (
                         /* Check balance against purchaseDraft.uiCost (server is authoritative for actual deduction) */
@@ -3560,18 +3660,28 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       </div>
                       
                       <button
-                        onClick={handleConfirmShipping}
-                        disabled={isProcessing || !shippingForm.full_name || !shippingForm.address_line1 || !shippingForm.city || !shippingForm.state || !shippingForm.zip || !shippingForm.country}
+                        onClick={() => {
+                          if (shippingStatus === 'error') {
+                            retryShipping();
+                          } else {
+                            handleConfirmShipping();
+                          }
+                        }}
+                        disabled={isProcessing || shippingStatus === 'saving' || !shippingForm.full_name || !shippingForm.address_line1 || !shippingForm.city || !shippingForm.state || !shippingForm.zip || !shippingForm.country}
                         className={`w-full mt-4 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
-                          isProcessing || !shippingForm.full_name || !shippingForm.address_line1 || !shippingForm.city || !shippingForm.state || !shippingForm.zip || !shippingForm.country
+                          isProcessing || shippingStatus === 'saving' || !shippingForm.full_name || !shippingForm.address_line1 || !shippingForm.city || !shippingForm.state || !shippingForm.zip || !shippingForm.country
                             ? 'bg-gray-500 cursor-not-allowed text-gray-300'
-                            : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(242,239,29,0.8)]'
+                            : shippingStatus === 'error'
+                              ? 'bg-gradient-to-r from-orange-400 to-orange-600 text-white hover:scale-[1.02]'
+                              : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(242,239,29,0.8)]'
                         }`}
-                        style={!isProcessing && shippingForm.full_name && shippingForm.address_line1 && shippingForm.city && shippingForm.state && shippingForm.zip && shippingForm.country ? {
+                        style={!isProcessing && shippingStatus !== 'saving' && shippingForm.full_name && shippingForm.address_line1 && shippingForm.city && shippingForm.state && shippingForm.zip && shippingForm.country && shippingStatus !== 'error' ? {
                           boxShadow: '0 0 20px rgba(242,239,29,0.6), inset 0 2px 0 rgba(255,255,255,0.6), inset 0 -8px 16px rgba(0,0,0,0.22)'
                         } : {}}
                       >
-                        {isProcessing ? 'Processing...' : 'CONFIRM SHIPPING'}
+                        {shippingStatus === 'saving' ? 'Saving...' :
+                         shippingStatus === 'error' ? 'RETRY SHIPPING' :
+                         isProcessing ? 'Processing...' : 'CONFIRM SHIPPING'}
                       </button>
                     </div>
                   )}

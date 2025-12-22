@@ -2373,6 +2373,7 @@ const HUDPanel = React.memo(function HUDPanel({
                     songsByElement={{}}
                     zoomLevel={1}
                     onPlanetSelect={handlePlanetSelectWithRewards}
+                    onSongChange={onSongChange}
                     quality="high"
                     focusElement={focusElement}
                     focusSongId={currentId || null}

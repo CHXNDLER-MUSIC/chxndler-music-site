@@ -152,34 +152,16 @@ export async function POST(request: NextRequest) {
     // Handle RPC result - could be object or array
     const result = Array.isArray(rpcResult) ? rpcResult[0] : rpcResult;
 
+    // Extract the orders.id from RPC result
+    const ordersId = result?.order_id ? String(result.order_id) : null;
+    console.log('[PURCHASE] orders.id', ordersId);
+
     // Treat "Already processed" as success (idempotency)
     if (result?.message === 'Already processed' || result?.idempotent) {
       console.log('[PURCHASE] Idempotent success:', result);
-      // Defensive: normalize payment_type on the order if present
-      try {
-        if (result?.order_id) {
-          const orderId = String(result.order_id);
-          const { data: orderRow } = await supabase
-            .from('orders')
-            .select('id, payment_type')
-            .eq('id', orderId)
-            .maybeSingle();
-          console.log('[PURCHASE] Existing order payment_type:', { orderId, payment_type: (orderRow as any)?.payment_type });
-          if ((orderRow as any)?.payment_type !== normalizedPaymentType) {
-            const { error: upErr } = await supabase
-              .from('orders')
-              .update({ payment_type: normalizedPaymentType })
-              .eq('id', orderId);
-            if (upErr) console.warn('[PURCHASE] Failed to normalize payment_type on idempotent order:', upErr);
-            else console.log('[PURCHASE] Normalized payment_type on idempotent order to', normalizedPaymentType);
-          }
-        }
-      } catch (normErr) {
-        console.warn('[PURCHASE] Normalization step failed (idempotent):', normErr);
-      }
       return NextResponse.json({
         success: true,
-        order_id: result.order_id ? String(result.order_id) : null,
+        order_id: ordersId,
         amount_spent: result.amount_spent || result.total_heartcoins || 0,
         idempotent: true,
         payment_type: normalizedPaymentType,
@@ -189,31 +171,9 @@ export async function POST(request: NextRequest) {
     // Normal success
     if (result?.success) {
       console.log('[PURCHASE] Success:', result);
-      // Defensive: normalize payment_type on the order if present
-      try {
-        if (result?.order_id) {
-          const orderId = String(result.order_id);
-          const { data: orderRow } = await supabase
-            .from('orders')
-            .select('id, payment_type')
-            .eq('id', orderId)
-            .maybeSingle();
-          console.log('[PURCHASE] Existing order payment_type:', { orderId, payment_type: (orderRow as any)?.payment_type });
-          if ((orderRow as any)?.payment_type !== normalizedPaymentType) {
-            const { error: upErr } = await supabase
-              .from('orders')
-              .update({ payment_type: normalizedPaymentType })
-              .eq('id', orderId);
-            if (upErr) console.warn('[PURCHASE] Failed to normalize payment_type:', upErr);
-            else console.log('[PURCHASE] Normalized payment_type to', normalizedPaymentType);
-          }
-        }
-      } catch (normErr) {
-        console.warn('[PURCHASE] Normalization step failed:', normErr);
-      }
       return NextResponse.json({
         success: true,
-        order_id: result.order_id ? String(result.order_id) : null,
+        order_id: ordersId,
         amount_spent: result.amount_spent || result.total_heartcoins || 0,
         payment_type: normalizedPaymentType,
       });
@@ -223,7 +183,7 @@ export async function POST(request: NextRequest) {
     console.log('[PURCHASE] RPC returned:', result);
     return NextResponse.json({
       success: true,
-      order_id: result?.order_id ? String(result.order_id) : null,
+      order_id: ordersId,
       amount_spent: result?.amount_spent || result?.total_heartcoins || 0,
       ...result,
     });
