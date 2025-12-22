@@ -1527,9 +1527,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     <>
       <button
         data-tour-id="heartcoin-button"
-        onClick={handleClick} 
-        onMouseEnter={onHoverSound}
-        className="flex items-center gap-1 p-2 rounded-lg transition-all duration-200 h-16"
+        onClick={handleClick}
+        className="flex items-center gap-1 p-2 rounded-lg transition-all duration-200 h-16 pointer-events-auto relative z-10"
         style={{
           transition: 'all 0.3s ease',
           ...restProps.style
@@ -1575,7 +1574,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           }}
         >
           <div
-            className="heartcoin-hologram-container"
+            className="heartcoin-hologram-container pointer-events-auto"
             style={{
               width: 'min(92vw, 550px)',
               height: '50vh',
@@ -2021,7 +2020,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       e.currentTarget.style.textShadow = '0 0 8px rgba(78,205,196,0.5)';
                     }
                   }}
-                  className="px-3 py-1 text-xs rounded border font-bold transition-all duration-200"
+                  className="px-3 py-1 text-xs rounded border font-bold transition-all duration-200 pointer-events-auto relative z-10"
                   style={{
                     background: dailyQuests.journalEntry ? 'rgba(0,255,0,0.1)' : 'rgba(78,205,196,0.15)',
                     color: dailyQuests.journalEntry ? '#00FF00' : '#4ECDC4',

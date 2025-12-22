@@ -59,6 +59,14 @@ export default function UserCards({
         setLoading(true);
         setError(null);
 
+        // Debug: Check current auth session
+        const { data: { session } } = await supabaseBrowser.auth.getSession();
+        console.log('[UserCards] Debug:', {
+          viewedUserId: userId,
+          sessionExists: !!session,
+          currentUserId: session?.user?.id ?? 'none (anon)',
+        });
+
         // Fetch user profile from public_profiles_table (never query private profiles table)
         const profileResponse = await supabaseBrowser
           .from('public_profiles_table')
@@ -67,7 +75,7 @@ export default function UserCards({
           .maybeSingle();
 
         if (profileResponse.error) {
-          // Don't show error, just show empty state
+          console.error('[UserCards] Profile fetch error:', profileResponse.error);
           setUserProfile(null);
           setUserCards([]);
           setLoading(false);
@@ -114,8 +122,14 @@ export default function UserCards({
             .order('acquired_at', { ascending: true });
 
           if (cardsResponse.error) {
-            console.error('[UserCards] Error fetching public cards:', cardsResponse.error);
-            setError('Unable to load public cards');
+            console.error('[UserCards] Error fetching public cards:', {
+              code: cardsResponse.error.code,
+              message: cardsResponse.error.message,
+              details: cardsResponse.error.details,
+              hint: cardsResponse.error.hint,
+            });
+            // Show user-friendly error
+            setError('Unable to load public cards. Please try again later.');
             setUserCards([]);
           } else {
             console.log('[UserCards] Fetched public cards count:', cardsResponse.data?.length ?? 0);
@@ -124,11 +138,12 @@ export default function UserCards({
         } catch (err) {
           // If cards fetch fails for any reason, show error state
           console.error('[UserCards] Exception fetching public cards:', err);
-          setError('Unable to load public cards');
+          setError('Unable to load public cards. Please try again later.');
           setUserCards([]);
         }
       } catch (err) {
         // On any error, show empty state rather than error message
+        console.error('[UserCards] Unexpected error:', err);
         setUserProfile(null);
         setUserCards([]);
       } finally {
@@ -160,8 +175,14 @@ export default function UserCards({
 
   if (error) {
     return (
-      <div className={`text-center text-red-400/80 text-sm ${className}`}>
-        {error}
+      <div className={`text-center ${className}`}>
+        <div className="text-red-400/80 text-sm mb-2">{error}</div>
+        <button
+          onClick={() => window.location.reload()}
+          className="text-xs text-white/50 hover:text-white/80 underline transition-colors"
+        >
+          Refresh page
+        </button>
       </div>
     );
   }
@@ -171,6 +192,29 @@ export default function UserCards({
     return (
       <div className={`text-center text-white/60 text-sm ${className}`}>
         No public cards yet.
+      </div>
+    );
+  }
+
+  // Handle case where user has no public cards
+  if (userCards.length === 0) {
+    return (
+      <div className={`${className}`}>
+        {showTitle && (
+          <div className="flex items-center gap-2 mb-3">
+            <img
+              src="/elements/binder.webp"
+              alt="Card Binder"
+              className="w-5 h-5"
+            />
+            <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: '#FF69B4' }}>
+              CARD COLLECTION
+            </h3>
+          </div>
+        )}
+        <div className="text-center text-white/50 text-sm py-4">
+          No public cards yet.
+        </div>
       </div>
     );
   }

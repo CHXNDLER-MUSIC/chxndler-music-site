@@ -2025,7 +2025,47 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               >
                 ×
               </button>
-              
+
+              {/* PAY WITH Heartcoin Button - Above Image */}
+              <div className="mb-4 flex justify-center">
+                <button
+                  onClick={() => {
+                    handleHeartCoinPurchaseConfirm(enlargedItem);
+                    setEnlargedItem(null);
+                    setEnlargedImageIndex(0);
+                  }}
+                  onMouseEnter={() => {
+                    if (!modalLoading && profile && (profile.heartcoin_balance || 0) >= (enlargedItem.heartCoin || 0)) {
+                      try { sfx.play('hover', 0.3); } catch {}
+                    }
+                  }}
+                  disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < (enlargedItem.heartCoin || 0)}
+                  className={`flex items-center gap-2 py-3 px-6 rounded-lg font-bold text-sm transition-all duration-200 ${
+                    modalLoading || !profile || (profile.heartcoin_balance || 0) < (enlargedItem.heartCoin || 0)
+                      ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
+                      : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,239,29,0.6)]'
+                  }`}
+                  style={
+                    modalLoading || !profile || (profile.heartcoin_balance || 0) < (enlargedItem.heartCoin || 0)
+                      ? undefined
+                      : {
+                          boxShadow: '0 0 15px rgba(242,239,29,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
+                        }
+                  }
+                >
+                  <span>PAY WITH</span>
+                  <img
+                    src="/elements/heart-coin.webp"
+                    alt="Heart Coin"
+                    className="w-5 h-5 object-contain"
+                    style={{
+                      filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
+                    }}
+                  />
+                  <span>{enlargedItem.heartCoin || 0}</span>
+                </button>
+              </div>
+
               {/* Image Content */}
               <div className="flex items-center justify-center w-full h-full">
                 <div className="relative max-w-full max-h-full">

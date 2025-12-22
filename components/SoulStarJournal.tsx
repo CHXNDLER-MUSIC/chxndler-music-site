@@ -123,7 +123,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   });
 
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [hasClickedInitialButton, setHasClickedInitialButton] = useState(false);
   const [activeTab, setActiveTab] = useState<'private' | 'public'>('public');
   const [showCardsModal, setShowCardsModal] = useState(false);
   const [showBadgesModal, setShowBadgesModal] = useState(false);
@@ -150,7 +149,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
     if (isOpen) {
       loadDailyPrompt();
       setShowLoginPrompt(false);
-      setHasClickedInitialButton(false);
       // Load starred entries for the private tab
       loadStarredEntries();
     }
@@ -1547,40 +1545,27 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   {(!user?.id || !profile?.element) ? (
                     <button
                       onClick={() => {
-                        if (!hasClickedInitialButton) {
-                          sfx.play('pause', 0.8);
-                          setHasClickedInitialButton(true);
-                        } else {
-                          sfx.play('button', 0.8);
-                          // Close journal and open welcome home, then reopen journal after login
-                          onClose();
-                          // Set flag to reopen journal after profile creation
-                          sessionStorage.setItem('reopenJournalAfterLogin', 'true');
-                          setTimeout(() => {
-                            if (openWelcomeHome) {
-                              openWelcomeHome();
-                            }
-                          }, 100);
-                        }
+                        sfx.play('button', 0.8);
+                        // Close journal and open welcome home, then reopen journal after login
+                        onClose();
+                        // Set flag to reopen journal after profile creation
+                        sessionStorage.setItem('reopenJournalAfterLogin', 'true');
+                        setTimeout(() => {
+                          if (openWelcomeHome) {
+                            openWelcomeHome();
+                          }
+                        }, 100);
                       }}
                       className="flex-1 px-4 py-2 rounded-lg text-base font-semibold transition-all duration-200 hover:opacity-90"
                       style={{
-                        background: hasClickedInitialButton 
-                          ? 'rgba(255, 255, 0, 0.15)' 
-                          : `linear-gradient(135deg, ${elementTheme.color}60, ${elementTheme.color}80)`,
-                        color: hasClickedInitialButton ? '#FFFF00' : '#000000',
-                        border: hasClickedInitialButton 
-                          ? '2px solid #FFFF00' 
-                          : `1px solid ${elementTheme.color}`,
-                        boxShadow: hasClickedInitialButton 
-                          ? '0 0 20px #FFFF00, 0 0 40px #FFFF0060, inset 0 0 15px #FFFF0030' 
-                          : `0 0 20px ${elementTheme.color}40, inset 0 0 10px ${elementTheme.color}20`,
-                        textShadow: hasClickedInitialButton 
-                          ? '0 0 8px #FFFF00, 0 0 15px #FFFF00, 0 0 25px #FFFF00' 
-                          : 'none'
+                        background: 'rgba(255, 255, 0, 0.15)',
+                        color: '#FFFF00',
+                        border: '2px solid #FFFF00',
+                        boxShadow: '0 0 20px #FFFF00, 0 0 40px #FFFF0060, inset 0 0 15px #FFFF0030',
+                        textShadow: '0 0 8px #FFFF00, 0 0 15px #FFFF00, 0 0 25px #FFFF00'
                       }}
                     >
-                      {!hasClickedInitialButton ? 'CAST YOUR SOUL STAR' : 'Create ALIEN profile to submit'}
+                      Create ALIEN profile to submit
                     </button>
                   ) : (
                     <button

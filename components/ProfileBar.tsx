@@ -449,7 +449,7 @@ export default function ProfileBar({
 
   return (
     <div 
-      className="fixed top-0 left-0 right-0 z-[300] h-16 bg-black/40 backdrop-blur-lg border-b border-white/20 transition-opacity duration-500 ease-in-out"
+      className="fixed top-0 left-0 right-0 z-[305] h-16 bg-black/40 backdrop-blur-lg border-b border-white/20 transition-opacity duration-500 ease-in-out"
     >
       <div className="relative h-full">
 
@@ -461,12 +461,12 @@ export default function ProfileBar({
         {/* Main Flex Layout - Center and Right */}
         <div className="flex items-center justify-between h-full pl-52 pr-2 min-w-0">
           {/* Left Side - Empty space (hamburger menu and auth button are absolutely positioned) */}
-          <div className="flex items-center flex-1 min-w-0">
+          <div className="flex items-center flex-1 min-w-0 pointer-events-none">
             {/* Space for hamburger menu and auth button - no content here */}
           </div>
 
           {/* Center Section - Middle pill UI */}
-          <div className="flex items-center justify-center flex-shrink-0">
+          <div className="flex items-center justify-center flex-shrink-0 pointer-events-none">
             {/* This is where the "existing middle pill" would go */}
             {/* Currently empty but structured for future pill UI */}
           </div>
