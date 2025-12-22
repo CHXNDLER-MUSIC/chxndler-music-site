@@ -100,8 +100,20 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
 
   // Handle track change from dropdown
   const handleTrackChange = useCallback(async (newTrackId: string) => {
+    // Trigger visual warp: focus selected planet and hide all during effect
     try {
-      // Use selectTrack method which stops music, plays warp, then loads the track and auto-plays
+      const { playerStore } = await import("@/store/usePlayerStore");
+      const st = playerStore.getState();
+      if (st) {
+        // setMain without preserve to trigger hidden state during warp
+        st.setMain(newTrackId);
+        st.setPlanetDisplayMode('hidden');
+        st.setPlanetsVisible(false);
+      }
+    } catch {}
+
+    try {
+      // Use selectTrack method which stops music, plays warp SFX, then loads and auto-plays
       await audioManager.selectTrack(newTrackId);
     } catch (err) {
       console.error('Failed to select track:', err);
@@ -113,6 +125,16 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
         // Set the track as current even if selection failed
         audioManager.loadTrack(getTrackUrlFromSongId(newTrackId));
       }
+    } finally {
+      // Reveal selected planet after warp/audio has started
+      try {
+        const { playerStore } = await import("@/store/usePlayerStore");
+        const st2 = playerStore.getState();
+        if (st2) {
+          st2.setPlanetDisplayMode('single');
+          st2.setPlanetsVisible(true);
+        }
+      } catch {}
     }
   }, [audioManager]);
 

@@ -807,6 +807,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [autoTextValue, setAutoTextValue] = useState("");
   const [attendLivestreamConfirming, setAttendLivestreamConfirming] = useState(false);
   const [phraseValidationResult, setPhraseValidationResult] = useState<'correct' | 'incorrect' | null>(null);
+  // Daily secret phrase redemption - prevent duplicates and track status
+  const [isRedeemingPhrase, setIsRedeemingPhrase] = useState(false);
+  const [phraseStatus, setPhraseStatus] = useState<'idle'|'success'|'already'|'incorrect'|'error'>('idle');
   
   // Bonus quests hook
   const { quests: bonusQuests, status: bonusQuestsStatus, errorMessage: bonusQuestsError, isLoggedIn, completeQuest, refetchQuests } = useBonusQuests();
@@ -817,15 +820,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   };
 
   // Redeem secret phrase via Supabase RPC (daily secret phrase)
-  const redeemDailySecretPhrase = async (phrase: string): Promise<{ status: string; reward?: number }> => {
-    const trimmed = phrase.trim().toLowerCase();
-    if (!trimmed) return { status: 'invalid' };
+  const redeemDailySecretPhrase = async (phrase: string): Promise<{ status: string; reward?: number; payload?: any }> => {
+    // Normalize input before RPC (do not force lowercase)
+    const cleaned = phrase.trim();
+    const normalized = cleaned.replace(/\s+/g, " ");
+    if (!normalized) return { status: 'invalid' };
 
     try {
-      const p_phrase = trimmed;
-      console.log('[SECRET_PHRASE] sending', { p_phrase });
-      const { data, error } = await supabaseBrowser.rpc("redeem_daily_secret_phrase", {
-        p_phrase
+      const { data, error } = await supabaseBrowser.rpc('redeem_daily_secret_phrase', {
+        p_phrase: normalized,
       });
 
       if (error) {
@@ -835,21 +838,38 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           hint: (error as any)?.hint,
           code: (error as any)?.code,
         });
-        const msg = error.message?.toLowerCase() || '';
-        if (msg.includes('not authenticated')) {
-          return { status: 'not_authenticated' };
-        } else if (msg.includes('invalid phrase')) {
-          return { status: 'invalid' };
-        } else if (msg.includes('already redeemed')) {
+
+        // Handle specific Postgres exceptions (backend errcodes)
+        const code = (error as any)?.code as string | undefined;
+        const msg = ((error as any)?.message || '').toLowerCase();
+        if (code === 'P0003') {
           return { status: 'already_redeemed' };
         }
+        if (code === 'P0002') {
+          return { status: 'invalid' };
+        }
+        if (code === 'P0001' || msg.includes('not authenticated') || msg.includes('not logged in')) {
+          return { status: 'not_authenticated' };
+        }
+
         return { status: 'error' };
       }
 
       const row = Array.isArray(data) ? data[0] : data;
+
+      // Log returned payload (reward, active_date)
+      try {
+        console.log('[SECRET_PHRASE] redeemed payload:', {
+          reward: row?.reward ?? row?.granted_amount ?? 0,
+          active_date: row?.active_date ?? row?.activeDate ?? null,
+          raw: row,
+        });
+      } catch {}
+
       return {
         status: 'success',
-        reward: row?.granted_amount || 0
+        reward: row?.reward ?? row?.granted_amount ?? 0,
+        payload: row,
       };
     } catch (error: any) {
       console.error('Error redeeming daily secret phrase:', {
@@ -2058,7 +2078,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       e.currentTarget.style.textShadow = '0 0 8px rgba(78,205,196,0.5)';
                     }
                   }}
-                  className="px-3 py-1 text-xs rounded border font-bold transition-all duration-200 pointer-events-auto relative z-10"
+                  className="px-5 py-2 text-xs rounded border font-bold transition-all duration-200 pointer-events-auto relative z-10 min-w-[140px]"
                   style={{
                     background: dailyQuests.journalEntry ? 'rgba(0,255,0,0.1)' : 'rgba(78,205,196,0.15)',
                     color: dailyQuests.journalEntry ? '#00FF00' : '#4ECDC4',
@@ -2102,10 +2122,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             <textarea
                               value={autoTextValue}
                               onChange={(e) => setAutoTextValue(e.target.value)}
-                              placeholder="ENTER SECRET PHRASE"
+                              placeholder="ENTER PASSWORD"
                               className="w-full h-8 px-2 py-1 text-xs rounded border bg-black/20 text-white placeholder-white/60 border-white/30 focus:border-white/60 focus:outline-none resize-none"
                               autoFocus
                               style={{ maxWidth: '200px' }}
+                              disabled={isRedeemingPhrase || phraseStatus === 'success' || phraseStatus === 'already'}
                             />
                           )
                         ) : (
@@ -2161,82 +2182,87 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 setAttendLivestreamConfirming(false);
                                 setPhraseValidationResult(null);
                               } else {
-                                // Redeem the secret phrase via RPC
+                                // Redeem the secret phrase via RPC (prevent duplicates and map errors)
+                                if (isRedeemingPhrase) return;
+                                setIsRedeemingPhrase(true);
                                 setSecretPhraseLoading(true);
-                                redeemDailySecretPhrase(autoTextValue).then(async (result) => {
-                                  const status = result.status;
+                                (async () => {
+                                  const inputPhrase = autoTextValue.trim();
+                                  try {
+                                    const { data, error } = await supabaseBrowser.rpc('redeem_daily_secret_phrase', { p_phrase: inputPhrase });
+                                    if (error) {
+                                      console.error('Secret phrase RPC error:', {
+                                        message: (error as any)?.message,
+                                        details: (error as any)?.details,
+                                        hint: (error as any)?.hint,
+                                        code: (error as any)?.code,
+                                      });
+                                      const code = (error as any)?.code;
+                                      const msg = ((error as any)?.message || '').toLowerCase();
+                                      if (code === 'P0003') {
+                                        setPhraseStatus('already');
+                                        setPhraseValidationResult('incorrect');
+                                        try { sfx.play('change-channel', 0.6); } catch {}
+                                        setCheckInMessage('Already redeemed');
+                                        try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Already redeemed today', type: 'error' } })); } catch {}
+                                        setStatusType('error');
+                                      } else if (code === 'P0002') {
+                                        setPhraseStatus('incorrect');
+                                        setPhraseValidationResult('incorrect');
+                                        try { sfx.play('change-channel', 0.6); } catch {}
+                                        setCheckInMessage('Incorrect secret phrase');
+                                        try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Incorrect secret phrase', type: 'error' } })); } catch {}
+                                        setStatusType('error');
+                                      } else if (code === 'P0001' || msg.includes('not authenticated') || msg.includes('not logged in')) {
+                                        setPhraseStatus('error');
+                                        setPhraseValidationResult('incorrect');
+                                        setCheckInMessage('You must be logged in');
+                                        try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Please log in to redeem', type: 'error' } })); } catch {}
+                                        setStatusType('error');
+                                      } else {
+                                        setPhraseStatus('error');
+                                        setPhraseValidationResult('incorrect');
+                                        try { sfx.play('change-channel', 0.6); } catch {}
+                                        setCheckInMessage('Something went wrong');
+                                        try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Something went wrong. Try again.', type: 'error' } })); } catch {}
+                                        setStatusType('error');
+                                      }
+                                      return;
+                                    }
 
-                                  if (status === 'success' || status === 'redeemed') {
-                                    // Success - phrase accepted and coins awarded
+                                    const row = Array.isArray(data) ? data[0] : data;
+                                    const reward = row?.granted_amount || row?.reward || 0;
+                                    setPhraseStatus('success');
                                     setPhraseValidationResult('correct');
+                                    setAutoTextValue('');
                                     try { sfx.play('click', 0.7); } catch {}
-                                    setCheckInMessage(`Secret phrase accepted! +${result.reward || 0} HeartCoins`);
+                                    setCheckInMessage(`Secret phrase accepted! +${reward} HeartCoins`);
                                     setStatusType('success');
                                     setShowCheckInSuccess(true);
-
-                                    // Refresh profile to update HeartCoin balance
+                                    try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: `Redeemed! +${reward} HeartCoins`, type: 'success' } })); } catch {}
                                     await refreshProfile();
                                     await refetchQuests();
-
-                                    // Clear UI after success
+                                  } catch (error: any) {
+                                    console.error('Error redeeming ATTEND_LIVESTREAM phrase:', {
+                                      message: error?.message,
+                                      details: error?.details,
+                                      hint: error?.hint,
+                                      code: error?.code,
+                                    });
+                                    setPhraseStatus('error');
+                                    setPhraseValidationResult('incorrect');
+                                    setCheckInMessage('Something went wrong');
+                                    setStatusType('error');
+                                  } finally {
+                                    setIsRedeemingPhrase(false);
+                                    setSecretPhraseLoading(false);
                                     setTimeout(() => {
-                                      setShowAutoTextBox(false);
-                                      setAutoTextValue("");
-                                      setAttendLivestreamConfirming(false);
                                       setShowCheckInSuccess(false);
                                       setCheckInMessage("");
                                       setStatusType('idle');
                                     }, 3000);
-                                  } else if (status === 'already_redeemed' || status === 'already_checked_in') {
-                                    // Already redeemed - show "Already checked in"
-                                    setPhraseValidationResult('incorrect');
-                                    try { sfx.play('change-channel', 0.6); } catch {}
-                                    setCheckInMessage('Already redeemed');
-                                    setStatusType('error');
-                                    setTimeout(() => {
-                                      setPhraseValidationResult(null);
-                                      setAutoTextValue("");
-                                      setCheckInMessage("");
-                                      setStatusType('idle');
-                                    }, 2500);
-                                  } else if (status === 'invalid' || status === 'incorrect') {
-                                    // Invalid phrase
-                                    setPhraseValidationResult('incorrect');
-                                    try { sfx.play('change-channel', 0.6); } catch {}
-                                    setCheckInMessage('Incorrect phrase');
-                                    setStatusType('error');
-                                    setTimeout(() => {
-                                      setPhraseValidationResult(null);
-                                      setAutoTextValue("");
-                                      setCheckInMessage("");
-                                      setStatusType('idle');
-                                    }, 2000);
-                                  } else if (status === 'not_authenticated') {
-                                    // Not logged in
-                                    setPhraseValidationResult('incorrect');
-                                    setCheckInMessage('Please log in');
-                                    setStatusType('error');
-                                    setTimeout(() => {
-                                      setPhraseValidationResult(null);
-                                      setCheckInMessage("");
-                                      setStatusType('idle');
-                                    }, 2500);
-                                  } else {
-                                    // Unknown error
-                                    setPhraseValidationResult('incorrect');
-                                    try { sfx.play('change-channel', 0.6); } catch {}
-                                    setCheckInMessage('Something went wrong');
-                                    setStatusType('error');
-                                    setTimeout(() => {
-                                      setPhraseValidationResult(null);
-                                      setAutoTextValue("");
-                                      setCheckInMessage("");
-                                      setStatusType('idle');
-                                    }, 2500);
                                   }
-                                }).finally(() => {
-                                  setSecretPhraseLoading(false);
-                                });
+                                })();
                               }
                             } else {
                               // First click - show the secret phrase input
@@ -2244,6 +2270,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               setAutoTextValue("");
                               setAttendLivestreamConfirming(true);
                               setPhraseValidationResult(null);
+                              setPhraseStatus('idle');
                             }
                           } else if (quest.quest_key === 'SECRET_PHRASE') {
                             if (secretPhraseInputVisible === quest.id) {
@@ -2276,7 +2303,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             (!quest.can_complete && !inviteFriendShared) ||
                             isQuestCompleted(quest) ||
                             (quest.quest_key === 'SECRET_PHRASE' && secretPhraseLoading) ||
-                            (quest.quest_key === 'ATTEND_LIVESTREAM' && secretPhraseLoading)
+                            (quest.quest_key === 'ATTEND_LIVESTREAM' && (secretPhraseLoading || isRedeemingPhrase || phraseStatus === 'success' || phraseStatus === 'already'))
                           )
                         }
                         className="px-2 py-1 text-xs rounded border font-bold transition-all duration-200"
@@ -2355,7 +2382,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           : (isQuestCompleted(quest) || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
                             ? 'COMPLETED'
                             : quest.quest_key === 'ATTEND_LIVESTREAM'
-                              ? (phraseValidationResult === 'correct' ? 'COMPLETED' : attendLivestreamConfirming ? 'CONFIRM' : 'CHECK IN')
+                              ? ((phraseStatus === 'success' || phraseStatus === 'already')
+                                  ? 'ALREADY REDEEMED'
+                                  : (phraseValidationResult === 'correct' ? 'COMPLETED' : attendLivestreamConfirming ? 'CONFIRM' : 'CHECK IN'))
                               : quest.quest_key === 'INVITE_FRIEND'
                                 ? (inviteFriendShared ? 'CONFIRM' : 'INVITE FRIEND')
                                 : quest.quest_key === 'SECRET_PHRASE'
@@ -2374,8 +2403,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           onChange={(e) => setSecretPhraseValue(e.target.value)}
                           placeholder="Enter secret phrase"
                           className="w-full px-2 py-1 text-xs rounded border bg-black/20 text-white placeholder-white/60 border-white/30 focus:border-white/60 focus:outline-none"
-                          onKeyPress={(e) => {
+                          onKeyDown={(e) => {
                             if (e.key === 'Enter' && !secretPhraseLoading) {
+                              e.preventDefault();
                               handleSecretPhraseQuest(quest);
                             }
                           }}

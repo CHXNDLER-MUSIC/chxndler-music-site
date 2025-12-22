@@ -1278,7 +1278,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             }, 200); // Slightly longer delay to ensure modal closes completely
                           }
                         }}
-                        className="px-4 py-2 text-sm rounded border transition-colors bg-rgba(255,255,255,0.1) text-white hover:bg-white/20 font-bold"
+                        className="px-6 py-3 text-sm rounded border transition-colors bg-rgba(255,255,255,0.1) text-white hover:bg-white/20 font-bold min-w-[160px]"
                         style={{
                           background: 'rgba(255,255,255,0.1)',
                           color: '#FFFFFF',

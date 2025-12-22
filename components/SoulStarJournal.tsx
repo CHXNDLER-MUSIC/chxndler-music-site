@@ -924,10 +924,18 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 try { sfx.play('change-channel', 0.8); } catch {}
                 setActiveTab('public');
               }}
-              onMouseEnter={() => {
+              onMouseEnter={(e) => {
                 try { sfx.play('hover', 0.6); } catch {}
+                e.currentTarget.style.transform = 'scale(1.08)';
+                e.currentTarget.style.boxShadow = '0 0 20px #00FF00, 0 0 35px #00FF0080, 0 0 50px #00FF0060';
+                e.currentTarget.style.textShadow = '0 0 10px #00FF00, 0 0 18px #00FF00, 0 0 28px #00FF00';
               }}
-              className="px-12 py-2.5 rounded text-base font-semibold uppercase transition-all duration-200 hover:scale-105"
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.boxShadow = activeTab === 'public' ? '0 0 15px #00FF0060, 0 0 25px #00FF0040' : 'none';
+                e.currentTarget.style.textShadow = activeTab === 'public' ? '0 0 8px #00FF00, 0 0 15px #00FF00' : 'none';
+              }}
+              className="px-12 py-2.5 rounded text-base font-semibold uppercase transition-all duration-200"
               style={{
                 background: activeTab === 'public' ? '#00FF0030' : 'rgba(0,0,0,0.4)',
                 color: activeTab === 'public' ? '#00FF00' : '#FFFFFFCC',
@@ -943,10 +951,18 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 try { sfx.play('change-channel', 0.8); } catch {}
                 setActiveTab('private');
               }}
-              onMouseEnter={() => {
+              onMouseEnter={(e) => {
                 try { sfx.play('hover', 0.6); } catch {}
+                e.currentTarget.style.transform = 'scale(1.08)';
+                e.currentTarget.style.boxShadow = '0 0 20px #FF69B4, 0 0 35px #FF69B480, 0 0 50px #FF69B460';
+                e.currentTarget.style.textShadow = '0 0 10px #FF69B4, 0 0 18px #FF69B4, 0 0 28px #FF69B4';
               }}
-              className="px-12 py-2.5 rounded text-base font-semibold uppercase transition-all duration-200 hover:scale-105"
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.boxShadow = activeTab === 'private' ? '0 0 15px #FF69B460, 0 0 25px #FF69B440' : 'none';
+                e.currentTarget.style.textShadow = activeTab === 'private' ? '0 0 8px #FF69B4, 0 0 15px #FF69B4' : 'none';
+              }}
+              className="px-12 py-2.5 rounded text-base font-semibold uppercase transition-all duration-200"
               style={{
                 background: activeTab === 'private' ? '#FF69B430' : 'rgba(0,0,0,0.4)',
                 color: activeTab === 'private' ? '#FF69B4' : '#FFFFFFCC',
