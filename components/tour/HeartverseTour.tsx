@@ -436,67 +436,30 @@ function TourOverlay() {
           const rect = element.getBoundingClientRect();
           const scrollTop = window.scrollY || document.documentElement.scrollTop;
           const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
-          
-          let top = rect.top + scrollTop;
-          let left = rect.left + scrollLeft;
 
-          // Position tooltip based on preferred position
-          switch (currentStepData.position) {
-            case 'bottom':
-              top += rect.height + 20;
-              left += rect.width / 2;
-              break;
-            case 'top':
-              top -= 20;
-              left += rect.width / 2;
-              break;
-            case 'right':
-              // For menu items, position to the right of the entire dropdown menu
-              if (isMenuStep) {
-                // Find the dropdown menu panel instead of the hamburger button
-                const dropdownMenu = document.querySelector('[data-tour-id="nav-panel"]') as HTMLElement;
-                const viewportWidth = window.innerWidth;
-                
-                let menuRightEdge = 320; // Default fallback
-                
-                if (dropdownMenu) {
-                  const menuRect = dropdownMenu.getBoundingClientRect();
-                  // Calculate the right edge of the dropdown menu panel
-                  menuRightEdge = menuRect.left + menuRect.width;
-                } else {
-                  // Fallback: use hamburger menu position + estimated dropdown width
-                  const hamburgerMenu = document.querySelector('[data-tour-id="hamburger"]') as HTMLElement;
-                  if (hamburgerMenu) {
-                    const hamburgerRect = hamburgerMenu.getBoundingClientRect();
-                    menuRightEdge = hamburgerRect.left + 240; // 240px is the dropdown width (w-60)
-                  }
-                }
-                
-                // Position tooltip well to the right with sufficient margin
-                const isMobile = viewportWidth <= 768;
-                const marginFromMenu = isMobile ? 16 : 50;
+          // Always anchor tooltip horizontally to the right of the hamburger/nav panel
+          const dropdownMenu = document.querySelector('[data-tour-id="nav-panel"]') as HTMLElement;
+          const hamburgerMenu = document.querySelector('[data-tour-id="hamburger"]') as HTMLElement;
+          const viewportWidth = window.innerWidth;
 
-                // Calculate left position - ALWAYS stay to the right of the menu
-                const minLeft = menuRightEdge + marginFromMenu + scrollLeft;
-                left = minLeft;
-
-                // Center tooltip vertically relative to the menu item
-                top = rect.top + scrollTop + (rect.height / 2);
-
-                console.log(`Tour: Positioning menu step at left: ${left}, menu right edge: ${menuRightEdge}, viewport width: ${viewportWidth}, margin: ${marginFromMenu}`);
-              } else {
-                top += rect.height / 2;
-                left += rect.width + 20;
-              }
-              break;
-            case 'left':
-              top += rect.height / 2;
-              left -= 20;
-              break;
-            default:
-              top += rect.height + 20;
-              left += rect.width / 2;
+          let anchorRight = 320; // sensible default
+          if (dropdownMenu) {
+            const menuRect = dropdownMenu.getBoundingClientRect();
+            anchorRight = menuRect.left + menuRect.width;
+          } else if (hamburgerMenu) {
+            const hamburgerRect = hamburgerMenu.getBoundingClientRect();
+            // If menu is closed, still offset to where the menu would open (approx w-60)
+            anchorRight = hamburgerRect.left + (dropdownMenu ? 0 : 240);
           }
+
+          const isMobile = viewportWidth <= 768;
+          const marginFromMenu = isMobile ? 16 : 50;
+
+          // Left edge of tooltip: always to the right of the hamburger/menu
+          const left = anchorRight + marginFromMenu + scrollLeft;
+
+          // Vertically center relative to the target element
+          const top = rect.top + scrollTop + rect.height / 2;
 
           setTooltipPosition({ top, left });
 
@@ -583,37 +546,15 @@ function TourOverlay() {
         style={
           currentStepData.targetId
             ? (() => {
-                const isMenuStep = currentStepData.id === 'about' ||
-                                   currentStepData.id === 'journey' ||
-                                   currentStepData.id === 'journal' ||
-                                   currentStepData.id === 'binder' ||
-                                   currentStepData.id === 'badges' ||
-                                   currentStepData.id === 'signal';
                 const isMobile = window.innerWidth <= 768;
-
-                // For menu steps on mobile, use right: 8px to constrain width naturally
-                if (isMenuStep && isMobile) {
-                  return {
-                    top: `${tooltipPosition.top}px`,
-                    left: `${tooltipPosition.left}px`,
-                    right: '8px',
-                    maxWidth: 'none',
-                    transform: 'translateY(-50%)',
-                  };
-                }
-
                 return {
                   top: `${tooltipPosition.top}px`,
                   left: `${tooltipPosition.left}px`,
                   right: 'auto',
                   maxWidth: isMobile ? '280px' : '384px',
-                  transform: currentStepData.position === 'left' ? 'translateX(-100%)' :
-                            currentStepData.position === 'top' ? 'translate(-50%, -100%)' :
-                            currentStepData.position === 'bottom' ? 'translateX(-50%)' :
-                            (currentStepData.position === 'right' &&
-                             (isMenuStep || currentStepData.id === 'signal-streaming')) ? 'translateY(-50%)' :
-                            'none',
-                };
+                  // Always vertically center since we anchor to the right of the menu/hamburger
+                  transform: 'translateY(-50%)',
+                } as React.CSSProperties;
               })()
             : {}
         }

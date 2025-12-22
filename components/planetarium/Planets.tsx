@@ -12,6 +12,7 @@ import {
   ElementPlanet as ElementPlanetData, 
   SongPlanet 
 } from '../planet-data';
+import HologramGrid from './HologramGrid';
 import { ElementPlanet } from '../ElementPlanet';
 import { 
   CAMERA_BASE_DISTANCE, 
@@ -214,6 +215,17 @@ export function Planets({ zoomLevel, initialActivePlanet, onPlanetSelect, worldI
 
   return (
     <group>
+      {/* Lightweight hologram grid behind planets */}
+      <HologramGrid 
+        width={100}
+        height={100}
+        cellSize={2}
+        textureSize={64}
+        baseZ={-0.28}
+        zOffset={-0.04}
+        baseOpacity={0.16}
+        secondaryOpacity={0.08}
+      />
       <CenterPlanet />
       
       {elementPlanets.map((planet, index) => (

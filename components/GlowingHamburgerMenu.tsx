@@ -28,9 +28,8 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
   
   const journeyTitle = getJourneyTitle(!!user);
 
-  // Show COMPLETED state only when logged in AND no pending entry
-  // Always show JOURNAL when logged out
-  const journalLabel = !user ? "JOURNAL" : (hasPendingReflection ? "JOURNAL" : "COMPLETED");
+  // Always show JOURNAL. When completed, we simply hide the pink dot.
+  const journalLabel = "JOURNAL";
   
   const menuItems = [
     { label: "ABOUT", href: undefined },
@@ -225,7 +224,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                   data-tour-id={
                     item.label === "ABOUT" ? "menu-about" :
                     (item.label === "JOURNEY" || item.label === "MY JOURNEY") ? "menu-journey" :
-                    (item.label === "JOURNAL" || item.label === "COMPLETED") ? "menu-journal" :
+                    item.label === "JOURNAL" ? "menu-journal" :
                     item.label === "BINDER" ? "menu-binder" :
                     item.label === "BADGES" ? "menu-badges" :
                     item.label === "STORE" ? "menu-store" :
@@ -235,16 +234,10 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                     item.label === "JOURNAL" && hasPendingReflection && !hideJournalDot
                       ? 'bg-gradient-to-r from-pink-500/10 via-transparent to-pink-500/10' 
                       : ''
-                  } ${
-                    item.label === "COMPLETED" 
-                      ? 'bg-gradient-to-r from-green-500/10 via-transparent to-green-500/10' 
-                      : ''
                   }`}
                   style={{
                     textShadow: item.label === "JOURNAL" && hasPendingReflection && !hideJournalDot
                       ? "0 0 10px rgba(255, 20, 147, 0.8), 0 0 20px rgba(255, 105, 180, 0.6)"
-                      : item.label === "COMPLETED" && !hasPendingReflection
-                      ? "0 0 10px rgba(34, 197, 94, 0.8), 0 0 20px rgba(34, 197, 94, 0.6)"
                       : "0 0 10px rgba(252, 84, 175, 0.3)",
                   }}
                 >
@@ -270,24 +263,20 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
                         className="transition-all duration-200"
                       />
                     )}
-                    {(item.label === "JOURNAL" || item.label === "COMPLETED") && (
+                    {item.label === "JOURNAL" && (
                       <Image
                         src="/elements/journal.webp"
-                        alt={item.label === "COMPLETED" ? "Journal Completed" : "Journal"}
+                        alt="Journal"
                         width={36}
                         height={36}
                         className={`transition-all duration-200 ${
                           item.label === "JOURNAL" && hasPendingReflection && !hideJournalDot
                             ? 'drop-shadow-[0_0_8px_rgba(255,105,180,0.8)]' 
-                            : item.label === "COMPLETED"
-                            ? 'drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]'
                             : ''
                         }`}
                         style={{
                           filter: item.label === "JOURNAL" && hasPendingReflection && !hideJournalDot
                             ? 'brightness(1.3) drop-shadow(0 0 12px rgba(255,105,180,0.9))'
-                            : item.label === "COMPLETED"
-                            ? 'brightness(1.3) drop-shadow(0 0 12px rgba(34,197,94,0.9))'
                             : undefined
                         }}
                       />

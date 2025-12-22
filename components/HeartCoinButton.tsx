@@ -285,6 +285,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [currentMerchIndex, setCurrentMerchIndex] = useState(0);
   // Enlarged merch modal state (must be defined before effects referencing it)
   const [enlargedMerchItem, setEnlargedMerchItem] = useState<StoreItem | null>(null);
+  const [showEnlargedConfirm, setShowEnlargedConfirm] = useState(false);
   
   const [inviteFriendShared, setInviteFriendShared] = useState(false);
   const [completedQuests, setCompletedQuests] = useState<Set<string>>(new Set());
@@ -700,12 +701,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     setFilteredCards(filtered);
   }, [cards, selectedCardElement, selectedRarity]);
 
-  // Load cards when the modal opens and CARDS tab is active
+  // Pre-load cards when the modal opens (not just when CARDS tab is active)
+  // This ensures cards are ready when user navigates to CARDS tab
   useEffect(() => {
-    if (open && (activeTab === 'USE' && activeUseTab === 'CARDS') && cards.length === 0) {
+    if (open && cards.length === 0) {
       fetchCards();
     }
-  }, [open, activeTab, activeUseTab, cards.length, fetchCards]);
+  }, [open, cards.length, fetchCards]);
 
   // Keyboard navigation for card cycling
   useEffect(() => {
@@ -787,6 +789,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [secretPhrase, setSecretPhrase] = useState("");
   const [checkInMessage, setCheckInMessage] = useState("");
   const [enlargedCard, setEnlargedCard] = useState<Card | null>(null);
+  const [showCardConfirm, setShowCardConfirm] = useState<'digital' | 'physical' | null>(null);
   const [isEnlargedCardFlipped, setIsEnlargedCardFlipped] = useState(false);
   const [cardRotation, setCardRotation] = useState(0); // For 360° spin mode
   const [isAnimatingFlip, setIsAnimatingFlip] = useState(false); // For smooth flip transition
@@ -806,7 +809,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [showAutoTextBox, setShowAutoTextBox] = useState(false);
   const [autoTextValue, setAutoTextValue] = useState("");
   const [attendLivestreamConfirming, setAttendLivestreamConfirming] = useState(false);
-  const [phraseValidationResult, setPhraseValidationResult] = useState<'correct' | 'incorrect' | null>(null);
+  const [phraseValidationResult, setPhraseValidationResult] = useState<'correct' | 'incorrect' | 'already' | null>(null);
   // Daily secret phrase redemption - prevent duplicates and track status
   const [isRedeemingPhrase, setIsRedeemingPhrase] = useState(false);
   const [phraseStatus, setPhraseStatus] = useState<'idle'|'success'|'already'|'incorrect'|'error'>('idle');
@@ -821,43 +824,41 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
   // Redeem secret phrase via Supabase RPC (daily secret phrase)
   const redeemDailySecretPhrase = async (phrase: string): Promise<{ status: string; reward?: number; payload?: any }> => {
-    // Normalize input before RPC (do not force lowercase)
-    const cleaned = phrase.trim();
-    const normalized = cleaned.replace(/\s+/g, " ");
-    if (!normalized) return { status: 'invalid' };
+    // Normalize to match backend: trim, collapse spaces, lowercase
+    const cleaned = phrase.trim().replace(/\s+/g, ' ').toLowerCase();
+    if (!cleaned) return { status: 'invalid' };
 
     try {
       const { data, error } = await supabaseBrowser.rpc('redeem_daily_secret_phrase', {
-        p_phrase: normalized,
+        p_phrase: cleaned,
       });
 
       if (error) {
+        const status = (error as any)?.status ?? (error as any)?.statusCode;
+        const code = (error as any)?.code as string | undefined;
         console.error('Secret phrase RPC error:', {
+          status,
           message: (error as any)?.message,
           details: (error as any)?.details,
           hint: (error as any)?.hint,
-          code: (error as any)?.code,
+          code,
         });
 
-        // Handle specific Postgres exceptions (backend errcodes)
-        const code = (error as any)?.code as string | undefined;
-        const msg = ((error as any)?.message || '').toLowerCase();
-        if (code === 'P0003') {
+        // Error mapping per requirements
+        if (status === 409 || code === '23505') {
           return { status: 'already_redeemed' };
         }
         if (code === 'P0002') {
           return { status: 'invalid' };
         }
-        if (code === 'P0001' || msg.includes('not authenticated') || msg.includes('not logged in')) {
+        if (code === 'P0001') {
           return { status: 'not_authenticated' };
         }
-
         return { status: 'error' };
       }
 
       const row = Array.isArray(data) ? data[0] : data;
 
-      // Log returned payload (reward, active_date)
       try {
         console.log('[SECRET_PHRASE] redeemed payload:', {
           reward: row?.reward ?? row?.granted_amount ?? 0,
@@ -2002,10 +2003,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             {/* Element of the Day */}
             <div className="flex items-center justify-between p-2 rounded border border-white/30 bg-white/10 flex-1 min-h-0">
               <div>
-                <div className="text-xs font-bold" style={{ color: '#FFFFFF' }}>
+                <div className="text-sm font-bold" style={{ color: '#FFFFFF' }}>
                   1. Tap the Element of the Day
                 </div>
-                <div className="text-[10px]" style={{ color: '#FFFFFF', opacity: 0.8 }}>
+                <div className="text-xs" style={{ color: '#FFFFFF', opacity: 0.8 }}>
                   Receive a random reward: HeartCoins, relics, or binder slot unlocks.
                 </div>
               </div>
@@ -2031,7 +2032,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   }}>Earn</span>
                   <div className="flex items-center" style={{ color: dailyQuests.elementTapped ? '#666' : '#90EE90', textShadow: dailyQuests.elementTapped ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' }}>
                     <span className="text-sm">{dailyQuests.elementTapped ? '✓ +1' : '+1'}</span>
-                    <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
+                    <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8 ml-2" />
                   </div>
                 </div>
               </div>
@@ -2041,10 +2042,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             <div className="flex flex-col p-2 rounded border border-white/30 bg-white/10 flex-1 min-h-0">
               <div className="flex items-center justify-between">
                 <div className="flex-1 mr-4">
-                  <div className="text-xs font-bold" style={{ color: '#FFFFFF' }}>
+                  <div className="text-sm font-bold" style={{ color: '#FFFFFF' }}>
                     2. Journal Entry of the Day
                   </div>
-                  <div className="text-[10px]" style={{ color: '#FFFFFF', opacity: 0.8 }}>
+                  <div className="text-xs" style={{ color: '#FFFFFF', opacity: 0.8 }}>
                     Answer today's journal prompt to earn one HEART coin.
                   </div>
                 </div>
@@ -2055,7 +2056,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   }}>Earn</span>
                   <div className="flex items-center" style={{ color: dailyQuests.journalEntry ? '#666' : '#90EE90', textShadow: dailyQuests.journalEntry ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' }}>
                     <span className="text-sm">{dailyQuests.journalEntry ? '✓ +1' : '+1'}</span>
-                    <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
+                    <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8 ml-2" />
                   </div>
                 </div>
               </div>
@@ -2107,7 +2108,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 <div className="text-center text-white/60 py-4">No bonus quests available</div>
               ) : (
                 bonusQuests.map((quest, index) => (
-                  <div key={quest.id} className={`flex flex-col px-2 py-1.5 rounded border border-white/30 bg-white/10 ${index < bonusQuests.length - 1 ? 'mb-1' : ''}`}>
+                  <div key={quest.id} className={`flex flex-col px-2 py-1 rounded border border-white/30 bg-white/10 ${index < bonusQuests.length - 1 ? 'mb-0.5' : ''}`}>
                     <div className="flex items-center justify-between">
                       <div className="flex-1 mr-2">
                         {quest.quest_key === 'ATTEND_LIVESTREAM' && showAutoTextBox ? (
@@ -2116,7 +2117,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               color: '#FF69B4',
                               textShadow: '0 0 8px #FF69B4'
                             }}>
-                              {phraseValidationResult === 'correct' ? 'CORRECT' : 'INCORRECT'}
+                              {phraseValidationResult === 'correct' ? 'CORRECT' : phraseValidationResult === 'already' ? 'ALREADY REDEEMED' : 'INCORRECT'}
                             </div>
                           ) : (
                             <textarea
@@ -2154,7 +2155,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         </div>
                       </div>
                     </div>
-                    <div className="mt-1 flex justify-center">
+                    <div className="mt-0.5 flex justify-center">
                       <button
                         onClick={() => {
                           // Play click sound for all button interactions
@@ -2187,43 +2188,46 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 setIsRedeemingPhrase(true);
                                 setSecretPhraseLoading(true);
                                 (async () => {
-                                  const inputPhrase = autoTextValue.trim();
+                                  // Normalize phrase: trim, collapse spaces, lowercase
+                                  const inputPhrase = autoTextValue.trim().replace(/\s+/g, ' ').toLowerCase();
                                   try {
                                     const { data, error } = await supabaseBrowser.rpc('redeem_daily_secret_phrase', { p_phrase: inputPhrase });
                                     if (error) {
+                                      const status = (error as any)?.status ?? (error as any)?.statusCode;
+                                      const code = (error as any)?.code;
                                       console.error('Secret phrase RPC error:', {
+                                        status,
                                         message: (error as any)?.message,
                                         details: (error as any)?.details,
                                         hint: (error as any)?.hint,
-                                        code: (error as any)?.code,
+                                        code,
                                       });
-                                      const code = (error as any)?.code;
-                                      const msg = ((error as any)?.message || '').toLowerCase();
-                                      if (code === 'P0003') {
+
+                                      if (status === 409 || code === '23505') {
                                         setPhraseStatus('already');
-                                        setPhraseValidationResult('incorrect');
+                                        setPhraseValidationResult('already');
                                         try { sfx.play('change-channel', 0.6); } catch {}
-                                        setCheckInMessage('Already redeemed');
-                                        try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Already redeemed today', type: 'error' } })); } catch {}
+                                        setCheckInMessage('Already redeemed.');
+                                        try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Already redeemed.', type: 'error' } })); } catch {}
                                         setStatusType('error');
                                       } else if (code === 'P0002') {
                                         setPhraseStatus('incorrect');
                                         setPhraseValidationResult('incorrect');
                                         try { sfx.play('change-channel', 0.6); } catch {}
-                                        setCheckInMessage('Incorrect secret phrase');
-                                        try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Incorrect secret phrase', type: 'error' } })); } catch {}
+                                        setCheckInMessage('Incorrect secret phrase.');
+                                        try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Incorrect secret phrase.', type: 'error' } })); } catch {}
                                         setStatusType('error');
-                                      } else if (code === 'P0001' || msg.includes('not authenticated') || msg.includes('not logged in')) {
+                                      } else if (code === 'P0001') {
                                         setPhraseStatus('error');
                                         setPhraseValidationResult('incorrect');
-                                        setCheckInMessage('You must be logged in');
-                                        try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Please log in to redeem', type: 'error' } })); } catch {}
+                                        setCheckInMessage('You must be logged in.');
+                                        try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'You must be logged in.', type: 'error' } })); } catch {}
                                         setStatusType('error');
                                       } else {
                                         setPhraseStatus('error');
                                         setPhraseValidationResult('incorrect');
                                         try { sfx.play('change-channel', 0.6); } catch {}
-                                        setCheckInMessage('Something went wrong');
+                                        setCheckInMessage('Something went wrong. Try again.');
                                         try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Something went wrong. Try again.', type: 'error' } })); } catch {}
                                         setStatusType('error');
                                       }
@@ -2251,7 +2255,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     });
                                     setPhraseStatus('error');
                                     setPhraseValidationResult('incorrect');
-                                    setCheckInMessage('Something went wrong');
+                                    setCheckInMessage('Something went wrong. Try again.');
                                     setStatusType('error');
                                   } finally {
                                     setIsRedeemingPhrase(false);
@@ -2260,6 +2264,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       setShowCheckInSuccess(false);
                                       setCheckInMessage("");
                                       setStatusType('idle');
+                                      // Reset back to default state (show title/description)
+                                      setShowAutoTextBox(false);
+                                      setAutoTextValue("");
+                                      setAttendLivestreamConfirming(false);
+                                      setPhraseValidationResult(null);
+                                      setPhraseStatus('idle');
                                     }, 3000);
                                   }
                                 })();
@@ -2701,8 +2711,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           window.open(PHYSICAL_ITEMS[currentMerchIndex].stripeUrl, '_blank');
                         }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-                        className="flex-1 px-4 py-3 rounded border border-white/60 bg-white/20 hover:bg-white/30 transition-all duration-200 text-white font-semibold text-xs whitespace-nowrap"
-                        style={{ textShadow: '0 0 4px rgba(255,255,255,0.6)', boxShadow: '0 0 8px rgba(255,255,255,0.2)' }}
+                        className="flex-1 px-4 py-3 rounded border border-green-500/60 bg-green-500/20 hover:bg-green-500/40 hover:scale-105 hover:border-green-400 hover:shadow-[0_0_25px_rgba(34,197,94,0.7)] transition-all duration-200 text-white font-semibold text-xs whitespace-nowrap"
+                        style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)', boxShadow: '0 0 8px rgba(34,197,94,0.3)' }}
                       >
                         PAY WITH ${PHYSICAL_ITEMS[currentMerchIndex].priceUsd % 1 === 0 ? PHYSICAL_ITEMS[currentMerchIndex].priceUsd.toFixed(0) : PHYSICAL_ITEMS[currentMerchIndex].priceUsd.toFixed(1)}
                       </button>
@@ -2745,12 +2755,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
                         disabled={isPurchasing}
-                        className={`flex-1 px-4 py-3 rounded border cursor-pointer transition-all duration-200 text-white font-semibold flex items-center justify-center gap-1 text-xs whitespace-nowrap ${
+                        className={`flex-1 px-4 py-3 rounded border cursor-pointer transition-all duration-200 text-white font-semibold flex items-center justify-center gap-1 text-xs whitespace-nowrap hover:scale-105 ${
                           isPurchasing ? 'opacity-50 cursor-not-allowed' : ''
                         } ${
                           purchaseDraft && purchaseDraft.merchItemId === merchItems[currentMerchIndex]?.id
                             ? 'border-yellow-400 bg-yellow-500/40 shadow-[0_0_20px_rgba(255,215,0,0.6)]'
-                            : 'border-yellow-500/60 bg-yellow-500/20 hover:bg-yellow-500/30'
+                            : 'border-yellow-500/60 bg-yellow-500/20 hover:bg-yellow-500/40 hover:border-yellow-400 hover:shadow-[0_0_25px_rgba(255,215,0,0.7)]'
                         }`}
                       >
                         PAY WITH
@@ -2766,10 +2776,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       {!selectedCardElement ? (
                         <>
                           
-                          <div 
+                          <div
                             className="text-center mb-3"
-                            style={{ 
-                              color: '#FFFFFF', 
+                            style={{
+                              color: '#FFFFFF',
                               fontSize: '14px',
                               textShadow: '0 0 4px rgba(255,255,255,0.6)',
                               marginTop: '8px'
@@ -2778,53 +2788,63 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             SELECT AN ELEMENT TO VIEW CARDS
                           </div>
 
-                          <div className="grid grid-cols-2 gap-1 justify-center place-items-center mx-auto" style={{ marginTop: '4px' }}>
-                            {['lightning', 'darkness', 'water', 'heart'].map((element, index) => {
-                              const elementCounts = getElementCardCounts();
-                              const count = elementCounts[element] || 0;
-                              return (
-                                <div
-                                  key={element}
-                                  className="text-center cursor-pointer group w-20"
-                                  onMouseEnter={() => {
-                                    try { sfx.play('change-channel', 0.5); } catch {}
-                                  }}
-                                  onClick={() => {
-                                    try { sfx.play('click', 0.7); } catch {}
-                                    setSelectedCardElement(element.toUpperCase());
-                                    // Filter to show the element card (e.g., "Lightning" card for lightning element)
-                                    const elementCardName = element.charAt(0).toUpperCase() + element.slice(1).toLowerCase();
-                                    setSelectedSong(elementCardName);
-                                    setSelectedRarity('');
-                                    setCurrentCardIndex(0);
-                                  }}
-                                >
-                                  <div 
-                                    className={`w-full h-20 rounded-lg relative overflow-hidden transition-all duration-300 group-hover:scale-105`}
+                          {/* Show loading spinner while cards are fetching */}
+                          {isLoadingCards ? (
+                            <div className="flex flex-col items-center justify-center py-8">
+                              <div className="w-8 h-8 border-2 border-white/30 border-t-pink-500 rounded-full animate-spin mb-2" />
+                              <div className="text-white/70 text-sm" style={{ textShadow: '0 0 4px rgba(255,255,255,0.4)' }}>
+                                Loading cards...
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-2 gap-1 justify-center place-items-center mx-auto" style={{ marginTop: '4px' }}>
+                              {['lightning', 'darkness', 'water', 'heart'].map((element, index) => {
+                                const elementCounts = getElementCardCounts();
+                                const count = elementCounts[element] || 0;
+                                return (
+                                  <div
+                                    key={element}
+                                    className="text-center cursor-pointer group w-20"
+                                    onMouseEnter={() => {
+                                      try { sfx.play('change-channel', 0.5); } catch {}
+                                    }}
+                                    onClick={() => {
+                                      try { sfx.play('click', 0.7); } catch {}
+                                      setSelectedCardElement(element.toUpperCase());
+                                      // Filter to show the element card (e.g., "Lightning" card for lightning element)
+                                      const elementCardName = element.charAt(0).toUpperCase() + element.slice(1).toLowerCase();
+                                      setSelectedSong(elementCardName);
+                                      setSelectedRarity('');
+                                      setCurrentCardIndex(0);
+                                    }}
                                   >
-                                    <img
-                                      src={`/elements/${element}.webp`}
-                                      alt={`${element} Card`}
-                                      className="w-full h-full object-cover rounded-lg"
-                                      draggable={false}
-                                    />
-                                    {/* Show card count for this element */}
-                                    <div 
-                                      className="absolute top-1 right-1 bg-black/70 rounded px-1 py-0.5"
-                                      style={{ 
-                                        color: '#FFFFFF', 
-                                        textShadow: '0 0 4px rgba(255,255,255,0.6)',
-                                        fontSize: '8px',
-                                        fontWeight: 'bold'
-                                      }}
+                                    <div
+                                      className={`w-full h-20 rounded-lg relative overflow-hidden transition-all duration-300 group-hover:scale-105`}
                                     >
-                                      {count}
+                                      <img
+                                        src={`/elements/${element}.webp`}
+                                        alt={`${element} Card`}
+                                        className="w-full h-full object-cover rounded-lg"
+                                        draggable={false}
+                                      />
+                                      {/* Show card count for this element */}
+                                      <div
+                                        className="absolute top-1 right-1 bg-black/70 rounded px-1 py-0.5"
+                                        style={{
+                                          color: '#FFFFFF',
+                                          textShadow: '0 0 4px rgba(255,255,255,0.6)',
+                                          fontSize: '8px',
+                                          fontWeight: 'bold'
+                                        }}
+                                      >
+                                        {count}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              );
-                            })}
-                          </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </>
                       ) : (
                         /* Card Detail View */
@@ -2899,9 +2919,17 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               if (!card) return null;
                               
                               return (
-                                <div className="relative w-full">
+                                <div className="relative w-full h-full flex flex-col">
                                   {/* Single Card Display */}
-                            <div key={card.id} className="flex flex-col items-center text-center max-w-full" onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}>
+                            <div key={card.id} className="flex flex-col items-center text-center max-w-full h-full" onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}>
+
+                              {/* Card Index Indicator - moved above image */}
+                              <div
+                                className="text-center text-white/70 text-xs mb-2"
+                                style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}
+                              >
+                                {currentCardIndex + 1} of {filteredCards.length}
+                              </div>
 
                               {/* Card Image with Navigation Arrows */}
                               <div className="flex items-center justify-center gap-4 mb-4">
@@ -2971,20 +2999,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               </button>
                             </div>
 
-                              {/* Card Index Indicator */}
-                              <div
-                                className="text-center text-white/70 text-xs mb-2"
-                                style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}
-                              >
-                                {currentCardIndex + 1} of {filteredCards.length}
-                              </div>
-
                               {/* Card Details - Below Image */}
-                              <div className="w-full max-w-md">
+                              <div className="w-full max-w-md flex-1 flex flex-col justify-end">
                                 {/* Description - only show when no form is active */}
                                 {!showPhysicalForm && !showDigitalForm && !showPhysicalConfirm && (
                                   <p
-                                    className="text-sm mb-3 leading-relaxed text-center max-w-lg mx-auto"
+                                    className="text-sm mb-1 leading-relaxed text-center max-w-lg mx-auto"
                                     style={{
                                       color: '#FFFFFF',
                                       textShadow: '0 0 4px rgba(255,255,255,0.6)'
@@ -3073,62 +3093,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   </button>
                                 )}
 
-                                {/* Purchase buttons - Always visible */}
-                                <div className="flex justify-center gap-4 pb-2">
-                                  <button
-                                    className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg border transition-colors text-sm font-semibold hover:scale-105 whitespace-nowrap flex-1 max-w-[180px] ${
-                                      showDigitalForm
-                                        ? 'border-blue-400/80 bg-blue-400/30'
-                                        : 'border-blue-500/60 bg-blue-500/20 hover:bg-blue-500/30'
-                                    }`}
-                                    style={{
-                                      color: showDigitalForm ? '#87CEEB' : '#00BFFF',
-                                      textShadow: showDigitalForm
-                                        ? '0 0 6px rgba(135,206,235,0.8)'
-                                        : '0 0 4px rgba(0,191,255,0.8)',
-                                      boxShadow: showDigitalForm ? '0 0 15px rgba(0,191,255,0.4)' : 'none'
-                                    }}
-                                    onMouseEnter={() => {
-                                      try { sfx.play('hover', 0.3); } catch {}
-                                    }}
-                                    onClick={() => {
-                                      try { sfx.play('click', 0.7); } catch {}
-                                      setShowDigitalForm(!showDigitalForm);
-                                      setShowPhysicalForm(false);
-                                      setShowPhysicalConfirm(false);
-                                    }}
-                                  >
-                                    <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5 flex-shrink-0" />
-                                    <span>{card.digitalCost} DIGITAL</span>
-                                  </button>
-
-                                  <button
-                                    className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg border transition-colors text-sm font-semibold hover:scale-105 whitespace-nowrap flex-1 max-w-[180px] ${
-                                      showPhysicalForm || showPhysicalConfirm
-                                        ? 'border-purple-400/80 bg-purple-400/30'
-                                        : 'border-purple-500/60 bg-purple-500/20 hover:bg-purple-500/30'
-                                    }`}
-                                    style={{
-                                      color: showPhysicalForm || showPhysicalConfirm ? '#E6E6FA' : '#DA70D6',
-                                      textShadow: showPhysicalForm || showPhysicalConfirm
-                                        ? '0 0 6px rgba(230,230,250,0.8)'
-                                        : '0 0 4px rgba(218,112,214,0.8)',
-                                      boxShadow: showPhysicalForm || showPhysicalConfirm ? '0 0 15px rgba(218,112,214,0.4)' : 'none'
-                                    }}
-                                    onMouseEnter={() => {
-                                      try { sfx.play('hover', 0.3); } catch {}
-                                    }}
-                                    onClick={() => {
-                                      try { sfx.play('click', 0.7); } catch {}
-                                      setShowPhysicalForm(!showPhysicalForm);
-                                      setShowPhysicalConfirm(false);
-                                      setShowDigitalForm(false);
-                                    }}
-                                  >
-                                    <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5 flex-shrink-0" />
-                                    <span>{card.physicalCost} PHYSICAL</span>
-                                  </button>
-                                </div>
 
                               </div>
                             </div>
@@ -3322,82 +3286,200 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               onClick={() => {
                 setEnlargedCard(null);
                 setCardRotation(0);
+                setShowCardConfirm(null);
               }}
             >
-              <div
-                className="relative w-56 mx-4"
-                style={{
-                  animation: 'cardPulse 2s ease-in-out infinite',
+              {/* Close Button - positioned in top left of modal overlay */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  try { sfx.play('close', 0.7); } catch {}
+                  setEnlargedCard(null);
+                  setIsEnlargedCardFlipped(false);
+                  setCardRotation(0);
+                  setShowCardConfirm(null);
                 }}
-                onClick={(e) => e.stopPropagation()}
+                onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                className="absolute top-3 left-3 w-7 h-7 bg-transparent border-2 border-white rounded-full flex items-center justify-center text-white text-sm font-bold transition-all duration-200 z-10 hover:scale-110 hover:shadow-[0_0_20px_rgba(255,255,255,0.8)]"
+                style={{ textShadow: '0 0 8px rgba(255,255,255,0.9)', boxShadow: '0 0 12px rgba(255,255,255,0.6)' }}
               >
-                {/* TiltSpinCard wrapper for 360° drag-to-spin interaction */}
-                <TiltSpinCard
-                  className="relative w-full h-[320px]"
-                  maxRotateX={10}
-                  sensitivity={0.3}
-                  returnDuration={400}
-                  enableSpin={true}
-                  spinSensitivity={0.8}
-                  onRotationChange={setCardRotation}
-                  onClick={() => {
-                    // Play flip sound
-                    try {
-                      sfx.play('flip', 0.8);
-                    } catch {
-                      // Fallback to native Audio
-                      try {
-                        const audio = new Audio('/audio/flip.mp3');
-                        audio.volume = 0.8;
-                        audio.play();
-                      } catch {}
-                    }
-                    // Animate flip
-                    setIsAnimatingFlip(true);
-                    setCardRotation(prev => prev + 180);
-                    setTimeout(() => setIsAnimatingFlip(false), 500);
-                  }}
-                >
-                  {/* Front of card - rotates with cardRotation */}
-                  <img
-                    src={enlargedCard.artwork_url || `/cards/${enlargedCard.card_name}.webp`}
-                    alt={enlargedCard.card_name}
-                    className="absolute inset-0 w-full h-full rounded-lg shadow-2xl object-contain pointer-events-none"
-                    style={{
-                      filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
-                      backfaceVisibility: 'hidden',
-                      transform: `rotateY(${cardRotation}deg)`,
-                      transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                    }}
-                    draggable={false}
-                  />
-                  {/* Back of card - offset by 180° */}
-                  <img
-                    src="/cards/BACK.webp"
-                    alt="Card back"
-                    className="absolute inset-0 w-full h-full rounded-lg shadow-2xl object-contain pointer-events-none"
-                    style={{
-                      filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
-                      backfaceVisibility: 'hidden',
-                      transform: `rotateY(${cardRotation + 180}deg)`,
-                      transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                    }}
-                    draggable={false}
-                  />
-                </TiltSpinCard>
+                ×
+              </button>
 
+              {/* Digital Purchase Button - positioned at top of modal */}
+              {!showCardConfirm && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    try { sfx.play('close', 0.7); } catch {}
-                    setEnlargedCard(null);
-                    setIsEnlargedCardFlipped(false);
-                    setCardRotation(0); // Reset rotation when closing
+                    try { sfx.play('click', 0.6); } catch {}
+                    setShowCardConfirm('digital');
                   }}
-                  className="absolute top-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white text-sm font-bold transition-all duration-200 z-10"
+                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                  className="absolute top-4 left-1/2 -translate-x-1/2 px-6 py-3 rounded border border-yellow-500/60 bg-yellow-500/20 hover:bg-yellow-500/40 hover:scale-110 hover:border-yellow-400 hover:shadow-[0_0_25px_rgba(255,215,0,0.7)] transition-all duration-200 text-white font-semibold text-sm flex items-center gap-2 whitespace-nowrap z-20"
+                  style={{ textShadow: '0 0 4px rgba(255,215,0,0.6)', boxShadow: '0 0 12px rgba(255,215,0,0.3)' }}
                 >
-                  ×
+                  {enlargedCard.digitalCost || 5}
+                  <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5" />
+                  DIGITAL
                 </button>
+              )}
+
+              {/* Physical Purchase Button - positioned at bottom of modal */}
+              {!showCardConfirm && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    try { sfx.play('click', 0.6); } catch {}
+                    setShowCardConfirm('physical');
+                  }}
+                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                  className="absolute bottom-4 left-1/2 -translate-x-1/2 px-6 py-3 rounded border border-green-500/60 bg-green-500/20 hover:bg-green-500/40 hover:scale-110 hover:border-green-400 hover:shadow-[0_0_25px_rgba(34,197,94,0.7)] transition-all duration-200 text-white font-semibold text-sm flex items-center gap-2 whitespace-nowrap z-20"
+                  style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)', boxShadow: '0 0 12px rgba(34,197,94,0.3)' }}
+                >
+                  {enlargedCard.physicalCost || 20}
+                  <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5" />
+                  PHYSICAL
+                </button>
+              )}
+
+              <div
+                className="relative w-56 mx-4 flex flex-col items-center"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Show confirmation view or normal view */}
+                {showCardConfirm ? (
+                  /* Confirmation View */
+                  <div className="flex flex-col items-center justify-center h-[320px] gap-6">
+                    {/* Card Title */}
+                    <div
+                      className="text-xl font-bold text-white text-center uppercase"
+                      style={{ textShadow: '0 0 10px rgba(255,255,255,0.8)' }}
+                    >
+                      {enlargedCard.card_name}
+                    </div>
+
+                    {/* Purchase Type */}
+                    <div
+                      className="text-sm text-white/70 uppercase"
+                      style={{ textShadow: '0 0 6px rgba(255,255,255,0.5)' }}
+                    >
+                      {showCardConfirm === 'digital' ? 'DIGITAL' : 'PHYSICAL'}
+                    </div>
+
+                    {/* User Balance */}
+                    <div className="flex items-center gap-2 text-white">
+                      <span className="text-sm opacity-70">YOU</span>
+                      <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-6 h-6" />
+                      <span
+                        className="text-lg font-bold"
+                        style={{ textShadow: '0 0 8px rgba(255,215,0,0.8)' }}
+                      >
+                        {heartCoins}
+                      </span>
+                    </div>
+
+                    {/* Cost */}
+                    <div className="flex items-center gap-2 text-white">
+                      <span className="text-sm opacity-70">COST</span>
+                      <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-6 h-6" />
+                      <span
+                        className="text-lg font-bold"
+                        style={{ textShadow: '0 0 8px rgba(255,215,0,0.8)' }}
+                      >
+                        {showCardConfirm === 'digital' ? (enlargedCard.digitalCost || 5) : (enlargedCard.physicalCost || 20)}
+                      </span>
+                    </div>
+
+                    {/* Confirm Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        try { sfx.play('click', 0.6); } catch {}
+                        // TODO: Handle card purchase confirmation
+                        console.log('[CARD PURCHASE] Confirm clicked', {
+                          card: enlargedCard.card_name,
+                          type: showCardConfirm,
+                          cost: showCardConfirm === 'digital' ? (enlargedCard.digitalCost || 5) : (enlargedCard.physicalCost || 20)
+                        });
+                        setShowCardConfirm(null);
+                      }}
+                      disabled={heartCoins < (showCardConfirm === 'digital' ? (enlargedCard.digitalCost || 5) : (enlargedCard.physicalCost || 20))}
+                      onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                      className={`px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg hover:scale-110 ${
+                        heartCoins >= (showCardConfirm === 'digital' ? (enlargedCard.digitalCost || 5) : (enlargedCard.physicalCost || 20))
+                          ? 'border-green-500/60 bg-green-500/20 hover:bg-green-500/40 hover:border-green-400 hover:shadow-[0_0_30px_rgba(34,197,94,0.8)]'
+                          : 'border-red-500/60 bg-red-500/20 cursor-not-allowed opacity-70 hover:shadow-[0_0_30px_rgba(239,68,68,0.8)]'
+                      }`}
+                      style={heartCoins >= (showCardConfirm === 'digital' ? (enlargedCard.digitalCost || 5) : (enlargedCard.physicalCost || 20))
+                        ? { textShadow: '0 0 8px rgba(34,197,94,0.8)', boxShadow: '0 0 15px rgba(34,197,94,0.4)' }
+                        : { textShadow: '0 0 8px rgba(239,68,68,0.8)', boxShadow: '0 0 15px rgba(239,68,68,0.4)' }
+                      }
+                    >
+                      CONFIRM
+                    </button>
+
+                    {/* Not enough coins message */}
+                    {heartCoins < (showCardConfirm === 'digital' ? (enlargedCard.digitalCost || 5) : (enlargedCard.physicalCost || 20)) && (
+                      <div className="text-red-400 text-xs" style={{ textShadow: '0 0 6px rgba(239,68,68,0.6)' }}>Not enough Heart Coins</div>
+                    )}
+                  </div>
+                ) : (
+                  /* Normal View - Card only (buttons are positioned absolutely in modal) */
+                  <TiltSpinCard
+                    style={{ animation: 'cardPulse 2s ease-in-out infinite' }}
+                    className="relative w-full h-[320px]"
+                    maxRotateX={10}
+                    sensitivity={0.3}
+                    returnDuration={400}
+                    enableSpin={true}
+                    spinSensitivity={0.8}
+                    onRotationChange={setCardRotation}
+                    onClick={() => {
+                      // Play flip sound
+                      try {
+                        sfx.play('flip', 0.8);
+                      } catch {
+                        // Fallback to native Audio
+                        try {
+                          const audio = new Audio('/audio/flip.mp3');
+                          audio.volume = 0.8;
+                          audio.play();
+                        } catch {}
+                      }
+                      // Animate flip
+                      setIsAnimatingFlip(true);
+                      setCardRotation(prev => prev + 180);
+                      setTimeout(() => setIsAnimatingFlip(false), 500);
+                    }}
+                  >
+                    {/* Front of card - rotates with cardRotation */}
+                    <img
+                      src={enlargedCard.artwork_url || `/cards/${enlargedCard.card_name}.webp`}
+                      alt={enlargedCard.card_name}
+                      className="absolute inset-0 w-full h-full rounded-lg shadow-2xl object-contain pointer-events-none"
+                      style={{
+                        filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
+                        backfaceVisibility: 'hidden',
+                        transform: `rotateY(${cardRotation}deg)`,
+                        transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                      }}
+                      draggable={false}
+                    />
+                    {/* Back of card - offset by 180° */}
+                    <img
+                      src="/cards/BACK.webp"
+                      alt="Card back"
+                      className="absolute inset-0 w-full h-full rounded-lg shadow-2xl object-contain pointer-events-none"
+                      style={{
+                        filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
+                        backfaceVisibility: 'hidden',
+                        transform: `rotateY(${cardRotation + 180}deg)`,
+                        transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                      }}
+                      draggable={false}
+                    />
+                  </TiltSpinCard>
+                )}
               </div>
             </div>
           )}
@@ -3409,6 +3491,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               onClick={() => {
                 setEnlargedMerchItem(null);
                 setMerchRotation(0);
+                setShowEnlargedConfirm(false);
               }}
             >
               {/* Pulsing animation keyframes */}
@@ -3422,115 +3505,204 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   }
                 }
               `}</style>
+
+              {/* Close Button - positioned in top left of modal overlay */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  try { sfx.play('close', 0.7); } catch {}
+                  setEnlargedMerchItem(null);
+                  setMerchRotation(0);
+                  setShowEnlargedConfirm(false);
+                }}
+                onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                className="absolute top-3 left-3 w-7 h-7 bg-transparent border-2 border-white rounded-full flex items-center justify-center text-white text-sm font-bold transition-all duration-200 z-10 hover:scale-110 hover:shadow-[0_0_20px_rgba(255,255,255,0.8)]"
+                style={{ textShadow: '0 0 8px rgba(255,255,255,0.9)', boxShadow: '0 0 12px rgba(255,255,255,0.6)' }}
+              >
+                ×
+              </button>
+
               <div
                 className="relative w-64 mx-4 flex flex-col items-center"
-                style={{
-                  animation: 'merchFloat 2.5s ease-in-out infinite',
-                }}
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* PAY WITH HeartCoin button - above image */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    try { sfx.play('click', 0.6); } catch {}
-                    // Find the corresponding merchItem by slug
-                    const currentMerchItem = merchItems.find(item => item.slug === enlargedMerchItem.slug);
+                {/* Show confirmation view or normal view */}
+                {showEnlargedConfirm ? (
+                  /* Confirmation View */
+                  <div className="flex flex-col items-center justify-center h-[320px] gap-6">
+                    {/* Item Name */}
+                    <div
+                      className="text-xl font-bold text-white text-center uppercase"
+                      style={{ textShadow: '0 0 10px rgba(255,255,255,0.8)' }}
+                    >
+                      {enlargedMerchItem.title}
+                    </div>
 
-                    if (currentMerchItem) {
-                      const idempotencyKey = `${currentMerchItem.id}-${userId}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-                      const draft: PurchaseDraft = {
-                        merchItemId: currentMerchItem.id,
-                        clientSlug: currentMerchItem.slug,
-                        quantity: 1,
-                        uiCost: currentMerchItem.price_heartcoins,
-                        source: 'MERCH',
-                        itemName: currentMerchItem.name,
-                        idempotencyKey,
-                      };
-                      console.log('[PURCHASE] PAY WITH clicked from enlarged modal, draft created', {
-                        idempotencyKey: draft.idempotencyKey,
-                        merchItemId: draft.merchItemId,
-                        itemName: draft.itemName,
-                      });
-                      setPurchaseDraft(draft);
-                    }
-                    setShowHeartCoinPurchase(true);
-                  }}
-                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-                  className="mb-4 px-6 py-3 rounded border border-yellow-500/60 bg-yellow-500/20 hover:bg-yellow-500/30 transition-all duration-200 text-white font-semibold text-sm flex items-center gap-2 whitespace-nowrap"
-                  style={{ textShadow: '0 0 4px rgba(255,215,0,0.6)', boxShadow: '0 0 12px rgba(255,215,0,0.3)' }}
-                >
-                  PAY WITH
-                  <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5" />
-                  {enlargedMerchItem.priceHeartCoins}
-                </button>
+                    {/* User Balance */}
+                    <div className="flex items-center gap-2 text-white">
+                      <span className="text-sm opacity-70">YOU</span>
+                      <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-6 h-6" />
+                      <span
+                        className="text-lg font-bold"
+                        style={{ textShadow: '0 0 8px rgba(255,215,0,0.8)' }}
+                      >
+                        {heartCoins}
+                      </span>
+                    </div>
 
-                {/* TiltSpinCard wrapper for 3D rotation - no visible styling */}
-                <TiltSpinCard
-                  className="relative w-full h-[320px]"
-                  style={{ perspective: '1000px' }}
-                  maxRotateX={10}
-                  sensitivity={0.3}
-                  returnDuration={400}
-                  enableSpin={true}
-                  spinSensitivity={0.8}
-                  onRotationChange={setMerchRotation}
-                  onClick={() => {
-                    // Play flip sound and animate
-                    sfx.play('flip', 0.8);
-                    setIsMerchAnimatingFlip(true);
-                    setMerchRotation(prev => prev + 180);
-                    setTimeout(() => setIsMerchAnimatingFlip(false), 500);
-                  }}
-                >
-                  {/* 3D container for images - this spins */}
-                  <div
-                    className="absolute inset-0 w-full h-full"
-                    style={{
-                      transformStyle: 'preserve-3d',
-                      transform: `rotateY(${merchRotation}deg)`,
-                      transition: isMerchAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                    }}
-                  >
-                    {/* Merchandise Image - Front */}
-                    <img
-                      src={enlargedMerchItem.image}
-                      alt={enlargedMerchItem.title}
-                      className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-                      style={{
-                        filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.3))',
-                        backfaceVisibility: 'hidden',
+                    {/* Cost */}
+                    <div className="flex items-center gap-2 text-white">
+                      <span className="text-sm opacity-70">COST</span>
+                      <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-6 h-6" />
+                      <span
+                        className="text-lg font-bold"
+                        style={{ textShadow: '0 0 8px rgba(255,215,0,0.8)' }}
+                      >
+                        {enlargedMerchItem.priceHeartCoins}
+                      </span>
+                    </div>
+
+                    {/* Confirm Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        try { sfx.play('click', 0.6); } catch {}
+                        // Find the corresponding merchItem by slug
+                        const currentMerchItem = merchItems.find(item => item.slug === enlargedMerchItem.slug);
+
+                        if (currentMerchItem) {
+                          const idempotencyKey = `${currentMerchItem.id}-${profile?.id}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+                          const draft: PurchaseDraft = {
+                            merchItemId: currentMerchItem.id,
+                            clientSlug: currentMerchItem.slug,
+                            quantity: 1,
+                            uiCost: currentMerchItem.price_heartcoins,
+                            source: 'MERCH',
+                            itemName: currentMerchItem.name,
+                            idempotencyKey,
+                          };
+                          console.log('[PURCHASE] CONFIRM clicked from enlarged modal, draft created', {
+                            idempotencyKey: draft.idempotencyKey,
+                            merchItemId: draft.merchItemId,
+                            itemName: draft.itemName,
+                          });
+                          setPurchaseDraft(draft);
+                        }
+                        setShowHeartCoinPurchase(true);
+                        setShowEnlargedConfirm(false);
                       }}
-                      draggable={false}
-                    />
-                    {/* Merchandise Image - Back */}
-                    <img
-                      src={enlargedMerchItem.image2 || enlargedMerchItem.image}
-                      alt={`${enlargedMerchItem.title} back`}
-                      className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-                      style={{
-                        filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.3))',
-                        backfaceVisibility: 'hidden',
-                        transform: 'rotateY(180deg)',
-                      }}
-                      draggable={false}
-                    />
+                      disabled={heartCoins < enlargedMerchItem.priceHeartCoins}
+                      onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                      className={`px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg hover:scale-110 ${
+                        heartCoins >= enlargedMerchItem.priceHeartCoins
+                          ? 'border-green-500/60 bg-green-500/20 hover:bg-green-500/40 hover:border-green-400 hover:shadow-[0_0_30px_rgba(34,197,94,0.8)]'
+                          : 'border-red-500/60 bg-red-500/20 cursor-not-allowed opacity-70 hover:shadow-[0_0_30px_rgba(239,68,68,0.8)]'
+                      }`}
+                      style={heartCoins >= enlargedMerchItem.priceHeartCoins
+                        ? { textShadow: '0 0 8px rgba(34,197,94,0.8)', boxShadow: '0 0 15px rgba(34,197,94,0.4)' }
+                        : { textShadow: '0 0 8px rgba(239,68,68,0.8)', boxShadow: '0 0 15px rgba(239,68,68,0.4)' }
+                      }
+                    >
+                      CONFIRM
+                    </button>
+
+                    {/* Not enough coins message */}
+                    {heartCoins < enlargedMerchItem.priceHeartCoins && (
+                      <div className="text-red-400 text-xs" style={{ textShadow: '0 0 6px rgba(239,68,68,0.6)' }}>Not enough Heart Coins</div>
+                    )}
                   </div>
-                </TiltSpinCard>
+                ) : (
+                  /* Normal View - Image with buttons */
+                  <>
+                    {/* PAY WITH HeartCoin button - above image */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        try { sfx.play('click', 0.6); } catch {}
+                        setShowEnlargedConfirm(true);
+                      }}
+                      onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                      className="-mb-12 px-6 py-3 rounded border border-yellow-500/60 bg-yellow-500/20 hover:bg-yellow-500/40 hover:scale-110 hover:border-yellow-400 hover:shadow-[0_0_25px_rgba(255,215,0,0.7)] transition-all duration-200 text-white font-semibold text-sm flex items-center gap-2 whitespace-nowrap z-20 relative"
+                      style={{ textShadow: '0 0 4px rgba(255,215,0,0.6)', boxShadow: '0 0 12px rgba(255,215,0,0.3)' }}
+                    >
+                      PAY WITH
+                      <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5" />
+                      {enlargedMerchItem.priceHeartCoins}
+                    </button>
 
-                {/* Close Button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    try { sfx.play('close', 0.7); } catch {}
-                    setEnlargedMerchItem(null);
-                    setMerchRotation(0);
-                  }}
-                  className="absolute top-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white text-sm font-bold transition-all duration-200 z-10"
-                >
-                  ×
-                </button>
+                    {/* TiltSpinCard wrapper for 3D rotation - with floating animation */}
+                    <TiltSpinCard
+                      className="relative w-full h-[320px] hover:scale-110 transition-all duration-200 cursor-pointer group hover:drop-shadow-[0_0_30px_rgba(255,255,255,0.5)]"
+                      style={{ perspective: '1000px', animation: 'merchFloat 2.5s ease-in-out infinite' }}
+                      maxRotateX={10}
+                      sensitivity={0.3}
+                      returnDuration={400}
+                      enableSpin={true}
+                      spinSensitivity={0.8}
+                      onRotationChange={setMerchRotation}
+                      onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                      onClick={() => {
+                        // Play flip sound and animate
+                        sfx.play('flip', 0.8);
+                        setIsMerchAnimatingFlip(true);
+                        setMerchRotation(prev => prev + 180);
+                        setTimeout(() => setIsMerchAnimatingFlip(false), 500);
+                      }}
+                    >
+                      {/* 3D container for images - this spins */}
+                      <div
+                        className="absolute inset-0 w-full h-full group-hover:drop-shadow-[0_0_25px_rgba(255,255,255,0.6)]"
+                        style={{
+                          transformStyle: 'preserve-3d',
+                          transform: `rotateY(${merchRotation}deg)`,
+                          transition: isMerchAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                          filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.3))',
+                        }}
+                      >
+                        {/* Merchandise Image - Front */}
+                        <img
+                          src={enlargedMerchItem.image}
+                          alt={enlargedMerchItem.title}
+                          className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+                          style={{
+                            filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.3))',
+                            backfaceVisibility: 'hidden',
+                          }}
+                          draggable={false}
+                        />
+                        {/* Merchandise Image - Back */}
+                        <img
+                          src={enlargedMerchItem.image2 || enlargedMerchItem.image}
+                          alt={`${enlargedMerchItem.title} back`}
+                          className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+                          style={{
+                            filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.3))',
+                            backfaceVisibility: 'hidden',
+                            transform: 'rotateY(180deg)',
+                          }}
+                          draggable={false}
+                        />
+                      </div>
+                    </TiltSpinCard>
+
+                    {/* PAY WITH USD button - below image */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        try { sfx.play('click', 0.6); } catch {}
+                        // Open Stripe checkout in new tab
+                        if (enlargedMerchItem.stripeUrl) {
+                          window.open(enlargedMerchItem.stripeUrl, '_blank');
+                        }
+                      }}
+                      onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                      className="-mt-10 px-6 py-3 rounded border border-green-500/60 bg-green-500/20 hover:bg-green-500/40 hover:scale-110 hover:border-green-400 hover:shadow-[0_0_25px_rgba(34,197,94,0.7)] transition-all duration-200 text-white font-semibold text-sm flex items-center gap-2 whitespace-nowrap z-20 relative"
+                      style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)', boxShadow: '0 0 12px rgba(34,197,94,0.3)' }}
+                    >
+                      PAY WITH ${enlargedMerchItem.priceUsd}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           )}

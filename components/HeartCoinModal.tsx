@@ -1242,13 +1242,13 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         <img src={getElementalPlanetImage(elementOfDay || 'heart') || '/textures/planet_heart.webp'} alt={`${elementOfDay || 'heart'} element`} className="w-8 h-8 rounded-full object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-white font-semibold text-base mb-1">1. Tap the Element of the Day</h3>
-                        <p className="text-white/60 text-sm leading-relaxed">Receive a random reward: HeartCoins, relics, or binder slot unlocks.</p>
+                        <h3 className="text-white font-semibold text-xl mb-1">1. Tap the Element of the Day</h3>
+                        <p className="text-white/60 text-base leading-relaxed">Receive a random reward: HeartCoins, relics, or binder slot unlocks.</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-                      <span className="text-[#4ECDC4] text-lg flex items-center font-bold">
-                        +1 <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
+                      <span className="text-[#4ECDC4] text-xl flex items-center font-bold">
+                        +1 <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8 ml-2" />
                       </span>
                     </div>
                   </div>
@@ -1264,8 +1264,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         </svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-white font-semibold text-base mb-1">2. Journal Entry of the Day</h3>
-                        <p className="text-white/60 text-sm leading-relaxed">Answer today's journal prompt to earn one HEART coin.</p>
+                        <h3 className="text-white font-semibold text-xl mb-1">2. Journal Entry of the Day</h3>
+                        <p className="text-white/60 text-base leading-relaxed">Answer today's journal prompt to earn one HEART coin.</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0 ml-4">
@@ -1288,8 +1288,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                       >
                         OPEN JOURNAL
                       </button>
-                      <span className="text-[#4ECDC4] text-lg flex items-center font-bold">
-                        +1 <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
+                      <span className="text-[#4ECDC4] text-xl flex items-center font-bold">
+                        +1 <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8 ml-2" />
                       </span>
                     </div>
                   </div>

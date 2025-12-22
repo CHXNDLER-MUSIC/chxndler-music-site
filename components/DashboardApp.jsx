@@ -788,6 +788,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       }
             setWarpFullyComplete(true);
           }
+          // Always reset warp state to allow subsequent warps (fixes blocked warps when onFlyEnd fails)
+          setWarpActive(false);
+          setAllowWarp(false);
         }, WARP_DURATION_MS + 500);
       }, 300);
     }
@@ -818,6 +821,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         }
           setWarpFullyComplete(true);
         }
+        // Always reset warp state to allow subsequent warps
+        setWarpActive(false);
+        setAllowWarp(false);
       }, WARP_DURATION_MS + 500);
     }
     prevIdxRef.current = channelIdx;
@@ -1811,7 +1817,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           onCodeClick={() => {}}
           onDigitalBinderClick={() => {}}
           onBadgesClick={() => {}}
-          onCloseBlueDisplay={() => setShowHUD(false)}
+          onCloseBlueDisplay={() => { setShowHUD(false); setBeamEnabled(false); }}
           onOpenBlueDisplay={() => {
             // Force open blue display without toggle logic
           if (uiPhase === 'warping' || uiRevealLocked) { return; }
@@ -1935,7 +1941,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         onCodeClick={handleCodeClick}
         onDigitalBinderClick={handleDigitalBinderClick}
         onBadgesClick={handleBadgesClick}
-        onCloseBlueDisplay={() => setShowHUD(false)}
+        onCloseBlueDisplay={() => { setShowHUD(false); setBeamEnabled(false); }}
           onOpenBlueDisplay={() => {
             // Force open blue display without toggle logic
           if (uiPhase === 'warping' || uiRevealLocked) { return; }
@@ -2633,7 +2639,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   joinAlienOpen={joinAlienOpen}
                   onNameSaved={setSavedProfileName}
                   onElementSaved={setSavedProfileElement}
-                  onCloseBlueDisplay={() => setShowHUD(false)}
+                  onCloseBlueDisplay={() => { setShowHUD(false); setBeamEnabled(false); }}
                   onOpenBlueDisplay={() => handleBeamToggle('blue')}
                   showHUD={showHUD}
                   beamColor={beamColor}
@@ -2717,7 +2723,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           joinAlienOpen={joinAlienOpen}
           onNameSaved={setSavedProfileName}
           onElementSaved={setSavedProfileElement}
-          onCloseBlueDisplay={() => setShowHUD(false)}
+          onCloseBlueDisplay={() => { setShowHUD(false); setBeamEnabled(false); }}
           onOpenBlueDisplay={() => handleBeamToggle('blue')}
           beamColor={beamColor}
           shouldOpenJournal={shouldOpenJournal}

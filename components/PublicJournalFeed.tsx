@@ -50,6 +50,8 @@ export default function PublicJournalFeed() {
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [spinRotation, setSpinRotation] = useState(0);
   const spinAudioRef = useRef<HTMLAudioElement | null>(null);
+  // Public profile fallbacks when denormalized fields are missing
+  const [authorOverrides, setAuthorOverrides] = useState<Record<string, { name: string | null; avatar: string | null }>>({});
 
   // Check auth state only for starring functionality (not for viewing)
   useEffect(() => {
@@ -83,6 +85,50 @@ export default function PublicJournalFeed() {
     spinAudioRef.current = new Audio('/sfx/spin.mp3');
     spinAudioRef.current.volume = 0.5;
   }, []);
+
+  // Load author public profile info for entries missing denormalized fields
+  useEffect(() => {
+    const loadMissingAuthorInfo = async () => {
+      try {
+        const missing = Array.from(new Set(
+          (entries || [])
+            .filter(e => !e.author_name || !e.author_avatar_url)
+            .map(e => e.user_id)
+            .filter(Boolean)
+        ))
+        // Skip any we already have overrides for
+        .filter((userId) => !authorOverrides[userId]);
+
+        if (missing.length === 0) return;
+
+        const results = await Promise.all(missing.map(async (userId) => {
+          try {
+            const { data, error } = await supabaseBrowser
+              .rpc('get_public_profile', { p_profile_id: userId })
+              .single();
+            if (error) return [userId, null] as const;
+            return [userId, { name: (data?.name || null), avatar: (data?.profile_image_url || null) }] as const;
+          } catch {
+            return [userId, null] as const;
+          }
+        }));
+
+        const next: Record<string, { name: string | null; avatar: string | null }> = {};
+        results.forEach(([userId, profile]) => {
+          if (profile) next[userId] = profile;
+        });
+        if (Object.keys(next).length > 0) {
+          setAuthorOverrides(prev => ({ ...prev, ...next }));
+        }
+      } catch (err) {
+        console.warn('PublicJournalFeed: failed to load public author profiles', err);
+      }
+    };
+
+    if (entries && entries.length > 0) {
+      loadMissingAuthorInfo();
+    }
+  }, [entries, authorOverrides]);
 
   // Reset card state when enlarged card changes
   useEffect(() => {
@@ -415,7 +461,7 @@ export default function PublicJournalFeed() {
                   }}
                 >
                   <img
-                    src={entry.author_avatar_url ?? "/elements/alien.webp"}
+                    src={(entry.author_avatar_url || authorOverrides[entry.user_id]?.avatar) ?? "/elements/alien.webp"}
                     alt="User"
                     className="w-8 h-8 rounded-full object-cover"
                     style={{
@@ -424,7 +470,7 @@ export default function PublicJournalFeed() {
                     }}
                   />
                   <div className="text-sm font-medium text-white">
-                    {entry.author_name ?? 'Alien'}
+                    {entry.author_name || authorOverrides[entry.user_id]?.name || 'Alien'}
                   </div>
                 </div>
 
@@ -504,7 +550,7 @@ export default function PublicJournalFeed() {
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-start">
                           <img
-                            src={entry.author_avatar_url ?? "/elements/alien.webp"}
+                            src={(entry.author_avatar_url || authorOverrides[entry.user_id]?.avatar) ?? "/elements/alien.webp"}
                             alt="User"
                             className="w-16 h-16 rounded-full object-cover mr-3"
                             style={{
@@ -514,7 +560,7 @@ export default function PublicJournalFeed() {
                           />
                           <div className="flex flex-col">
                             <div className="text-2xl font-bold text-white">
-                              {entry.author_name ?? 'Alien'}
+                              {entry.author_name || authorOverrides[entry.user_id]?.name || 'Alien'}
                             </div>
 
                             {/* Element label */}
