@@ -314,6 +314,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
   // Shipping status: idle, saving, success, error
   const [shippingStatus, setShippingStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [shippingAttempted, setShippingAttempted] = useState(false); // Track if user tried to submit with missing fields
   const [shippingForm, setShippingForm] = useState({
     full_name: '',
     address_line1: '',
@@ -805,6 +806,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [checkInMessage, setCheckInMessage] = useState("");
   const [enlargedCard, setEnlargedCard] = useState<Card | null>(null);
   const [showCardConfirm, setShowCardConfirm] = useState<'digital' | 'physical' | null>(null);
+  const [cardPurchaseStep, setCardPurchaseStep] = useState<'confirm' | 'shipping' | 'done'>('confirm');
+  const [cardShippingAttempted, setCardShippingAttempted] = useState(false);
   const [isEnlargedCardFlipped, setIsEnlargedCardFlipped] = useState(false);
   const [cardRotation, setCardRotation] = useState(0); // For 360° spin mode
   const [isAnimatingFlip, setIsAnimatingFlip] = useState(false); // For smooth flip transition
@@ -1367,6 +1370,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
       // Close confirm and modal state after starting refresh
       setShowCardConfirm(null);
+      setCardPurchaseStep('confirm');
       setEnlargedCard(null);
 
       // Success toast
@@ -1469,6 +1473,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       }
 
       setStep('shipping');
+      setShippingAttempted(false); // Reset so button starts as "CONFIRM SHIPPING"
       // Close enlarged modal but keep purchaseDraft visible for shipping
       setActiveMerchItem(null);
       setShowEnlargedConfirm(false);
@@ -1544,6 +1549,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
         setCurrentOrderId(purchaseResult.order_id || null);
         setStep('shipping');
+        setShippingAttempted(false); // Reset so button starts as "CONFIRM SHIPPING"
 
         // Play success sound
         try { sfx.play('card-ding', 0.8); } catch {}
@@ -2963,6 +2969,46 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                             className="px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
                                           />
                                         </div>
+
+                                        {/* CONFIRM SHIPPING button - directly below form fields */}
+                                        {(() => {
+                                          const missingRequired = !shippingForm.full_name || !shippingForm.address_line1 || !shippingForm.city || !shippingForm.state || !shippingForm.zip || !shippingForm.country;
+                                          const showMissing = missingRequired && shippingAttempted && shippingStatus !== 'error' && shippingStatus !== 'saving' && !isProcessing;
+                                          return (
+                                            <button
+                                              className={`w-full mt-4 px-4 py-3 rounded border transition-colors text-center font-bold text-lg ${(isProcessing || shippingStatus === 'saving') ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                              style={{
+                                                backgroundColor: showMissing ? 'rgba(255,255,0,0.2)' : shippingStatus === 'error' ? 'rgba(255,165,0,0.2)' : 'rgba(0,255,0,0.2)',
+                                                borderColor: showMissing ? 'rgba(255,255,0,0.6)' : shippingStatus === 'error' ? 'rgba(255,165,0,0.6)' : 'rgba(0,255,0,0.6)',
+                                                color: showMissing ? '#FFFF00' : shippingStatus === 'error' ? '#FFB347' : '#90EE90',
+                                                textShadow: showMissing ? '0 0 4px rgba(255,255,0,0.8)' : shippingStatus === 'error' ? '0 0 4px rgba(255,179,71,0.8)' : '0 0 4px rgba(144,238,144,0.8)',
+                                                boxShadow: showMissing ? '0 0 8px rgba(255,255,0,0.3)' : shippingStatus === 'error' ? '0 0 8px rgba(255,165,0,0.3)' : '0 0 8px rgba(0,255,0,0.3)'
+                                              }}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (missingRequired) {
+                                                  console.log('[SHIPPING] CONFIRM clicked with missing fields - playing scroll sound');
+                                                  setShippingAttempted(true);
+                                                  try { sfx.play('scroll', 0.5); } catch {}
+                                                  return;
+                                                }
+                                                if (shippingStatus === 'error') {
+                                                  console.log('[SHIPPING] RETRY SHIPPING clicked');
+                                                  retryShipping();
+                                                } else {
+                                                  console.log('[SHIPPING] CONFIRM SHIPPING clicked');
+                                                  handleConfirmShipping();
+                                                }
+                                              }}
+                                              onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                                            >
+                                              {shippingStatus === 'saving' ? 'Saving...' :
+                                               shippingStatus === 'error' ? 'RETRY SHIPPING' :
+                                               isProcessing ? 'Processing...' :
+                                               showMissing ? 'MISSING INFORMATION' : 'CONFIRM SHIPPING'}
+                                            </button>
+                                          );
+                                        })()}
                                       </div>
                                     </div>
                                   ) : (
@@ -3113,38 +3159,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     </div>
                   )}
 
-                  {/* CONFIRM button for heart coin purchase OR CONFIRM SHIPPING - renders from purchaseDraft */}
-                  {activeUseTab === 'MERCH' && purchaseDraft && showHeartCoinPurchase && (
+                  {/* CONFIRM button for heart coin purchase - only show when NOT in shipping step (shipping form has its own button) */}
+                  {activeUseTab === 'MERCH' && purchaseDraft && showHeartCoinPurchase && step !== 'shipping' && (
                     <div className="absolute left-6 right-6 bottom-4">
-                      {step === 'shipping' ? (
-                        /* CONFIRM SHIPPING or RETRY SHIPPING button based on shippingStatus */
-                        <button
-                          className={`w-full px-4 py-3 rounded border transition-colors text-center font-bold text-lg ${(isProcessing || shippingStatus === 'saving') ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          style={{
-                            backgroundColor: shippingStatus === 'error' ? 'rgba(255,165,0,0.2)' : 'rgba(0,255,0,0.2)',
-                            borderColor: shippingStatus === 'error' ? 'rgba(255,165,0,0.6)' : 'rgba(0,255,0,0.6)',
-                            color: shippingStatus === 'error' ? '#FFB347' : '#90EE90',
-                            textShadow: shippingStatus === 'error' ? '0 0 4px rgba(255,179,71,0.8)' : '0 0 4px rgba(144,238,144,0.8)',
-                            boxShadow: shippingStatus === 'error' ? '0 0 8px rgba(255,165,0,0.3)' : '0 0 8px rgba(0,255,0,0.3)'
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (shippingStatus === 'error') {
-                              console.log('[SHIPPING] RETRY SHIPPING clicked');
-                              retryShipping();
-                            } else {
-                              console.log('[SHIPPING] CONFIRM SHIPPING clicked');
-                              handleConfirmShipping();
-                            }
-                          }}
-                          onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-                          disabled={isProcessing || shippingStatus === 'saving' || !shippingForm.full_name || !shippingForm.address_line1 || !shippingForm.city || !shippingForm.state || !shippingForm.zip || !shippingForm.country}
-                        >
-                          {shippingStatus === 'saving' ? 'Saving...' :
-                           shippingStatus === 'error' ? 'RETRY SHIPPING' :
-                           isProcessing ? 'Processing...' : 'CONFIRM SHIPPING'}
-                        </button>
-                      ) : (
+                      {(
                         /* Check balance against purchaseDraft.uiCost (server is authoritative for actual deduction) */
                         (profile?.id ? heartCoins : 0) >= (purchaseDraft.uiCost || 0) ? (
                           <button
@@ -3720,6 +3738,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 setEnlargedCard(null);
                 setCardRotation(0);
                 setShowCardConfirm(null);
+                setCardPurchaseStep('confirm');
               }}
             >
               {/* Close Button - positioned in top left of modal overlay */}
@@ -3731,6 +3750,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   setIsEnlargedCardFlipped(false);
                   setCardRotation(0);
                   setShowCardConfirm(null);
+                  setCardPurchaseStep('confirm');
                 }}
                 onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
                 className="absolute top-3 left-3 w-7 h-7 bg-transparent border-2 border-white rounded-full flex items-center justify-center text-white text-sm font-bold transition-all duration-200 z-10 hover:scale-110 hover:shadow-[0_0_20px_rgba(255,255,255,0.8)]"
@@ -3823,37 +3843,144 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       </span>
                     </div>
 
-                    {/* Confirm Button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        try { sfx.play('click', 0.6); } catch {}
-                        // Digital purchase confirm handler (physical handled elsewhere)
-                        if (showCardConfirm === 'digital') {
-                          handleConfirmCardPurchase();
-                        } else {
-                          console.warn('[CARD PURCHASE] GUARD: physical confirm clicked in HeartCoinButton, no handler here');
-                          try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Physical purchase flow coming soon', type: 'info' } })); } catch {}
-                        }
-                      }}
-                      disabled={heartCoins < (showCardConfirm === 'digital' ? (enlargedCard.digitalCost || 5) : (enlargedCard.physicalCost || 20))}
-                      onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-                      className={`px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg hover:scale-110 ${
-                        heartCoins >= (showCardConfirm === 'digital' ? (enlargedCard.digitalCost || 5) : (enlargedCard.physicalCost || 20))
-                          ? 'border-green-500/60 bg-green-500/20 hover:bg-green-500/40 hover:border-green-400 hover:shadow-[0_0_30px_rgba(34,197,94,0.8)]'
-                          : 'border-red-500/60 bg-red-500/20 cursor-not-allowed opacity-70 hover:shadow-[0_0_30px_rgba(239,68,68,0.8)]'
-                      }`}
-                      style={heartCoins >= (showCardConfirm === 'digital' ? (enlargedCard.digitalCost || 5) : (enlargedCard.physicalCost || 20))
-                        ? { textShadow: '0 0 8px rgba(34,197,94,0.8)', boxShadow: '0 0 15px rgba(34,197,94,0.4)' }
-                        : { textShadow: '0 0 8px rgba(239,68,68,0.8)', boxShadow: '0 0 15px rgba(239,68,68,0.4)' }
-                      }
-                    >
-                      CONFIRM
-                    </button>
+                    {/* Confirm Button - or Shipping Form for physical cards */}
+                    {showCardConfirm === 'physical' && cardPurchaseStep === 'shipping' ? (
+                      /* Shipping Form for physical card purchase */
+                      <div className="w-full space-y-2">
+                        <div className="text-sm text-green-400 mb-2 text-center" style={{ textShadow: '0 0 4px rgba(0,255,0,0.6)' }}>
+                          Purchase successful! Enter shipping details:
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Full Name"
+                          value={shippingForm.full_name}
+                          onChange={(e) => setShippingForm({...shippingForm, full_name: e.target.value})}
+                          className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Address Line 1"
+                          value={shippingForm.address_line1}
+                          onChange={(e) => setShippingForm({...shippingForm, address_line1: e.target.value})}
+                          className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Address Line 2 (Optional)"
+                          value={shippingForm.address_line2}
+                          onChange={(e) => setShippingForm({...shippingForm, address_line2: e.target.value})}
+                          className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="text"
+                            placeholder="City"
+                            value={shippingForm.city}
+                            onChange={(e) => setShippingForm({...shippingForm, city: e.target.value})}
+                            className="px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                          />
+                          <input
+                            type="text"
+                            placeholder="State"
+                            value={shippingForm.state}
+                            onChange={(e) => setShippingForm({...shippingForm, state: e.target.value})}
+                            className="px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="text"
+                            placeholder="ZIP Code"
+                            value={shippingForm.zip}
+                            onChange={(e) => setShippingForm({...shippingForm, zip: e.target.value})}
+                            className="px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Country"
+                            value={shippingForm.country}
+                            onChange={(e) => setShippingForm({...shippingForm, country: e.target.value})}
+                            className="px-3 py-2 bg-white/10 border border-white/30 rounded text-white placeholder-white/50 text-sm"
+                          />
+                        </div>
 
-                    {/* Not enough coins message */}
-                    {heartCoins < (showCardConfirm === 'digital' ? (enlargedCard.digitalCost || 5) : (enlargedCard.physicalCost || 20)) && (
-                      <div className="text-red-400 text-xs" style={{ textShadow: '0 0 6px rgba(239,68,68,0.6)' }}>Not enough Heart Coins</div>
+                        {/* CONFIRM SHIPPING button */}
+                        {(() => {
+                          const missingRequired = !shippingForm.full_name || !shippingForm.address_line1 || !shippingForm.city || !shippingForm.state || !shippingForm.zip || !shippingForm.country;
+                          const showMissing = missingRequired && cardShippingAttempted && shippingStatus !== 'error' && shippingStatus !== 'saving' && !isProcessing;
+                          return (
+                            <button
+                              className={`w-full mt-3 px-4 py-3 rounded border transition-colors text-center font-bold text-lg ${(isProcessing || shippingStatus === 'saving') ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              style={{
+                                backgroundColor: showMissing ? 'rgba(255,255,0,0.2)' : shippingStatus === 'error' ? 'rgba(255,165,0,0.2)' : 'rgba(0,255,0,0.2)',
+                                borderColor: showMissing ? 'rgba(255,255,0,0.6)' : shippingStatus === 'error' ? 'rgba(255,165,0,0.6)' : 'rgba(0,255,0,0.6)',
+                                color: showMissing ? '#FFFF00' : shippingStatus === 'error' ? '#FFB347' : '#90EE90',
+                                textShadow: showMissing ? '0 0 4px rgba(255,255,0,0.8)' : shippingStatus === 'error' ? '0 0 4px rgba(255,179,71,0.8)' : '0 0 4px rgba(144,238,144,0.8)',
+                                boxShadow: showMissing ? '0 0 8px rgba(255,255,0,0.3)' : shippingStatus === 'error' ? '0 0 8px rgba(255,165,0,0.3)' : '0 0 8px rgba(0,255,0,0.3)'
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (missingRequired) {
+                                  console.log('[CARD SHIPPING] CONFIRM clicked with missing fields - playing scroll sound');
+                                  setCardShippingAttempted(true);
+                                  try { sfx.play('scroll', 0.5); } catch {}
+                                  return;
+                                }
+                                if (shippingStatus === 'error') {
+                                  console.log('[CARD SHIPPING] RETRY SHIPPING clicked');
+                                  retryShipping();
+                                } else {
+                                  console.log('[CARD SHIPPING] CONFIRM SHIPPING clicked');
+                                  handleConfirmShipping();
+                                }
+                              }}
+                              onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                            >
+                              {shippingStatus === 'saving' ? 'Saving...' :
+                               shippingStatus === 'error' ? 'RETRY SHIPPING' :
+                               isProcessing ? 'Processing...' :
+                               showMissing ? 'MISSING INFORMATION' : 'CONFIRM SHIPPING'}
+                            </button>
+                          );
+                        })()}
+                      </div>
+                    ) : (
+                      /* Normal Confirm Button */
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            try { sfx.play('click', 0.6); } catch {}
+                            // Digital purchase confirm handler
+                            if (showCardConfirm === 'digital') {
+                              handleConfirmCardPurchase();
+                            } else {
+                              // Physical card - transition to shipping step
+                              console.log('[CARD PURCHASE] Physical confirm clicked, transitioning to shipping');
+                              setCardPurchaseStep('shipping');
+                              setCardShippingAttempted(false);
+                            }
+                          }}
+                          disabled={heartCoins < (showCardConfirm === 'digital' ? (enlargedCard.digitalCost || 5) : (enlargedCard.physicalCost || 20))}
+                          onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                          className={`px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg hover:scale-110 ${
+                            heartCoins >= (showCardConfirm === 'digital' ? (enlargedCard.digitalCost || 5) : (enlargedCard.physicalCost || 20))
+                              ? 'border-green-500/60 bg-green-500/20 hover:bg-green-500/40 hover:border-green-400 hover:shadow-[0_0_30px_rgba(34,197,94,0.8)]'
+                              : 'border-red-500/60 bg-red-500/20 cursor-not-allowed opacity-70 hover:shadow-[0_0_30px_rgba(239,68,68,0.8)]'
+                          }`}
+                          style={heartCoins >= (showCardConfirm === 'digital' ? (enlargedCard.digitalCost || 5) : (enlargedCard.physicalCost || 20))
+                            ? { textShadow: '0 0 8px rgba(34,197,94,0.8)', boxShadow: '0 0 15px rgba(34,197,94,0.4)' }
+                            : { textShadow: '0 0 8px rgba(239,68,68,0.8)', boxShadow: '0 0 15px rgba(239,68,68,0.4)' }
+                          }
+                        >
+                          CONFIRM
+                        </button>
+
+                        {/* Not enough coins message */}
+                        {heartCoins < (showCardConfirm === 'digital' ? (enlargedCard.digitalCost || 5) : (enlargedCard.physicalCost || 20)) && (
+                          <div className="text-red-400 text-xs" style={{ textShadow: '0 0 6px rgba(239,68,68,0.6)' }}>Not enough Heart Coins</div>
+                        )}
+                      </>
                     )}
                   </div>
                 ) : (

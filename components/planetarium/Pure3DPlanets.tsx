@@ -554,14 +554,14 @@ export default function Pure3DPlanets({
       return restPos.clone().add(dir.multiplyScalar(biasStrength));
     };
 
-    // Helper to project 3D position to screen coordinates
+    // Helper to project 3D position to screen coordinates (viewport coordinates for fixed positioning)
     const projectToScreen = (worldPos: THREE.Vector3): { x: number; y: number } => {
       const vector = worldPos.clone();
       vector.project(camera);
       const rect = container.getBoundingClientRect();
       return {
-        x: ((vector.x + 1) / 2) * rect.width,
-        y: ((-vector.y + 1) / 2) * rect.height
+        x: rect.left + ((vector.x + 1) / 2) * rect.width,
+        y: rect.top + ((-vector.y + 1) / 2) * rect.height
       };
     };
 
@@ -1279,9 +1279,14 @@ export default function Pure3DPlanets({
 
   // Handle warp button click - triggers warp effect same as song dropdown
   const handleWarpClick = async () => {
-    if (!planetPopup) return;
+    console.log('handleWarpClick called, planetPopup:', planetPopup);
+    if (!planetPopup) {
+      console.log('handleWarpClick: planetPopup is null, returning early');
+      return;
+    }
 
     const { slug, isSong, isDailyElement, element } = planetPopup;
+    console.log('handleWarpClick: processing warp for', { slug, isSong, isDailyElement, element });
 
     // Play warp sound effect and set global flag so SkyboxVideo doesn't play it again
     try {
@@ -1391,12 +1396,12 @@ export default function Pure3DPlanets({
       {planetPopup && (
         <div
           style={{
-            position: 'absolute',
+            position: 'fixed',
             left: planetPopup.x,
             top: planetPopup.y,
             transform: 'translate(-50%, -100%) translateY(-20px)',
             pointerEvents: 'auto',
-            zIndex: 100,
+            zIndex: 999999,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -1405,7 +1410,24 @@ export default function Pure3DPlanets({
         >
           {/* Warp Button */}
           <button
-            onClick={handleWarpClick}
+            onClick={(e) => {
+              console.log('WARP BUTTON CLICKED!', e.target, planetPopup);
+              e.stopPropagation();
+              e.preventDefault();
+              handleWarpClick();
+            }}
+            onPointerDown={(e) => {
+              console.log('WARP BUTTON POINTER DOWN', e.target);
+              e.stopPropagation();
+            }}
+            onMouseDown={(e) => {
+              console.log('WARP BUTTON MOUSE DOWN', e.target);
+              e.stopPropagation();
+            }}
+            onTouchStart={(e) => {
+              console.log('WARP BUTTON TOUCH START');
+              e.stopPropagation();
+            }}
             style={{
               background: `linear-gradient(135deg, ${getElementColor(planetPopup.element)}cc, ${getElementColor(planetPopup.element)}88)`,
               border: `2px solid ${getElementColor(planetPopup.element)}`,
@@ -1417,6 +1439,9 @@ export default function Pure3DPlanets({
               textTransform: 'uppercase',
               letterSpacing: '2px',
               cursor: 'pointer',
+              pointerEvents: 'auto',
+              touchAction: 'manipulation',
+              userSelect: 'none',
               boxShadow: `
                 0 0 10px ${getElementColor(planetPopup.element)}80,
                 0 0 20px ${getElementColor(planetPopup.element)}60,
@@ -1428,11 +1453,13 @@ export default function Pure3DPlanets({
               textShadow: `0 0 10px ${getElementColor(planetPopup.element)}`
             }}
           >
-            Warp
+            WARP
           </button>
 
           {/* Planet Info Card */}
           <div
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
             style={{
               background: 'rgba(0, 0, 0, 0.85)',
               backdropFilter: 'blur(10px)',
@@ -1442,6 +1469,7 @@ export default function Pure3DPlanets({
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
+              pointerEvents: 'auto',
               boxShadow: `0 4px 20px rgba(0, 0, 0, 0.5), 0 0 15px ${getElementColor(planetPopup.element)}30`
             }}
           >

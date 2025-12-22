@@ -1575,6 +1575,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         console.log('🌍 planet:warp event received:', { element, isDailyElement, isCenterPlanet });
       }
 
+      // Set YouTube sky for element planets (WATER, CENTER, HEART, DARKNESS, LIGHTNING)
+      // User can update this URL later
+      const elementPlanets = ['water', 'center', 'heart', 'darkness', 'lightning'];
+      if (element && elementPlanets.includes(String(element).toLowerCase())) {
+        setElementWarpYoutubeUrl('https://youtu.be/xS-a7rWzYYw');
+      }
+
       // Trigger warp visual effect (lightspeed overlay)
       // Don't change songs - just show the warp animation
       setWarpActive(true);
@@ -2038,6 +2045,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         // Use the current track's YouTube sky as soon as a selection is in progress
         // or playback has started; keep looping even if audio pauses.
         youtubeUrl={(() => {
+          // Prioritize element warp YouTube URL when warping to element planets
+          if (elementWarpYoutubeUrl) return elementWarpYoutubeUrl;
+
           const slug = curTrack?.slug;
           const mapped = slug ? youtubeSkyFor(slug) : undefined;
           // On the homepage:

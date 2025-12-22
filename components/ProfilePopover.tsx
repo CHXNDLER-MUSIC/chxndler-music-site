@@ -968,7 +968,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   onMouseEnter={() => {
                     try { sfx.play('hover', 0.3); } catch {}
                   }}
-                  className="text-left cursor-pointer transition-all duration-200 hover:scale-[1.02]"
+                  className="text-left cursor-pointer transition-all duration-200 hover:scale-[1.08]"
                   style={{
                     color: '#00FFFF',
                     textShadow: '0 0 8px rgba(0,255,255,0.6)',
@@ -1025,7 +1025,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   onMouseEnter={() => {
                     try { sfx.play('hover', 0.3); } catch {}
                   }}
-                  className="font-bold text-xl transition-all duration-200 hover:scale-105 cursor-pointer flex items-center"
+                  className="font-bold text-xl transition-all duration-200 hover:scale-[1.12] cursor-pointer flex items-center"
                   style={{ 
                     color: profile?.element ? getElementInfo(profile.element).color : '#00FFFF', 
                     textShadow: profile?.element ? `0 0 8px ${getElementInfo(profile.element).color}60` : '0 0 8px rgba(0,255,255,0.6)',
@@ -1050,7 +1050,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   onClick={() => { setShowRelicsInline(true); setShowMerchInline(false); try { sfx.play('click', 0.6); } catch {} }}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowRelicsInline(true); setShowMerchInline(false); try { sfx.play('click', 0.6); } catch {} } }}
                   onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-                  className="w-14 h-14 transition-transform hover:scale-[1.08] flex items-center justify-center cursor-pointer select-none flex-shrink-0"
+                  className="w-14 h-14 transition-transform hover:scale-[1.15] flex items-center justify-center cursor-pointer select-none flex-shrink-0"
                   style={{ background: 'transparent', backgroundColor: 'transparent', border: 'none', boxShadow: 'none', outline: 'none' }}
                   title="View your relics"
                 >
@@ -1526,55 +1526,46 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
 
               {/* Merch Grid / Expanded View - Inline */}
               {selectedMerchInline ? (
-                <div className="mb-4 relative rounded-lg overflow-hidden border border-cyan-400/60 flex flex-col" style={{ boxShadow: '0 0 15px rgba(0,255,255,0.25)', maxHeight: 'calc(100% - 80px)' }}>
-                  {/* Header with Back to Grid button */}
-                  <div className="flex items-center justify-between p-2 border-b border-cyan-400/40 bg-black/40 flex-shrink-0">
-                    <div className="flex-1" /> {/* Spacer for centering */}
+                <div className="absolute inset-0 flex flex-col overflow-hidden" style={{ borderRadius: 18, zIndex: 20, background: 'rgba(0,0,0,0.95)' }}>
+                  {/* Compact header bar */}
+                  <div className="flex items-center px-3 py-2 bg-black/80 border-b border-cyan-400/40 flex-shrink-0">
+                    <button
+                      onClick={() => { setSelectedMerchInline(null); setMerchRotation(0); try { sfx.play('close', 0.6); } catch {} }}
+                      onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                      className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110"
+                      style={{
+                        background: 'rgba(0,255,255,0.15)',
+                        border: '1px solid rgba(0,255,255,0.5)',
+                        color: '#00FFFF',
+                        fontSize: '18px'
+                      }}
+                    >
+                      ←
+                    </button>
                     <div className="flex flex-col items-center flex-1">
                       <span
-                        className="text-lg font-bold text-center"
+                        className="text-base font-bold text-center"
                         style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.8)' }}
                       >
                         {selectedMerchInline.name}
                       </span>
                       {userMerchDates[selectedMerchInline.id] && (
                         <span
-                          className="text-xs"
+                          className="text-[10px]"
                           style={{ color: 'rgba(255,255,255,0.7)' }}
                         >
                           Collected: {new Date(userMerchDates[selectedMerchInline.id]).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 flex-1 justify-end">
-                      {selectedMerchInline.price_heartcoins > 0 && (
-                        <span
-                          className="text-xs font-semibold px-2 py-1 rounded flex-shrink-0"
-                          style={{
-                            background: 'rgba(255,215,0,0.2)',
-                            border: '1px solid rgba(255,215,0,0.6)',
-                            color: '#FFD700'
-                          }}
-                        >
-                          {selectedMerchInline.price_heartcoins} HC
-                        </span>
-                      )}
-                      <button
-                        onClick={() => { setSelectedMerchInline(null); setMerchRotation(0); try { sfx.play('close', 0.6); } catch {} }}
-                        className="px-2 py-1 rounded-md text-xs font-semibold transition-all hover:scale-105"
-                        style={{
-                          background: 'rgba(0,255,255,0.15)',
-                          border: '1px solid rgba(0,255,255,0.5)',
-                          color: '#00FFFF'
-                        }}
-                      >
-                        Back to Grid
-                      </button>
-                    </div>
                   </div>
-                  <div className="relative flex-1 min-h-0 flex items-center justify-center overflow-hidden">
+                  {/* Full-size image container */}
+                  <div className="relative flex-1 min-h-0 flex items-center justify-center overflow-hidden bg-black/60 p-2">
                     <TiltSpinCard
-                      className="relative w-full h-full max-h-full"
+                      className="relative w-full h-full animate-[pulse-float_3s_ease-in-out_infinite]"
+                      style={{
+                        animation: 'pulse-float 3s ease-in-out infinite'
+                      }}
                       maxRotateX={10}
                       sensitivity={0.3}
                       returnDuration={400}
@@ -1589,16 +1580,14 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                       <img
                         src={selectedMerchInline.image_url || ''}
                         alt={selectedMerchInline.name}
-                        className="w-full h-full object-contain rounded-lg"
+                        className="w-full h-full object-contain"
                         style={{
                           transform: `rotateY(${merchRotation}deg)`,
                           transition: 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)',
-                          maxHeight: '100%',
                         }}
                         draggable={false}
                       />
                     </TiltSpinCard>
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/20 pointer-events-none" />
                   </div>
                 </div>
               ) : (
@@ -1620,23 +1609,26 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                     updated_at: ''
                   }))).map((item, i) => {
                     const hasImage = Boolean(item.image_url);
+                    const isUnlocked = Boolean(userMerchDates[item.id]);
                     return (
                       <button
                         type="button"
-                        onClick={() => { if (hasImage) { setSelectedMerchInline(item as MerchItem); try { sfx.play('click', 0.6); } catch {} } }}
+                        onClick={() => { if (isUnlocked && hasImage) { setSelectedMerchInline(item as MerchItem); try { sfx.play('click', 0.6); } catch {} } }}
+                        onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
                         key={`merch-inline-${item.id}`}
                         className="aspect-square rounded-lg border border-white/20 bg-black/40 relative overflow-hidden transition-transform hover:scale-[1.03] disabled:opacity-60 disabled:cursor-not-allowed"
                         style={{
                           minHeight: '68px'
                         }}
-                        disabled={!hasImage}
-                        title={hasImage ? `View ${item.name}` : item.name || `Merch ${i + 1}`}
+                        disabled={!isUnlocked}
+                        title={isUnlocked ? (hasImage ? `View ${item.name}` : item.name || `Merch ${i + 1}`) : 'Locked'}
                       >
                         {hasImage ? (
                           <img
                             src={item.image_url!}
                             alt={item.name || `Merch ${i + 1}`}
-                            className="absolute inset-0 w-full h-full object-cover"
+                            className={`absolute inset-0 w-full h-full object-cover ${isUnlocked ? '' : 'grayscale'}`}
+                            style={{ opacity: isUnlocked ? 1 : 0.5 }}
                             onError={(e) => {
                               const target = e.currentTarget as HTMLImageElement;
                               target.style.display = 'none';
@@ -1644,6 +1636,11 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-white/30 text-xs">🛍️</div>
+                        )}
+                        {!isUnlocked && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-[10px] text-white font-semibold">
+                            Locked
+                          </div>
                         )}
                         <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
                         <div

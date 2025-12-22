@@ -29,6 +29,16 @@
   }
 }
 
+/* Subtle floating pulse animation for enlarged merch images */
+@keyframes pulse-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
 /* CSS Variables for consistent z-index layering */
 :root {
   --z-modal: 99999999;
