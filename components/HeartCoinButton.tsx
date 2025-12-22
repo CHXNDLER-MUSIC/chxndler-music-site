@@ -1380,10 +1380,135 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       const message = err?.message || 'Unexpected error during purchase';
       try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message, type: 'error' } })); } catch {}
     } finally {
-      // Always reset flags so it can’t fail silently
+      // Always reset flags so it can't fail silently
       cardPurchaseInFlightRef.current = false;
       setIsPurchasing(false);
       console.log('[CARD PURCHASE] In-flight reset FALSE');
+    }
+  };
+
+  // Confirm handler for PHYSICAL card purchases with shipping
+  // This calls the API which handles purchase + shipping atomically
+  const handleConfirmPhysicalCardPurchase = async () => {
+    console.log('[CARD PURCHASE] Physical confirm with shipping clicked', {
+      card: enlargedCard?.card_name,
+      cardId: enlargedCard?.id,
+      cost: enlargedCard?.physicalCost || 20,
+      heartCoins,
+      isPurchasing,
+      inFlightRef: cardPurchaseInFlightRef.current,
+    });
+
+    const selectedCard = enlargedCard;
+    const selectedCardId = selectedCard?.id;
+
+    // Guards with logs for every early return
+    if (isPurchasing) {
+      console.warn('[CARD PURCHASE] GUARD: isPurchasing already true');
+      return;
+    }
+    if (cardPurchaseInFlightRef.current) {
+      console.warn('[CARD PURCHASE] GUARD: cardPurchaseInFlightRef already true');
+      return;
+    }
+    if (!profile?.id) {
+      console.warn('[CARD PURCHASE] GUARD: missing profile/user');
+      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Please log in to buy cards', type: 'error' } })); } catch {}
+      return;
+    }
+    if (!selectedCardId) {
+      console.warn('[CARD PURCHASE] GUARD: missing selectedCardId');
+      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'No card selected', type: 'error' } })); } catch {}
+      return;
+    }
+
+    // Validate shipping form
+    if (!shippingForm.full_name || !shippingForm.address_line1 || !shippingForm.city || !shippingForm.state || !shippingForm.zip || !shippingForm.country) {
+      console.warn('[CARD PURCHASE] GUARD: missing shipping fields');
+      setCardShippingAttempted(true);
+      try { sfx.play('scroll', 0.5); } catch {}
+      return;
+    }
+
+    const cost = selectedCard?.physicalCost || 20;
+    if ((profile?.heartcoin_balance ?? heartCoins ?? 0) < cost) {
+      console.warn('[CARD PURCHASE] GUARD: insufficient balance', { balance: profile?.heartcoin_balance ?? heartCoins ?? 0, cost });
+      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Insufficient HeartCoins', type: 'error' } })); } catch {}
+      return;
+    }
+
+    // Set in-flight BEFORE any async work
+    cardPurchaseInFlightRef.current = true;
+    setIsPurchasing(true);
+    setShippingStatus('saving');
+    console.log('[CARD PURCHASE] Physical card in-flight set TRUE');
+
+    try {
+      console.log('[CARD PURCHASE] Calling /api/cards/purchase-physical');
+      const response = await fetch('/api/cards/purchase-physical', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cardId: selectedCardId,
+          shipping_full_name: shippingForm.full_name,
+          shipping_address_line1: shippingForm.address_line1,
+          shipping_address_line2: shippingForm.address_line2 || null,
+          shipping_city: shippingForm.city,
+          shipping_state: shippingForm.state,
+          shipping_zip: shippingForm.zip,
+          shipping_country: shippingForm.country || 'United States'
+        })
+      });
+
+      const result = await response.json();
+      console.log('[CARD PURCHASE] API response:', result);
+
+      if (!response.ok || !result.success) {
+        console.error('[CARD PURCHASE] Physical purchase failed:', result.error);
+        setShippingStatus('error');
+        try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: result.error || 'Purchase failed', type: 'error' } })); } catch {}
+        return;
+      }
+
+      const orderId = result.order_id;
+      console.log('[CARD PURCHASE] orders.id', orderId);
+      setShippingStatus('success');
+
+      // Play success sound
+      try { sfx.play('card-ding', 0.8); } catch {}
+
+      // Refresh profile to update HeartCoin balance
+      try { await refreshProfile(); } catch {}
+
+      // Success toast
+      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: `Physical card ordered: ${selectedCard?.card_name}!`, type: 'success' } })); } catch {}
+
+      // Clear state after short delay to show success
+      setTimeout(() => {
+        setShowCardConfirm(null);
+        setCardPurchaseStep('confirm');
+        setEnlargedCard(null);
+        setShippingStatus('idle');
+        setShippingForm({
+          full_name: '',
+          address_line1: '',
+          address_line2: '',
+          city: '',
+          state: '',
+          zip: '',
+          county: '',
+          country: ''
+        });
+      }, 1500);
+
+    } catch (err: any) {
+      console.error('[CARD PURCHASE] Unexpected error:', err);
+      setShippingStatus('error');
+      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: err?.message || 'Unexpected error', type: 'error' } })); } catch {}
+    } finally {
+      cardPurchaseInFlightRef.current = false;
+      setIsPurchasing(false);
+      console.log('[CARD PURCHASE] Physical card in-flight reset FALSE');
     }
   };
 
@@ -3847,8 +3972,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     {showCardConfirm === 'physical' && cardPurchaseStep === 'shipping' ? (
                       /* Shipping Form for physical card purchase */
                       <div className="w-full space-y-2">
-                        <div className="text-sm text-green-400 mb-2 text-center" style={{ textShadow: '0 0 4px rgba(0,255,0,0.6)' }}>
-                          Purchase successful! Enter shipping details:
+                        <div className="text-sm text-yellow-400 mb-2 text-center" style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}>
+                          Enter shipping details to complete purchase:
                         </div>
                         <input
                           type="text"
@@ -3927,11 +4052,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   return;
                                 }
                                 if (shippingStatus === 'error') {
-                                  console.log('[CARD SHIPPING] RETRY SHIPPING clicked');
-                                  retryShipping();
+                                  console.log('[CARD SHIPPING] RETRY clicked');
+                                  handleConfirmPhysicalCardPurchase();
                                 } else {
-                                  console.log('[CARD SHIPPING] CONFIRM SHIPPING clicked');
-                                  handleConfirmShipping();
+                                  console.log('[CARD SHIPPING] CONFIRM SHIPPING clicked - calling handleConfirmPhysicalCardPurchase');
+                                  handleConfirmPhysicalCardPurchase();
                                 }
                               }}
                               onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
