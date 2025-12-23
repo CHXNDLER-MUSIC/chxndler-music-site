@@ -30,6 +30,7 @@ type QuestStatus = {
 
 // Load quest status from localStorage on mount
 // Uses server date for Element of Day quest to match backend
+// Also queries daily_checkins table to verify check-in status
 function useQuestStatus() {
   const [questStatus, setQuestStatus] = useState<QuestStatus>({
     elementOfDay: false,
@@ -48,13 +49,37 @@ function useQuestStatus() {
     // Fetch server date for Element of Day consistency
     fetch('/api/element-of-day')
       .then(res => res.json())
-      .then(data => {
+      .then(async (data) => {
         // Use server date for element quest, client date for others
         const elementDateKey = data.serverDate || new Date().toISOString().split('T')[0];
         setServerDateKey(elementDateKey);
 
-        // Check element quest with server date
-        const elementDone = localStorage.getItem(`quest_element_${elementDateKey}`) === 'true';
+        // Check element quest with localStorage first (optimistic)
+        let elementDone = localStorage.getItem(`quest_element_${elementDateKey}`) === 'true';
+
+        // Also check daily_checkins table for Element of Day check-in status
+        // This ensures UI is correct even if localStorage was cleared
+        try {
+          const { data: sessionData } = await supabaseBrowser.auth.getSession();
+          if (sessionData?.session?.user) {
+            const { data: checkinRow, error: checkinErr } = await supabaseBrowser
+              .from('daily_checkins')
+              .select('id')
+              .eq('user_id', sessionData.session.user.id)
+              .eq('checkin_date_ny', elementDateKey)
+              .limit(1)
+              .maybeSingle();
+
+            if (!checkinErr && checkinRow) {
+              // Database confirms check-in exists for today
+              elementDone = true;
+              // Sync localStorage with database truth
+              localStorage.setItem(`quest_element_${elementDateKey}`, 'true');
+            }
+          }
+        } catch (dbErr) {
+          console.warn('[QuestList] Failed to check daily_checkins table:', dbErr);
+        }
 
         // Other quests use client date (they don't have server-time dependencies)
         const journalDone = localStorage.getItem(`quest_journal_${clientToday}`) === 'true' || hasAnsweredToday();
@@ -231,14 +256,26 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
     return () => subscription.unsubscribe();
   }, [showLoginModal]);
 
-  // Listen for element-of-day-claimed event (triggered when warping to daily element)
+  // Listen for element-of-day-claimed event (triggered when clicking Element of Day image)
+  // Element of Day click -> claim_daily_checkin RPC updates UI here
   useEffect(() => {
     const handleElementClaimed = (event: CustomEvent) => {
-      console.log('[QuestList] Element of day claimed via warp:', event.detail);
+      console.log('[QuestList] Element of day claimed:', event.detail);
+      const { checkinDate, alreadyCheckedIn } = event.detail || {};
+
       // Update quest status to mark element of day as completed
       setQuestStatus(prev => ({ ...prev, elementOfDay: true }));
-      showCelebration(`Element of the Day completed via WARP! +1 HeartCoin earned.`);
-      // Refresh profile to update heartcoin balance
+
+      // Save to localStorage with server date key for persistence
+      const dateKey = checkinDate || serverDateKey || new Date().toISOString().split('T')[0];
+      localStorage.setItem(`quest_element_${dateKey}`, 'true');
+
+      // Only show celebration if this was a new check-in (not already checked in)
+      if (!alreadyCheckedIn) {
+        showCelebration(`Element of the Day completed! Daily streak updated.`);
+      }
+
+      // Refresh profile to update daily_streak_current
       try { refreshProfile(); } catch {}
     };
 
@@ -246,7 +283,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
     return () => {
       window.removeEventListener('element-of-day-claimed', handleElementClaimed as EventListener);
     };
-  }, [refreshProfile]);
+  }, [refreshProfile, serverDateKey]);
 
   // Helper functions to get quest data from server
   const getElementalSongQuest = () => bonusQuests.find(q => q.quest_key === 'LISTEN_ELEMENT_SONG');
@@ -1175,7 +1212,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                   disabled={questStatus.liveShow || bonusQuestsLoading || (showCheckIn && (loading || !secretPhrase.trim()))}
                   className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 ${
                     questStatus.liveShow
-                      ? 'bg-green-600/40 border border-green-500/50 text-green-300 cursor-not-allowed'
+                      ? 'bg-green-500/40 border-2 border-green-400 text-white cursor-default'
                       : !isAuthenticated
                         ? 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300 cursor-pointer'
                         : showCheckIn && secretPhrase.trim()
@@ -1186,7 +1223,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                   }`}
                   style={{
                     boxShadow: questStatus.liveShow
-                      ? '0 0 10px rgba(0,255,0,0.3)'
+                      ? '0 0 30px rgba(0,255,0,0.8), inset 0 0 15px rgba(0,255,0,0.3), 0 0 60px rgba(0,255,0,0.6)'
                       : !isAuthenticated
                         ? '0 0 10px rgba(255,255,0,0.3)'
                         : showCheckIn && secretPhrase.trim()
@@ -1195,7 +1232,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                             ? '0 0 5px rgba(128,128,128,0.2)'
                             : '0 0 10px rgba(252,84,175,0.3)',
                     textShadow: questStatus.liveShow
-                      ? '0 0 4px rgba(0,255,0,0.6)'
+                      ? '0 0 15px rgba(0,255,0,1), 0 0 25px rgba(0,255,0,0.8)'
                       : !isAuthenticated
                         ? '0 0 4px rgba(255,255,0,0.6)'
                         : showCheckIn && secretPhrase.trim()
@@ -1215,16 +1252,16 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                   }
                 </button>
                 <div
-                  className={`font-bold text-sm cursor-pointer ${
+                  className={`font-bold text-sm ${
                     questStatus.liveShow
                       ? 'text-green-400'
                       : !isAuthenticated
-                        ? 'text-yellow-400 hover:text-yellow-300'
-                        : 'text-pink-400'
+                        ? 'text-yellow-400 hover:text-yellow-300 cursor-pointer'
+                        : 'text-pink-400 cursor-pointer'
                   }`}
                   style={{
                     textShadow: questStatus.liveShow
-                      ? '0 0 4px rgba(0,255,0,0.6)'
+                      ? '0 0 15px rgba(0,255,0,1), 0 0 25px rgba(0,255,0,0.8)'
                       : !isAuthenticated
                         ? '0 0 4px rgba(255,255,0,0.6)'
                         : '0 0 4px rgba(252,84,175,0.6)'

@@ -62,6 +62,13 @@ export interface Pure3DPlanetsProps {
   hasClaimedElementOfDay?: boolean;
   isClaimingReward?: boolean;
   onDailyPlanetClick?: (element: ElementType) => Promise<any>;
+  // Intention text to display in the Element of Day modal
+  intentionOfDay?: string | null;
+  // Relic/boost key for the Element of Day reward
+  rewardKey?: string | null;
+  // Relic label and image for the Element of Day celebration
+  relicLabel?: string | null;
+  relicImageUrl?: string | null;
 }
 
 export default function Pure3DPlanets({
@@ -76,7 +83,11 @@ export default function Pure3DPlanets({
   glowActive = false,
   hasClaimedElementOfDay = false,
   isClaimingReward = false,
-  onDailyPlanetClick
+  onDailyPlanetClick,
+  intentionOfDay = null,
+  rewardKey = null,
+  relicLabel = null,
+  relicImageUrl = null
 }: Pure3DPlanetsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isClient, setIsClient] = useState(false);
@@ -1726,9 +1737,11 @@ export default function Pure3DPlanets({
     }
 
     const { slug, name, isSong, isDailyElement: popupIsDailyElement, element } = planetPopup;
-    // Re-calculate isDailyElement based on current glowingElement prop (in case API loaded after popup was created)
-    const isDailyElement = !isSong && element !== 'center' && element === glowingElement && !hasClaimedElementOfDay;
-    console.log('[WARP] trigger from planet button - resolved', { selectedPlanet: name, resolvedSlug: slug, isSong, element, isDailyElement, popupIsDailyElement, glowingElement });
+    // Check if this is the element of the day (for showing modal - regardless of claim status)
+    const isElementOfDay = !isSong && element !== 'center' && element === glowingElement;
+    // Check if we should attempt to claim (only if not already claimed)
+    const shouldAttemptClaim = isElementOfDay && !hasClaimedElementOfDay;
+    console.log('[WARP] trigger from planet button - resolved', { selectedPlanet: name, resolvedSlug: slug, isSong, element, isElementOfDay, shouldAttemptClaim, glowingElement });
 
     // Close the popup IMMEDIATELY - before anything else
     setPlanetPopup(null);
@@ -1823,14 +1836,14 @@ export default function Pure3DPlanets({
         center: '/tracks/center.MP3'
       };
       const elementAudioPath = elementAudioPaths[slug.toLowerCase()] || `/tracks/${slug.toLowerCase()}.MP3`;
-      console.log('[WARP] element planet warp', { element: slug, isDailyElement, audioPath: elementAudioPath });
+      console.log('[WARP] element planet warp', { element: slug, isElementOfDay, audioPath: elementAudioPath });
 
       // Dispatch event for listeners - include the audio path for DashboardApp to play
       try {
         window.dispatchEvent(new CustomEvent('planet:warp', {
           detail: {
             element: slug,
-            isDailyElement,
+            isDailyElement: isElementOfDay,
             isCenterPlanet: element === 'center',
             audioPath: elementAudioPath // Element audio file path for direct playback
           }
@@ -1843,18 +1856,39 @@ export default function Pure3DPlanets({
       // Element planets have their own audio files (darkness.MP3, etc.) that are NOT in the tracks array.
       // The DashboardApp handles element audio playback via the planet:warp event.
 
-      // For the daily element planet, wait for warp effect to finish before showing reward
+      // For the element of the day, wait for warp effect to finish before showing modal
       // Must match DashboardApp's WARP_DURATION_MS (3000ms) + buffer for visual effect to fully complete
-      const WARP_DURATION_MS = 3500; // Duration to wait before showing reward (3000ms warp + 500ms buffer)
-      if (isDailyElement && onDailyPlanetClick && element !== 'center') {
-        console.log('[WARP] waiting for warp effect before claiming daily element reward for:', element);
-        // Wait for warp effect to complete, then claim reward and show celebration
+      const WARP_DURATION_MS = 3500; // Duration to wait before showing modal (3000ms warp + 500ms buffer)
+      if (isElementOfDay && element !== 'center') {
+        console.log('[WARP] waiting for warp effect before showing element of day modal for:', element);
+        // Wait for warp effect to complete
         await new Promise(resolve => setTimeout(resolve, WARP_DURATION_MS));
-        console.log('[WARP] warp effect complete, now claiming reward');
+        console.log('[WARP] warp effect complete, showing element of day modal, intentionOfDay:', intentionOfDay);
+
+        // Always show the Element of the Day modal after warp
         try {
-          await onDailyPlanetClick(element as ElementType);
+          window.dispatchEvent(new CustomEvent('element-of-day:show', {
+            detail: {
+              element: element as ElementType,
+              intention: intentionOfDay,
+              rewardKey: rewardKey,
+              relicLabel: relicLabel,
+              relicImageUrl: relicImageUrl
+            }
+          }));
+          console.log('[WARP] Dispatched element-of-day:show event with intention:', intentionOfDay, 'rewardKey:', rewardKey, 'relicLabel:', relicLabel);
         } catch (err) {
-          console.error('[WARP] Failed to claim element of day reward:', err);
+          console.error('[WARP] Failed to show element of day modal:', err);
+        }
+
+        // Only attempt to claim if not already claimed
+        if (shouldAttemptClaim && onDailyPlanetClick) {
+          console.log('[WARP] attempting to claim reward for:', element);
+          try {
+            await onDailyPlanetClick(element as ElementType);
+          } catch (err) {
+            console.error('[WARP] Failed to claim element of day reward:', err);
+          }
         }
       } else {
         // For other element planets, also call onPlanetSelect for any additional handling

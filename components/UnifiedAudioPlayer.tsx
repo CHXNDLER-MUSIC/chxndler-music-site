@@ -234,19 +234,19 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
             {/* Play/Pause Button */}
             <button
               onClick={handleTogglePlay}
-              className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-[#19E3FF]/20 to-[#38B6FF]/20 border-2 border-[#19E3FF]/60 rounded-full flex items-center justify-center transition-all duration-300 hover:bg-[#19E3FF]/30 hover:border-[#19E3FF] hover:shadow-lg hover:shadow-[#19E3FF]/40 hover:scale-105"
+              className="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-[#19E3FF]/20 to-[#38B6FF]/20 border-2 border-[#19E3FF]/60 rounded-full flex items-center justify-center transition-all duration-300 hover:bg-[#19E3FF]/30 hover:border-[#19E3FF] hover:shadow-lg hover:shadow-[#19E3FF]/40 hover:scale-105"
               aria-label={isPlaying ? "Pause" : "Play"}
               style={{
                 filter: 'drop-shadow(0 0 8px rgba(25, 227, 255, 0.3))'
               }}
             >
               {isPlaying ? (
-                <div className="w-4 h-4 flex gap-1">
+                <div className="w-5 h-5 flex gap-1.5">
                   <div className="w-1.5 h-full bg-white rounded-sm"></div>
                   <div className="w-1.5 h-full bg-white rounded-sm"></div>
                 </div>
               ) : (
-                <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[12px] border-l-white border-b-[8px] border-b-transparent ml-1"></div>
+                <div className="w-0 h-0 border-t-[10px] border-t-transparent border-l-[14px] border-l-white border-b-[10px] border-b-transparent ml-1"></div>
               )}
             </button>
 

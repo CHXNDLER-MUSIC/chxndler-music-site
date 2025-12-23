@@ -78,6 +78,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
   const [merchRotation, setMerchRotation] = useState(0);
   const [showElementInfo, setShowElementInfo] = useState(false);
   const [currentElementIndex, setCurrentElementIndex] = useState(0);
+  const [activeBoosts, setActiveBoosts] = useState<{ kind: string; label: string }[]>([]);
 
   const popoverRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -116,6 +117,59 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
     if (isOpen && user) {
       fetchUnlockedItems();
     }
+  }, [isOpen, user]);
+
+  // Fetch active boosts for today (NY timezone)
+  useEffect(() => {
+    if (!isOpen || !user) {
+      setActiveBoosts([]);
+      return;
+    }
+
+    const fetchActiveBoosts = async () => {
+      try {
+        // Calculate today in NY timezone
+        const todayNY = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'America/New_York',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }).format(new Date());
+
+        const { data, error } = await supabaseBrowser
+          .from('user_effects')
+          .select('kind, metadata')
+          .eq('user_id', user.id)
+          .eq('active_date', todayNY)
+          .is('consumed_at', null);
+
+        if (error) {
+          console.warn('Failed to fetch active boosts:', error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          const boostLabels: Record<string, string> = {
+            'JOURNAL_BONUS': '📝 Reflection (2x Journal)',
+            'LISTEN_MULTIPLIER': '🎧 Deep Focus (2x Listen)',
+            'STREAK_SHIELD': '🛡️ Streak Shield'
+          };
+          setActiveBoosts(
+            data.map(effect => ({
+              kind: effect.kind,
+              label: boostLabels[effect.kind] || effect.kind
+            }))
+          );
+        } else {
+          setActiveBoosts([]);
+        }
+      } catch (err) {
+        console.warn('Error fetching active boosts:', err);
+        setActiveBoosts([]);
+      }
+    };
+
+    fetchActiveBoosts();
   }, [isOpen, user]);
 
   // Reset editing state when popover closes
@@ -682,7 +736,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
           top: 'var(--profile-bar-boundary, 64px)',
           left: 0,
           right: 0,
-          bottom: 'calc(var(--light-beam-boundary) + var(--beam-height, 68px))'
+          bottom: 'var(--light-beam-boundary)'
         }}
       >
         <div
@@ -703,14 +757,15 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
           top: 'var(--profile-bar-boundary, 64px)',
           left: 0,
           right: 0,
-          bottom: 'calc(var(--light-beam-boundary) + var(--beam-height, 68px))',
+          bottom: 'var(--light-beam-boundary)',
           paddingTop: '16px'
         }}
       >
         <div
-          className="profile-hologram-container overflow-y-auto"
+          className="profile-hologram-container overflow-y-auto overflow-x-hidden"
           style={{
             width: 'min(92vw, 500px)',
+            height: '100%',
             maxHeight: '100%',
             padding: '16px 24px 18px 24px',
             borderRadius: 18,
@@ -1077,16 +1132,43 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                 {/* Total heartcoins */}
                 <div className="flex items-center">
                   <span className="text-white/80 text-sm mr-1">Total HeartCoins:</span>
-                  <span 
+                  <span
                     className="font-bold text-sm"
-                    style={{ 
-                      color: '#00FFFF', 
-                      textShadow: '0 0 8px rgba(0,255,255,0.6)' 
+                    style={{
+                      color: '#00FFFF',
+                      textShadow: '0 0 8px rgba(0,255,255,0.6)'
                     }}
                   >
                     {profile?.heartcoin_total || 0}
                   </span>
                 </div>
+
+                {/* Active Boosts */}
+                {activeBoosts.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-white/10 flex flex-col gap-1">
+                    <span
+                      className="text-xs font-semibold"
+                      style={{
+                        color: '#FFD700',
+                        textShadow: '0 0 6px rgba(255,215,0,0.5)'
+                      }}
+                    >
+                      Active Boosts:
+                    </span>
+                    {activeBoosts.map((boost, idx) => (
+                      <span
+                        key={`${boost.kind}-${idx}`}
+                        className="text-xs"
+                        style={{
+                          color: '#FFD700',
+                          textShadow: '0 0 4px rgba(255,215,0,0.4)'
+                        }}
+                      >
+                        {boost.label}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1532,21 +1614,8 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                   </div>
                   {/* Full-size image container */}
                   <div className="relative flex-1 min-h-0 flex items-center justify-center overflow-hidden bg-black/80 p-2">
-                    {/* Glow effect behind the image */}
-                    <div
-                      className="absolute inset-0 flex items-center justify-center"
-                      style={{ pointerEvents: 'none', zIndex: 0 }}
-                    >
-                      <div
-                        style={{
-                          width: '80%',
-                          height: '80%',
-                          background: 'radial-gradient(ellipse at center, rgba(0,255,255,0.7) 0%, rgba(0,255,255,0.4) 25%, rgba(0,255,255,0.15) 50%, transparent 75%)',
-                          filter: 'blur(60px)',
-                          boxShadow: '0 0 80px 40px rgba(0,255,255,0.3)'
-                        }}
-                      />
-                    </div>
+                    {/* Simple glow circle behind the image */}
+                    <div className="absolute w-48 h-48 bg-[#00FFFF]/30 rounded-full blur-xl" style={{ zIndex: 0 }} />
                     <TiltSpinCard
                       className="relative w-full h-full animate-[pulse-float_3s_ease-in-out_infinite]"
                       style={{
@@ -1614,7 +1683,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                           <img
                             src={item.image_url!}
                             alt={item.name || `Merch ${i + 1}`}
-                            className={`absolute inset-0 w-full h-full object-cover ${isUnlocked ? '' : 'grayscale'}`}
+                            className={`absolute inset-0 w-full h-full object-contain p-1 ${isUnlocked ? '' : 'grayscale'}`}
                             style={{ opacity: isUnlocked ? 1 : 0.5 }}
                             onError={(e) => {
                               const target = e.currentTarget as HTMLImageElement;
@@ -1833,11 +1902,14 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
           )}
 
 
-          {/* Start Tour Button - Only show when relics, merch, element menu, and element info are not displayed */}
-          {!showRelicsInline && !showMerchInline && !showElementMenu && !showElementInfo && (
-            <div className="mt-4 pt-3" style={{
-              borderTop: '1px solid rgba(0,255,255,0.2)'
-            }}>
+          {/* Start Tour Button - Hidden but preserves space when overlays are displayed */}
+          <div
+            className="mt-4 pt-3"
+            style={{
+              borderTop: '1px solid rgba(0,255,255,0.2)',
+              visibility: (showRelicsInline || showMerchInline || showElementMenu || showElementInfo) ? 'hidden' : 'visible'
+            }}
+          >
               <button
                 onClick={handleStartTour}
                 onMouseEnter={() => {
@@ -1875,8 +1947,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
               >
                 🚪 Sign Out
               </button>
-            </div>
-          )}
+          </div>
         </div>
       </div>
 

@@ -47,9 +47,26 @@ export async function GET() {
     if (error) {
       console.error('[element-of-day API] Error fetching:', error.message);
       return NextResponse.json(
-        { serverDate, element: null, relicKey: null, intentionOfDay: null, error: error.message },
+        { serverDate, element: null, relicKey: null, intentionOfDay: null, relicLabel: null, relicImageUrl: null, error: error.message },
         { status: 500 }
       );
+    }
+
+    // If we have a relic_key, fetch the relic details
+    let relicLabel: string | null = null;
+    let relicImageUrl: string | null = null;
+
+    if (data?.relic_key) {
+      const { data: relicData, error: relicError } = await supabase
+        .from('relics')
+        .select('label, image_url')
+        .eq('code', data.relic_key)
+        .maybeSingle();
+
+      if (!relicError && relicData) {
+        relicLabel = relicData.label;
+        relicImageUrl = relicData.image_url;
+      }
     }
 
     return NextResponse.json({
@@ -57,6 +74,8 @@ export async function GET() {
       element: data?.element ?? null,
       relicKey: data?.relic_key ?? null,
       intentionOfDay: data?.intention_of_day ?? null,
+      relicLabel,
+      relicImageUrl,
     });
   } catch (err: any) {
     console.error('[element-of-day API] Unexpected error:', err);

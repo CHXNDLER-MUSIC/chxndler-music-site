@@ -138,7 +138,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         name: 'COLLECTOR',
         displayName: 'COLLECTOR', 
         badges: allBadges.length > 0 ? badgesWithUnlocked.filter(badge => badge.category === 'collector') : [],
-        image: '/elements/collector.webp'
+        image: '/badges/collector.webp'
       },
       {
         id: 'elemental-streak',
@@ -159,7 +159,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         name: 'CURRENCY',
         displayName: 'CURRENCY',
         badges: allBadges.length > 0 ? badgesWithUnlocked.filter(badge => badge.category === 'currency') : [],
-        image: '/elements/currency.webp'
+        image: '/badges/currency.webp'
       },
       {
         id: 'community',
@@ -748,7 +748,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             </div>
             
             {/* Category Selection Grid */}
-            <div className="mt-6 p-4 bg-black/20 rounded-xl border border-white/10">
+            <div className="mt-1 p-4 bg-black/20 rounded-xl border border-white/10">
               <div className="text-center mb-8">
                 <div className="mb-3">
                   <span className="text-cyan-300 text-lg font-bold uppercase tracking-wider">
@@ -896,20 +896,19 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                 >
                   {/* Front of badge */}
                   <div
-                    className="absolute inset-0 w-full h-full bg-gradient-to-br from-gray-800/80 to-black/90 border-4 border-white/30 rounded-3xl flex items-center justify-center"
+                    className="absolute inset-0 w-full h-full bg-gradient-to-br from-gray-800/80 to-black/90 border-4 border-white/30 rounded-3xl flex items-center justify-center overflow-hidden"
                     style={{
                       backfaceVisibility: 'hidden',
                       boxShadow: '0 0 60px rgba(252,84,175,0.4), 0 0 120px rgba(56,182,255,0.3)'
                     }}
                   >
                     {/* Badge content */}
-                    <div className={`transition-opacity ${enlargedBadge.unlocked ? 'opacity-100' : 'opacity-40'}`}>
+                    <div className={`transition-opacity w-full h-full flex items-center justify-center p-4 ${enlargedBadge.unlocked ? 'opacity-100' : 'opacity-40'}`}>
                       {enlargedBadge.icon_url ? (
                         <img
                           src={enlargedBadge.icon_url}
                           alt={enlargedBadge.badge_name}
-                          className="object-cover rounded-full"
-                          style={{ width: 'calc(100% - 16px)', height: 'calc(100% - 16px)' }}
+                          className="w-full h-full object-contain"
                           draggable={false}
                         />
                       ) : (
@@ -927,7 +926,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
 
                   {/* Back of badge */}
                   <div
-                    className="absolute inset-0 w-full h-full bg-gradient-to-br from-gray-800/80 to-black/90 border-4 border-white/30 rounded-3xl flex items-center justify-center"
+                    className="absolute inset-0 w-full h-full bg-gradient-to-br from-gray-800/80 to-black/90 border-4 border-white/30 rounded-3xl flex items-center justify-center overflow-hidden"
                     style={{
                       backfaceVisibility: 'hidden',
                       transform: 'rotateY(180deg)',
@@ -951,13 +950,13 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                         </div>
                       </div>
                     ) : (
-                      <div className="transition-opacity opacity-40">
+                      <div className="transition-opacity opacity-40 w-full h-full flex items-center justify-center p-4">
                         {enlargedBadge.icon_url ? (
                           <img
                             src={enlargedBadge.icon_url}
                             alt={enlargedBadge.badge_name}
-                            className="object-cover rounded-full"
-                            style={{ width: 'calc(100% - 16px)', height: 'calc(100% - 16px)', transform: 'scaleX(-1)' }}
+                            className="w-full h-full object-contain"
+                            style={{ transform: 'scaleX(-1)' }}
                             draggable={false}
                           />
                         ) : (
@@ -1129,8 +1128,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           />
 
           {/* Content container - scrollable */}
-          <div className="flex-1 relative z-10 overflow-y-auto overflow-x-hidden" style={{ padding: '8px 12px 20px 12px' }}>
-            <div className="relative badges-modal-container">
+          <div className="flex-1 relative z-10 overflow-y-auto overflow-x-hidden" style={{ padding: '0px 12px 20px 12px' }}>
+            <div className="relative badges-modal-container pt-1">
               <div data-badges-modal>
                 {badgesContent}
               </div>

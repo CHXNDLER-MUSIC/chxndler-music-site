@@ -40,6 +40,7 @@ import HoloStarsButton from "@/components/HoloStarsButton";
 import SoulStareModal from "@/components/SoulStareModal";
 import HeartCoinModal from "@/components/HeartCoinModal";
 import ElementOfDayModal from "@/components/ElementOfDayModal";
+import RelicCelebration from "@/components/RelicCelebration";
 import { useUIStore } from "@/store/useUIStore";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useUIState } from "@/lib/use-ui-state";
@@ -386,9 +387,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       }
       
       // Update curTrack to match the context (maintain compatibility with existing logic)
+      // BUT preserve isElement flag if curTrack is an element planet pseudo-track
       const matchingTrack = tracks.find(t => t.slug === audioManager.currentTrack.id);
       if (matchingTrack && (!curTrack || curTrack.slug !== matchingTrack.slug)) {
-        setCurTrack(matchingTrack);
+        // Don't override element pseudo-tracks - they need isElement: true preserved
+        if (!curTrack?.isElement) {
+          setCurTrack(matchingTrack);
+        }
       }
     }
   }, [audioManager.currentTrack, curTrack, isWarping]);
@@ -2879,10 +2884,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         />
       )}
       
-      {/* Welcome Home Modal triggered on first start */}
-      <WelcomeHomeModal 
-        open={showWelcomeHomeModal} 
-        onClose={handleWelcomeHomeClose} 
+      {/* Welcome Home Modal triggered on first start - hidden during warp effect */}
+      <WelcomeHomeModal
+        open={showWelcomeHomeModal && !warpActive}
+        onClose={handleWelcomeHomeClose}
       />
 
       {/* Heart Coin Modal */}
@@ -2896,6 +2901,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
       {/* Element of the Day Modal - shows after warp to daily element */}
       <ElementOfDayModal />
+
+      {/* Relic Celebration - shows after claiming element of day reward */}
+      <RelicCelebration />
 
       {/* Authentication Error Notification */}
       <AnimatePresence>

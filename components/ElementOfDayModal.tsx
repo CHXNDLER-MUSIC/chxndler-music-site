@@ -1,12 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import type { ElementType } from "@/lib/planetConfig";
+import { RELIC_CELEBRATION_EVENT } from "./RelicCelebration";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 
 interface ElementOfDayData {
   element: ElementType;
   intention: string | null;
+  rewardKey: string | null;
+  relicLabel: string | null;
+  relicImageUrl: string | null;
 }
 
 const ELEMENT_CONFIG: Record<ElementType, { name: string; color: string; icon: string }> = {
@@ -19,17 +24,140 @@ const ELEMENT_CONFIG: Record<ElementType, { name: string; color: string; icon: s
 export default function ElementOfDayModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [data, setData] = useState<ElementOfDayData | null>(null);
+  const [claimed, setClaimed] = useState(false);
+  const hoverAudioRef = useRef<HTMLAudioElement | null>(null);
+  const clickAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Play hover sound when hovering over the element
+  const handleElementHover = useCallback(() => {
+    if (claimed) return;
+    if (!hoverAudioRef.current) {
+      hoverAudioRef.current = new Audio("/audio/hover.mp3");
+      hoverAudioRef.current.volume = 0.5;
+    }
+    hoverAudioRef.current.currentTime = 0;
+    hoverAudioRef.current.play().catch(() => {});
+  }, [claimed]);
+
+  // Play click sound when clicking the element
+  const playClickSound = useCallback(() => {
+    if (!clickAudioRef.current) {
+      clickAudioRef.current = new Audio("/audio/click.mp3");
+      clickAudioRef.current.volume = 0.5;
+    }
+    clickAudioRef.current.currentTime = 0;
+    clickAudioRef.current.play().catch(() => {});
+  }, []);
 
   const handleClose = useCallback(() => {
     setIsOpen(false);
     setData(null);
+    setClaimed(false);
   }, []);
 
+  // Handle clicking on the element image to claim reward
+  // Element of Day click -> claim_daily_checkin RPC
+  const handleImageClick = useCallback(async () => {
+    if (!data || claimed) return;
+
+    // Play click sound
+    playClickSound();
+
+    // Stop pulsing by marking as claimed
+    setClaimed(true);
+
+    // Call claim_daily_checkin RPC to record the check-in
+    try {
+      const { data: session } = await supabaseBrowser.auth.getSession();
+      if (session?.session?.user) {
+        const { data: rpcResult, error: rpcError } = await supabaseBrowser.rpc(
+          'claim_daily_checkin',
+          { p_source: 'element_of_day' }
+        );
+
+        if (rpcError) {
+          console.error('[ElementOfDayModal] claim_daily_checkin RPC error:', rpcError);
+        } else {
+          console.log('[ElementOfDayModal] claim_daily_checkin RPC success:', rpcResult);
+
+          // Dispatch event so QuestList can update its UI
+          window.dispatchEvent(
+            new CustomEvent('element-of-day-claimed', {
+              detail: {
+                element: data.element,
+                checkinDate: rpcResult?.checkin_date_ny,
+                dailyStreak: rpcResult?.daily_streak_current,
+                alreadyCheckedIn: rpcResult?.already_checked_in,
+              },
+            })
+          );
+
+          // Trigger profile refresh to update daily_streak_current in UI
+          window.dispatchEvent(new CustomEvent('profile:force-refresh'));
+        }
+      } else {
+        console.log('[ElementOfDayModal] User not logged in, skipping daily check-in');
+      }
+    } catch (err) {
+      console.error('[ElementOfDayModal] Error calling claim_daily_checkin:', err);
+    }
+
+    // Close modal after brief delay
+    setTimeout(() => {
+      setIsOpen(false);
+
+      // Dispatch relic celebration event
+      if (data.rewardKey) {
+        window.dispatchEvent(
+          new CustomEvent(RELIC_CELEBRATION_EVENT, {
+            detail: {
+              element: data.element,
+              rewardKey: data.rewardKey,
+              relicLabel: data.relicLabel,
+              relicImageUrl: data.relicImageUrl,
+            },
+          })
+        );
+      }
+
+      // Reset state after celebration starts
+      setTimeout(() => {
+        setData(null);
+        setClaimed(false);
+      }, 100);
+    }, 300);
+  }, [data, claimed, playClickSound]);
+
   useEffect(() => {
-    const handleShow = (e: CustomEvent<ElementOfDayData>) => {
+    const handleShow = async (e: CustomEvent<ElementOfDayData>) => {
+      console.log('[ElementOfDayModal] Received event:', e.detail);
       if (e.detail?.element) {
+        // Always fetch the latest data from API to ensure intention is available
+        try {
+          const res = await fetch('/api/element-of-day');
+          if (res.ok) {
+            const apiData = await res.json();
+            console.log('[ElementOfDayModal] Fetched from API:', apiData);
+            const eventData: ElementOfDayData = {
+              element: e.detail.element,
+              intention: apiData.intentionOfDay || e.detail.intention || null,
+              rewardKey: apiData.relicKey || e.detail.rewardKey || null,
+              relicLabel: apiData.relicLabel || e.detail.relicLabel || null,
+              relicImageUrl: apiData.relicImageUrl || e.detail.relicImageUrl || null,
+            };
+            setData(eventData);
+            setIsOpen(true);
+            setClaimed(false);
+            return;
+          }
+        } catch (err) {
+          console.warn('[ElementOfDayModal] Failed to fetch from API:', err);
+        }
+
+        // Fallback to event data if API fails
         setData(e.detail);
         setIsOpen(true);
+        setClaimed(false);
       }
     };
 
@@ -58,43 +186,57 @@ export default function ElementOfDayModal() {
 
   return createPortal(
     <>
-      {/* Backdrop */}
+      {/* Backdrop - transparent, no dimming */}
       <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+        className="fixed inset-0"
         style={{ zIndex: 2147483647 }}
         onClick={handleClose}
       />
 
-      {/* Hologram base glow */}
-      <div
-        className="fixed inset-0 flex items-center justify-center pointer-events-none"
-        style={{ zIndex: 2147483648 }}
-      >
-        <div
-          style={{
-            width: "min(100vw, 500px)",
-            height: "250px",
-            background: `radial-gradient(ellipse 80% 100% at 50% 50%, ${elementColor}70 0%, ${elementColor}40 30%, ${elementColor}10 60%, transparent 100%)`,
-            filter: "blur(80px)",
-          }}
-        />
-      </div>
+      {/* Pulsing glow animation styles - only when not claimed */}
+      <style>{`
+        @keyframes elementPulse {
+          0%, 100% {
+            transform: scale(1);
+            filter: drop-shadow(0 0 20px ${elementColor}) drop-shadow(0 0 40px ${elementColor}80);
+          }
+          50% {
+            transform: scale(1.08);
+            filter: drop-shadow(0 0 35px ${elementColor}) drop-shadow(0 0 60px ${elementColor}90);
+          }
+        }
+        @keyframes glowPulse {
+          0%, 100% {
+            opacity: 0.6;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.15);
+          }
+        }
+      `}</style>
 
-      {/* Modal Content */}
+      {/* Modal Content - positioned at bottom, just above light beam */}
       <div
-        className="fixed inset-0 flex items-center justify-center"
-        style={{ zIndex: 2147483648 }}
+        className="fixed left-0 right-0 flex items-end justify-center pointer-events-none"
+        style={{
+          zIndex: 2147483648,
+          top: "var(--profile-bar-boundary, 64px)",
+          bottom: "var(--light-beam-boundary, 200px)",
+        }}
       >
         <div
-          className="relative"
+          className="relative pointer-events-auto flex flex-col"
           style={{
             width: "min(90vw, 380px)",
+            maxHeight: "100%",
             padding: "24px",
             borderRadius: 20,
-            background: "rgba(0,0,0,0.75)",
+            background: "rgba(0,0,0,0.85)",
             border: `2px solid ${elementColor}80`,
-            boxShadow: `0 0 40px ${elementColor}50, 0 0 80px ${elementColor}30, inset 0 0 30px ${elementColor}15`,
-            backdropFilter: "blur(16px) saturate(140%)",
+            boxShadow: `0 0 40px ${elementColor}50, 0 0 80px ${elementColor}30`,
+            overflow: "auto",
           }}
         >
           {/* Close button */}
@@ -129,32 +271,53 @@ export default function ElementOfDayModal() {
             }}
           />
 
-          {/* Element Image */}
+          {/* Element Image with glow and pulse - clickable */}
           <div className="flex justify-center mb-6">
-            <div
-              className="relative"
+            <button
+              onClick={handleImageClick}
+              onMouseEnter={handleElementHover}
+              className="relative cursor-pointer transition-transform hover:scale-105"
               style={{
-                width: 120,
-                height: 120,
-                borderRadius: "50%",
-                background: `radial-gradient(circle at 30% 30%, ${elementColor}30, transparent 70%)`,
-                boxShadow: `0 0 40px ${elementColor}40, inset 0 0 20px ${elementColor}20`,
+                width: 140,
+                height: 140,
+                background: "transparent",
+                border: "none",
+                padding: 0,
               }}
+              aria-label="Claim reward"
             >
+              {/* Pulsing glow behind the image - only when not claimed */}
+              {!claimed && (
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: -20,
+                    borderRadius: "50%",
+                    background: `radial-gradient(circle, ${elementColor}60 0%, ${elementColor}30 40%, transparent 70%)`,
+                    animation: "glowPulse 2s ease-in-out infinite",
+                  }}
+                />
+              )}
+              {/* The element image with pulse animation - stops when claimed */}
               <img
                 src={config?.icon}
                 alt={config?.name}
-                className="absolute inset-0 w-full h-full object-contain p-4"
                 style={{
-                  filter: `drop-shadow(0 0 12px ${elementColor})`,
+                  position: "relative",
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "contain",
+                  animation: claimed ? "none" : "elementPulse 2s ease-in-out infinite",
+                  opacity: claimed ? 0.5 : 1,
+                  transition: "opacity 0.3s ease",
                 }}
               />
-            </div>
+            </button>
           </div>
 
           {/* Element Name */}
           <div
-            className="text-center mb-4"
+            className="text-center mb-3"
             style={{
               color: elementColor,
               textShadow: `0 0 16px ${elementColor}90`,
@@ -166,48 +329,32 @@ export default function ElementOfDayModal() {
             {config?.name}
           </div>
 
-          {/* Intention */}
+          {/* Intention text directly under element name */}
           {data.intention && (
-            <>
-              <div
-                className="text-center mb-2"
-                style={{
-                  color: "rgba(255,255,255,0.5)",
-                  fontSize: "11px",
-                  fontWeight: "bold",
-                  letterSpacing: "0.2em",
-                }}
-              >
-                INTENTION
-              </div>
-              <div
-                className="text-center px-4"
-                style={{
-                  color: "rgba(255,255,255,0.9)",
-                  fontSize: "16px",
-                  lineHeight: 1.6,
-                  textShadow: "0 0 8px rgba(255,255,255,0.3)",
-                }}
-              >
-                {data.intention}
-              </div>
-            </>
+            <div
+              className="text-center px-4 mb-4"
+              style={{
+                color: "rgba(255,255,255,0.9)",
+                fontSize: "16px",
+                lineHeight: 1.6,
+                textShadow: "0 0 8px rgba(255,255,255,0.3)",
+              }}
+            >
+              {data.intention}
+            </div>
           )}
 
-          {/* Continue button */}
-          <button
-            onClick={handleClose}
-            className="w-full mt-6 py-3 rounded-lg font-medium transition-all"
-            style={{
-              background: `${elementColor}20`,
-              border: `1px solid ${elementColor}60`,
-              color: elementColor,
-              textShadow: `0 0 8px ${elementColor}80`,
-              boxShadow: `0 0 15px ${elementColor}30`,
-            }}
-          >
-            CONTINUE
-          </button>
+          {/* Tap hint */}
+          {!claimed && (
+            <div
+              className="text-center text-xs"
+              style={{
+                color: "rgba(255,255,255,0.5)",
+              }}
+            >
+              Tap the element to claim your reward
+            </div>
+          )}
         </div>
       </div>
     </>,

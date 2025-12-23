@@ -33,7 +33,7 @@ export default function ClientPlanetScene({
 }: ClientPlanetSceneProps) {
   const { songs, songsByElement, loading, error } = useSongs();
   const { focusElement } = useFocusElementOfDay();
-  const { loading: eodLoading, element, isClaimed, claim, intention } = useElementOfDayClaim();
+  const { loading: eodLoading, element, isClaimed, claim, intention, rewardKey, relicLabel, relicImageUrl } = useElementOfDayClaim();
   const [optimisticClaimed, setOptimisticClaimed] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
   const quality = getDeviceQuality();
@@ -82,7 +82,7 @@ export default function ClientPlanetScene({
     );
   }
 
-  console.log('ClientPlanetScene rendering Pure3DPlanets with:', { songs: songs.length, quality });
+  console.log('ClientPlanetScene rendering Pure3DPlanets with:', { songs: songs.length, quality, glowingElement, intention });
 
   // Prefer element_of_day from DB; fallback to focus element source if needed
   const glowingElement = useMemo(() => element ?? focusElement ?? null, [element, focusElement]);
@@ -112,17 +112,9 @@ export default function ClientPlanetScene({
         return resp;
       }
       if (resp.ok) {
-        if (typeof window !== 'undefined') {
-          // Show the Element of the Day modal with element and intention
-          try {
-            window.dispatchEvent(new CustomEvent('element-of-day:show', {
-              detail: {
-                element: glowingElement,
-                intention: resp.intention_of_day || intention
-              }
-            }));
-          } catch {}
-        }
+        // Modal is now shown from Pure3DPlanets after warp effect
+        // Just log success here
+        console.log('[ClientPlanetScene] Successfully claimed element of day reward');
         return resp;
       }
       // Not ok and not already claimed: revert
@@ -153,6 +145,10 @@ export default function ClientPlanetScene({
       hasClaimedElementOfDay={hasClaimed}
       isClaimingReward={isClaiming}
       onDailyPlanetClick={handleDailyPlanetClick}
+      intentionOfDay={intention}
+      rewardKey={rewardKey}
+      relicLabel={relicLabel}
+      relicImageUrl={relicImageUrl}
     />
   );
 }

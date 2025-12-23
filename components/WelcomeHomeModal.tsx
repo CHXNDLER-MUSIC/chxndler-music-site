@@ -277,7 +277,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
 
         <p className="relative text-lg mb-2 text-center" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.8), 0 0 16px rgba(0,255,255,0.6), 0 0 24px rgba(0,255,255,0.4)' }}>WELCOME TO THE <span style={{ color: '#FF69B4', textShadow: '0 0 8px rgba(255,105,180,0.8), 0 0 16px rgba(255,105,180,0.6), 0 0 24px rgba(255,105,180,0.4)' }}>HEARTVERSE</span> <span style={{ color: '#FF69B4', textShadow: '0 0 8px rgba(255,105,180,0.8), 0 0 16px rgba(255,105,180,0.6), 0 0 24px rgba(255,105,180,0.4)' }}>{"<3"}</span></p>
         
-        <p className="relative text-lg mb-3 text-center" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.6)' }}>Connect with other ALIENS, receive early releases and step into exclusive events.</p>
+        <p className="relative text-lg mb-3 text-center" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.6)' }}>Connect with other ALIENS, receive early releases and access exclusive events.</p>
 
         {error && (
           <div className="relative mb-2 rounded-md bg-red-50/10 border border-red-200/40 p-2 text-sm text-red-200">

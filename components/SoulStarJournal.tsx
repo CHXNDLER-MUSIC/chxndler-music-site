@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
 import PublicJournalFeed from "@/components/PublicJournalFeed";
 import { sfx } from "@/lib/sfx";
 import { useDailyReflectionStatus } from "@/hooks/useDailyReflectionStatus";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { getLocalDateString, getDisplayDateString } from "@/utils/dateHelpers";
+import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
 import BinderModal from "./BinderModal";
 import BadgesModal from "./BadgesModal";
 import UserBadges from "./UserBadges";
@@ -14,6 +15,8 @@ import UserCards from "./UserCards";
 import JourneyModal from "./JourneyModal";
 import TiltSpinCard from "./TiltSpinCard";
 import Image from 'next/image';
+import CastToStarsOverlay, { getGlowingPlanetPosition } from "./rituals/CastToStarsOverlay";
+import { ElementType } from "./planetarium/Pure3DPlanets";
 
 interface DailyPrompt {
   id: string;
@@ -141,6 +144,12 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const [starredByMe, setStarredByMe] = useState<Set<string>>(new Set());
   const [starringEntryId, setStarringEntryId] = useState<string | null>(null);
 
+  // Cast to Stars ritual animation state
+  const castButtonRef = useRef<HTMLButtonElement>(null);
+  const [showRitualOverlay, setShowRitualOverlay] = useState(false);
+  const [ritualStartPosition, setRitualStartPosition] = useState<{ x: number; y: number } | null>(null);
+  const [pendingRewardData, setPendingRewardData] = useState<{ awarded: number } | null>(null);
+
   const today = getLocalDateString();
   const todayFormatted = getDisplayDateString(today);
 
@@ -242,6 +251,16 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   };
 
   const handleSaveEntry = async () => {
+    // Capture button position BEFORE any validation (for animation start point)
+    let buttonPosition: { x: number; y: number } | null = null;
+    if (castButtonRef.current) {
+      const rect = castButtonRef.current.getBoundingClientRect();
+      buttonPosition = {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+      };
+    }
+
     try {
       // Validate user is signed in
       if (!user?.id) {
@@ -267,8 +286,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       }
 
       // Validate that the daily prompt has a proper UUID (allow temporary placeholder values)
-      if (dailyPrompt.id && 
-          !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(dailyPrompt.id) && 
+      if (dailyPrompt.id &&
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(dailyPrompt.id) &&
           dailyPrompt.id !== 'relic-id-here') {
         setError("Daily prompt data is corrupted. Please refresh the page and try again.");
         setTimeout(() => setError(""), 5000);
@@ -287,7 +306,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         promptId: dailyPrompt?.id,
         isValidUUID: dailyPrompt?.id ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(dailyPrompt.id) : false
       });
-      
+
       // Use ProfileContext's saveJournalEntry which handles upsert properly
       const entryDate = getLocalDateString();
       const result = await saveJournalEntry({
@@ -306,9 +325,23 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
       console.log('Successfully saved journal entry:', result);
 
+      // Award heartcoins for journal entry (idempotent - only once per NY day per user)
+      let awardedCoins = 0;
+      try {
+        const { data: awardResult, error: awardError } = await supabaseBrowser.rpc('award_journal_heartcoins');
+        if (awardError) {
+          console.warn('Failed to award journal heartcoins:', awardError.message);
+        } else if (awardResult) {
+          console.log('Journal heartcoins award result:', awardResult);
+          awardedCoins = awardResult.awarded || 0;
+        }
+      } catch (awardErr) {
+        console.warn('Error calling award_journal_heartcoins RPC:', awardErr);
+      }
+
       // Refresh profile data to update journal entries and reflection status
       await refreshProfile();
-      
+
       // Mark reflection as complete to hide notifications (after a short delay to ensure profile refresh completes)
       setTimeout(() => {
         markReflectionComplete();
@@ -320,13 +353,39 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         ...prev,
         isSubmitted: true
       }));
-      
-      // Notify parent that journal was completed
-      onJournalCompleted?.();
-      // Broadcast an event so other UI (e.g., hamburger) can clear journal dot immediately
-      try {
-        window.dispatchEvent(new CustomEvent('journalCompleted'));
-      } catch {}
+
+      // === RITUAL ANIMATION SEQUENCE ===
+      // Store pending reward data for after animation completes
+      if (awardedCoins > 0) {
+        setPendingRewardData({ awarded: awardedCoins });
+      }
+
+      // Store button position for animation start point
+      if (buttonPosition) {
+        setRitualStartPosition(buttonPosition);
+      }
+
+      // Close the journal panel first
+      onClose();
+
+      // Small delay to ensure panel close animation starts, then show ritual overlay
+      setTimeout(() => {
+        if (buttonPosition) {
+          setShowRitualOverlay(true);
+        } else {
+          // If no button position, skip animation and trigger rewards immediately
+          if (awardedCoins > 0) {
+            triggerHeartCoinCelebration(awardedCoins);
+          }
+          onJournalCompleted?.();
+          try {
+            window.dispatchEvent(new CustomEvent('journalCompleted'));
+          } catch {}
+        }
+      }, 100);
+
+      // Note: onJournalCompleted and journalCompleted event will be triggered
+      // in handleRitualComplete after the animation finishes
 
     } catch (error) {
       console.error('Failed to save journal entry:', error);
@@ -390,6 +449,27 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
     sfx.play('close', 0.8);
     onClose();
   };
+
+  // Callback when ritual animation completes - triggers reward celebration
+  const handleRitualComplete = useCallback(() => {
+    // Hide the overlay
+    setShowRitualOverlay(false);
+    setRitualStartPosition(null);
+
+    // Trigger reward celebration if there are pending coins
+    if (pendingRewardData && pendingRewardData.awarded > 0) {
+      triggerHeartCoinCelebration(pendingRewardData.awarded);
+      setPendingRewardData(null);
+    }
+
+    // Notify parent that journal was completed
+    onJournalCompleted?.();
+
+    // Broadcast event so other UI can update
+    try {
+      window.dispatchEvent(new CustomEvent('journalCompleted'));
+    } catch {}
+  }, [pendingRewardData, onJournalCompleted]);
 
   const handleEntryClick = (entryId: string) => {
     sfx.play('click', 0.6);
@@ -626,7 +706,22 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   };
 
 
-  if (!isOpen) return null;
+  // Render ritual overlay even when journal is closed (animation plays after close)
+  if (!isOpen) {
+    // Only render the ritual overlay if animation is active
+    if (showRitualOverlay && ritualStartPosition) {
+      const targetPosition = getGlowingPlanetPosition(dailyPrompt?.element as ElementType || null);
+      return (
+        <CastToStarsOverlay
+          startPosition={ritualStartPosition}
+          targetPosition={targetPosition}
+          onComplete={handleRitualComplete}
+          element={dailyPrompt?.element as ElementType || null}
+        />
+      );
+    }
+    return null;
+  }
 
   if (!dailyPrompt) {
     return null; // Don't show loading popup, just return null
@@ -1234,7 +1329,16 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 )}
               </div>
             )}
-            {activeTab === 'public' && <PublicJournalFeed />}
+            {activeTab === 'public' && (
+              <PublicJournalFeed
+                onStarToggle={() => {
+                  // Refresh journal entries to sync stars_count in private tab
+                  if (user?.id) {
+                    loadJournalEntries(user.id);
+                  }
+                }}
+              />
+            )}
           </div>
         </div>
       ) : (
@@ -1612,22 +1716,23 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     </button>
                   ) : (
                     <button
+                      ref={castButtonRef}
                       onClick={journalState.isSubmitted ? undefined : handleSaveEntry}
                       disabled={!journalState.isSubmitted && (!soulStarText.trim() || isSaving)}
                       className="flex-1 px-4 py-2 rounded-lg text-base font-semibold transition-all duration-200 disabled:opacity-40"
                       style={{
-                        background: journalState.isSubmitted 
-                          ? 'rgba(57, 255, 20, 0.2)' 
+                        background: journalState.isSubmitted
+                          ? 'rgba(57, 255, 20, 0.2)'
                           : `linear-gradient(135deg, ${elementTheme.color}60, ${elementTheme.color}80)`,
                         color: journalState.isSubmitted ? '#39FF14' : elementTheme.color,
-                        border: journalState.isSubmitted 
-                          ? '2px solid #39FF14' 
+                        border: journalState.isSubmitted
+                          ? '2px solid #39FF14'
                           : `1px solid ${elementTheme.color}`,
-                        boxShadow: journalState.isSubmitted 
-                          ? '0 0 20px #39FF14, 0 0 40px #39FF1460, inset 0 0 15px #39FF1430' 
+                        boxShadow: journalState.isSubmitted
+                          ? '0 0 20px #39FF14, 0 0 40px #39FF1460, inset 0 0 15px #39FF1430'
                           : `0 0 20px ${elementTheme.color}40, inset 0 0 10px ${elementTheme.color}20`,
-                        textShadow: journalState.isSubmitted 
-                          ? '0 0 8px #39FF14, 0 0 15px #39FF14, 0 0 25px #39FF14' 
+                        textShadow: journalState.isSubmitted
+                          ? '0 0 8px #39FF14, 0 0 15px #39FF14, 0 0 25px #39FF14'
                           : 'none',
                         cursor: (journalState.isSubmitted || !soulStarText.trim() || isSaving) ? 'not-allowed' : 'pointer'
                       }}

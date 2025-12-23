@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { usePublicSoulJournalEntries } from "@/hooks/useSoulJournalEntries";
+import { useProfile } from "@/contexts/ProfileContext";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { getDisplayDateString } from "@/utils/dateHelpers";
 import { sfx } from "@/lib/sfx";
@@ -37,9 +38,15 @@ const RARITY_COLORS: Record<string, { bg: string; border: string; glow: string }
   legendary: { bg: 'rgba(251, 191, 36, 0.2)', border: '#FBBF24', glow: '#FBBF2440' },
 };
 
-export default function PublicJournalFeed() {
+interface PublicJournalFeedProps {
+  onStarToggle?: () => void;
+}
+
+export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedProps) {
   // Public feed - no auth dependency for viewing entries
   const { entries, loading, error, refreshEntries } = usePublicSoulJournalEntries();
+  // Get current user's profile for avatar fallback on own entries
+  const { user, profile } = useProfile();
   const [showProfileInfo, setShowProfileInfo] = useState<{[key: string]: boolean}>({});
   const [starredByMe, setStarredByMe] = useState<Set<string>>(new Set());
   const [starringEntryId, setStarringEntryId] = useState<string | null>(null);
@@ -52,6 +59,46 @@ export default function PublicJournalFeed() {
   const spinAudioRef = useRef<HTMLAudioElement | null>(null);
   // Public profile fallbacks when denormalized fields are missing
   const [authorOverrides, setAuthorOverrides] = useState<Record<string, { name: string | null; avatar: string | null }>>({});
+
+  // Helper: Resolve avatar URL with correct priority order
+  // 1. entry.author_avatar_url (from DB)
+  // 2. authorOverrides[entry.user_id]?.avatar (for missing denormalized fields)
+  // 3. profile.profile_image_url (ONLY if entry.user_id === current user)
+  // 4. default avatar "/elements/alien.webp"
+  const resolveAvatarUrl = (entry: { user_id: string; author_avatar_url?: string | null }) => {
+    // First priority: DB-stored author avatar
+    if (entry.author_avatar_url) {
+      return entry.author_avatar_url;
+    }
+    // Second priority: fetched public profile override
+    if (authorOverrides[entry.user_id]?.avatar) {
+      return authorOverrides[entry.user_id].avatar;
+    }
+    // Third priority: current user's profile context (for own entries)
+    if (user?.id && entry.user_id === user.id && profile?.profile_image_url) {
+      return profile.profile_image_url;
+    }
+    // Fallback: default avatar
+    return "/elements/alien.webp";
+  };
+
+  // Helper: Resolve author name with correct priority order
+  const resolveAuthorName = (entry: { user_id: string; author_name?: string | null }) => {
+    // First priority: DB-stored author name
+    if (entry.author_name) {
+      return entry.author_name;
+    }
+    // Second priority: fetched public profile override
+    if (authorOverrides[entry.user_id]?.name) {
+      return authorOverrides[entry.user_id].name;
+    }
+    // Third priority: current user's profile context (for own entries)
+    if (user?.id && entry.user_id === user.id && profile?.name) {
+      return profile.name;
+    }
+    // Fallback: default name
+    return 'Alien';
+  };
 
   // Check auth state only for starring functionality (not for viewing)
   useEffect(() => {
@@ -197,6 +244,9 @@ export default function PublicJournalFeed() {
 
       // Refresh entries to get updated star counts
       refreshEntries();
+
+      // Notify parent to refresh their journal entries (syncs private tab)
+      onStarToggle?.();
     } catch (err) {
       console.error('Failed to toggle star:', err);
       // Revert optimistic update
@@ -461,7 +511,7 @@ export default function PublicJournalFeed() {
                   }}
                 >
                   <img
-                    src={(entry.author_avatar_url || authorOverrides[entry.user_id]?.avatar) || "/elements/alien.webp"}
+                    src={resolveAvatarUrl(entry)}
                     alt="User"
                     className="w-8 h-8 rounded-full object-cover"
                     style={{
@@ -473,7 +523,7 @@ export default function PublicJournalFeed() {
                     }}
                   />
                   <div className="text-sm font-medium text-white">
-                    {entry.author_name || authorOverrides[entry.user_id]?.name || 'Alien'}
+                    {resolveAuthorName(entry)}
                   </div>
                 </div>
 
@@ -553,7 +603,7 @@ export default function PublicJournalFeed() {
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-start">
                           <img
-                            src={(entry.author_avatar_url || authorOverrides[entry.user_id]?.avatar) || "/elements/alien.webp"}
+                            src={resolveAvatarUrl(entry)}
                             alt="User"
                             className="w-16 h-16 rounded-full object-cover mr-3"
                             style={{
@@ -566,7 +616,7 @@ export default function PublicJournalFeed() {
                           />
                           <div className="flex flex-col">
                             <div className="text-2xl font-bold text-white">
-                              {entry.author_name || authorOverrides[entry.user_id]?.name || 'Alien'}
+                              {resolveAuthorName(entry)}
                             </div>
 
                             {/* Element label */}

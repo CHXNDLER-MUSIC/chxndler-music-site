@@ -47,11 +47,24 @@ export default function AuthButton() {
           clearSession();
         }
       };
-      
+
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
     }
   }, [clearSession]);
+
+  // Listen for openProfilePopover event (triggered after relic celebration)
+  useEffect(() => {
+    const handleOpenProfile = () => {
+      // Only open if user has a complete profile
+      if (user && profile?.profile_complete) {
+        setShowProfilePopover(true);
+      }
+    };
+
+    window.addEventListener('openProfilePopover', handleOpenProfile);
+    return () => window.removeEventListener('openProfilePopover', handleOpenProfile);
+  }, [user, profile?.profile_complete]);
 
   // Get button display info
   const getButtonDisplayInfo = () => {

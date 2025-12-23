@@ -16,6 +16,7 @@ import TiltSpinCard from '@/components/TiltSpinCard';
 import { usePlanetRewardsContext } from '@/components/PlanetRewardsProvider';
 import { getElementalPlanetImage } from '@/lib/elementalPlanets';
 import { triggerMerchCelebration } from '@/utils/merchCelebration';
+import { triggerHeartCoinCelebration } from '@/utils/heartcoinCelebration';
 
 // Helper function to convert MerchItem to StoreItem for backward compatibility
 const merchItemToStoreItem = (merchItem: MerchItem): StoreItem => {
@@ -2310,7 +2311,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               setActiveMerchItem(null);
               try { onClose?.(); } catch {}
             }}
-            className="absolute top-2 right-4 text-white hover:text-gray-200 cursor-pointer w-8 h-8 rounded-full border border-white/80 flex items-center justify-center"
+            onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+            className="absolute top-2 right-4 text-white hover:text-gray-200 cursor-pointer w-8 h-8 rounded-full border border-white/80 flex items-center justify-center transition-transform duration-200 hover:scale-110"
             style={{ 
               fontSize: '16px',
               boxShadow: '0 0 15px rgba(255,255,255,0.8), 0 0 25px rgba(255,255,255,0.5), 0 0 35px rgba(255,255,255,0.3)',
@@ -2330,11 +2332,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           
           {/* Header */}
           <div className="text-center mb-0.5 mt-2">
-            <div 
-              className="text-lg font-bold mb-2 cursor-pointer hover:scale-105 transition-transform duration-200"
-              style={{ 
-                color: '#FFFFFF', 
-                textShadow: '0 0 12px rgba(255,255,255,0.9), 0 0 24px rgba(255,255,255,0.6), 0 0 36px rgba(255,255,255,0.3)', 
+            <span
+              className="text-lg font-bold mb-2 cursor-pointer hover:scale-105 transition-transform duration-200 inline-block"
+              style={{
+                color: '#FFFFFF',
+                textShadow: '0 0 12px rgba(255,255,255,0.9), 0 0 24px rgba(255,255,255,0.6), 0 0 36px rgba(255,255,255,0.3)',
                 fontSize: '20px'
               }}
               onClick={() => {
@@ -2346,7 +2348,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               }}
             >
               HeartCoins
-            </div>
+            </span>
             
             {/* Tabs arranged in a 2x2 grid: EARN/USE (top), MERCH/CARDS (bottom) */}
             <div className="grid grid-cols-2 gap-1 pl-1 pr-4">
@@ -2729,10 +2731,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         {quest.quest_key === 'ATTEND_LIVESTREAM' && showAutoTextBox ? (
                           phraseValidationResult ? (
                             <div className="text-xs font-bold flex items-center h-8" style={{
-                              color: '#FF69B4',
-                              textShadow: '0 0 8px #FF69B4'
+                              color: phraseValidationResult === 'correct' ? '#00FF00' : '#FF69B4',
+                              textShadow: phraseValidationResult === 'correct' ? '0 0 8px #00FF00, 0 0 16px #00FF00' : '0 0 8px #FF69B4'
                             }}>
-                              {phraseValidationResult === 'correct' ? 'CORRECT' : phraseValidationResult === 'already' ? 'ALREADY REDEEMED' : 'INCORRECT'}
+                              {phraseValidationResult === 'correct' ? 'PASSWORD ACCEPTED' : phraseValidationResult === 'already' ? 'ALREADY REDEEMED' : 'INCORRECT'}
                             </div>
                           ) : (
                             <textarea
@@ -2853,6 +2855,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     setPhraseValidationResult('correct');
                                     setAutoTextValue('');
                                     try { sfx.play('click', 0.7); } catch {}
+                                    // Trigger HeartCoin celebration with the reward amount
+                                    if (reward > 0) {
+                                      triggerHeartCoinCelebration(reward);
+                                    }
                                     setCheckInMessage(`Secret phrase accepted! +${reward} HeartCoins`);
                                     setStatusType('success');
                                     setShowCheckInSuccess(true);
@@ -3011,9 +3017,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           : (isQuestCompleted(quest) || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
                             ? 'COMPLETED'
                             : quest.quest_key === 'ATTEND_LIVESTREAM'
-                              ? ((phraseStatus === 'success' || phraseStatus === 'already')
+                              ? (phraseStatus === 'already'
                                   ? 'ALREADY REDEEMED'
-                                  : (phraseValidationResult === 'correct' ? 'COMPLETED' : attendLivestreamConfirming ? 'CONFIRM' : 'CHECK IN'))
+                                  : phraseStatus === 'success'
+                                    ? 'PASSWORD ACCEPTED'
+                                    : (attendLivestreamConfirming ? 'CONFIRM' : 'CHECK IN'))
                               : quest.quest_key === 'INVITE_FRIEND'
                                 ? (inviteFriendShared ? 'CONFIRM' : 'INVITE FRIEND')
                                 : quest.quest_key === 'SECRET_PHRASE'
@@ -3048,23 +3056,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               )}
             </div>
           )}
-          
-          {/* Success message */}
-          {showCheckInSuccess && (
-            <div 
-              className="text-center py-2 mb-2 rounded border border-green-400/60"
-              style={{
-                background: 'rgba(0,255,0,0.1)',
-                color: '#90EE90',
-                textShadow: '0 0 4px rgba(144,238,144,0.8)'
-              }}
-            >
-              {checkInMessage}
-              <br />
-              <span className="text-sm font-bold">You received +5 HEART COINS</span>
-            </div>
-          )}
-          
+
             </div>
           )}
             </>
@@ -3366,8 +3358,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
                   {/* Bottom description (removed PAY WITH button) - Only show when NOT in heart coin purchase mode */}
                   {activeUseTab === 'MERCH' && PHYSICAL_ITEMS[currentMerchIndex] && !purchaseDraft && (
-                    <div className="absolute left-6 right-6 bottom-4" style={{ lineHeight: '1.3' }}>
-                      <div className="text-xs text-white/90 mb-2" style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}>
+                    <div className="absolute left-6 right-6 bottom-0" style={{ lineHeight: '1.3' }}>
+                      <div className="text-xs text-white/90" style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}>
                         {PHYSICAL_ITEMS[currentMerchIndex].description}
                       </div>
                     </div>

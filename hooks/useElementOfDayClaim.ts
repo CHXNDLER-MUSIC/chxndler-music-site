@@ -20,6 +20,8 @@ export interface ElementOfDayClaimState {
   element: ElementOfDay;
   rewardKey: string | null;
   intention: string | null;
+  relicLabel: string | null;
+  relicImageUrl: string | null;
   isClaimed: boolean;
   error: string | null;
   claim: () => Promise<ClaimRPCResponse | null>;
@@ -38,6 +40,8 @@ export function useElementOfDayClaim(): ElementOfDayClaimState {
   const [element, setElement] = useState<ElementOfDay>(null);
   const [rewardKey, setRewardKey] = useState<string | null>(null);
   const [intention, setIntention] = useState<string | null>(null);
+  const [relicLabel, setRelicLabel] = useState<string | null>(null);
+  const [relicImageUrl, setRelicImageUrl] = useState<string | null>(null);
   const [isClaimed, setIsClaimed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Store the server date to ensure consistency
@@ -63,13 +67,18 @@ export function useElementOfDayClaim(): ElementOfDayClaimState {
         setElement(null);
         setRewardKey(null);
         setIntention(null);
+        setRelicLabel(null);
+        setRelicImageUrl(null);
         setServerDate(null);
       } else {
         const normalized = normalizeElement(data.element);
         setElement(normalized);
         setRewardKey(data.relicKey ?? null);
         setIntention(data.intentionOfDay ?? null);
+        setRelicLabel(data.relicLabel ?? null);
+        setRelicImageUrl(data.relicImageUrl ?? null);
         setServerDate(data.serverDate);
+        console.log('[useElementOfDayClaim] Fetched data:', { element: normalized, intention: data.intentionOfDay, relicLabel: data.relicLabel });
       }
 
       // Check claim status for this user using server date
@@ -155,6 +164,8 @@ export function useElementOfDayClaim(): ElementOfDayClaimState {
     element,
     rewardKey,
     intention,
+    relicLabel,
+    relicImageUrl,
     isClaimed,
     error,
     claim,

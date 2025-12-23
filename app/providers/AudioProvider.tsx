@@ -1,6 +1,7 @@
 "use client";
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 
 // Track info for audio and visual display
 export type TrackInfo = {
@@ -218,17 +219,126 @@ const AudioCtx = createContext<(AudioState & AudioControls) | null>(null);
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [state, setState] = useState<AudioState>({ 
-    src: null, 
-    playing: false, 
-    currentTime: 0, 
-    duration: 0, 
+  const [state, setState] = useState<AudioState>({
+    src: null,
+    playing: false,
+    currentTime: 0,
+    duration: 0,
     volume: 1,
     currentTrack: null,
     isLoading: false,
     pendingTrack: null,
     warpCompleted: false
   });
+
+  // Listen session tracking refs
+  const sessionStartRef = useRef<Date | null>(null);
+  const sessionTrackIdRef = useRef<string | null>(null);
+  const isRecordingRef = useRef<boolean>(false);
+  const currentTrackRef = useRef<string | null>(null);
+
+  // Record listen session to song_listen_sessions
+  const recordListenSession = async (trackId: string, startedAt: Date, endedAt: Date) => {
+    // Prevent double-recording
+    if (isRecordingRef.current) return;
+
+    const durationSeconds = Math.floor((endedAt.getTime() - startedAt.getTime()) / 1000);
+
+    // Ignore sessions shorter than 10 seconds
+    if (durationSeconds < 10) {
+      console.log(`🎧 Listen session too short (${durationSeconds}s), skipping record`);
+      return;
+    }
+
+    isRecordingRef.current = true;
+
+    try {
+      // Get current user
+      const { data: { session } } = await supabaseBrowser.auth.getSession();
+      if (!session?.user?.id) {
+        console.log('🎧 No authenticated user, skipping listen record');
+        isRecordingRef.current = false;
+        return;
+      }
+
+      // Calculate today in NY timezone for effect check
+      const todayNY = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/New_York',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(new Date());
+
+      // Check for active LISTEN_MULTIPLIER effect
+      let multiplier = 1;
+      try {
+        const { data: effectData } = await supabaseBrowser
+          .from('user_effects')
+          .select('id, metadata')
+          .eq('user_id', session.user.id)
+          .eq('kind', 'LISTEN_MULTIPLIER')
+          .eq('active_date', todayNY)
+          .is('consumed_at', null)
+          .single();
+
+        if (effectData) {
+          multiplier = (effectData.metadata as { multiplier?: number })?.multiplier || 2;
+          console.log(`🎧 Deep Focus active! Listen multiplier: ${multiplier}x`);
+
+          // Mark effect as consumed
+          await supabaseBrowser
+            .from('user_effects')
+            .update({ consumed_at: new Date().toISOString() })
+            .eq('id', effectData.id);
+        }
+      } catch (effectErr) {
+        // Effect check failed, continue with multiplier=1
+        console.log('🎧 No listen multiplier effect active');
+      }
+
+      // Insert listen session
+      const sessionData = {
+        user_id: session.user.id,
+        song_id: trackId,
+        started_at: startedAt.toISOString(),
+        ended_at: endedAt.toISOString(),
+        duration_seconds: durationSeconds,
+        source: 'player',
+        metadata: multiplier > 1 ? { multiplier, listen_units: multiplier } : null
+      };
+
+      const { error: insertError } = await supabaseBrowser
+        .from('song_listen_sessions')
+        .insert(sessionData);
+
+      if (insertError) {
+        console.error('🎧 Failed to record listen session:', insertError);
+      } else {
+        console.log(`🎧 Recorded listen session: ${trackId}, ${durationSeconds}s, ${multiplier}x multiplier`);
+      }
+    } catch (err) {
+      console.error('🎧 Error recording listen session:', err);
+    } finally {
+      isRecordingRef.current = false;
+    }
+  };
+
+  // Start tracking a new listen session
+  const startListenSession = (trackId: string) => {
+    sessionStartRef.current = new Date();
+    sessionTrackIdRef.current = trackId;
+    console.log(`🎧 Started listen session for: ${trackId}`);
+  };
+
+  // End and record the current listen session
+  const endListenSession = () => {
+    if (sessionStartRef.current && sessionTrackIdRef.current) {
+      const endedAt = new Date();
+      recordListenSession(sessionTrackIdRef.current, sessionStartRef.current, endedAt);
+    }
+    sessionStartRef.current = null;
+    sessionTrackIdRef.current = null;
+  };
 
   // Lazily create audio element once on client
   useEffect(() => {
@@ -246,10 +356,16 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const onPlay = () => {
       console.log('🎵 AudioProvider: onPlay event fired');
       setState(s => ({ ...s, playing: true, isLoading: false }));
+      // Start listen session tracking
+      if (currentTrackRef.current && !sessionStartRef.current) {
+        startListenSession(currentTrackRef.current);
+      }
     };
     const onPause = () => {
       console.log('🎵 AudioProvider: onPause event fired');
       setState(s => ({ ...s, playing: false }));
+      // End listen session tracking
+      endListenSession();
     };
     const onVol = () => setState(s => ({ ...s, volume: a.volume }));
     const onLoadStart = () => setState(s => ({ ...s, isLoading: true }));
@@ -367,6 +483,32 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         delete (window as any).__UNIFIED_AUDIO_ACTIVE; 
         delete (window as any).__AUDIO_MANAGER_ACTIVE; 
       } catch {} 
+    };
+  }, []);
+
+  // Sync currentTrackRef when track changes and handle track-to-track transitions
+  useEffect(() => {
+    const newTrackId = state.currentTrack?.id || null;
+    const previousTrackId = currentTrackRef.current;
+
+    // If track changed while playing, end the old session and start a new one
+    if (previousTrackId && newTrackId !== previousTrackId && sessionStartRef.current) {
+      endListenSession();
+    }
+
+    // Update the ref
+    currentTrackRef.current = newTrackId;
+
+    // If a new track started and we're playing, start a new session
+    if (newTrackId && state.playing && !sessionStartRef.current) {
+      startListenSession(newTrackId);
+    }
+  }, [state.currentTrack?.id, state.playing]);
+
+  // End session on unmount
+  useEffect(() => {
+    return () => {
+      endListenSession();
     };
   }, []);
 
