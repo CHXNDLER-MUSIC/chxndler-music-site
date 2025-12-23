@@ -74,14 +74,28 @@ export async function POST(request: NextRequest) {
 
     // Get user from session
     const cookieStore = await cookies();
+
+    // DEBUG: Log all cookies received
+    const allCookies = cookieStore.getAll();
+    console.log('[MERCH PURCHASE DEBUG] Cookie names:', allCookies.map(c => c.name));
+    console.log('[MERCH PURCHASE DEBUG] sb-* cookies:', allCookies.filter(c => c.name.startsWith('sb-')).map(c => ({ name: c.name, valueLen: c.value?.length })));
+
     const token = cookieStore.get('sb-access-token')?.value || '';
+    console.log('[MERCH PURCHASE DEBUG] sb-access-token found:', !!token, 'length:', token?.length || 0);
 
     if (!token) {
+      console.log('[MERCH PURCHASE DEBUG] No sb-access-token cookie - returning 401');
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     const supabase = createSupabaseServerClientWithJwt(token);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
+    console.log('[MERCH PURCHASE DEBUG] supabase.auth.getUser() result:', {
+      hasUser: !!user,
+      userId: user?.id ?? null,
+      userEmail: user?.email ?? null,
+      error: authError?.message ?? null,
+    });
 
     if (authError || !user) {
       return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });

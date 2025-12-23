@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
+import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
 
 /**
  * Step 1 of physical card purchase: Create order via RPC, deduct HeartCoins
@@ -20,38 +20,28 @@ export async function POST(request: NextRequest) {
     console.log('[CARD PURCHASE DEBUG] Cookie names:', allCookies.map(c => c.name));
     console.log('[CARD PURCHASE DEBUG] sb-* cookies:', allCookies.filter(c => c.name.startsWith('sb-')).map(c => ({ name: c.name, valueLen: c.value?.length })));
 
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
-            } catch {
-              // The `setAll` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing user sessions.
-            }
-          },
-        },
-      }
-    );
+    // Use the same auth pattern as merch route - read sb-access-token cookie
+    const token = cookieStore.get('sb-access-token')?.value || '';
+    console.log('[CARD PURCHASE DEBUG] sb-access-token found:', !!token, 'length:', token?.length || 0);
 
-    // DEBUG: Check session before getUser
-    const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
-    console.log('[CARD PURCHASE DEBUG] getSession result:', {
-      hasSession: !!sessionData?.session,
-      sessionError: sessionErr?.message,
-      userId: sessionData?.session?.user?.id,
-    });
+    if (!token) {
+      console.log('[CARD PURCHASE DEBUG] No sb-access-token cookie - returning 401');
+      return NextResponse.json(
+        { success: false, error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
+
+    const supabase = createSupabaseServerClientWithJwt(token);
 
     // Verify user is authenticated
     const { data: { user }, error: userErr } = await supabase.auth.getUser();
+    console.log('[CARD PURCHASE DEBUG] supabase.auth.getUser() result:', {
+      hasUser: !!user,
+      userId: user?.id ?? null,
+      userEmail: user?.email ?? null,
+      error: userErr?.message ?? null,
+    });
 
     if (userErr || !user) {
       return NextResponse.json(

@@ -6969,17 +6969,113 @@ const HUDPanel = React.memo(function HUDPanel({
                         }} />
                       )}
 
-                      {/* Star animation overlay */}
+                      {/* Shining Star animation overlay */}
                       {showStarAnimation && (
-                        <div style={{
-                          position: 'absolute',
-                          top: '50%',
-                          left: '50%',
-                          transform: 'translate(-50%, -50%)',
-                          animation: 'starBirth 3s ease-out forwards',
-                          zIndex: 5
-                        }}>
-                        </div>
+                        <motion.div
+                          style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            zIndex: 100,
+                            pointerEvents: 'none'
+                          }}
+                          initial={{ x: '-50%', y: '-50%' }}
+                        >
+                          {/* Central glowing star core */}
+                          <motion.div
+                            style={{
+                              width: 30,
+                              height: 30,
+                              borderRadius: '50%',
+                              background: 'radial-gradient(circle, #FFFFFF 0%, #FFD700 40%, #FFA500 70%, transparent 100%)',
+                              boxShadow: '0 0 40px #FFD700, 0 0 80px #FFA500, 0 0 120px rgba(255,215,0,0.6)'
+                            }}
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{
+                              scale: [0, 1.5, 1.2, 1.5, 1.2, 1.5, 0.8, 0],
+                              opacity: [0, 1, 1, 1, 1, 1, 0.8, 0]
+                            }}
+                            transition={{ duration: 3.5, ease: "easeOut" }}
+                          />
+                          {/* Star burst rays */}
+                          {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
+                            <motion.div
+                              key={angle}
+                              style={{
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                width: 3,
+                                height: 60,
+                                background: 'linear-gradient(to top, transparent, #FFD700 30%, #FFFFFF 60%, transparent)',
+                                transformOrigin: 'center bottom',
+                                transform: `translate(-50%, -100%) rotate(${angle}deg)`,
+                                borderRadius: 2
+                              }}
+                              initial={{ scaleY: 0, opacity: 0 }}
+                              animate={{
+                                scaleY: [0, 1.5, 1, 1.3, 0.8, 0],
+                                opacity: [0, 1, 0.8, 1, 0.6, 0]
+                              }}
+                              transition={{
+                                duration: 3,
+                                delay: i * 0.05,
+                                ease: "easeOut"
+                              }}
+                            />
+                          ))}
+                          {/* Outer glow ring */}
+                          <motion.div
+                            style={{
+                              position: 'absolute',
+                              top: '50%',
+                              left: '50%',
+                              width: 100,
+                              height: 100,
+                              borderRadius: '50%',
+                              border: '2px solid rgba(255,215,0,0.6)',
+                              boxShadow: '0 0 30px rgba(255,215,0,0.4), inset 0 0 30px rgba(255,215,0,0.2)'
+                            }}
+                            initial={{ x: '-50%', y: '-50%', scale: 0, opacity: 0 }}
+                            animate={{
+                              scale: [0, 2, 2.5],
+                              opacity: [0, 0.8, 0]
+                            }}
+                            transition={{ duration: 2, ease: "easeOut" }}
+                          />
+                          {/* Sparkle particles */}
+                          {[...Array(12)].map((_, i) => {
+                            const angle = (i * 30) * Math.PI / 180;
+                            const distance = 80 + Math.random() * 40;
+                            return (
+                              <motion.div
+                                key={`sparkle-${i}`}
+                                style={{
+                                  position: 'absolute',
+                                  top: '50%',
+                                  left: '50%',
+                                  width: 6,
+                                  height: 6,
+                                  borderRadius: '50%',
+                                  background: '#FFD700',
+                                  boxShadow: '0 0 10px #FFD700, 0 0 20px rgba(255,215,0,0.6)'
+                                }}
+                                initial={{ x: '-50%', y: '-50%', scale: 0, opacity: 0 }}
+                                animate={{
+                                  x: ['-50%', `calc(-50% + ${Math.cos(angle) * distance}px)`],
+                                  y: ['-50%', `calc(-50% + ${Math.sin(angle) * distance}px)`],
+                                  scale: [0, 1, 0],
+                                  opacity: [0, 1, 0]
+                                }}
+                                transition={{
+                                  duration: 2,
+                                  delay: 0.3 + i * 0.05,
+                                  ease: "easeOut"
+                                }}
+                              />
+                            );
+                          })}
+                        </motion.div>
                       )}
                     </div>
                   </div>
