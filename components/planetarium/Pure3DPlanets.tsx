@@ -1148,8 +1148,17 @@ export default function Pure3DPlanets({
 
       // === CAMERA FOLLOW LOGIC ===
       // When locked or animating to a planet, continuously update camera to track the planet as it orbits
-      if ((cameraModeRef.current === 'locked' || cameraModeRef.current === 'animating') && focusedSongSlugRef.current && !isUserInteractingRef.current) {
-        const focusedId = focusedSongSlugRef.current.toLowerCase();
+      const isFollowingPlanet = (cameraModeRef.current === 'locked' || cameraModeRef.current === 'animating') && focusedSongSlugRef.current && !isUserInteractingRef.current;
+
+      // Disable autoRotate when following a planet, re-enable when free
+      if (isFollowingPlanet) {
+        controls.autoRotate = false;
+      } else if (cameraModeRef.current === 'free') {
+        controls.autoRotate = true;
+      }
+
+      if (isFollowingPlanet) {
+        const focusedId = focusedSongSlugRef.current!.toLowerCase();
         // Try song mesh first, then element sprite
         let targetObject: THREE.Object3D | undefined = songMeshMapRef.current.get(focusedId);
         if (!targetObject) {
@@ -1157,6 +1166,8 @@ export default function Pure3DPlanets({
         }
 
         if (targetObject) {
+          // Update world matrix to ensure we get the correct position after orbit rotations
+          targetObject.updateWorldMatrix(true, false);
           // Get current world position of the focused planet
           targetObject.getWorldPosition(tmpTargetPosRef.current);
 
@@ -1176,8 +1187,8 @@ export default function Pure3DPlanets({
       // Camera lerp for smooth easing (hover bias, cinematic focus, and planet follow)
       // Do NOT override user interaction; only lerp when the user is not actively moving the camera
       if (!isUserInteractingRef.current) {
-        // Use faster lerp when locked/animating for smoother follow
-        const lerpSpeed = cameraModeRef.current === 'locked' ? 0.06 :
+        // Use faster lerp when locked for tight follow, slower when animating for smooth approach
+        const lerpSpeed = cameraModeRef.current === 'locked' ? 0.15 :
                           cameraModeRef.current === 'animating' ? 0.05 :
                           isCinematicRef.current ? 0.04 : 0.08;
         if (desiredCameraPosRef.current && desiredLookAtRef.current) {

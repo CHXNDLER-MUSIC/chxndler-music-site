@@ -1621,24 +1621,17 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       setShowHUD(false);
       setBeamEnabled(false);
 
-      // Stop any currently playing audio before element audio plays
-      try {
-        audioManager.stopAllAudio();
-      } catch (err) {
-        console.warn('[WARP] Error stopping audio:', err);
-      }
-
-      // Play the element audio file if provided
-      if (audioPath) {
-        console.log('🎵 Playing element audio:', audioPath);
-        // Create audio element and play directly
-        const elementAudio = new Audio(audioPath);
-        elementAudio.volume = 0.7;
-        elementAudio.play().catch(err => {
+      // Play element audio through AudioProvider so play/pause button works
+      // Element tracks are registered in AudioProvider: HEART, WATER, LIGHTNING, DARKNESS, CENTER
+      if (element) {
+        const elementId = String(element).toLowerCase();
+        console.log('🎵 Playing element audio via AudioProvider:', elementId);
+        try {
+          // Use selectTrack which stops current audio, plays warp SFX, then loads and auto-plays
+          audioManager.selectTrack(elementId);
+        } catch (err) {
           console.warn('[WARP] Element audio playback failed:', err);
-        });
-        // Store reference for cleanup if needed
-        window.__CHX_ELEMENT_AUDIO = elementAudio;
+        }
       }
 
       // Trigger warp visual effect (lightspeed overlay)
@@ -1661,7 +1654,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     return () => {
       window.removeEventListener('planet:warp', handlePlanetWarp);
     };
-  }, []);
+  }, [audioManager]);
 
   // Enable SFX globally only after Start unlocks the UI
   React.useEffect(() => {
