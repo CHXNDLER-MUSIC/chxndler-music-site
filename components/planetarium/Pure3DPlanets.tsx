@@ -1226,9 +1226,10 @@ export default function Pure3DPlanets({
       // Camera lerp for smooth easing (hover bias, cinematic focus, and planet follow)
       // Do NOT override user interaction; only lerp when the user is not actively moving the camera
       if (!isUserInteractingRef.current) {
-        // Use faster lerp when locked for tight follow, slower when animating for smooth approach
-        const lerpSpeed = cameraModeRef.current === 'locked' ? 0.15 :
-                          cameraModeRef.current === 'animating' ? 0.05 :
+        // Use very fast lerp when locked for tight follow (camera moves with planet)
+        // Slower lerp when animating for smooth approach to planet
+        const lerpSpeed = cameraModeRef.current === 'locked' ? 0.85 :
+                          cameraModeRef.current === 'animating' ? 0.08 :
                           isCinematicRef.current ? 0.04 : 0.08;
         if (desiredCameraPosRef.current && desiredLookAtRef.current) {
           camera.position.lerp(desiredCameraPosRef.current, lerpSpeed);

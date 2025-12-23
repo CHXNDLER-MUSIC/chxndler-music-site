@@ -109,7 +109,7 @@ export default function BadgeCelebrationController() {
   // Badge celebration overlay
   if (phase === 'badge') {
     return (
-      <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-none">
+      <div className="fixed inset-0 z-[100000] flex items-center justify-center pointer-events-none">
         {/* Backdrop */}
         <div
           className="absolute inset-0 bg-black/40 backdrop-blur-sm"
@@ -187,7 +187,7 @@ export default function BadgeCelebrationController() {
   // HeartCoin celebration overlay
   if (phase === 'heartcoin') {
     return (
-      <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-none">
+      <div className="fixed inset-0 z-[100000] flex items-center justify-center pointer-events-none">
         {/* Backdrop */}
         <div
           className="absolute inset-0 bg-black/40 backdrop-blur-sm"

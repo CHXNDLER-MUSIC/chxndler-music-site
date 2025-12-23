@@ -300,7 +300,6 @@ const HUDPanel = React.memo(function HUDPanel({
   const starsBtnRef = useRef(null);
   const [soulSkyPopoverPos, setSoulSkyPopoverPos] = useState(null);
   const [questionResponse, setQuestionResponse] = useState('');
-  const [showStarAnimation, setShowStarAnimation] = useState(false);
   const [showBeamEffect, setShowBeamEffect] = useState(false);
   const [isCasting, setIsCasting] = useState(false); // For "Cast into the Stars" orb animation
   const [showJournalView, setShowJournalView] = useState(false);
@@ -6680,10 +6679,9 @@ const HUDPanel = React.memo(function HUDPanel({
                       title="Close"
                       onMouseEnter={(e) => { try { sfx.play('hover', 0.4); } catch {}; try { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 0 26px rgba(255,255,0,0.95), 0 0 42px rgba(255,255,0,0.65)'; } catch {} }}
                       onMouseLeave={(e) => { try { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 0 16px rgba(255,255,0,0.85), 0 0 32px rgba(255,255,0,0.35)'; } catch {} }}
-                      onClick={() => { 
-                        try { sfx.play('close', 0.4); } catch {}; 
+                      onClick={() => {
+                        try { sfx.play('close', 0.4); } catch {};
                         setShowSoulSkyPopover(false);
-                        setShowStarAnimation(false);
                         setShowBeamEffect(false);
                         setQuestionResponse('');
                       }}
@@ -6888,12 +6886,10 @@ const HUDPanel = React.memo(function HUDPanel({
                             audio.play().catch(() => {});
                           } catch {}
 
-                          setShowStarAnimation(true);
                           setShowBeamEffect(true);
 
                           // Re-enable UI and clear after existing animation
                           setTimeout(() => {
-                            setShowStarAnimation(false);
                             setShowBeamEffect(false);
                             setQuestionResponse('');
                             setIsCasting(false);
@@ -6981,114 +6977,6 @@ const HUDPanel = React.memo(function HUDPanel({
                         }} />
                       )}
 
-                      {/* Shining Star animation overlay */}
-                      {showStarAnimation && (
-                        <motion.div
-                          style={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            zIndex: 100,
-                            pointerEvents: 'none'
-                          }}
-                          initial={{ x: '-50%', y: '-50%' }}
-                        >
-                          {/* Central glowing star core */}
-                          <motion.div
-                            style={{
-                              width: 30,
-                              height: 30,
-                              borderRadius: '50%',
-                              background: 'radial-gradient(circle, #FFFFFF 0%, #FFD700 40%, #FFA500 70%, transparent 100%)',
-                              boxShadow: '0 0 40px #FFD700, 0 0 80px #FFA500, 0 0 120px rgba(255,215,0,0.6)'
-                            }}
-                            initial={{ scale: 0, opacity: 0 }}
-                            animate={{
-                              scale: [0, 1.5, 1.2, 1.5, 1.2, 1.5, 0.8, 0],
-                              opacity: [0, 1, 1, 1, 1, 1, 0.8, 0]
-                            }}
-                            transition={{ duration: 3.5, ease: "easeOut" }}
-                          />
-                          {/* Star burst rays */}
-                          {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
-                            <motion.div
-                              key={angle}
-                              style={{
-                                position: 'absolute',
-                                top: '50%',
-                                left: '50%',
-                                width: 3,
-                                height: 60,
-                                background: 'linear-gradient(to top, transparent, #FFD700 30%, #FFFFFF 60%, transparent)',
-                                transformOrigin: 'center bottom',
-                                transform: `translate(-50%, -100%) rotate(${angle}deg)`,
-                                borderRadius: 2
-                              }}
-                              initial={{ scaleY: 0, opacity: 0 }}
-                              animate={{
-                                scaleY: [0, 1.5, 1, 1.3, 0.8, 0],
-                                opacity: [0, 1, 0.8, 1, 0.6, 0]
-                              }}
-                              transition={{
-                                duration: 3,
-                                delay: i * 0.05,
-                                ease: "easeOut"
-                              }}
-                            />
-                          ))}
-                          {/* Outer glow ring */}
-                          <motion.div
-                            style={{
-                              position: 'absolute',
-                              top: '50%',
-                              left: '50%',
-                              width: 100,
-                              height: 100,
-                              borderRadius: '50%',
-                              border: '2px solid rgba(255,215,0,0.6)',
-                              boxShadow: '0 0 30px rgba(255,215,0,0.4), inset 0 0 30px rgba(255,215,0,0.2)'
-                            }}
-                            initial={{ x: '-50%', y: '-50%', scale: 0, opacity: 0 }}
-                            animate={{
-                              scale: [0, 2, 2.5],
-                              opacity: [0, 0.8, 0]
-                            }}
-                            transition={{ duration: 2, ease: "easeOut" }}
-                          />
-                          {/* Sparkle particles */}
-                          {[...Array(12)].map((_, i) => {
-                            const angle = (i * 30) * Math.PI / 180;
-                            const distance = 80 + Math.random() * 40;
-                            return (
-                              <motion.div
-                                key={`sparkle-${i}`}
-                                style={{
-                                  position: 'absolute',
-                                  top: '50%',
-                                  left: '50%',
-                                  width: 6,
-                                  height: 6,
-                                  borderRadius: '50%',
-                                  background: '#FFD700',
-                                  boxShadow: '0 0 10px #FFD700, 0 0 20px rgba(255,215,0,0.6)'
-                                }}
-                                initial={{ x: '-50%', y: '-50%', scale: 0, opacity: 0 }}
-                                animate={{
-                                  x: ['-50%', `calc(-50% + ${Math.cos(angle) * distance}px)`],
-                                  y: ['-50%', `calc(-50% + ${Math.sin(angle) * distance}px)`],
-                                  scale: [0, 1, 0],
-                                  opacity: [0, 1, 0]
-                                }}
-                                transition={{
-                                  duration: 2,
-                                  delay: 0.3 + i * 0.05,
-                                  ease: "easeOut"
-                                }}
-                              />
-                            );
-                          })}
-                        </motion.div>
-                      )}
                     </div>
                   </div>
                     )}

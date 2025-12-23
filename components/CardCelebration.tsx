@@ -52,7 +52,7 @@ export default function CardCelebration() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none" style={{ padding: '4vh 2rem' }}>
+    <div className="fixed inset-0 z-[100000] flex items-center justify-center pointer-events-none" style={{ padding: '4vh 2rem' }}>
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/20 backdrop-blur-sm heartcoin-backdrop-fade" />
       

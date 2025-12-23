@@ -169,7 +169,7 @@ export default function PlanetRewardCelebration({ reward, intentionOfDay, onComp
 
   if (reward.type === 'RELIC') {
     return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
+      <div className="fixed inset-0 z-[100000] flex items-center justify-center pointer-events-none">
         {/* Backdrop */}
         <div
           className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -264,7 +264,7 @@ export default function PlanetRewardCelebration({ reward, intentionOfDay, onComp
   const boostDescription = BOOST_DESCRIPTIONS[reward.code] || 'Special boost activated!';
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
+    <div className="fixed inset-0 z-[100000] flex items-center justify-center pointer-events-none">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"

@@ -446,9 +446,15 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
 
       // Update badge progress counters when profile loads
-      updateBadgeProgressCounters(user.id).catch(err => {
-        console.warn('Failed to update badge progress counters:', err);
-      });
+      // Then refresh user badges to show any newly unlocked badges
+      updateBadgeProgressCounters(user.id)
+        .then(() => {
+          // Refresh user badges to pick up any newly awarded badges
+          fetchUserBadges(user.id);
+        })
+        .catch(err => {
+          console.warn('Failed to update badge progress counters:', err);
+        });
 
       setProfileWithCelebration(mappedProfile);
     } catch (error) {
@@ -827,10 +833,16 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       });
 
       // Update badge progress counters after saving a journal entry
+      // Then refresh user badges to show any newly unlocked badges
       if (user?.id) {
-        updateBadgeProgressCounters(user.id).catch(err => {
-          console.warn('Failed to update badge progress after journal save:', err);
-        });
+        updateBadgeProgressCounters(user.id)
+          .then(() => {
+            // Refresh user badges to pick up any newly awarded badges
+            fetchUserBadges(user.id);
+          })
+          .catch(err => {
+            console.warn('Failed to update badge progress after journal save:', err);
+          });
       }
 
       // Public sharing is now handled via the is_public column in the main entry

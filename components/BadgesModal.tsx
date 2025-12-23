@@ -191,19 +191,19 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   // Badge detail modal
   if (selectedBadge) {
     const badgeDetailContent = (
-      <div className="relative text-center space-y-6 w-full px-4 pt-4" style={{ touchAction: 'pan-y' }}>
+      <div className="relative text-center space-y-4 w-full px-4 pt-4 pb-6 overflow-y-auto" style={{ touchAction: 'pan-y', maxHeight: '100%' }}>
         <button
           onClick={() => {
             sfx.play('click');
             setSelectedBadge(null);
           }}
-          className="mb-4 w-12 h-12 rounded-full border-2 border-[#38B6FF]/60 text-[#38B6FF] hover:text-[#38B6FF]/80 hover:border-[#38B6FF]/80 transition-all duration-200 flex items-center justify-center text-xl"
+          className="mb-2 w-10 h-10 rounded-full border-2 border-[#38B6FF]/60 text-[#38B6FF] hover:text-[#38B6FF]/80 hover:border-[#38B6FF]/80 transition-all duration-200 flex items-center justify-center text-lg"
         >
           ←
         </button>
 
         {/* Large badge display with 3D spin */}
-        <div className="flex flex-col items-center space-y-3">
+        <div className="flex flex-col items-center space-y-2">
           {/* Touch capture container - prevents scroll from capturing events */}
           <div
             className="relative"
@@ -216,7 +216,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             onTouchMove={(e) => e.stopPropagation()}
           >
             <TiltSpinCard
-              className="relative w-56 h-56 cursor-grab active:cursor-grabbing"
+              className="relative w-40 h-40 cursor-grab active:cursor-grabbing"
               style={{
                 touchAction: 'none',
                 perspective: '1000px',
@@ -255,15 +255,15 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
               >
                 {/* Front of badge */}
                 <div
-                  className="absolute inset-0 w-full h-full rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 flex items-center justify-center"
+                  className="absolute inset-0 w-full h-full rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 flex items-center justify-center overflow-hidden"
                   style={{ backfaceVisibility: 'hidden' }}
                 >
-                  <div className={`relative z-10 transition-opacity ${selectedBadge.unlocked ? 'opacity-100' : 'opacity-60'}`}>
+                  <div className={`relative z-10 transition-opacity w-full h-full flex items-center justify-center ${selectedBadge.unlocked ? 'opacity-100' : 'opacity-60'}`}>
                     {selectedBadge.icon_url ? (
                       <img
                         src={selectedBadge.icon_url}
                         alt={selectedBadge.badge_name}
-                        className="w-44 h-44 object-cover rounded-full"
+                        className="w-32 h-32 object-contain"
                         draggable={false}
                       />
                     ) : (
@@ -280,7 +280,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
 
                 {/* Back of badge */}
                 <div
-                  className="absolute inset-0 w-full h-full rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 flex items-center justify-center"
+                  className="absolute inset-0 w-full h-full rounded-full bg-gradient-to-br from-gray-800/80 to-black/90 border-2 border-white/30 flex items-center justify-center overflow-hidden"
                   style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
                 >
                   {/* Show user name and claimed date for unlocked badges */}
@@ -300,12 +300,12 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                       </div>
                     </div>
                   ) : (
-                    <div className="relative z-10 transition-opacity opacity-60">
+                    <div className="relative z-10 transition-opacity opacity-60 w-full h-full flex items-center justify-center">
                       {selectedBadge.icon_url ? (
                         <img
                           src={selectedBadge.icon_url}
                           alt={selectedBadge.badge_name}
-                          className="w-44 h-44 object-cover rounded-full"
+                          className="w-32 h-32 object-contain"
                           style={{ transform: 'scaleX(-1)' }}
                           draggable={false}
                         />
@@ -320,58 +320,30 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           </div>
           
           {/* Badge name */}
-          <h2 className="text-white font-bold text-lg text-center">
+          <h2 className="text-white font-bold text-base text-center">
             {selectedBadge.badge_name}
           </h2>
-          
+
           {/* Status */}
-          <div className={`text-sm ${
+          <div className={`text-xs ${
             selectedBadge.unlocked ? 'text-green-400' : 'text-white/40'
           }`}>
             {selectedBadge.unlocked ? '✅ UNLOCKED' : '🔒 LOCKED'}
           </div>
+
+          {/* Badge description - inline */}
+          {selectedBadge.description && (
+            <p className="text-white/60 text-xs max-w-xs mx-auto">
+              {selectedBadge.description}
+            </p>
+          )}
         </div>
         
-        {/* Badge description */}
-        {selectedBadge.description && (
-          <p className="text-white/70 text-sm max-w-xs mx-auto">
-            {selectedBadge.description}
-          </p>
-        )}
-        
-        {/* Progress display - Always show for badges with progress tracking */}
-        {selectedBadge.progress && (
-          <div className="text-center space-y-3 py-2">
-            <div className="text-white/50 text-xs uppercase tracking-wider font-bold">PROGRESS</div>
-            
-            {/* Progress bar */}
-            <div className="mx-auto max-w-xs">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-white/60 text-xs">{selectedBadge.progress.current}</span>
-                <span className="text-white/60 text-xs">
-                  {selectedBadge.progress.target || selectedBadge.requirement_count}
-                </span>
-              </div>
-              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-500"
-                  style={{ width: `${selectedBadge.progress.percentage}%` }}
-                />
-              </div>
-              <div className="text-center mt-1">
-                <span className="text-white text-sm font-medium">
-                  {selectedBadge.progress.percentage}% Complete
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Requirement text - Always show */}
+        {/* Requirement text */}
         {selectedBadge.requirement_type && selectedBadge.requirement_count && (
-          <div className="text-center space-y-2 py-2">
-            <div className="text-white/50 text-xs uppercase tracking-wider font-bold">REQUIREMENT</div>
-            <div className="text-white text-sm font-medium bg-white/5 rounded px-3 py-2">
+          <div className="text-center space-y-1">
+            <div className="text-cyan-400/80 text-xs uppercase tracking-wider font-bold">REQUIREMENT</div>
+            <div className="text-white text-sm font-medium">
               {formatRequirementText({
                 requirement_type: selectedBadge.requirement_type,
                 requirement_count: selectedBadge.requirement_count,
@@ -384,6 +356,31 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                 category: selectedBadge.category as any,
                 created_at: ''
               })}
+            </div>
+          </div>
+        )}
+
+        {/* Progress display - compact layout */}
+        {selectedBadge.progress && (
+          <div className="text-center space-y-2">
+            <div className="mx-auto max-w-xs">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-white/60 text-xs">Progress</span>
+                <span className="text-white/80 text-xs font-medium">
+                  {selectedBadge.progress.current} / {selectedBadge.progress.target || selectedBadge.requirement_count}
+                </span>
+              </div>
+              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full transition-all duration-500"
+                  style={{ width: `${selectedBadge.progress.percentage}%` }}
+                />
+              </div>
+              <div className="text-center mt-1">
+                <span className="text-green-400 text-xs font-medium">
+                  {selectedBadge.progress.percentage}% Complete
+                </span>
+              </div>
             </div>
           </div>
         )}

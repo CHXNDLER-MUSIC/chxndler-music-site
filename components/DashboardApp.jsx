@@ -39,6 +39,7 @@ import ProfileBarWrapper from "@/components/ProfileBarWrapper";
 import HoloStarsButton from "@/components/HoloStarsButton";
 import SoulStareModal from "@/components/SoulStareModal";
 import HeartCoinModal from "@/components/HeartCoinModal";
+import ElementOfDayModal from "@/components/ElementOfDayModal";
 import { useUIStore } from "@/store/useUIStore";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useUIState } from "@/lib/use-ui-state";
@@ -2885,13 +2886,16 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       />
 
       {/* Heart Coin Modal */}
-      <HeartCoinModal 
-        open={showHeartCoinModal} 
+      <HeartCoinModal
+        open={showHeartCoinModal}
         onClose={() => setShowHeartCoinModal(false)}
         onOpenJournal={handleOpenJournal}
         onOpenWelcomeHome={() => setShowWelcomeHomeModal(true)}
         initialTab={heartCoinModalTab}
       />
+
+      {/* Element of the Day Modal - shows after warp to daily element */}
+      <ElementOfDayModal />
 
       {/* Authentication Error Notification */}
       <AnimatePresence>

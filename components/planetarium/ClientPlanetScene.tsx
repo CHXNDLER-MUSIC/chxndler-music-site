@@ -33,7 +33,7 @@ export default function ClientPlanetScene({
 }: ClientPlanetSceneProps) {
   const { songs, songsByElement, loading, error } = useSongs();
   const { focusElement } = useFocusElementOfDay();
-  const { loading: eodLoading, element, isClaimed, claim } = useElementOfDayClaim();
+  const { loading: eodLoading, element, isClaimed, claim, intention } = useElementOfDayClaim();
   const [optimisticClaimed, setOptimisticClaimed] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
   const quality = getDeviceQuality();
@@ -113,7 +113,15 @@ export default function ClientPlanetScene({
       }
       if (resp.ok) {
         if (typeof window !== 'undefined') {
-          try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: `Claimed today’s ${elemLabel} reward`, type: 'success' } })); } catch {}
+          // Show the Element of the Day modal with element and intention
+          try {
+            window.dispatchEvent(new CustomEvent('element-of-day:show', {
+              detail: {
+                element: glowingElement,
+                intention: resp.intention_of_day || intention
+              }
+            }));
+          } catch {}
         }
         return resp;
       }

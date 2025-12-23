@@ -674,41 +674,44 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
   return createPortal(
     <>
       {/* Hologram base glow */}
-      <div 
-        className="fixed inset-0 flex items-center justify-center"
+      <div
+        className="fixed flex items-end justify-center"
         style={{
-          zIndex: 2147483648,
+          zIndex: 2147483647,
           pointerEvents: 'none',
-          paddingTop: '220px',
-          // Ensure glow does not extend into the light beam area
-          bottom: 'var(--light-beam-boundary)'
+          top: 'var(--profile-bar-boundary, 64px)',
+          left: 0,
+          right: 0,
+          bottom: 'calc(var(--light-beam-boundary) + var(--beam-height, 68px))'
         }}
       >
         <div
           style={{
             width: 'min(120vw, 700px)',
-            height: '200px',
-            background: 'radial-gradient(ellipse 80% 100% at 50% 0%, rgba(0,255,255,0.7) 0%, rgba(0,255,255,0.4) 30%, rgba(0,255,255,0.1) 60%, transparent 100%)',
-            filter: 'blur(100px)'
+            height: '150px',
+            background: 'radial-gradient(ellipse 80% 100% at 50% 100%, rgba(0,255,255,0.5) 0%, rgba(0,255,255,0.3) 30%, rgba(0,255,255,0.1) 60%, transparent 100%)',
+            filter: 'blur(80px)'
           }}
         />
       </div>
-      
+
       {/* Profile Modal */}
-      <div 
-        className="fixed inset-0 flex items-start justify-center"
+      <div
+        className="fixed flex items-start justify-center overflow-hidden"
         style={{
           zIndex: 2147483648,
-          paddingTop: '80px',
-          // Constrain the modal to end at the light beam boundary
-          bottom: 'var(--light-beam-boundary)'
+          top: 'var(--profile-bar-boundary, 64px)',
+          left: 0,
+          right: 0,
+          bottom: 'calc(var(--light-beam-boundary) + var(--beam-height, 68px))',
+          paddingTop: '16px'
         }}
       >
         <div
-          className="profile-hologram-container"
+          className="profile-hologram-container overflow-y-auto"
           style={{
             width: 'min(92vw, 500px)',
-            minHeight: '440px',
+            maxHeight: '100%',
             padding: '16px 24px 18px 24px',
             borderRadius: 18,
             background: 'rgba(0,0,0,0.6)',
@@ -772,39 +775,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
           >
             ×
           </button>
-          
-          {/* View Relics Button - Positioned below close button */}
-          <button
-            onClick={() => {
-              setShowRelicsInline(!showRelicsInline);
-              setShowElementMenu(false); // Close element menu when opening relics display
-              try { sfx.play('click', 0.6); } catch {}
-            }}
-            onMouseEnter={() => {
-              try { sfx.play('hover', 0.3); } catch {}
-            }}
-            className="absolute top-[85vh] right-4 w-10 h-10 rounded-full border-2 border-yellow-400/60 bg-yellow-400/10 hover:border-yellow-400/80 hover:bg-yellow-400/20 transition-all duration-200 hover:scale-110 flex items-center justify-center overflow-hidden"
-            style={{
-              boxShadow: 'inset 0 0 15px rgba(255, 193, 7, 0.4)'
-            }}
-            title="View Relics"
-          >
-            <img
-              src="/elements/relics.webp"
-              alt="Relics"
-              className="absolute inset-0 w-full h-full object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                const parent = target.parentElement;
-                if (parent) {
-                  parent.innerHTML = '🏛️';
-                  parent.style.fontSize = '14px';
-                }
-              }}
-            />
-          </button>
-          
+
           {/* PROFILE Header */}
           <div className="text-center mb-2">
             <h1 
@@ -1560,11 +1531,27 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
                     </div>
                   </div>
                   {/* Full-size image container */}
-                  <div className="relative flex-1 min-h-0 flex items-center justify-center overflow-hidden bg-black/60 p-2">
+                  <div className="relative flex-1 min-h-0 flex items-center justify-center overflow-hidden bg-black/80 p-2">
+                    {/* Glow effect behind the image */}
+                    <div
+                      className="absolute inset-0 flex items-center justify-center"
+                      style={{ pointerEvents: 'none', zIndex: 0 }}
+                    >
+                      <div
+                        style={{
+                          width: '80%',
+                          height: '80%',
+                          background: 'radial-gradient(ellipse at center, rgba(0,255,255,0.7) 0%, rgba(0,255,255,0.4) 25%, rgba(0,255,255,0.15) 50%, transparent 75%)',
+                          filter: 'blur(60px)',
+                          boxShadow: '0 0 80px 40px rgba(0,255,255,0.3)'
+                        }}
+                      />
+                    </div>
                     <TiltSpinCard
                       className="relative w-full h-full animate-[pulse-float_3s_ease-in-out_infinite]"
                       style={{
-                        animation: 'pulse-float 3s ease-in-out infinite'
+                        animation: 'pulse-float 3s ease-in-out infinite',
+                        zIndex: 1
                       }}
                       maxRotateX={10}
                       sensitivity={0.3}

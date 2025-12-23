@@ -1438,12 +1438,26 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         body: JSON.stringify({ cardId: selectedCardId })
       });
 
+      // Handle 404 specifically - indicates route doesn't exist
+      if (response.status === 404) {
+        console.error('[CARD PURCHASE] API route not found (404)');
+        try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'API route not found: /api/cards/purchase-physical', type: 'error' } })); } catch {}
+        return;
+      }
+
       const result = await response.json();
       console.log('[CARD PURCHASE] API response:', result);
 
       if (!response.ok || !result.success) {
         console.error('[CARD PURCHASE] Physical purchase failed:', result.error);
         try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: result.error || 'Purchase failed', type: 'error' } })); } catch {}
+        return;
+      }
+
+      // Only proceed to shipping form if we have a valid orderId
+      if (!result.orderId) {
+        console.error('[CARD PURCHASE] No orderId returned from API');
+        try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Order creation failed - no order ID returned', type: 'error' } })); } catch {}
         return;
       }
 
