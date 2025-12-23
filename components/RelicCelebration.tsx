@@ -10,6 +10,7 @@ export interface RelicCelebrationDetail {
   rewardKey: string;
   relicLabel?: string | null;
   relicImageUrl?: string | null;
+  relicKind?: string | null;
 }
 
 // Element colors for styling
@@ -52,17 +53,27 @@ export default function RelicCelebration() {
       setTimeout(() => {
         setIsVisible(false);
 
-        // After celebration ends, open appropriate display based on reward type
-        // Element of Day click -> after relic celebration, open profile or binder
+        // After celebration ends, open appropriate display based on relic type
+        // Check relicKind first, fall back to rewardKey string matching
+        const relicKind = detail.relicKind?.toLowerCase() || '';
         const rewardKey = detail.rewardKey?.toLowerCase() || '';
 
-        if (rewardKey.includes('slot') || rewardKey.includes('card_slot')) {
-          // SLOT relics -> open binder display
+        // Determine relic type: check kind field first, then fall back to key matching
+        const isSlot = relicKind === 'slot' || rewardKey.includes('slot') || rewardKey.includes('card_slot');
+        const isBoost = relicKind === 'boost' || rewardKey.includes('boost');
+
+        if (isSlot) {
+          // SLOT type -> open binder display
           window.dispatchEvent(new CustomEvent('openDigitalBinder'));
-        } else {
-          // BOOST relics and other relics -> open profile display
+        } else if (isBoost) {
+          // BOOST type -> open profile display only (no relics collection)
           window.dispatchEvent(new CustomEvent('openProfilePopover', {
-            detail: { showRelics: !rewardKey.includes('boost') }
+            detail: { showRelics: false }
+          }));
+        } else {
+          // Any other type -> open profile display AND relics collection
+          window.dispatchEvent(new CustomEvent('openProfilePopover', {
+            detail: { showRelics: true }
           }));
         }
 

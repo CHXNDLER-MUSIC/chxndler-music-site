@@ -16,6 +16,7 @@ export default function AuthButton() {
   const hasEnteredHeartverse = useUIState((state) => state.hasEnteredHeartverse);
   const [showWelcomeHome, setShowWelcomeHome] = useState(false);
   const [showProfilePopover, setShowProfilePopover] = useState(false);
+  const [showRelicsOnOpen, setShowRelicsOnOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const { openNamePrompt, openElementSelection } = useUIStore();
 
@@ -55,9 +56,12 @@ export default function AuthButton() {
 
   // Listen for openProfilePopover event (triggered after relic celebration)
   useEffect(() => {
-    const handleOpenProfile = () => {
+    const handleOpenProfile = (event: Event) => {
       // Only open if user has a complete profile
       if (user && profile?.profile_complete) {
+        const customEvent = event as CustomEvent<{ showRelics?: boolean }>;
+        const shouldShowRelics = customEvent.detail?.showRelics ?? false;
+        setShowRelicsOnOpen(shouldShowRelics);
         setShowProfilePopover(true);
       }
     };
@@ -246,10 +250,14 @@ export default function AuthButton() {
       />
 
       {/* Profile Popover */}
-      <ProfilePopover 
+      <ProfilePopover
         isOpen={showProfilePopover}
-        onClose={() => setShowProfilePopover(false)}
+        onClose={() => {
+          setShowProfilePopover(false);
+          setShowRelicsOnOpen(false);
+        }}
         anchorElement={buttonRef.current}
+        showRelicsOnOpen={showRelicsOnOpen}
       />
     </>
   );

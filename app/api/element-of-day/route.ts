@@ -55,17 +55,19 @@ export async function GET() {
     // If we have a relic_key, fetch the relic details
     let relicLabel: string | null = null;
     let relicImageUrl: string | null = null;
+    let relicKind: string | null = null;
 
     if (data?.relic_key) {
       const { data: relicData, error: relicError } = await supabase
         .from('relics')
-        .select('label, image_url')
+        .select('label, image_url, kind')
         .eq('code', data.relic_key)
         .maybeSingle();
 
       if (!relicError && relicData) {
         relicLabel = relicData.label;
         relicImageUrl = relicData.image_url;
+        relicKind = relicData.kind;
       }
     }
 
@@ -76,6 +78,7 @@ export async function GET() {
       intentionOfDay: data?.intention_of_day ?? null,
       relicLabel,
       relicImageUrl,
+      relicKind,
     });
   } catch (err: any) {
     console.error('[element-of-day API] Unexpected error:', err);

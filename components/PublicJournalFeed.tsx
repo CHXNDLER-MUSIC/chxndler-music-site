@@ -62,21 +62,22 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
 
   // Helper: Resolve avatar URL with correct priority order
   // 1. entry.author_avatar_url (from DB)
-  // 2. authorOverrides[entry.user_id]?.avatar (for missing denormalized fields)
-  // 3. profile.profile_image_url (ONLY if entry.user_id === current user)
+  // 2. profile.profile_image_url (ONLY if entry.user_id === current user) - PRIORITIZE current user's fresh profile
+  // 3. authorOverrides[entry.user_id]?.avatar (for missing denormalized fields)
   // 4. default avatar "/elements/alien.webp"
   const resolveAvatarUrl = (entry: { user_id: string; author_avatar_url?: string | null }) => {
     // First priority: DB-stored author avatar
     if (entry.author_avatar_url) {
       return entry.author_avatar_url;
     }
-    // Second priority: fetched public profile override
+    // Second priority: current user's profile context (for own entries) - use case-insensitive comparison
+    const isOwnEntry = user?.id && entry.user_id?.toLowerCase() === user.id?.toLowerCase();
+    if (isOwnEntry && profile?.profile_image_url) {
+      return profile.profile_image_url;
+    }
+    // Third priority: fetched public profile override (for other users)
     if (authorOverrides[entry.user_id]?.avatar) {
       return authorOverrides[entry.user_id].avatar;
-    }
-    // Third priority: current user's profile context (for own entries)
-    if (user?.id && entry.user_id === user.id && profile?.profile_image_url) {
-      return profile.profile_image_url;
     }
     // Fallback: default avatar
     return "/elements/alien.webp";
@@ -88,13 +89,14 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
     if (entry.author_name) {
       return entry.author_name;
     }
-    // Second priority: fetched public profile override
+    // Second priority: current user's profile context (for own entries) - use case-insensitive comparison
+    const isOwnEntry = user?.id && entry.user_id?.toLowerCase() === user.id?.toLowerCase();
+    if (isOwnEntry && profile?.name) {
+      return profile.name;
+    }
+    // Third priority: fetched public profile override (for other users)
     if (authorOverrides[entry.user_id]?.name) {
       return authorOverrides[entry.user_id].name;
-    }
-    // Third priority: current user's profile context (for own entries)
-    if (user?.id && entry.user_id === user.id && profile?.name) {
-      return profile.name;
     }
     // Fallback: default name
     return 'Alien';
@@ -154,7 +156,7 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
               .rpc('get_public_profile', { p_profile_id: userId })
               .single();
             if (error) return [userId, null] as const;
-            return [userId, { name: (data?.name || null), avatar: (data?.profile_image_url || null) }] as const;
+            return [userId, { name: (data?.name || null), avatar: (data?.profile_image_url || data?.avatar_url || null) }] as const;
           } catch {
             return [userId, null] as const;
           }

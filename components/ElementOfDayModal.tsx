@@ -12,6 +12,7 @@ interface ElementOfDayData {
   rewardKey: string | null;
   relicLabel: string | null;
   relicImageUrl: string | null;
+  relicKind: string | null;
 }
 
 const ELEMENT_CONFIG: Record<ElementType, { name: string; color: string; icon: string }> = {
@@ -115,6 +116,7 @@ export default function ElementOfDayModal() {
               rewardKey: data.rewardKey,
               relicLabel: data.relicLabel,
               relicImageUrl: data.relicImageUrl,
+              relicKind: data.relicKind,
             },
           })
         );
@@ -144,6 +146,7 @@ export default function ElementOfDayModal() {
               rewardKey: apiData.relicKey || e.detail.rewardKey || null,
               relicLabel: apiData.relicLabel || e.detail.relicLabel || null,
               relicImageUrl: apiData.relicImageUrl || e.detail.relicImageUrl || null,
+              relicKind: apiData.relicKind || e.detail.relicKind || null,
             };
             setData(eventData);
             setIsOpen(true);
@@ -344,17 +347,6 @@ export default function ElementOfDayModal() {
             </div>
           )}
 
-          {/* Tap hint */}
-          {!claimed && (
-            <div
-              className="text-center text-xs"
-              style={{
-                color: "rgba(255,255,255,0.5)",
-              }}
-            >
-              Tap the element to claim your reward
-            </div>
-          )}
         </div>
       </div>
     </>,

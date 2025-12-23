@@ -49,9 +49,10 @@ interface ProfilePopoverProps {
   isOpen: boolean;
   onClose: () => void;
   anchorElement?: HTMLElement | null;
+  showRelicsOnOpen?: boolean;
 }
 
-export default function ProfilePopover({ isOpen, onClose, anchorElement }: ProfilePopoverProps) {
+export default function ProfilePopover({ isOpen, onClose, anchorElement, showRelicsOnOpen }: ProfilePopoverProps) {
   const { profile, user, updateProfile, refreshProfile } = useProfile();
   const { start: startTour } = useTour();
   
@@ -181,6 +182,13 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement }: Profi
       }
     }
   }, [isOpen, profile]);
+
+  // Auto-open relics collection when showRelicsOnOpen is true
+  useEffect(() => {
+    if (isOpen && showRelicsOnOpen) {
+      setShowRelicsInline(true);
+    }
+  }, [isOpen, showRelicsOnOpen]);
 
   // Close on escape key and outside click
   useEffect(() => {
