@@ -2528,57 +2528,30 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 </div>
               </div>
 
-              {/* HeartCoin Purchase Buttons */}
-              <div className="flex flex-col gap-3 mt-4">
+              {/* Physical Purchase Button - BELOW card */}
+              <div className="mt-4">
                 {!showEnlargedCardConfirm ? (
-                  <>
-                    {/* Digital Purchase Button - 5 HeartCoins */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Handle digital purchase (use existing flow)
-                        setSelectedPurchaseType('digital');
-                        handleCardPurchase('digital');
-                      }}
-                      disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < 5}
-                      className={`w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 text-white font-bold transition-all duration-200 shadow-lg ${
-                        modalLoading || !profile || (profile.heartcoin_balance || 0) < 5
-                          ? 'bg-gray-500 cursor-not-allowed opacity-50'
-                          : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 hover:shadow-cyan-500/30'
-                      }`}
-                      style={{
-                        boxShadow: modalLoading || !profile || (profile.heartcoin_balance || 0) < 5 ? undefined : '0 0 15px rgba(6, 182, 212, 0.3)',
-                      }}
-                    >
-                      <img src="/heartcoin.webp" alt="HeartCoin" className="w-5 h-5" />
-                      <span>5 HEARTCOIN</span>
-                      <span className="text-white/80">|</span>
-                      <span className="text-cyan-200">DIGITAL</span>
-                    </button>
-
-                    {/* Physical Purchase Button - 20 HeartCoins */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        try { sfx.play('click', 0.4); } catch {}
-                        setShowEnlargedCardConfirm(true);
-                      }}
-                      disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < 20}
-                      className={`w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 text-white font-bold transition-all duration-200 shadow-lg ${
-                        modalLoading || !profile || (profile.heartcoin_balance || 0) < 20
-                          ? 'bg-gray-500 cursor-not-allowed opacity-50'
-                          : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 hover:shadow-amber-500/30'
-                      }`}
-                      style={{
-                        boxShadow: modalLoading || !profile || (profile.heartcoin_balance || 0) < 20 ? undefined : '0 0 15px rgba(245, 158, 11, 0.3)',
-                      }}
-                    >
-                      <img src="/heartcoin.webp" alt="HeartCoin" className="w-5 h-5" />
-                      <span>20 HEARTCOIN</span>
-                      <span className="text-white/80">|</span>
-                      <span className="text-amber-200">PHYSICAL</span>
-                    </button>
-                  </>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      try { sfx.play('click', 0.4); } catch {}
+                      setShowEnlargedCardConfirm(true);
+                    }}
+                    disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < 20}
+                    className={`w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 text-white font-bold transition-all duration-200 shadow-lg ${
+                      modalLoading || !profile || (profile.heartcoin_balance || 0) < 20
+                        ? 'bg-gray-500 cursor-not-allowed opacity-50'
+                        : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 hover:shadow-amber-500/30'
+                    }`}
+                    style={{
+                      boxShadow: modalLoading || !profile || (profile.heartcoin_balance || 0) < 20 ? undefined : '0 0 15px rgba(245, 158, 11, 0.3)',
+                    }}
+                  >
+                    <img src="/heartcoin.webp" alt="HeartCoin" className="w-5 h-5" />
+                    <span>20 HEARTCOIN</span>
+                    <span className="text-white/80">|</span>
+                    <span className="text-amber-200">PHYSICAL</span>
+                  </button>
                 ) : (
                   /* Confirmation UI for physical card purchase */
                   <div className="bg-black/60 border border-amber-500/50 rounded-lg p-4">

@@ -23,6 +23,12 @@ export function trackKeyFromSlug(slug?: string): string | null {
     "were-just-friends": "WJF",
     "were-just-friends-dmvrco-remix": "WJF_DMVRCO",
     "were-just-friends-mickey-jas-remix": "WJF_MICKEY_JAS",
+    // Element planet tracks
+    "water": "WATER",
+    "lightning": "LIGHTNING",
+    "darkness": "DARKNESS",
+    "heart": "HEART",
+    "center": "CENTER",
   };
   return map[s] || null;
 }

@@ -1396,16 +1396,8 @@ export default function Pure3DPlanets({
         }
       }
     } else {
-      // For element planets (including daily element and center), trigger warp visual effect
+      // For element planets (including daily element and center), trigger warp visual effect AND play element track
       console.log('[WARP] element planet warp', { element: slug, isDailyElement });
-
-      // Play warp sound effect for visual feedback
-      const WARP_DURATION_MS = 2500; // Duration of warp effect before showing reward
-      try {
-        sfx.play('warp', 0.7);
-      } catch (e) {
-        console.warn('[WARP] Could not play warp sound:', e);
-      }
 
       // Dispatch event for any listeners
       try {
@@ -1420,7 +1412,15 @@ export default function Pure3DPlanets({
         console.warn('[WARP] Could not dispatch planet:warp event:', e);
       }
 
+      // Trigger the element track to play via onSongChange
+      // This uses the same warp flow as song planets, which plays warp SFX + loads track
+      if (onSongChange) {
+        console.log('[WARP] triggering element track playback for:', slug);
+        onSongChange(slug);
+      }
+
       // For the daily element planet, wait for warp effect to finish before showing reward
+      const WARP_DURATION_MS = 2500; // Duration of warp effect before showing reward
       if (isDailyElement && onDailyPlanetClick && element !== 'center') {
         console.log('[WARP] waiting for warp effect before claiming daily element reward for:', element);
         // Wait for warp effect to complete, then claim reward and show celebration
@@ -1432,7 +1432,7 @@ export default function Pure3DPlanets({
           console.error('[WARP] Failed to claim element of day reward:', err);
         }
       } else {
-        // For other element planets, call onPlanetSelect
+        // For other element planets, also call onPlanetSelect for any additional handling
         onPlanetSelect?.(slug);
       }
     }

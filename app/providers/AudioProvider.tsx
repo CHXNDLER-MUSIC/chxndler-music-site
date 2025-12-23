@@ -36,6 +36,12 @@ export const TRACKS = {
   SPACE_MUSIC: { mp3: "/tracks/space-music.mp3", opus: "/tracks/space-music.opus" },
   WELCOME_TO_HEARTVERSE: { mp3: "/tracks/welcome-to-the-heartverse.mp3", opus: "/tracks/welcome-to-the-heartverse.opus" },
   WELCOME_BACK: { mp3: "/tracks/welcome-back.mp3", opus: "/tracks/welcome-back.opus" },
+  // Element planet tracks
+  WATER: { mp3: "/tracks/WATER.MP3" },
+  LIGHTNING: { mp3: "/tracks/LIGHTNING.MP3" },
+  DARKNESS: { mp3: "/tracks/darkness.MP3" },
+  HEART: { mp3: "/tracks/heart.MP3" },
+  CENTER: { mp3: "/tracks/center.MP3" },
 } as const;
 
 // Track info mapping - links track keys to visual/metadata information
@@ -137,6 +143,37 @@ export const TRACK_INFO: Record<string, TrackInfo> = {
     coverUrl: '/covers/WE\'RE JUST FRIENDS.webp',
     skyTexture: '/sky/were-just-friends-sky.webp',
     oneLiner: 'Lines blur between us.'
+  },
+  // Element planet tracks
+  'water': {
+    id: 'water',
+    title: 'WATER',
+    artist: 'CHXNDLER',
+    oneLiner: 'Flow like the ocean.'
+  },
+  'lightning': {
+    id: 'lightning',
+    title: 'LIGHTNING',
+    artist: 'CHXNDLER',
+    oneLiner: 'Electric energy.'
+  },
+  'darkness': {
+    id: 'darkness',
+    title: 'DARKNESS',
+    artist: 'CHXNDLER',
+    oneLiner: 'Embrace the shadows.'
+  },
+  'heart': {
+    id: 'heart',
+    title: 'HEART',
+    artist: 'CHXNDLER',
+    oneLiner: 'Feel the love.'
+  },
+  'center': {
+    id: 'center',
+    title: 'HEARTVERSE',
+    artist: 'CHXNDLER',
+    oneLiner: 'Welcome to the center.'
   }
 };
 
