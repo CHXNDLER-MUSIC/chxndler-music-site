@@ -2521,7 +2521,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                 ) : (
                   // Individual Element Card View
                   <>
-                  <div className="flex flex-col h-full overflow-hidden">
+                  <div className="flex flex-col h-full overflow-hidden" style={{ maxHeight: '100%' }}>
                     {/* Back Button and Element Filter */}
                     <div className="flex items-center gap-3 mb-2 flex-shrink-0">
                       <button
@@ -2561,7 +2561,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
 
                     {/* Card Display Area with Navigation */}
                     {getFilteredCards().length > 0 && (
-                      <div className="relative flex flex-col" style={{ height: 'calc(100% - 40px)' }}>
+                      <div className="relative flex flex-col flex-1" style={{ height: 'calc(100% - 40px)', minHeight: 0 }}>
                         {/* Card and Navigation Row */}
                         <div className="relative flex items-center justify-center flex-1 min-h-0">
                           {/* Left Arrow */}

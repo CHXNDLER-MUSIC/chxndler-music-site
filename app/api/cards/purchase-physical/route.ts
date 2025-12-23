@@ -14,6 +14,12 @@ export async function POST(request: NextRequest) {
   try {
     // Create cookie-based Supabase client for authenticated requests
     const cookieStore = await cookies();
+
+    // DEBUG: Log all cookies received
+    const allCookies = cookieStore.getAll();
+    console.log('[CARD PURCHASE DEBUG] Cookie names:', allCookies.map(c => c.name));
+    console.log('[CARD PURCHASE DEBUG] sb-* cookies:', allCookies.filter(c => c.name.startsWith('sb-')).map(c => ({ name: c.name, valueLen: c.value?.length })));
+
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -35,6 +41,14 @@ export async function POST(request: NextRequest) {
         },
       }
     );
+
+    // DEBUG: Check session before getUser
+    const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+    console.log('[CARD PURCHASE DEBUG] getSession result:', {
+      hasSession: !!sessionData?.session,
+      sessionError: sessionErr?.message,
+      userId: sessionData?.session?.user?.id,
+    });
 
     // Verify user is authenticated
     const { data: { user }, error: userErr } = await supabase.auth.getUser();

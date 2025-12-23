@@ -688,9 +688,9 @@ export default function Pure3DPlanets({
         blending: THREE.AdditiveBlending,
       });
       const glowSprite = new THREE.Sprite(glowMaterial);
-      // Scale based on object size
+      // Scale based on object size - tighter glow around the planet
       const baseScale = Math.max(obj.scale.x, obj.scale.y, obj.scale.z);
-      glowSprite.scale.set(baseScale * 2.5, baseScale * 2.5, 1);
+      glowSprite.scale.set(baseScale * 1.4, baseScale * 1.4, 1);
       glowSprite.renderOrder = -1;
       glowSprite.position.copy(obj.position);
       obj.parent?.add(glowSprite);
@@ -976,7 +976,7 @@ export default function Pure3DPlanets({
           const glowOpacity = 0.5 + Math.sin(elapsed * 3) * 0.2;
           (selectedGlowSpriteRef.current.material as THREE.SpriteMaterial).opacity = glowOpacity;
 
-          const glowScale = baseSc.x * scaleFactor * 2.5 + Math.sin(elapsed * 2) * 0.5;
+          const glowScale = baseSc.x * scaleFactor * 1.4 + Math.sin(elapsed * 2) * 0.15;
           selectedGlowSpriteRef.current.scale.set(glowScale, glowScale, 1);
         }
       }

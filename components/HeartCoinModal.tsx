@@ -1850,9 +1850,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         )}
       </div>
     ) : isUseMode && activeTab === 'cards' ? (
-      <div>
+      <div className="flex flex-col h-full overflow-hidden">
         {/* USE: Description toggle (exactly matches EARN copy) */}
-        <div className="text-center mb-4">
+        <div className="text-center mb-4 flex-shrink-0">
           {showHeartCoinDescription ? (
             <div className="text-white/80 text-sm leading-relaxed space-y-2">
               <p>HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting, and showing up.</p>
@@ -1865,9 +1865,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         </div>
         {/* Show card view if an element is selected */}
         {selectedElement !== null ? (
-          <div className="relative">
+          <div className="relative flex flex-col flex-1 overflow-hidden">
             {/* Top Navigation Bar */}
-            <div className="flex items-center gap-3 mb-6 relative z-30">
+            <div className="flex items-center gap-3 mb-6 relative z-30 flex-shrink-0">
               {/* Back Button */}
               <button
                 onClick={handleBackToElementSelection}
@@ -2388,13 +2388,39 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 ×
               </button>
 
+              {/* Digital Purchase Button - ABOVE card */}
+              {!showEnlargedCardConfirm && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Handle digital purchase (use existing flow)
+                    setSelectedPurchaseType('digital');
+                    handleCardPurchase('digital');
+                  }}
+                  disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < 5}
+                  className={`w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 text-white font-bold transition-all duration-200 shadow-lg mb-4 ${
+                    modalLoading || !profile || (profile.heartcoin_balance || 0) < 5
+                      ? 'bg-gray-500 cursor-not-allowed opacity-50'
+                      : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 hover:shadow-cyan-500/30'
+                  }`}
+                  style={{
+                    boxShadow: modalLoading || !profile || (profile.heartcoin_balance || 0) < 5 ? undefined : '0 0 15px rgba(6, 182, 212, 0.3)',
+                  }}
+                >
+                  <img src="/heartcoin.webp" alt="HeartCoin" className="w-5 h-5" />
+                  <span>5 HEARTCOIN</span>
+                  <span className="text-white/80">|</span>
+                  <span className="text-cyan-200">DIGITAL</span>
+                </button>
+              )}
+
               {/* Card Image */}
-              <div className="flex items-center justify-center w-full h-full">
+              <div className="flex items-center justify-center w-full flex-1">
                 <div className="relative max-w-full max-h-full">
                   <div
                     className="relative w-full"
                     style={{
-                      height: '55vh',
+                      height: '50vh',
                       maxWidth: '350px'
                     }}
                   >
