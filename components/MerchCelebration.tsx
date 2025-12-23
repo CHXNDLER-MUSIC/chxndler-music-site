@@ -74,9 +74,6 @@ export default function MerchCelebration() {
         <p className="text-white font-bold text-xl mt-4 relative z-10 text-center">
           {itemName} Purchased!
         </p>
-        <p className="text-white/70 text-sm mt-2 relative z-10">
-          Check your email for order confirmation
-        </p>
       </div>
     </div>
   );

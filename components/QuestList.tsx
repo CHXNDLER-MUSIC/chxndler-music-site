@@ -133,7 +133,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         const { data: { session } } = await supabaseClient.auth.getSession();
         const isAuth = !!session?.user;
         setIsAuthenticated(isAuth);
-        
+
         // Load bonus quests if authenticated
         if (isAuth && session?.user?.id) {
           await loadBonusQuests(session.user.id);
@@ -156,12 +156,12 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
       async (event, session) => {
         const isAuth = !!session?.user;
         setIsAuthenticated(isAuth);
-        
+
         // Close login modal if user successfully logs in
         if (isAuth && showLoginModal) {
           setShowLoginModal(false);
         }
-        
+
         // Load bonus quests when user logs in
         if (isAuth && session?.user?.id) {
           await loadBonusQuests(session.user.id);
@@ -174,6 +174,23 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
 
     return () => subscription.unsubscribe();
   }, [showLoginModal]);
+
+  // Listen for element-of-day-claimed event (triggered when warping to daily element)
+  useEffect(() => {
+    const handleElementClaimed = (event: CustomEvent) => {
+      console.log('[QuestList] Element of day claimed via warp:', event.detail);
+      // Update quest status to mark element of day as completed
+      setQuestStatus(prev => ({ ...prev, elementOfDay: true }));
+      showCelebration(`Element of the Day completed via WARP! +1 HeartCoin earned.`);
+      // Refresh profile to update heartcoin balance
+      try { refreshProfile(); } catch {}
+    };
+
+    window.addEventListener('element-of-day-claimed', handleElementClaimed as EventListener);
+    return () => {
+      window.removeEventListener('element-of-day-claimed', handleElementClaimed as EventListener);
+    };
+  }, [refreshProfile]);
 
   // Helper functions to get quest data from server
   const getElementalSongQuest = () => bonusQuests.find(q => q.quest_key === 'LISTEN_ELEMENT_SONG');
@@ -720,15 +737,17 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                   }}
                 />
                 {questStatus.elementOfDay && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-green-400/20 to-green-500/30">
-                    <span 
-                      className="text-green-400 text-lg font-bold"
+                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-green-400/30 to-green-500/40 rounded-full">
+                    <span
+                      className="text-xs font-black uppercase tracking-tight text-center leading-none px-1"
                       style={{
-                        textShadow: '0 0 8px rgba(0,255,0,1), 0 0 15px rgba(0,255,0,0.8)',
-                        filter: 'drop-shadow(0 0 6px rgba(0,255,0,0.9))'
+                        color: '#00FF00',
+                        textShadow: '0 0 10px rgba(0,255,0,1), 0 0 20px rgba(0,255,0,0.9), 0 0 30px rgba(0,255,0,0.7), 0 0 40px rgba(0,255,0,0.5)',
+                        filter: 'drop-shadow(0 0 8px rgba(0,255,0,1))',
+                        animation: 'neonPulse 1.5s ease-in-out infinite alternate'
                       }}
                     >
-                      ✓
+                      COMPLETED
                     </span>
                   </div>
                 )}
@@ -1208,6 +1227,20 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         open={showLoginModal}
         onClose={() => setShowLoginModal(false)}
       />
+
+      {/* Neon glow animation for COMPLETED text */}
+      <style jsx global>{`
+        @keyframes neonPulse {
+          0% {
+            text-shadow: 0 0 10px rgba(0,255,0,1), 0 0 20px rgba(0,255,0,0.9), 0 0 30px rgba(0,255,0,0.7), 0 0 40px rgba(0,255,0,0.5);
+            filter: drop-shadow(0 0 8px rgba(0,255,0,1));
+          }
+          100% {
+            text-shadow: 0 0 15px rgba(0,255,0,1), 0 0 30px rgba(0,255,0,1), 0 0 45px rgba(0,255,0,0.9), 0 0 60px rgba(0,255,0,0.7);
+            filter: drop-shadow(0 0 15px rgba(0,255,0,1));
+          }
+        }
+      `}</style>
     </div>
   );
 }

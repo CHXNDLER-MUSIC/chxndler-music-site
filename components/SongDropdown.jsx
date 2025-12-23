@@ -65,6 +65,20 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
     return items.find(i => normalizeSlug(i.id) === a) || items[0];
   }, [items, activeId]);
 
+  // Check if currentId is an element planet (not in items list) - used for display
+  const isElementWarp = useMemo(() => {
+    if (!currentId) return false;
+    const normalizedCurrentId = normalizeSlug(currentId);
+    const elementPlanets = ['heart', 'water', 'lightning', 'darkness', 'center'];
+    return elementPlanets.includes(normalizedCurrentId) && !items.some(i => normalizeSlug(i.id) === normalizedCurrentId);
+  }, [currentId, items]);
+
+  // Get element display name (uppercase) for element warps
+  const elementDisplayName = useMemo(() => {
+    if (!isElementWarp) return null;
+    return String(currentId).toUpperCase();
+  }, [isElementWarp, currentId]);
+
   // Set mounted state for portal
   useEffect(() => {
     setMounted(true);
@@ -239,19 +253,20 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
       >
         <span className="flex items-center gap-2 min-w-0">
           {(() => {
-            const headerIconName = !currentId ? 'music' : (current?.icon || 'music');
+            // When element warp, use the element name as icon; otherwise use song icon or music
+            const headerIconName = !currentId ? 'music' : (isElementWarp ? String(currentId).toLowerCase() : (current?.icon || 'music'));
             const dataIcon = headerIconName === 'music' ? 'music' : 'element';
             return (
               <span
                 className="songs-icon"
                 data-icon={dataIcon}
               >
-                <OptimizedElementIcon 
-                  name={headerIconName} 
-                  alt={!currentId ? "Music" : (current?.title || "Music")} 
-                  className="w-7 h-7 object-contain" 
-                  width={28} 
-                  height={28} 
+                <OptimizedElementIcon
+                  name={headerIconName}
+                  alt={!currentId ? "Music" : (isElementWarp ? elementDisplayName : (current?.title || "Music"))}
+                  className="w-7 h-7 object-contain"
+                  width={28}
+                  height={28}
                   priority
                 />
               </span>
@@ -265,7 +280,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
               textShadow: '0 0 2px rgba(255,255,255,0.95), 0 0 6px rgba(255,255,255,0.65)'
             } : undefined}
           >
-            {!currentId ? 'MUSIC' : (current?.title || 'SONGS')}
+            {!currentId ? 'MUSIC' : (isElementWarp ? elementDisplayName : (current?.title || 'SONGS'))}
           </span>
         </span>
         <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden className="opacity-80 text-[#9EEBFF]"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>

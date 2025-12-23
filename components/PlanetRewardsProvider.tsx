@@ -6,6 +6,8 @@ import { useAuth } from '@/app/providers/AuthProvider';
 import PlanetRewardCelebration from './PlanetRewardCelebration';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { getLocalDateString } from '@/utils/dateHelpers';
+import { triggerHeartCoinCelebration } from '@/utils/heartcoinCelebration';
+import { logHeartcoinTransaction } from '@/utils/heartcoins';
 
 interface PlanetRewardsContextValue {
   claimPlanetReward: (element: ElementType) => Promise<PlanetReward | null>;
@@ -167,6 +169,36 @@ export function PlanetRewardsProvider({
       } as any;
 
       setLastReward(reward);
+
+      // Award HeartCoin for element of the day quest completion
+      try {
+        await logHeartcoinTransaction(supabaseBrowser, {
+          user_id: user.id,
+          amount: 1,
+          reason: 'ELEMENT_OF_DAY',
+          description: 'Element of the Day reward (via warp)',
+          transaction_type: 'bonus',
+          metadata: { element, source: 'warp' }
+        });
+      } catch (err) {
+        console.warn('Failed to log HeartCoin transaction:', err);
+      }
+
+      // Trigger HeartCoin celebration animation
+      triggerHeartCoinCelebration(1);
+
+      // Update localStorage for quest tracking (syncs with QuestList)
+      const today = new Date().toDateString();
+      try {
+        localStorage.setItem(`quest_element_${today}`, 'true');
+      } catch {}
+
+      // Dispatch event so QuestList can update its state immediately
+      try {
+        window.dispatchEvent(new CustomEvent('element-of-day-claimed', {
+          detail: { element, source: 'warp' }
+        }));
+      } catch {}
 
       // Let host screens refresh if needed
       setTimeout(() => {

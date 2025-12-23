@@ -1605,6 +1605,18 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       setUserSelected(true);
       setHomeMode(false);
 
+      // Set curTrack to a pseudo-track representing the element
+      // This makes the dropdown display the element name (e.g., "LIGHTNING") instead of previous selection
+      if (element) {
+        const elementName = String(element).toUpperCase();
+        setCurTrack({
+          slug: String(element).toLowerCase(),
+          title: elementName,
+          icon: String(element).toLowerCase(),
+          isElement: true
+        });
+      }
+
       // Hide blue display/HUD when warping to element planet (like song selection)
       setShowHUD(false);
       setBeamEnabled(false);
