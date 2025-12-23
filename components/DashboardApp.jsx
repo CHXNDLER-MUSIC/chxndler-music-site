@@ -632,17 +632,19 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
 
   function onSongChange(id, options){
+    // [WARP] Entry point for all song changes
+    console.log('[WARP] start - onSongChange entry point', { id, options, tracksCount: tracks?.length || 0 });
+
     // In-app song change without spotlight/beam/route reloads
     // The id parameter is already the track slug from buildPlanetSongs()
     const slug = String(id || '').toLowerCase();
     // Guard against empty/invalid ids to avoid matching the first track
     if (!slug || slug.trim() === '') {
+      console.error('[WARP] start - early return: empty id');
       console.warn('DashboardApp: onSongChange called with empty id; ignoring selection');
       return;
     }
-    if (process.env.NODE_ENV === "development") {
-      console.log('🎵 onSongChange - id:', id, 'slug:', slug);
-    }
+    console.log('[WARP] start - resolved slug:', slug);
     
     // IMMEDIATELY hide blue display and light beam when song is selected
     // Unless explicitly asked to preserve the blue display (e.g., HUD planet clicks)
@@ -664,9 +666,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     }
     
     if (idx < 0) {
+      console.error('[WARP] start - early return: track not found', { id, slug });
       console.warn('DashboardApp: onSongChange - track not found for id:', id, 'slug:', slug);
       if (process.env.NODE_ENV === "development") {
-        console.log('Available tracks:', tracks.map(t => ({title: t.title, slug: t.slug})));
+        console.log('[WARP] Available tracks:', tracks.map(t => ({title: t.title, slug: t.slug})));
       }
       return;
     }
@@ -772,6 +775,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // If a warp is already active (or being initiated by Start), avoid stacking warps.
     // Keep the current warp running and let the latest pending selection take effect when it finishes.
     if (!warpActive && !isWarping) {
+      console.log('[WARP] triggering warp sequence for:', selectedTrack.title);
       // Mark warp overlay as active immediately before triggering
       setWarpActive(true);
       // Reset button reveal guard for this new warp
@@ -779,6 +783,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       // Add a brief delay before triggering warp sequence, allowing for anticipation
       setTimeout(() => {
         // Trigger warp sequence
+        console.log('[WARP] flySignal incremented - warp effect starting');
         setAllowWarp(true);
         setFlySignal((n) => n + 1);
         
@@ -795,8 +800,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           setAllowWarp(false);
         }, WARP_DURATION_MS + 500);
       }, 300);
+    } else {
+      console.log('[WARP] warp blocked - already active', { warpActive, isWarping });
     }
-    
+
     // Audio channel change is now handled by the unified audio system
     // Track switching is handled after warp completion
   }

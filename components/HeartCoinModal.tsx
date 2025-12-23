@@ -15,6 +15,7 @@ import TiltSpinCard from '@/components/TiltSpinCard';
 import { usePlanetRewardsContext } from '@/components/PlanetRewardsProvider';
 import { getElementalPlanetImage } from '@/lib/elementalPlanets';
 import { triggerMerchCelebration } from '@/utils/merchCelebration';
+import { triggerHeartCoinCelebration } from '@/utils/heartcoinCelebration';
 
 type Props = {
   open: boolean;
@@ -549,6 +550,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         const reward = result?.awarded || result?.reward || 0;
         setSecretPhraseMessage({ type: 'success', text: `+${reward} HeartCoins` });
         setSecretPhrase(''); // Clear input
+        // Trigger heartcoin celebration (plays sound + shows animation)
+        triggerHeartCoinCelebration(reward);
         // Refresh profile to update HeartCoin balance
         await refreshProfile();
       } else if (status === 'already_redeemed' || status === 'already_checked_in') {

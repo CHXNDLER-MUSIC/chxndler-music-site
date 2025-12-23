@@ -15,6 +15,7 @@ import {
 } from '@/utils/hologramHalo';
 import Image from 'next/image';
 import { sfx } from '@/lib/sfx';
+import { triggerWarpToSong } from '@/lib/warp';
 
 export type ElementType = 'heart' | 'water' | 'lightning' | 'darkness';
 
@@ -105,8 +106,12 @@ export default function Pure3DPlanets({
   const selectedPlanetBaseScaleRef = useRef<THREE.Vector3 | null>(null);
   const selectedPlanetBaseYRef = useRef<number | null>(null);
   const selectedGlowSpriteRef = useRef<THREE.Sprite | null>(null);
+  // Track which element is selected (to skip y-oscillation for element of the day)
+  const selectedElementIdRef = useRef<ElementType | null>(null);
   // Store popup state in a ref for animation loop access
   const planetPopupRef = useRef<PlanetPopup | null>(null);
+  // Prevent double-firing warp from both onClick and onTouchEnd
+  const warpTriggeredRef = useRef(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -166,6 +171,9 @@ export default function Pure3DPlanets({
     rendererRef.current = renderer;
     // Enable pointer events on canvas for OrbitControls and click detection
     renderer.domElement.style.pointerEvents = 'auto';
+    // Ensure canvas stays below popup (z-index 999999)
+    renderer.domElement.style.position = 'relative';
+    renderer.domElement.style.zIndex = '1';
 
     // Controls
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -608,15 +616,17 @@ export default function Pure3DPlanets({
       selectedPlanetRef.current = null;
       selectedPlanetBaseScaleRef.current = null;
       selectedPlanetBaseYRef.current = null;
+      selectedElementIdRef.current = null;
     };
 
     // Helper to set up selection effects on a planet
-    const setupSelectionEffects = (obj: THREE.Object3D, glowColor: string) => {
+    const setupSelectionEffects = (obj: THREE.Object3D, glowColor: string, elementId?: ElementType) => {
       clearSelectionEffects();
 
       selectedPlanetRef.current = obj;
       selectedPlanetBaseScaleRef.current = obj.scale.clone();
       selectedPlanetBaseYRef.current = obj.position.y;
+      selectedElementIdRef.current = elementId ?? null;
 
       // Create glow sprite for the selected planet
       const canvas = document.createElement('canvas');
@@ -659,6 +669,13 @@ export default function Pure3DPlanets({
 
     // Click handler
     const handleClick = async (event: MouseEvent) => {
+      // Check if the click was on the WARP button or popup UI - if so, don't process as 3D click
+      const target = event.target as HTMLElement;
+      if (target.closest('.warp-button') || target.closest('[data-popup-card]')) {
+        console.log('[3D Click] Ignoring click - target is popup UI element');
+        return;
+      }
+
       // Stop event from bubbling up to parent elements (prevents HUD toggle)
       event.stopPropagation();
       event.preventDefault();
@@ -697,7 +714,7 @@ export default function Pure3DPlanets({
         if (elementId) {
           // Show popup for element planet (including daily element - warp button will trigger reward claim)
           const screenPos = projectToScreen(intersectionPoint);
-          setupSelectionEffects(obj, getElementColor(elementId));
+          setupSelectionEffects(obj, getElementColor(elementId), elementId);
 
           // Flag if this is the daily element planet for special warp handling
           const isDailyElement = elementId === glowingElement && !hasClaimedElementOfDay;
@@ -813,8 +830,14 @@ export default function Pure3DPlanets({
       }
     };
 
-    // Prevent clicks from bubbling to parent
+    // Prevent clicks from bubbling to parent - but allow popup interactions
     const handleMouseDown = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // If clicking on popup UI, let the popup handle it
+      if (target.closest('.warp-button') || target.closest('[data-popup-card]')) {
+        console.log('[3D MouseDown] Ignoring - target is popup UI element');
+        return;
+      }
       event.stopPropagation();
     };
 
@@ -920,7 +943,9 @@ export default function Pure3DPlanets({
         );
 
         // Oscillate up/down: subtle bob of 0.3 units
-        const yOffset = Math.sin(elapsed * 2) * 0.3;
+        // Skip y-oscillation for element of the day (only glow, no movement)
+        const isElementOfDay = selectedElementIdRef.current && selectedElementIdRef.current === glowingElement;
+        const yOffset = isElementOfDay ? 0 : Math.sin(elapsed * 2) * 0.3;
         selectedPlanetRef.current.position.y = baseY + yOffset;
 
         // Also update the glow sprite position to match
@@ -937,12 +962,18 @@ export default function Pure3DPlanets({
       }
 
       // Update popup position to track planet as it rotates
+      // Only update if position has changed by more than 2 pixels to avoid excessive re-renders
+      // which can interfere with click event handling on the WARP button
       if (planetPopupRef.current && planetPopupRef.current.targetObject) {
         const worldPos = new THREE.Vector3();
         planetPopupRef.current.targetObject.getWorldPosition(worldPos);
         const screenPos = projectToScreen(worldPos);
-        // Update popup state with new position
-        setPlanetPopup(prev => prev ? { ...prev, x: screenPos.x, y: screenPos.y } : null);
+        const dx = Math.abs(screenPos.x - planetPopupRef.current.x);
+        const dy = Math.abs(screenPos.y - planetPopupRef.current.y);
+        // Only update state if position changed by more than 2 pixels
+        if (dx > 2 || dy > 2) {
+          setPlanetPopup(prev => prev ? { ...prev, x: screenPos.x, y: screenPos.y } : null);
+        }
       }
 
       // Camera lerp for smooth easing (hover bias and cinematic focus)
@@ -1028,6 +1059,7 @@ export default function Pure3DPlanets({
         selectedPlanetRef.current = null;
         selectedPlanetBaseScaleRef.current = null;
         selectedPlanetBaseYRef.current = null;
+        selectedElementIdRef.current = null;
       } catch {}
       // Dispose hologram grid textures and materials
       try {
@@ -1277,16 +1309,25 @@ export default function Pure3DPlanets({
     );
   }
 
-  // Handle warp button click - triggers warp effect same as song dropdown
+  // Handle warp button click - uses shared triggerWarpToSong for consistency
   const handleWarpClick = async () => {
-    console.log('handleWarpClick called, planetPopup:', planetPopup);
+    // Prevent double-firing from both onClick and onTouchEnd
+    if (warpTriggeredRef.current) {
+      console.log('[WARP] skipping - already triggered');
+      return;
+    }
+    warpTriggeredRef.current = true;
+    setTimeout(() => { warpTriggeredRef.current = false; }, 500);
+
+    console.log('[WARP] trigger from planet button', { planetPopup: planetPopup ? { name: planetPopup.name, slug: planetPopup.slug, isSong: planetPopup.isSong } : null, hasOnSongChange: !!onSongChange, songsCount: songs.length });
     if (!planetPopup) {
-      console.log('handleWarpClick: planetPopup is null, returning early');
+      console.error('[WARP] ERROR: planetPopup is null - cannot trigger warp');
+      warpTriggeredRef.current = false;
       return;
     }
 
-    const { slug, isSong, isDailyElement, element } = planetPopup;
-    console.log('handleWarpClick: processing warp for', { slug, isSong, isDailyElement, element });
+    const { slug, name, isSong, isDailyElement, element } = planetPopup;
+    console.log('[WARP] trigger from planet button - resolved', { selectedPlanet: name, resolvedSlug: slug, isSong, element, isDailyElement });
 
     // Play warp sound effect and set global flag so SkyboxVideo doesn't play it again
     try {
@@ -1318,23 +1359,33 @@ export default function Pure3DPlanets({
     selectedPlanetRef.current = null;
     selectedPlanetBaseScaleRef.current = null;
     selectedPlanetBaseYRef.current = null;
+    selectedElementIdRef.current = null;
 
     // Use the isSong flag set when the popup was created - this is more reliable
     // than checking against element names since it was determined at click time
-    if (isSong && onSongChange) {
-      // For song planets, trigger full warp sequence via onSongChange
-      // This calls DashboardApp.onSongChange which handles:
-      // - Lightspeed visual effect (via flySignal)
-      // - Warp audio
-      // - Planet visibility
-      // - Sky change
-      // - Song playback
-      debug('WARP button clicked - triggering onSongChange for:', slug);
-      onSongChange(slug);
+    if (isSong) {
+      // For song planets, use the unified triggerWarpToSong helper
+      // This ensures consistent behavior between dropdown and planet button
+      const result = triggerWarpToSong({
+        songSlug: slug,
+        planetName: name,
+        source: 'planet-button',
+        songs,
+        onSongChange
+      });
+
+      if (!result.success) {
+        console.error('[WARP] planet button warp failed:', result.error);
+        // Fallback: try calling onSongChange directly with slug if we have it
+        if (onSongChange && slug) {
+          console.log('[WARP] attempting fallback with direct slug:', slug);
+          onSongChange(slug);
+        }
+      }
     } else {
       // For element planets (including daily element and center), trigger warp visual effect
       // Dispatch event that DashboardApp listens for to trigger the lightspeed visual
-      debug('WARP button clicked - triggering warp for element:', slug);
+      console.log('[WARP] element planet warp - dispatching planet:warp event', { element: slug, isDailyElement });
       try {
         window.dispatchEvent(new CustomEvent('planet:warp', {
           detail: {
@@ -1344,17 +1395,17 @@ export default function Pure3DPlanets({
           }
         }));
       } catch (e) {
-        console.warn('Could not dispatch planet:warp event:', e);
+        console.warn('[WARP] Could not dispatch planet:warp event:', e);
       }
 
       // After warp visual starts, handle element-specific actions
       if (isDailyElement && onDailyPlanetClick && element !== 'center') {
         // For the daily element planet, claim the reward after warp effect
-        debug('WARP button clicked - claiming daily element reward for:', element);
+        console.log('[WARP] claiming daily element reward for:', element);
         try {
           await onDailyPlanetClick(element as ElementType);
         } catch (err) {
-          console.error('Failed to claim element of day reward:', err);
+          console.error('[WARP] Failed to claim element of day reward:', err);
         }
       } else {
         // For other element planets, call onPlanetSelect
@@ -1392,7 +1443,7 @@ export default function Pure3DPlanets({
         position: 'relative'
       }}
     >
-      {/* Planet Popup */}
+      {/* Planet Popup - rendered via portal to avoid event conflicts with canvas */}
       {planetPopup && (
         <div
           style={{
@@ -1400,34 +1451,50 @@ export default function Pure3DPlanets({
             left: planetPopup.x,
             top: planetPopup.y,
             transform: 'translate(-50%, -100%) translateY(-20px)',
-            pointerEvents: 'auto',
+            pointerEvents: 'none', // Container doesn't block, but children do
             zIndex: 999999,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '8px'
+            gap: '8px',
+            isolation: 'isolate' // Create new stacking context
           }}
         >
-          {/* Warp Button */}
+          {/* Warp Button - iOS safe with onClick + onTouchEnd fallback */}
           <button
             onClick={(e) => {
-              console.log('WARP BUTTON CLICKED!', e.target, planetPopup);
+              console.log('[WARP] button onClick triggered');
               e.stopPropagation();
               e.preventDefault();
               handleWarpClick();
             }}
             onPointerDown={(e) => {
-              console.log('WARP BUTTON POINTER DOWN', e.target);
+              console.log('[WARP] button onPointerDown');
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+            onPointerUp={(e) => {
+              console.log('[WARP] button onPointerUp');
               e.stopPropagation();
             }}
             onMouseDown={(e) => {
-              console.log('WARP BUTTON MOUSE DOWN', e.target);
+              console.log('[WARP] button onMouseDown');
               e.stopPropagation();
+              e.preventDefault();
             }}
             onTouchStart={(e) => {
-              console.log('WARP BUTTON TOUCH START');
+              console.log('[WARP] button onTouchStart');
               e.stopPropagation();
             }}
+            onTouchEnd={(e) => {
+              // iOS fallback: some iOS versions don't fire onClick reliably
+              console.log('[WARP] button onTouchEnd - triggering warp');
+              e.stopPropagation();
+              e.preventDefault();
+              handleWarpClick();
+            }}
+            className="warp-button"
+            data-element={planetPopup.element}
             style={{
               background: `linear-gradient(135deg, ${getElementColor(planetPopup.element)}cc, ${getElementColor(planetPopup.element)}88)`,
               border: `2px solid ${getElementColor(planetPopup.element)}`,
@@ -1442,6 +1509,10 @@ export default function Pure3DPlanets({
               pointerEvents: 'auto',
               touchAction: 'manipulation',
               userSelect: 'none',
+              WebkitTapHighlightColor: 'transparent',
+              WebkitUserSelect: 'none',
+              position: 'relative',
+              zIndex: 10,
               boxShadow: `
                 0 0 10px ${getElementColor(planetPopup.element)}80,
                 0 0 20px ${getElementColor(planetPopup.element)}60,
@@ -1458,8 +1529,10 @@ export default function Pure3DPlanets({
 
           {/* Planet Info Card */}
           <div
+            data-popup-card="true"
             onClick={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
+            onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
             style={{
               background: 'rgba(0, 0, 0, 0.85)',
               backdropFilter: 'blur(10px)',
@@ -1509,25 +1582,24 @@ export default function Pure3DPlanets({
         </div>
       )}
 
-      {/* Keyframes for warp button glow animation */}
-      <style jsx>{`
+      {/* Global keyframes for warp button glow animation - using global style to avoid re-render issues */}
+      <style jsx global>{`
         @keyframes warpGlow {
           0% {
-            box-shadow:
-              0 0 10px ${planetPopup ? getElementColor(planetPopup.element) : '#FC54AF'}80,
-              0 0 20px ${planetPopup ? getElementColor(planetPopup.element) : '#FC54AF'}60,
-              0 0 30px ${planetPopup ? getElementColor(planetPopup.element) : '#FC54AF'}40,
-              0 0 40px ${planetPopup ? getElementColor(planetPopup.element) : '#FC54AF'}20,
-              inset 0 0 10px ${planetPopup ? getElementColor(planetPopup.element) : '#FC54AF'}40;
+            filter: brightness(1);
           }
           100% {
-            box-shadow:
-              0 0 15px ${planetPopup ? getElementColor(planetPopup.element) : '#FC54AF'}90,
-              0 0 30px ${planetPopup ? getElementColor(planetPopup.element) : '#FC54AF'}70,
-              0 0 45px ${planetPopup ? getElementColor(planetPopup.element) : '#FC54AF'}50,
-              0 0 60px ${planetPopup ? getElementColor(planetPopup.element) : '#FC54AF'}30,
-              inset 0 0 15px ${planetPopup ? getElementColor(planetPopup.element) : '#FC54AF'}50;
+            filter: brightness(1.2);
           }
+        }
+        .warp-button {
+          transition: transform 0.1s ease;
+        }
+        .warp-button:hover {
+          transform: scale(1.05);
+        }
+        .warp-button:active {
+          transform: scale(0.98);
         }
       `}</style>
     </div>

@@ -82,6 +82,7 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
         } else {
           // Prefer parent sequencing if provided; otherwise, set main ID
           // and let HoloAudioBridge handle planet visibility (warp effect)
+          console.log('[WARP] trigger from dropdown (keyboard)', { songId: id });
           if (onSongChange) {
             onSongChange(id);
           } else {
@@ -207,6 +208,7 @@ export default function SongList({ onSongChange }: { onSongChange?: (id: string)
                 audioManager?.togglePlayPause();
               } else {
                 // Delegate selection to parent to run the global warp + playback flow
+                console.log('[WARP] trigger from dropdown (click)', { songId: s.id, songTitle: s.title });
                 if (onSongChange) {
                   onSongChange(s.id);
                 } else {
