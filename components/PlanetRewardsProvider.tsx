@@ -16,6 +16,7 @@ interface PlanetRewardsContextValue {
   clearError: () => void;
   isAuthenticated: boolean;
   elementOfDay: ElementType | null;
+  intentionOfDay: string | null; // Today's intention text from element_of_day table
   claimedToday: boolean;
   isSyncing: boolean; // True when element of day is being refetched (e.g., after midnight rollover)
   refetchElementOfDay: () => Promise<void>; // Force refetch element of day from server
@@ -57,6 +58,7 @@ export function PlanetRewardsProvider({
 
   // Element of the day - only this element's planet can give rewards
   const [elementOfDay, setElementOfDay] = useState<ElementType | null>(null);
+  const [intentionOfDay, setIntentionOfDay] = useState<string | null>(null);
   const [claimedToday, setClaimedToday] = useState<boolean>(false);
   // Store server date for consistency with backend
   const [serverDate, setServerDate] = useState<string | null>(null);
@@ -84,6 +86,7 @@ export function PlanetRewardsProvider({
       }
       const normalized = normalizeElement(data.element);
       setElementOfDay(normalized);
+      setIntentionOfDay(data.intentionOfDay ?? null);
       setServerDate(data.serverDate);
       setIsSyncing(false);
       return data.serverDate;
@@ -162,10 +165,18 @@ export function PlanetRewardsProvider({
   }, [user?.id, fetchTodayElement]);
 
   const claimPlanetReward = useCallback(async (element: ElementType): Promise<PlanetReward | null> => {
-    // Check authentication first
+    // If user is not authenticated, still show the celebration but prompt sign in
     if (!user) {
+      // Show the celebration display even without claiming
+      const displayReward: PlanetReward = {
+        type: 'BOOST',
+        element,
+        code: 'element_of_day_display',
+        label: 'Sign in to claim your daily blessing',
+      } as any;
+      setLastReward(displayReward);
       onSignInRequired?.();
-      return null;
+      return displayReward;
     }
 
     // Prevent duplicate claims while in-flight or during brief cooldown
@@ -202,13 +213,15 @@ export function PlanetRewardsProvider({
             }));
           } catch {}
 
-          // Show friendly message
-          try {
-            window.dispatchEvent(new CustomEvent('toast:show', {
-              detail: { message: 'Already claimed today.', type: 'info' }
-            }));
-          } catch {}
-          return null;
+          // Still show the celebration with the element of day info
+          const displayReward: PlanetReward = {
+            type: 'BOOST',
+            element,
+            code: 'element_of_day_claimed',
+            label: 'Already claimed today',
+          } as any;
+          setLastReward(displayReward);
+          return displayReward;
         }
         if (msg.includes('wrong element')) {
           // Element of the Day just changed - auto-refetch and show friendly message
@@ -326,6 +339,7 @@ export function PlanetRewardsProvider({
         clearError,
         isAuthenticated,
         elementOfDay,
+        intentionOfDay,
         claimedToday,
         isSyncing,
         refetchElementOfDay,
@@ -334,6 +348,7 @@ export function PlanetRewardsProvider({
       {children}
       <PlanetRewardCelebration
         reward={lastReward}
+        intentionOfDay={intentionOfDay}
         onComplete={handleCelebrationComplete}
       />
     </PlanetRewardsContext.Provider>
@@ -353,6 +368,7 @@ export function usePlanetRewardsContext() {
       clearError: () => {},
       isAuthenticated: false,
       elementOfDay: null as ElementType | null,
+      intentionOfDay: null as string | null,
       claimedToday: false,
       isSyncing: false,
       refetchElementOfDay: async () => {},

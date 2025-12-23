@@ -476,8 +476,8 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
             );
           })}
           <audio ref={hoverRef} preload="auto">
+            <source src="/audio/hover.mp3" type="audio/mpeg" />
             <source src="/audio/change-channel.mp3" type="audio/mpeg" />
-            <source src="/audio/song-select.mp3" type="audio/mpeg" />
           </audio>
         </div>,
         document.body

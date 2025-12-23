@@ -7,7 +7,7 @@ import { toAppleEmbed, appleEmbedHeight } from "@/lib/apple";
 import { createPortal } from "react-dom";
 import { useAudio } from "@/app/providers/AudioProvider";
 
-export default function StreamingButtons({ pos, links, showControls = true }:{ pos: { xVw:number; yVh:number; sizePx:number; gapPx?:number; tilt?:string; vertical?: boolean; mobile?: {sizePx:number; gapPx?:number}; tablet?: {sizePx:number; gapPx?:number} }, links:{ spotify?:string; apple?:string; youtube?:string }, showControls?: boolean }){
+export default function StreamingButtons({ pos, links, showControls = true, disabled = false }:{ pos: { xVw:number; yVh:number; sizePx:number; gapPx?:number; tilt?:string; vertical?: boolean; mobile?: {sizePx:number; gapPx?:number}; tablet?: {sizePx:number; gapPx?:number} }, links:{ spotify?:string; apple?:string; youtube?:string }, showControls?: boolean, disabled?: boolean }){
   const { playing, play, pause, volume, setVolume } = useAudio();
   // Get responsive size based on screen width
   const getResponsiveSize = () => {
@@ -239,7 +239,7 @@ export default function StreamingButtons({ pos, links, showControls = true }:{ p
       )}
 
       {/* Spotify Button */}
-      {links.spotify && (
+      {(links.spotify || disabled) && (
         <div
           className="wrap"
           style={vertical
@@ -249,31 +249,42 @@ export default function StreamingButtons({ pos, links, showControls = true }:{ p
           }
         >
           <span className="socket" aria-hidden />
-          <IconButtonShell
-            title="Listen on Spotify"
-            href={links.spotify}
-            color="#1DB954"
-            onClickFX={playClick}
-            onHoverFX={playHover}
-            onClick={() => {
-              try {
-                const embed = toSpotifyEmbed(links.spotify!);
-                if (embed) {
-                  setSpEmbedUrl(embed);
-                  setShowSpotifyPopover(true);
-                } else {
-                  window.open(links.spotify!, '_blank', 'noopener,noreferrer');
+          {disabled ? (
+            <div
+              className="ck-icon-btn-disabled"
+              title="Spotify (Not available for elemental planets)"
+              aria-disabled="true"
+            >
+              <span className="logo-glow-disabled">{SpotifyIcon}</span>
+            </div>
+          ) : (
+            <IconButtonShell
+              title="Listen on Spotify"
+              href={links.spotify!}
+              color="#1DB954"
+              onClickFX={playClick}
+              onHoverFX={playHover}
+              onClick={() => {
+                try {
+                  const embed = toSpotifyEmbed(links.spotify!);
+                  if (embed) {
+                    setSpEmbedUrl(embed);
+                    setShowSpotifyPopover(true);
+                  } else {
+                    window.open(links.spotify!, '_blank', 'noopener,noreferrer');
+                  }
+                } catch {
+                  try { window.open(links.spotify!, '_blank', 'noopener,noreferrer'); } catch {}
                 }
-              } catch {
-                try { window.open(links.spotify!, '_blank', 'noopener,noreferrer'); } catch {}
-              }
-            }}
-          >
-            {SpotifyIcon}
-          </IconButtonShell>
+              }}
+            >
+              {SpotifyIcon}
+            </IconButtonShell>
+          )}
         </div>
       )}
-      {links.apple && (
+      {/* Apple Music Button */}
+      {(links.apple || disabled) && (
         <div
           className="wrap"
           style={vertical
@@ -284,29 +295,39 @@ export default function StreamingButtons({ pos, links, showControls = true }:{ p
           }
         >
           <span className="socket" aria-hidden />
-          <IconButtonShell
-            title="Listen on Apple Music"
-            href={links.apple}
-            color="#FF3B30"
-            onClickFX={playClick}
-            onHoverFX={playHover}
-            onClick={() => {
-              try {
-                const embed = toAppleEmbed(links.apple!);
-                if (embed) { setAmEmbedUrl(embed); setShowApplePopover(true); }
-                else { window.open(links.apple!, '_blank', 'noopener,noreferrer'); }
-              } catch {
-                try { window.open(links.apple!, '_blank', 'noopener,noreferrer'); } catch {}
-              }
-            }}
-          >
-            {AppleIcon}
-          </IconButtonShell>
+          {disabled ? (
+            <div
+              className="ck-icon-btn-disabled"
+              title="Apple Music (Not available for elemental planets)"
+              aria-disabled="true"
+            >
+              <span className="logo-glow-disabled">{AppleIcon}</span>
+            </div>
+          ) : (
+            <IconButtonShell
+              title="Listen on Apple Music"
+              href={links.apple!}
+              color="#FF3B30"
+              onClickFX={playClick}
+              onHoverFX={playHover}
+              onClick={() => {
+                try {
+                  const embed = toAppleEmbed(links.apple!);
+                  if (embed) { setAmEmbedUrl(embed); setShowApplePopover(true); }
+                  else { window.open(links.apple!, '_blank', 'noopener,noreferrer'); }
+                } catch {
+                  try { window.open(links.apple!, '_blank', 'noopener,noreferrer'); } catch {}
+                }
+              }}
+            >
+              {AppleIcon}
+            </IconButtonShell>
+          )}
         </div>
       )}
 
       {/* YouTube Button */}
-      {links.youtube && (
+      {(links.youtube || disabled) && (
         <div
           className="wrap"
           style={vertical
@@ -317,22 +338,32 @@ export default function StreamingButtons({ pos, links, showControls = true }:{ p
           }
         >
           <span className="socket" aria-hidden />
-          <IconButtonShell
-            title="Watch on YouTube"
-            href={links.youtube}
-            color="#FF0000"
-            onClickFX={playClick}
-            onHoverFX={playHover}
-            onClick={() => {
-              try {
-                window.open(links.youtube!, '_blank', 'noopener,noreferrer');
-              } catch {
-                // Fallback if window.open fails
-              }
-            }}
-          >
-            {YoutubeIcon}
-          </IconButtonShell>
+          {disabled ? (
+            <div
+              className="ck-icon-btn-disabled"
+              title="YouTube (Not available for elemental planets)"
+              aria-disabled="true"
+            >
+              <span className="logo-glow-disabled">{YoutubeIcon}</span>
+            </div>
+          ) : (
+            <IconButtonShell
+              title="Watch on YouTube"
+              href={links.youtube!}
+              color="#FF0000"
+              onClickFX={playClick}
+              onHoverFX={playHover}
+              onClick={() => {
+                try {
+                  window.open(links.youtube!, '_blank', 'noopener,noreferrer');
+                } catch {
+                  // Fallback if window.open fails
+                }
+              }}
+            >
+              {YoutubeIcon}
+            </IconButtonShell>
+          )}
         </div>
       )}
       
@@ -361,6 +392,37 @@ export default function StreamingButtons({ pos, links, showControls = true }:{ p
             drop-shadow(0 0 16px var(--btn-color))
             drop-shadow(0 0 36px var(--btn-color))
             drop-shadow(0 0 64px var(--btn-color));
+        }
+        /* Disabled button styles (for elemental planets) */
+        .ck-icon-btn-disabled {
+          position: relative;
+          display: grid;
+          place-items: center;
+          width: 100%;
+          height: 100%;
+          border-radius: 16px;
+          color: #888;
+          background:
+            radial-gradient(120% 100% at 50% -10%, rgba(128,128,128,.08), rgba(128,128,128,0) 42%),
+            linear-gradient(180deg, #1a1a1a, #0d0d0d 64%);
+          border: 1px solid rgba(128,128,128,.25);
+          box-shadow:
+            0 18px 36px rgba(0,0,0,.45),
+            inset 0 2px 0 rgba(128,128,128,.15),
+            inset 0 -6px 14px rgba(0,0,0,.6);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          cursor: not-allowed;
+          opacity: 0.5;
+          pointer-events: none;
+        }
+        .logo-glow-disabled {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: #666;
+          filter: grayscale(1) brightness(0.5);
+          opacity: 0.6;
         }
       `}</style>
       <audio ref={clickRef} src="/audio/join-alien.mp3" preload="auto" playsInline />

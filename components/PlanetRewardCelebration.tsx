@@ -10,6 +10,7 @@ import { getElementalPlanetImage } from '@/lib/elementalPlanets';
 
 interface PlanetRewardCelebrationProps {
   reward: PlanetReward | null;
+  intentionOfDay?: string | null;
   onComplete: () => void;
 }
 
@@ -23,13 +24,16 @@ const ELEMENT_COLORS: Record<string, { primary: string; glow: string }> = {
   darkness: { primary: '#9C27B0', glow: 'rgba(156, 39, 176, 0.5)' },
 };
 
-export default function PlanetRewardCelebration({ reward, onComplete }: PlanetRewardCelebrationProps) {
+export default function PlanetRewardCelebration({ reward, intentionOfDay, onComplete }: PlanetRewardCelebrationProps) {
   const { hasLock, acquire, release, canAcquire } = useCelebrationLock('planet_reward');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasStartedRef = useRef(false);
   const { user } = useProfile();
   const [intentionText, setIntentionText] = useState<string | null>(null);
+
+  // Use intentionOfDay prop as priority if provided
+  const displayIntention = intentionOfDay || intentionText;
 
   // Initialize audio on client
   useEffect(() => {
@@ -325,13 +329,13 @@ export default function PlanetRewardCelebration({ reward, onComplete }: PlanetRe
           ELEMENT OF THE DAY
         </p>
 
-        {/* Intention text from today's soul_journal_entries */}
-        {intentionText && (
+        {/* Intention text - from element_of_day API or soul_journal_entries */}
+        {displayIntention && (
           <p
             className="text-white/90 text-base mt-2 relative z-10 text-center max-w-xs"
             style={{ textShadow: '0 0 15px rgba(255, 255, 255, 0.25)' }}
           >
-            {intentionText}
+            {displayIntention}
           </p>
         )}
 

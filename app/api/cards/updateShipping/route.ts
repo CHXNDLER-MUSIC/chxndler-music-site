@@ -6,6 +6,36 @@ import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
  * Step 2 of physical card purchase: Update order with shipping info
  * Called after order is created via /api/cards/purchase-physical
  */
+
+// Helper: Extract access token from Supabase auth cookies
+// Supabase uses project-prefixed cookie names like sb-{ref}-auth-token
+function extractAccessToken(cookieStore: Awaited<ReturnType<typeof cookies>>): string | null {
+  const allCookies = cookieStore.getAll();
+
+  // Look for any cookie that matches Supabase auth pattern
+  // Pattern: sb-{project-ref}-auth-token (stores JSON with access_token)
+  for (const cookie of allCookies) {
+    if (cookie.name.startsWith('sb-') && cookie.name.endsWith('-auth-token')) {
+      try {
+        const parsed = JSON.parse(cookie.value);
+        if (parsed?.access_token) {
+          return parsed.access_token;
+        }
+      } catch {
+        // Not valid JSON, skip
+      }
+    }
+  }
+
+  // Fallback: look for raw sb-access-token (legacy/simple setup)
+  const legacyToken = cookieStore.get('sb-access-token')?.value;
+  if (legacyToken) {
+    return legacyToken;
+  }
+
+  return null;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const {
@@ -71,9 +101,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user from session
+    // Get user from session using robust cookie extraction
     const cookieStore = await cookies();
-    const token = cookieStore.get('sb-access-token')?.value || '';
+    const token = extractAccessToken(cookieStore);
 
     if (!token) {
       return NextResponse.json(

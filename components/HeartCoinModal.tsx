@@ -2368,7 +2368,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
             onClick={(e) => e.stopPropagation()}
           >
             <div
-              className="relative bg-gray-900 border border-gray-600 rounded-lg p-6 max-w-2xl max-h-[90vh] overflow-auto"
+              className="relative bg-gray-900 border border-gray-600 rounded-lg p-6 max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
               style={{
                 background: 'rgba(17, 24, 39, 0.95)',
                 backdropFilter: 'blur(20px)',
@@ -2398,7 +2398,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     handleCardPurchase('digital');
                   }}
                   disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < 5}
-                  className={`w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 text-white font-bold transition-all duration-200 shadow-lg mb-4 ${
+                  className={`w-full max-w-md mx-auto py-2 px-8 rounded-lg flex items-center justify-center gap-2 text-white font-bold transition-all duration-200 shadow-lg mb-3 flex-shrink-0 ${
                     modalLoading || !profile || (profile.heartcoin_balance || 0) < 5
                       ? 'bg-gray-500 cursor-not-allowed opacity-50'
                       : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 hover:shadow-cyan-500/30'
@@ -2415,12 +2415,12 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               )}
 
               {/* Card Image */}
-              <div className="flex items-center justify-center w-full flex-1">
+              <div className="flex items-center justify-center w-full flex-1 min-h-0 overflow-hidden">
                 <div className="relative max-w-full max-h-full">
                   <div
                     className="relative w-full"
                     style={{
-                      height: '50vh',
+                      height: '45vh',
                       maxWidth: '350px'
                     }}
                   >
@@ -2529,7 +2529,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               </div>
 
               {/* Physical Purchase Button - BELOW card */}
-              <div className="mt-4">
+              <div className="mt-3 flex-shrink-0">
                 {!showEnlargedCardConfirm ? (
                   <button
                     onClick={(e) => {
@@ -2538,7 +2538,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                       setShowEnlargedCardConfirm(true);
                     }}
                     disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < 20}
-                    className={`w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 text-white font-bold transition-all duration-200 shadow-lg ${
+                    className={`w-full max-w-md mx-auto py-2 px-8 rounded-lg flex items-center justify-center gap-2 text-white font-bold transition-all duration-200 shadow-lg ${
                       modalLoading || !profile || (profile.heartcoin_balance || 0) < 20
                         ? 'bg-gray-500 cursor-not-allowed opacity-50'
                         : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 hover:shadow-amber-500/30'

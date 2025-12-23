@@ -290,8 +290,8 @@ export default function Pure3DPlanets({
     const createLightEmissionSprite = (glowColor: number, scale: number, position: [number, number, number]) => {
       // Create radial gradient texture programmatically for soft light emission
       const canvas = document.createElement('canvas');
-      canvas.width = 256;
-      canvas.height = 256;
+      canvas.width = 512; // Higher res for better quality glow
+      canvas.height = 512;
       const ctx = canvas.getContext('2d');
 
       if (ctx) {
@@ -300,16 +300,19 @@ export default function Pure3DPlanets({
         const g = (glowColor >> 8) & 255;
         const b = glowColor & 255;
 
-        // Create soft radial gradient for light emission effect
-        const gradient = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
-        gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.8)`);    // Bright center
-        gradient.addColorStop(0.2, `rgba(${r}, ${g}, ${b}, 0.5)`);  // Quick falloff
-        gradient.addColorStop(0.4, `rgba(${r}, ${g}, ${b}, 0.25)`); // Mid fade
-        gradient.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, 0.08)`); // Soft outer
+        // Create intense radial gradient for prominent light emission effect
+        const gradient = ctx.createRadialGradient(256, 256, 0, 256, 256, 256);
+        gradient.addColorStop(0, `rgba(255, 255, 255, 1)`);         // White-hot center
+        gradient.addColorStop(0.05, `rgba(${r}, ${g}, ${b}, 1)`);   // Full color
+        gradient.addColorStop(0.15, `rgba(${r}, ${g}, ${b}, 0.9)`); // Still bright
+        gradient.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, 0.6)`);  // Mid intensity
+        gradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.35)`); // Falloff
+        gradient.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, 0.15)`); // Soft outer
+        gradient.addColorStop(0.85, `rgba(${r}, ${g}, ${b}, 0.05)`);// Very soft
         gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);      // Transparent edge
 
         ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, 256, 256);
+        ctx.fillRect(0, 0, 512, 512);
       }
 
       const glowTexture = new THREE.CanvasTexture(canvas);
@@ -319,14 +322,14 @@ export default function Pure3DPlanets({
         map: glowTexture,
         transparent: true,
         depthWrite: false,
-        opacity: 0.9,
+        opacity: 1.0, // Full opacity for bright glow
         blending: THREE.AdditiveBlending,
       });
 
       const sprite = new THREE.Sprite(material);
       sprite.position.set(...position);
-      // Base scale for the glow (larger than planet for emission effect)
-      const baseGlowScale = scale * 12;
+      // Base scale for the glow (much larger than planet for dramatic emission effect)
+      const baseGlowScale = scale * 18;
       sprite.scale.set(baseGlowScale, baseGlowScale, 1);
       sprite.renderOrder = -1;
       // Store base scale for animation
@@ -636,12 +639,26 @@ export default function Pure3DPlanets({
       // Tag the planet sprite with its element id for raycasting
       (planet as any).userData = { elementId: p.id };
       try { elementSpriteMapRef.current.set(p.id, planet); } catch {}
+
       // Light emission glow sprite for element of the day (controlled by props)
       const glowSprite = createLightEmissionSprite(p.glow, 1.8, p.pos);
-      // Daily element glow is visible only if glowActive and it's the daily element and not claimed
+      // Daily element glow is visible if glowActive and it's the daily element (stays visible all day)
       const isDailyElement = glowingElement === p.id;
-      glowSprite.visible = !!(glowActive && isDailyElement && !hasClaimedElementOfDay);
+      console.log(`[GLOW] Planet ${p.id}: isDailyElement=${isDailyElement}, glowActive=${glowActive}, glowingElement=${glowingElement}`);
+      glowSprite.visible = !!(glowActive && isDailyElement);
       try { glowSpriteMapRef.current.set(p.id, glowSprite); } catch {}
+
+      // Add outer ring glow for extra dramatic effect (element of day only)
+      if (isDailyElement) {
+        const outerGlow = createLightEmissionSprite(p.glow, 2.8, p.pos); // Larger outer glow
+        outerGlow.visible = !!glowActive;
+        (outerGlow.material as THREE.SpriteMaterial).opacity = 0.4;
+        outerGlow.renderOrder = -2;
+        // Store reference for animation
+        (glowSprite as any).userData.outerGlow = outerGlow;
+        group.add(outerGlow);
+      }
+
       group.add(glowSprite);
       group.add(planet);
 
@@ -1077,14 +1094,36 @@ export default function Pure3DPlanets({
         holoHUD.texture.offset.y %= 1;
       }
 
-      // Subtle light emission pulse for the daily element (only when not claimed)
-      if (glowingElement && !hasClaimedElementOfDay) {
+      // Prominent light emission pulse for the daily element (stays glowing all day)
+      if (glowingElement) {
         const glowSprite = glowSpriteMapRef.current.get(glowingElement);
         if (glowSprite && glowSprite.material) {
-          // Subtle opacity pulse: 0.75 to 0.95 range for gentle light breathing
-          const pulseValue = 0.85 + Math.sin(elapsed * 1.5) * 0.1;
-          (glowSprite.material as THREE.SpriteMaterial).opacity = pulseValue;
-          // Scale stays constant - light emission size doesn't change, only intensity
+          // Opacity pulse: 0.7 to 1.0 range for visible light breathing
+          const opacityPulse = 0.85 + Math.sin(elapsed * 2.0) * 0.15;
+          (glowSprite.material as THREE.SpriteMaterial).opacity = opacityPulse;
+
+          // Scale pulse for dramatic "breathing" glow effect
+          const baseScale = (glowSprite as any).userData?.baseGlowScale || 32;
+          const scalePulse = baseScale * (1.0 + Math.sin(elapsed * 1.5) * 0.12);
+          glowSprite.scale.set(scalePulse, scalePulse, 1);
+
+          // Animate outer glow ring with inverse phase for layered effect
+          const outerGlow = (glowSprite as any).userData?.outerGlow as THREE.Sprite | undefined;
+          if (outerGlow && outerGlow.material) {
+            const outerOpacity = 0.3 + Math.sin(elapsed * 1.2 + Math.PI) * 0.15;
+            (outerGlow.material as THREE.SpriteMaterial).opacity = outerOpacity;
+            const outerBaseScale = (outerGlow as any).userData?.baseGlowScale || 50;
+            const outerScalePulse = outerBaseScale * (1.0 + Math.sin(elapsed * 1.0) * 0.08);
+            outerGlow.scale.set(outerScalePulse, outerScalePulse, 1);
+          }
+        }
+
+        // Also pulse the element planet sprite itself for extra emphasis
+        const elementSprite = elementSpriteMapRef.current.get(glowingElement);
+        if (elementSprite) {
+          const planetBaseScale = (elementSprite as any).userData?.baseScale || 9;
+          const planetPulse = planetBaseScale * (1.0 + Math.sin(elapsed * 2.5) * 0.05);
+          elementSprite.scale.set(planetPulse, planetPulse, 1);
         }
       }
 
@@ -1311,38 +1350,19 @@ export default function Pure3DPlanets({
     useEffect(() => {
       try {
         glowSpriteMapRef.current.forEach((sprite, id) => {
-          // Only show glow for the daily element when not claimed
-          sprite.visible = !!(glowActive && glowingElement === id && !hasClaimedElementOfDay);
+          // Show glow for the daily element (stays visible all day)
+          const shouldGlow = !!(glowActive && glowingElement === id);
+          sprite.visible = shouldGlow;
+          // Also update outer glow if present
+          const outerGlow = (sprite as any).userData?.outerGlow as THREE.Sprite | undefined;
+          if (outerGlow) {
+            outerGlow.visible = shouldGlow;
+          }
         });
+        console.log(`[GLOW] Props changed: glowingElement=${glowingElement}, glowActive=${glowActive}`);
       } catch {}
-    }, [glowingElement, glowActive, hasClaimedElementOfDay]);
+    }, [glowingElement, glowActive]);
 
-    // Smoothly fade out the halo when claimed
-    const prevClaimRef = React.useRef<boolean>(hasClaimedElementOfDay);
-    useEffect(() => {
-      const prev = prevClaimRef.current;
-      prevClaimRef.current = hasClaimedElementOfDay;
-      if (!prev && hasClaimedElementOfDay && glowingElement) {
-        const sprite = glowSpriteMapRef.current.get(glowingElement);
-        if (sprite && sprite.material) {
-          const mat = sprite.material as THREE.SpriteMaterial;
-          let startOpacity = mat.opacity ?? 0.7;
-          let start: number | null = null;
-          const duration = 250; // ms
-          const fade = (ts: number) => {
-            if (start === null) start = ts;
-            const t = Math.min(1, (ts - start) / duration);
-            mat.opacity = startOpacity * (1 - t);
-            if (t < 1) {
-              requestAnimationFrame(fade);
-            } else {
-              sprite.visible = false;
-            }
-          };
-          requestAnimationFrame(fade);
-        }
-      }
-    }, [hasClaimedElementOfDay, glowingElement]);
 
   // Camera focus effect - animate camera to focus on the element of the day
   useEffect(() => {
@@ -1704,8 +1724,10 @@ export default function Pure3DPlanets({
       return;
     }
 
-    const { slug, name, isSong, isDailyElement, element } = planetPopup;
-    console.log('[WARP] trigger from planet button - resolved', { selectedPlanet: name, resolvedSlug: slug, isSong, element, isDailyElement });
+    const { slug, name, isSong, isDailyElement: popupIsDailyElement, element } = planetPopup;
+    // Re-calculate isDailyElement based on current glowingElement prop (in case API loaded after popup was created)
+    const isDailyElement = !isSong && element !== 'center' && element === glowingElement && !hasClaimedElementOfDay;
+    console.log('[WARP] trigger from planet button - resolved', { selectedPlanet: name, resolvedSlug: slug, isSong, element, isDailyElement, popupIsDailyElement, glowingElement });
 
     // Close the popup IMMEDIATELY - before anything else
     setPlanetPopup(null);
@@ -1821,7 +1843,8 @@ export default function Pure3DPlanets({
       // The DashboardApp handles element audio playback via the planet:warp event.
 
       // For the daily element planet, wait for warp effect to finish before showing reward
-      const WARP_DURATION_MS = 2500; // Duration of warp effect before showing reward
+      // Must match DashboardApp's WARP_DURATION_MS (3000ms) + buffer for visual effect to fully complete
+      const WARP_DURATION_MS = 3500; // Duration to wait before showing reward (3000ms warp + 500ms buffer)
       if (isDailyElement && onDailyPlanetClick && element !== 'center') {
         console.log('[WARP] waiting for warp effect before claiming daily element reward for:', element);
         // Wait for warp effect to complete, then claim reward and show celebration
