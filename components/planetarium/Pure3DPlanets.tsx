@@ -250,21 +250,51 @@ export default function Pure3DPlanets({
       return sprite;
     };
 
-    const createGlowSprite = (texturePath: string, scale: number, position: [number, number, number]) => {
-      const texture = textureLoader.load(texturePath);
-      texture.colorSpace = THREE.SRGBColorSpace;
+    // Create a light emission glow sprite with radial gradient
+    const createLightEmissionSprite = (glowColor: number, scale: number, position: [number, number, number]) => {
+      // Create radial gradient texture programmatically for soft light emission
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      if (ctx) {
+        // Convert hex color to RGB
+        const r = (glowColor >> 16) & 255;
+        const g = (glowColor >> 8) & 255;
+        const b = glowColor & 255;
+
+        // Create soft radial gradient for light emission effect
+        const gradient = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+        gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.8)`);    // Bright center
+        gradient.addColorStop(0.2, `rgba(${r}, ${g}, ${b}, 0.5)`);  // Quick falloff
+        gradient.addColorStop(0.4, `rgba(${r}, ${g}, ${b}, 0.25)`); // Mid fade
+        gradient.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, 0.08)`); // Soft outer
+        gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);      // Transparent edge
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 256, 256);
+      }
+
+      const glowTexture = new THREE.CanvasTexture(canvas);
+      glowTexture.needsUpdate = true;
+
       const material = new THREE.SpriteMaterial({
-        map: texture,
+        map: glowTexture,
         transparent: true,
         depthWrite: false,
-        opacity: 0.7,
+        opacity: 0.9,
         blending: THREE.AdditiveBlending,
-        color: 0xffffff,
       });
+
       const sprite = new THREE.Sprite(material);
       sprite.position.set(...position);
-      sprite.scale.set(scale * 7.5, scale * 7.5, 1);
+      // Base scale for the glow (larger than planet for emission effect)
+      const baseGlowScale = scale * 12;
+      sprite.scale.set(baseGlowScale, baseGlowScale, 1);
       sprite.renderOrder = -1;
+      // Store base scale for animation
+      (sprite as any).userData = { baseGlowScale };
       return sprite as THREE.Sprite;
     };
 
@@ -468,8 +498,8 @@ export default function Pure3DPlanets({
       // Tag the planet sprite with its element id for raycasting
       (planet as any).userData = { elementId: p.id };
       try { elementSpriteMapRef.current.set(p.id, planet); } catch {}
-      // Optional glow sprite (controlled by props)
-      const glowSprite = createGlowSprite(p.texture, 1.8, p.pos);
+      // Light emission glow sprite for element of the day (controlled by props)
+      const glowSprite = createLightEmissionSprite(p.glow, 1.8, p.pos);
       // Daily element glow is visible only if glowActive and it's the daily element and not claimed
       const isDailyElement = glowingElement === p.id;
       glowSprite.visible = !!(glowActive && isDailyElement && !hasClaimedElementOfDay);
@@ -897,24 +927,14 @@ export default function Pure3DPlanets({
         hologramGrid.texture.offset.y = (elapsed * 0.02) % 1;
       }
 
-      // Pulse animation for the daily element glow (only when not claimed)
+      // Subtle light emission pulse for the daily element (only when not claimed)
       if (glowingElement && !hasClaimedElementOfDay) {
         const glowSprite = glowSpriteMapRef.current.get(glowingElement);
         if (glowSprite && glowSprite.material) {
-          // Stronger pulse opacity: 0.5 to 0.9 range for prominent glow
-          const pulseValue = 0.7 + Math.sin(elapsed * 2.5) * 0.2;
+          // Subtle opacity pulse: 0.75 to 0.95 range for gentle light breathing
+          const pulseValue = 0.85 + Math.sin(elapsed * 1.5) * 0.1;
           (glowSprite.material as THREE.SpriteMaterial).opacity = pulseValue;
-
-          // Larger pulse scale: 7.0 to 9.0 range for breathing effect
-          const scaleValue = 8.0 + Math.sin(elapsed * 1.8) * 1.0;
-          glowSprite.scale.set(scaleValue, scaleValue, 1);
-        }
-        // Add a more noticeable pulse to the target planet sprite
-        const planetSprite = elementSpriteMapRef.current.get(glowingElement);
-        if (planetSprite) {
-          const baseScale = (planetSprite as any).userData?.baseScale || planetSprite.scale.x || 9;
-          const s = 1 + Math.sin(elapsed * 2) * 0.05;
-          planetSprite.scale.set(baseScale * s, baseScale * s, 1);
+          // Scale stays constant - light emission size doesn't change, only intensity
         }
       }
 
@@ -1329,17 +1349,10 @@ export default function Pure3DPlanets({
     const { slug, name, isSong, isDailyElement, element } = planetPopup;
     console.log('[WARP] trigger from planet button - resolved', { selectedPlanet: name, resolvedSlug: slug, isSong, element, isDailyElement });
 
-    // Play warp sound effect and set global flag so SkyboxVideo doesn't play it again
-    try {
-      sfx.play('warp', 0.8);
-      // Set global flag to prevent double warp sound in SkyboxVideo
-      (window as any).__WARP_SOUND_PLAYED = true;
-    } catch {}
-
-    // Close the popup immediately
+    // Close the popup IMMEDIATELY - before anything else
     setPlanetPopup(null);
 
-    // Clear selection effects
+    // Clear selection effects synchronously
     if (selectedGlowSpriteRef.current) {
       selectedGlowSpriteRef.current.parent?.remove(selectedGlowSpriteRef.current);
       try {
@@ -1384,8 +1397,17 @@ export default function Pure3DPlanets({
       }
     } else {
       // For element planets (including daily element and center), trigger warp visual effect
-      // Dispatch event that DashboardApp listens for to trigger the lightspeed visual
-      console.log('[WARP] element planet warp - dispatching planet:warp event', { element: slug, isDailyElement });
+      console.log('[WARP] element planet warp', { element: slug, isDailyElement });
+
+      // Play warp sound effect for visual feedback
+      const WARP_DURATION_MS = 2500; // Duration of warp effect before showing reward
+      try {
+        sfx.play('warp', 0.7);
+      } catch (e) {
+        console.warn('[WARP] Could not play warp sound:', e);
+      }
+
+      // Dispatch event for any listeners
       try {
         window.dispatchEvent(new CustomEvent('planet:warp', {
           detail: {
@@ -1398,10 +1420,12 @@ export default function Pure3DPlanets({
         console.warn('[WARP] Could not dispatch planet:warp event:', e);
       }
 
-      // After warp visual starts, handle element-specific actions
+      // For the daily element planet, wait for warp effect to finish before showing reward
       if (isDailyElement && onDailyPlanetClick && element !== 'center') {
-        // For the daily element planet, claim the reward after warp effect
-        console.log('[WARP] claiming daily element reward for:', element);
+        console.log('[WARP] waiting for warp effect before claiming daily element reward for:', element);
+        // Wait for warp effect to complete, then claim reward and show celebration
+        await new Promise(resolve => setTimeout(resolve, WARP_DURATION_MS));
+        console.log('[WARP] warp effect complete, now claiming reward');
         try {
           await onDailyPlanetClick(element as ElementType);
         } catch (err) {
