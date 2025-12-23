@@ -16,6 +16,18 @@ import {
 import Image from 'next/image';
 import { sfx } from '@/lib/sfx';
 import { triggerWarpToSong } from '@/lib/warp';
+import { useAudio } from '@/app/providers/AudioProvider';
+import { useUIState } from '@/lib/use-ui-state';
+
+// ============================================
+// HUD HOLOGRAM GRID CONFIGURATION (Tweakable)
+// ============================================
+const HUD_GRID_OPACITY = 0.12;                    // Base opacity (0.08–0.18 range)
+const HUD_GRID_REPEAT = { x: 6, y: 4 };           // Texture repeat count
+const HUD_PLANE_SIZE = { width: 28, height: 18 }; // World units
+const HUD_PLANE_POS = { x: 0, y: 8, z: -18 };     // Position behind planets
+const HUD_PLANE_ROTATION_X = -0.12;               // Slight tilt for perspective
+const HUD_GRID_SCROLL_SPEED = { x: 0.005, y: 0.002 }; // Subtle drift animation
 
 export type ElementType = 'heart' | 'water' | 'lightning' | 'darkness';
 
@@ -68,9 +80,17 @@ export default function Pure3DPlanets({
 }: Pure3DPlanetsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isClient, setIsClient] = useState(false);
+  const { stopAllAudio } = useAudio();
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
+  // UI state (shared)
+  const {
+    setSelectedPlanetId,
+    setFocusedPlanetId,
+    setCameraMode,
+    setIsUserInteracting,
+  } = useUIState();
   // Track when the user is interacting so we don't snap back
   const isUserInteractingRef = useRef(false);
   // Keep references to song meshes by slug/id for camera focusing
@@ -100,6 +120,13 @@ export default function Pure3DPlanets({
   const focusedSongSlugRef = useRef<string | null>(null);
   // Keep reference to glow sprite for focused song
   const songGlowSpriteRef = useRef<THREE.Sprite | null>(null);
+
+  // === CAMERA FOLLOW STATE ===
+  // Camera mode: 'free' = user control, 'animating' = flying to planet, 'locked' = following planet
+  const cameraModeRef = useRef<'free' | 'animating' | 'locked'>('free');
+  // Temporary vectors for camera follow calculations (reused to avoid allocations)
+  const tmpTargetPosRef = useRef(new THREE.Vector3());
+  const tmpCamOffsetRef = useRef(new THREE.Vector3());
 
   // Track selected planet for visual effects (glow, scale, oscillate)
   const selectedPlanetRef = useRef<THREE.Object3D | null>(null);
@@ -187,6 +214,14 @@ export default function Pure3DPlanets({
     // Keep camera targets in sync with user interaction to avoid snap-back
     const onControlStart = () => {
       isUserInteractingRef.current = true;
+      try { setIsUserInteracting(true); } catch {}
+      // Release camera lock when user starts interacting (drag/wheel/touch)
+      // They must press Warp again to re-lock the camera to a planet
+      if (cameraModeRef.current === 'locked' || cameraModeRef.current === 'animating') {
+        console.log('[CAMERA] User interaction detected - releasing camera lock');
+        cameraModeRef.current = 'free';
+        try { setCameraMode('free'); } catch {}
+      }
       // While the user is moving the camera, make desired == current
       desiredCameraPosRef.current = camera.position.clone();
       desiredLookAtRef.current = controls.target.clone();
@@ -199,6 +234,7 @@ export default function Pure3DPlanets({
     };
     const onControlEnd = () => {
       isUserInteractingRef.current = false;
+      try { setIsUserInteracting(false); } catch {}
       // Persist the position the user left the camera at
       restCameraPositionRef.current = camera.position.clone();
       restCameraTargetRef.current = controls.target.clone();
@@ -432,6 +468,108 @@ export default function Pure3DPlanets({
 
     const hologramGrid = createHologramGridFloor();
     scene.add(hologramGrid.group);
+
+    // === HUD HOLOGRAM GRID PLANE (Vertical backdrop behind planets) ===
+    // Creates a subtle holographic grid that anchors the planets visually
+    const createHoloHUDPlane = () => {
+      const textureSize = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = textureSize;
+      canvas.height = textureSize;
+      const ctx = canvas.getContext('2d')!;
+
+      // Clear with transparent background
+      ctx.clearRect(0, 0, textureSize, textureSize);
+
+      // Grid line color (cyan hologram tint)
+      const lineColor = 'rgba(51, 233, 255, ';
+
+      // Draw minor grid lines (every 16px)
+      ctx.strokeStyle = lineColor + '0.15)';
+      ctx.lineWidth = 0.5;
+      for (let i = 0; i <= textureSize; i += 16) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, textureSize);
+        ctx.moveTo(0, i);
+        ctx.lineTo(textureSize, i);
+        ctx.stroke();
+      }
+
+      // Draw major grid lines (every 64px)
+      ctx.strokeStyle = lineColor + '0.35)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= textureSize; i += 64) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, textureSize);
+        ctx.moveTo(0, i);
+        ctx.lineTo(textureSize, i);
+        ctx.stroke();
+      }
+
+      // Optional: faint diagonal scanlines
+      ctx.strokeStyle = lineColor + '0.06)';
+      ctx.lineWidth = 0.5;
+      for (let i = -textureSize; i <= textureSize * 2; i += 8) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i + textureSize, textureSize);
+        ctx.stroke();
+      }
+
+      // Add radial vignette fade (edges fade out)
+      const gradient = ctx.createRadialGradient(
+        textureSize / 2, textureSize / 2, 0,
+        textureSize / 2, textureSize / 2, textureSize / 2
+      );
+      gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');      // Center: transparent
+      gradient.addColorStop(0.6, 'rgba(0, 0, 0, 0)');    // Mid: still transparent
+      gradient.addColorStop(0.85, 'rgba(0, 0, 0, 0.5)'); // Start fade
+      gradient.addColorStop(1, 'rgba(0, 0, 0, 1)');      // Edge: fully dark
+
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, textureSize, textureSize);
+      ctx.globalCompositeOperation = 'source-over';
+
+      // Create Three.js texture
+      const hudTexture = new THREE.CanvasTexture(canvas);
+      hudTexture.wrapS = THREE.RepeatWrapping;
+      hudTexture.wrapT = THREE.RepeatWrapping;
+      hudTexture.repeat.set(HUD_GRID_REPEAT.x, HUD_GRID_REPEAT.y);
+      hudTexture.magFilter = THREE.LinearFilter;
+      hudTexture.minFilter = THREE.LinearMipmapLinearFilter;
+      hudTexture.generateMipmaps = true;
+      hudTexture.needsUpdate = true;
+
+      // Create plane mesh
+      const hudGeometry = new THREE.PlaneGeometry(
+        HUD_PLANE_SIZE.width,
+        HUD_PLANE_SIZE.height,
+        1, 1
+      );
+      const hudMaterial = new THREE.MeshBasicMaterial({
+        map: hudTexture,
+        transparent: true,
+        opacity: HUD_GRID_OPACITY,
+        depthWrite: false,
+        depthTest: true,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        color: new THREE.Color(0x33e9ff),
+      });
+
+      const hudMesh = new THREE.Mesh(hudGeometry, hudMaterial);
+      hudMesh.position.set(HUD_PLANE_POS.x, HUD_PLANE_POS.y, HUD_PLANE_POS.z);
+      hudMesh.rotation.x = HUD_PLANE_ROTATION_X;
+      hudMesh.renderOrder = -50; // Behind planets but in front of floor grid
+
+      return { mesh: hudMesh, texture: hudTexture, material: hudMaterial };
+    };
+
+    const holoHUD = createHoloHUDPlane();
+    scene.add(holoHUD.mesh);
 
     // Orbiting planets evenly spaced (90 degrees apart) around the sun
     const orbitRadius = 18;
@@ -736,53 +874,56 @@ export default function Pure3DPlanets({
             isSong: false,
             targetObject: obj
           });
+          try { setSelectedPlanetId('center'); } catch {}
           return;
         }
 
         // Check if this is an element planet
-        const elementId = obj.userData?.elementId as ElementType | undefined;
-        if (elementId) {
-          // Show popup for element planet (including daily element - warp button will trigger reward claim)
-          const screenPos = projectToScreen(intersectionPoint);
-          setupSelectionEffects(obj, getElementColor(elementId), elementId);
+    const elementId = obj.userData?.elementId as ElementType | undefined;
+    if (elementId) {
+      // Show popup for element planet (including daily element - warp button will trigger reward claim)
+      const screenPos = projectToScreen(intersectionPoint);
+      setupSelectionEffects(obj, getElementColor(elementId), elementId);
 
           // Flag if this is the daily element planet for special warp handling
           const isDailyElement = elementId === glowingElement && !hasClaimedElementOfDay;
 
-          setPlanetPopup({
-            x: screenPos.x,
-            y: screenPos.y,
-            name: elementNames[elementId] || elementId,
-            element: elementId,
-            slug: elementId,
-            isSong: false,
-            targetObject: obj,
-            isDailyElement // Pass this flag so warp knows to claim reward
-          });
-          return;
-        }
+      setPlanetPopup({
+        x: screenPos.x,
+        y: screenPos.y,
+        name: elementNames[elementId] || elementId,
+        element: elementId,
+        slug: elementId,
+        isSong: false,
+        targetObject: obj,
+        isDailyElement // Pass this flag so warp knows to claim reward
+      });
+      try { setSelectedPlanetId(elementId); } catch {}
+      return;
+    }
 
         // Check for song planets
         const songSlug = obj.userData?.slug;
         const songElement = obj.userData?.element as ElementType | undefined;
-        if (songSlug) {
-          // Find the song title from the songs array
-          const song = songs.find((s: any) => (s.slug || s.id) === songSlug);
-          const songTitle = song?.title || songSlug;
+    if (songSlug) {
+      // Find the song title from the songs array
+      const song = songs.find((s: any) => (s.slug || s.id) === songSlug);
+      const songTitle = song?.title || songSlug;
 
           const screenPos = projectToScreen(intersectionPoint);
           setupSelectionEffects(obj, getElementColor(songElement || 'heart'));
-          setPlanetPopup({
-            x: screenPos.x,
-            y: screenPos.y,
-            name: songTitle,
-            element: songElement || 'heart',
-            slug: songSlug,
-            isSong: true,
-            targetObject: obj
-          });
-          return;
-        }
+      setPlanetPopup({
+        x: screenPos.x,
+        y: screenPos.y,
+        name: songTitle,
+        element: songElement || 'heart',
+        slug: songSlug,
+        isSong: true,
+        targetObject: obj
+      });
+      try { setSelectedPlanetId(String(songSlug).toLowerCase()); } catch {}
+      return;
+    }
 
         // Fallback: check orbit groups for element click
         orbitGroups.forEach((og, idx) => {
@@ -927,6 +1068,15 @@ export default function Pure3DPlanets({
         hologramGrid.texture.offset.y = (elapsed * 0.02) % 1;
       }
 
+      // Animate HUD hologram grid plane (subtle drift)
+      if (holoHUD.texture) {
+        holoHUD.texture.offset.x += HUD_GRID_SCROLL_SPEED.x * 0.016; // ~60fps delta
+        holoHUD.texture.offset.y += HUD_GRID_SCROLL_SPEED.y * 0.016;
+        // Keep offsets within 0-1 range to avoid precision issues
+        holoHUD.texture.offset.x %= 1;
+        holoHUD.texture.offset.y %= 1;
+      }
+
       // Subtle light emission pulse for the daily element (only when not claimed)
       if (glowingElement && !hasClaimedElementOfDay) {
         const glowSprite = glowSpriteMapRef.current.get(glowingElement);
@@ -996,13 +1146,46 @@ export default function Pure3DPlanets({
         }
       }
 
-      // Camera lerp for smooth easing (hover bias and cinematic focus)
+      // === CAMERA FOLLOW LOGIC ===
+      // When locked to a planet, continuously update camera to track the planet as it orbits
+      if (cameraModeRef.current === 'locked' && focusedSongSlugRef.current && !isUserInteractingRef.current) {
+        const mesh = songMeshMapRef.current.get(focusedSongSlugRef.current.toLowerCase());
+        if (mesh) {
+          // Get current world position of the focused planet
+          mesh.getWorldPosition(tmpTargetPosRef.current);
+
+          // Compute camera offset: position behind and above the planet
+          const center = new THREE.Vector3(0, 12, 0); // Sun position
+          tmpCamOffsetRef.current.copy(tmpTargetPosRef.current).sub(center).normalize();
+          const followDistance = 8;
+
+          // Update desired camera position to follow the planet
+          desiredCameraPosRef.current = tmpTargetPosRef.current.clone()
+            .add(tmpCamOffsetRef.current.clone().multiplyScalar(followDistance))
+            .add(new THREE.Vector3(0, 3, 0)); // Slightly above
+          desiredLookAtRef.current = tmpTargetPosRef.current.clone();
+        }
+      }
+
+      // Camera lerp for smooth easing (hover bias, cinematic focus, and planet follow)
       // Do NOT override user interaction; only lerp when the user is not actively moving the camera
       if (!isUserInteractingRef.current) {
-        const lerpSpeed = isCinematicRef.current ? 0.04 : 0.08; // Slower during cinematic for dramatic effect
+        // Use faster lerp when locked/animating for smoother follow
+        const lerpSpeed = cameraModeRef.current === 'locked' ? 0.06 :
+                          cameraModeRef.current === 'animating' ? 0.05 :
+                          isCinematicRef.current ? 0.04 : 0.08;
         if (desiredCameraPosRef.current && desiredLookAtRef.current) {
           camera.position.lerp(desiredCameraPosRef.current, lerpSpeed);
           controls.target.lerp(desiredLookAtRef.current, lerpSpeed);
+        }
+      }
+
+      // When animating toward a planet, auto-lock once near the target
+      if (cameraModeRef.current === 'animating' && desiredCameraPosRef.current) {
+        const dist = camera.position.distanceTo(desiredCameraPosRef.current);
+        if (dist < 0.3) {
+          cameraModeRef.current = 'locked';
+          try { setCameraMode('locked'); } catch {}
         }
       }
 
@@ -1089,6 +1272,12 @@ export default function Pure3DPlanets({
           if (mesh.material) (mesh.material as THREE.Material).dispose();
           if (mesh.geometry) mesh.geometry.dispose();
         });
+      } catch {}
+      // Dispose HUD hologram grid plane
+      try {
+        if (holoHUD.texture) holoHUD.texture.dispose();
+        if (holoHUD.material) holoHUD.material.dispose();
+        if (holoHUD.mesh.geometry) holoHUD.mesh.geometry.dispose();
       } catch {}
       // Clear maps on teardown
       try { songMeshMapRef.current.clear(); } catch {}
@@ -1300,6 +1489,10 @@ export default function Pure3DPlanets({
 
     // Set the desired camera position and look-at target
     // The main animation loop will smoothly lerp to these positions
+    // Set camera mode to animating while we fly toward the target
+    cameraModeRef.current = 'animating';
+    try { setCameraMode('animating'); } catch {}
+    try { setFocusedPlanetId(key); } catch {}
     desiredCameraPosRef.current = endCamPos;
     desiredLookAtRef.current = targetPos.clone();
 
@@ -1307,14 +1500,97 @@ export default function Pure3DPlanets({
     restCameraPositionRef.current = endCamPos.clone();
     restCameraTargetRef.current = targetPos.clone();
 
+    // === SET CAMERA MODE FOR FOCUS PLANET ON WARP ===
+    // Start in animating mode, then transition to locked after animation completes
+    cameraModeRef.current = 'animating';
+    console.log('[CAMERA] Starting warp animation to planet:', key);
+
+    // After animation time (~1.2s), switch to locked mode to follow the planet
+    const lockTimeoutId = setTimeout(() => {
+      // Only lock if still focused on the same planet
+      if (focusedSongSlugRef.current === key && cameraModeRef.current === 'animating') {
+        cameraModeRef.current = 'locked';
+        console.log('[CAMERA] Animation complete - now locked to planet:', key);
+      }
+    }, 1200);
+
     debug(`focusSongId: camera will animate to`, endCamPos.toArray(), 'looking at', targetPos.toArray());
 
-    // Cleanup glow on effect unmount or when focusSongId changes
+    // Cleanup glow and timeout on effect unmount or when focusSongId changes
     return () => {
+      clearTimeout(lockTimeoutId);
       // Only cleanup if this specific effect is being torn down
       // (not when component is just updating)
     };
   }, [focusSongId, sceneReady]);
+
+  // Imperative warp-to-planet used by warp button and dropdown via window event
+  const warpToPlanet = React.useCallback((planetId: string) => {
+    if (!sceneReady || !cameraRef.current || !controlsRef.current) return;
+    const key = String(planetId).toLowerCase();
+    let mesh = songMeshMapRef.current.get(key);
+    if (!mesh) return;
+    const targetPos = new THREE.Vector3();
+    mesh.getWorldPosition(targetPos);
+    // Add glow if not present or focus changed
+    if (sceneRef.current && focusedSongSlugRef.current !== key) {
+      if (songGlowSpriteRef.current) {
+        try {
+          songGlowSpriteRef.current.parent?.remove(songGlowSpriteRef.current);
+          const mat = songGlowSpriteRef.current.material as THREE.SpriteMaterial;
+          if (mat.map) mat.map.dispose();
+          mat.dispose();
+        } catch {}
+        songGlowSpriteRef.current = null;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = 128; canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+        g.addColorStop(0, 'rgba(0, 255, 255, 1)');
+        g.addColorStop(0.3, 'rgba(0, 255, 255, 0.6)');
+        g.addColorStop(0.6, 'rgba(0, 200, 255, 0.3)');
+        g.addColorStop(1, 'rgba(0, 150, 255, 0)');
+        ctx.fillStyle = g; ctx.fillRect(0,0,128,128);
+      }
+      const glowTexture = new THREE.CanvasTexture(canvas); glowTexture.needsUpdate = true;
+      const glowMaterial = new THREE.SpriteMaterial({ map: glowTexture, transparent: true, depthWrite: false, opacity: 0.6, blending: THREE.AdditiveBlending });
+      const glowSprite = new THREE.Sprite(glowMaterial);
+      glowSprite.scale.set(5, 5, 1);
+      const localPos = new THREE.Vector3(); mesh.getWorldPosition(localPos);
+      if (mesh.parent) {
+        const parent = mesh.parent; const inv = new THREE.Matrix4().copy(parent.matrixWorld).invert();
+        localPos.applyMatrix4(inv);
+      }
+      glowSprite.position.copy(localPos);
+      mesh.parent?.add(glowSprite);
+      songGlowSpriteRef.current = glowSprite;
+      focusedSongSlugRef.current = key;
+    }
+    // Compute camera end pos similar to focusSongId effect
+    const center = new THREE.Vector3(0, 12, 0);
+    const dir = targetPos.clone().sub(center).normalize();
+    const dist = 8; const height = 3;
+    const endCamPos = targetPos.clone().add(dir.multiplyScalar(dist)).add(new THREE.Vector3(0, height, 0));
+    cameraModeRef.current = 'animating';
+    try { setCameraMode('animating'); } catch {}
+    try { setFocusedPlanetId(key); } catch {}
+    desiredCameraPosRef.current = endCamPos;
+    desiredLookAtRef.current = targetPos.clone();
+  }, [sceneReady]);
+
+  // Listen for warp events fired from dropdown and warp helper
+  useEffect(() => {
+    const handler = (e: any) => {
+      const id = e?.detail?.id;
+      if (id) warpToPlanet(id);
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('planet:warp-to-song', handler);
+    }
+    return () => { if (typeof window !== 'undefined') window.removeEventListener('planet:warp-to-song', handler); };
+  }, [warpToPlanet]);
 
   if (!isClient) {
     // Return empty container to prevent flash of loading text
@@ -1338,6 +1614,12 @@ export default function Pure3DPlanets({
     }
     warpTriggeredRef.current = true;
     setTimeout(() => { warpTriggeredRef.current = false; }, 500);
+
+    // Play channel change sound immediately before warp effect
+    try { sfx.play('change-channel', 0.7); } catch {}
+
+    // Stop current music immediately
+    try { stopAllAudio(); } catch {}
 
     console.log('[WARP] trigger from planet button', { planetPopup: planetPopup ? { name: planetPopup.name, slug: planetPopup.slug, isSong: planetPopup.isSong } : null, hasOnSongChange: !!onSongChange, songsCount: songs.length });
     if (!planetPopup) {
@@ -1377,6 +1659,41 @@ export default function Pure3DPlanets({
     // Use the isSong flag set when the popup was created - this is more reliable
     // than checking against element names since it was determined at click time
     if (isSong) {
+      // === START CAMERA FOCUS IMMEDIATELY FOR PLANET BUTTON WARP ===
+      // This happens before onSongChange so camera starts moving right away
+      const key = String(slug).toLowerCase();
+      const mesh = songMeshMapRef.current.get(key);
+      if (mesh && cameraRef.current && controlsRef.current) {
+        // Set focused planet for camera follow
+        focusedSongSlugRef.current = key;
+        cameraModeRef.current = 'animating';
+        console.log('[CAMERA] Planet button warp - starting animation to:', key);
+
+        // Get current world position and compute camera target
+        const targetPos = new THREE.Vector3();
+        mesh.getWorldPosition(targetPos);
+        const center = new THREE.Vector3(0, 12, 0); // Sun position
+        const dir = targetPos.clone().sub(center).normalize();
+        const distance = 8;
+        const endCamPos = targetPos.clone()
+          .add(dir.clone().multiplyScalar(distance))
+          .add(new THREE.Vector3(0, 3, 0));
+
+        // Set camera targets
+        desiredCameraPosRef.current = endCamPos;
+        desiredLookAtRef.current = targetPos.clone();
+        restCameraPositionRef.current = endCamPos.clone();
+        restCameraTargetRef.current = targetPos.clone();
+
+        // Transition to locked mode after animation completes
+        setTimeout(() => {
+          if (focusedSongSlugRef.current === key && cameraModeRef.current === 'animating') {
+            cameraModeRef.current = 'locked';
+            console.log('[CAMERA] Planet button warp - now locked to:', key);
+          }
+        }, 1200);
+      }
+
       // For song planets, use the unified triggerWarpToSong helper
       // This ensures consistent behavior between dropdown and planet button
       const result = triggerWarpToSong({
@@ -1396,28 +1713,36 @@ export default function Pure3DPlanets({
         }
       }
     } else {
-      // For element planets (including daily element and center), trigger warp visual effect AND play element track
-      console.log('[WARP] element planet warp', { element: slug, isDailyElement });
+      // For element planets (including daily element and center), trigger warp visual effect AND play element audio
+      // Element audio files are separate from song tracks with specific filenames:
+      // darkness.MP3, heart.MP3, LIGHTNING.MP3, WATER.MP3, center.MP3
+      const elementAudioPaths: Record<string, string> = {
+        darkness: '/tracks/darkness.MP3',
+        heart: '/tracks/heart.MP3',
+        lightning: '/tracks/LIGHTNING.MP3',
+        water: '/tracks/WATER.MP3',
+        center: '/tracks/center.MP3'
+      };
+      const elementAudioPath = elementAudioPaths[slug.toLowerCase()] || `/tracks/${slug.toLowerCase()}.MP3`;
+      console.log('[WARP] element planet warp', { element: slug, isDailyElement, audioPath: elementAudioPath });
 
-      // Dispatch event for any listeners
+      // Dispatch event for listeners - include the audio path for DashboardApp to play
       try {
         window.dispatchEvent(new CustomEvent('planet:warp', {
           detail: {
             element: slug,
             isDailyElement,
-            isCenterPlanet: element === 'center'
+            isCenterPlanet: element === 'center',
+            audioPath: elementAudioPath // Element audio file path for direct playback
           }
         }));
       } catch (e) {
         console.warn('[WARP] Could not dispatch planet:warp event:', e);
       }
 
-      // Trigger the element track to play via onSongChange
-      // This uses the same warp flow as song planets, which plays warp SFX + loads track
-      if (onSongChange) {
-        console.log('[WARP] triggering element track playback for:', slug);
-        onSongChange(slug);
-      }
+      // NOTE: Do NOT call onSongChange for element planets!
+      // Element planets have their own audio files (darkness.MP3, etc.) that are NOT in the tracks array.
+      // The DashboardApp handles element audio playback via the planet:warp event.
 
       // For the daily element planet, wait for warp effect to finish before showing reward
       const WARP_DURATION_MS = 2500; // Duration of warp effect before showing reward

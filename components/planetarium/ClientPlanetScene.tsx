@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import Pure3DPlanets from './Pure3DPlanets';
 import { useSongs } from '@/hooks/useSongs';
 import { useFocusElementOfDay } from '@/hooks/useFocusElementOfDay';
 import { useElementOfDayClaim } from '@/hooks/useElementOfDayClaim';
+import { useAudio } from '@/app/providers/AudioProvider';
+import { playerStore } from '@/store/usePlayerStore';
 
 interface ClientPlanetSceneProps {
   zoomLevel: number;
@@ -35,6 +37,26 @@ export default function ClientPlanetScene({
   const [optimisticClaimed, setOptimisticClaimed] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
   const quality = getDeviceQuality();
+  const audioManager = useAudio();
+
+  // Subscribe to playerStore.mainId for dropdown → camera focus
+  // When a song is selected via dropdown, mainId changes and we pass it to Pure3DPlanets
+  const focusSongId = useSyncExternalStore(
+    playerStore.subscribe,
+    () => playerStore.getState().mainId,
+    () => null // Server-side fallback
+  );
+
+  // Handle song/element track changes from planet warp
+  const handleSongChange = useCallback(async (trackId: string) => {
+    console.log('[ClientPlanetScene] handleSongChange called with:', trackId);
+    try {
+      // Use selectTrack which handles stopping current music, playing warp SFX, and auto-playing
+      await audioManager.selectTrack(trackId);
+    } catch (err) {
+      console.error('[ClientPlanetScene] Failed to select track:', err);
+    }
+  }, [audioManager]);
 
   console.log('ClientPlanetScene render:', { loading, error: error?.message, songsCount: songs.length, quality });
 
@@ -112,8 +134,11 @@ export default function ClientPlanetScene({
       songsByElement={songsByElement}
       zoomLevel={zoomLevel}
       onPlanetSelect={onPlanetSelect}
+      onSongChange={handleSongChange}
       quality={quality}
       focusElement={focusElement}
+      // Focus Planet on Warp: pass mainId from playerStore so dropdown selection triggers camera focus
+      focusSongId={focusSongId}
       // Element of the Day glow and click
       glowingElement={glowingElement}
       glowActive={!!glowingElement}

@@ -14,6 +14,15 @@ type UIState = {
   // Track if user has clicked the START button
   userClickedStart: boolean;
   setUserClickedStart: (value: boolean) => void;
+  // Planetarium camera + selection state
+  selectedPlanetId: string | null;
+  setSelectedPlanetId: (id: string | null) => void;
+  focusedPlanetId: string | null;
+  setFocusedPlanetId: (id: string | null) => void;
+  cameraMode: 'free' | 'animating' | 'locked';
+  setCameraMode: (mode: 'free' | 'animating' | 'locked') => void;
+  isUserInteracting: boolean;
+  setIsUserInteracting: (v: boolean) => void;
 };
 
 // Enhanced Heartverse state with persistence and clear debugging
@@ -62,6 +71,35 @@ export const useUIState = create<UIState>()(
           });
         }
         set({ userClickedStart: value });
+      },
+      // Planetarium camera + selection state (non-persistent)
+      selectedPlanetId: null,
+      setSelectedPlanetId: (id) => {
+        if (typeof window !== 'undefined') {
+          console.log('🎯 UIState: setSelectedPlanetId', { id });
+        }
+        set({ selectedPlanetId: id });
+      },
+      focusedPlanetId: null,
+      setFocusedPlanetId: (id) => {
+        if (typeof window !== 'undefined') {
+          console.log('🎯 UIState: setFocusedPlanetId', { id });
+        }
+        set({ focusedPlanetId: id });
+      },
+      cameraMode: 'free',
+      setCameraMode: (mode) => {
+        if (typeof window !== 'undefined') {
+          console.log('🎯 UIState: setCameraMode', { mode });
+        }
+        set({ cameraMode: mode });
+      },
+      isUserInteracting: false,
+      setIsUserInteracting: (v) => {
+        if (typeof window !== 'undefined') {
+          console.log('🎯 UIState: setIsUserInteracting', { v });
+        }
+        set({ isUserInteracting: v });
       },
     }),
     {

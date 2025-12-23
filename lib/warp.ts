@@ -118,6 +118,13 @@ export function triggerWarpToSong(params: TriggerWarpParams): WarpResult {
   console.log(`[WARP] start - calling onSongChange with: ${resolvedId}`);
 
   try {
+    // Notify 3D scene to focus/warp camera toward this song's planet
+    try {
+      if (typeof window !== 'undefined' && resolvedId) {
+        window.dispatchEvent(new CustomEvent('planet:warp-to-song', { detail: { id: resolvedId, source } }));
+      }
+    } catch {}
+
     onSongChange(resolvedId);
     console.log(`[WARP] onSongChange called successfully`);
     return { success: true, resolvedId };

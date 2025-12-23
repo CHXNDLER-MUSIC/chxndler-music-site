@@ -587,6 +587,20 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      // Update currentTrack state FIRST to prevent the playerStore subscription
+      // from triggering a duplicate playTrack call
+      setState(s => ({ ...s, currentTrack: trackInfo }));
+
+      // Update playerStore.mainId to keep play/pause button in sync
+      // This ensures the player UI shows the correct track after warp
+      try {
+        const { playerStore } = await import('@/store/usePlayerStore');
+        playerStore.setState({ mainId: normId, prevMainId: playerStore.getState().mainId });
+        console.log('🎵 Updated playerStore.mainId to:', normId);
+      } catch (err) {
+        console.warn('Failed to update playerStore:', err);
+      }
+
       // 1. Stop current music immediately
       console.log('🎵 Stopping current music for track selection');
       stopAllAudioInternal();

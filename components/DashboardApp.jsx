@@ -645,6 +645,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       return;
     }
     console.log('[WARP] start - resolved slug:', slug);
+    // Notify planetarium to focus camera on destination immediately
+    try {
+      if (typeof window !== 'undefined' && slug) {
+        window.dispatchEvent(new CustomEvent('planet:warp-to-song', { detail: { id: slug, source: 'dropdown' } }));
+      }
+    } catch {}
     
     // IMMEDIATELY hide blue display and light beam when song is selected
     // Unless explicitly asked to preserve the blue display (e.g., HUD planet clicks)
@@ -1322,7 +1328,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
     // Mark that user actually clicked START
     setUserClickedStart(true);
-    
+
+    // Show Welcome Home modal immediately for logged-out users on first START click
+    if (!profile?.id && !showWelcomeHomeModal) {
+      setShowWelcomeHomeModal(true);
+    }
+
     // Set flag to identify this as a start button warp
     startButtonWarpRef.current = true;
     // Reset button reveal guard for this new warp
@@ -1577,9 +1588,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   // Listen for planet:warp event to trigger warp visual effect for element planets
   React.useEffect(() => {
     const handlePlanetWarp = (e) => {
-      const { element, isDailyElement, isCenterPlanet } = e.detail || {};
+      const { element, isDailyElement, isCenterPlanet, audioPath } = e.detail || {};
       if (process.env.NODE_ENV === "development") {
-        console.log('🌍 planet:warp event received:', { element, isDailyElement, isCenterPlanet });
+        console.log('🌍 planet:warp event received:', { element, isDailyElement, isCenterPlanet, audioPath });
       }
 
       // Set YouTube sky for element planets (WATER, CENTER, HEART, DARKNESS, LIGHTNING)
@@ -1589,8 +1600,36 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         setElementWarpYoutubeUrl('https://youtu.be/xS-a7rWzYYw');
       }
 
+      // Mark user as having selected something to suppress welcome home modal
+      // This prevents the welcome home popup from appearing after element planet warps
+      setUserSelected(true);
+      setHomeMode(false);
+
+      // Hide blue display/HUD when warping to element planet (like song selection)
+      setShowHUD(false);
+      setBeamEnabled(false);
+
+      // Stop any currently playing audio before element audio plays
+      try {
+        audioManager.stopAllAudio();
+      } catch (err) {
+        console.warn('[WARP] Error stopping audio:', err);
+      }
+
+      // Play the element audio file if provided
+      if (audioPath) {
+        console.log('🎵 Playing element audio:', audioPath);
+        // Create audio element and play directly
+        const elementAudio = new Audio(audioPath);
+        elementAudio.volume = 0.7;
+        elementAudio.play().catch(err => {
+          console.warn('[WARP] Element audio playback failed:', err);
+        });
+        // Store reference for cleanup if needed
+        window.__CHX_ELEMENT_AUDIO = elementAudio;
+      }
+
       // Trigger warp visual effect (lightspeed overlay)
-      // Don't change songs - just show the warp animation
       setWarpActive(true);
       buttonRevealTriggeredRef.current = false;
 
@@ -2292,12 +2331,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   }
                 } catch {}
               }, 500); // Small delay to ensure audio is ready
-
-              // Show welcome modal for non-logged users (synchronized with blue display reveal)
-              // Only show if not already open to prevent excessive re-renders
-              if (!profile?.id && !userSelected && !pendingTrackPlay && userClickedStart && !showWelcomeHomeModal) {
-                setShowWelcomeHomeModal(true);
-              }
+              // Welcome modal is now shown immediately on START click (not after warp)
             } catch {}
             // Ensure homepage shows all planets after warp
             

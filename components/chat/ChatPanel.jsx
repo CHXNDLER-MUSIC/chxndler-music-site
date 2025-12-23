@@ -1675,8 +1675,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                   </span>
 
                                   {/* Action buttons below element */}
-                                  {user && profile && (
-                                    <div className="mt-2 w-full flex items-center justify-center gap-2">
+                                  <div className="mt-2 w-full flex items-center justify-center gap-2">
                                       {/* Binder Button */}
                                       <button
                                         onClick={() => {
@@ -1796,7 +1795,6 @@ export default function ChatPanel({ isOpen, onClose }) {
                                         />
                                       </button>
                                     </div>
-                                  )}
                                 </div>
                               </div>
                             </div>

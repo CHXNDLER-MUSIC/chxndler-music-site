@@ -148,15 +148,20 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
       {/* Only show modal UI when open */}
       {open && (
         <>
-          {/* Hologram base glow - wider and stronger */}
-          <div 
-            className="fixed inset-0 flex items-center justify-center"
-            style={{
-              zIndex: 2147483648,
-              pointerEvents: 'none',
-              paddingTop: '200px'
-            }}
-          >
+      {/* Hologram base glow - align within profile bar/light beam bounds */}
+      <div 
+        className="fixed flex justify-center"
+        style={{
+          zIndex: 2147483648,
+          pointerEvents: 'none',
+          left: 0,
+          right: 0,
+          top: 'var(--profile-bar-boundary, 64px)',
+          bottom: 'var(--light-beam-boundary, 120px)',
+          alignItems: 'flex-start',
+          paddingTop: '200px'
+        }}
+      >
         <div
           style={{
             width: 'min(120vw, 700px)',
@@ -167,12 +172,17 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
         />
       </div>
       
-      {/* Welcome Modal - holographic popup */}
+      {/* Welcome Modal - holographic popup (top aligned to profile bar boundary) */}
       <div
-        className="fixed inset-0 flex items-center justify-center pointer-events-none"
+        className="fixed flex justify-center pointer-events-none"
         style={{
           zIndex: 2147483648,
-          marginTop: '-220px'
+          left: 0,
+          right: 0,
+          top: 'var(--profile-bar-boundary, 64px)',
+          bottom: 'var(--light-beam-boundary, 120px)',
+          alignItems: 'flex-start',
+          marginTop: '12px'
         }}
       >
         <div
