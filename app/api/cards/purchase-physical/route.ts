@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
+import { createServerClient } from '@supabase/ssr';
 
 /**
  * Step 1 of physical card purchase: Create order via RPC, deduct HeartCoins
@@ -12,9 +12,44 @@ import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
  */
 export async function POST(request: NextRequest) {
   try {
-    const { cardId } = await request.json();
+    // Create cookie-based Supabase client for authenticated requests
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              // The `setAll` method was called from a Server Component.
+              // This can be ignored if you have middleware refreshing user sessions.
+            }
+          },
+        },
+      }
+    );
 
-    console.log('[CARD PURCHASE] Physical card purchase request:', { cardId });
+    // Verify user is authenticated
+    const { data: { user }, error: userErr } = await supabase.auth.getUser();
+
+    if (userErr || !user) {
+      return NextResponse.json(
+        { success: false, error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
+
+    console.log('[CARD PURCHASE] User authenticated:', user.id);
+
+    // Parse request body
+    const { cardId } = await request.json();
 
     // Validate required fields
     if (!cardId) {
@@ -24,71 +59,46 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user from session
-    const cookieStore = await cookies();
-    const token = cookieStore.get('sb-access-token')?.value || '';
-
-    if (!token) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const supabase = createSupabaseServerClientWithJwt(token);
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    console.log('[CARD PURCHASE] User authenticated:', user.id);
+    console.log('[CARD PURCHASE] Physical card purchase request:', { cardId });
 
     // Call the RPC to handle the entire purchase atomically
     // The RPC handles: balance check, deduction, order creation, transaction logging
-    const { data: orderId, error: rpcError } = await supabase.rpc('purchase_physical_card', {
+    const { data, error } = await supabase.rpc('purchase_physical_card', {
       p_card_id: cardId
     });
 
-    if (rpcError) {
+    if (error) {
       console.error('[CARD PURCHASE] RPC error:', {
-        message: rpcError.message,
-        details: rpcError.details,
-        hint: rpcError.hint,
-        code: rpcError.code
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
       });
       return NextResponse.json(
         {
           success: false,
           error: 'Failed to create order',
-          errorCode: 'ORDER_CREATE_FAILED',
-          debug: {
-            message: rpcError.message,
-            details: rpcError.details,
-            hint: rpcError.hint,
-            code: rpcError.code
-          }
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
         },
         { status: 500 }
       );
     }
 
-    if (!orderId) {
+    if (!data) {
       console.error('[CARD PURCHASE] RPC returned no orderId');
       return NextResponse.json(
         {
           success: false,
-          error: 'Failed to create order - no order ID returned',
-          errorCode: 'ORDER_CREATE_FAILED'
+          error: 'Failed to create order - no order ID returned'
         },
         { status: 500 }
       );
     }
 
-    console.log('[CARD PURCHASE] RPC success, orderId:', orderId);
+    console.log('[CARD PURCHASE] RPC success, orderId:', data);
 
     // Get updated balance to return to client
     const { data: profile } = await supabase
@@ -102,7 +112,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      orderId: orderId,
+      orderId: data,
       newBalance: newBalance,
       message: 'Order created! Please provide shipping details.'
     });
@@ -112,8 +122,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        errorCode: 'INTERNAL_ERROR'
+        error: `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}`
       },
       { status: 500 }
     );
