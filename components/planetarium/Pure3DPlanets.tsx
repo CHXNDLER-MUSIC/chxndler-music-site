@@ -1149,10 +1149,16 @@ export default function Pure3DPlanets({
       // === CAMERA FOLLOW LOGIC ===
       // When locked to a planet, continuously update camera to track the planet as it orbits
       if (cameraModeRef.current === 'locked' && focusedSongSlugRef.current && !isUserInteractingRef.current) {
-        const mesh = songMeshMapRef.current.get(focusedSongSlugRef.current.toLowerCase());
-        if (mesh) {
+        const focusedId = focusedSongSlugRef.current.toLowerCase();
+        // Try song mesh first, then element sprite
+        let targetObject: THREE.Object3D | undefined = songMeshMapRef.current.get(focusedId);
+        if (!targetObject) {
+          targetObject = elementSpriteMapRef.current.get(focusedId);
+        }
+
+        if (targetObject) {
           // Get current world position of the focused planet
-          mesh.getWorldPosition(tmpTargetPosRef.current);
+          targetObject.getWorldPosition(tmpTargetPosRef.current);
 
           // Compute camera offset: position behind and above the planet
           const center = new THREE.Vector3(0, 12, 0); // Sun position
@@ -1525,15 +1531,27 @@ export default function Pure3DPlanets({
   }, [focusSongId, sceneReady]);
 
   // Imperative warp-to-planet used by warp button and dropdown via window event
+  // This is the SINGLE entry point for all warp-to-planet operations
   const warpToPlanet = React.useCallback((planetId: string) => {
     if (!sceneReady || !cameraRef.current || !controlsRef.current) return;
     const key = String(planetId).toLowerCase();
-    let mesh = songMeshMapRef.current.get(key);
-    if (!mesh) return;
+
+    // Try song mesh first, then element sprite
+    let targetObject: THREE.Object3D | undefined = songMeshMapRef.current.get(key);
+    const isElementPlanet = !targetObject;
+    if (!targetObject) {
+      targetObject = elementSpriteMapRef.current.get(key);
+    }
+    if (!targetObject) {
+      console.warn('[WARP] warpToPlanet: No object found for key:', key);
+      return;
+    }
+
     const targetPos = new THREE.Vector3();
-    mesh.getWorldPosition(targetPos);
-    // Add glow if not present or focus changed
-    if (sceneRef.current && focusedSongSlugRef.current !== key) {
+    targetObject.getWorldPosition(targetPos);
+
+    // Add glow if not present or focus changed (only for song planets - elements have their own glow)
+    if (sceneRef.current && focusedSongSlugRef.current !== key && !isElementPlanet) {
       if (songGlowSpriteRef.current) {
         try {
           songGlowSpriteRef.current.parent?.remove(songGlowSpriteRef.current);
@@ -1558,38 +1576,61 @@ export default function Pure3DPlanets({
       const glowMaterial = new THREE.SpriteMaterial({ map: glowTexture, transparent: true, depthWrite: false, opacity: 0.6, blending: THREE.AdditiveBlending });
       const glowSprite = new THREE.Sprite(glowMaterial);
       glowSprite.scale.set(5, 5, 1);
-      const localPos = new THREE.Vector3(); mesh.getWorldPosition(localPos);
-      if (mesh.parent) {
-        const parent = mesh.parent; const inv = new THREE.Matrix4().copy(parent.matrixWorld).invert();
+      const localPos = new THREE.Vector3(); targetObject.getWorldPosition(localPos);
+      if (targetObject.parent) {
+        const parent = targetObject.parent; const inv = new THREE.Matrix4().copy(parent.matrixWorld).invert();
         localPos.applyMatrix4(inv);
       }
       glowSprite.position.copy(localPos);
-      mesh.parent?.add(glowSprite);
+      targetObject.parent?.add(glowSprite);
       songGlowSpriteRef.current = glowSprite;
-      focusedSongSlugRef.current = key;
     }
+
+    // Update focused planet ref
+    focusedSongSlugRef.current = key;
+
     // Compute camera end pos similar to focusSongId effect
     const center = new THREE.Vector3(0, 12, 0);
     const dir = targetPos.clone().sub(center).normalize();
     const dist = 8; const height = 3;
     const endCamPos = targetPos.clone().add(dir.multiplyScalar(dist)).add(new THREE.Vector3(0, height, 0));
+
+    // Set camera mode to animating and update state
     cameraModeRef.current = 'animating';
     try { setCameraMode('animating'); } catch {}
     try { setFocusedPlanetId(key); } catch {}
+
+    // Set camera targets
     desiredCameraPosRef.current = endCamPos;
     desiredLookAtRef.current = targetPos.clone();
-  }, [sceneReady]);
+    restCameraPositionRef.current = endCamPos.clone();
+    restCameraTargetRef.current = targetPos.clone();
 
-  // Listen for warp events fired from dropdown and warp helper
+    console.log('[WARP] warpToPlanet:', key, isElementPlanet ? '(element)' : '(song)');
+  }, [sceneReady, setCameraMode, setFocusedPlanetId]);
+
+  // Listen for warp events fired from dropdown, warp helper, and element warps
   useEffect(() => {
-    const handler = (e: any) => {
+    // Handler for song warps (planet:warp-to-song)
+    const songHandler = (e: any) => {
       const id = e?.detail?.id;
       if (id) warpToPlanet(id);
     };
+    // Handler for element warps (planet:warp)
+    const elementHandler = (e: any) => {
+      const element = e?.detail?.element;
+      if (element) warpToPlanet(element);
+    };
     if (typeof window !== 'undefined') {
-      window.addEventListener('planet:warp-to-song', handler);
+      window.addEventListener('planet:warp-to-song', songHandler);
+      window.addEventListener('planet:warp', elementHandler);
     }
-    return () => { if (typeof window !== 'undefined') window.removeEventListener('planet:warp-to-song', handler); };
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('planet:warp-to-song', songHandler);
+        window.removeEventListener('planet:warp', elementHandler);
+      }
+    };
   }, [warpToPlanet]);
 
   if (!isClient) {

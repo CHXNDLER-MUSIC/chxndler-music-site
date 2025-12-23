@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
-import { getLocalDateString } from "@/utils/dateHelpers";
 import { useAuth } from "@/app/providers/AuthProvider";
 
 export type ElementOfDay = "heart" | "water" | "lightning" | "darkness" | null;
@@ -41,41 +40,46 @@ export function useElementOfDayClaim(): ElementOfDayClaimState {
   const [intention, setIntention] = useState<string | null>(null);
   const [isClaimed, setIsClaimed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Store the server date to ensure consistency
+  const [serverDate, setServerDate] = useState<string | null>(null);
 
-  const todayKey = useMemo(() => `${user?.id || "anon"}:${getLocalDateString()}`, [user?.id]);
+  // Key based on user and server date (if available)
+  const todayKey = useMemo(() => `${user?.id || "anon"}:${serverDate || "init"}`, [user?.id, serverDate]);
   const lastFetchRef = useRef<string | null>(null);
 
   const fetchToday = useCallback(async () => {
-    const today = getLocalDateString();
     setLoading(true);
     setError(null);
     try {
-      // Fetch today's element row
-      const { data: eod, error: eodErr } = await supabaseBrowser
-        .from("element_of_day")
-        .select("day, element, relic_key, intention_of_day")
-        .eq("day", today)
-        .maybeSingle();
+      // Fetch today's element from server API (uses server time in America/New_York)
+      const res = await fetch("/api/element-of-day");
+      if (!res.ok) {
+        throw new Error(`API error: ${res.status}`);
+      }
+      const data = await res.json();
 
-      if (eodErr) {
-        console.warn("useElementOfDayClaim: element_of_day fetch error:", eodErr.message);
+      if (data.error) {
+        console.warn("useElementOfDayClaim: API error:", data.error);
         setElement(null);
         setRewardKey(null);
         setIntention(null);
+        setServerDate(null);
       } else {
-        const normalized = normalizeElement(eod?.element);
+        const normalized = normalizeElement(data.element);
         setElement(normalized);
-        setRewardKey(eod?.relic_key ?? null);
-        setIntention(eod?.intention_of_day ?? null);
+        setRewardKey(data.relicKey ?? null);
+        setIntention(data.intentionOfDay ?? null);
+        setServerDate(data.serverDate);
       }
 
-      // Check claim status for this user and day
-      if (user?.id) {
+      // Check claim status for this user using server date
+      const dateToCheck = data.serverDate;
+      if (user?.id && dateToCheck) {
         const { count, error: claimErr } = await supabaseBrowser
           .from("user_element_claims")
           .select("*", { count: "exact", head: true })
           .eq("user_id", user.id)
-          .eq("day", today);
+          .eq("day", dateToCheck);
 
         if (claimErr) {
           console.warn("useElementOfDayClaim: user_element_claims fetch error:", claimErr.message);
@@ -99,10 +103,18 @@ export function useElementOfDayClaim(): ElementOfDayClaimState {
   }, [user?.id]);
 
   useEffect(() => {
-    if (lastFetchRef.current === todayKey) return;
-    lastFetchRef.current = todayKey;
-    fetchToday();
-  }, [todayKey, fetchToday]);
+    // Initial fetch
+    if (lastFetchRef.current === null) {
+      lastFetchRef.current = "init";
+      fetchToday();
+      return;
+    }
+    // Re-fetch when user changes (but only if we already fetched once)
+    if (lastFetchRef.current !== todayKey && serverDate) {
+      lastFetchRef.current = todayKey;
+      fetchToday();
+    }
+  }, [todayKey, fetchToday, serverDate]);
 
   const claim = useCallback(async (): Promise<ClaimRPCResponse | null> => {
     setError(null);
@@ -114,7 +126,7 @@ export function useElementOfDayClaim(): ElementOfDayClaimState {
 
       if (rpcErr) {
         console.error("useElementOfDayClaim: claim RPC error", rpcErr);
-        setError("Couldn’t claim reward");
+        setError("Couldn't claim reward");
         return null;
       }
 
@@ -133,7 +145,7 @@ export function useElementOfDayClaim(): ElementOfDayClaimState {
       return resp ?? null;
     } catch (err) {
       console.error("useElementOfDayClaim: claim error", err);
-      setError("Couldn’t claim reward");
+      setError("Couldn't claim reward");
       return null;
     }
   }, []);

@@ -5,7 +5,6 @@ import { ElementType, PlanetReward } from '@/lib/usePlanetRewards';
 import { useAuth } from '@/app/providers/AuthProvider';
 import PlanetRewardCelebration from './PlanetRewardCelebration';
 import { supabaseBrowser } from '@/lib/supabase-browser';
-import { getLocalDateString } from '@/utils/dateHelpers';
 import { triggerHeartCoinCelebration } from '@/utils/heartcoinCelebration';
 import { logHeartcoinTransaction } from '@/utils/heartcoins';
 
@@ -53,6 +52,35 @@ export function PlanetRewardsProvider({
   // Element of the day - only this element's planet can give rewards
   const [elementOfDay, setElementOfDay] = useState<ElementType | null>(null);
   const [claimedToday, setClaimedToday] = useState<boolean>(false);
+  // Store server date for consistency with backend
+  const [serverDate, setServerDate] = useState<string | null>(null);
+
+  // Function to fetch today's element from server API
+  const fetchTodayElement = useCallback(async () => {
+    try {
+      // Fetch from server API to get server-time based "today"
+      const res = await fetch('/api/element-of-day');
+      if (!res.ok) {
+        console.warn('Error fetching element-of-day API:', res.status);
+        setElementOfDay(null);
+        return null;
+      }
+      const data = await res.json();
+      if (data.error) {
+        console.warn('Error in element-of-day API:', data.error);
+        setElementOfDay(null);
+        return null;
+      }
+      const normalized = normalizeElement(data.element);
+      setElementOfDay(normalized);
+      setServerDate(data.serverDate);
+      return data.serverDate;
+    } catch (err) {
+      console.error('Failed to fetch element-of-day:', err);
+      setElementOfDay(null);
+      return null;
+    }
+  }, []);
 
   // Fetch today's element and whether current user has claimed
   const fetchRunRef = useRef<string | null>(null);
@@ -60,32 +88,18 @@ export function PlanetRewardsProvider({
     let cancelled = false;
     async function fetchTodayAndClaim() {
       try {
-        const today = getLocalDateString();
-
-        // 1) Fetch the element of the day from source of truth
-        const { data: eod, error: eodErr } = await supabaseBrowser
-          .from('element_of_day')
-          .select('element')
-          .eq('day', today)
-          .maybeSingle();
+        // 1) Fetch the element of the day from server API (uses server time)
+        const dateToCheck = await fetchTodayElement();
 
         if (cancelled) return;
 
-        if (eodErr) {
-          console.warn('Error fetching element_of_day:', eodErr.message);
-          setElementOfDay(null);
-        } else {
-          const normalized = normalizeElement(eod?.element);
-          setElementOfDay(normalized);
-        }
-
         // 2) Check if this user has already claimed today
-        if (user?.id) {
+        if (user?.id && dateToCheck) {
           const { count, error: claimErr } = await supabaseBrowser
             .from('user_element_claims')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', user.id)
-            .eq('day', today);
+            .eq('day', dateToCheck);
 
           if (cancelled) return;
 
@@ -108,12 +122,18 @@ export function PlanetRewardsProvider({
       }
     }
 
-    const todayKey = `${user?.id || 'anon'}:${getLocalDateString()}`;
-    if (fetchRunRef.current === todayKey) return () => { cancelled = true; };
-    fetchRunRef.current = todayKey;
-    fetchTodayAndClaim();
+    // Use a simple key for initial fetch detection
+    const todayKey = `${user?.id || 'anon'}:init`;
+    if (fetchRunRef.current === null) {
+      fetchRunRef.current = todayKey;
+      fetchTodayAndClaim();
+    } else if (user?.id && !fetchRunRef.current.startsWith(user.id)) {
+      // User changed, re-fetch
+      fetchRunRef.current = todayKey;
+      fetchTodayAndClaim();
+    }
     return () => { cancelled = true; };
-  }, [user?.id]);
+  }, [user?.id, fetchTodayElement]);
 
   const claimPlanetReward = useCallback(async (element: ElementType): Promise<PlanetReward | null> => {
     // Check authentication first
@@ -142,11 +162,28 @@ export function PlanetRewardsProvider({
           setIsClaimingReward(false);
           setCooldownActive(true);
           cooldownTimeoutRef.current = setTimeout(() => setCooldownActive(false), 1200);
+          // Show friendly message
+          try {
+            window.dispatchEvent(new CustomEvent('toast:show', {
+              detail: { message: 'Already claimed today.', type: 'info' }
+            }));
+          } catch {}
           return null;
         }
         if (msg.includes('wrong element')) {
-          setError('Wrong element for today');
+          // Element of the Day just changed - auto-refetch and show friendly message
+          setError('Element of the Day just changed. Refreshing...');
           setIsClaimingReward(false);
+          try {
+            window.dispatchEvent(new CustomEvent('toast:show', {
+              detail: { message: 'Element of the Day just changed. Refreshing...', type: 'info' }
+            }));
+          } catch {}
+          // Auto-refetch to get the new element
+          setTimeout(async () => {
+            await fetchTodayElement();
+            setError(null);
+          }, 500);
           return null;
         }
         setError('Could not claim reward, try again');

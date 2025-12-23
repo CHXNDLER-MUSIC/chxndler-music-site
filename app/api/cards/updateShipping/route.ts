@@ -126,17 +126,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update order with shipping info
+    // Update order with shipping info (use shipping_ prefixed columns to match DB schema)
     const { error: updateError } = await supabase
       .from('orders')
       .update({
-        full_name: full_name.trim(),
-        address_line1: address_line1.trim(),
-        address_line2: address_line2?.trim() || null,
-        city: city.trim(),
-        state: state.trim(),
-        zip: zip.trim(),
-        country: country.trim(),
+        shipping_full_name: full_name.trim(),
+        shipping_address_line1: address_line1.trim(),
+        shipping_address_line2: address_line2?.trim() || null,
+        shipping_city: city.trim(),
+        shipping_state: state.trim(),
+        shipping_zip: zip.trim(),
+        shipping_country: country.trim(),
         shipping_submitted: true,
         status: 'shipping_submitted'
       })
