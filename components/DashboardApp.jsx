@@ -2630,6 +2630,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         closeAllSignal={uiCloseSignal}
         suspendUI={isWarping}
         hideStartButton={false}
+        isElementPlanet={!!curTrack?.isElement}
         onPowerToggle={() => { 
           // Manual power toggle should not start new welcome audio, but don't interrupt if it's already playing
           if (!welcomeOnStartRef.current) {

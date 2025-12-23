@@ -33,6 +33,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
   closeAllSignal = 0,
   suspendUI = false,
   hideStartButton = false,
+  isElementPlanet = false,
 }: {
   onLaunch: () => void;
   POS: any;
@@ -51,6 +52,8 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
   suspendUI?: boolean;
   // Hide the start button (when rendering it externally)
   hideStartButton?: boolean;
+  // True when viewing an element planet (DARKNESS, LIGHTNING, WATER, HEART)
+  isElementPlanet?: boolean;
 }) {
   const pauseRef = useRef<HTMLAudioElement|null>(null);
   const hoverRef = useRef<HTMLAudioElement|null>(null);
@@ -699,6 +702,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
                 LINKS.spotify ? { id: 'sp', label: 'Spotify', href: LINKS.spotify, icon: '/elements/spotify.webp', color: '#1DB954' } : null,
                 LINKS.apple ? { id: 'am', label: 'Apple Music', href: LINKS.apple, icon: '/elements/apple.webp', color: '#FC54AF' } : null,
               ].filter(Boolean) as any}
+                isElementPlanet={isElementPlanet}
                 radius={90}
                 hubColor={activeBeamColor === 'yellow' ? "#F2EF1D" : "#F2EF1D"}
                 isActive={activeBeamColor === 'yellow'}

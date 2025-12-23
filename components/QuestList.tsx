@@ -29,6 +29,7 @@ type QuestStatus = {
 };
 
 // Load quest status from localStorage on mount
+// Uses server date for Element of Day quest to match backend
 function useQuestStatus() {
   const [questStatus, setQuestStatus] = useState<QuestStatus>({
     elementOfDay: false,
@@ -39,41 +40,96 @@ function useQuestStatus() {
   });
   const [todaysElement, setTodaysElement] = useState({ name: "dreamer", color: "pink" });
   const [todaysQuestion, setTodaysQuestion] = useState(getTodaysQuestion());
-  
+  const [serverDateKey, setServerDateKey] = useState<string | null>(null);
+
   useEffect(() => {
-    const today = new Date().toDateString();
-    const elementDone = localStorage.getItem(`quest_element_${today}`) === 'true';
-    const journalDone = localStorage.getItem(`quest_journal_${today}`) === 'true' || hasAnsweredToday();
-    const inviteDone = localStorage.getItem(`quest_invite_${today}`) === 'true';
-    const inviteConfirmDone = localStorage.getItem(`quest_invite_confirm_${today}`) === 'true';
-    const liveshowDone = localStorage.getItem(`quest_liveshow_${today}`) === 'true';
-    
-    setQuestStatus({
-      elementOfDay: elementDone,
-      journalEntry: journalDone,
-      inviteFriend: inviteDone,
-      inviteFriendConfirm: inviteConfirmDone,
-      liveShow: liveshowDone
-    });
-    
-    // Determine today's element (simple rotation based on day of year)
-    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
-    const elements = [
-      { name: "dreamer", color: "pink" },
-      { name: "lover", color: "red" },
-      { name: "wanderer", color: "blue" },
-      { name: "binder", color: "green" },
-      { name: "star", color: "yellow" },
-      { name: "heart", color: "pink" },
-      { name: "water", color: "blue" },
-      { name: "lightning", color: "purple" },
-      { name: "darkness", color: "gray" },
-      { name: "power", color: "orange" }
-    ];
-    setTodaysElement(elements[dayOfYear % elements.length]);
+    const clientToday = new Date().toDateString();
+
+    // Fetch server date for Element of Day consistency
+    fetch('/api/element-of-day')
+      .then(res => res.json())
+      .then(data => {
+        // Use server date for element quest, client date for others
+        const elementDateKey = data.serverDate || new Date().toISOString().split('T')[0];
+        setServerDateKey(elementDateKey);
+
+        // Check element quest with server date
+        const elementDone = localStorage.getItem(`quest_element_${elementDateKey}`) === 'true';
+
+        // Other quests use client date (they don't have server-time dependencies)
+        const journalDone = localStorage.getItem(`quest_journal_${clientToday}`) === 'true' || hasAnsweredToday();
+        const inviteDone = localStorage.getItem(`quest_invite_${clientToday}`) === 'true';
+        const inviteConfirmDone = localStorage.getItem(`quest_invite_confirm_${clientToday}`) === 'true';
+        const liveshowDone = localStorage.getItem(`quest_liveshow_${clientToday}`) === 'true';
+
+        setQuestStatus({
+          elementOfDay: elementDone,
+          journalEntry: journalDone,
+          inviteFriend: inviteDone,
+          inviteFriendConfirm: inviteConfirmDone,
+          liveShow: liveshowDone
+        });
+
+        // Set today's element from server response
+        if (data.element) {
+          const elementColors: Record<string, string> = {
+            heart: "pink",
+            water: "blue",
+            lightning: "purple",
+            darkness: "gray"
+          };
+          setTodaysElement({
+            name: data.element,
+            color: elementColors[data.element] || "pink"
+          });
+        }
+      })
+      .catch(err => {
+        console.warn('Failed to fetch element-of-day, using client date:', err);
+        // Fallback to client-only behavior
+        const elementDone = localStorage.getItem(`quest_element_${clientToday}`) === 'true';
+        const journalDone = localStorage.getItem(`quest_journal_${clientToday}`) === 'true' || hasAnsweredToday();
+        const inviteDone = localStorage.getItem(`quest_invite_${clientToday}`) === 'true';
+        const inviteConfirmDone = localStorage.getItem(`quest_invite_confirm_${clientToday}`) === 'true';
+        const liveshowDone = localStorage.getItem(`quest_liveshow_${clientToday}`) === 'true';
+
+        setQuestStatus({
+          elementOfDay: elementDone,
+          journalEntry: journalDone,
+          inviteFriend: inviteDone,
+          inviteFriendConfirm: inviteConfirmDone,
+          liveShow: liveshowDone
+        });
+
+        // Fallback element rotation based on day of year
+        const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+        const elements = [
+          { name: "heart", color: "pink" },
+          { name: "water", color: "blue" },
+          { name: "lightning", color: "purple" },
+          { name: "darkness", color: "gray" }
+        ];
+        setTodaysElement(elements[dayOfYear % elements.length]);
+      });
+
+    // Listen for element-of-day-changed event (midnight rollover)
+    const handleElementChanged = (e: CustomEvent) => {
+      const newServerDate = e.detail?.serverDate;
+      if (newServerDate) {
+        setServerDateKey(newServerDate);
+        // Re-check element quest status with new date
+        const elementDone = localStorage.getItem(`quest_element_${newServerDate}`) === 'true';
+        setQuestStatus(prev => ({ ...prev, elementOfDay: elementDone }));
+      }
+    };
+
+    window.addEventListener('element-of-day-changed', handleElementChanged as EventListener);
+    return () => {
+      window.removeEventListener('element-of-day-changed', handleElementChanged as EventListener);
+    };
   }, []);
-  
-  return { questStatus, setQuestStatus, todaysElement, todaysQuestion };
+
+  return { questStatus, setQuestStatus, todaysElement, todaysQuestion, serverDateKey };
 }
 
 export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCloseHeartCoinPopup }: Props) {
@@ -91,7 +147,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   const [bonusQuests, setBonusQuests] = useState<any[]>([]);
   const [bonusQuestsLoading, setBonusQuestsLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const { questStatus, setQuestStatus, todaysElement, todaysQuestion } = useQuestStatus();
+  const { questStatus, setQuestStatus, todaysElement, todaysQuestion, serverDateKey } = useQuestStatus();
   const { refreshProfile } = useProfile();
 
   // Load bonus quests from server
@@ -231,8 +287,9 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         metadata: {}
       });
       setQuestStatus(prev => ({ ...prev, elementOfDay: true }));
-      const today = new Date().toDateString();
-      localStorage.setItem(`quest_element_${today}`, 'true');
+      // Use server date for element quest localStorage key
+      const dateKey = serverDateKey || new Date().toISOString().split('T')[0];
+      localStorage.setItem(`quest_element_${dateKey}`, 'true');
       showCelebration(`✨ Element touched! Your ${todaysElement.name} energy is awakened! +1 HeartCoin earned.`);
       triggerHeartCoinCelebration(1);
       try { await refreshProfile(); } catch {}

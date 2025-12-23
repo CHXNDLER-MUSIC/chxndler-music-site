@@ -17,6 +17,8 @@ interface PlanetRewardsContextValue {
   isAuthenticated: boolean;
   elementOfDay: ElementType | null;
   claimedToday: boolean;
+  isSyncing: boolean; // True when element of day is being refetched (e.g., after midnight rollover)
+  refetchElementOfDay: () => Promise<void>; // Force refetch element of day from server
 }
 
 const PlanetRewardsContext = createContext<PlanetRewardsContextValue | null>(null);
@@ -26,6 +28,8 @@ interface PlanetRewardsProviderProps {
   onRelicClaimed?: () => void; // Callback to refresh relics
   onBoostClaimed?: () => void; // Callback to refresh boosts
   onSignInRequired?: () => void; // Callback when sign in is needed
+  onClaimsRefetch?: () => void; // Callback to refresh user_element_claims
+  onQuestsRefetch?: () => void; // Callback to refresh daily quests
 }
 
 function normalizeElement(s: string | null | undefined): ElementType | null {
@@ -39,6 +43,8 @@ export function PlanetRewardsProvider({
   onRelicClaimed,
   onBoostClaimed,
   onSignInRequired,
+  onClaimsRefetch,
+  onQuestsRefetch,
 }: PlanetRewardsProviderProps) {
   const { user } = useAuth();
   // Local state fully governs Element-of-Day flow and UI
@@ -54,30 +60,37 @@ export function PlanetRewardsProvider({
   const [claimedToday, setClaimedToday] = useState<boolean>(false);
   // Store server date for consistency with backend
   const [serverDate, setServerDate] = useState<string | null>(null);
+  // True when element is being synced (refetched after midnight rollover or error)
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
   // Function to fetch today's element from server API
   const fetchTodayElement = useCallback(async () => {
+    setIsSyncing(true);
     try {
       // Fetch from server API to get server-time based "today"
       const res = await fetch('/api/element-of-day');
       if (!res.ok) {
         console.warn('Error fetching element-of-day API:', res.status);
         setElementOfDay(null);
+        setIsSyncing(false);
         return null;
       }
       const data = await res.json();
       if (data.error) {
         console.warn('Error in element-of-day API:', data.error);
         setElementOfDay(null);
+        setIsSyncing(false);
         return null;
       }
       const normalized = normalizeElement(data.element);
       setElementOfDay(normalized);
       setServerDate(data.serverDate);
+      setIsSyncing(false);
       return data.serverDate;
     } catch (err) {
       console.error('Failed to fetch element-of-day:', err);
       setElementOfDay(null);
+      setIsSyncing(false);
       return null;
     }
   }, []);
@@ -135,6 +148,19 @@ export function PlanetRewardsProvider({
     return () => { cancelled = true; };
   }, [user?.id, fetchTodayElement]);
 
+  // Full refetch: element + claim status - exposed for manual refresh (e.g., on app resume)
+  const refetchElementOfDay = useCallback(async () => {
+    const newDate = await fetchTodayElement();
+    if (user?.id && newDate) {
+      const { count } = await supabaseBrowser
+        .from('user_element_claims')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('day', newDate);
+      setClaimedToday((count ?? 0) > 0);
+    }
+  }, [user?.id, fetchTodayElement]);
+
   const claimPlanetReward = useCallback(async (element: ElementType): Promise<PlanetReward | null> => {
     // Check authentication first
     if (!user) {
@@ -162,6 +188,20 @@ export function PlanetRewardsProvider({
           setIsClaimingReward(false);
           setCooldownActive(true);
           cooldownTimeoutRef.current = setTimeout(() => setCooldownActive(false), 1200);
+
+          // Ensure quest is marked completed in localStorage (idempotent)
+          const questDateKey = serverDate || new Date().toISOString().split('T')[0];
+          try {
+            localStorage.setItem(`quest_element_${questDateKey}`, 'true');
+          } catch {}
+
+          // Dispatch event so QuestList updates (idempotent)
+          try {
+            window.dispatchEvent(new CustomEvent('element-of-day-claimed', {
+              detail: { element, source: 'already-claimed' }
+            }));
+          } catch {}
+
           // Show friendly message
           try {
             window.dispatchEvent(new CustomEvent('toast:show', {
@@ -172,17 +212,32 @@ export function PlanetRewardsProvider({
         }
         if (msg.includes('wrong element')) {
           // Element of the Day just changed - auto-refetch and show friendly message
-          setError('Element of the Day just changed. Refreshing...');
+          setError('The Element of the Day just changed. Syncing…');
           setIsClaimingReward(false);
           try {
             window.dispatchEvent(new CustomEvent('toast:show', {
-              detail: { message: 'Element of the Day just changed. Refreshing...', type: 'info' }
+              detail: { message: 'The Element of the Day just changed. Syncing…', type: 'info' }
             }));
           } catch {}
-          // Auto-refetch to get the new element
+          // Auto-refetch to get the new element and claim status
           setTimeout(async () => {
-            await fetchTodayElement();
+            const newDate = await fetchTodayElement();
+            // Also re-check claim status for the new date
+            if (user?.id && newDate) {
+              const { count } = await supabaseBrowser
+                .from('user_element_claims')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id)
+                .eq('day', newDate);
+              setClaimedToday((count ?? 0) > 0);
+            }
             setError(null);
+            // Notify UI that element has changed
+            try {
+              window.dispatchEvent(new CustomEvent('element-of-day-changed', {
+                detail: { serverDate: newDate }
+              }));
+            } catch {}
           }, 500);
           return null;
         }
@@ -225,9 +280,10 @@ export function PlanetRewardsProvider({
       triggerHeartCoinCelebration(1);
 
       // Update localStorage for quest tracking (syncs with QuestList)
-      const today = new Date().toDateString();
+      // Use serverDate to ensure consistency with backend
+      const questDateKey = serverDate || new Date().toISOString().split('T')[0];
       try {
-        localStorage.setItem(`quest_element_${today}`, 'true');
+        localStorage.setItem(`quest_element_${questDateKey}`, 'true');
       } catch {}
 
       // Dispatch event so QuestList can update its state immediately
@@ -241,6 +297,8 @@ export function PlanetRewardsProvider({
       setTimeout(() => {
         try { onBoostClaimed?.(); } catch {}
         try { onRelicClaimed?.(); } catch {}
+        try { onClaimsRefetch?.(); } catch {}
+        try { onQuestsRefetch?.(); } catch {}
       }, 100);
 
       return reward;
@@ -250,7 +308,7 @@ export function PlanetRewardsProvider({
       setError('Could not claim reward, try again');
       return null;
     }
-  }, [user, isClaimingReward, cooldownActive, onBoostClaimed, onRelicClaimed, onSignInRequired]);
+  }, [user, isClaimingReward, cooldownActive, serverDate, onBoostClaimed, onRelicClaimed, onSignInRequired, onClaimsRefetch, onQuestsRefetch, fetchTodayElement]);
 
   const handleCelebrationComplete = useCallback(() => {
     setLastReward(null);
@@ -269,6 +327,8 @@ export function PlanetRewardsProvider({
         isAuthenticated,
         elementOfDay,
         claimedToday,
+        isSyncing,
+        refetchElementOfDay,
       }}
     >
       {children}
@@ -294,6 +354,8 @@ export function usePlanetRewardsContext() {
       isAuthenticated: false,
       elementOfDay: null as ElementType | null,
       claimedToday: false,
+      isSyncing: false,
+      refetchElementOfDay: async () => {},
     };
   }
   return context;

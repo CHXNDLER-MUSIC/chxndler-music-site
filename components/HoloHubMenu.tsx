@@ -224,6 +224,7 @@ export default function HoloHubMenu({
   anchorOffsetPx,
   closeSignal = 0,
   suspend = false,
+  isElementPlanet = false,
 }: {
   items?: HubItem[];
   radius?: number;
@@ -241,6 +242,8 @@ export default function HoloHubMenu({
   closeSignal?: number;
   // Temporarily hide panel contents without changing open state
   suspend?: boolean;
+  // True when viewing an element planet (DARKNESS, LIGHTNING, WATER, HEART) - disables streaming buttons
+  isElementPlanet?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [inlineUrl, setInlineUrl] = useState<string | null>(null);
@@ -648,21 +651,26 @@ export default function HoloHubMenu({
           const isFirst = i === 0;
           const isLast = i === entries.length - 1;
           const size = itemSize;
+          // Streaming buttons (Spotify, Apple Music, YouTube) are disabled on element planets
+          const isStreamingButton = ['sp', 'am', 'yt'].includes(it.id);
+          const isDisabled = isElementPlanet && isStreamingButton;
           return (
             <button
               key={it.id}
               ref={isFirst ? firstItemRef : isLast ? lastItemRef : undefined}
               type="button"
-              className="item"
+              className={`item${isDisabled ? ' item-disabled' : ''}`}
               role="menuitem"
               data-no-track
-              tabIndex={open ? 0 : -1}
+              tabIndex={open && !isDisabled ? 0 : -1}
               data-id={it.id}
+              disabled={isDisabled}
+              aria-disabled={isDisabled}
               style={{
                 left: '50%',
                 top: '50%',
                 transform: `translate(${atRest ? pos.x : 0}px, ${atRest ? pos.y : 0}px) translate(-50%, -50%) scale(${open ? 1 : 0.85})`,
-                opacity: open ? 1 : 0,
+                opacity: isDisabled ? 0.35 : (open ? 1 : 0),
                 // use CSS var for tint so hover styles can reference it
                 ['--tint' as any]: tint,
                 // Set proper translation values for hover states
@@ -671,11 +679,17 @@ export default function HoloHubMenu({
                 borderColor: `${tint}AA`,
                 width: `${size}px`,
                 height: `${size}px`,
+                pointerEvents: isDisabled ? 'none' : 'auto',
+                cursor: isDisabled ? 'not-allowed' : 'pointer',
+                filter: isDisabled ? 'grayscale(0.6) brightness(0.7)' : 'none',
               }}
-              onClick={(e) => { e.stopPropagation(); try { sfx.play('join', 0.9); } catch {}; runItem(it, e as unknown as MouseEvent); }}
+              onClick={(e) => {
+                if (isDisabled) { e.stopPropagation(); return; }
+                e.stopPropagation(); try { sfx.play('join', 0.9); } catch {}; runItem(it, e as unknown as MouseEvent);
+              }}
               onMouseDown={(e) => { e.stopPropagation(); }}
-              onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-              title={it.label}
+              onMouseEnter={() => { if (!isDisabled) { try { sfx.play('hover', 0.35); } catch {} } }}
+              title={isDisabled ? `${it.label} - Not available for element planets` : it.label}
             >
               <span className="icon" aria-hidden>
                 {typeof it.icon === "string" ? (
@@ -684,7 +698,7 @@ export default function HoloHubMenu({
                   it.icon || <span className="dot" />
                 )}
               </span>
-              <span className="sr-only">{it.label}</span>
+              <span className="sr-only">{it.label}{isDisabled ? ' (disabled)' : ''}</span>
             </button>
           );
         })}
@@ -721,6 +735,9 @@ export default function HoloHubMenu({
                 const isFirst = i === 0;
                 const isLast = i === entries.length - 1;
                 const size = itemSize;
+                // Streaming buttons (Spotify, Apple Music, YouTube) are disabled on element planets
+                const isStreamingButton = ['sp', 'am', 'yt'].includes(it.id);
+                const isDisabled = isElementPlanet && isStreamingButton;
                 return (
                   <button
                     key={it.id}
@@ -743,27 +760,35 @@ export default function HoloHubMenu({
                       }
                     }, [it.id, isFirst, isLast])}
                     type="button"
-                    className="item"
+                    className={`item${isDisabled ? ' item-disabled' : ''}`}
                     role="menuitem"
                     data-no-track
-                    tabIndex={open ? 0 : -1}
+                    tabIndex={open && !isDisabled ? 0 : -1}
                     data-id={it.id}
+                    disabled={isDisabled}
+                    aria-disabled={isDisabled}
                     style={{
                       left: '50%',
                       top: '50%',
                       transform: `translate(${atRest ? pos.x : 0}px, ${atRest ? pos.y : 0}px) translate(-50%, -50%) scale(${open ? 1 : 0.85})`,
-                      opacity: open ? 1 : 0,
+                      opacity: isDisabled ? 0.35 : (open ? 1 : 0),
                       ['--tint' as any]: tint,
                       ['--tx' as any]: `${atRest ? pos.x : 0}px`,
                       ['--ty' as any]: `${atRest ? pos.y : 0}px`,
                       borderColor: `${tint}AA`,
                       width: `${size}px`,
                       height: `${size}px`,
+                      pointerEvents: isDisabled ? 'none' : 'auto',
+                      cursor: isDisabled ? 'not-allowed' : 'pointer',
+                      filter: isDisabled ? 'grayscale(0.6) brightness(0.7)' : 'none',
                     }}
-                    onClick={(e) => { e.stopPropagation(); try { sfx.play('join', 0.9); } catch {}; runItem(it, e as unknown as MouseEvent); }}
+                    onClick={(e) => {
+                      if (isDisabled) { e.stopPropagation(); return; }
+                      e.stopPropagation(); try { sfx.play('join', 0.9); } catch {}; runItem(it, e as unknown as MouseEvent);
+                    }}
                     onMouseDown={(e) => { e.stopPropagation(); }}
-                    onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                    title={it.label}
+                    onMouseEnter={() => { if (!isDisabled) { try { sfx.play('hover', 0.35); } catch {} } }}
+                    title={isDisabled ? `${it.label} - Not available for element planets` : it.label}
                   >
                     <span className="icon" aria-hidden>
                       {typeof it.icon === 'string' ? (
@@ -772,7 +797,7 @@ export default function HoloHubMenu({
                         it.icon || <span className="dot" />
                       )}
                     </span>
-                    <span className="sr-only">{it.label}</span>
+                    <span className="sr-only">{it.label}{isDisabled ? ' (disabled)' : ''}</span>
                   </button>
                 );
               })}
@@ -1172,6 +1197,18 @@ export default function HoloHubMenu({
         .item:active{ transform: translate(var(--tx,0), var(--ty,0)) translate(-50%, -50%) scale(0.95); }
         /* Focus ring should follow the item's own tint, not the hub color */
         .item:focus{ outline: 2px solid var(--tint, #38B6FF); outline-offset: 2px; }
+        /* Disabled state for streaming buttons on element planets */
+        .item-disabled, .item:disabled {
+          pointer-events: none !important;
+          cursor: not-allowed !important;
+          opacity: 0.35 !important;
+          filter: grayscale(0.6) brightness(0.7) !important;
+          box-shadow: 0 8px 16px rgba(0,0,0,.4) !important;
+        }
+        .item-disabled:hover, .item:disabled:hover {
+          transform: translate(var(--tx,0), var(--ty,0)) translate(-50%, -50%) scale(1) !important;
+          filter: grayscale(0.6) brightness(0.7) !important;
+        }
         .item .dot{ width: 10px; height:10px; border-radius:9999px; background:#9EEBFF; }
 
         /* Instagram: Spotify-style rim with ORANGE glow */

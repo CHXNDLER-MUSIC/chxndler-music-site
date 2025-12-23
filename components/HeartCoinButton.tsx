@@ -1425,13 +1425,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       return;
     }
 
-    const cost = selectedCard?.physicalCost || 20;
-    if ((profile?.heartcoin_balance ?? heartCoins ?? 0) < cost) {
-      console.warn('[CARD PURCHASE] GUARD: insufficient balance', { balance: profile?.heartcoin_balance ?? heartCoins ?? 0, cost });
-      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Insufficient HeartCoins', type: 'error' } })); } catch {}
-      return;
-    }
-
     // Set in-flight BEFORE any async work
     cardPurchaseInFlightRef.current = true;
     setIsPurchasing(true);
@@ -1454,9 +1447,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         return;
       }
 
-      const orderId = result.orderId;
-      const newBalance = result.newBalance;
+      const orderId = result.orderId as string | undefined;
+      const newBalance = result.newBalance as number | undefined;
+      const cost = result.cost as number | undefined;
       console.log('[CARD PURCHASE] orders.id', orderId);
+      console.log('[CARD PURCHASE] cost', cost);
       console.log('[CARD PURCHASE] newBalance', newBalance);
 
       // Update local balance
@@ -1481,7 +1476,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         cardId: selectedCardId,
         clientSlug: selectedCard?.card_name || 'card',
         quantity: 1,
-        uiCost: cost,
+        uiCost: typeof cost === 'number' ? cost : (selectedCard?.physicalCost || 0),
         source: 'CARDS',
         itemName: selectedCard?.card_name || 'Physical Card',
         idempotencyKey,

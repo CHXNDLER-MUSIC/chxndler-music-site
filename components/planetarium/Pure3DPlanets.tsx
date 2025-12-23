@@ -1147,8 +1147,8 @@ export default function Pure3DPlanets({
       }
 
       // === CAMERA FOLLOW LOGIC ===
-      // When locked to a planet, continuously update camera to track the planet as it orbits
-      if (cameraModeRef.current === 'locked' && focusedSongSlugRef.current && !isUserInteractingRef.current) {
+      // When locked or animating to a planet, continuously update camera to track the planet as it orbits
+      if ((cameraModeRef.current === 'locked' || cameraModeRef.current === 'animating') && focusedSongSlugRef.current && !isUserInteractingRef.current) {
         const focusedId = focusedSongSlugRef.current.toLowerCase();
         // Try song mesh first, then element sprite
         let targetObject: THREE.Object3D | undefined = songMeshMapRef.current.get(focusedId);
@@ -1659,8 +1659,32 @@ export default function Pure3DPlanets({
     // Play channel change sound immediately before warp effect
     try { sfx.play('change-channel', 0.7); } catch {}
 
-    // Stop current music immediately
+    // Stop ALL audio immediately - be aggressive about stopping everything
     try { stopAllAudio(); } catch {}
+    // Also explicitly stop the main audio player element
+    try {
+      const mainAudio = document.querySelector<HTMLAudioElement>('audio[data-audio-player="1"]');
+      if (mainAudio) {
+        mainAudio.pause();
+        mainAudio.currentTime = 0;
+      }
+    } catch {}
+    // Stop any ambient audio
+    try {
+      const ambientAudio = document.querySelector<HTMLAudioElement>('audio[data-ambient="1"]');
+      if (ambientAudio) {
+        ambientAudio.pause();
+        ambientAudio.currentTime = 0;
+      }
+    } catch {}
+    // Stop any element audio that might be playing
+    try {
+      if ((window as any).__CHX_ELEMENT_AUDIO) {
+        (window as any).__CHX_ELEMENT_AUDIO.pause();
+        (window as any).__CHX_ELEMENT_AUDIO.currentTime = 0;
+        (window as any).__CHX_ELEMENT_AUDIO = null;
+      }
+    } catch {}
 
     console.log('[WARP] trigger from planet button', { planetPopup: planetPopup ? { name: planetPopup.name, slug: planetPopup.slug, isSong: planetPopup.isSong } : null, hasOnSongChange: !!onSongChange, songsCount: songs.length });
     if (!planetPopup) {
