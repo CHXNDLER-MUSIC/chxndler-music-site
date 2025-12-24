@@ -2891,10 +2891,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 console.log('[LISTEN BUTTON] Dispatching song:warp-request with slug:', songOfDaySlug);
                                 setTimeout(() => {
                                   // Dispatch song:warp-request to trigger full warp sequence (camera + visual effect)
+                                  // Include autoPlay: true to start playback after warp completes
                                   window.dispatchEvent(new CustomEvent('song:warp-request', {
-                                    detail: { songSlug: songOfDaySlug, source: 'daily-quest' }
+                                    detail: { songSlug: songOfDaySlug, source: 'daily-quest', autoPlay: true }
                                   }));
-                                  console.log('[LISTEN BUTTON] Warp request dispatched!');
+                                  console.log('[LISTEN BUTTON] Warp request dispatched with autoPlay!');
                                 }, 300);
                               } else {
                                 console.log('[LISTEN BUTTON] ERROR: songOfDaySlug is null/undefined');

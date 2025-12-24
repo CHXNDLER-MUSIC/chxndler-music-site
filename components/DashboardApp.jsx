@@ -1666,13 +1666,28 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   // This is used by the LISTEN button in HeartCoinButton to trigger both camera + visual warp
   React.useEffect(() => {
     const handleSongWarpRequest = (e) => {
-      const { songSlug, source } = e.detail || {};
+      const { songSlug, source, autoPlay } = e.detail || {};
       if (process.env.NODE_ENV === "development") {
-        console.log('🎵 song:warp-request event received:', { songSlug, source });
+        console.log('🎵 song:warp-request event received:', { songSlug, source, autoPlay });
       }
       if (songSlug) {
         // Call onSongChange which triggers the full warp sequence (camera + visual effect)
         onSongChange(songSlug);
+
+        // If autoPlay is requested (from LISTEN button), trigger playback after warp completes
+        if (autoPlay) {
+          setTimeout(() => {
+            console.log('🎵 Auto-playing song after warp:', songSlug);
+            try {
+              // Play the flip SFX to indicate playback starting
+              sfx.play('flip', 0.6);
+              // Use the unified audio system to start playback
+              audioManager.togglePlayPause();
+            } catch (err) {
+              console.warn('Auto-play failed:', err);
+            }
+          }, WARP_DURATION_MS + 500); // Wait for warp to complete
+        }
       }
     };
 
@@ -1680,7 +1695,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     return () => {
       window.removeEventListener('song:warp-request', handleSongWarpRequest);
     };
-  }, [tracks]); // tracks dependency since onSongChange uses it
+  }, [tracks, audioManager]); // tracks dependency since onSongChange uses it
 
   // Enable SFX globally only after Start unlocks the UI
   React.useEffect(() => {
