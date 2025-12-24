@@ -3073,7 +3073,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
                   {/* MERCH Tab Content */}
                   {activeUseTab === 'MERCH' && (
-                    <div className="px-2 pb-20">
+                    <div className={`px-2 ${step === 'shipping' ? 'pb-2' : 'pb-20'}`}>
                       {/* Loading state */}
                       {merchLoading && (
                         <div className="text-center py-8">

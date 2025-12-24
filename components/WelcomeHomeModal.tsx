@@ -172,7 +172,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
         />
       </div>
       
-      {/* Welcome Modal - holographic popup (top aligned to profile bar boundary) */}
+      {/* Welcome Modal - holographic popup (bottom aligned to light beam boundary) */}
       <div
         className="fixed flex justify-center pointer-events-none"
         style={{
@@ -181,8 +181,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
           right: 0,
           top: 'var(--profile-bar-boundary, 64px)',
           bottom: 'var(--light-beam-boundary, 120px)',
-          alignItems: 'flex-start',
-          marginTop: '12px'
+          alignItems: 'flex-end'
         }}
       >
         <div

@@ -308,10 +308,10 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
       handleLoginPrompt();
       return;
     }
-    
+
     try { sfx.play('click', 0.8); } catch {}
     setLoading(true);
-    
+
     try {
       const { data: { user } } = await supabaseClient.auth.getUser();
       if (!user?.id) throw new Error('Not authenticated');
@@ -335,6 +335,25 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle clicking the element image - navigates to 3D planet view with element selected
+  const handleElementImageClick = () => {
+    try { sfx.play('click', 0.8); } catch {}
+
+    // Close the heart coin popup
+    onCloseHeartCoinPopup?.();
+
+    // Open the blue display (3D planet view)
+    onOpenBlueDisplay?.();
+
+    // Dispatch event to select the element planet in the 3D view
+    // This will focus the camera on the element and show the WARP button popup
+    window.dispatchEvent(new CustomEvent('element-planet:select', {
+      detail: {
+        element: todaysElement.name
+      }
+    }));
   };
 
   const handleJournalOpen = () => {
@@ -798,13 +817,12 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
               <p className="text-white/80 text-sm mb-2">Touch the glowing planet to receive one HeartCoin.</p>
             </div>
             <div className="flex items-center gap-2">
-              {/* Today's Element Icon */}
+              {/* Today's Element Icon - Click to navigate to 3D planet view */}
               <button
-                onClick={handleElementTap}
-                disabled={questStatus.elementOfDay || loading}
+                onClick={handleElementImageClick}
                 className={`w-12 h-12 border-2 rounded-full overflow-hidden transition-all relative ${
-                  questStatus.elementOfDay 
-                    ? 'cursor-default' 
+                  questStatus.elementOfDay
+                    ? 'cursor-pointer border-green-500/60 hover:border-green-400'
                     : `border-pink-500/60 hover:border-pink-400 cursor-pointer`
                 }`}
                 style={{

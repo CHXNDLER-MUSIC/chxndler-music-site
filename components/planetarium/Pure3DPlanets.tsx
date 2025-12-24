@@ -1284,8 +1284,112 @@ export default function Pure3DPlanets({
 
     window.addEventListener('resize', handleResize);
 
+    // Listen for element-planet:select event from QuestList
+    // This programmatically selects an element planet and shows the WARP button popup
+    const handleElementPlanetSelect = (e: CustomEvent<{ element: string }>) => {
+      const element = e.detail?.element as ElementType;
+      if (!element) return;
+
+      console.log('[Pure3DPlanets] Received element-planet:select for:', element);
+
+      // Find the element sprite
+      const elementSprite = elementSpriteMapRef.current.get(element);
+      if (!elementSprite) {
+        console.warn('[Pure3DPlanets] Element sprite not found for:', element);
+        return;
+      }
+
+      // Play click sound
+      try { sfx.play('click', 0.5); } catch {}
+
+      // Get the element planet position for popup placement
+      const sunY = 12;
+      const orbitRadius = 18;
+      const elementPositions: Record<ElementType, THREE.Vector3> = {
+        heart: new THREE.Vector3(orbitRadius, sunY, 0),
+        water: new THREE.Vector3(0, sunY, orbitRadius),
+        lightning: new THREE.Vector3(-orbitRadius, sunY, 0),
+        darkness: new THREE.Vector3(0, sunY, -orbitRadius),
+      };
+      const elementPos = elementPositions[element];
+      const screenPos = projectToScreen(elementPos);
+
+      // Set up selection effects
+      setupSelectionEffects(elementSprite, getElementColor(element), element);
+
+      // Flag if this is the daily element planet for special warp handling
+      const isDailyElement = element === glowingElement && !hasClaimedElementOfDay;
+
+      // Element display names
+      const elementNames: Record<ElementType, string> = {
+        heart: 'Heart',
+        water: 'Water',
+        lightning: 'Lightning',
+        darkness: 'Darkness',
+      };
+
+      // Show the planet popup with WARP button
+      setPlanetPopup({
+        x: screenPos.x,
+        y: screenPos.y,
+        name: elementNames[element] || element,
+        element: element,
+        slug: element,
+        isSong: false,
+        targetObject: elementSprite,
+        isDailyElement,
+      });
+
+      try { setSelectedPlanetId(element); } catch {}
+
+      // Also animate camera to focus on this element
+      const elementCameraPositions: Record<ElementType, THREE.Vector3> = {
+        heart: new THREE.Vector3(28, 18, 6),
+        water: new THREE.Vector3(6, 18, 28),
+        lightning: new THREE.Vector3(-28, 18, 6),
+        darkness: new THREE.Vector3(6, 18, -28),
+      };
+
+      const newCameraPosition = elementCameraPositions[element];
+      const targetPosition = elementPos.clone();
+
+      // Animate camera to focus on element
+      const startPosition = camera.position.clone();
+      const startTarget = controls.target.clone();
+
+      const duration = 1500; // 1.5 seconds
+      const startTime = performance.now();
+
+      const animateToElement = () => {
+        const elapsed = performance.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // Easing function (ease-out cubic)
+        const eased = 1 - Math.pow(1 - progress, 3);
+
+        // Interpolate camera position
+        camera.position.lerpVectors(startPosition, newCameraPosition, eased);
+
+        // Interpolate controls target
+        controls.target.lerpVectors(startTarget, targetPosition, eased);
+        controls.update();
+
+        if (progress < 1) {
+          requestAnimationFrame(animateToElement);
+        } else {
+          // Lock camera after animation completes
+          try { setCameraMode('locked'); } catch {}
+        }
+      };
+
+      animateToElement();
+    };
+
+    window.addEventListener('element-planet:select', handleElementPlanetSelect as EventListener);
+
     // Cleanup
     return () => {
+      window.removeEventListener('element-planet:select', handleElementPlanetSelect as EventListener);
       // Reset scene ready state on cleanup
       setSceneReady(false);
       cancelAnimationFrame(animationId);

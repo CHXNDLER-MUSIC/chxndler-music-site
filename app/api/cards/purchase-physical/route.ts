@@ -83,9 +83,63 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Fetch the card to get its physical price
+    const { data: card, error: cardError } = await supabase
+      .from('cards')
+      .select('id, card_name, price_heartcoins_physical, is_physical')
+      .eq('id', cardId)
+      .single();
+
+    if (cardError || !card) {
+      console.error('[CARD PURCHASE] Card fetch error:', cardError);
+      return NextResponse.json(
+        { success: false, error: 'Card not found' },
+        { status: 404 }
+      );
+    }
+
+    if (!card.is_physical) {
+      return NextResponse.json(
+        { success: false, error: 'This card is not available for physical purchase' },
+        { status: 400 }
+      );
+    }
+
+    const cost = card.price_heartcoins_physical ?? 15;
+
+    // Fetch user's current heartcoin_balance
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('heartcoin_balance')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile) {
+      console.error('[CARD PURCHASE] Profile fetch error:', profileError);
+      return NextResponse.json(
+        { success: false, error: 'User profile not found' },
+        { status: 404 }
+      );
+    }
+
+    const currentBalance = profile.heartcoin_balance ?? 0;
+
+    // Check if user has sufficient heartcoin_balance
+    if (currentBalance < cost) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Insufficient HeartCoins! You need ${cost} but only have ${currentBalance}`,
+          required: cost,
+          available: currentBalance
+        },
+        { status: 400 }
+      );
+    }
+
     // Call the RPC function to handle purchase atomically
     // RPC uses auth.uid() internally to identify the user
-    const { data: rpcResult, error: rpcError } = await supabase.rpc('purchase_physical_card', {
+    const { data: orderId, error: rpcError } = await supabase.rpc('purchase_physical_card', {
       p_card_id: cardId,
     });
 
@@ -97,12 +151,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Calculate new balance after deduction
+    const newBalance = currentBalance - cost;
+
     // Return response with keys that match frontend expectations
     return NextResponse.json({
       success: true,
-      orderId: rpcResult.order_id,
-      newBalance: rpcResult.new_balance,
-      new_balance: rpcResult.new_balance, // Keep for backward compatibility
+      orderId: orderId,
+      newBalance: newBalance,
+      new_balance: newBalance, // Keep for backward compatibility
     });
 
   } catch (error) {

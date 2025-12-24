@@ -417,6 +417,18 @@ export default function ProfileBar({
     return () => window.removeEventListener('openBinderCard', handleOpenBinderCard as EventListener);
   }, []);
 
+  // Listen for openDigitalBinder event (triggered after SLOT relic celebration)
+  useEffect(() => {
+    const handleOpenDigitalBinder = () => {
+      setActivePanel('binder');
+      setPreselectedCard(null);
+      try { onCloseBlueDisplay?.(); } catch {}
+    };
+
+    window.addEventListener('openDigitalBinder', handleOpenDigitalBinder);
+    return () => window.removeEventListener('openDigitalBinder', handleOpenDigitalBinder);
+  }, [onCloseBlueDisplay]);
+
 
   // ProfileBarWrapper already handles hasEnteredHeartverse check
   // This component should always render when called (never dim/hide based on other conditions)
@@ -1186,7 +1198,10 @@ export default function ProfileBar({
                 console.log("Open store popup from quest list");
               }}
               onOpenBlueDisplay={onOpenBlueDisplay}
-              onCloseHeartCoinPopup={() => setShowQuests(false)}
+              onCloseHeartCoinPopup={() => {
+                setShowQuests(false);
+                setShowHeartPopover(false);
+              }}
             />
           </div>
         </div>,

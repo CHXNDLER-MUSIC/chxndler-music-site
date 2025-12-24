@@ -220,20 +220,20 @@ export default function ElementOfDayModal() {
         }
       `}</style>
 
-      {/* Modal Content - positioned at bottom, just above light beam */}
+      {/* Modal Content - fills space from profile bar to top of light beam */}
       <div
-        className="fixed left-0 right-0 flex items-end justify-center pointer-events-none"
+        className="fixed left-0 right-0 flex items-stretch justify-center pointer-events-none"
         style={{
           zIndex: 2147483648,
           top: "var(--profile-bar-boundary, 64px)",
-          bottom: "var(--light-beam-boundary, 200px)",
+          bottom: "calc(var(--light-beam-boundary, 200px) + var(--beam-height, 68px))",
         }}
       >
         <div
-          className="relative pointer-events-auto flex flex-col"
+          className="relative pointer-events-auto flex flex-col justify-center"
           style={{
             width: "min(90vw, 380px)",
-            maxHeight: "100%",
+            height: "100%",
             padding: "24px",
             borderRadius: 20,
             background: "rgba(0,0,0,0.85)",
