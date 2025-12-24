@@ -1026,9 +1026,9 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
           >
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <h4 className="text-white font-semibold mb-1">1. Listen to Your Elemental Song</h4>
+                <h4 className="text-white font-bold mb-1 text-base">1. Listen to Your Elemental Song</h4>
                 <p className="text-white/80 text-sm mb-2">Play the track aligned with your element.</p>
-                <p className="text-white/60 text-xs">+2 + Element Card</p>
+                <p className="text-white/70 text-sm font-semibold">+2 + Element Card</p>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -1100,9 +1100,9 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         >
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <h4 className="text-white font-semibold mb-1">2. Invite a Friend</h4>
+              <h4 className="text-white font-bold mb-1 text-base">2. Invite a Friend</h4>
               <p className="text-white/80 text-sm mb-2">Share the Heartverse with someone you love. When they join, you both earn HeartCoins.</p>
-              <p className="text-white/60 text-xs">+1 /day</p>
+              <p className="text-white/70 text-sm font-semibold">+1 /day</p>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -1142,7 +1142,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                 }}
               >
                 {questStatus.inviteFriendConfirm
-                  ? 'COMPLETED'
+                  ? 'SIGNAL SENT'
                   : !isAuthenticated
                     ? 'LOG IN TO COMPLETE'
                     : questStatus.inviteFriend
@@ -1203,7 +1203,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         >
           <div className="space-y-3">
             <div>
-              <h4 className="text-white font-semibold mb-1">3. Attend a Livestream or Live Show</h4>
+              <h4 className="text-white font-bold mb-1 text-base">3. Attend a Livestream or Live Show</h4>
               <p className="text-white/80 text-sm mb-3">Check in at a CHXNDLER show or stream to receive bonus HEART coins.</p>
 
               {showCheckIn && (

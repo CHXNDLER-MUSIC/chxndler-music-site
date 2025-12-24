@@ -11,6 +11,13 @@ import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
  * - Shipping info is added in step 2 via /api/cards/updateShipping
  */
 
+const ROUTE_PATH = '/api/cards/purchase-physical';
+
+// Generate a short random request ID for tracing
+function generateRequestId(): string {
+  return Math.random().toString(36).substring(2, 10);
+}
+
 // Helper: Extract access token from Supabase auth cookies
 // Supabase uses project-prefixed cookie names like sb-{ref}-auth-token
 function extractAccessToken(cookieStore: Awaited<ReturnType<typeof cookies>>): string | null {
@@ -40,28 +47,78 @@ function extractAccessToken(cookieStore: Awaited<ReturnType<typeof cookies>>): s
   return null;
 }
 
+// Helper: Create a consistent error response with requestId
+function errorResponse(
+  requestId: string,
+  message: string,
+  code: string,
+  status: number,
+  extra?: Record<string, unknown>
+): NextResponse {
+  return NextResponse.json(
+    { success: false, requestId, error: message, code, ...extra },
+    { status }
+  );
+}
+
+/**
+ * GET handler - route health/debug check
+ */
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    route: ROUTE_PATH,
+    methods: ['GET', 'POST'],
+    ts: Date.now(),
+  });
+}
+
+/**
+ * OPTIONS handler - CORS preflight
+ */
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      Allow: 'GET,POST,OPTIONS',
+      'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
+}
+
+/**
+ * POST handler - physical card purchase
+ */
 export async function POST(request: NextRequest) {
-  console.log('[purchase-physical] hit');
+  const requestId = generateRequestId();
+  const pathname = request.nextUrl.pathname;
+
+  console.log(`[purchase-physical] START requestId=${requestId} method=POST pathname=${pathname}`);
+
   try {
     // Read cookies and extract auth token
     const cookieStore = await cookies();
     const token = extractAccessToken(cookieStore);
 
     if (!token) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
+      console.log(`[purchase-physical] requestId=${requestId} error=not_authenticated`);
+      return errorResponse(requestId, 'Not authenticated', 'AUTH_MISSING', 401);
     }
 
     // Parse request body
-    const { cardId } = await request.json();
+    let cardId: string | undefined;
+    try {
+      const body = await request.json();
+      cardId = body.cardId;
+    } catch {
+      console.log(`[purchase-physical] requestId=${requestId} error=invalid_json`);
+      return errorResponse(requestId, 'Invalid JSON body', 'INVALID_JSON', 400);
+    }
 
     if (!cardId) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required field: cardId' },
-        { status: 400 }
-      );
+      console.log(`[purchase-physical] requestId=${requestId} error=missing_card_id`);
+      return errorResponse(requestId, 'Missing required field: cardId', 'MISSING_CARD_ID', 400);
     }
 
     // Create Supabase client with user's token so auth.uid() works in RPC
@@ -71,10 +128,8 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid authentication token' },
-        { status: 401 }
-      );
+      console.log(`[purchase-physical] requestId=${requestId} error=invalid_token`);
+      return errorResponse(requestId, 'Invalid authentication token', 'AUTH_INVALID', 401);
     }
 
     // Fetch the card to get its physical price
@@ -85,18 +140,13 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (cardError || !card) {
-      console.error('[CARD PURCHASE] Card fetch error:', cardError);
-      return NextResponse.json(
-        { success: false, error: 'Card not found' },
-        { status: 404 }
-      );
+      console.error(`[purchase-physical] requestId=${requestId} Card fetch error:`, cardError);
+      return errorResponse(requestId, 'Card not found', 'CARD_NOT_FOUND', 404);
     }
 
     if (!card.is_physical) {
-      return NextResponse.json(
-        { success: false, error: 'This card is not available for physical purchase' },
-        { status: 400 }
-      );
+      console.log(`[purchase-physical] requestId=${requestId} error=not_physical cardId=${cardId}`);
+      return errorResponse(requestId, 'This card is not available for physical purchase', 'NOT_PHYSICAL', 400);
     }
 
     const cost = card.price_heartcoins_physical ?? 15;
@@ -109,25 +159,21 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (profileError || !profile) {
-      console.error('[CARD PURCHASE] Profile fetch error:', profileError);
-      return NextResponse.json(
-        { success: false, error: 'User profile not found' },
-        { status: 404 }
-      );
+      console.error(`[purchase-physical] requestId=${requestId} Profile fetch error:`, profileError);
+      return errorResponse(requestId, 'User profile not found', 'PROFILE_NOT_FOUND', 404);
     }
 
     const currentBalance = profile.heartcoin_balance ?? 0;
 
     // Check if user has sufficient heartcoin_balance
     if (currentBalance < cost) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Insufficient HeartCoins! You need ${cost} but only have ${currentBalance}`,
-          required: cost,
-          available: currentBalance
-        },
-        { status: 400 }
+      console.log(`[purchase-physical] requestId=${requestId} error=insufficient_balance required=${cost} available=${currentBalance}`);
+      return errorResponse(
+        requestId,
+        `Insufficient HeartCoins! You need ${cost} but only have ${currentBalance}`,
+        'INSUFFICIENT_BALANCE',
+        400,
+        { required: cost, available: currentBalance }
       );
     }
 
@@ -138,11 +184,8 @@ export async function POST(request: NextRequest) {
     });
 
     if (rpcError) {
-      console.error('[CARD PURCHASE] RPC error:', rpcError);
-      return NextResponse.json(
-        { success: false, error: rpcError.message },
-        { status: 400 }
-      );
+      console.error(`[purchase-physical] requestId=${requestId} RPC error:`, rpcError);
+      return errorResponse(requestId, rpcError.message, 'RPC_ERROR', 400);
     }
 
     // Fetch actual new balance from database after RPC (more accurate than calculating)
@@ -154,9 +197,12 @@ export async function POST(request: NextRequest) {
 
     const newBalance = updatedProfile?.heartcoin_balance ?? (currentBalance - cost);
 
+    console.log(`[purchase-physical] SUCCESS requestId=${requestId} orderId=${orderId} cost=${cost} newBalance=${newBalance}`);
+
     // Return response with keys that match frontend expectations
     return NextResponse.json({
       success: true,
+      requestId,
       orderId: orderId,
       newBalance: newBalance,
       new_balance: newBalance,
@@ -165,10 +211,12 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[CARD PURCHASE] Unexpected error:', error);
-    return NextResponse.json(
-      { success: false, error: `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}` },
-      { status: 500 }
+    console.error(`[purchase-physical] requestId=${requestId} Unexpected error:`, error);
+    return errorResponse(
+      requestId,
+      `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      'INTERNAL_ERROR',
+      500
     );
   }
 }

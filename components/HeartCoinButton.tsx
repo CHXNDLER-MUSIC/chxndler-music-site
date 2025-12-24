@@ -3103,6 +3103,20 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               setSecretPhraseInputVisible(quest.id);
                               setSecretPhraseValue('');
                             }
+                          } else if (quest.quest_key === 'LISTEN_ELEMENT_SONG') {
+                            // RETURN HOME: Close panel and navigate to user's element planet
+                            setOpen(false);
+                            try { onClose?.(); } catch {}
+                            // Open the 3D planet view (blue display)
+                            try { onOpenBlueDisplay?.(); } catch {}
+                            // Navigate to user's element planet after panel closes
+                            const userElement = profile?.element?.toLowerCase() || 'heart';
+                            setTimeout(() => {
+                              // Use element-planet:select to focus camera on element and show WARP button
+                              window.dispatchEvent(new CustomEvent('element-planet:select', {
+                                detail: { element: userElement }
+                              }));
+                            }, 200);
                           } else {
                             handleBonusQuestComplete(quest);
                           }
