@@ -7,7 +7,6 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { track } from "@/lib/analytics";
 import { useBonusQuests } from '@/hooks/useBonusQuests';
-import { getAllQuestsForUser } from '@/lib/bonusQuests';
 import { useUserCards } from "@/hooks/useUserCards";
 import { BonusQuestWithCompletion } from '@/types/bonusQuests';
 import { useMerchItems } from '@/hooks/useMerchItems';
@@ -275,18 +274,36 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, onOpenBinder, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, isActive = false, journalCompleted = false, onJournalCompleted, onClose, onBeamColorChange, ...restProps }: Props) {
   const { profile, refreshProfile, setIsJournalOpen } = useProfile();
-  const { elementOfDay, songOfDayTitle } = usePlanetRewardsContext();
+  const { elementOfDay, songOfDayTitle, songOfDaySlug } = usePlanetRewardsContext();
 
   // New hooks for database-driven merch
   const { items: merchItems, loading: merchLoading, error: merchError } = useMerchItems('physical');
   const { purchaseWithHeartCoins, updateShipping, isProcessing, error: purchaseError, clearError } = useMerchPurchase();
   
   // Convert MerchItems to StoreItems for backward compatibility
-  const PHYSICAL_ITEMS = useMemo(() => 
-    merchItems.map(merchItemToStoreItem), 
+  const PHYSICAL_ITEMS = useMemo(() =>
+    merchItems.map(merchItemToStoreItem),
     [merchItems]
   );
-  
+
+  // Quests hook - returns ALL quests (DAILY + BONUS categories)
+  const { quests: allQuests, status: questsStatus, errorMessage: questsError, isLoggedIn, completeQuest, refetchQuests } = useBonusQuests();
+
+  // Derive daily and bonus quests from allQuests via memoization
+  // Use "dailyQuestItems" to avoid conflict with the existing "dailyQuests" UI state
+  const dailyQuestItems = useMemo(() =>
+    (allQuests || []).filter(q => q.category === 'DAILY'),
+    [allQuests]
+  );
+
+  const bonusQuestItems = useMemo(() =>
+    (allQuests || []).filter(q => q.category === 'BONUS'),
+    [allQuests]
+  );
+
+  // Loading state derived from hook status
+  const dailyQuestsLoading = questsStatus === 'loading';
+
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'EARN' | 'USE'>('EARN');
   const [activeUseTab, setActiveUseTab] = useState<'MERCH' | 'CARDS'>('MERCH');
@@ -459,6 +476,22 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     window.addEventListener('close-heartcoin-modal', handleCloseModal);
     return () => window.removeEventListener('close-heartcoin-modal', handleCloseModal);
   }, []);
+
+  // Listen for element-of-day-claimed event to mark daily quest as completed
+  useEffect(() => {
+    const handleElementClaimed = (e: CustomEvent) => {
+      console.log('[HeartCoinButton] Element of day claimed:', e.detail);
+      // Find the TAP_ELEMENT_OF_DAY quest and mark it as completed
+      const elementQuest = dailyQuestItems.find(q => q.quest_key === 'TAP_ELEMENT_OF_DAY');
+      if (elementQuest) {
+        setCompletedQuests(prev => new Set(prev).add(elementQuest.id));
+      }
+      // Refetch quests to get updated completion status from server
+      refetchQuests();
+    };
+    window.addEventListener('element-of-day-claimed', handleElementClaimed as EventListener);
+    return () => window.removeEventListener('element-of-day-claimed', handleElementClaimed as EventListener);
+  }, [dailyQuestItems, refetchQuests]);
 
   // Listen for openHeartCoinCards event from collect card button
   useEffect(() => {
@@ -848,30 +881,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // Daily secret phrase redemption - prevent duplicates and track status
   const [isRedeemingPhrase, setIsRedeemingPhrase] = useState(false);
   const [phraseStatus, setPhraseStatus] = useState<'idle'|'success'|'already'|'incorrect'|'error'>('idle');
-  
-  // Bonus quests hook
-  const { quests: bonusQuests, status: bonusQuestsStatus, errorMessage: bonusQuestsError, isLoggedIn, completeQuest, refetchQuests } = useBonusQuests();
-
-  // Daily quests state (fetched from database)
-  const [dbDailyQuests, setDbDailyQuests] = useState<BonusQuestWithCompletion[]>([]);
-  const [dailyQuestsLoading, setDailyQuestsLoading] = useState(false);
-
-  // Fetch daily quests from database
-  useEffect(() => {
-    const fetchDailyQuests = async () => {
-      setDailyQuestsLoading(true);
-      try {
-        const userId = profile?.id || null;
-        const { dailyQuests } = await getAllQuestsForUser(userId);
-        setDbDailyQuests(dailyQuests);
-      } catch (error) {
-        console.error('[HeartCoinButton] Error fetching daily quests:', error);
-      } finally {
-        setDailyQuestsLoading(false);
-      }
-    };
-    fetchDailyQuests();
-  }, [profile?.id]);
 
   // Helper function to check if quest is completed (either from DB or local state)
   const isQuestCompleted = (quest: any) => {
@@ -2654,17 +2663,26 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             <div className="mb-1 flex-1 min-h-0 flex flex-col gap-0.5">
               {dailyQuestsLoading ? (
                 <div className="text-center text-white py-4">Loading daily quests...</div>
-              ) : dbDailyQuests.length === 0 ? (
+              ) : dailyQuestItems.length === 0 ? (
                 <div className="text-center text-white/60 py-4">No daily quests available</div>
               ) : (
-                dbDailyQuests.map((quest, index) => (
+                dailyQuestItems.map((quest, index) => (
                   <div key={quest.id} className="flex flex-col px-2 pt-0.5 pb-1 rounded border border-white/30 bg-white/10 flex-1 min-h-0 relative">
                     <div className="absolute top-1 right-1 flex items-center" style={{
                       color: isQuestCompleted(quest) ? '#666' : '#90EE90',
                       textShadow: isQuestCompleted(quest) ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90'
                     }}>
-                      <span className="text-xs font-bold">{isQuestCompleted(quest) ? '✓' : ''} +{quest.reward_heartcoins || 1}</span>
-                      <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
+                      {quest.quest_key === 'TAP_ELEMENT_OF_DAY' ? (
+                        <>
+                          <span className="text-xs font-bold">{isQuestCompleted(quest) ? '✓' : ''} +</span>
+                          <img src="/elements/relics.webp" alt="Relic" className="w-6 h-6 ml-1" />
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-xs font-bold">{isQuestCompleted(quest) ? '✓' : ''} +{quest.reward_heartcoins || 1}</span>
+                          <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
+                        </>
+                      )}
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex-1 mr-10">
@@ -2691,7 +2709,18 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 Song of the Day
                               </div>
                               {songOfDayTitle && (
-                                <div className="text-sm font-normal ml-10" style={{ color: '#90EE90', textShadow: '0 0 8px #90EE90' }}>
+                                <div className="text-sm font-normal ml-10" style={{
+                                  color: elementOfDay === 'heart' ? '#FF69B4'
+                                    : elementOfDay === 'lightning' ? '#FFD700'
+                                    : elementOfDay === 'water' ? '#1E90FF'
+                                    : elementOfDay === 'darkness' ? '#8B0082'
+                                    : '#FFFFFF',
+                                  textShadow: elementOfDay === 'heart' ? '0 0 8px #FF69B4'
+                                    : elementOfDay === 'lightning' ? '0 0 8px #FFD700'
+                                    : elementOfDay === 'water' ? '0 0 8px #1E90FF'
+                                    : elementOfDay === 'darkness' ? '0 0 8px #8B0082'
+                                    : '0 0 8px #FFFFFF'
+                                }}>
                                   {songOfDayTitle}
                                 </div>
                               )}
@@ -2728,33 +2757,34 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             const targetElement = elementOfDay || 'heart';
                             console.log('[HeartCoinButton] Element image clicked, warping to:', targetElement);
                             try { sfx.play('click', 0.8); } catch {}
-                            // Close the popup first
+                            // Close the popup first - call onClose to notify parent
                             setOpen(false);
+                            try { onClose?.(); } catch {}
                             // Also dispatch event to close any HeartCoin modals
                             window.dispatchEvent(new CustomEvent('close-heartcoin-modal'));
                             // Delay to let heart coin display close before warp
                             setTimeout(() => {
-                              // Open the 3D planet view via prop or event
-                              if (onOpenBlueDisplay) {
-                                console.log('[HeartCoinButton] Calling onOpenBlueDisplay');
-                                onOpenBlueDisplay();
-                              } else {
-                                window.dispatchEvent(new CustomEvent('open-blue-display'));
-                              }
-                              // Dispatch planet:warp event to trigger actual warp animation
+                              // Dispatch planet:warp event FIRST to trigger warp animation
+                              console.log('[HeartCoinButton] Dispatching planet:warp event');
+                              window.dispatchEvent(new CustomEvent('planet:warp', {
+                                detail: { element: targetElement }
+                              }));
+                              // After warp effect, open the 3D planet view
                               setTimeout(() => {
-                                console.log('[HeartCoinButton] Dispatching planet:warp event');
-                                window.dispatchEvent(new CustomEvent('planet:warp', {
-                                  detail: { element: targetElement }
-                                }));
-                                // After warp completes, show Element of the Day modal
+                                if (onOpenBlueDisplay) {
+                                  console.log('[HeartCoinButton] Calling onOpenBlueDisplay');
+                                  onOpenBlueDisplay();
+                                } else {
+                                  window.dispatchEvent(new CustomEvent('open-blue-display'));
+                                }
+                                // After blue display opens, show Element of the Day modal
                                 setTimeout(() => {
                                   console.log('[HeartCoinButton] Showing Element of the Day modal');
                                   window.dispatchEvent(new CustomEvent('element-of-day:show', {
                                     detail: { element: targetElement }
                                   }));
-                                }, 1500); // Wait for warp animation to complete
-                              }, 300); // Small delay to let blue display open first
+                                }, 1500); // Wait for blue display to fully open
+                              }, 3000); // Wait for warp animation to complete
                             }, 150); // Let heart coin display close first
                           }}
                           className="flex items-center cursor-pointer hover:scale-110 transition-transform"
@@ -2780,8 +2810,18 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             if (quest.quest_key === 'JOURNAL_ENTRY_OF_DAY') {
                               handleJournalEntry();
                             } else if (quest.quest_key === 'LISTEN_SONG_OF_DAY') {
-                              // TODO: Implement song of day handler
                               try { sfx.play('click', 0.6); } catch {}
+                              // Close the HeartCoin modal
+                              setOpen(false);
+                              window.dispatchEvent(new CustomEvent('close-heartcoin-modal'));
+                              // Warp to the song of the day
+                              if (songOfDaySlug) {
+                                setTimeout(() => {
+                                  window.dispatchEvent(new CustomEvent('planet:warp-to-song', {
+                                    detail: { id: songOfDaySlug, source: 'daily-quest' }
+                                  }));
+                                }, 300);
+                              }
                             }
                           }}
                           disabled={isQuestCompleted(quest)}
@@ -2815,17 +2855,17 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           {/* Bonus Quests Tab Content */}
           {activeEarnTab === 'BONUS QUESTS' && (
             <div>
-              {bonusQuestsStatus === 'loading' ? (
+              {questsStatus === 'loading' ? (
                 <div className="text-center text-white py-4">Loading bonus quests...</div>
-              ) : bonusQuestsStatus === 'error' ? (
+              ) : questsStatus === 'error' ? (
                 <div className="text-center text-red-400/70 py-4 text-sm">
                   Unable to load bonus quests
                 </div>
-              ) : bonusQuests.length === 0 ? (
+              ) : bonusQuestItems.length === 0 ? (
                 <div className="text-center text-white/60 py-4">No bonus quests available</div>
               ) : (
-                bonusQuests.map((quest, index) => (
-                  <div key={quest.id} className={`flex flex-col px-2 py-1 rounded border border-white/30 bg-white/10 relative ${index < bonusQuests.length - 1 ? 'mb-0.5' : ''}`}>
+                bonusQuestItems.map((quest, index) => (
+                  <div key={quest.id} className={`flex flex-col px-2 py-1 rounded border border-white/30 bg-white/10 relative ${index < bonusQuestItems.length - 1 ? 'mb-0.5' : ''}`}>
                     {/* HeartCoin reward - top right */}
                     <div className="absolute top-1 right-1">
                       {quest.quest_key === 'LISTEN_ELEMENT_SONG' ? (

@@ -71,7 +71,10 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
   const yellowFromPinkTimeoutB = useRef<number | null>(null);
   // Feature flag to show/hide test celebration buttons (default hidden)
   const showTestCelebrations = process.env.NEXT_PUBLIC_SHOW_TEST_CELEBRATIONS === 'true';
-  
+
+  // Track if wheel video failed to load (hide wheel gracefully if video assets missing)
+  const [wheelVideoFailed, setWheelVideoFailed] = useState(false);
+
   // Use the uiUnlocked prop passed from DashboardApp instead of reading from window
   const isUIUnlocked = uiUnlocked;
   
@@ -463,6 +466,9 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
             return "/cockpit/wheel_transparent.webm";
           })();
 
+          // Hide wheel gracefully if video assets failed to load
+          if (wheelVideoFailed) return null;
+
           if (disable) {
             // If explicitly disabled, still render a plain <video> so the wheel is visible
             return (
@@ -486,12 +492,9 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
                     background: 'transparent'
                   } : {})
                 }}
-                onError={(e) => {
-                  // Fallback to transparent MP4 if primary source fails
-                  const video = e.currentTarget;
-                  if (!video.src.includes('wheel_transparent.mp4')) {
-                    video.src = '/cockpit/wheel_transparent.mp4';
-                  }
+                onError={() => {
+                  // All video sources failed - hide wheel gracefully
+                  setWheelVideoFailed(true);
                 }}
               >
                 <source src={wheelSrc} type="video/mp4" />
@@ -505,6 +508,8 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
           const paused = false;
           // Allow quick fallback to plain video for visibility debugging
           if (plainWheel) {
+            // Hide wheel if video failed to load
+            if (wheelVideoFailed) return null;
             return (
               <video
                 autoPlay
@@ -529,12 +534,9 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
                     background: 'transparent'
                   } : {})
                 }}
-                onError={(e) => {
-                  // Fallback to transparent MP4 if primary source fails
-                  const video = e.currentTarget;
-                  if (!video.src.includes('wheel_transparent.mp4')) {
-                    video.src = '/cockpit/wheel_transparent.mp4';
-                  }
+                onError={() => {
+                  // All video sources failed - hide wheel gracefully
+                  setWheelVideoFailed(true);
                 }}
               >
                 <source src={wheelSrc} type="video/mp4" />

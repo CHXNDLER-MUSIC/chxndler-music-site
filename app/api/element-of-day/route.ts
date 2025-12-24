@@ -73,10 +73,11 @@ export async function GET() {
 
     // Get song of the day - find a released song matching today's element
     let songOfDayTitle: string | null = null;
+    let songOfDaySlug: string | null = null;
     if (data?.element) {
       const { data: songData, error: songError } = await supabase
         .from('songs')
-        .select('title')
+        .select('title, slug')
         .eq('element', data.element.toUpperCase())
         .eq('is_released', true)
         .limit(1)
@@ -84,6 +85,7 @@ export async function GET() {
 
       if (!songError && songData) {
         songOfDayTitle = songData.title;
+        songOfDaySlug = songData.slug;
       }
     }
 
@@ -96,6 +98,7 @@ export async function GET() {
       relicImageUrl,
       relicKind,
       songOfDayTitle,
+      songOfDaySlug,
     });
   } catch (err: any) {
     console.error('[element-of-day API] Unexpected error:', err);

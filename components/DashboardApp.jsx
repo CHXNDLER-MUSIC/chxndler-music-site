@@ -1989,6 +1989,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               playsInline
               aria-label="wheel-video-plain"
               style={{ width: '100%', height: '100%', objectFit: 'cover', background: 'transparent' }}
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
             />
             );
             }

@@ -5,7 +5,7 @@ import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useProfile } from '@/contexts/ProfileContext';
 
 interface UseBonusQuestsReturn {
-  quests: BonusQuestWithCompletion[];
+  quests: BonusQuestWithCompletion[]; // All quests (both DAILY and BONUS categories)
   status: "idle" | "loading" | "success" | "error";
   errorMessage: string | null;
   isLoggedIn: boolean;
@@ -14,8 +14,9 @@ interface UseBonusQuestsReturn {
 }
 
 /**
- * Hook for managing bonus quests in the Heart Coins modal
- * Handles fetching, caching, and completion of bonus quests for the current user
+ * Hook for managing quests in the Heart Coins modal
+ * Handles fetching, caching, and completion of ALL quests (DAILY + BONUS) for the current user
+ * Components should filter by category: q.category === 'DAILY' or q.category === 'BONUS'
  */
 export function useBonusQuests(): UseBonusQuestsReturn {
   const [quests, setQuests] = useState<BonusQuestWithCompletion[]>([]);
@@ -65,8 +66,8 @@ export function useBonusQuests(): UseBonusQuestsReturn {
         for (let i = 0; i <= retries; i++) {
           try {
             // Use getAllQuestsForUser which properly splits by category
-            const { bonusQuests } = await getAllQuestsForUser(currentUserId);
-            return bonusQuests; // Only return BONUS category quests
+            const { allQuests } = await getAllQuestsForUser(currentUserId);
+            return allQuests; // Return ALL quests (DAILY + BONUS) - filter by category in component
           } catch (err) {
             if (i === retries) throw err;
             // Wait before retry (exponential backoff)

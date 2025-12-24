@@ -15,11 +15,11 @@ interface ElementOfDayData {
   relicKind: string | null;
 }
 
-const ELEMENT_CONFIG: Record<ElementType, { name: string; color: string; icon: string }> = {
-  heart: { name: "HEART", color: "#FC54AF", icon: "/elements/heart.webp" },
-  water: { name: "WATER", color: "#38B6FF", icon: "/elements/water.webp" },
-  lightning: { name: "LIGHTNING", color: "#F2EF1D", icon: "/elements/lightning.webp" },
-  darkness: { name: "DARKNESS", color: "#FFFFFF", icon: "/elements/darkness.webp" },
+const ELEMENT_CONFIG: Record<ElementType, { name: string; color: string; icon: string; sound: string }> = {
+  heart: { name: "HEART", color: "#FC54AF", icon: "/elements/heart.webp", sound: "/audio/heart-pulse.MP3" },
+  water: { name: "WATER", color: "#38B6FF", icon: "/elements/water.webp", sound: "/audio/water-ripple.MP3" },
+  lightning: { name: "LIGHTNING", color: "#F2EF1D", icon: "/elements/lightning.webp", sound: "/audio/lightning-spark.MP3" },
+  darkness: { name: "DARKNESS", color: "#FFFFFF", icon: "/elements/darkness.webp", sound: "/audio/shadow-glow.MP3" },
 };
 
 export default function ElementOfDayModal() {
@@ -28,6 +28,8 @@ export default function ElementOfDayModal() {
   const [claimed, setClaimed] = useState(false);
   const hoverAudioRef = useRef<HTMLAudioElement | null>(null);
   const clickAudioRef = useRef<HTMLAudioElement | null>(null);
+  const alienWaveAudioRef = useRef<HTMLAudioElement | null>(null);
+  const elementSoundRef = useRef<HTMLAudioElement | null>(null);
 
   // Play hover sound when hovering over the element
   const handleElementHover = useCallback(() => {
@@ -50,6 +52,26 @@ export default function ElementOfDayModal() {
     clickAudioRef.current.play().catch(() => {});
   }, []);
 
+  // Play alien-wave.mp3 when modal appears
+  const playAlienWaveSound = useCallback(() => {
+    if (!alienWaveAudioRef.current) {
+      alienWaveAudioRef.current = new Audio("/audio/alien-wave.MP3");
+      alienWaveAudioRef.current.volume = 0.6;
+    }
+    alienWaveAudioRef.current.currentTime = 0;
+    alienWaveAudioRef.current.play().catch(() => {});
+  }, []);
+
+  // Play element-specific sound when clicking the element image
+  const playElementSound = useCallback((element: ElementType) => {
+    const config = ELEMENT_CONFIG[element];
+    if (!config?.sound) return;
+
+    elementSoundRef.current = new Audio(config.sound);
+    elementSoundRef.current.volume = 0.7;
+    elementSoundRef.current.play().catch(() => {});
+  }, []);
+
   const handleClose = useCallback(() => {
     setIsOpen(false);
     setData(null);
@@ -61,8 +83,8 @@ export default function ElementOfDayModal() {
   const handleImageClick = useCallback(async () => {
     if (!data || claimed) return;
 
-    // Play click sound
-    playClickSound();
+    // Play element-specific sound
+    playElementSound(data.element);
 
     // Stop pulsing by marking as claimed
     setClaimed(true);
@@ -93,6 +115,31 @@ export default function ElementOfDayModal() {
             })
           );
 
+          // Award the relic to user's collection if there's a rewardKey
+          if (data.rewardKey && !rpcResult?.already_checked_in) {
+            console.log('[ElementOfDayModal] Attempting to award relic:', data.rewardKey, 'to user:', session.session.user.id);
+            try {
+              const { error: relicError } = await supabaseBrowser.rpc(
+                'award_relic_to_user',
+                {
+                  p_user_id: session.session.user.id,
+                  p_relic_code: data.rewardKey
+                }
+              );
+              if (relicError) {
+                console.error('[ElementOfDayModal] award_relic_to_user RPC error:', relicError);
+              } else {
+                console.log('[ElementOfDayModal] Relic awarded successfully:', data.rewardKey);
+                // Dispatch event to refresh relics collection
+                window.dispatchEvent(new CustomEvent('relics:refresh'));
+              }
+            } catch (relicErr) {
+              console.error('[ElementOfDayModal] Error awarding relic:', relicErr);
+            }
+          } else {
+            console.log('[ElementOfDayModal] Skipping relic award - rewardKey:', data.rewardKey, 'alreadyCheckedIn:', rpcResult?.already_checked_in);
+          }
+
           // Trigger profile refresh to update daily_streak_current in UI
           window.dispatchEvent(new CustomEvent('profile:force-refresh'));
         }
@@ -107,28 +154,30 @@ export default function ElementOfDayModal() {
     setTimeout(() => {
       setIsOpen(false);
 
-      // Dispatch relic celebration event
-      if (data.rewardKey) {
-        window.dispatchEvent(
-          new CustomEvent(RELIC_CELEBRATION_EVENT, {
-            detail: {
-              element: data.element,
-              rewardKey: data.rewardKey,
-              relicLabel: data.relicLabel,
-              relicImageUrl: data.relicImageUrl,
-              relicKind: data.relicKind,
-            },
-          })
-        );
-      }
-
-      // Reset state after celebration starts
+      // Dispatch relic celebration event after 1 second
       setTimeout(() => {
-        setData(null);
-        setClaimed(false);
-      }, 100);
+        if (data.rewardKey) {
+          window.dispatchEvent(
+            new CustomEvent(RELIC_CELEBRATION_EVENT, {
+              detail: {
+                element: data.element,
+                rewardKey: data.rewardKey,
+                relicLabel: data.relicLabel,
+                relicImageUrl: data.relicImageUrl,
+                relicKind: data.relicKind,
+              },
+            })
+          );
+        }
+
+        // Reset state after celebration starts
+        setTimeout(() => {
+          setData(null);
+          setClaimed(false);
+        }, 100);
+      }, 1000); // Wait 1 second before relic celebration
     }, 300);
-  }, [data, claimed, playClickSound]);
+  }, [data, claimed, playElementSound]);
 
   useEffect(() => {
     const handleShow = async (e: CustomEvent<ElementOfDayData>) => {
@@ -151,6 +200,8 @@ export default function ElementOfDayModal() {
             setData(eventData);
             setIsOpen(true);
             setClaimed(false);
+            // Play alien-wave sound when modal appears
+            playAlienWaveSound();
             return;
           }
         } catch (err) {
@@ -161,6 +212,8 @@ export default function ElementOfDayModal() {
         setData(e.detail);
         setIsOpen(true);
         setClaimed(false);
+        // Play alien-wave sound when modal appears
+        playAlienWaveSound();
       }
     };
 
@@ -168,7 +221,7 @@ export default function ElementOfDayModal() {
     return () => {
       window.removeEventListener("element-of-day:show" as any, handleShow);
     };
-  }, []);
+  }, [playAlienWaveSound]);
 
   // Close on escape key
   useEffect(() => {
@@ -246,6 +299,14 @@ export default function ElementOfDayModal() {
           {/* Close button */}
           <button
             onClick={handleClose}
+            onMouseEnter={() => {
+              if (!hoverAudioRef.current) {
+                hoverAudioRef.current = new Audio("/audio/hover.mp3");
+                hoverAudioRef.current.volume = 0.5;
+              }
+              hoverAudioRef.current.currentTime = 0;
+              hoverAudioRef.current.play().catch(() => {});
+            }}
             className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 border border-white/20 text-white/70 hover:bg-white/20 transition-colors"
             aria-label="Close"
           >
@@ -258,7 +319,7 @@ export default function ElementOfDayModal() {
             style={{
               color: elementColor,
               textShadow: `0 0 12px ${elementColor}80`,
-              fontSize: "14px",
+              fontSize: "18px",
               fontWeight: "bold",
               letterSpacing: "0.15em",
             }}

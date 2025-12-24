@@ -30,6 +30,16 @@ export function useUserRelics(userId?: string) {
     setRefetchCounter(c => c + 1);
   }, []);
 
+  // Listen for relics:refresh event to trigger refetch
+  useEffect(() => {
+    const handleRelicsRefresh = () => {
+      console.log('[useUserRelics] Received relics:refresh event, refetching...');
+      refetch();
+    };
+    window.addEventListener('relics:refresh', handleRelicsRefresh);
+    return () => window.removeEventListener('relics:refresh', handleRelicsRefresh);
+  }, [refetch]);
+
   useEffect(() => {
     if (!userId) {
       setLoading(false);
