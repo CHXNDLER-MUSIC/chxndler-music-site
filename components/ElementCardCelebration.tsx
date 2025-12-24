@@ -66,14 +66,14 @@ export default function ElementCardCelebration() {
       // Show celebration
       setIsVisible(true);
 
-      // Hide after 5 seconds and trigger callback
+      // Hide after 4 seconds and trigger callback
       timeoutRef.current = setTimeout(() => {
         setIsVisible(false);
         isShowingRef.current = false;
         if (onComplete) {
           onComplete();
         }
-      }, 5000);
+      }, 4000);
     };
 
     // Add event listener
@@ -93,11 +93,17 @@ export default function ElementCardCelebration() {
 
   return (
     <div className="fixed inset-0 z-[100000] flex items-center justify-center pointer-events-none" style={{ alignItems: 'center', paddingBottom: '10vh' }}>
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/20 backdrop-blur-sm heartcoin-backdrop-fade" />
+      {/* Backdrop - 4s animation with forwards fill to prevent flicker */}
+      <div
+        className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+        style={{ animation: 'heartcoinBackdropFade 4s ease-out forwards' }}
+      />
 
-      {/* Celebration content */}
-      <div className="relative flex flex-col items-center heartcoin-pop">
+      {/* Celebration content - 4s animation with forwards fill to prevent flicker */}
+      <div
+        className="relative flex flex-col items-center"
+        style={{ animation: 'heartcoinPop 4s ease-out forwards' }}
+      >
         {/* Glowing background circle */}
         <div
           className="absolute w-64 h-64 rounded-full blur-xl"

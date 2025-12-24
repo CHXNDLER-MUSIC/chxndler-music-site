@@ -96,6 +96,18 @@ export async function POST(request: NextRequest) {
 
   console.log(`[purchase-physical] START requestId=${requestId} method=POST pathname=${pathname}`);
 
+  // Dev-only diagnostic: skip Supabase work and confirm route is reachable
+  if (process.env.NODE_ENV === 'development' && request.headers.get('x-skip-supabase') === '1') {
+    console.log(`[purchase-physical] DEV DIAGNOSTIC requestId=${requestId} - route reachable, skipping Supabase`);
+    return NextResponse.json({
+      ok: true,
+      route: 'purchase-physical',
+      requestId,
+      diagnostic: true,
+      ts: Date.now(),
+    });
+  }
+
   try {
     // Read cookies and extract auth token
     const cookieStore = await cookies();

@@ -296,7 +296,7 @@ export default function ElementOfDayModal() {
             background: "rgba(0,0,0,0.85)",
             border: `2px solid ${elementColor}80`,
             boxShadow: `0 0 40px ${elementColor}50, 0 0 80px ${elementColor}30`,
-            overflow: "auto",
+            overflow: "visible",
           }}
         >
           {/* Close button */}
@@ -340,7 +340,7 @@ export default function ElementOfDayModal() {
           />
 
           {/* Element Image with glow and pulse - clickable */}
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-6" style={{ overflow: "visible" }}>
             <button
               onClick={handleImageClick}
               onMouseEnter={handleElementHover}
@@ -348,9 +348,11 @@ export default function ElementOfDayModal() {
               style={{
                 width: 140,
                 height: 140,
-                background: "transparent",
+                background: "none",
+                backgroundColor: "transparent",
                 border: "none",
                 padding: 0,
+                overflow: "visible",
               }}
               aria-label="Claim reward"
             >

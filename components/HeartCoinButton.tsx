@@ -20,6 +20,9 @@ import { triggerMerchCelebration } from '@/utils/merchCelebration';
 import { triggerHeartCoinCelebration } from '@/utils/heartcoinCelebration';
 import { triggerElementCardCelebration } from '@/utils/elementCardCelebration';
 
+// Get basePath from env (supports deployments with basePath like /cockpit)
+const basePath = (process.env.NEXT_PUBLIC_BASE_PATH || '').replace(/\/$/, '');
+
 // Helper function to convert MerchItem to StoreItem for backward compatibility
 const merchItemToStoreItem = (merchItem: MerchItem): StoreItem => {
   // Special-case: beanie back image should use profile_url_2 when available
@@ -885,8 +888,57 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [isRedeemingPhrase, setIsRedeemingPhrase] = useState(false);
   const [phraseStatus, setPhraseStatus] = useState<'idle'|'success'|'already'|'incorrect'|'error'>('idle');
 
+  // Check if today's secret phrase has already been redeemed on mount
+  useEffect(() => {
+    const checkTodayRedemption = async () => {
+      if (!profile?.id) return;
+
+      try {
+        // Get today's date in YYYY-MM-DD format
+        const today = new Date().toISOString().split('T')[0];
+
+        // Query secret_phrase_redemptions joined with secret_phrases
+        // to check if user has redeemed today's phrase
+        const { data, error } = await supabaseBrowser
+          .from('secret_phrase_redemptions')
+          .select(`
+            id,
+            secret_phrases!inner (
+              active_date
+            )
+          `)
+          .eq('user_id', profile.id)
+          .eq('secret_phrases.active_date', today)
+          .limit(1);
+
+        if (error) {
+          console.warn('Error checking today redemption:', error);
+          return;
+        }
+
+        // If we found a redemption for today, set status to 'already'
+        if (data && data.length > 0) {
+          setPhraseStatus('already');
+        }
+      } catch (err) {
+        console.warn('Error in checkTodayRedemption:', err);
+      }
+    };
+
+    checkTodayRedemption();
+  }, [profile?.id]);
+
   // Helper function to check if quest is completed (either from DB or local state)
   const isQuestCompleted = (quest: any) => {
+    // For daily quests, check completed_today or local state
+    if (quest.quest_key === 'JOURNAL_ENTRY_OF_DAY') {
+      return dailyQuests.journalEntry || quest.completed_today > 0 || completedQuests.has(quest.id);
+    }
+    // For other daily quests, check completed_today
+    if (quest.completed_today !== undefined) {
+      return quest.completed_today > 0 || completedQuests.has(quest.id);
+    }
+    // For one-time quests
     return (quest.times_completed > 0 && quest.max_total_completions === 1) || completedQuests.has(quest.id);
   };
 
@@ -1475,8 +1527,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     console.log('[CARD PURCHASE] Physical card in-flight set TRUE');
 
     try {
-      console.log('[CARD PURCHASE] Calling /api/cards/purchase-physical');
-      const response = await fetch('/api/cards/purchase-physical', {
+      const purchaseUrl = `${basePath}/api/cards/purchase-physical`;
+      console.log('[CARD PURCHASE] Calling', purchaseUrl);
+      const response = await fetch(purchaseUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cardId: selectedCardId })
@@ -1484,8 +1537,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
       // Handle 404 specifically - indicates route doesn't exist
       if (response.status === 404) {
-        console.error('[CARD PURCHASE] API route not found (404)');
-        try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'API route not found: /api/cards/purchase-physical', type: 'error' } })); } catch {}
+        console.error('[CARD PURCHASE] API route not found (404)', purchaseUrl);
+        try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: `API route not found: ${purchaseUrl}`, type: 'error' } })); } catch {}
         return;
       }
 
@@ -1583,7 +1636,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     console.log('[CARD SHIPPING] using orders.id', purchaseDraft.orderId);
 
     try {
-      const response = await fetch('/api/cards/updateShipping', {
+      const shippingUrl = `${basePath}/api/cards/updateShipping`;
+      const response = await fetch(shippingUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2188,7 +2242,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
     try {
       const context = determineContext();
-      const res = await fetch('/api/redeem-secret-phrase', {
+      const res = await fetch(`${basePath}/api/redeem-secret-phrase`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ context, phrase: secretPhrase }),
@@ -2892,7 +2946,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           })()}
                         >
                           {isQuestCompleted(quest)
-                            ? 'COMPLETED'
+                            ? (quest.quest_key === 'JOURNAL_ENTRY_OF_DAY' ? 'REFLECTED' : 'COMPLETED')
                             : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
                               ? 'REFLECT'
                               : quest.quest_key === 'LISTEN_SONG_OF_DAY'
@@ -3628,8 +3682,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       }}
                                       onMouseEnter={(e) => { e.stopPropagation(); try { sfx.play('hover', 0.3); } catch {} }}
                                       disabled={isPurchasing}
-                                      className={`absolute flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-110 transition-all duration-200 ${isPurchasing ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                      style={{ left: '-40px', top: '50%', transform: 'translateY(-50%)', boxShadow: '0 0 8px rgba(255,255,255,0.3)' }}
+                                      className={`absolute left-[-40px] top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-125 transition-all duration-200 ${isPurchasing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                      style={{ boxShadow: '0 0 8px rgba(255,255,255,0.3)' }}
                                       aria-label="Previous item"
                                     >
                                       <span className="text-white text-sm font-bold">←</span>
@@ -3643,8 +3697,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       }}
                                       onMouseEnter={(e) => { e.stopPropagation(); try { sfx.play('hover', 0.3); } catch {} }}
                                       disabled={isPurchasing}
-                                      className={`absolute flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-110 transition-all duration-200 ${isPurchasing ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                      style={{ right: '-40px', top: '50%', transform: 'translateY(-50%)', boxShadow: '0 0 8px rgba(255,255,255,0.3)' }}
+                                      className={`absolute right-[-40px] top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-125 transition-all duration-200 ${isPurchasing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                      style={{ boxShadow: '0 0 8px rgba(255,255,255,0.3)' }}
                                       aria-label="Next item"
                                     >
                                       <span className="text-white text-sm font-bold">→</span>
@@ -3665,7 +3719,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                         disabled={isPurchasing}
                                         className={`w-2 h-2 rounded-full transition-all duration-300 ${
                                           index === currentMerchIndex
-                                            ? 'bg-[#F2EF1D] shadow-[0_0_6px_rgba(242,239,29,0.8)]'
+                                            ? 'bg-white shadow-[0_0_6px_rgba(255,255,255,0.8)]'
                                             : 'bg-white/30 hover:bg-white/50'
                                         } ${isPurchasing ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                                       />
@@ -3962,12 +4016,23 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               </button>
                             </div>
 
-                              {/* Card Index Indicator - below image */}
-                              <div
-                                className="text-center text-white/70 text-xs mb-2"
-                                style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}
-                              >
-                                {currentCardIndex + 1} of {filteredCards.length}
+                              {/* Card Index Indicator Dots - below image */}
+                              <div className="flex justify-center items-center gap-1.5 mb-2">
+                                {filteredCards.map((_, index) => (
+                                  <button
+                                    key={index}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      try { sfx.play('click', 0.4); } catch {}
+                                      setCurrentCardIndex(index);
+                                    }}
+                                    className={`w-2 h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                                      index === currentCardIndex
+                                        ? 'bg-white shadow-[0_0_6px_rgba(255,255,255,0.8)]'
+                                        : 'bg-white/30 hover:bg-white/50'
+                                    }`}
+                                  />
+                                ))}
                               </div>
 
                               {/* Card Details - Below Image */}
@@ -4707,7 +4772,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
                     {/* TiltSpinCard wrapper for 3D rotation - with floating animation */}
                     <TiltSpinCard
-                      className="relative w-full h-[320px] hover:scale-110 transition-all duration-200 cursor-pointer group hover:drop-shadow-[0_0_30px_rgba(255,255,255,0.5)]"
+                      className="relative w-full h-[360px] hover:scale-110 transition-all duration-200 cursor-pointer group hover:drop-shadow-[0_0_30px_rgba(255,255,255,0.5)]"
                       style={{ perspective: '1000px', animation: 'merchFloat 2.5s ease-in-out infinite' }}
                       maxRotateX={10}
                       sensitivity={0.3}

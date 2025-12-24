@@ -121,6 +121,18 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
     }
   }, [isOpen, user]);
 
+  // Listen for relics:refresh event to update collection after Element of Day claim
+  useEffect(() => {
+    const handleRelicsRefresh = () => {
+      if (user) {
+        console.log('[ProfilePopover] Received relics:refresh event, refetching...');
+        fetchUnlockedItems();
+      }
+    };
+    window.addEventListener('relics:refresh', handleRelicsRefresh);
+    return () => window.removeEventListener('relics:refresh', handleRelicsRefresh);
+  }, [user]);
+
   // Fetch active boosts for today (NY timezone)
   useEffect(() => {
     if (!isOpen || !user) {

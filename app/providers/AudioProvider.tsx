@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import { useDailySongProgress } from "@/hooks/useDailySongProgress";
 
 // Track info for audio and visual display
 export type TrackInfo = {
@@ -236,6 +237,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const sessionTrackIdRef = useRef<string | null>(null);
   const isRecordingRef = useRef<boolean>(false);
   const currentTrackRef = useRef<string | null>(null);
+
+  // Refs to track warp state for playerStore subscription (avoids stale closure issues)
+  const warpCompletedRef = useRef<boolean>(state.warpCompleted);
+  const pendingTrackRef = useRef<string | null>(state.pendingTrack);
 
   // Record listen session to song_listen_sessions
   const recordListenSession = async (trackId: string, startedAt: Date, endedAt: Date) => {
@@ -514,6 +519,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   // This will be used for auto-playing after warp completion
   const autoPlayAfterWarpRef = useRef<string | null>(null);
+
+  // Daily song progress tracking - awards HeartCoin at 50% completion
+  // Uses audioRef.current as source of truth for currentTime/duration
+  useDailySongProgress({
+    audioElement: audioRef.current,
+    trackSlug: state.currentTrack?.id || null,
+    isPlaying: state.playing,
+    enabled: true // Only tracks when authenticated user is playing a song
+  });
 
   // Normalize incoming slugs so dropdown selections (e.g. `we're-just-friends`) map to TRACK_INFO ids (e.g. `were-just-friends`)
   const normalizeSlug = (slug?: string): string => {
@@ -983,7 +997,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     stopAllAudio: stopAllAudioInternal,
     
     setPendingTrack: (trackId: string | null) => {
-      setState(s => ({ ...s, pendingTrack: trackId }));
+      // When setting a new pending track, reset warpCompleted to false
+      // This ensures the playerStore subscription defers playback until warp finishes
+      setState(s => ({ ...s, pendingTrack: trackId, warpCompleted: trackId ? false : s.warpCompleted }));
     },
     
     markWarpCompleted: () => {
@@ -998,6 +1014,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     currentTrack: state.currentTrack,
     
   }), [state.src, state.currentTrack, state.playing]);
+
+  // Keep refs in sync with state (for use in subscription callbacks to avoid stale closures)
+  useEffect(() => {
+    warpCompletedRef.current = state.warpCompleted;
+  }, [state.warpCompleted]);
+
+  useEffect(() => {
+    pendingTrackRef.current = state.pendingTrack;
+  }, [state.pendingTrack]);
 
   // Auto-play track when warp completes
   useEffect(() => {
@@ -1047,7 +1072,17 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
               setState(s => ({ ...s, currentTrack: trackInfo }));
             }
 
-            // Always switch to the new track, even if something else is playing
+            // If there's already a pending track waiting for warp to complete,
+            // or if warp hasn't completed yet (warpCompleted is false after a song selection),
+            // don't play immediately - set as pending track and let the warpCompleted effect handle it
+            // Use refs to get current values (avoids stale closure issue)
+            if (pendingTrackRef.current || !warpCompletedRef.current) {
+              console.log('🎵 AudioProvider: Warp not complete yet, setting as pending track:', currentMainId);
+              setState(s => ({ ...s, pendingTrack: currentMainId }));
+              return;
+            }
+
+            // Warp has already completed, so we can play immediately
             console.log('🎵 AudioProvider: Switching to new track:', currentMainId);
             api.playTrack(currentMainId).catch(console.error);
           }
