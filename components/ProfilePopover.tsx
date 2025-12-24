@@ -34,7 +34,7 @@ interface Relic {
 interface UserRelic {
   id: string;
   relic_id: string;
-  earned_at: string;
+  obtained_at: string;
   relics: Relic;
 }
 
@@ -514,6 +514,8 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
     if (!user) return;
 
     setLoading(true);
+    console.log('[ProfilePopover] Fetching unlocked items for user:', user.id);
+
     try {
       // Fetch all relics and unlocked badges/relics in parallel
       const [badgeResult, relicResult] = await Promise.all([
@@ -536,7 +538,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
           .select(`
             id,
             relic_id,
-            earned_at,
+            obtained_at,
             relics (
               id,
               label,
@@ -549,24 +551,41 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
 
       // Handle badges
       if (badgeResult.error) {
-        console.error('Error fetching user badges:', badgeResult.error);
+        console.error('[ProfilePopover] Error fetching user badges:', badgeResult.error);
         setUserBadges([]);
       } else {
+        console.log('[ProfilePopover] Fetched user badges:', badgeResult.data?.length || 0);
         setUserBadges(badgeResult.data || []);
       }
 
-      // Handle relics
+      // Handle relics with detailed error logging
       if (relicResult.error) {
-        if (!relicResult.error.message?.includes('relation') && !relicResult.error.message?.includes('does not exist')) {
-          console.error('Error fetching user relics:', relicResult.error);
+        console.error('[ProfilePopover] Error fetching user_relics:', {
+          message: relicResult.error.message,
+          code: relicResult.error.code,
+          details: relicResult.error.details,
+          hint: relicResult.error.hint,
+        });
+
+        // Check for RLS/permission denied errors
+        if (
+          relicResult.error.message?.toLowerCase().includes('permission') ||
+          relicResult.error.message?.toLowerCase().includes('rls') ||
+          relicResult.error.code === '42501' ||
+          relicResult.error.code === 'PGRST301'
+        ) {
+          console.error('[ProfilePopover] RLS/Permission error on user_relics table - SELECT is blocked. All relics will show as locked. Check your Supabase RLS policies for user_relics.');
         }
+
         setUserRelics([]);
       } else {
+        console.log('[ProfilePopover] Fetched user_relics:', relicResult.data?.length || 0, 'relic_ids:', relicResult.data?.map(r => r.relic_id));
+
         // Transform the user relics data to match our interface
         const transformedUserRelics = relicResult.data?.map(userRelic => ({
           id: userRelic.id,
           relic_id: userRelic.relic_id,
-          earned_at: userRelic.earned_at,
+          obtained_at: userRelic.obtained_at,
           relics: {
             id: userRelic.relics.id,
             relic_name: userRelic.relics.label,
@@ -574,7 +593,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
             description: userRelic.relics.code
           }
         })) || [];
-        
+
         setUserRelics(transformedUserRelics);
       }
 
@@ -590,7 +609,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
       // Build available images array
       buildAvailableImages(badgeResult.data || [], relicResult.data || []);
     } catch (error) {
-      console.error('Error fetching unlocked items:', error);
+      console.error('[ProfilePopover] Unexpected error fetching unlocked items:', error);
       setUserRelics([]);
       setUserBadges([]);
       setAllRelics([]);

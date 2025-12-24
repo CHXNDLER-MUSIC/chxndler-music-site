@@ -42,6 +42,7 @@ export function useUserRelics(userId?: string) {
 
   useEffect(() => {
     if (!userId) {
+      console.log('[useUserRelics] No userId provided, skipping fetch');
       setLoading(false);
       return;
     }
@@ -52,48 +53,70 @@ export function useUserRelics(userId?: string) {
       try {
         setLoading(true);
         setError(null);
+        console.log('[useUserRelics] Fetching relics for user:', userId);
 
-        // First, get all available relics
+        // First, get all available relics (only kind='RELIC', not boosts/slots)
         const { data: allRelics, error: relicsError } = await supabaseClient
           .from('relics')
-          .select('*');
+          .select('id, code, label, kind, rarity, image_url, description, created_at')
+          .eq('kind', 'RELIC')
+          .order('created_at', { ascending: true });
 
         if (relicsError) {
+          console.error('[useUserRelics] Error fetching relics definitions:', relicsError);
           throw relicsError;
         }
+        console.log('[useUserRelics] Fetched', allRelics?.length || 0, 'relic definitions');
 
-        // Then get user's unlocked relics
-        const { data: userRelics, error: userRelicsError } = await supabaseClient
+        // Then get user's unlocked relics from user_relics
+        const { data: userRelicsData, error: userRelicsError } = await supabaseClient
           .from('user_relics')
-          .select(`
-            relic_id,
-            obtained_at,
-            relics!inner (
-              id,
-              code,
-              label,
-              kind,
-              rarity,
-              image_url,
-              description
-            )
-          `)
+          .select('relic_id, obtained_at')
           .eq('user_id', userId);
 
         if (userRelicsError) {
-          throw userRelicsError;
+          // Log detailed error info for RLS debugging
+          console.error('[useUserRelics] Error fetching user_relics:', {
+            message: userRelicsError.message,
+            code: userRelicsError.code,
+            details: userRelicsError.details,
+            hint: userRelicsError.hint,
+          });
+
+          // Check for RLS/permission denied errors
+          if (
+            userRelicsError.message?.toLowerCase().includes('permission') ||
+            userRelicsError.message?.toLowerCase().includes('rls') ||
+            userRelicsError.code === '42501' ||
+            userRelicsError.code === 'PGRST301'
+          ) {
+            console.error('[useUserRelics] RLS/Permission error on user_relics table - SELECT is blocked. All relics will show as locked. Check your Supabase RLS policies for user_relics.');
+          }
+
+          // Continue with empty user relics instead of throwing
+          console.warn('[useUserRelics] Continuing with empty user_relics due to error');
         }
 
         if (!mounted) return;
 
-        // Create a map of unlocked relic IDs for quick lookup
-        const unlockedRelicIds = new Set(userRelics?.map(ur => ur.relic_id) || []);
+        // Create a Set of owned relic_ids for quick lookup
+        const ownedRelicIds = new Set<string>(
+          (userRelicsData || []).map(ur => ur.relic_id)
+        );
+        console.log('[useUserRelics] User owns', ownedRelicIds.size, 'relics:', Array.from(ownedRelicIds));
+
+        // Build a map of relic_id -> obtained_at for display
+        const obtainedAtMap = new Map<string, string>();
+        (userRelicsData || []).forEach(ur => {
+          if (ur.relic_id && ur.obtained_at) {
+            obtainedAtMap.set(ur.relic_id, ur.obtained_at);
+          }
+        });
 
         // Combine all relics with unlock status
         const relicsWithStatus: RelicWithStatus[] = (allRelics || []).map(relic => {
-          const userRelic = userRelics?.find(ur => ur.relic_id === relic.id);
-          const isUnlocked = unlockedRelicIds.has(relic.id);
-          
+          const isUnlocked = ownedRelicIds.has(relic.id);
+
           return {
             id: relic.id,
             code: relic.code,
@@ -102,16 +125,22 @@ export function useUserRelics(userId?: string) {
             rarity: relic.rarity,
             image_url: relic.image_url,
             description: relic.description,
-            obtained_at: userRelic?.obtained_at || null,
+            obtained_at: obtainedAtMap.get(relic.id) || null,
             isUnlocked,
             isLocked: !isUnlocked
           };
         });
 
+        console.log('[useUserRelics] Built relicsWithStatus:', {
+          total: relicsWithStatus.length,
+          unlocked: relicsWithStatus.filter(r => r.isUnlocked).length,
+          locked: relicsWithStatus.filter(r => r.isLocked).length,
+        });
+
         setRelics(relicsWithStatus);
       } catch (err) {
         if (!mounted) return;
-        console.error('Error fetching user relics:', err);
+        console.error('[useUserRelics] Unexpected error:', err);
         setError(err instanceof Error ? err.message : 'Failed to load relics');
       } finally {
         if (mounted) {
