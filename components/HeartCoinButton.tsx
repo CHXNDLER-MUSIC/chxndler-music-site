@@ -7,6 +7,7 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { track } from "@/lib/analytics";
 import { useBonusQuests } from '@/hooks/useBonusQuests';
+import { getAllQuestsForUser } from '@/lib/bonusQuests';
 import { useUserCards } from "@/hooks/useUserCards";
 import { BonusQuestWithCompletion } from '@/types/bonusQuests';
 import { useMerchItems } from '@/hooks/useMerchItems';
@@ -274,7 +275,7 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, onOpenBinder, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, isActive = false, journalCompleted = false, onJournalCompleted, onClose, onBeamColorChange, ...restProps }: Props) {
   const { profile, refreshProfile, setIsJournalOpen } = useProfile();
-  const { elementOfDay } = usePlanetRewardsContext();
+  const { elementOfDay, songOfDayTitle } = usePlanetRewardsContext();
 
   // New hooks for database-driven merch
   const { items: merchItems, loading: merchLoading, error: merchError } = useMerchItems('physical');
@@ -448,6 +449,16 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       setIsFromCollectCard(false);
     }
   }, [isActive, open, isFromCollectCard]);
+
+  // Listen for close-heartcoin-modal event
+  useEffect(() => {
+    const handleCloseModal = () => {
+      console.log('[HeartCoinButton] Received close-heartcoin-modal event');
+      setOpen(false);
+    };
+    window.addEventListener('close-heartcoin-modal', handleCloseModal);
+    return () => window.removeEventListener('close-heartcoin-modal', handleCloseModal);
+  }, []);
 
   // Listen for openHeartCoinCards event from collect card button
   useEffect(() => {
@@ -840,7 +851,28 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   
   // Bonus quests hook
   const { quests: bonusQuests, status: bonusQuestsStatus, errorMessage: bonusQuestsError, isLoggedIn, completeQuest, refetchQuests } = useBonusQuests();
-  
+
+  // Daily quests state (fetched from database)
+  const [dbDailyQuests, setDbDailyQuests] = useState<BonusQuestWithCompletion[]>([]);
+  const [dailyQuestsLoading, setDailyQuestsLoading] = useState(false);
+
+  // Fetch daily quests from database
+  useEffect(() => {
+    const fetchDailyQuests = async () => {
+      setDailyQuestsLoading(true);
+      try {
+        const userId = profile?.id || null;
+        const { dailyQuests } = await getAllQuestsForUser(userId);
+        setDbDailyQuests(dailyQuests);
+      } catch (error) {
+        console.error('[HeartCoinButton] Error fetching daily quests:', error);
+      } finally {
+        setDailyQuestsLoading(false);
+      }
+    };
+    fetchDailyQuests();
+  }, [profile?.id]);
+
   // Helper function to check if quest is completed (either from DB or local state)
   const isQuestCompleted = (quest: any) => {
     return (quest.times_completed > 0 && quest.max_total_completions === 1) || completedQuests.has(quest.id);
@@ -2619,97 +2651,165 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
           {/* Daily Quests Tab Content */}
           {activeEarnTab === 'DAILY QUESTS' && (
-            <div className="mb-4 flex-1 min-h-0 flex flex-col gap-2">
-            {/* Element of the Day */}
-            <div className="p-2 rounded border border-white/30 bg-white/10 flex-1 min-h-0 relative">
-              <div
-                className="absolute top-2 right-2 flex items-center"
-                style={{ color: dailyQuests.elementTapped ? '#666' : '#90EE90', textShadow: dailyQuests.elementTapped ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' }}
-              >
-                <span className="text-sm">{dailyQuests.elementTapped ? '✓ +1' : '+1'}</span>
-                <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8 ml-2" />
-              </div>
-              <div>
-                <div className="text-sm font-bold" style={{ color: '#FFFFFF' }}>
-                  1. Tap the Element of the Day
-                </div>
-                <div className="text-xs" style={{ color: '#FFFFFF', opacity: 0.8 }}>
-                  Receive a random reward: HeartCoins, relics, or binder slot unlocks.
-                </div>
-              </div>
-              <div className="mt-2 flex flex-col items-center">
-                <button
-                  onClick={handleElementTap}
-                  disabled={dailyQuests.elementTapped}
-                  className="flex items-center"
-                >
-                  <img
-                    src={getElementIcon(elementOfDay || 'heart')}
-                    alt={`${elementOfDay || 'heart'} element`}
-                    className="w-16 h-16 rounded-full object-cover"
-                    style={{
-                      filter: dailyQuests.elementTapped ? 'grayscale(1)' : 'drop-shadow(0 0 10px rgba(255,215,0,0.9))'
-                    }}
-                  />
-                </button>
-              </div>
+            <div className="mb-1 flex-1 min-h-0 flex flex-col gap-0.5">
+              {dailyQuestsLoading ? (
+                <div className="text-center text-white py-4">Loading daily quests...</div>
+              ) : dbDailyQuests.length === 0 ? (
+                <div className="text-center text-white/60 py-4">No daily quests available</div>
+              ) : (
+                dbDailyQuests.map((quest, index) => (
+                  <div key={quest.id} className="flex flex-col px-2 pt-0.5 pb-1 rounded border border-white/30 bg-white/10 flex-1 min-h-0 relative">
+                    <div className="absolute top-1 right-1 flex items-center" style={{
+                      color: isQuestCompleted(quest) ? '#666' : '#90EE90',
+                      textShadow: isQuestCompleted(quest) ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90'
+                    }}>
+                      <span className="text-xs font-bold">{isQuestCompleted(quest) ? '✓' : ''} +{quest.reward_heartcoins || 1}</span>
+                      <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 mr-10">
+                        <div className="text-base font-bold flex items-center gap-2" style={{ color: '#FFFFFF' }}>
+                          {quest.quest_key === 'TAP_ELEMENT_OF_DAY' ? (
+                            <>
+                              <img
+                                src="/elements/elementals.webp"
+                                alt=""
+                                className="w-8 h-8"
+                                style={{ filter: 'drop-shadow(0 0 8px cyan) drop-shadow(0 0 16px cyan)' }}
+                              />
+                              Element of the Day
+                            </>
+                          ) : quest.quest_key === 'LISTEN_SONG_OF_DAY' ? (
+                            <div className="flex flex-col">
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src="/elements/music.webp"
+                                  alt=""
+                                  className="w-8 h-8"
+                                  style={{ filter: 'drop-shadow(0 0 8px white) drop-shadow(0 0 16px white)' }}
+                                />
+                                Song of the Day
+                              </div>
+                              {songOfDayTitle && (
+                                <div className="text-sm font-normal ml-10" style={{ color: '#90EE90', textShadow: '0 0 8px #90EE90' }}>
+                                  {songOfDayTitle}
+                                </div>
+                              )}
+                            </div>
+                          ) : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY' ? (
+                            <>
+                              <img
+                                src="/elements/journal.webp"
+                                alt=""
+                                className="w-8 h-8"
+                                style={{ filter: 'drop-shadow(0 0 8px yellow) drop-shadow(0 0 16px yellow)' }}
+                              />
+                              Journal Entry of the Day
+                            </>
+                          ) : (
+                            <>{index + 1}. {quest.title}</>
+                          )}
+                        </div>
+                        <div className="text-sm" style={{ color: '#FFFFFF', opacity: 0.8 }}>
+                          {quest.quest_key === 'TAP_ELEMENT_OF_DAY'
+                            ? 'Unlock a surprise reward such as boosts, relics, or a binder slot.'
+                            : quest.description}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Special rendering for TAP_ELEMENT_OF_DAY */}
+                    {quest.quest_key === 'TAP_ELEMENT_OF_DAY' && (
+                      <div className="-mt-1 -mb-2 flex flex-col items-center">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const targetElement = elementOfDay || 'heart';
+                            console.log('[HeartCoinButton] Element image clicked, warping to:', targetElement);
+                            try { sfx.play('click', 0.8); } catch {}
+                            // Close the popup first
+                            setOpen(false);
+                            // Also dispatch event to close any HeartCoin modals
+                            window.dispatchEvent(new CustomEvent('close-heartcoin-modal'));
+                            // Delay to let heart coin display close before warp
+                            setTimeout(() => {
+                              // Open the 3D planet view via prop or event
+                              if (onOpenBlueDisplay) {
+                                console.log('[HeartCoinButton] Calling onOpenBlueDisplay');
+                                onOpenBlueDisplay();
+                              } else {
+                                window.dispatchEvent(new CustomEvent('open-blue-display'));
+                              }
+                              // Dispatch planet:warp event to trigger actual warp animation
+                              setTimeout(() => {
+                                console.log('[HeartCoinButton] Dispatching planet:warp event');
+                                window.dispatchEvent(new CustomEvent('planet:warp', {
+                                  detail: { element: targetElement }
+                                }));
+                                // After warp completes, show Element of the Day modal
+                                setTimeout(() => {
+                                  console.log('[HeartCoinButton] Showing Element of the Day modal');
+                                  window.dispatchEvent(new CustomEvent('element-of-day:show', {
+                                    detail: { element: targetElement }
+                                  }));
+                                }, 1500); // Wait for warp animation to complete
+                              }, 300); // Small delay to let blue display open first
+                            }, 150); // Let heart coin display close first
+                          }}
+                          className="flex items-center cursor-pointer hover:scale-110 transition-transform"
+                          onMouseEnter={() => { try { sfx.play('hover', 0.5); } catch {} }}
+                          style={{ pointerEvents: 'auto', zIndex: 10 }}
+                        >
+                          <img
+                            src={getElementIcon(elementOfDay || 'heart')}
+                            alt={`${elementOfDay || 'heart'} element`}
+                            className="w-16 h-16 rounded-full object-cover"
+                            style={{
+                              filter: isQuestCompleted(quest) ? 'grayscale(1)' : 'drop-shadow(0 0 10px rgba(255,215,0,0.9))'
+                            }}
+                          />
+                        </button>
+                      </div>
+                    )}
+                    {/* Button for other quests */}
+                    {quest.quest_key !== 'TAP_ELEMENT_OF_DAY' && (
+                      <div className="mt-2 flex justify-center">
+                        <button
+                          onClick={() => {
+                            if (quest.quest_key === 'JOURNAL_ENTRY_OF_DAY') {
+                              handleJournalEntry();
+                            } else if (quest.quest_key === 'LISTEN_SONG_OF_DAY') {
+                              // TODO: Implement song of day handler
+                              try { sfx.play('click', 0.6); } catch {}
+                            }
+                          }}
+                          disabled={isQuestCompleted(quest)}
+                          onMouseEnter={() => { try { sfx.play('hover', 0.5); } catch {} }}
+                          className="px-5 py-2 text-xs rounded border font-bold transition-all duration-200 pointer-events-auto relative z-10 min-w-[140px] hover:scale-105"
+                          style={{
+                            background: isQuestCompleted(quest) ? 'rgba(0,255,0,0.1)' : 'rgba(78,205,196,0.15)',
+                            color: isQuestCompleted(quest) ? '#00FF00' : '#4ECDC4',
+                            borderColor: isQuestCompleted(quest) ? '#00FF00' : '#4ECDC4',
+                            textShadow: isQuestCompleted(quest) ? '0 0 8px #00FF00, 0 0 16px #00FF00' : '0 0 8px rgba(78,205,196,0.5)',
+                            boxShadow: isQuestCompleted(quest) ? '0 0 10px rgba(0,255,0,0.4), 0 0 20px rgba(0,255,0,0.2)' : 'none'
+                          }}
+                        >
+                          {isQuestCompleted(quest)
+                            ? 'COMPLETED'
+                            : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                              ? 'OPEN JOURNAL'
+                              : quest.quest_key === 'LISTEN_SONG_OF_DAY'
+                                ? 'LISTEN'
+                                : 'COMPLETE'
+                          }
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
-
-            {/* Journal Entry */}
-            <div className="flex flex-col p-2 rounded border border-white/30 bg-white/10 flex-1 min-h-0">
-              <div className="flex items-center justify-between">
-                <div className="flex-1 mr-4">
-                  <div className="text-sm font-bold" style={{ color: '#FFFFFF' }}>
-                    2. Journal Entry of the Day
-                  </div>
-                  <div className="text-xs" style={{ color: '#FFFFFF', opacity: 0.8 }}>
-                    Answer today's journal prompt to earn one HEART coin.
-                  </div>
-                </div>
-                <div className="flex flex-col items-center flex-shrink-0">
-                  <span className="text-[10px] font-bold" style={{
-                    color: dailyQuests.journalEntry ? '#666' : '#90EE90',
-                    textShadow: dailyQuests.journalEntry ? 'none' : '0 0 6px #90EE90'
-                  }}>Earn</span>
-                  <div className="flex items-center" style={{ color: dailyQuests.journalEntry ? '#666' : '#90EE90', textShadow: dailyQuests.journalEntry ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90' }}>
-                    <span className="text-sm">{dailyQuests.journalEntry ? '✓ +1' : '+1'}</span>
-                    <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8 ml-2" />
-                  </div>
-                </div>
-              </div>
-              <div className="mt-2 flex justify-center">
-                <button
-                  onClick={handleJournalEntry}
-                  disabled={dailyQuests.journalEntry}
-                  onMouseEnter={(e) => {
-                    try { sfx.play('hover', 0.3); } catch {}
-                    if (!dailyQuests.journalEntry) {
-                      e.currentTarget.style.transform = 'scale(1.05)';
-                      e.currentTarget.style.boxShadow = '0 0 20px rgba(78,205,196,0.8), 0 0 40px rgba(78,205,196,0.4)';
-                      e.currentTarget.style.textShadow = '0 0 10px #4ECDC4, 0 0 20px #4ECDC4';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!dailyQuests.journalEntry) {
-                      e.currentTarget.style.transform = 'scale(1)';
-                      e.currentTarget.style.boxShadow = 'none';
-                      e.currentTarget.style.textShadow = '0 0 8px rgba(78,205,196,0.5)';
-                    }
-                  }}
-                  className="px-5 py-2 text-xs rounded border font-bold transition-all duration-200 pointer-events-auto relative z-10 min-w-[140px]"
-                  style={{
-                    background: dailyQuests.journalEntry ? 'rgba(0,255,0,0.1)' : 'rgba(78,205,196,0.15)',
-                    color: dailyQuests.journalEntry ? '#00FF00' : '#4ECDC4',
-                    borderColor: dailyQuests.journalEntry ? '#00FF00' : '#4ECDC4',
-                    textShadow: dailyQuests.journalEntry ? '0 0 8px #00FF00, 0 0 16px #00FF00' : '0 0 8px rgba(78,205,196,0.5)',
-                    boxShadow: dailyQuests.journalEntry ? '0 0 10px rgba(0,255,0,0.4), 0 0 20px rgba(0,255,0,0.2)' : 'none'
-                  }}
-                >
-                  {dailyQuests.journalEntry ? 'COMPLETED' : 'OPEN JOURNAL'}
-                </button>
-              </div>
-            </div>
-          </div>
           )}
 
           {/* Bonus Quests Tab Content */}
@@ -2725,9 +2825,38 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 <div className="text-center text-white/60 py-4">No bonus quests available</div>
               ) : (
                 bonusQuests.map((quest, index) => (
-                  <div key={quest.id} className={`flex flex-col px-2 py-1 rounded border border-white/30 bg-white/10 ${index < bonusQuests.length - 1 ? 'mb-0.5' : ''}`}>
+                  <div key={quest.id} className={`flex flex-col px-2 py-1 rounded border border-white/30 bg-white/10 relative ${index < bonusQuests.length - 1 ? 'mb-0.5' : ''}`}>
+                    {/* HeartCoin reward - top right */}
+                    <div className="absolute top-1 right-1">
+                      {quest.quest_key === 'LISTEN_ELEMENT_SONG' ? (
+                        <div className="flex items-center" style={{
+                          color: isQuestCompleted(quest) ? '#666' : '#90EE90',
+                          textShadow: isQuestCompleted(quest) ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90'
+                        }}>
+                          <span className="text-xs">+</span>
+                          <img
+                            src={`/cards/${(profile?.element || 'HEART').toUpperCase()}.webp`}
+                            alt="Element Card"
+                            className="h-8 ml-0.5 object-contain"
+                            style={{ filter: 'drop-shadow(0 0 4px white)' }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex items-center" style={{
+                          color: (isQuestCompleted(quest) && quest.quest_key !== 'INVITE_FRIEND') ? '#666' : '#90EE90',
+                          textShadow: (isQuestCompleted(quest) && quest.quest_key !== 'INVITE_FRIEND') ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90'
+                        }}>
+                          <span className="text-xs font-bold">
+                            {quest.quest_key === 'INVITE_FRIEND'
+                              ? 'Daily +1'
+                              : (quest.reward_notes || `+${quest.reward_heartcoins}`)}
+                          </span>
+                          <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
+                        </div>
+                      )}
+                    </div>
                     <div className="flex items-center justify-between">
-                      <div className="flex-1 mr-2">
+                      <div className="flex-1 mr-10">
                         {quest.quest_key === 'ATTEND_LIVESTREAM' && showAutoTextBox ? (
                           phraseValidationResult ? (
                             <div className="text-xs font-bold flex items-center h-8" style={{
@@ -2749,23 +2878,39 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           )
                         ) : (
                           <>
-                            <div className="text-xs font-bold" style={{ color: '#FFFFFF' }}>
-                              {index + 1}. {quest.title}
+                            <div className="text-base font-bold flex items-center gap-2" style={{ color: '#FFFFFF' }}>
+                              {quest.quest_key === 'ATTEND_LIVESTREAM' ? (
+                                <>
+                                  <img src="/elements/antennas.webp" alt="" className="w-8 h-8"
+                                    style={{ filter: 'drop-shadow(0 0 8px #FF69B4) drop-shadow(0 0 16px #FF69B4)' }} />
+                                  {quest.title}
+                                </>
+                              ) : quest.quest_key === 'INVITE_FRIEND' ? (
+                                <>
+                                  <img src="/elements/merch.webp" alt="" className="w-8 h-8"
+                                    style={{ filter: 'drop-shadow(0 0 8px cyan) drop-shadow(0 0 16px cyan)' }} />
+                                  Invite an Alien
+                                </>
+                              ) : quest.quest_key === 'LISTEN_ELEMENT_SONG' ? (
+                                <>
+                                  <img
+                                    src={getElementIcon(profile?.element || 'heart')}
+                                    alt=""
+                                    className="w-8 h-8 rounded-full object-cover"
+                                    style={{ filter: 'drop-shadow(0 0 8px white) drop-shadow(0 0 16px white)' }} />
+                                  {quest.title}
+                                </>
+                              ) : (
+                                <>{index + 1}. {quest.title}</>
+                              )}
                             </div>
-                            <div className="text-[10px]" style={{ color: '#FFFFFF', opacity: 0.8 }}>
-                              {quest.description}
+                            <div className="text-sm" style={{ color: '#FFFFFF', opacity: 0.8 }}>
+                              {quest.quest_key === 'INVITE_FRIEND'
+                                ? 'Invite a friend into the Heartverse. Share the signal.'
+                                : quest.description}
                             </div>
                           </>
                         )}
-                      </div>
-                      <div className="flex flex-col items-center flex-shrink-0">
-                        <div className="flex items-center" style={{
-                          color: (isQuestCompleted(quest) && quest.quest_key !== 'INVITE_FRIEND') ? '#666' : '#90EE90',
-                          textShadow: (isQuestCompleted(quest) && quest.quest_key !== 'INVITE_FRIEND') ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90'
-                        }}>
-                          <span className="text-base">{quest.reward_notes || `+${quest.reward_heartcoins}`}</span>
-                          <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8 ml-1" />
-                        </div>
                       </div>
                     </div>
                     <div className="mt-0.5 flex justify-center">
@@ -2941,7 +3086,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             (quest.quest_key === 'ATTEND_LIVESTREAM' && (secretPhraseLoading || isRedeemingPhrase || phraseStatus === 'success' || phraseStatus === 'already'))
                           )
                         }
-                        className="px-2 py-1 text-xs rounded border font-bold transition-all duration-200"
+                        className="px-4 py-1 text-xs rounded border font-bold transition-all duration-200 min-w-[120px] hover:scale-105"
                         style={{
                           background: !isLoggedIn
                             ? 'rgba(78,205,196,0.2)'
@@ -3023,12 +3168,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     ? 'PASSWORD ACCEPTED'
                                     : (attendLivestreamConfirming ? 'CONFIRM' : 'CHECK IN'))
                               : quest.quest_key === 'INVITE_FRIEND'
-                                ? (inviteFriendShared ? 'CONFIRM' : 'INVITE FRIEND')
+                                ? (inviteFriendShared ? 'CONFIRM' : 'SEND SIGNAL')
                                 : quest.quest_key === 'SECRET_PHRASE'
                                   ? (secretPhraseInputVisible === quest.id
                                       ? (secretPhraseLoading ? 'SUBMITTING...' : 'SUBMIT')
                                       : 'ENTER PHRASE')
-                                : 'COMPLETE')}
+                                : quest.quest_key === 'LISTEN_ELEMENT_SONG'
+                                  ? 'VISIT ELEMENT'
+                                  : 'COMPLETE')}
                       </button>
                     </div>
                     {/* Secret phrase input field */}

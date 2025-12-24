@@ -40,7 +40,7 @@ export async function GET() {
     // Fetch today's element using the server-computed date
     const { data, error } = await supabase
       .from('element_of_day')
-      .select('day, element, relic_key, intention_of_day')
+      .select('day, element, relic_key, intention_of_day, song_id')
       .eq('day', serverDate)
       .maybeSingle();
 
@@ -71,6 +71,22 @@ export async function GET() {
       }
     }
 
+    // Get song of the day - find a released song matching today's element
+    let songOfDayTitle: string | null = null;
+    if (data?.element) {
+      const { data: songData, error: songError } = await supabase
+        .from('songs')
+        .select('title')
+        .eq('element', data.element.toUpperCase())
+        .eq('is_released', true)
+        .limit(1)
+        .maybeSingle();
+
+      if (!songError && songData) {
+        songOfDayTitle = songData.title;
+      }
+    }
+
     return NextResponse.json({
       serverDate,
       element: data?.element ?? null,
@@ -79,6 +95,7 @@ export async function GET() {
       relicLabel,
       relicImageUrl,
       relicKind,
+      songOfDayTitle,
     });
   } catch (err: any) {
     console.error('[element-of-day API] Unexpected error:', err);

@@ -843,7 +843,10 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         >
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <h4 className="text-white font-semibold mb-1">1. Tap the Element of the Day</h4>
+              <h4 className="text-white font-semibold mb-1 flex items-center gap-2">
+                <img src="/elements/elementals.webp" alt="" className="w-5 h-5" />
+                Element of the Day
+              </h4>
               <p className="text-white/80 text-sm mb-2">Unlock a surprise reward such as boosts, relics, or binder slot.</p>
             </div>
             <div className="flex items-center gap-2">

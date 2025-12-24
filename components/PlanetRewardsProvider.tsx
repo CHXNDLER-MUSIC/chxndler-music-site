@@ -17,6 +17,7 @@ interface PlanetRewardsContextValue {
   isAuthenticated: boolean;
   elementOfDay: ElementType | null;
   intentionOfDay: string | null; // Today's intention text from element_of_day table
+  songOfDayTitle: string | null; // Today's song title from element_of_day table
   claimedToday: boolean;
   isSyncing: boolean; // True when element of day is being refetched (e.g., after midnight rollover)
   refetchElementOfDay: () => Promise<void>; // Force refetch element of day from server
@@ -59,6 +60,7 @@ export function PlanetRewardsProvider({
   // Element of the day - only this element's planet can give rewards
   const [elementOfDay, setElementOfDay] = useState<ElementType | null>(null);
   const [intentionOfDay, setIntentionOfDay] = useState<string | null>(null);
+  const [songOfDayTitle, setSongOfDayTitle] = useState<string | null>(null);
   const [claimedToday, setClaimedToday] = useState<boolean>(false);
   // Store server date for consistency with backend
   const [serverDate, setServerDate] = useState<string | null>(null);
@@ -87,6 +89,7 @@ export function PlanetRewardsProvider({
       const normalized = normalizeElement(data.element);
       setElementOfDay(normalized);
       setIntentionOfDay(data.intentionOfDay ?? null);
+      setSongOfDayTitle(data.songOfDayTitle ?? null);
       setServerDate(data.serverDate);
       setIsSyncing(false);
       return data.serverDate;
@@ -340,6 +343,7 @@ export function PlanetRewardsProvider({
         isAuthenticated,
         elementOfDay,
         intentionOfDay,
+        songOfDayTitle,
         claimedToday,
         isSyncing,
         refetchElementOfDay,
