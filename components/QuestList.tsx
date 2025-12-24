@@ -220,14 +220,15 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
       }
 
       // Sync Live Show quest status
+      // Check both server state AND localStorage (secret phrases are tracked separately)
       const liveShowQuest = bonus.find(q => q.quest_key === 'ATTEND_LIVESTREAM');
-      if (liveShowQuest) {
-        const isCompletedToday = liveShowQuest.completed_today > 0;
-        if (isCompletedToday) {
-          const today = new Date().toDateString();
-          localStorage.setItem(`quest_liveshow_${today}`, 'true');
-          setQuestStatus(prev => ({ ...prev, liveShow: true }));
-        }
+      const today = new Date().toDateString();
+      const localLiveShowDone = localStorage.getItem(`quest_liveshow_${today}`) === 'true';
+      const serverLiveShowDone = liveShowQuest?.completed_today > 0;
+
+      if (serverLiveShowDone || localLiveShowDone) {
+        localStorage.setItem(`quest_liveshow_${today}`, 'true');
+        setQuestStatus(prev => ({ ...prev, liveShow: true }));
       }
     } catch (error) {
       console.error('Failed to load quests:', error);
@@ -1263,7 +1264,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                   disabled={questStatus.liveShow || questsLoading || (showCheckIn && (loading || !secretPhrase.trim()))}
                   className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 ${
                     questStatus.liveShow
-                      ? 'bg-green-500/40 border-2 border-green-400 text-white cursor-default'
+                      ? 'border-2 cursor-default'
                       : !isAuthenticated
                         ? 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300 cursor-pointer'
                         : showCheckIn && secretPhrase.trim()
@@ -1273,28 +1274,33 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                             : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300 cursor-pointer'
                   }`}
                   style={{
-                    boxShadow: questStatus.liveShow
-                      ? '0 0 30px rgba(0,255,0,0.8), inset 0 0 15px rgba(0,255,0,0.3), 0 0 60px rgba(0,255,0,0.6)'
-                      : !isAuthenticated
+                    ...(questStatus.liveShow ? {
+                      background: 'rgba(0, 255, 0, 0.2)',
+                      borderColor: '#00FF00',
+                      color: '#00FF00',
+                      boxShadow: '0 0 30px rgba(0,255,0,0.8), inset 0 0 15px rgba(0,255,0,0.3), 0 0 60px rgba(0,255,0,0.6)',
+                      textShadow: '0 0 15px rgba(0,255,0,1), 0 0 25px rgba(0,255,0,0.8)',
+                      opacity: 1
+                    } : {
+                      boxShadow: !isAuthenticated
                         ? '0 0 10px rgba(255,255,0,0.3)'
                         : showCheckIn && secretPhrase.trim()
                           ? '0 0 20px rgba(255,255,0,0.8), inset 0 0 10px rgba(255,255,0,0.2)'
                           : showCheckIn
                             ? '0 0 5px rgba(128,128,128,0.2)'
                             : '0 0 10px rgba(252,84,175,0.3)',
-                    textShadow: questStatus.liveShow
-                      ? '0 0 15px rgba(0,255,0,1), 0 0 25px rgba(0,255,0,0.8)'
-                      : !isAuthenticated
+                      textShadow: !isAuthenticated
                         ? '0 0 4px rgba(255,255,0,0.6)'
                         : showCheckIn && secretPhrase.trim()
                           ? '0 0 10px rgba(255,255,0,1)'
                           : showCheckIn
                             ? '0 0 2px rgba(128,128,128,0.4)'
                             : '0 0 4px rgba(252,84,175,0.6)'
+                    })
                   }}
                 >
                   {questStatus.liveShow
-                    ? 'COMPLETED'
+                    ? 'CHECKED IN'
                     : !isAuthenticated
                       ? 'LOG IN TO COMPLETE'
                       : showCheckIn
@@ -1315,7 +1321,8 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                       ? '0 0 15px rgba(0,255,0,1), 0 0 25px rgba(0,255,0,0.8)'
                       : !isAuthenticated
                         ? '0 0 4px rgba(255,255,0,0.6)'
-                        : '0 0 4px rgba(252,84,175,0.6)'
+                        : '0 0 4px rgba(252,84,175,0.6)',
+                    color: questStatus.liveShow ? '#00FF00' : undefined
                   }}
                   onClick={
                     questStatus.liveShow
@@ -1326,7 +1333,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                   }
                 >
                   {questStatus.liveShow
-                    ? '✓ Complete'
+                    ? '✓ CHECKED IN'
                     : !isAuthenticated
                       ? 'Log in to complete'
                       : '+5'

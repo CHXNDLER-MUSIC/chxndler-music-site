@@ -3109,14 +3109,17 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             try { onClose?.(); } catch {}
                             // Open the 3D planet view (blue display)
                             try { onOpenBlueDisplay?.(); } catch {}
-                            // Navigate to user's element planet after panel closes
+                            // Navigate to user's element planet after panel closes and 3D scene mounts
                             const userElement = profile?.element?.toLowerCase() || 'heart';
-                            setTimeout(() => {
-                              // Use element-planet:select to focus camera on element and show WARP button
+                            // Dispatch element selection with retries to handle varying mount times
+                            const dispatchElementSelect = () => {
                               window.dispatchEvent(new CustomEvent('element-planet:select', {
                                 detail: { element: userElement }
                               }));
-                            }, 200);
+                            };
+                            // Initial attempt after 600ms, retry at 1200ms if scene took longer to mount
+                            setTimeout(dispatchElementSelect, 600);
+                            setTimeout(dispatchElementSelect, 1200);
                           } else {
                             handleBonusQuestComplete(quest);
                           }
