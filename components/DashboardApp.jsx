@@ -1662,6 +1662,26 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     };
   }, [audioManager]);
 
+  // Listen for song:warp-request event to trigger full warp effect for song planets
+  // This is used by the LISTEN button in HeartCoinButton to trigger both camera + visual warp
+  React.useEffect(() => {
+    const handleSongWarpRequest = (e) => {
+      const { songSlug, source } = e.detail || {};
+      if (process.env.NODE_ENV === "development") {
+        console.log('🎵 song:warp-request event received:', { songSlug, source });
+      }
+      if (songSlug) {
+        // Call onSongChange which triggers the full warp sequence (camera + visual effect)
+        onSongChange(songSlug);
+      }
+    };
+
+    window.addEventListener('song:warp-request', handleSongWarpRequest);
+    return () => {
+      window.removeEventListener('song:warp-request', handleSongWarpRequest);
+    };
+  }, [tracks]); // tracks dependency since onSongChange uses it
+
   // Enable SFX globally only after Start unlocks the UI
   React.useEffect(() => {
     try { sfx.setEnabled(!!uiUnlocked); } catch {}

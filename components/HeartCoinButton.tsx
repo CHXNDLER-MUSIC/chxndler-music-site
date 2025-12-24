@@ -15,6 +15,7 @@ import { MerchItem } from '@/types/merch';
 import TiltSpinCard from '@/components/TiltSpinCard';
 import { usePlanetRewardsContext } from '@/components/PlanetRewardsProvider';
 import { getElementalPlanetImage } from '@/lib/elementalPlanets';
+import { ELEMENT_COLORS, Element } from '@/lib/planets';
 import { triggerMerchCelebration } from '@/utils/merchCelebration';
 import { triggerHeartCoinCelebration } from '@/utils/heartcoinCelebration';
 import { triggerElementCardCelebration } from '@/utils/elementCardCelebration';
@@ -2304,8 +2305,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               backdropFilter: 'blur(12px) saturate(140%)',
               color: '#FFFFFF',
               position: 'relative',
-              overflow: 'hidden auto',
-              overflowX: 'hidden'
+              overflowY: 'auto',
+              overflowX: 'clip'
             }}
         >
           {/* Soft bottom glow */}
@@ -2661,14 +2662,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
           {/* Daily Quests Tab Content */}
           {activeEarnTab === 'DAILY QUESTS' && (
-            <div className="mb-1 flex-1 min-h-0 flex flex-col gap-0.5">
+            <div className="mb-1 flex-1 min-h-0 flex flex-col gap-0.5 overflow-visible">
               {dailyQuestsLoading ? (
                 <div className="text-center text-white py-4">Loading daily quests...</div>
               ) : dailyQuestItems.length === 0 ? (
                 <div className="text-center text-white/60 py-4">No daily quests available</div>
               ) : (
                 dailyQuestItems.map((quest, index) => (
-                  <div key={quest.id} className="flex flex-col px-2 pt-0.5 pb-1 rounded border border-white/30 bg-white/10 flex-1 min-h-0 relative">
+                  <div key={quest.id} className="flex flex-col px-2 pt-0.5 pb-1 rounded border border-white/30 bg-white/10 flex-1 min-h-0 relative overflow-visible">
                     <div className="absolute top-1 right-1 flex items-center" style={{
                       color: isQuestCompleted(quest) ? '#666' : '#90EE90',
                       textShadow: isQuestCompleted(quest) ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90'
@@ -2749,7 +2750,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     </div>
                     {/* Special rendering for TAP_ELEMENT_OF_DAY */}
                     {quest.quest_key === 'TAP_ELEMENT_OF_DAY' && (
-                      <div className="-mt-1 -mb-2 flex flex-col items-center">
+                      <div className="-mt-1 -mb-2 flex flex-col items-center py-4">
                         <button
                           type="button"
                           onClick={(e) => {
@@ -2788,18 +2789,31 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               }, 3000); // Wait for warp animation to complete
                             }, 150); // Let heart coin display close first
                           }}
-                          className="flex items-center cursor-pointer hover:scale-110 transition-transform"
+                          className="flex items-center cursor-pointer hover:scale-110 transition-transform overflow-visible"
                           onMouseEnter={() => { try { sfx.play('hover', 0.5); } catch {} }}
-                          style={{ pointerEvents: 'auto', zIndex: 10 }}
+                          style={{ pointerEvents: 'auto', zIndex: 10, overflow: 'visible' }}
                         >
-                          <img
-                            src={getElementIcon(elementOfDay || 'heart')}
-                            alt={`${elementOfDay || 'heart'} element`}
-                            className="w-16 h-16 rounded-full object-cover"
-                            style={{
-                              filter: isQuestCompleted(quest) ? 'grayscale(1)' : 'drop-shadow(0 0 10px rgba(255,215,0,0.9))'
-                            }}
-                          />
+                          <div className="relative overflow-visible" style={{ overflow: 'visible' }}>
+                            {/* Glow background */}
+                            {!isQuestCompleted(quest) && (
+                              <div
+                                className="absolute inset-0 rounded-full animate-pulse"
+                                style={{
+                                  background: 'radial-gradient(circle, rgba(255,215,0,0.6) 0%, rgba(255,215,0,0.3) 40%, transparent 70%)',
+                                  transform: 'scale(1.8)',
+                                  filter: 'blur(8px)'
+                                }}
+                              />
+                            )}
+                            <img
+                              src={getElementIcon(elementOfDay || 'heart')}
+                              alt={`${elementOfDay || 'heart'} element`}
+                              className="w-16 h-16 rounded-full object-cover relative"
+                              style={{
+                                filter: isQuestCompleted(quest) ? 'grayscale(1)' : 'none'
+                              }}
+                            />
+                          </div>
                         </button>
                       </div>
                     )}
@@ -2816,14 +2830,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               // Close the HeartCoin modal
                               setOpen(false);
                               window.dispatchEvent(new CustomEvent('close-heartcoin-modal'));
-                              // Warp to the song of the day
+                              // Warp to the song of the day with full visual warp effect
                               if (songOfDaySlug) {
-                                console.log('[LISTEN BUTTON] Dispatching planet:warp-to-song with id:', songOfDaySlug);
+                                console.log('[LISTEN BUTTON] Dispatching song:warp-request with slug:', songOfDaySlug);
                                 setTimeout(() => {
-                                  window.dispatchEvent(new CustomEvent('planet:warp-to-song', {
-                                    detail: { id: songOfDaySlug, source: 'daily-quest' }
+                                  // Dispatch song:warp-request to trigger full warp sequence (camera + visual effect)
+                                  window.dispatchEvent(new CustomEvent('song:warp-request', {
+                                    detail: { songSlug: songOfDaySlug, source: 'daily-quest' }
                                   }));
-                                  console.log('[LISTEN BUTTON] Event dispatched!');
+                                  console.log('[LISTEN BUTTON] Warp request dispatched!');
                                 }, 300);
                               } else {
                                 console.log('[LISTEN BUTTON] ERROR: songOfDaySlug is null/undefined');
@@ -2833,33 +2848,46 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           disabled={isQuestCompleted(quest)}
                           onMouseEnter={() => { try { sfx.play('hover', 0.5); } catch {} }}
                           className="px-5 py-2 text-xs rounded border font-bold transition-all duration-200 pointer-events-auto relative z-10 min-w-[140px] hover:scale-105"
-                          style={{
-                            background: isQuestCompleted(quest)
-                              ? 'rgba(0,255,0,0.1)'
-                              : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
-                                ? 'rgba(255,255,0,0.15)'
-                                : 'rgba(78,205,196,0.15)',
-                            color: isQuestCompleted(quest)
-                              ? '#00FF00'
-                              : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
-                                ? '#FFFF00'
-                                : '#4ECDC4',
-                            borderColor: isQuestCompleted(quest)
-                              ? '#00FF00'
-                              : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
-                                ? '#FFFF00'
-                                : '#4ECDC4',
-                            textShadow: isQuestCompleted(quest)
-                              ? '0 0 8px #00FF00, 0 0 16px #00FF00'
-                              : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
-                                ? '0 0 8px rgba(255,255,0,0.5)'
-                                : '0 0 8px rgba(78,205,196,0.5)',
-                            boxShadow: isQuestCompleted(quest)
-                              ? '0 0 10px rgba(0,255,0,0.4), 0 0 20px rgba(0,255,0,0.2)'
-                              : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
-                                ? '0 0 10px rgba(255,255,0,0.3)'
-                                : 'none'
-                          }}
+                          style={(() => {
+                            // Get element color for LISTEN_SONG_OF_DAY button
+                            const songElementColor = quest.quest_key === 'LISTEN_SONG_OF_DAY' && elementOfDay
+                              ? ELEMENT_COLORS[elementOfDay as Element] || '#4ECDC4'
+                              : '#4ECDC4';
+                            // Convert hex to rgba for background
+                            const hexToRgba = (hex: string, alpha: number) => {
+                              const r = parseInt(hex.slice(1, 3), 16);
+                              const g = parseInt(hex.slice(3, 5), 16);
+                              const b = parseInt(hex.slice(5, 7), 16);
+                              return `rgba(${r},${g},${b},${alpha})`;
+                            };
+                            return {
+                              background: isQuestCompleted(quest)
+                                ? 'rgba(0,255,0,0.1)'
+                                : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                                  ? 'rgba(255,255,0,0.15)'
+                                  : hexToRgba(songElementColor, 0.15),
+                              color: isQuestCompleted(quest)
+                                ? '#00FF00'
+                                : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                                  ? '#FFFF00'
+                                  : songElementColor,
+                              borderColor: isQuestCompleted(quest)
+                                ? '#00FF00'
+                                : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                                  ? '#FFFF00'
+                                  : songElementColor,
+                              textShadow: isQuestCompleted(quest)
+                                ? '0 0 8px #00FF00, 0 0 16px #00FF00'
+                                : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                                  ? '0 0 8px rgba(255,255,0,0.5)'
+                                  : `0 0 8px ${hexToRgba(songElementColor, 0.5)}`,
+                              boxShadow: isQuestCompleted(quest)
+                                ? '0 0 10px rgba(0,255,0,0.4), 0 0 20px rgba(0,255,0,0.2)'
+                                : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                                  ? '0 0 10px rgba(255,255,0,0.3)'
+                                  : 'none'
+                            };
+                          })()}
                         >
                           {isQuestCompleted(quest)
                             ? 'COMPLETED'
@@ -3293,9 +3321,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           ? 'Log in to complete'
                           : quest.quest_key === 'ATTEND_LIVESTREAM' && isQuestCompleted(quest)
                             ? 'CHECKED IN'
-                            : (isQuestCompleted(quest) || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
-                              ? 'COMPLETED'
-                              : quest.quest_key === 'ATTEND_LIVESTREAM'
+                            : quest.quest_key === 'INVITE_FRIEND' && (isQuestCompleted(quest) || !quest.can_complete)
+                              ? 'SIGNAL SENT'
+                              : isQuestCompleted(quest)
+                                ? 'COMPLETED'
+                                : quest.quest_key === 'ATTEND_LIVESTREAM'
                                 ? (phraseStatus === 'already'
                                     ? 'CHECKED IN'
                                     : phraseStatus === 'success'
@@ -3309,7 +3339,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                         : 'ENTER PHRASE')
                                   : quest.quest_key === 'LISTEN_ELEMENT_SONG'
                                     ? (elementSongReturned ? 'RETURNED' : 'RETURN HOME')
-                                    : 'COMPLETE')}
+                                    : 'COMPLETE'}
                       </button>
                     </div>
                     {/* Secret phrase input field */}

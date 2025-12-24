@@ -15,6 +15,7 @@ import { MerchItem } from '@/types/merch';
 import TiltSpinCard from '@/components/TiltSpinCard';
 import { usePlanetRewardsContext } from '@/components/PlanetRewardsProvider';
 import { getElementalPlanetImage } from '@/lib/elementalPlanets';
+import { playerStore } from '@/store/usePlayerStore';
 import { triggerMerchCelebration } from '@/utils/merchCelebration';
 import { triggerHeartCoinCelebration } from '@/utils/heartcoinCelebration';
 
@@ -158,7 +159,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   const questsLoading = questsStatus === 'loading';
   const { items: merchItems, loading: merchLoading } = useMerchItems('physical');
   const { purchaseWithHeartCoins, isProcessing } = useMerchPurchase();
-  const { elementOfDay } = usePlanetRewardsContext();
+  const { elementOfDay, songOfDaySlug } = usePlanetRewardsContext();
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -529,11 +530,20 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         break;
 
       case 'LISTEN_SONG_OF_DAY':
-        // Close modal and warp to today's song planet (dispatch custom event)
-        onClose();
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('song-of-day:navigate'));
-        }, 200);
+        // Close modal and warp to today's song planet via playerStore (triggers warp effect)
+        if (songOfDaySlug) {
+          onClose();
+          setTimeout(() => {
+            console.log('[WARP] trigger from daily quest LISTEN button', { songOfDaySlug });
+            try {
+              playerStore.getState().setMain(songOfDaySlug);
+            } catch (e) {
+              console.error('[WARP] Failed to set main song:', e);
+            }
+          }, 200);
+        } else {
+          console.warn('[HeartCoinModal] No songOfDaySlug available for LISTEN_SONG_OF_DAY quest');
+        }
         break;
 
       case 'JOURNAL_ENTRY_OF_DAY':
@@ -1638,7 +1648,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                           : isQuestCompleted(quest)
                           ? 'COMPLETED'
                           : questHasHandler(quest.quest_key)
-                            ? (quest.quest_key === 'JOURNAL_ENTRY_OF_DAY' ? 'REFLECT' : 'START')
+                            ? (quest.quest_key === 'JOURNAL_ENTRY_OF_DAY' ? 'REFLECT' : quest.quest_key === 'LISTEN_SONG_OF_DAY' ? 'LISTEN' : 'START')
                             : 'INCOMPLETE'}
                       </button>
                     </div>
