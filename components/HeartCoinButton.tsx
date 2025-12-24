@@ -17,6 +17,7 @@ import { usePlanetRewardsContext } from '@/components/PlanetRewardsProvider';
 import { getElementalPlanetImage } from '@/lib/elementalPlanets';
 import { triggerMerchCelebration } from '@/utils/merchCelebration';
 import { triggerHeartCoinCelebration } from '@/utils/heartcoinCelebration';
+import { triggerElementCardCelebration } from '@/utils/elementCardCelebration';
 
 // Helper function to convert MerchItem to StoreItem for backward compatibility
 const merchItemToStoreItem = (merchItem: MerchItem): StoreItem => {
@@ -321,6 +322,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [showEnlargedConfirm, setShowEnlargedConfirm] = useState(false);
   
   const [inviteFriendShared, setInviteFriendShared] = useState(false);
+  const [elementSongReturned, setElementSongReturned] = useState(false);
   const [completedQuests, setCompletedQuests] = useState<Set<string>>(new Set());
   const [shippingInfo, setShippingInfo] = useState({
     fullName: '',
@@ -1148,8 +1150,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           setCheckInMessage('Incorrect secret phrase for today.');
           try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Incorrect secret phrase for today.', type: 'error' } })); } catch {}
         } else if (code === 'P0003' || status === 409 || code === '23505') {
-          setCheckInMessage('Already redeemed today.');
-          try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Already redeemed today.', type: 'info' } })); } catch {}
+          setCheckInMessage('Already checked in!');
+          try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Already checked in!', type: 'success' } })); } catch {}
         } else if (code === 'P0001') {
           setCheckInMessage('Log in to redeem.');
           try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Log in to redeem.', type: 'error' } })); } catch {}
@@ -2832,17 +2834,37 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           onMouseEnter={() => { try { sfx.play('hover', 0.5); } catch {} }}
                           className="px-5 py-2 text-xs rounded border font-bold transition-all duration-200 pointer-events-auto relative z-10 min-w-[140px] hover:scale-105"
                           style={{
-                            background: isQuestCompleted(quest) ? 'rgba(0,255,0,0.1)' : 'rgba(78,205,196,0.15)',
-                            color: isQuestCompleted(quest) ? '#00FF00' : '#4ECDC4',
-                            borderColor: isQuestCompleted(quest) ? '#00FF00' : '#4ECDC4',
-                            textShadow: isQuestCompleted(quest) ? '0 0 8px #00FF00, 0 0 16px #00FF00' : '0 0 8px rgba(78,205,196,0.5)',
-                            boxShadow: isQuestCompleted(quest) ? '0 0 10px rgba(0,255,0,0.4), 0 0 20px rgba(0,255,0,0.2)' : 'none'
+                            background: isQuestCompleted(quest)
+                              ? 'rgba(0,255,0,0.1)'
+                              : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                                ? 'rgba(255,255,0,0.15)'
+                                : 'rgba(78,205,196,0.15)',
+                            color: isQuestCompleted(quest)
+                              ? '#00FF00'
+                              : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                                ? '#FFFF00'
+                                : '#4ECDC4',
+                            borderColor: isQuestCompleted(quest)
+                              ? '#00FF00'
+                              : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                                ? '#FFFF00'
+                                : '#4ECDC4',
+                            textShadow: isQuestCompleted(quest)
+                              ? '0 0 8px #00FF00, 0 0 16px #00FF00'
+                              : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                                ? '0 0 8px rgba(255,255,0,0.5)'
+                                : '0 0 8px rgba(78,205,196,0.5)',
+                            boxShadow: isQuestCompleted(quest)
+                              ? '0 0 10px rgba(0,255,0,0.4), 0 0 20px rgba(0,255,0,0.2)'
+                              : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                                ? '0 0 10px rgba(255,255,0,0.3)'
+                                : 'none'
                           }}
                         >
                           {isQuestCompleted(quest)
                             ? 'COMPLETED'
                             : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
-                              ? 'OPEN JOURNAL'
+                              ? 'REFLECT'
                               : quest.quest_key === 'LISTEN_SONG_OF_DAY'
                                 ? 'LISTEN'
                                 : 'COMPLETE'
@@ -2904,10 +2926,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         {quest.quest_key === 'ATTEND_LIVESTREAM' && showAutoTextBox ? (
                           phraseValidationResult ? (
                             <div className="text-xs font-bold flex items-center h-8" style={{
-                              color: phraseValidationResult === 'correct' ? '#00FF00' : '#FF69B4',
-                              textShadow: phraseValidationResult === 'correct' ? '0 0 8px #00FF00, 0 0 16px #00FF00' : '0 0 8px #FF69B4'
+                              color: (phraseValidationResult === 'correct' || phraseValidationResult === 'already') ? '#00FF00' : '#FF69B4',
+                              textShadow: (phraseValidationResult === 'correct' || phraseValidationResult === 'already') ? '0 0 8px #00FF00, 0 0 16px #00FF00' : '0 0 8px #FF69B4'
                             }}>
-                              {phraseValidationResult === 'correct' ? 'PASSWORD ACCEPTED' : phraseValidationResult === 'already' ? 'ALREADY REDEEMED' : 'INCORRECT'}
+                              {phraseValidationResult === 'correct' ? 'PASSWORD ACCEPTED' : phraseValidationResult === 'already' ? 'CHECKED IN' : 'INCORRECT'}
                             </div>
                           ) : (
                             <textarea
@@ -3008,10 +3030,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       if (code === 'P0003' || status === 409 || code === '23505') {
                                         setPhraseStatus('already');
                                         setPhraseValidationResult('already');
-                                        try { sfx.play('change-channel', 0.6); } catch {}
-                                        setCheckInMessage('Already redeemed today.');
-                                        try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Already redeemed today.', type: 'info' } })); } catch {}
-                                        setStatusType('error');
+                                        try { sfx.play('click', 0.7); } catch {}
+                                        setCheckInMessage('Already checked in!');
+                                        try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Already checked in!', type: 'success' } })); } catch {}
+                                        setStatusType('success');
                                       } else if (code === 'P0002') {
                                         setPhraseStatus('incorrect');
                                         setPhraseValidationResult('incorrect');
@@ -3124,18 +3146,33 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             setOpen(false);
                             try { onClose?.(); } catch {}
 
-                            // Open the 3D planet view (blue display)
-                            try { onOpenBlueDisplay?.(); } catch {}
+                            // Wait for sound to play, then trigger warp (blue display opens after warp)
+                            setTimeout(() => {
+                              // Dispatch planet:warp event to trigger warp effect
+                              window.dispatchEvent(new CustomEvent('planet:warp', {
+                                detail: {
+                                  element: userElement,
+                                  isDailyElement: false,
+                                  isCenterPlanet: userElement === 'center',
+                                  audioPath: audioPath
+                                }
+                              }));
 
-                            // Dispatch planet:warp event to trigger actual warp effect
-                            window.dispatchEvent(new CustomEvent('planet:warp', {
-                              detail: {
-                                element: userElement,
-                                isDailyElement: false,
-                                isCenterPlanet: userElement === 'center',
-                                audioPath: audioPath
-                              }
-                            }));
+                              // After warp effect completes (~3500ms), open blue display
+                              setTimeout(() => {
+                                try { onOpenBlueDisplay?.(); } catch {}
+
+                                // Then trigger element card celebration after blue display opens
+                                setTimeout(() => {
+                                  setElementSongReturned(true);
+                                  const userName = profile?.name || undefined;
+                                  triggerElementCardCelebration(userElement, userName, () => {
+                                    // Open binder after celebration ends
+                                    window.dispatchEvent(new CustomEvent('openBinderModal'));
+                                  });
+                                }, 500); // Small delay after blue display opens
+                              }, 3500); // Wait for warp effect to complete
+                            }, 300); // Wait for channel change sound
                           } else {
                             handleBonusQuestComplete(quest);
                           }
@@ -3169,74 +3206,86 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             ? 'rgba(78,205,196,0.2)'
                             : (isQuestCompleted(quest) && quest.quest_key !== 'LISTEN_ELEMENT_SONG') || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
                             ? 'rgba(0,255,0,0.2)'
-                            : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
-                              ? 'rgba(0,0,0,0.3)'
-                              : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
+                            : quest.quest_key === 'LISTEN_ELEMENT_SONG' && elementSongReturned
+                              ? 'rgba(0,255,0,0.2)'
+                              : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                                 ? 'rgba(0,0,0,0.3)'
-                                : quest.quest_key === 'LISTEN_ELEMENT_SONG'
-                                  ? 'rgba(78,205,196,0.15)'
-                                  : quest.can_complete
-                                    ? 'rgba(255,255,255,0.1)'
-                                    : 'rgba(100,100,100,0.3)',
+                                : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
+                                  ? 'rgba(0,0,0,0.3)'
+                                  : quest.quest_key === 'LISTEN_ELEMENT_SONG'
+                                    ? 'rgba(78,205,196,0.15)'
+                                    : quest.can_complete
+                                      ? 'rgba(255,255,255,0.1)'
+                                      : 'rgba(100,100,100,0.3)',
                           color: !isLoggedIn
                             ? '#4ECDC4'
                             : (isQuestCompleted(quest) && quest.quest_key !== 'LISTEN_ELEMENT_SONG') || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
                             ? '#00FF00'
-                            : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
-                              ? '#F2EF1D'
-                              : quest.quest_key === 'ATTEND_LIVESTREAM' && phraseValidationResult === 'correct'
-                                ? '#00FF00'
-                                : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
-                                  ? '#F2EF1D'
-                                  : quest.quest_key === 'LISTEN_ELEMENT_SONG'
-                                    ? '#4ECDC4'
-                                    : quest.can_complete
-                                      ? '#FFFFFF'
-                                      : '#666',
+                            : quest.quest_key === 'LISTEN_ELEMENT_SONG' && elementSongReturned
+                              ? '#00FF00'
+                              : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
+                                ? '#F2EF1D'
+                                : quest.quest_key === 'ATTEND_LIVESTREAM' && (phraseValidationResult === 'correct' || phraseValidationResult === 'already')
+                                  ? '#00FF00'
+                                  : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
+                                    ? '#F2EF1D'
+                                    : quest.quest_key === 'LISTEN_ELEMENT_SONG'
+                                      ? '#4ECDC4'
+                                      : quest.can_complete
+                                        ? '#FFFFFF'
+                                        : '#666',
                           borderColor: !isLoggedIn
                             ? '#4ECDC4'
                             : (isQuestCompleted(quest) && quest.quest_key !== 'LISTEN_ELEMENT_SONG') || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
                             ? '#00FF00'
-                            : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
-                              ? '#F2EF1D'
-                              : quest.quest_key === 'ATTEND_LIVESTREAM' && phraseValidationResult === 'correct'
-                                ? '#00FF00'
-                                : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
-                                  ? '#F2EF1D'
-                                  : quest.quest_key === 'LISTEN_ELEMENT_SONG'
-                                    ? '#4ECDC4'
-                                    : quest.can_complete
-                                      ? 'rgba(255,255,255,0.6)'
-                                      : 'rgba(100,100,100,0.6)',
+                            : quest.quest_key === 'LISTEN_ELEMENT_SONG' && elementSongReturned
+                              ? '#00FF00'
+                              : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
+                                ? '#F2EF1D'
+                                : quest.quest_key === 'ATTEND_LIVESTREAM' && (phraseValidationResult === 'correct' || phraseValidationResult === 'already')
+                                  ? '#00FF00'
+                                  : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
+                                    ? '#F2EF1D'
+                                    : quest.quest_key === 'LISTEN_ELEMENT_SONG'
+                                      ? '#4ECDC4'
+                                      : quest.can_complete
+                                        ? 'rgba(255,255,255,0.6)'
+                                        : 'rgba(100,100,100,0.6)',
                           borderWidth: isQuestCompleted(quest) || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
                             ? '2px'
-                            : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
+                            : quest.quest_key === 'LISTEN_ELEMENT_SONG' && elementSongReturned
                               ? '2px'
-                              : quest.quest_key === 'ATTEND_LIVESTREAM' && (phraseValidationResult === 'correct' || attendLivestreamConfirming)
+                              : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                                 ? '2px'
-                                : '1px',
+                                : quest.quest_key === 'ATTEND_LIVESTREAM' && (phraseValidationResult === 'correct' || phraseValidationResult === 'already' || attendLivestreamConfirming)
+                                  ? '2px'
+                                  : '1px',
                           textShadow: !isLoggedIn
                             ? '0 0 8px rgba(78,205,196,0.5)'
                             : isQuestCompleted(quest) || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
                             ? '0 0 8px #00FF00, 0 0 16px #00FF00'
-                            : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
-                              ? '0 0 10px #F2EF1D'
-                              : quest.quest_key === 'ATTEND_LIVESTREAM' && phraseValidationResult === 'correct'
-                                ? '0 0 8px #00FF00, 0 0 16px #00FF00'
-                                : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
-                                  ? '0 0 10px #F2EF1D'
-                                  : 'none',
+                            : quest.quest_key === 'LISTEN_ELEMENT_SONG' && elementSongReturned
+                              ? '0 0 8px #00FF00, 0 0 16px #00FF00'
+                              : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
+                                ? '0 0 10px #F2EF1D'
+                                : quest.quest_key === 'ATTEND_LIVESTREAM' && (phraseValidationResult === 'correct' || phraseValidationResult === 'already')
+                                  ? '0 0 8px #00FF00, 0 0 16px #00FF00'
+                                  : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
+                                    ? '0 0 10px #F2EF1D'
+                                    : 'none',
                           boxShadow: !isLoggedIn
                             ? 'none'
                             : isQuestCompleted(quest) || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
                             ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)'
-                            : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
-                              ? '0 0 20px rgba(242,239,29,0.8), inset 0 0 10px rgba(242,239,29,0.2)'
-                              : quest.quest_key === 'ATTEND_LIVESTREAM' && phraseValidationResult === 'correct'
-                                ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)'
-                                : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
-                                  ? '0 0 20px rgba(242,239,29,0.8), inset 0 0 10px rgba(242,239,29,0.2)'
-                                  : 'none',
+                            : quest.quest_key === 'LISTEN_ELEMENT_SONG' && elementSongReturned
+                              ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)'
+                              : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
+                                ? '0 0 20px rgba(242,239,29,0.8), inset 0 0 10px rgba(242,239,29,0.2)'
+                                : quest.quest_key === 'ATTEND_LIVESTREAM' && (phraseValidationResult === 'correct' || phraseValidationResult === 'already')
+                                  ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)'
+                                  : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
+                                    ? '0 0 20px rgba(242,239,29,0.8), inset 0 0 10px rgba(242,239,29,0.2)'
+                                    : 'none',
                           cursor: !isLoggedIn ? 'pointer' : 'default'
                         }}
                       >
@@ -3248,7 +3297,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               ? 'COMPLETED'
                               : quest.quest_key === 'ATTEND_LIVESTREAM'
                                 ? (phraseStatus === 'already'
-                                    ? 'ALREADY REDEEMED'
+                                    ? 'CHECKED IN'
                                     : phraseStatus === 'success'
                                       ? 'PASSWORD ACCEPTED'
                                       : (attendLivestreamConfirming ? 'CONFIRM' : 'CHECK IN'))
@@ -3259,7 +3308,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                         ? (secretPhraseLoading ? 'SUBMITTING...' : 'SUBMIT')
                                         : 'ENTER PHRASE')
                                   : quest.quest_key === 'LISTEN_ELEMENT_SONG'
-                                    ? 'RETURN HOME'
+                                    ? (elementSongReturned ? 'RETURNED' : 'RETURN HOME')
                                     : 'COMPLETE')}
                       </button>
                     </div>

@@ -1599,26 +1599,36 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             ? 'rgba(78,205,196,0.2)'
                             : isQuestCompleted(quest)
                             ? 'rgba(0,255,0,0.2)'
+                            : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                            ? 'rgba(255,255,0,0.15)'
                             : 'rgba(255,255,255,0.1)',
                           color: !profile
                             ? '#4ECDC4'
                             : isQuestCompleted(quest)
                             ? '#00FF00'
+                            : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                            ? '#FFFF00'
                             : '#FFFFFF',
                           borderColor: !profile
                             ? '#4ECDC4'
                             : isQuestCompleted(quest)
                             ? '#00FF00'
+                            : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                            ? '#FFFF00'
                             : 'rgba(255,255,255,0.6)',
                           textShadow: !profile
                             ? '0 0 8px rgba(78,205,196,0.5)'
                             : isQuestCompleted(quest)
                             ? '0 0 8px #00FF00, 0 0 16px #00FF00'
+                            : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                            ? '0 0 8px rgba(255,255,0,0.5)'
                             : 'none',
                           boxShadow: !profile
                             ? 'none'
                             : isQuestCompleted(quest)
                             ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)'
+                            : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                            ? '0 0 10px rgba(255,255,0,0.3)'
                             : 'none',
                           cursor: !profile || isQuestCompleted(quest) ? 'default' : 'pointer'
                         }}
@@ -1628,7 +1638,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                           : isQuestCompleted(quest)
                           ? 'COMPLETED'
                           : questHasHandler(quest.quest_key)
-                            ? (quest.quest_key === 'JOURNAL_ENTRY_OF_DAY' ? 'OPEN JOURNAL' : 'START')
+                            ? (quest.quest_key === 'JOURNAL_ENTRY_OF_DAY' ? 'REFLECT' : 'START')
                             : 'INCOMPLETE'}
                       </button>
                     </div>

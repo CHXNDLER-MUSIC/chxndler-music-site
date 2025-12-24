@@ -123,16 +123,26 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [open]);
 
-  // When opening the menu, measure one option's height and cap list to 6 rows
+  // When opening the menu, measure one option's height and cap list to avoid overlapping cover art
   useEffect(() => {
     if (!open) return;
     const raf = requestAnimationFrame(() => {
       try {
         const h = optMeasureRef.current?.offsetHeight || 0;
-        if (h > 0) setMaxListHeight(h * 5);
-        else setMaxListHeight(180); // fallback
+        const baseMax = h > 0 ? h * 5 : 180;
+
+        // Calculate available space: from trigger bottom to safe zone above cover art
+        // Cover art is at bottom: 60px with ~110px height, so reserve ~180px from viewport bottom
+        const viewportHeight = window.innerHeight;
+        const triggerBottom = rootRef.current?.getBoundingClientRect()?.bottom || 0;
+        const coverArtReserve = 180; // Reserve space for cover art container at bottom-right
+        const availableSpace = viewportHeight - triggerBottom - coverArtReserve;
+
+        // Use the smaller of calculated space or base max, with minimum of 120px for usability
+        const finalMax = Math.max(120, Math.min(baseMax, availableSpace));
+        setMaxListHeight(finalMax);
       } catch {
-        setMaxListHeight(180);
+        setMaxListHeight(160); // Smaller fallback to be safe
       }
     });
     return () => cancelAnimationFrame(raf);
@@ -294,13 +304,13 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
           tabIndex={-1}
           onKeyDown={onListKeyDown}
           ref={listRef}
-          className="fixed z-[100000] max-h-[240px] overflow-y-auto overflow-x-hidden rounded-[8px] border border-[#19E3FF]/60 bg-[rgba(8,26,32,0.6)] backdrop-blur-xl shadow-[0_6px_18px_rgba(0,0,0,0.45)] holo-scrollbar"
+          className="fixed z-[100000] overflow-y-auto overflow-x-hidden rounded-[8px] border border-[#19E3FF]/60 bg-[rgba(8,26,32,0.6)] backdrop-blur-xl shadow-[0_6px_18px_rgba(0,0,0,0.45)] holo-scrollbar"
           style={{
             position: 'fixed',
             top: triggerRect.bottom + window.scrollY + 2,
             left: triggerRect.left + window.scrollX,
             width: triggerRect.width,
-            maxHeight: maxListHeight ? `${maxListHeight}px` : '240px',
+            maxHeight: maxListHeight ? `${maxListHeight}px` : '160px',
             overflowY: 'auto',
             overflowX: 'hidden',
             pointerEvents: 'auto',

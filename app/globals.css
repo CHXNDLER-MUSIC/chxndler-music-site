@@ -2297,3 +2297,40 @@ button:hover > .heart-coin-glow,
 .journal-scroll::-webkit-scrollbar-thumb:hover {
   background: radial-gradient(circle, rgba(252, 248, 180, 1), rgba(252, 220, 80, 0.6));
 }
+
+/* Neon Sweep - Holographic light sweep effect on button hover */
+button {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+button::after {
+  content: "";
+  position: absolute;
+  top: -40%;
+  left: -60%;
+  width: 60%;
+  height: 180%;
+  transform: rotate(20deg);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 260ms ease,
+    opacity 180ms ease;
+  background: linear-gradient(
+    90deg,
+    rgba(0,0,0,0),
+    rgba(255,255,255,0.18),
+    rgba(56,182,255,0.22),
+    rgba(252,84,175,0.18),
+    rgba(0,0,0,0)
+  );
+  mix-blend-mode: screen;
+  z-index: 1;
+}
+
+button:hover::after {
+  opacity: 1;
+  transform: translateX(260%) rotate(20deg);
+}

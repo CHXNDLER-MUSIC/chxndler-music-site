@@ -1273,19 +1273,6 @@ export default function Pure3DPlanets({
     setSceneReady(true);
     debug('Scene setup complete, sceneReady = true');
 
-    // Check for pending element planet selection (from HeartCoinButton RETURN HOME)
-    if (typeof window !== 'undefined' && (window as any).__PENDING_ELEMENT_PLANET_SELECT) {
-      const pendingElement = (window as any).__PENDING_ELEMENT_PLANET_SELECT;
-      delete (window as any).__PENDING_ELEMENT_PLANET_SELECT;
-      console.log('[Pure3DPlanets] Found pending element selection on mount:', pendingElement);
-      // Dispatch the event after a brief delay to ensure everything is initialized
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('element-planet:select', {
-          detail: { element: pendingElement }
-        }));
-      }, 100);
-    }
-
     // Handle resize
     const handleResize = () => {
       const w = container.clientWidth;

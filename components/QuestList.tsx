@@ -591,29 +591,47 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         setLoading(false);
         return;
       }
-      
+
       // Use API response to set UI state
       if (data.status === 'success') {
-        // Success case
+        // Success case - fresh check-in
         console.log('Secret phrase redemption successful:', data);
         setQuestStatus(prev => ({ ...prev, liveShow: true }));
         // Save to localStorage to persist across sessions for today
         const today = new Date().toDateString();
         localStorage.setItem(`quest_liveshow_${today}`, 'true');
-        
+
         const successMessage = `Check-in successful +${data.rewardHeartCoins || 'reward'}`;
         showCelebration(successMessage);
         setSecretPhrase(""); // Clear input
         setShowCheckIn(false);
-        
+
         // Update displayed heartcoin balance (optimistically add data.rewardHeartCoins OR refetch profile)
         if (data.rewardHeartCoins && data.rewardHeartCoins > 0) {
           triggerHeartCoinCelebration(data.rewardHeartCoins);
           // Refresh profile to update balance
           await refreshProfile();
         }
+      } else if (data.status === 'already_redeemed') {
+        // User has already checked in today - update UI to reflect this
+        console.log('User already checked in today');
+        setQuestStatus(prev => ({ ...prev, liveShow: true }));
+        // Sync localStorage to ensure persistence for the rest of the day
+        const today = new Date().toDateString();
+        localStorage.setItem(`quest_liveshow_${today}`, 'true');
+
+        setSecretPhrase(""); // Clear input
+        setShowCheckIn(false);
+        showCelebration("You're already checked in for today!");
+      } else if (data.status === 'invalid') {
+        // Invalid/incorrect phrase
+        setCheckInError("Incorrect phrase");
+        setTimeout(() => {
+          setCheckInError("");
+          setSecretPhrase("");
+        }, 3000);
       } else {
-        // This case should not be reached due to earlier error handling, but keep as fallback
+        // Unexpected response - fallback
         console.error('Unexpected data format:', data);
         setCheckInError("Connection error. Please try again.");
         setTimeout(() => {
@@ -958,22 +976,18 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                     ? 'bg-green-600/30 border border-green-500/50 text-green-300 cursor-not-allowed'
                     : !isAuthenticated
                       ? 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300'
-                      : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300'
+                      : 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300'
                 }`}
                 style={{
                   boxShadow: questStatus.journalEntry
                     ? '0 0 10px rgba(0,255,0,0.3)'
-                    : !isAuthenticated
-                      ? '0 0 10px rgba(255,255,0,0.3)'
-                      : '0 0 10px rgba(252,84,175,0.3)',
+                    : '0 0 10px rgba(255,255,0,0.3)',
                   textShadow: questStatus.journalEntry
                     ? '0 0 4px rgba(0,255,0,0.6)'
-                    : !isAuthenticated
-                      ? '0 0 4px rgba(255,255,0,0.6)'
-                      : '0 0 4px rgba(252,84,175,0.6)'
+                    : '0 0 4px rgba(255,255,0,0.6)'
                 }}
               >
-                {questStatus.journalEntry ? '✓ COMPLETE' : !isAuthenticated ? 'LOG IN TO COMPLETE' : 'OPEN JOURNAL'}
+                {questStatus.journalEntry ? '✓ COMPLETE' : !isAuthenticated ? 'LOG IN TO COMPLETE' : 'REFLECT'}
               </button>
               <div 
                 className={`font-bold text-sm cursor-pointer ${
