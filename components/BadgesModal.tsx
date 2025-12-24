@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProfile } from "@/contexts/ProfileContext";
 import BadgeCategoryButton from "@/components/BadgeCategoryButton";
@@ -9,6 +9,8 @@ import { sfx } from "@/lib/sfx";
 import TiltSpinCard from "@/components/TiltSpinCard";
 import { getBadgeProgressForUser, formatRequirementText } from "@/lib/badgeProgress";
 import { updateBadgeProgressCounters, calculateRealtimeBadgeProgress, manualBadgeCheck } from "@/lib/updateBadgeProgress";
+import { useAttendanceCounts } from "@/hooks/useAttendanceCounts";
+import { AttendanceCounts } from "@/types/badges";
 
 // Local types for badge display
 interface BadgeDisplay {
@@ -55,7 +57,22 @@ function formatClaimedDate(dateString: string | null | undefined): string {
 
 export default function BadgesModal({ open, onClose, embedded = false }: Props) {
   const { profile, allBadges, userBadges, badgesLoading, badgesError, user } = useProfile();
-  
+
+  // Fetch attendance counts for community badges
+  const {
+    liveStreamCount,
+    inPersonCount,
+    totalAttendanceCount,
+    loading: attendanceLoading,
+  } = useAttendanceCounts();
+
+  // Memoize attendance counts for badge progress calculation
+  const attendanceCounts: AttendanceCounts = useMemo(() => ({
+    liveStreamCount,
+    inPersonCount,
+    totalAttendanceCount,
+  }), [liveStreamCount, inPersonCount, totalAttendanceCount]);
+
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedBadge, setSelectedBadge] = useState<BadgeDisplay | null>(null);
   const [enlargedBadge, setEnlargedBadge] = useState<BadgeDisplay | null>(null);
@@ -72,10 +89,11 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   const badgesWithUnlocked: BadgeDisplay[] = allBadges.map(badge => {
     const userBadge = userBadges.find(ub => ub.badge_id === badge.id);
     const isUnlocked = !!userBadge;
-    
+
     // Calculate progress for this badge
     let progress;
     if (badge.requirement_type && badge.requirement_count && profile) {
+      // Pass attendance counts for community badges that use attendance-based requirements
       const badgeProgress = getBadgeProgressForUser({
         requirement_type: badge.requirement_type,
         requirement_count: badge.requirement_count,
@@ -87,7 +105,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         requirement_text: null,
         category: badge.category as any,
         created_at: badge.created_at
-      }, profile);
+      }, profile, attendanceCounts);
       
       progress = {
         current: badgeProgress.current,
@@ -438,7 +456,33 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         >
           ←
         </button>
-        
+
+        {/* Community badge attendance stats */}
+        {selectedCategory === 'community' && (
+          <div className="mb-4 p-3 bg-black/40 rounded-lg border border-white/20">
+            <div className="text-center mb-2">
+              <span className="text-cyan-400/80 text-xs uppercase tracking-wider font-bold">
+                ATTENDANCE PROGRESS
+              </span>
+            </div>
+            <div className="flex justify-center gap-6">
+              <div className="flex flex-col items-center">
+                <div className="text-2xl font-bold text-cyan-400">
+                  {attendanceLoading ? '...' : liveStreamCount}
+                </div>
+                <div className="text-xs text-white/60">Live Streams</div>
+              </div>
+              <div className="w-px bg-white/20" />
+              <div className="flex flex-col items-center">
+                <div className="text-2xl font-bold text-green-400">
+                  {attendanceLoading ? '...' : inPersonCount}
+                </div>
+                <div className="text-xs text-white/60">In-Person</div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Badge grid matching binder layout */}
         <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3 sm:gap-4 flex-1 overflow-y-auto px-2" style={{ paddingBottom: '0px', marginBottom: '0px' }}>
           {sortedBadges.length > 0 ? sortedBadges.map((badge, index) => (

@@ -224,22 +224,30 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const loadExistingEntry = () => {
     if (!dailyPrompt?.element) return;
 
-    const todayEntry = journalEntries.find(entry => 
+    const todayEntry = journalEntries.find(entry =>
       entry.entry_date === today && entry.element === dailyPrompt?.element
     );
     if (todayEntry) {
       // Check if entry_text contains corrupted prompt text and clear it
       const entryTextValue = todayEntry.entry_text || "";
-      const isCorruptedWithPromptText = dailyPrompt && 
-        (entryTextValue === dailyPrompt.entry_text?.text || 
+      const isCorruptedWithPromptText = dailyPrompt &&
+        (entryTextValue === dailyPrompt.entry_text?.text ||
          entryTextValue === currentPromptText);
-      
+
+      const isAlreadySubmitted = !isCorruptedWithPromptText && !!(entryTextValue && entryTextValue.trim().length > 0);
+
       setSoulStarText(isCorruptedWithPromptText ? "" : entryTextValue);
       setJournalState(prev => ({
         ...prev,
         isPrivate: !(todayEntry.is_public ?? false),
-        isSubmitted: !isCorruptedWithPromptText && !!(entryTextValue && entryTextValue.trim().length > 0),
+        isSubmitted: isAlreadySubmitted,
       }));
+
+      // If entry is already submitted, dispatch event to hide pink dot in hamburger menu
+      if (isAlreadySubmitted) {
+        window.dispatchEvent(new CustomEvent('journalCompleted'));
+        markReflectionComplete();
+      }
     } else {
       setSoulStarText("");
       setJournalState(prev => ({

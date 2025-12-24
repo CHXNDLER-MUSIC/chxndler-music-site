@@ -77,6 +77,14 @@
   pointer-events: none !important;
 }
 
+/* Ensure ALL custom cursor variants never block hover events */
+#custom-cursor,
+#custom-cursor-vanilla,
+.custom-cursor,
+[data-custom-cursor] {
+  pointer-events: none !important;
+}
+
 .custom-cursor {
   position: fixed;
   top: 0;

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useProfile } from '@/contexts/ProfileContext';
 import { supabaseBrowser } from '@/lib/supabase-browser';
-import { Badge, UserBadge, BadgeWithProgress, BadgeCategoryData, BADGE_CATEGORIES } from '@/types/badges';
+import { Badge, UserBadge, BadgeWithProgress, BadgeCategoryData, BADGE_CATEGORIES, AttendanceCounts } from '@/types/badges';
 import { getBadgeProgressForUser, formatRequirementText } from '@/lib/badgeProgress';
+import { useAttendanceCounts } from '@/hooks/useAttendanceCounts';
 
 export function useBadges() {
   const { user, profile } = useProfile();
@@ -12,6 +13,22 @@ export function useBadges() {
   const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch attendance counts for community badges
+  const {
+    liveStreamCount,
+    inPersonCount,
+    totalAttendanceCount,
+    loading: attendanceLoading,
+    error: attendanceError
+  } = useAttendanceCounts();
+
+  // Memoize attendance counts for badge progress calculation
+  const attendanceCounts: AttendanceCounts = useMemo(() => ({
+    liveStreamCount,
+    inPersonCount,
+    totalAttendanceCount,
+  }), [liveStreamCount, inPersonCount, totalAttendanceCount]);
 
   // Fetch badges from public.badges table
   const fetchBadges = async () => {
@@ -69,8 +86,9 @@ export function useBadges() {
 
   // Calculate badge progress using the new data-driven approach
   const calculateBadgeProgress = (badge: Badge): BadgeWithProgress => {
-    const badgeProgress = getBadgeProgressForUser(badge, profile);
-    
+    // Pass attendance counts for community badges that use attendance-based requirements
+    const badgeProgress = getBadgeProgressForUser(badge, profile, attendanceCounts);
+
     // Check if user has earned this badge
     const userBadge = userBadges.find(ub => ub.badge_id === badge.id);
     const unlocked = !!user && !!userBadge;
@@ -235,9 +253,11 @@ export function useBadges() {
     badges: badges.map(calculateBadgeProgress), // Legacy compatibility
     badgeCategories: getBadgeCategories(),
     userBadges,
-    loading,
-    error,
+    loading: loading || attendanceLoading,
+    error: error || attendanceError,
     awardBadge,
+    // Expose attendance counts for community badge UI
+    attendanceCounts,
     refetch: () => {
       setLoading(true);
       setError(null);

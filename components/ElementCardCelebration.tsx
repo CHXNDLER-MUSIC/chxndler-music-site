@@ -66,14 +66,14 @@ export default function ElementCardCelebration() {
       // Show celebration
       setIsVisible(true);
 
-      // Hide after 3 seconds and trigger callback
+      // Hide after 5 seconds and trigger callback
       timeoutRef.current = setTimeout(() => {
         setIsVisible(false);
         isShowingRef.current = false;
         if (onComplete) {
           onComplete();
         }
-      }, 3000);
+      }, 5000);
     };
 
     // Add event listener

@@ -2827,6 +2827,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             } else if (quest.quest_key === 'LISTEN_SONG_OF_DAY') {
                               console.log('[LISTEN BUTTON] Clicked! songOfDaySlug:', songOfDaySlug);
                               try { sfx.play('click', 0.6); } catch {}
+                              // Close the HeartCoin popup first (notify parent to close)
+                              onClose?.();
                               // Close the HeartCoin modal
                               setOpen(false);
                               window.dispatchEvent(new CustomEvent('close-heartcoin-modal'));
@@ -3648,9 +3650,26 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       <span className="text-white text-sm font-bold">→</span>
                                     </button>
                                   </div>
-                                  {/* Item index: place directly under image */}
-                                  <div className="mt-1 text-center text-white/70 text-xs" style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}>
-                                    {currentMerchIndex + 1} of {PHYSICAL_ITEMS.length}
+                                  {/* Page Indicator Dots */}
+                                  <div className="mt-2 flex justify-center items-center gap-1.5">
+                                    {PHYSICAL_ITEMS.map((_, index) => (
+                                      <button
+                                        key={index}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (!isPurchasing) {
+                                            try { sfx.play('click', 0.4); } catch {}
+                                            setCurrentMerchIndex(index);
+                                          }
+                                        }}
+                                        disabled={isPurchasing}
+                                        className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                                          index === currentMerchIndex
+                                            ? 'bg-[#F2EF1D] shadow-[0_0_6px_rgba(242,239,29,0.8)]'
+                                            : 'bg-white/30 hover:bg-white/50'
+                                        } ${isPurchasing ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                                      />
+                                    ))}
                                   </div>
                                   
                                   {/* PAY WITH $ button moved to bottom action bar */}

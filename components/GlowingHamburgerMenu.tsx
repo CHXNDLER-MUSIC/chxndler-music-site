@@ -64,6 +64,13 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
     return () => { try { window.removeEventListener('journalCompleted', onCompleted); } catch {} };
   }, []);
 
+  // If reflection is already complete (from hook check), hide the dot
+  useEffect(() => {
+    if (!hasPendingReflection) {
+      setHideJournalDot(true);
+    }
+  }, [hasPendingReflection]);
+
 
   const toggleMenu = () => {
     sfx.play('click', 0.7);

@@ -578,16 +578,26 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
       if (data.status === 'error') {
         console.error('API response error:', data);
         if (data.code === 'ALREADY_REDEEMED') {
-          setCheckInError("Already checked in");
+          // User already checked in today - update UI to reflect this
+          setQuestStatus(prev => ({ ...prev, liveShow: true }));
+          const today = new Date().toDateString();
+          localStorage.setItem(`quest_liveshow_${today}`, 'true');
+          setSecretPhrase("");
+          setShowCheckIn(false);
+          showCelebration("You're already checked in for today!");
         } else if (data.code === 'NO_ACTIVE_PHRASE') {
           setCheckInError("Incorrect");
+          setTimeout(() => {
+            setCheckInError("");
+            setSecretPhrase("");
+          }, 3000);
         } else {
           setCheckInError("Connection error. Please try again.");
+          setTimeout(() => {
+            setCheckInError("");
+            setSecretPhrase("");
+          }, 3000);
         }
-        setTimeout(() => {
-          setCheckInError("");
-          setSecretPhrase("");
-        }, 3000);
         setLoading(false);
         return;
       }
@@ -853,26 +863,26 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         </h3>
 
         {/* Quest 1: Tap Element of the Day */}
-        <div 
-          className="border border-cyan-400/40 rounded-lg p-4 mb-4"
-          style={{ 
+        <div
+          className="border border-cyan-400/40 rounded-lg p-3 mb-4"
+          style={{
             background: 'rgba(0,255,255,0.05)',
             boxShadow: '0 0 10px rgba(0,255,255,0.2)'
           }}
         >
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <h4 className="text-white font-semibold mb-1 flex items-center gap-2">
+              <h4 className="text-white font-semibold mb-0.5 flex items-center gap-2">
                 <img src="/elements/elementals.webp" alt="" className="w-5 h-5" />
                 Element of the Day
               </h4>
-              <p className="text-white/80 text-sm mb-2">Unlock a surprise reward such as boosts, relics, or binder slot.</p>
+              <p className="text-white/80 text-sm mb-1">Unlock a surprise reward such as boosts, relics, or binder slot.</p>
             </div>
             <div className="flex items-center gap-2">
               {/* Today's Element Icon - Click to navigate to 3D planet view */}
               <button
                 onClick={handleElementImageClick}
-                className={`w-12 h-12 border-2 rounded-full overflow-hidden transition-all relative ${
+                className={`w-10 h-10 border-2 rounded-full overflow-hidden transition-all relative ${
                   questStatus.elementOfDay
                     ? 'cursor-pointer border-green-500/60 hover:border-green-400'
                     : `border-pink-500/60 hover:border-pink-400 cursor-pointer`
@@ -971,23 +981,27 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
               <button
                 onClick={handleJournalOpen}
                 disabled={questStatus.journalEntry || loading}
-                className={`w-20 h-20 rounded-full text-xs transition-all duration-200 flex items-center justify-center cursor-pointer ${
+                className={`w-20 h-20 rounded-full text-xs font-bold transition-all duration-200 flex items-center justify-center cursor-pointer ${
                   questStatus.journalEntry
-                    ? 'bg-green-600/30 border border-green-500/50 text-green-300 cursor-not-allowed'
+                    ? 'border-2 cursor-not-allowed'
                     : !isAuthenticated
                       ? 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300'
                       : 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300'
                 }`}
                 style={{
-                  boxShadow: questStatus.journalEntry
-                    ? '0 0 10px rgba(0,255,0,0.3)'
-                    : '0 0 10px rgba(255,255,0,0.3)',
-                  textShadow: questStatus.journalEntry
-                    ? '0 0 4px rgba(0,255,0,0.6)'
-                    : '0 0 4px rgba(255,255,0,0.6)'
+                  ...(questStatus.journalEntry ? {
+                    background: 'rgba(0, 255, 0, 0.2)',
+                    borderColor: '#00FF00',
+                    color: '#00FF00',
+                    boxShadow: '0 0 20px rgba(0,255,0,0.8), inset 0 0 10px rgba(0,255,0,0.3)',
+                    textShadow: '0 0 10px rgba(0,255,0,1), 0 0 20px rgba(0,255,0,0.8)'
+                  } : {
+                    boxShadow: '0 0 10px rgba(255,255,0,0.3)',
+                    textShadow: '0 0 4px rgba(255,255,0,0.6)'
+                  })
                 }}
               >
-                {questStatus.journalEntry ? '✓ COMPLETE' : !isAuthenticated ? 'LOG IN TO COMPLETE' : 'REFLECT'}
+                {questStatus.journalEntry ? 'REFLECTED' : !isAuthenticated ? 'LOG IN TO COMPLETE' : 'REFLECT'}
               </button>
               <div 
                 className={`font-bold text-sm cursor-pointer ${
@@ -1032,9 +1046,9 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
 
         {/* Bonus Quest 1: Listen to Your Elemental Song (if available) */}
         {getElementalSongQuest() && (
-          <div 
+          <div
             className="border border-cyan-400/40 rounded-lg p-4 mb-4"
-            style={{ 
+            style={{
               background: 'rgba(0,255,255,0.05)',
               boxShadow: '0 0 10px rgba(0,255,255,0.2)'
             }}
@@ -1043,7 +1057,12 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
               <div className="flex-1">
                 <h4 className="text-white font-bold mb-1 text-base">1. Listen to Your Elemental Song</h4>
                 <p className="text-white/80 text-sm mb-2">Play the track aligned with your element.</p>
-                <p className="text-white/70 text-sm font-semibold">+2 + Element Card</p>
+                <div className="flex items-center gap-2">
+                  <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8" style={{ filter: 'drop-shadow(0 0 4px rgba(255,105,180,0.6))' }} />
+                  <span className="text-pink-300 font-bold text-lg" style={{ textShadow: '0 0 6px rgba(255,105,180,0.6)' }}>+2</span>
+                  <span className="text-white/70 text-lg mx-1">+</span>
+                  <img src="/elements/elementals.webp" alt="Element Card" className="w-10 h-10" style={{ filter: 'drop-shadow(0 0 6px rgba(0,255,255,0.6))' }} />
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -1106,9 +1125,9 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         )}
 
         {/* Bonus Quest 2: Invite a Friend */}
-        <div 
+        <div
           className="border border-cyan-400/40 rounded-lg p-4 mb-4"
-          style={{ 
+          style={{
             background: 'rgba(0,255,255,0.05)',
             boxShadow: '0 0 10px rgba(0,255,255,0.2)'
           }}
@@ -1117,7 +1136,11 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
             <div className="flex-1">
               <h4 className="text-white font-bold mb-1 text-base">2. Invite a Friend</h4>
               <p className="text-white/80 text-sm mb-2">Share the Heartverse with someone you love. When they join, you both earn HeartCoins.</p>
-              <p className="text-white/70 text-sm font-semibold">+1 /day</p>
+              <div className="flex items-center gap-2">
+                <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8" style={{ filter: 'drop-shadow(0 0 4px rgba(255,105,180,0.6))' }} />
+                <span className="text-pink-300 font-bold text-lg" style={{ textShadow: '0 0 6px rgba(255,105,180,0.6)' }}>+1</span>
+                <span className="text-white/60 text-sm">/day</span>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -1209,9 +1232,9 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         </div>
 
         {/* Bonus Quest 3: Attend Live Show */}
-        <div 
+        <div
           className="border border-cyan-400/40 rounded-lg p-4"
-          style={{ 
+          style={{
             background: 'rgba(0,255,255,0.05)',
             boxShadow: '0 0 10px rgba(0,255,255,0.2)'
           }}
@@ -1219,7 +1242,11 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
           <div className="space-y-3">
             <div>
               <h4 className="text-white font-bold mb-1 text-base">3. Attend a Livestream or Live Show</h4>
-              <p className="text-white/80 text-sm mb-3">Check in at a CHXNDLER show or stream to receive bonus HEART coins.</p>
+              <p className="text-white/80 text-sm mb-2">Check in at a CHXNDLER show or stream to receive bonus HEART coins.</p>
+              <div className="flex items-center gap-2 mb-3">
+                <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8" style={{ filter: 'drop-shadow(0 0 4px rgba(255,105,180,0.6))' }} />
+                <span className="text-pink-300 font-bold text-lg" style={{ textShadow: '0 0 6px rgba(255,105,180,0.6)' }}>+1-5</span>
+              </div>
 
               {showCheckIn && (
                 <div className="mb-3">

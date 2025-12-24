@@ -1,19 +1,26 @@
 // Badge progress calculation utility
-import { Badge, BadgeProgress } from '@/types/badges';
+import { Badge, BadgeProgress, AttendanceCounts } from '@/types/badges';
 import { log, warn } from '@/lib/logger';
 
 // Allow any profile shape since we may get different Profile interfaces
 type AnyProfile = any;
 
+// Optional attendance counts for community badges
+type OptionalAttendanceCounts = AttendanceCounts | null;
+
 /**
  * Calculate badge progress for a given badge and user profile
  * Maps badge requirement types to profile counter columns
+ * @param badge - The badge to calculate progress for
+ * @param profile - The user's profile data
+ * @param attendanceCounts - Optional attendance counts for community badges
  */
 export function getBadgeProgressForUser(
   badge: Badge,
-  profile: AnyProfile | null
+  profile: AnyProfile | null,
+  attendanceCounts?: OptionalAttendanceCounts
 ): BadgeProgress {
-  
+
   if (!profile) {
     return {
       current: 0,
@@ -124,12 +131,30 @@ export function getBadgeProgressForUser(
     case 'heartcoin_transfers':
       current = profile.heartcoins_sent || 0;
       break;
-      
+
     case 'heart coins':
       // Handle space-separated variant of heartcoins
       current = profile.heartcoin_total || 0;
       break;
-      
+
+    // Attendance-based community badges (from secret phrase redemptions)
+    case 'attendance_live_stream':
+      // Counts only LIVE_STREAM attendance from secret phrase redemptions
+      current = attendanceCounts?.liveStreamCount ?? profile.streams_attended ?? 0;
+      break;
+
+    case 'attendance_in_person':
+      // Counts only IN_PERSON attendance from secret phrase redemptions
+      current = attendanceCounts?.inPersonCount ?? profile.concerts_attended ?? 0;
+      break;
+
+    case 'attendance_any':
+    case 'attendance_total':
+      // Counts any type of attendance from secret phrase redemptions
+      current = attendanceCounts?.totalAttendanceCount ??
+        ((profile.streams_attended ?? 0) + (profile.concerts_attended ?? 0));
+      break;
+
     default:
       // TODO: Add support for new requirement types as they are added
       warn(`Unknown requirement type: ${badge.requirement_type} for badge: ${badge.slug || badge.badge_name || badge.id}`);
@@ -235,7 +260,18 @@ export function formatRequirementText(badge: Badge): string {
       
     case 'heartcoins_sent':
       return `${requirement_count} HeartCoin${requirement_count === 1 ? '' : 's'} sent`;
-      
+
+    // Attendance-based community badges
+    case 'attendance_live_stream':
+      return `Attend ${requirement_count} live stream${requirement_count === 1 ? '' : 's'}`;
+
+    case 'attendance_in_person':
+      return `Attend ${requirement_count} in-person concert${requirement_count === 1 ? '' : 's'}`;
+
+    case 'attendance_any':
+    case 'attendance_total':
+      return `Attend ${requirement_count} event${requirement_count === 1 ? '' : 's'} (any type)`;
+
     default:
       return `${requirement_count} ${requirement_type.replace(/_/g, ' ')}`;
   }

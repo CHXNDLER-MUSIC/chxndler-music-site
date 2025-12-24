@@ -103,3 +103,10 @@ export const BADGE_CATEGORIES: Record<string, BadgeCategory> = {
   LISTENING: 'listening',
   COMMUNITY: 'community'
 } as const;
+
+// Attendance counts for community badge progress
+export interface AttendanceCounts {
+  liveStreamCount: number;
+  inPersonCount: number;
+  totalAttendanceCount: number;
+}

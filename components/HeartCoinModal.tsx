@@ -166,6 +166,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   const [error, setError] = useState<string | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState(initialTab);
   const [activeEarnTab, setActiveEarnTab] = useState<'DAILY QUESTS' | 'BONUS QUESTS'>('DAILY QUESTS');
 
@@ -242,7 +244,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   // Ordered list of cards for the selected element
   const [elementCards, setElementCards] = useState<any[]>([]);
 
-  const itemsPerPage = 6;
+  const itemsPerPage = 1;
 
   useEffect(() => {
     if (open) {
@@ -1388,6 +1390,33 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     setCurrentPage(prev => Math.min(totalPages - 1, prev + 1));
   };
 
+  // Swipe gesture handlers for merch carousel
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && currentPage < merchItems.length - 1) {
+      try { sfx.play('hover', 0.3); } catch {}
+      setCurrentPage(prev => prev + 1);
+    } else if (isRightSwipe && currentPage > 0) {
+      try { sfx.play('hover', 0.3); } catch {}
+      setCurrentPage(prev => prev - 1);
+    }
+  };
+
   const handlePrevCard = () => {
     try { sfx.play('flip', 0.8); } catch {}
     setIsEnlargedCardFlipped(false);
@@ -1833,224 +1862,225 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               )}
             </div>
             
-            {/* Store Items Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[60vh] overflow-y-auto pr-2">
-          {merchLoading ? (
-            <div className="col-span-full text-center py-8">
-              <div className="w-8 h-8 border-2 border-[#F2EF1D] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-              <p className="text-white/60 text-sm">Loading merch items...</p>
-            </div>
-          ) : merchItems.length > 0 ? (
-            merchItems.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage).map((item, index) => (
-            <div key={index} className="text-center space-y-4 pt-4 px-4 pb-0 bg-black/20 rounded-lg transition-all duration-300">
-              <h3 className="text-lg font-bold text-white tracking-wider">
-                {item.name.toUpperCase()}
-              </h3>
-              
-              {/* Item Images */}
-              <div className="relative h-48 w-full flex items-center justify-center">
-                <img
-                  src={item.image_url || '/store/default.webp'}
-                  alt={item.name}
-                  className="max-h-full max-w-full object-contain rounded-lg cursor-pointer hover:scale-105 transition-transform duration-300"
-                  onClick={() => {
-                    // Convert database item to StoreItem format for modal
-                    const storeItem = {
-                      name: item.name,
-                      image: item.image_url || '/store/default.webp',
-                      image2: (item as any).slug === 'beanie' ? ((item as any).profile_url_2 || (item as any).secondary_image_url) : (item as any).secondary_image_url,
-                      stripeUrl: item.stripe_url || '',
-                      description: item.description || '',
-                      cost: item.price_usd || 0,
-                      heartCoin: item.price_heartcoins || 0,
-                      merch_item_id: item.id
-                    };
-                    setEnlargedItem(storeItem);
-                    setEnlargedImageIndex(0);
-                  }}
-                />
-                {item.secondary_image_url && (
-                  <img
-                    src={item.secondary_image_url}
-                    alt={`${item.name} alternative view`}
-                    className="max-h-full max-w-full object-contain rounded-lg absolute top-0 left-0 opacity-0 hover:opacity-100 transition-opacity duration-300 cursor-pointer"
-                    onClick={() => {
-                      const storeItem = {
-                        name: item.name,
-                        image: item.image_url || '/store/default.webp',
-                        image2: (item as any).slug === 'beanie' ? ((item as any).profile_url_2 || (item as any).secondary_image_url) : (item as any).secondary_image_url,
-                        stripeUrl: item.stripe_url || '',
-                        description: item.description || '',
-                        cost: item.price_usd || 0,
-                        heartCoin: item.price_heartcoins || 0,
-                        merch_item_id: item.id
-                      };
-                      setEnlargedItem(storeItem);
-                      setEnlargedImageIndex(0);
-                    }}
-                  />
-                )}
+            {/* Merch Carousel */}
+            {merchLoading ? (
+              <div className="text-center py-8">
+                <div className="w-8 h-8 border-2 border-[#F2EF1D] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                <p className="text-white/60 text-sm">Loading merch items...</p>
               </div>
-              
-              {/* Description - Hidden for cleaner look */}
-              {false && (
-                <div className="text-white/80 text-xs leading-relaxed px-2 break-words">
-                  {item.description?.toUpperCase()}
-                </div>
-              )}
-              
-              {/* Price and Heart Coins */}
-              <div className="flex items-center justify-between w-full px-2">
-                {/* Left side - User heart coins */}
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-xs font-bold text-white/80">USER</span>
-                  <div className="flex items-center gap-1">
-                    <img
-                      src="/elements/heart-coin.webp"
-                      alt="Heart Coin"
-                      className="w-4 h-4 object-contain"
-                      style={{
-                        filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
-                      }}
-                    />
-                    <span className="text-sm font-bold text-[#F2EF1D]">{profile?.heartcoin_balance || 0}</span>
-                  </div>
-                </div>
+            ) : merchItems.length > 0 ? (
+              <>
+                {/* Item Title */}
+                <h3 className="text-lg font-bold text-white tracking-wider text-center mb-4">
+                  {merchItems[currentPage]?.name.toUpperCase()}
+                </h3>
 
-                {/* Right side - Cost */}
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-xs font-bold text-white/80">COST</span>
-                  <div className="flex items-center gap-1">
-                    <img
-                      src="/elements/heart-coin.webp"
-                      alt="Heart Coin"
-                      className="w-4 h-4 object-contain"
-                      style={{
-                        filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
-                      }}
-                    />
-                    <span className="text-sm font-bold text-[#F2EF1D]">{item.price_heartcoins || 0}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Purchase Button */}
-              {item.stripe_url && (
-                <div className="flex justify-center">
+                {/* Carousel with Arrows - Swipe enabled */}
+                <div
+                  className="flex items-center w-full"
+                  onTouchStart={onTouchStart}
+                  onTouchMove={onTouchMove}
+                  onTouchEnd={onTouchEnd}
+                >
+                  {/* LEFT ARROW - Aligned to left edge */}
                   <button
-                    onClick={() => handlePurchase(item.stripe_url)}
+                    onClick={handlePrevPage}
                     onMouseEnter={() => {
-                      try { sfx.play('hover', 0.3); } catch {}
+                      if (currentPage !== 0) {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }
                     }}
-                    className="px-3 py-2 rounded-lg font-bold text-sm text-green-400 hover:bg-green-500/20 hover:scale-105 transition-all duration-200"
+                    disabled={currentPage === 0}
+                    className={`flex-shrink-0 p-3 rounded-full border-2 transition-all duration-300 ${
+                      currentPage === 0
+                        ? 'border-white/20 text-white/30 cursor-not-allowed'
+                        : 'border-[#F2EF1D] text-[#F2EF1D] hover:bg-[#F2EF1D] hover:text-black hover:shadow-[0_0_15px_rgba(242,239,29,0.6)]'
+                    }`}
                   >
-                    PAY WITH ${item.price_usd ? (item.price_usd % 1 === 0 ? item.price_usd.toFixed(0) : item.price_usd.toFixed(1)) : '0'}
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Item Content - Centered */}
+                  <div className="flex-1 text-center px-4">
+                    {(() => {
+                      const item = merchItems[currentPage];
+                      if (!item) return null;
+                      return (
+                        <>
+                          {/* Item Image */}
+                          <div className="relative h-48 w-full flex items-center justify-center mb-4">
+                            <img
+                              src={item.image_url || '/store/default.webp'}
+                              alt={item.name}
+                              className="max-h-full max-w-full object-contain rounded-lg cursor-pointer hover:scale-105 transition-transform duration-300"
+                              onClick={() => {
+                                const storeItem = {
+                                  name: item.name,
+                                  image: item.image_url || '/store/default.webp',
+                                  image2: (item as any).slug === 'beanie' ? ((item as any).profile_url_2 || (item as any).secondary_image_url) : (item as any).secondary_image_url,
+                                  stripeUrl: item.stripe_url || '',
+                                  description: item.description || '',
+                                  cost: item.price_usd || 0,
+                                  heartCoin: item.price_heartcoins || 0,
+                                  merch_item_id: item.id
+                                };
+                                setEnlargedItem(storeItem);
+                                setEnlargedImageIndex(0);
+                              }}
+                            />
+                          </div>
+
+                          {/* Page Indicator Dots */}
+                          {merchItems.length > 1 && (
+                            <div className="flex justify-center items-center gap-2 mb-4">
+                              {merchItems.map((_, index) => (
+                                <button
+                                  key={index}
+                                  onClick={() => setCurrentPage(index)}
+                                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                                    index === currentPage
+                                      ? 'bg-[#F2EF1D] shadow-[0_0_8px_rgba(242,239,29,0.8)]'
+                                      : 'bg-white/30 hover:bg-white/50'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+
+                  {/* RIGHT ARROW - Aligned to right edge */}
+                  <button
+                    onClick={handleNextPage}
+                    onMouseEnter={() => {
+                      if (currentPage !== totalPages - 1) {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }
+                    }}
+                    disabled={currentPage === totalPages - 1}
+                    className={`flex-shrink-0 p-3 rounded-full border-2 transition-all duration-300 ${
+                      currentPage === totalPages - 1
+                        ? 'border-white/20 text-white/30 cursor-not-allowed'
+                        : 'border-[#F2EF1D] text-[#F2EF1D] hover:bg-[#F2EF1D] hover:text-black hover:shadow-[0_0_15px_rgba(242,239,29,0.6)]'
+                    }`}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </button>
                 </div>
-              )}
-              
-              {/* Add to Collection Button */}
-              <button
-                onClick={() => {
-                  // Convert database item to StoreItem format
-                  const storeItem = {
-                    name: item.name,
-                    image: item.image_url || '/store/default.webp',
-                    image2: item.secondary_image_url,
-                    stripeUrl: item.stripe_url || '',
-                    description: item.description || '',
-                    cost: item.price_usd || 0,
-                    heartCoin: item.price_heartcoins || 0,
-                    merch_item_id: item.id
-                  };
-                  handleHeartCoinPurchaseConfirm(storeItem);
-                }}
-                onMouseEnter={() => {
-                  if (!modalLoading && profile && (profile.heartcoin_balance || 0) >= (item.price_heartcoins || 0)) {
-                    try { sfx.play('hover', 0.3); } catch {}
-                  }
-                }}
-                disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < (item.price_heartcoins || 0)}
-                className={`w-full py-2 px-4 rounded-lg font-bold text-xs transition-all duration-200 ${
-                  modalLoading || !profile || (profile.heartcoin_balance || 0) < (item.price_heartcoins || 0)
-                    ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
-                    : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,239,29,0.6)]'
-                }`}
-                style={
-                  modalLoading || !profile || (profile.heartcoin_balance || 0) < (item.price_heartcoins || 0)
-                    ? undefined
-                    : {
-                        boxShadow: '0 0 15px rgba(242,239,29,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
-                      }
-                }
-              >
-                {modalLoading ? 'Purchasing...' : 'Add to Collection'}
-              </button>
-            </div>
-          ))
-          ) : (
-            <div className="col-span-full text-center py-8">
-              <p className="text-white/60 text-sm">No merch items available</p>
-            </div>
-          )}
-        </div>
 
-        {/* Navigation Arrows */}
-        {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-4 mt-6 pt-4 border-t border-white/10">
-            <button
-              onClick={handlePrevPage}
-              onMouseEnter={() => {
-                if (currentPage !== 0) {
-                  try { sfx.play('hover', 0.3); } catch {}
-                }
-              }}
-              disabled={currentPage === 0}
-              className={`p-3 rounded-full border-2 transition-all duration-300 ${
-                currentPage === 0
-                  ? 'border-white/20 text-white/30 cursor-not-allowed'
-                  : 'border-[#F2EF1D] text-[#F2EF1D] hover:bg-[#F2EF1D] hover:text-black hover:shadow-[0_0_15px_rgba(242,239,29,0.6)]'
-              }`}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
+                {/* Item Details Below Carousel */}
+                {(() => {
+                  const item = merchItems[currentPage];
+                  if (!item) return null;
+                  return (
+                    <div className="mt-4 space-y-4 bg-black/20 rounded-lg p-4">
+                      {/* Description */}
+                      <p className="text-white/80 text-sm text-center italic">
+                        {item.description}
+                      </p>
 
-            <div className="flex items-center gap-2">
-              {Array.from({ length: totalPages }).map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentPage(index)}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                    index === currentPage
-                      ? 'bg-[#F2EF1D] shadow-[0_0_8px_rgba(242,239,29,0.8)]'
-                      : 'bg-white/30 hover:bg-white/50'
-                  }`}
-                />
-              ))}
-            </div>
+                      {/* Price and Heart Coins */}
+                      <div className="flex items-center justify-between w-full px-2">
+                        {/* Left side - User heart coins */}
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-xs font-bold text-white/80">USER</span>
+                          <div className="flex items-center gap-1">
+                            <img
+                              src="/elements/heart-coin.webp"
+                              alt="Heart Coin"
+                              className="w-4 h-4 object-contain"
+                              style={{
+                                filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
+                              }}
+                            />
+                            <span className="text-sm font-bold text-[#F2EF1D]">{profile?.heartcoin_balance || 0}</span>
+                          </div>
+                        </div>
 
-            <button
-              onClick={handleNextPage}
-              onMouseEnter={() => {
-                if (currentPage !== totalPages - 1) {
-                  try { sfx.play('hover', 0.3); } catch {}
-                }
-              }}
-              disabled={currentPage === totalPages - 1}
-              className={`p-3 rounded-full border-2 transition-all duration-300 ${
-                currentPage === totalPages - 1
-                  ? 'border-white/20 text-white/30 cursor-not-allowed'
-                  : 'border-[#F2EF1D] text-[#F2EF1D] hover:bg-[#F2EF1D] hover:text-black hover:shadow-[0_0_15px_rgba(242,239,29,0.6)]'
-              }`}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-        )}
+                        {/* Right side - Cost */}
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-xs font-bold text-white/80">COST</span>
+                          <div className="flex items-center gap-1">
+                            <img
+                              src="/elements/heart-coin.webp"
+                              alt="Heart Coin"
+                              className="w-4 h-4 object-contain"
+                              style={{
+                                filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
+                              }}
+                            />
+                            <span className="text-sm font-bold text-[#F2EF1D]">{item.price_heartcoins || 0}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Purchase Button */}
+                      {item.stripe_url && (
+                        <div className="flex justify-center">
+                          <button
+                            onClick={() => handlePurchase(item.stripe_url)}
+                            onMouseEnter={() => {
+                              try { sfx.play('hover', 0.3); } catch {}
+                            }}
+                            className="px-3 py-2 rounded-lg font-bold text-sm text-green-400 hover:bg-green-500/20 hover:scale-105 transition-all duration-200"
+                          >
+                            PAY WITH ${item.price_usd ? (item.price_usd % 1 === 0 ? item.price_usd.toFixed(0) : item.price_usd.toFixed(1)) : '0'}
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Add to Collection Button */}
+                      <button
+                        onClick={() => {
+                          const storeItem = {
+                            name: item.name,
+                            image: item.image_url || '/store/default.webp',
+                            image2: item.secondary_image_url,
+                            stripeUrl: item.stripe_url || '',
+                            description: item.description || '',
+                            cost: item.price_usd || 0,
+                            heartCoin: item.price_heartcoins || 0,
+                            merch_item_id: item.id
+                          };
+                          handleHeartCoinPurchaseConfirm(storeItem);
+                        }}
+                        onMouseEnter={() => {
+                          if (!modalLoading && profile && (profile.heartcoin_balance || 0) >= (item.price_heartcoins || 0)) {
+                            try { sfx.play('hover', 0.3); } catch {}
+                          }
+                        }}
+                        disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < (item.price_heartcoins || 0)}
+                        className={`w-full py-2 px-4 rounded-lg font-bold text-xs transition-all duration-200 ${
+                          modalLoading || !profile || (profile.heartcoin_balance || 0) < (item.price_heartcoins || 0)
+                            ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
+                            : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,239,29,0.6)]'
+                        }`}
+                        style={
+                          modalLoading || !profile || (profile.heartcoin_balance || 0) < (item.price_heartcoins || 0)
+                            ? undefined
+                            : {
+                                boxShadow: '0 0 15px rgba(242,239,29,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
+                              }
+                        }
+                      >
+                        {modalLoading ? 'Purchasing...' : 'Add to Collection'}
+                      </button>
+                    </div>
+                  );
+                })()}
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-white/60 text-sm">No merch items available</p>
+              </div>
+            )}
+
       </div>
     ) : isUseMode && activeTab === 'cards' ? (
       <div className="flex flex-col h-full overflow-hidden">
@@ -2191,9 +2221,13 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
                 {/* Card Info */}
                 <div className="mt-4 space-y-6">
-                  <p className="text-white/60 text-sm text-center">
-                    {displayCardIndex + 1} of {displayCards.length}
-                  </p>
+                  <div className="flex justify-center gap-1 text-sm">
+                    {displayCards.map((_, i) => (
+                      <span key={i} className={i === displayCardIndex ? 'text-white' : 'text-white/40'}>
+                        {i === displayCardIndex ? '●' : '○'}
+                      </span>
+                    ))}
+                  </div>
 
                   {/* Card Description */}
                   <div className="text-center px-4">
