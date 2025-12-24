@@ -80,6 +80,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
   const [showElementInfo, setShowElementInfo] = useState(false);
   const [currentElementIndex, setCurrentElementIndex] = useState(0);
   const [activeBoosts, setActiveBoosts] = useState<{ kind: string; label: string }[]>([]);
+  const [totalSoulStars, setTotalSoulStars] = useState(0);
 
   const popoverRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -171,6 +172,35 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
     };
 
     fetchActiveBoosts();
+  }, [isOpen, user]);
+
+  // Fetch total soul stars when popover opens
+  useEffect(() => {
+    if (!isOpen || !user) {
+      return;
+    }
+
+    const fetchTotalSoulStars = async () => {
+      try {
+        const { data, error } = await supabaseBrowser
+          .from('soul_journal_entries')
+          .select('stars_count')
+          .eq('user_id', user.id);
+
+        if (error) {
+          console.warn('Failed to fetch soul stars:', error);
+          return;
+        }
+
+        // Sum up all stars_count from user's journal entries
+        const total = data?.reduce((sum, entry) => sum + (entry.stars_count || 0), 0) || 0;
+        setTotalSoulStars(total);
+      } catch (err) {
+        console.warn('Error fetching soul stars:', err);
+      }
+    };
+
+    fetchTotalSoulStars();
   }, [isOpen, user]);
 
   // Reset editing state when popover closes
@@ -770,12 +800,12 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
         }}
       >
         <div
-          className="profile-hologram-container overflow-y-auto overflow-x-hidden"
+          className="profile-hologram-container overflow-y-auto overflow-x-hidden flex flex-col"
           style={{
             width: 'min(92vw, 500px)',
-            height: '100%',
+            height: 'fit-content',
             maxHeight: '100%',
-            padding: '16px 24px 18px 24px',
+            padding: '16px 24px 0px 24px',
             borderRadius: 18,
             background: 'rgba(0,0,0,0.6)',
             border: '1px solid rgba(0,255,255,0.55)',
@@ -840,12 +870,12 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
           </button>
 
           {/* PROFILE Header */}
-          <div className="text-center mb-2">
-            <h1 
+          <div className="text-center mb-0.5">
+            <h1
               className="text-2xl font-bold"
-              style={{ 
-                color: '#00FFFF', 
-                textShadow: '0 0 12px rgba(0,255,255,0.8)', 
+              style={{
+                color: '#00FFFF',
+                textShadow: '0 0 12px rgba(0,255,255,0.8)',
                 letterSpacing: '0.1em'
               }}
             >
@@ -854,8 +884,8 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
           </div>
 
           {/* Thin cyan neon line under PROFILE title */}
-          <div 
-            className="w-full h-px mb-3"
+          <div
+            className="w-full h-px mb-1"
             style={{
               background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)',
               boxShadow: '0 0 4px rgba(0,255,255,0.6)'
@@ -863,7 +893,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
           />
 
           {/* Top section with Profile Image and Header */}
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex items-start justify-between mb-1">
             {/* Profile Image - Left */}
             <div className="flex-shrink-0">
               {/* Current Profile Image - Clickable */}
@@ -954,10 +984,10 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                     style={{
                       color: '#00FFFF',
                       textShadow: '0 0 8px rgba(0,255,255,0.6)',
-                      fontSize: '28px',
+                      fontSize: '32px',
                       fontWeight: 'bold',
                       width: '100%',
-                      maxWidth: '200px'
+                      maxWidth: '220px'
                     }}
                     maxLength={30}
                   />
@@ -1006,7 +1036,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                   style={{
                     color: '#00FFFF',
                     textShadow: '0 0 8px rgba(0,255,255,0.6)',
-                    fontSize: '28px',
+                    fontSize: '32px',
                     fontWeight: 'bold',
                     background: 'none',
                     border: 'none',
@@ -1073,115 +1103,211 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
               </div>
             </div>
             
-            {/* Right side - Relics/Merch buttons and stats */}
-            <div className="flex flex-col items-center gap-2">
-              {/* Relics and Merch buttons row */}
-              <div className="flex items-center gap-2">
-                {/* Relics button */}
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => { setShowRelicsInline(true); setShowMerchInline(false); try { sfx.play('click', 0.6); } catch {} }}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowRelicsInline(true); setShowMerchInline(false); try { sfx.play('click', 0.6); } catch {} } }}
-                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-                  className="w-14 h-14 transition-transform hover:scale-[1.15] flex items-center justify-center cursor-pointer select-none flex-shrink-0"
-                  style={{ background: 'transparent', backgroundColor: 'transparent', border: 'none', boxShadow: 'none', outline: 'none' }}
-                  title="View your relics"
-                >
-                  <img
-                    src="/elements/relics.webp"
-                    alt="Relics"
-                    className="w-12 h-12 object-contain"
-                    onError={(e) => {
-                      const target = e.currentTarget as HTMLImageElement;
-                      target.style.display = 'none';
-                    }}
-                  />
-                </div>
+          </div>
 
-                {/* Merch button */}
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => { setShowMerchInline(true); setShowRelicsInline(false); try { sfx.play('click', 0.6); } catch {} }}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowMerchInline(true); setShowRelicsInline(false); try { sfx.play('click', 0.6); } catch {} } }}
-                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-                  className="w-14 h-14 transition-transform hover:scale-[1.08] flex items-center justify-center cursor-pointer select-none flex-shrink-0"
-                  style={{ background: 'transparent', backgroundColor: 'transparent', border: 'none', boxShadow: 'none', outline: 'none' }}
-                  title="View merch"
+          {/* Stats Row - Daily Streak, HeartCoins, Soul Stars */}
+          <div className="flex items-center justify-between px-2 py-2 mb-0.5 rounded-lg" style={{ background: 'rgba(0,0,0,0.3)' }}>
+            {/* Daily Streak - Left */}
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-1.5">
+                <svg
+                  width="32"
+                  height="32"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  style={{ filter: 'drop-shadow(0 0 6px rgba(255,100,50,0.8))' }}
                 >
-                  <img
-                    src="/elements/merch.webp"
-                    alt="Merch"
-                    className="w-12 h-12 object-contain"
-                    onError={(e) => {
-                      const target = e.currentTarget as HTMLImageElement;
-                      target.style.display = 'none';
-                    }}
+                  <path
+                    d="M12 2C12 2 7 7 7 12C7 15.5 9 18 12 20C15 18 17 15.5 17 12C17 7 12 2 12 2Z"
+                    fill="#FF6432"
                   />
-                </div>
+                  <path
+                    d="M12 6C12 6 9 9 9 12C9 14 10.5 16 12 17C13.5 16 15 14 15 12C15 9 12 6 12 6Z"
+                    fill="#FFB830"
+                  />
+                </svg>
+                <span
+                  className="font-bold text-xl"
+                  style={{
+                    color: '#FF6432',
+                    textShadow: '0 0 10px rgba(255,100,50,0.7)'
+                  }}
+                >
+                  {profile?.daily_streak || 0}
+                </span>
               </div>
-              
-              {/* Daily Streak and Heart Coins under relics */}
-              <div className="flex flex-col gap-y-1 items-center">
-                {/* Daily streak */}
-                <div className="flex items-center">
-                  <span className="text-white/80 text-sm mr-1">Daily Streak:</span>
-                  <span 
-                    className="font-bold text-sm"
-                    style={{ 
-                      color: '#00FFFF', 
-                      textShadow: '0 0 8px rgba(0,255,255,0.6)' 
-                    }}
-                  >
-                    {profile?.daily_streak || 0}
-                  </span>
-                </div>
-                {/* Total heartcoins */}
-                <div className="flex items-center">
-                  <span className="text-white/80 text-sm mr-1">Total HeartCoins:</span>
-                  <span
-                    className="font-bold text-sm"
-                    style={{
-                      color: '#00FFFF',
-                      textShadow: '0 0 8px rgba(0,255,255,0.6)'
-                    }}
-                  >
-                    {profile?.heartcoin_total || 0}
-                  </span>
-                </div>
+              <span
+                className="text-sm font-medium"
+                style={{
+                  color: '#FFFFFF',
+                  textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 16px rgba(255,255,255,0.5)'
+                }}
+              >
+                Streak
+              </span>
+            </div>
 
-                {/* Active Boosts */}
-                {activeBoosts.length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-white/10 flex flex-col gap-1">
-                    <span
-                      className="text-xs font-semibold"
-                      style={{
-                        color: '#FFD700',
-                        textShadow: '0 0 6px rgba(255,215,0,0.5)'
-                      }}
-                    >
-                      Active Boosts:
-                    </span>
-                    {activeBoosts.map((boost, idx) => (
-                      <span
-                        key={`${boost.kind}-${idx}`}
-                        className="text-xs"
-                        style={{
-                          color: '#FFD700',
-                          textShadow: '0 0 4px rgba(255,215,0,0.4)'
-                        }}
-                      >
-                        {boost.label}
-                      </span>
-                    ))}
-                  </div>
-                )}
+            {/* Total HeartCoins - Center */}
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-1.5">
+                <img
+                  src="/elements/heart-coin.webp"
+                  alt="HeartCoin"
+                  className="w-8 h-8 object-contain"
+                  style={{ filter: 'drop-shadow(0 0 6px rgba(255,107,157,0.8))' }}
+                />
+                <span
+                  className="font-bold text-xl"
+                  style={{
+                    color: '#FF6B9D',
+                    textShadow: '0 0 10px rgba(255,107,157,0.7)'
+                  }}
+                >
+                  {profile?.heartcoin_total || 0}
+                </span>
               </div>
+              <span
+                className="text-sm font-medium"
+                style={{
+                  color: '#FFFFFF',
+                  textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 16px rgba(255,255,255,0.5)'
+                }}
+              >
+                HeartCoins
+              </span>
+            </div>
+
+            {/* Total Soul Stars - Right */}
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-1.5">
+                <img
+                  src="/elements/soul-star.webp"
+                  alt="Soul Star"
+                  className="w-8 h-8 object-contain"
+                  style={{ filter: 'drop-shadow(0 0 6px rgba(168,85,247,0.8))' }}
+                />
+                <span
+                  className="font-bold text-xl"
+                  style={{
+                    color: '#A855F7',
+                    textShadow: '0 0 10px rgba(168,85,247,0.7)'
+                  }}
+                >
+                  {totalSoulStars}
+                </span>
+              </div>
+              <span
+                className="text-sm font-medium"
+                style={{
+                  color: '#FFFFFF',
+                  textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 16px rgba(255,255,255,0.5)'
+                }}
+              >
+                SoulStars
+              </span>
             </div>
           </div>
-          
-          
+
+          {/* Relics & Merch Buttons Row */}
+          <div className="flex items-center justify-between px-4 py-1 mb-0.5 rounded-lg" style={{ background: 'rgba(0,0,0,0.3)' }}>
+            {/* Relics Button - Left */}
+            <button
+              onClick={() => { setShowRelicsInline(true); setShowMerchInline(false); try { sfx.play('click', 0.6); } catch {} }}
+              onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 hover:scale-105"
+              style={{
+                background: 'linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,215,0,0.1))',
+                border: '1px solid rgba(255,215,0,0.5)',
+                boxShadow: '0 0 12px rgba(255,215,0,0.3)'
+              }}
+            >
+              <img
+                src="/elements/relics.webp"
+                alt="Relics"
+                className="w-8 h-8 object-contain"
+              />
+              <span
+                className="font-semibold text-sm"
+                style={{
+                  color: '#FFD700',
+                  textShadow: '0 0 8px rgba(255,215,0,0.8)'
+                }}
+              >
+                Relics
+              </span>
+            </button>
+
+            {/* Merch Button - Right */}
+            <button
+              onClick={() => { setShowMerchInline(true); setShowRelicsInline(false); try { sfx.play('click', 0.6); } catch {} }}
+              onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 hover:scale-105"
+              style={{
+                background: 'linear-gradient(135deg, rgba(168,85,247,0.2), rgba(168,85,247,0.1))',
+                border: '1px solid rgba(168,85,247,0.5)',
+                boxShadow: '0 0 12px rgba(168,85,247,0.3)'
+              }}
+            >
+              <img
+                src="/elements/merch.webp"
+                alt="Merch"
+                className="w-8 h-8 object-contain"
+              />
+              <span
+                className="font-semibold text-sm"
+                style={{
+                  color: '#A855F7',
+                  textShadow: '0 0 8px rgba(168,85,247,0.8)'
+                }}
+              >
+                Merch
+              </span>
+            </button>
+          </div>
+
+          {/* BOOST Row */}
+          <div className="flex items-center justify-center px-4 py-1.5 rounded-lg" style={{ background: 'rgba(0,0,0,0.3)' }}>
+            <div className="flex flex-col items-center w-full">
+              <span
+                className="font-bold text-base mb-1"
+                style={{
+                  color: '#00FFFF',
+                  textShadow: '0 0 10px rgba(0,255,255,0.8), 0 0 20px rgba(0,255,255,0.5)',
+                  letterSpacing: '0.1em'
+                }}
+              >
+                BOOST
+              </span>
+              {activeBoosts.length > 0 ? (
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {activeBoosts.map((boost, idx) => (
+                    <span
+                      key={`${boost.kind}-${idx}`}
+                      className="text-sm px-3 py-1 rounded-full"
+                      style={{
+                        color: '#00FFFF',
+                        textShadow: '0 0 6px rgba(0,255,255,0.6)',
+                        background: 'rgba(0,255,255,0.15)',
+                        border: '1px solid rgba(0,255,255,0.4)'
+                      }}
+                    >
+                      {boost.label}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <span
+                  className="text-sm"
+                  style={{
+                    color: 'rgba(0,255,255,0.5)',
+                    textShadow: '0 0 4px rgba(0,255,255,0.3)'
+                  }}
+                >
+                  No active boosts
+                </span>
+              )}
+            </div>
+          </div>
 
           {/* Profile Image Selection Menu - Full Modal Overlay */}
           {showElementMenu && (
@@ -1655,7 +1781,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-4 gap-3 mb-1" style={{ maxWidth: '320px', marginLeft: 'auto', marginRight: 'auto' }}>
+                <div className="grid grid-cols-4 gap-3 mb-1" style={{ maxWidth: '380px', marginLeft: 'auto', marginRight: 'auto' }}>
                   {(allMerch.length > 0 ? allMerch.slice(0, 16) : Array.from({ length: 16 }, (_, i) => ({
                     id: `placeholder-${i}`,
                     name: `Merch ${i + 1}`,
@@ -1682,7 +1808,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                         key={`merch-inline-${item.id}`}
                         className="aspect-square rounded-lg border border-white/20 bg-black/40 relative overflow-hidden transition-transform hover:scale-[1.03] disabled:opacity-60 disabled:cursor-not-allowed"
                         style={{
-                          minHeight: '68px'
+                          minHeight: '82px'
                         }}
                         disabled={!isUnlocked}
                         title={isUnlocked ? (hasImage ? `View ${item.name}` : item.name || `Merch ${i + 1}`) : 'Locked'}
@@ -1910,20 +2036,20 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
           )}
 
 
-          {/* Start Tour Button - Hidden but preserves space when overlays are displayed */}
+          {/* Buttons Container */}
           <div
-            className="mt-4 pt-3"
+            className="mt-1"
             style={{
-              borderTop: '1px solid rgba(0,255,255,0.2)',
               visibility: (showRelicsInline || showMerchInline || showElementMenu || showElementInfo) ? 'hidden' : 'visible'
             }}
           >
+              {/* Start Tour Button */}
               <button
                 onClick={handleStartTour}
                 onMouseEnter={() => {
                   try { sfx.play('hover', 0.3); } catch {}
                 }}
-                className="w-full px-4 py-3 rounded-lg font-semibold transition-all duration-200 hover:scale-105 active:scale-95 mb-3"
+                className="w-full px-4 py-2.5 rounded-lg font-semibold transition-all duration-200 hover:scale-105 active:scale-95 mb-2"
                 style={{
                   background: 'linear-gradient(135deg, rgba(0,255,255,0.25), rgba(0,255,255,0.15))',
                   border: '1px solid rgba(0,255,255,0.5)',

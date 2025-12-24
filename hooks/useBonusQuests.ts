@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BonusQuestWithCompletion, QuestCompletionResult } from '@/types/bonusQuests';
-import { getBonusQuestsForUser, completeBonusQuestLegacy } from '@/lib/bonusQuests';
+import { getAllQuestsForUser, completeBonusQuestLegacy } from '@/lib/bonusQuests';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useProfile } from '@/contexts/ProfileContext';
 
@@ -64,7 +64,9 @@ export function useBonusQuests(): UseBonusQuestsReturn {
       const fetchWithRetry = async (retries = 2): Promise<any> => {
         for (let i = 0; i <= retries; i++) {
           try {
-            return await getBonusQuestsForUser(currentUserId);
+            // Use getAllQuestsForUser which properly splits by category
+            const { bonusQuests } = await getAllQuestsForUser(currentUserId);
+            return bonusQuests; // Only return BONUS category quests
           } catch (err) {
             if (i === retries) throw err;
             // Wait before retry (exponential backoff)
@@ -72,13 +74,13 @@ export function useBonusQuests(): UseBonusQuestsReturn {
           }
         }
       };
-      
+
       // Always fetch public quests; overlay completion if user exists
       const questsData = await Promise.race([
         fetchWithRetry(),
         timeoutPromise
       ]);
-      
+
       setQuests(questsData);
       setStatus("success");
       setHasLoggedError(false); // Reset error logging flag on success

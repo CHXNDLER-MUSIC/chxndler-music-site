@@ -10,7 +10,7 @@ import { logHeartcoinTransaction } from "@/utils/heartcoins";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useProfile } from "@/contexts/ProfileContext";
 import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
-import { getBonusQuestsForUser } from "@/lib/bonusQuests";
+import { getAllQuestsForUser } from "@/lib/bonusQuests";
 import LoginModal from "@/components/LoginModal";
 
 type Props = {
@@ -169,41 +169,70 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   const [celebrationMessage, setCelebrationMessage] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
+  const [dailyQuests, setDailyQuests] = useState<any[]>([]);
   const [bonusQuests, setBonusQuests] = useState<any[]>([]);
-  const [bonusQuestsLoading, setBonusQuestsLoading] = useState(false);
+  const [questsLoading, setQuestsLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { questStatus, setQuestStatus, todaysElement, todaysQuestion, serverDateKey } = useQuestStatus();
   const { refreshProfile } = useProfile();
 
-  // Load bonus quests from server
-  const loadBonusQuests = async (userId: string | null) => {
+  // Load all quests from server (both DAILY and BONUS categories)
+  const loadAllQuests = async (userId: string | null) => {
     try {
-      setBonusQuestsLoading(true);
-      const serverQuests = await getBonusQuestsForUser(userId);
-      setBonusQuests(serverQuests);
-      
-      // Also sync the localStorage state for backwards compatibility
-      const inviteFriendQuest = serverQuests.find(q => q.quest_key === 'INVITE_FRIEND');
-      
+      setQuestsLoading(true);
+      const { dailyQuests: daily, bonusQuests: bonus } = await getAllQuestsForUser(userId);
+      setDailyQuests(daily);
+      setBonusQuests(bonus);
+
+      // Sync localStorage state for backwards compatibility
+      const inviteFriendQuest = bonus.find(q => q.quest_key === 'INVITE_FRIEND');
       if (inviteFriendQuest) {
         const today = new Date().toDateString();
         const isCompletedToday = inviteFriendQuest.completed_today > 0;
-        
-        // Update localStorage to match server state
         localStorage.setItem(`quest_invite_confirm_${today}`, isCompletedToday.toString());
-        
-        // Update state
-        setQuestStatus(prev => ({ 
-          ...prev, 
+        setQuestStatus(prev => ({
+          ...prev,
           inviteFriendConfirm: isCompletedToday,
-          // If confirmed today, also set inviteFriend to true
           inviteFriend: isCompletedToday ? true : prev.inviteFriend
         }));
       }
+
+      // Sync Element of Day quest status
+      const elementQuest = daily.find(q => q.quest_key === 'TAP_ELEMENT_OF_DAY');
+      if (elementQuest) {
+        const isCompletedToday = elementQuest.completed_today > 0;
+        if (isCompletedToday) {
+          const dateKey = serverDateKey || new Date().toISOString().split('T')[0];
+          localStorage.setItem(`quest_element_${dateKey}`, 'true');
+          setQuestStatus(prev => ({ ...prev, elementOfDay: true }));
+        }
+      }
+
+      // Sync Journal quest status
+      const journalQuest = daily.find(q => q.quest_key === 'JOURNAL_ENTRY_OF_DAY');
+      if (journalQuest) {
+        const isCompletedToday = journalQuest.completed_today > 0;
+        if (isCompletedToday) {
+          const today = new Date().toDateString();
+          localStorage.setItem(`quest_journal_${today}`, 'true');
+          setQuestStatus(prev => ({ ...prev, journalEntry: true }));
+        }
+      }
+
+      // Sync Live Show quest status
+      const liveShowQuest = bonus.find(q => q.quest_key === 'ATTEND_LIVESTREAM');
+      if (liveShowQuest) {
+        const isCompletedToday = liveShowQuest.completed_today > 0;
+        if (isCompletedToday) {
+          const today = new Date().toDateString();
+          localStorage.setItem(`quest_liveshow_${today}`, 'true');
+          setQuestStatus(prev => ({ ...prev, liveShow: true }));
+        }
+      }
     } catch (error) {
-      console.error('Failed to load bonus quests:', error);
+      console.error('Failed to load quests:', error);
     } finally {
-      setBonusQuestsLoading(false);
+      setQuestsLoading(false);
     }
   };
 
@@ -215,12 +244,11 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         const isAuth = !!session?.user;
         setIsAuthenticated(isAuth);
 
-        // Load bonus quests if authenticated
+        // Load all quests (DAILY and BONUS)
         if (isAuth && session?.user?.id) {
-          await loadBonusQuests(session.user.id);
+          await loadAllQuests(session.user.id);
         } else {
-          // Still load quests for display, but user won't be able to complete them
-          await loadBonusQuests(null);
+          await loadAllQuests(null);
         }
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -243,12 +271,11 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
           setShowLoginModal(false);
         }
 
-        // Load bonus quests when user logs in
+        // Load all quests when auth state changes
         if (isAuth && session?.user?.id) {
-          await loadBonusQuests(session.user.id);
+          await loadAllQuests(session.user.id);
         } else {
-          // Load public quests when user logs out
-          await loadBonusQuests(null);
+          await loadAllQuests(null);
         }
       }
     );
@@ -285,7 +312,10 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
     };
   }, [refreshProfile, serverDateKey]);
 
-  // Helper functions to get quest data from server
+  // Helper functions to get quest data from server (checking correct category arrays)
+  const getElementOfDayQuest = () => dailyQuests.find(q => q.quest_key === 'TAP_ELEMENT_OF_DAY');
+  const getSongOfDayQuest = () => dailyQuests.find(q => q.quest_key === 'LISTEN_SONG_OF_DAY');
+  const getJournalQuest = () => dailyQuests.find(q => q.quest_key === 'JOURNAL_ENTRY_OF_DAY');
   const getElementalSongQuest = () => bonusQuests.find(q => q.quest_key === 'LISTEN_ELEMENT_SONG');
   const getInviteFriendQuest = () => bonusQuests.find(q => q.quest_key === 'INVITE_FRIEND');
   const getLiveShowQuest = () => bonusQuests.find(q => q.quest_key === 'ATTEND_LIVESTREAM');
@@ -474,7 +504,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
           // Reload bonus quests to update button states
           const { data: { session } } = await supabaseClient.auth.getSession();
           if (session?.user?.id) {
-            await loadBonusQuests(session.user.id);
+            await loadAllQuests(session.user.id);
           }
         } else {
           // Unexpected response format
@@ -656,7 +686,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
           // Reload bonus quests to update button states
           const { data: { session } } = await supabaseClient.auth.getSession();
           if (session?.user?.id) {
-            await loadBonusQuests(session.user.id);
+            await loadAllQuests(session.user.id);
           }
         }
       } else {
@@ -972,17 +1002,17 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
 
       {/* Bonus Quests Section */}
       <div>
-        <h3 
+        <h3
           className="text-lg font-bold mb-4 text-center"
-          style={{ 
-            color: '#00FFFF', 
-            textShadow: '0 0 8px rgba(0,255,255,0.6)' 
+          style={{
+            color: '#00FFFF',
+            textShadow: '0 0 8px rgba(0,255,255,0.6)'
           }}
         >
           ⭐ BONUS QUESTS
         </h3>
 
-        {/* Quest 1: Listen to Your Elemental Song (if available) */}
+        {/* Bonus Quest 1: Listen to Your Elemental Song (if available) */}
         {getElementalSongQuest() && (
           <div 
             className="border border-cyan-400/40 rounded-lg p-4 mb-4"
@@ -1000,7 +1030,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
               <div className="flex items-center gap-2">
                 <button
                   onClick={getElementalSongQuest()?.completed_today > 0 ? undefined : handleCompleteElementalSong}
-                  disabled={getElementalSongQuest()?.completed_today > 0 || loading || bonusQuestsLoading}
+                  disabled={getElementalSongQuest()?.completed_today > 0 || loading || questsLoading}
                   className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 cursor-pointer ${
                     getElementalSongQuest()?.completed_today > 0
                       ? 'bg-green-500/40 border-2 border-green-400 text-green-300 cursor-not-allowed'
@@ -1057,7 +1087,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
           </div>
         )}
 
-        {/* Quest 2: Invite a Friend */}
+        {/* Bonus Quest 2: Invite a Friend */}
         <div 
           className="border border-cyan-400/40 rounded-lg p-4 mb-4"
           style={{ 
@@ -1080,7 +1110,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                       ? handleConfirmInvite 
                       : handleInviteFriend
                 }
-                disabled={questStatus.inviteFriendConfirm || loading || bonusQuestsLoading}
+                disabled={questStatus.inviteFriendConfirm || loading || questsLoading}
                 className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 cursor-pointer flex items-center justify-center ${
                   questStatus.inviteFriendConfirm
                     ? 'bg-green-500 border-2 border-green-400 text-white cursor-default !opacity-100'
@@ -1160,7 +1190,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
           </div>
         </div>
 
-        {/* Quest 2: Attend Live Show */}
+        {/* Bonus Quest 3: Attend Live Show */}
         <div 
           className="border border-cyan-400/40 rounded-lg p-4"
           style={{ 
@@ -1227,7 +1257,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                         ? handleCheckInSubmit
                         : handleShowCheckInForm
                   }
-                  disabled={questStatus.liveShow || bonusQuestsLoading || (showCheckIn && (loading || !secretPhrase.trim()))}
+                  disabled={questStatus.liveShow || questsLoading || (showCheckIn && (loading || !secretPhrase.trim()))}
                   className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 ${
                     questStatus.liveShow
                       ? 'bg-green-500/40 border-2 border-green-400 text-white cursor-default'
@@ -1318,7 +1348,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
           </div>
         </div>
       </div>
-      
+
       {/* Soul Stare Modal */}
       <SoulStareModal
         isOpen={showSoulStare}

@@ -41,6 +41,7 @@ function extractAccessToken(cookieStore: Awaited<ReturnType<typeof cookies>>): s
 }
 
 export async function POST(request: NextRequest) {
+  console.log('[purchase-physical] hit');
   try {
     // Read cookies and extract auth token
     const cookieStore = await cookies();
