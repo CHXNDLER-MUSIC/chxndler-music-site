@@ -2673,12 +2673,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     }}>
                       {quest.quest_key === 'TAP_ELEMENT_OF_DAY' ? (
                         <>
-                          <span className="text-base font-bold">{isQuestCompleted(quest) ? '✓' : ''} +</span>
+                          <span className="text-base font-bold">+</span>
                           <img src="/elements/relics.webp" alt="Relic" className="w-10 h-10 ml-1" style={{ filter: 'drop-shadow(0 0 8px yellow) drop-shadow(0 0 16px yellow)' }} />
                         </>
                       ) : (
                         <>
-                          <span className="text-base font-bold">{isQuestCompleted(quest) ? '✓' : ''} +{quest.reward_heartcoins || 1}</span>
+                          <span className="text-base font-bold">+{quest.reward_heartcoins || 1}</span>
                           <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-10 h-10 ml-1" />
                         </>
                       )}
@@ -3104,22 +3104,38 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               setSecretPhraseValue('');
                             }
                           } else if (quest.quest_key === 'LISTEN_ELEMENT_SONG') {
-                            // RETURN HOME: Close panel and navigate to user's element planet
+                            // RETURN HOME: Close panel and warp to user's element planet
+                            const userElement = profile?.element?.toLowerCase() || 'heart';
+
+                            // Element audio file paths
+                            const elementAudioPaths: Record<string, string> = {
+                              darkness: '/tracks/darkness.MP3',
+                              heart: '/tracks/heart.MP3',
+                              lightning: '/tracks/LIGHTNING.MP3',
+                              water: '/tracks/WATER.MP3',
+                              center: '/tracks/center.MP3'
+                            };
+                            const audioPath = elementAudioPaths[userElement] || `/tracks/${userElement}.MP3`;
+
+                            // Play channel change sound before warp
+                            try { sfx.play('change-channel', 0.7); } catch {}
+
+                            // Close the heart coin popup
                             setOpen(false);
                             try { onClose?.(); } catch {}
+
                             // Open the 3D planet view (blue display)
                             try { onOpenBlueDisplay?.(); } catch {}
-                            // Navigate to user's element planet after panel closes and 3D scene mounts
-                            const userElement = profile?.element?.toLowerCase() || 'heart';
-                            // Dispatch element selection with retries to handle varying mount times
-                            const dispatchElementSelect = () => {
-                              window.dispatchEvent(new CustomEvent('element-planet:select', {
-                                detail: { element: userElement }
-                              }));
-                            };
-                            // Initial attempt after 600ms, retry at 1200ms if scene took longer to mount
-                            setTimeout(dispatchElementSelect, 600);
-                            setTimeout(dispatchElementSelect, 1200);
+
+                            // Dispatch planet:warp event to trigger actual warp effect
+                            window.dispatchEvent(new CustomEvent('planet:warp', {
+                              detail: {
+                                element: userElement,
+                                isDailyElement: false,
+                                isCenterPlanet: userElement === 'center',
+                                audioPath: audioPath
+                              }
+                            }));
                           } else {
                             handleBonusQuestComplete(quest);
                           }

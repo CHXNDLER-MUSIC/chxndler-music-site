@@ -2598,7 +2598,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               )}
 
               {/* Card Image */}
-              <div className="flex items-center justify-center w-full flex-1 min-h-0 overflow-hidden">
+              <div className="flex items-center justify-center w-full flex-1 min-h-0 overflow-visible relative">
                 <div className="relative max-w-full max-h-full">
                   <div
                     className="relative w-full"
@@ -2661,54 +2661,56 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         draggable={false}
                       />
                     </TiltSpinCard>
-                    
-                    {/* Navigation arrows - only show if multiple cards in current view */}
-                    {displayCards.length > 1 && (
-                      <>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePrevCard();
-                          }}
-                          className="absolute left-2 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-[#4ECDC4]/20 hover:bg-[#4ECDC4]/40 border-2 border-[#4ECDC4] rounded-full flex items-center justify-center text-[#4ECDC4] hover:text-white transition-all duration-200 shadow-[0_0_15px_rgba(78,205,196,0.4)]"
-                        >
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-                          </svg>
-                        </button>
 
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleNextCard();
-                          }}
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/20 hover:bg-white/40 border-2 border-white rounded-full flex items-center justify-center text-white transition-all duration-200 hover:scale-110"
-                          style={{
-                            boxShadow: '0 0 15px rgba(255,255,255,0.6), 0 0 30px rgba(255,255,255,0.4), 0 0 45px rgba(255,255,255,0.2)',
-                          }}
-                        >
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.8))' }}>
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </button>
-                        
-                        {/* Card indicators */}
-                        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-1">
-                          {displayCards.map((_, index) => (
-                            <div
-                              key={index}
-                              className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                                index === displayCardIndex
-                                  ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]'
-                                  : 'bg-white/30'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      </>
+                    {/* Card indicators - stay with card */}
+                    {displayCards.length > 1 && (
+                      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-1">
+                        {displayCards.map((_, index) => (
+                          <div
+                            key={index}
+                            className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                              index === displayCardIndex
+                                ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]'
+                                : 'bg-white/30'
+                            }`}
+                          />
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
+
+                {/* Navigation arrows - positioned at screen edges */}
+                {displayCards.length > 1 && (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePrevCard();
+                      }}
+                      className="absolute left-0 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-[#4ECDC4]/20 hover:bg-[#4ECDC4]/40 border-2 border-[#4ECDC4] rounded-full flex items-center justify-center text-[#4ECDC4] hover:text-white transition-all duration-200 shadow-[0_0_15px_rgba(78,205,196,0.4)]"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNextCard();
+                      }}
+                      className="absolute right-0 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/20 hover:bg-white/40 border-2 border-white rounded-full flex items-center justify-center text-white transition-all duration-200 hover:scale-110"
+                      style={{
+                        boxShadow: '0 0 15px rgba(255,255,255,0.6), 0 0 30px rgba(255,255,255,0.4), 0 0 45px rgba(255,255,255,0.2)',
+                      }}
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.8))' }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* Physical Purchase Button - BELOW card */}
