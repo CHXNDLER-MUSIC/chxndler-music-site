@@ -77,6 +77,8 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
   const [showMerchInline, setShowMerchInline] = useState(false);
   const [selectedMerchInline, setSelectedMerchInline] = useState<MerchItem | null>(null);
   const [merchRotation, setMerchRotation] = useState(0);
+  const [relicRotationInline, setRelicRotationInline] = useState(0);
+  const [relicRotationModal, setRelicRotationModal] = useState(0);
   const [showElementInfo, setShowElementInfo] = useState(false);
   const [currentElementIndex, setCurrentElementIndex] = useState(0);
   const [activeBoosts, setActiveBoosts] = useState<{ kind: string; label: string }[]>([]);
@@ -401,6 +403,17 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
           const reName = /phone\s*-?\s*1(?!\d)/i;
           return reName.test(name) || includesCI(url, 'phone-1');
         };
+        const isDarknessPlanet = (r: Relic) => {
+          const name = norm(r.relic_name);
+          const url = norm(r.icon_url);
+          return (includesCI(name, 'darkness') && includesCI(name, 'planet')) || includesCI(url, 'darkness') || includesCI(url, 'planet_darkness');
+        };
+        const isLogo2 = (r: Relic) => {
+          const name = norm(r.relic_name);
+          const url = norm(r.icon_url);
+          const reName = /logo\s*-?\s*2(?!\d)/i;
+          return reName.test(name) || includesCI(url, 'logo-2') || includesCI(url, 'logo_2');
+        };
 
         // Planet detectors (by name or URL)
         const isPlanetHeart = (r: Relic) => {
@@ -425,10 +438,15 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
           { pred: isPlanetHeart, index: 0 },              // position 1
           { pred: isPlanetWater, index: 1 },              // position 2
           { pred: isPlanetLightning, index: 2 },          // position 3
-          // Wallpapers
-          { pred: (r) => isWallpaperN(r, 3), index: 4 },  // position 5
-          { pred: (r) => isWallpaperN(r, 4), index: 5 },  // position 6
-          { pred: (r) => isWallpaperN(r, 2), index: 6 },  // position 7
+          // Swapped: Darkness Planet to position 4, Logo-2 to position 16
+          { pred: isDarknessPlanet, index: 3 },           // position 4
+          { pred: isLogo2, index: 15 },                   // position 16
+          // Wallpapers 1-4 on row 2 (positions 5-8)
+          { pred: (r) => isWallpaperN(r, 1), index: 4 },  // position 5
+          { pred: (r) => isWallpaperN(r, 2), index: 5 },  // position 6
+          { pred: (r) => isWallpaperN(r, 3), index: 6 },  // position 7
+          { pred: (r) => isWallpaperN(r, 4), index: 7 },  // position 8
+          // Wallpaper 5 on row 3
           { pred: (r) => isWallpaperN(r, 5), index: 8 },  // position 9
           // Phone wallpaper and Alien Blue
           { pred: isPhone1, index: 9 },                   // position 10
@@ -1430,6 +1448,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                           console.error('Error saving element:', error);
                         }
                       }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }}
                       className={`w-14 h-14 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 ${
                          selectedImageUrl === element.url
                            ? 'border-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.6)]'
@@ -1485,13 +1506,37 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                     return (
                       <button
                         key={`relic-${relic.id}`}
-                        onClick={() => {
-                          if (isUnlocked && relic.icon_url) {
-                            setSelectedRelicInline(relic.icon_url);
-                            setShowRelicsInline(true);
-                            setShowElementMenu(false);
-                            try { sfx.play('flip', 0.6); } catch {}
+                        onClick={async () => {
+                          if (!user || !isUnlocked || !relic.icon_url) return;
+
+                          // Update local state immediately
+                          setSelectedImageUrl(relic.icon_url);
+                          setShowElementMenu(false);
+                          try { sfx.play('flip', 0.6); } catch {}
+
+                          // Save profile image to Supabase
+                          try {
+                            const { error } = await supabaseBrowser
+                              .from('profiles')
+                              .update({
+                                profile_image_url: relic.icon_url,
+                                updated_at: new Date().toISOString()
+                              })
+                              .eq('id', user.id);
+
+                            if (error) {
+                              console.error('Error updating profile image:', error);
+                              return;
+                            }
+
+                            // Refresh profile context
+                            await refreshProfile();
+                          } catch (error) {
+                            console.error('Error saving profile image:', error);
                           }
+                        }}
+                        onMouseEnter={() => {
+                          try { sfx.play('hover', 0.3); } catch {}
                         }}
                         disabled={!isUnlocked}
                         className={`relative w-14 h-14 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 disabled:opacity-60 disabled:cursor-not-allowed ${
@@ -1548,56 +1593,27 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                 border: '1px solid rgba(0,255,255,0.55)'
               }}
             >
-              {/* Close button */}
-              <button
-                onClick={() => {
-                  setShowRelicsInline(false);
-                  try { sfx.play('close', 0.6); } catch {}
-                }}
-                onMouseEnter={() => {
-                  try { sfx.play('hover', 0.3); } catch {}
-                }}
-                className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
-                style={{
-                  background: 'rgba(0,255,255,0.2)',
-                  border: '1px solid rgba(0,255,255,0.6)',
-                  color: '#00FFFF',
-                  boxShadow: '0 0 10px rgba(0,255,255,0.3)',
-                  fontSize: '12px',
-                  fontWeight: 'bold'
-                }}
-              >
-                ×
-              </button>
-
-              {/* Header */}
-              <div 
-                className="text-center mb-2"
-                style={{ 
-                  color: '#00FFFF', 
-                  textShadow: '0 0 8px rgba(0,255,255,0.6)', 
-                  fontSize: '18px',
-                  fontWeight: 'bold'
-                }}
-              >
-                RELICS COLLECTION
-              </div>
-
-              {/* Info text - moved below header */}
-              <div className="text-center mb-2">
-                <p className="text-sm text-white" style={{ textShadow: '0 0 8px rgba(255,255,255,0.85)' }}>
-                  Tap the Element of the Day to unlock ancient relics
-                </p>
-              </div>
-
-              {/* Relics Grid / Expanded View - Inline */}
               {selectedRelicInline ? (
-                <div className="mb-4 relative rounded-lg overflow-hidden border border-cyan-400/60" style={{ boxShadow: '0 0 15px rgba(0,255,255,0.25)' }}>
-                  {/* Controls above the image */}
-                  <div className="flex items-center justify-end gap-2 p-2 border-b border-cyan-400/40 bg-black/40">
+                /* Fullscreen Enlarged Relic View */
+                <div className="absolute inset-0 flex flex-col">
+                  {/* Controls bar */}
+                  <div className="flex items-center justify-between gap-2 p-3 bg-black/60">
+                    <button
+                      onClick={() => { setSelectedRelicInline(null); setRelicRotationInline(0); try { sfx.play('close', 0.6); } catch {} }}
+                      onMouseEnter={() => { try { sfx.play('hover', 0.4); } catch {} }}
+                      className="w-9 h-9 flex items-center justify-center rounded-md text-lg font-semibold transition-all hover:scale-110"
+                      style={{
+                        background: 'rgba(0,255,255,0.15)',
+                        border: '1px solid rgba(0,255,255,0.5)',
+                        color: '#00FFFF'
+                      }}
+                    >
+                      ←
+                    </button>
                     <button
                       onClick={() => handleDownload(selectedRelicInline)}
-                      className="px-3 py-1.5 rounded-md text-xs font-semibold transition-all"
+                      onMouseEnter={() => { try { sfx.play('hover', 0.4); } catch {} }}
+                      className="px-4 py-2 rounded-md text-sm font-semibold transition-all hover:scale-110"
                       style={{
                         background: 'rgba(255,255,255,0.1)',
                         border: '1px solid rgba(255,255,255,0.6)',
@@ -1608,29 +1624,86 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                       ⬇ Download
                     </button>
                   </div>
-                  <div className="relative w-full" style={{ aspectRatio: '1 / 1' }}>
-                    <img
-                      src={selectedRelicInline}
-                      alt="Selected relic"
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/20 pointer-events-none" />
-                  </div>
-                  <div className="flex items-center justify-between gap-2 p-2">
-                    <button
-                      onClick={() => { setSelectedRelicInline(null); try { sfx.play('close', 0.6); } catch {} }}
-                      className="px-3 py-1.5 rounded-md text-xs font-semibold transition-all"
+                  {/* Full image area */}
+                  <div className="flex-1 relative flex items-center justify-center overflow-hidden bg-black/80">
+                    {/* Glow circle behind the image */}
+                    <div className="absolute w-40 h-40 bg-[#00FFFF]/30 rounded-full blur-xl" style={{ zIndex: 0 }} />
+                    <TiltSpinCard
+                      className="relative w-full h-full animate-[pulse-float_3s_ease-in-out_infinite]"
                       style={{
-                        background: 'rgba(0,255,255,0.15)',
-                        border: '1px solid rgba(0,255,255,0.5)',
-                        color: '#00FFFF'
+                        animation: 'pulse-float 3s ease-in-out infinite',
+                        zIndex: 1
+                      }}
+                      maxRotateX={10}
+                      sensitivity={0.3}
+                      returnDuration={400}
+                      enableSpin={true}
+                      spinSensitivity={0.8}
+                      onRotationChange={(deg) => setRelicRotationInline(deg)}
+                      onTap={() => {
+                        setRelicRotationInline(prev => prev + 180);
+                        try { sfx.play('click', 0.5); } catch {}
                       }}
                     >
-                      Back to Grid
-                    </button>
+                      <img
+                        src={selectedRelicInline}
+                        alt="Selected relic"
+                        className="w-full h-full object-contain"
+                        style={{
+                          transform: `rotateY(${relicRotationInline}deg)`,
+                          transition: 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+                          filter: 'drop-shadow(0 0 15px rgba(0, 255, 255, 0.4))',
+                        }}
+                        draggable={false}
+                      />
+                    </TiltSpinCard>
                   </div>
                 </div>
               ) : (
+                <>
+                  {/* Close button */}
+                  <button
+                    onClick={() => {
+                      setShowRelicsInline(false);
+                      try { sfx.play('close', 0.6); } catch {}
+                    }}
+                    onMouseEnter={() => {
+                      try { sfx.play('hover', 0.3); } catch {}
+                    }}
+                    className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+                    style={{
+                      background: 'rgba(0,255,255,0.2)',
+                      border: '1px solid rgba(0,255,255,0.6)',
+                      color: '#00FFFF',
+                      boxShadow: '0 0 10px rgba(0,255,255,0.3)',
+                      fontSize: '12px',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    ×
+                  </button>
+
+                  {/* Header */}
+                  <div
+                    className="text-center mb-2"
+                    style={{
+                      color: '#00FFFF',
+                      textShadow: '0 0 8px rgba(0,255,255,0.6)',
+                      fontSize: '18px',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    RELICS COLLECTION
+                  </div>
+
+                  {/* Info text - moved below header */}
+                  <div className="text-center mb-2">
+                    <p className="text-sm text-white" style={{ textShadow: '0 0 8px rgba(255,255,255,0.85)' }}>
+                      Tap the Element of the Day to unlock ancient relics
+                    </p>
+                  </div>
+
+                  {/* Relics Grid */}
                 <div className="grid grid-cols-4 gap-3 mb-1" style={{ maxWidth: '320px', marginLeft: 'auto', marginRight: 'auto' }}>
                   {(allRelics.length > 0 ? allRelics.slice(0, 16) : Array.from({ length: 16 }, (_, i) => ({
                     id: `placeholder-${i}`,
@@ -1683,6 +1756,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                     );
                   })}
                 </div>
+                </>
               )}
 
             </div>
@@ -2142,76 +2216,27 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close button */}
-            <button
-              onClick={() => {
-                setShowRelicsModal(false);
-                try { sfx.play('close', 0.8); } catch {}
-              }}
-              onMouseEnter={() => {
-                try { sfx.play('hover', 0.3); } catch {}
-              }}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
-              style={{
-                background: 'rgba(0,255,255,0.2)',
-                border: '1px solid rgba(0,255,255,0.6)',
-                color: '#00FFFF',
-                boxShadow: '0 0 10px rgba(0,255,255,0.3)',
-                fontSize: '14px',
-                fontWeight: 'bold'
-              }}
-            >
-              ×
-            </button>
-
-            {/* Header */}
-            <div 
-              className="text-center mb-6"
-              style={{ 
-                color: '#00FFFF', 
-                textShadow: '0 0 8px rgba(0,255,255,0.6)', 
-                fontSize: '22px',
-                fontWeight: 'bold'
-              }}
-            >
-              RELICS COLLECTION
-            </div>
-
-            {/* Thin cyan neon line */}
-            <div 
-              className="w-full h-px mb-6"
-              style={{
-                background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)',
-                boxShadow: '0 0 4px rgba(0,255,255,0.6)'
-              }}
-            />
-
-            {/* Relics Grid / Expanded View - Modal */}
             {selectedRelicModal ? (
-              <div className="mb-6 relative rounded-lg overflow-hidden border-2 border-cyan-400/60" style={{ boxShadow: '0 0 18px rgba(0,255,255,0.25)' }}>
-                <div className="relative w-full" style={{ aspectRatio: '1 / 1' }}>
-                  <img
-                    src={selectedRelicModal}
-                    alt="Selected relic"
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/25 pointer-events-none" />
-                </div>
-                <div className="flex items-center justify-between gap-3 p-3">
+              /* Fullscreen Enlarged Relic View - Modal */
+              <div className="flex flex-col" style={{ minHeight: '400px' }}>
+                {/* Controls bar */}
+                <div className="flex items-center justify-between gap-3 p-3 bg-black/60 rounded-t-lg">
                   <button
-                    onClick={() => { setSelectedRelicModal(null); try { sfx.play('close', 0.6); } catch {} }}
-                    className="px-4 py-2 rounded-md text-sm font-semibold transition-all"
+                    onClick={() => { setSelectedRelicModal(null); setRelicRotationModal(0); try { sfx.play('close', 0.6); } catch {} }}
+                    onMouseEnter={() => { try { sfx.play('hover', 0.4); } catch {} }}
+                    className="w-10 h-10 flex items-center justify-center rounded-md text-xl font-semibold transition-all hover:scale-110"
                     style={{
                       background: 'rgba(0,255,255,0.15)',
                       border: '1px solid rgba(0,255,255,0.5)',
                       color: '#00FFFF'
                     }}
                   >
-                    Back to Grid
+                    ←
                   </button>
                   <button
                     onClick={() => selectedRelicModal && handleDownload(selectedRelicModal)}
-                    className="px-4 py-2 rounded-md text-sm font-semibold transition-all"
+                    onMouseEnter={() => { try { sfx.play('hover', 0.4); } catch {} }}
+                    className="px-5 py-2.5 rounded-md text-base font-semibold transition-all hover:scale-110"
                     style={{
                       background: 'rgba(255,255,255,0.1)',
                       border: '1px solid rgba(255,255,255,0.6)',
@@ -2222,8 +2247,88 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                     ⬇ Download
                   </button>
                 </div>
+                {/* Full image area */}
+                <div className="flex-1 relative flex items-center justify-center overflow-hidden bg-black/80" style={{ minHeight: '350px' }}>
+                  {/* Glow circle behind the image */}
+                  <div className="absolute w-56 h-56 bg-[#00FFFF]/30 rounded-full blur-xl" style={{ zIndex: 0 }} />
+                  <TiltSpinCard
+                    className="relative w-full h-full animate-[pulse-float_3s_ease-in-out_infinite]"
+                    style={{
+                      animation: 'pulse-float 3s ease-in-out infinite',
+                      zIndex: 1
+                    }}
+                    maxRotateX={10}
+                    sensitivity={0.3}
+                    returnDuration={400}
+                    enableSpin={true}
+                    spinSensitivity={0.8}
+                    onRotationChange={(deg) => setRelicRotationModal(deg)}
+                    onTap={() => {
+                      setRelicRotationModal(prev => prev + 180);
+                      try { sfx.play('click', 0.5); } catch {}
+                    }}
+                  >
+                    <img
+                      src={selectedRelicModal}
+                      alt="Selected relic"
+                      className="w-full h-full object-contain"
+                      style={{
+                        transform: `rotateY(${relicRotationModal}deg)`,
+                        transition: 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+                        filter: 'drop-shadow(0 0 20px rgba(0, 255, 255, 0.5))',
+                      }}
+                      draggable={false}
+                    />
+                  </TiltSpinCard>
+                </div>
               </div>
             ) : (
+              <>
+                {/* Close button */}
+                <button
+                  onClick={() => {
+                    setShowRelicsModal(false);
+                    try { sfx.play('close', 0.8); } catch {}
+                  }}
+                  onMouseEnter={() => {
+                    try { sfx.play('hover', 0.3); } catch {}
+                  }}
+                  className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+                  style={{
+                    background: 'rgba(0,255,255,0.2)',
+                    border: '1px solid rgba(0,255,255,0.6)',
+                    color: '#00FFFF',
+                    boxShadow: '0 0 10px rgba(0,255,255,0.3)',
+                    fontSize: '14px',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  ×
+                </button>
+
+                {/* Header */}
+                <div
+                  className="text-center mb-6"
+                  style={{
+                    color: '#00FFFF',
+                    textShadow: '0 0 8px rgba(0,255,255,0.6)',
+                    fontSize: '22px',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  RELICS COLLECTION
+                </div>
+
+                {/* Thin cyan neon line */}
+                <div
+                  className="w-full h-px mb-6"
+                  style={{
+                    background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)',
+                    boxShadow: '0 0 4px rgba(0,255,255,0.6)'
+                  }}
+                />
+
+                {/* Relics Grid */}
               <div className="grid grid-cols-4 gap-1 mb-6">
                 {(allRelics.length > 0 ? allRelics.slice(0, 16) : Array.from({ length: 16 }, (_, i) => ({
                   id: `placeholder-${i}`,
@@ -2273,14 +2378,15 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                   );
                 })}
               </div>
-            )}
 
-            {/* Info text */}
-            <div className="text-center">
-              <p className="text-base text-white" style={{ textShadow: '0 0 8px rgba(255,255,255,0.85)' }}>
-                Tap the Element of the Day to unlock ancient relics
-              </p>
-            </div>
+                {/* Info text */}
+                <div className="text-center">
+                  <p className="text-base text-white" style={{ textShadow: '0 0 8px rgba(255,255,255,0.85)' }}>
+                    Tap the Element of the Day to unlock ancient relics
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

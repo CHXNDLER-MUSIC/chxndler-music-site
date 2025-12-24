@@ -822,7 +822,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                       <div className="absolute inset-1 bg-gradient-to-br from-gray-800/80 to-black/90 rounded-full" />
                       <div className="relative z-10 w-full h-full flex items-center justify-center">
                         <img
-                          src={category.image}
+                          src={`${category.image}?v=2`}
                           alt={category.displayName}
                           className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-full"
                           draggable={false}

@@ -1681,8 +1681,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             try {
               // Play the flip SFX to indicate playback starting
               sfx.play('flip', 0.6);
-              // Use the unified audio system to start playback
-              audioManager.togglePlayPause();
+              // Use playTrack with the captured songSlug to ensure the correct song plays
+              // (togglePlayPause would use a stale closure and potentially play the wrong song)
+              audioManager.playTrack(songSlug);
             } catch (err) {
               console.warn('Auto-play failed:', err);
             }
