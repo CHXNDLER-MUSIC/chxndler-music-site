@@ -814,7 +814,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <h4 className="text-white font-semibold mb-1">1. Tap the Element of the Day</h4>
-              <p className="text-white/80 text-sm mb-2">Touch the glowing planet to receive one HeartCoin.</p>
+              <p className="text-white/80 text-sm mb-2">Unlock a surprise reward such as boosts, relics, or binder slot.</p>
             </div>
             <div className="flex items-center gap-2">
               {/* Today's Element Icon - Click to navigate to 3D planet view */}

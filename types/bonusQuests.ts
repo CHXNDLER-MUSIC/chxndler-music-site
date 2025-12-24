@@ -5,7 +5,7 @@ export interface BonusQuestRow {
   quest_key: string;
   title: string;
   description: string;
-  category: 'LISTENING' | 'SUPPORT' | 'COMMUNITY';
+  category: 'DAILY' | 'BONUS' | 'LISTENING' | 'SUPPORT' | 'COMMUNITY';
   is_active: boolean;
   is_core: boolean;
   sort_order: number;

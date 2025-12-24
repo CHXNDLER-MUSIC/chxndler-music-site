@@ -232,7 +232,8 @@ export default function ElementOfDayModal() {
         <div
           className="relative pointer-events-auto flex flex-col justify-center"
           style={{
-            width: "min(90vw, 380px)",
+            width: "calc(var(--display-width) + 32px)",
+            maxWidth: "90vw",
             height: "100%",
             padding: "24px",
             borderRadius: 20,

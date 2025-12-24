@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
+import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
 
 /**
  * Physical card purchase API
@@ -64,14 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Supabase client with user's token so auth.uid() works in RPC
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        auth: { persistSession: false, autoRefreshToken: false },
-        global: { headers: { Authorization: `Bearer ${token}` } },
-      }
-    );
+    const supabase = createSupabaseServerClientWithJwt(token);
 
     // Verify the user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
@@ -151,15 +144,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate new balance after deduction
-    const newBalance = currentBalance - cost;
+    // Fetch actual new balance from database after RPC (more accurate than calculating)
+    const { data: updatedProfile } = await supabase
+      .from('profiles')
+      .select('heartcoin_balance')
+      .eq('id', user.id)
+      .single();
+
+    const newBalance = updatedProfile?.heartcoin_balance ?? (currentBalance - cost);
 
     // Return response with keys that match frontend expectations
     return NextResponse.json({
       success: true,
       orderId: orderId,
       newBalance: newBalance,
-      new_balance: newBalance, // Keep for backward compatibility
+      new_balance: newBalance,
+      heartcoin_balance: newBalance,
+      cost: cost,
     });
 
   } catch (error) {

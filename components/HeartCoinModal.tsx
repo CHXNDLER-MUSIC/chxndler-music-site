@@ -8,6 +8,7 @@ import HeartversePopup from "@/components/HeartversePopup";
 import PopoutShell from "@/components/PopoutShell";
 import { useBonusQuests } from '@/hooks/useBonusQuests';
 import { BonusQuestWithCompletion } from '@/types/bonusQuests';
+import { getAllQuestsForUser } from '@/lib/bonusQuests';
 import { useMerchItems } from '@/hooks/useMerchItems';
 import { useMerchPurchase } from '@/hooks/useMerchPurchase';
 import { MerchItem } from '@/types/merch';
@@ -153,7 +154,7 @@ const storeItems: StoreItem[] = [
 
 export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWelcomeHome, initialTab = 'earn', availableCards = [], currentCardIndex = 0, onCardNavigation }: Props) {
   const { profile, loading: profileLoading, refreshProfile } = useProfile();
-  const { quests: bonusQuests, status: questsStatus } = useBonusQuests();
+  const { quests: legacyBonusQuests, status: questsStatus, refetchQuests } = useBonusQuests();
   const questsLoading = questsStatus === 'loading';
   const { items: merchItems, loading: merchLoading } = useMerchItems('physical');
   const { purchaseWithHeartCoins, isProcessing } = useMerchPurchase();
@@ -166,6 +167,12 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   const [currentPage, setCurrentPage] = useState(0);
   const [activeTab, setActiveTab] = useState(initialTab);
   const [activeEarnTab, setActiveEarnTab] = useState<'DAILY QUESTS' | 'BONUS QUESTS'>('DAILY QUESTS');
+
+  // DB-driven quests split by category (DAILY vs BONUS)
+  const [dbDailyQuests, setDbDailyQuests] = useState<BonusQuestWithCompletion[]>([]);
+  const [dbBonusQuests, setDbBonusQuests] = useState<BonusQuestWithCompletion[]>([]);
+  const [dbQuestsLoading, setDbQuestsLoading] = useState(false);
+  const [hasLoadedQuests, setHasLoadedQuests] = useState(false);
 
   // Purchase confirmation states
   const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
@@ -243,6 +250,28 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       try { sfx.setEnabled(true); } catch {}
     }
   }, [open, initialTab]);
+
+  // Fetch DB-driven quests (DAILY and BONUS) when modal opens
+  useEffect(() => {
+    if (!open) return;
+
+    const fetchDbQuests = async () => {
+      setDbQuestsLoading(true);
+      try {
+        const userId = profile?.id || null;
+        const { dailyQuests, bonusQuests } = await getAllQuestsForUser(userId);
+        setDbDailyQuests(dailyQuests);
+        setDbBonusQuests(bonusQuests);
+        setHasLoadedQuests(true);
+      } catch (error) {
+        console.error('[HeartCoinModal] Error fetching quests:', error);
+      } finally {
+        setDbQuestsLoading(false);
+      }
+    };
+
+    fetchDbQuests();
+  }, [open, profile?.id]);
 
   // Fetch all cards when CARDS tab is active
   useEffect(() => {
@@ -467,11 +496,122 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     if (quest.max_total_completions === 1 && quest.times_completed > 0) {
       return true;
     }
+    // For daily repeatable quests, check if cannot complete today
+    if (!quest.can_complete && quest.completed_today > 0) {
+      return true;
+    }
     // For daily repeatable quests like INVITE_FRIEND, check if cannot complete today
     if (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete) {
       return true;
     }
     return false;
+  };
+
+  // Quest click handler - maps quest_key to appropriate actions
+  const handleQuestClick = (quest: BonusQuestWithCompletion) => {
+    if (isQuestCompleted(quest)) return;
+    if (!profile) {
+      handleLoginToComplete();
+      return;
+    }
+
+    const questKey = quest.quest_key;
+
+    switch (questKey) {
+      case 'TAP_ELEMENT_OF_DAY':
+        // Close modal and dispatch event to navigate to 3D planet view
+        onClose();
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('element-planet:select', {
+            detail: { element: elementOfDay || 'heart' }
+          }));
+        }, 200);
+        break;
+
+      case 'LISTEN_SONG_OF_DAY':
+        // Close modal and warp to today's song planet (dispatch custom event)
+        onClose();
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('song-of-day:navigate'));
+        }, 200);
+        break;
+
+      case 'JOURNAL_ENTRY_OF_DAY':
+        // Open journal
+        if (onOpenJournal) {
+          onClose();
+          setTimeout(() => {
+            onOpenJournal();
+          }, 200);
+        }
+        break;
+
+      case 'FOLLOW_SPOTIFY':
+        window.open('https://open.spotify.com/artist/3Q3pWr5U6mMxpL3qMhIyoT', '_blank');
+        break;
+
+      case 'FOLLOW_TIKTOK':
+        window.open('https://www.tiktok.com/@chxndlerr', '_blank');
+        break;
+
+      case 'FOLLOW_YOUTUBE':
+        window.open('https://www.youtube.com/@CHXNDLERR', '_blank');
+        break;
+
+      case 'FOLLOW_INSTAGRAM':
+        window.open('https://www.instagram.com/chxndlerr', '_blank');
+        break;
+
+      case 'INVITE_FRIEND':
+        // Use native share if available, otherwise copy to clipboard
+        const shareMessage = "I thought of you. I think this world could feel like home for you too. https://chxndler.world/";
+        if (navigator.share) {
+          navigator.share({ text: shareMessage }).catch(() => {});
+        } else {
+          navigator.clipboard.writeText(shareMessage).then(() => {
+            alert("Invite message copied to clipboard!");
+          }).catch(() => {
+            alert(shareMessage);
+          });
+        }
+        break;
+
+      case 'ATTEND_LIVESTREAM':
+        // This is handled via secret phrase redemption
+        break;
+
+      case 'LISTEN_FEATURED_SONG':
+      case 'LISTEN_ELEMENT_SONG':
+        // Navigate to music player
+        onClose();
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('featured-song:play'));
+        }, 200);
+        break;
+
+      default:
+        // Unknown quest_key - log warning and do nothing
+        console.warn(`[HeartCoinModal] No click handler implemented for quest_key: ${questKey}`);
+        break;
+    }
+  };
+
+  // Check if a quest has an action handler
+  const questHasHandler = (questKey: string): boolean => {
+    const handledQuests = [
+      'TAP_ELEMENT_OF_DAY',
+      'LISTEN_SONG_OF_DAY',
+      'JOURNAL_ENTRY_OF_DAY',
+      'FOLLOW_SPOTIFY',
+      'FOLLOW_TIKTOK',
+      'FOLLOW_YOUTUBE',
+      'FOLLOW_INSTAGRAM',
+      'INVITE_FRIEND',
+      'ATTEND_LIVESTREAM',
+      'LISTEN_FEATURED_SONG',
+      'LISTEN_ELEMENT_SONG',
+    ];
+    return handledQuests.includes(questKey);
   };
 
   // Form validation function
@@ -1411,97 +1551,47 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
             {/* Quest Content */}
             {activeEarnTab === 'DAILY QUESTS' ? (
-              <div className="flex flex-col flex-1 w-full gap-3 min-h-0 h-full">
-                {/* Element of the Day Quest */}
-                <div className="w-full bg-black/20 rounded-lg p-4 border border-white/10 flex-1">
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center flex-shrink-0">
-                        <img src={getElementalPlanetImage(elementOfDay || 'heart') || '/textures/planet_heart.webp'} alt={`${elementOfDay || 'heart'} element`} className="w-8 h-8 rounded-full object-cover" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-white font-semibold text-xl mb-1">1. Tap the Element of the Day</h3>
-                        <p className="text-white/60 text-base leading-relaxed">Receive a random reward: HeartCoins, relics, or binder slot unlocks.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-                      <span className="text-[#4ECDC4] text-xl flex items-center font-bold">
-                        +1 <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8 ml-2" />
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Journal Entry Quest */}
-                <div className="w-full bg-black/20 rounded-lg p-4 border border-white/10 flex-1">
-                  <div className="flex items-start justify-between w-full h-full">
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center flex-shrink-0">
-                        <svg className="w-7 h-7 text-white/60" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-white font-semibold text-xl mb-1">2. Journal Entry of the Day</h3>
-                        <p className="text-white/60 text-base leading-relaxed">Answer today's journal prompt to earn one HEART coin.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 flex-shrink-0 ml-4">
-                      <button
-                        onClick={() => {
-                          if (onOpenJournal) {
-                            onClose(); // Close the HeartCoin modal first
-                            setTimeout(() => {
-                              onOpenJournal(); // Then open the journal
-                            }, 200); // Slightly longer delay to ensure modal closes completely
-                          }
-                        }}
-                        className="px-6 py-3 text-sm rounded border transition-colors bg-rgba(255,255,255,0.1) text-white hover:bg-white/20 font-bold min-w-[160px]"
-                        style={{
-                          background: 'rgba(255,255,255,0.1)',
-                          color: '#FFFFFF',
-                          borderColor: 'rgba(255,255,255,0.6)',
-                          textShadow: 'none',
-                        }}
-                      >
-                        OPEN JOURNAL
-                      </button>
-                      <span className="text-[#4ECDC4] text-xl flex items-center font-bold">
-                        +1 <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8 ml-2" />
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
               <div className="space-y-3 max-h-[50vh] overflow-y-auto">
-                {questsLoading ? (
+                {dbQuestsLoading ? (
                   <div className="text-center py-8">
-                    <div className="w-8 h-8 border-2 border-[#F2EF1D] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                    <p className="text-white/60 text-sm">Loading quests...</p>
+                    <div className="w-8 h-8 border-2 border-[#4ECDC4] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                    <p className="text-white/60 text-sm">Loading daily quests...</p>
                   </div>
-                ) : bonusQuests.length > 0 ? (
-                  bonusQuests.map((quest, index) => (
+                ) : dbDailyQuests.length > 0 ? (
+                  dbDailyQuests.map((quest, index) => (
                     <div key={quest.id} className="flex flex-col p-3 rounded-lg border border-white/30 bg-white/10">
                       <div className="flex items-center justify-between">
-                        <div className="flex-1 mr-4">
-                          <div className="text-sm font-bold text-white">
-                            {index + 1}. {quest.title}
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          {/* Quest icon based on quest_key */}
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center flex-shrink-0">
+                            {quest.quest_key === 'TAP_ELEMENT_OF_DAY' ? (
+                              <img src={getElementalPlanetImage(elementOfDay || 'heart') || '/textures/planet_heart.webp'} alt="element" className="w-7 h-7 rounded-full object-cover" />
+                            ) : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY' ? (
+                              <svg className="w-6 h-6 text-white/60" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                              </svg>
+                            ) : quest.quest_key === 'LISTEN_SONG_OF_DAY' ? (
+                              <svg className="w-6 h-6 text-white/60" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
+                              </svg>
+                            ) : (
+                              <svg className="w-6 h-6 text-white/60" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            )}
                           </div>
-                          <div className="text-xs text-white/80">
-                            {quest.description}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-bold text-white">
+                              {index + 1}. {quest.title}
+                            </div>
+                            <div className="text-xs text-white/80">
+                              {quest.description}
+                            </div>
                           </div>
                         </div>
-                        <span className="text-sm flex items-center" style={{
-                          color: isQuestCompleted(quest) ? '#666' : '#90EE90',
-                          textShadow: isQuestCompleted(quest) ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90'
-                        }}>
-                          {quest.reward_notes || `+${quest.reward_heartcoins}`}
-                          <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
-                        </span>
                       </div>
                       <button
-                        onClick={!profile ? handleLoginToComplete : undefined}
+                        onClick={() => handleQuestClick(quest)}
                         disabled={!!profile && isQuestCompleted(quest)}
                         className="mt-3 px-3 py-2 text-xs rounded border transition-colors font-bold w-full hover:opacity-80"
                         style={{
@@ -1530,14 +1620,107 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             : isQuestCompleted(quest)
                             ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)'
                             : 'none',
-                          cursor: !profile ? 'pointer' : 'default'
+                          cursor: !profile || isQuestCompleted(quest) ? 'default' : 'pointer'
                         }}
                       >
                         {!profile
                           ? 'Log in to complete'
                           : isQuestCompleted(quest)
                           ? 'COMPLETED'
-                          : 'COMPLETE'}
+                          : questHasHandler(quest.quest_key)
+                            ? (quest.quest_key === 'JOURNAL_ENTRY_OF_DAY' ? 'OPEN JOURNAL' : 'START')
+                            : 'INCOMPLETE'}
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-white/60 text-sm">No daily quests available</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[50vh] overflow-y-auto">
+                {dbQuestsLoading ? (
+                  <div className="text-center py-8">
+                    <div className="w-8 h-8 border-2 border-[#F2EF1D] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                    <p className="text-white/60 text-sm">Loading bonus quests...</p>
+                  </div>
+                ) : dbBonusQuests.length > 0 ? (
+                  dbBonusQuests.map((quest, index) => (
+                    <div key={quest.id} className="flex flex-col p-3 rounded-lg border border-white/30 bg-white/10">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1 min-w-0 mr-2">
+                          {/* Quest icon based on quest_key */}
+                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500/20 to-purple-500/20 flex items-center justify-center flex-shrink-0">
+                            {quest.quest_key?.startsWith('FOLLOW_') ? (
+                              <svg className="w-5 h-5 text-white/60" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                              </svg>
+                            ) : quest.quest_key === 'INVITE_FRIEND' ? (
+                              <svg className="w-5 h-5 text-white/60" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
+                              </svg>
+                            ) : quest.quest_key === 'ATTEND_LIVESTREAM' ? (
+                              <svg className="w-5 h-5 text-white/60" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                              </svg>
+                            ) : (
+                              <svg className="w-5 h-5 text-white/60" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-bold text-white">
+                              {index + 1}. {quest.title}
+                            </div>
+                            <div className="text-xs text-white/80">
+                              {quest.description}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleQuestClick(quest)}
+                        disabled={!!profile && isQuestCompleted(quest)}
+                        className="mt-3 px-3 py-2 text-xs rounded border transition-colors font-bold w-full hover:opacity-80"
+                        style={{
+                          background: !profile
+                            ? 'rgba(78,205,196,0.2)'
+                            : isQuestCompleted(quest)
+                            ? 'rgba(0,255,0,0.2)'
+                            : 'rgba(255,255,255,0.1)',
+                          color: !profile
+                            ? '#4ECDC4'
+                            : isQuestCompleted(quest)
+                            ? '#00FF00'
+                            : '#FFFFFF',
+                          borderColor: !profile
+                            ? '#4ECDC4'
+                            : isQuestCompleted(quest)
+                            ? '#00FF00'
+                            : 'rgba(255,255,255,0.6)',
+                          textShadow: !profile
+                            ? '0 0 8px rgba(78,205,196,0.5)'
+                            : isQuestCompleted(quest)
+                            ? '0 0 8px #00FF00, 0 0 16px #00FF00'
+                            : 'none',
+                          boxShadow: !profile
+                            ? 'none'
+                            : isQuestCompleted(quest)
+                            ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)'
+                            : 'none',
+                          cursor: !profile || isQuestCompleted(quest) ? 'default' : 'pointer'
+                        }}
+                      >
+                        {!profile
+                          ? 'Log in to complete'
+                          : isQuestCompleted(quest)
+                          ? 'COMPLETED'
+                          : questHasHandler(quest.quest_key)
+                            ? (quest.quest_key === 'INVITE_FRIEND' ? 'INVITE' : quest.quest_key?.startsWith('FOLLOW_') ? 'FOLLOW' : 'START')
+                            : 'INCOMPLETE'}
                       </button>
                     </div>
                   ))

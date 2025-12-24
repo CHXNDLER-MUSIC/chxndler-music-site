@@ -4,6 +4,119 @@ import { BonusQuestRow, UserBonusQuestRow, BonusQuestWithCompletion, QuestComple
 import { logHeartcoinTransaction } from '@/utils/heartcoins';
 
 /**
+ * Fetches ALL active bonus quests (without is_core filtering) for use in HeartCoinModal.
+ * Splits quests by category (DAILY vs BONUS) and overlays completion state.
+ * Returns { dailyQuests, bonusQuests } with completion data.
+ */
+export async function getAllQuestsForUser(userId?: string | null): Promise<{
+  dailyQuests: BonusQuestWithCompletion[];
+  bonusQuests: BonusQuestWithCompletion[];
+  allQuests: BonusQuestWithCompletion[];
+}> {
+  try {
+    // Fetch all active quests ordered by sort_order
+    const { data: quests, error: questsError } = await supabaseClient
+      .from('bonus_quests')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+
+    if (questsError) {
+      console.error('[getAllQuestsForUser] Error fetching quests:', questsError);
+      return { dailyQuests: [], bonusQuests: [], allQuests: [] };
+    }
+
+    if (!quests || quests.length === 0) {
+      console.log('[getAllQuestsForUser] No active quests found');
+      return { dailyQuests: [], bonusQuests: [], allQuests: [] };
+    }
+
+    // Fetch user's completion stats (only if a userId is present)
+    let completions: Pick<UserBonusQuestRow, 'bonus_quest_id' | 'times_completed' | 'last_completed_at'>[] = [];
+    let todayCompletions: { bonus_quest_id: string }[] = [];
+
+    if (userId) {
+      // Fetch total completion counts
+      const { data, error: completionsError } = await supabaseClient
+        .from('user_bonus_quests')
+        .select('bonus_quest_id, times_completed, last_completed_at')
+        .eq('user_id', userId);
+
+      if (completionsError) {
+        console.error('[getAllQuestsForUser] Error fetching user completions:', completionsError);
+      } else {
+        completions = data || [];
+      }
+
+      // Fetch today's completions
+      const today = new Date().toISOString().split('T')[0];
+      const { data: todayData, error: todayError } = await supabaseClient
+        .from('user_bonus_quest_completions')
+        .select('bonus_quest_id')
+        .eq('user_id', userId)
+        .gte('completed_at', `${today}T00:00:00Z`)
+        .lt('completed_at', `${today}T23:59:59.999Z`);
+
+      if (todayError) {
+        console.error('[getAllQuestsForUser] Error fetching today\'s completions:', todayError);
+      } else {
+        todayCompletions = todayData || [];
+      }
+    }
+
+    // Build completion maps
+    const completionMap = new Map<string, { times_completed: number; last_completed_at: string | null }>();
+    completions?.forEach(completion => {
+      completionMap.set(completion.bonus_quest_id, {
+        times_completed: completion.times_completed,
+        last_completed_at: completion.last_completed_at
+      });
+    });
+
+    const todayCompletionMap = new Set<string>();
+    todayCompletions.forEach(completion => {
+      todayCompletionMap.add(completion.bonus_quest_id);
+    });
+
+    // Transform all quests to include completion data
+    const allQuestsWithCompletion: BonusQuestWithCompletion[] = quests.map(quest => {
+      const completion = completionMap.get(quest.id);
+      const timesCompleted = completion?.times_completed || 0;
+      const completedToday = todayCompletionMap.has(quest.id) ? 1 : 0;
+
+      const hasReachedDailyLimit = completedToday >= quest.max_times_per_day;
+      const hasReachedTotalLimit = quest.max_total_completions !== null && timesCompleted >= quest.max_total_completions;
+      const canComplete = !hasReachedDailyLimit && !hasReachedTotalLimit;
+
+      return {
+        ...quest,
+        times_completed: timesCompleted,
+        can_complete: canComplete,
+        completed_today: completedToday
+      };
+    });
+
+    // Split by category
+    const dailyQuests = allQuestsWithCompletion.filter(q => q.category === 'DAILY');
+    const bonusQuests = allQuestsWithCompletion.filter(q => q.category === 'BONUS');
+
+    // Log summary (only once after fetch)
+    console.log('[getAllQuestsForUser] Summary:', {
+      totalQuests: allQuestsWithCompletion.length,
+      dailyCount: dailyQuests.length,
+      bonusCount: bonusQuests.length,
+      questKeys: allQuestsWithCompletion.map(q => q.quest_key)
+    });
+
+    return { dailyQuests, bonusQuests, allQuests: allQuestsWithCompletion };
+
+  } catch (error) {
+    console.error('[getAllQuestsForUser] Error:', error);
+    return { dailyQuests: [], bonusQuests: [], allQuests: [] };
+  }
+}
+
+/**
  * Fetches bonus quests with a specific Supabase client (for server-side use).
  * Always fetches public quests first (no auth required), then if a userId is
  * provided, fetches that user's completion rows to compute completion state.
