@@ -1274,18 +1274,17 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
   const handleJournalEntry = () => {
     try { sfx.play('click', 0.6); } catch {}
-    if (!dailyQuests.journalEntry) {
-      // Close the HeartCoin display and open the journal popout
-      setOpen(false);
-      onClose?.();
-      setTimeout(() => {
-        try {
-          setIsJournalOpen(true);
-          onOpenJournal?.();
-          window.dispatchEvent(new CustomEvent('openJournalModal'));
-        } catch {}
-      }, 150);
-    }
+    // Close the HeartCoin display and open the journal popout
+    setOpen(false);
+    onClose?.();
+    window.dispatchEvent(new CustomEvent('close-heartcoin-modal'));
+    setTimeout(() => {
+      try {
+        setIsJournalOpen(true);
+        onOpenJournal?.();
+        window.dispatchEvent(new CustomEvent('openJournalModal'));
+      } catch {}
+    }, 150);
   };
 
   const handleUseHeartCoins = (e?: React.MouseEvent) => {
@@ -2674,13 +2673,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     }}>
                       {quest.quest_key === 'TAP_ELEMENT_OF_DAY' ? (
                         <>
-                          <span className="text-xs font-bold">{isQuestCompleted(quest) ? '✓' : ''} +</span>
-                          <img src="/elements/relics.webp" alt="Relic" className="w-6 h-6 ml-1" />
+                          <span className="text-base font-bold">{isQuestCompleted(quest) ? '✓' : ''} +</span>
+                          <img src="/elements/relics.webp" alt="Relic" className="w-10 h-10 ml-1" style={{ filter: 'drop-shadow(0 0 8px yellow) drop-shadow(0 0 16px yellow)' }} />
                         </>
                       ) : (
                         <>
-                          <span className="text-xs font-bold">{isQuestCompleted(quest) ? '✓' : ''} +{quest.reward_heartcoins || 1}</span>
-                          <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6 ml-1" />
+                          <span className="text-base font-bold">{isQuestCompleted(quest) ? '✓' : ''} +{quest.reward_heartcoins || 1}</span>
+                          <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-10 h-10 ml-1" />
                         </>
                       )}
                     </div>
@@ -2810,17 +2809,22 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             if (quest.quest_key === 'JOURNAL_ENTRY_OF_DAY') {
                               handleJournalEntry();
                             } else if (quest.quest_key === 'LISTEN_SONG_OF_DAY') {
+                              console.log('[LISTEN BUTTON] Clicked! songOfDaySlug:', songOfDaySlug);
                               try { sfx.play('click', 0.6); } catch {}
                               // Close the HeartCoin modal
                               setOpen(false);
                               window.dispatchEvent(new CustomEvent('close-heartcoin-modal'));
                               // Warp to the song of the day
                               if (songOfDaySlug) {
+                                console.log('[LISTEN BUTTON] Dispatching planet:warp-to-song with id:', songOfDaySlug);
                                 setTimeout(() => {
                                   window.dispatchEvent(new CustomEvent('planet:warp-to-song', {
                                     detail: { id: songOfDaySlug, source: 'daily-quest' }
                                   }));
+                                  console.log('[LISTEN BUTTON] Event dispatched!');
                                 }, 300);
+                              } else {
+                                console.log('[LISTEN BUTTON] ERROR: songOfDaySlug is null/undefined');
                               }
                             }
                           }}
@@ -3120,8 +3124,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         }}
                         disabled={
                           isLoggedIn && (
-                            (!quest.can_complete && !inviteFriendShared) ||
-                            isQuestCompleted(quest) ||
+                            (!quest.can_complete && !inviteFriendShared && quest.quest_key !== 'LISTEN_ELEMENT_SONG') ||
+                            (isQuestCompleted(quest) && quest.quest_key !== 'LISTEN_ELEMENT_SONG') ||
                             (quest.quest_key === 'SECRET_PHRASE' && secretPhraseLoading) ||
                             (quest.quest_key === 'ATTEND_LIVESTREAM' && (secretPhraseLoading || isRedeemingPhrase || phraseStatus === 'success' || phraseStatus === 'already'))
                           )
@@ -3130,18 +3134,20 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         style={{
                           background: !isLoggedIn
                             ? 'rgba(78,205,196,0.2)'
-                            : isQuestCompleted(quest) || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
+                            : (isQuestCompleted(quest) && quest.quest_key !== 'LISTEN_ELEMENT_SONG') || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
                             ? 'rgba(0,255,0,0.2)'
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? 'rgba(0,0,0,0.3)'
                               : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
                                 ? 'rgba(0,0,0,0.3)'
-                                : quest.can_complete
-                                  ? 'rgba(255,255,255,0.1)'
-                                  : 'rgba(100,100,100,0.3)',
+                                : quest.quest_key === 'LISTEN_ELEMENT_SONG'
+                                  ? 'rgba(78,205,196,0.15)'
+                                  : quest.can_complete
+                                    ? 'rgba(255,255,255,0.1)'
+                                    : 'rgba(100,100,100,0.3)',
                           color: !isLoggedIn
                             ? '#4ECDC4'
-                            : isQuestCompleted(quest) || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
+                            : (isQuestCompleted(quest) && quest.quest_key !== 'LISTEN_ELEMENT_SONG') || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
                             ? '#00FF00'
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? '#F2EF1D'
@@ -3149,12 +3155,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 ? '#00FF00'
                                 : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
                                   ? '#F2EF1D'
-                                  : quest.can_complete
-                                    ? '#FFFFFF'
-                                    : '#666',
+                                  : quest.quest_key === 'LISTEN_ELEMENT_SONG'
+                                    ? '#4ECDC4'
+                                    : quest.can_complete
+                                      ? '#FFFFFF'
+                                      : '#666',
                           borderColor: !isLoggedIn
                             ? '#4ECDC4'
-                            : isQuestCompleted(quest) || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
+                            : (isQuestCompleted(quest) && quest.quest_key !== 'LISTEN_ELEMENT_SONG') || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
                             ? '#00FF00'
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
                               ? '#F2EF1D'
@@ -3162,9 +3170,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 ? '#00FF00'
                                 : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
                                   ? '#F2EF1D'
-                                  : quest.can_complete
-                                    ? 'rgba(255,255,255,0.6)'
-                                    : 'rgba(100,100,100,0.6)',
+                                  : quest.quest_key === 'LISTEN_ELEMENT_SONG'
+                                    ? '#4ECDC4'
+                                    : quest.can_complete
+                                      ? 'rgba(255,255,255,0.6)'
+                                      : 'rgba(100,100,100,0.6)',
                           borderWidth: isQuestCompleted(quest) || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
                             ? '2px'
                             : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
@@ -3199,23 +3209,25 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       >
                         {!isLoggedIn
                           ? 'Log in to complete'
-                          : (isQuestCompleted(quest) || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
-                            ? 'COMPLETED'
-                            : quest.quest_key === 'ATTEND_LIVESTREAM'
-                              ? (phraseStatus === 'already'
-                                  ? 'ALREADY REDEEMED'
-                                  : phraseStatus === 'success'
-                                    ? 'PASSWORD ACCEPTED'
-                                    : (attendLivestreamConfirming ? 'CONFIRM' : 'CHECK IN'))
-                              : quest.quest_key === 'INVITE_FRIEND'
-                                ? (inviteFriendShared ? 'CONFIRM' : 'SEND SIGNAL')
-                                : quest.quest_key === 'SECRET_PHRASE'
-                                  ? (secretPhraseInputVisible === quest.id
-                                      ? (secretPhraseLoading ? 'SUBMITTING...' : 'SUBMIT')
-                                      : 'ENTER PHRASE')
-                                : quest.quest_key === 'LISTEN_ELEMENT_SONG'
-                                  ? 'VISIT ELEMENT'
-                                  : 'COMPLETE')}
+                          : quest.quest_key === 'ATTEND_LIVESTREAM' && isQuestCompleted(quest)
+                            ? 'CHECKED IN'
+                            : (isQuestCompleted(quest) || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
+                              ? 'COMPLETED'
+                              : quest.quest_key === 'ATTEND_LIVESTREAM'
+                                ? (phraseStatus === 'already'
+                                    ? 'ALREADY REDEEMED'
+                                    : phraseStatus === 'success'
+                                      ? 'PASSWORD ACCEPTED'
+                                      : (attendLivestreamConfirming ? 'CONFIRM' : 'CHECK IN'))
+                                : quest.quest_key === 'INVITE_FRIEND'
+                                  ? (inviteFriendShared ? 'CONFIRM' : 'SEND SIGNAL')
+                                  : quest.quest_key === 'SECRET_PHRASE'
+                                    ? (secretPhraseInputVisible === quest.id
+                                        ? (secretPhraseLoading ? 'SUBMITTING...' : 'SUBMIT')
+                                        : 'ENTER PHRASE')
+                                  : quest.quest_key === 'LISTEN_ELEMENT_SONG'
+                                    ? 'RETURN HOME'
+                                    : 'COMPLETE')}
                       </button>
                     </div>
                     {/* Secret phrase input field */}

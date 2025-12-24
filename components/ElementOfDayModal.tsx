@@ -116,20 +116,23 @@ export default function ElementOfDayModal() {
           );
 
           // Award the relic to user's collection if there's a rewardKey
-          if (data.rewardKey && !rpcResult?.already_checked_in) {
+          // Always attempt to award - the API handles duplicates gracefully
+          if (data.rewardKey) {
             console.log('[ElementOfDayModal] Attempting to award relic:', data.rewardKey, 'to user:', session.session.user.id);
             try {
-              const { error: relicError } = await supabaseBrowser.rpc(
-                'award_relic_to_user',
-                {
-                  p_user_id: session.session.user.id,
-                  p_relic_code: data.rewardKey
-                }
-              );
-              if (relicError) {
-                console.error('[ElementOfDayModal] award_relic_to_user RPC error:', relicError);
+              const response = await fetch('/api/award-relic', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  userId: session.session.user.id,
+                  relicCode: data.rewardKey,
+                }),
+              });
+              const result = await response.json();
+              if (!response.ok) {
+                console.error('[ElementOfDayModal] award-relic API error:', result);
               } else {
-                console.log('[ElementOfDayModal] Relic awarded successfully:', data.rewardKey);
+                console.log('[ElementOfDayModal] Relic awarded successfully:', result);
                 // Dispatch event to refresh relics collection
                 window.dispatchEvent(new CustomEvent('relics:refresh'));
               }
@@ -137,7 +140,7 @@ export default function ElementOfDayModal() {
               console.error('[ElementOfDayModal] Error awarding relic:', relicErr);
             }
           } else {
-            console.log('[ElementOfDayModal] Skipping relic award - rewardKey:', data.rewardKey, 'alreadyCheckedIn:', rpcResult?.already_checked_in);
+            console.log('[ElementOfDayModal] No rewardKey set for today - skipping relic award');
           }
 
           // Trigger profile refresh to update daily_streak_current in UI

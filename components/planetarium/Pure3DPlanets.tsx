@@ -1761,14 +1761,23 @@ export default function Pure3DPlanets({
     // Handler for song warps (planet:warp-to-song)
     const songHandler = (e: any) => {
       const id = e?.detail?.id;
-      if (id) warpToPlanet(id);
+      const source = e?.detail?.source;
+      console.log('[Pure3DPlanets] Received planet:warp-to-song event! id:', id, 'source:', source);
+      if (id) {
+        console.log('[Pure3DPlanets] Calling warpToPlanet with:', id);
+        warpToPlanet(id);
+      } else {
+        console.log('[Pure3DPlanets] ERROR: No id in event detail');
+      }
     };
     // Handler for element warps (planet:warp)
     const elementHandler = (e: any) => {
       const element = e?.detail?.element;
+      console.log('[Pure3DPlanets] Received planet:warp event! element:', element);
       if (element) warpToPlanet(element);
     };
     if (typeof window !== 'undefined') {
+      console.log('[Pure3DPlanets] Setting up warp event listeners');
       window.addEventListener('planet:warp-to-song', songHandler);
       window.addEventListener('planet:warp', elementHandler);
     }
