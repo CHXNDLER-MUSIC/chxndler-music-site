@@ -1498,11 +1498,20 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     console.log('[CARD PURCHASE] In-flight set TRUE');
 
     try {
-      // Single authoritative call to backend
-      const { data, error } = await supabaseBrowser.rpc('purchase_digital_card', { p_card_id: selectedCardId });
+      // Log Supabase URL for debugging
+      console.log('[CARD PURCHASE] supabaseUrl', (supabaseBrowser as any)?.rest?.url ?? process.env.NEXT_PUBLIC_SUPABASE_URL);
 
-      if (error) {
-        const msg = (error as any)?.message || '';
+      // Single authoritative call to backend
+      const { data, error: rpcError } = await supabaseBrowser.rpc('purchase_digital_card', { p_card_id: selectedCardId });
+
+      if (rpcError) {
+        console.error('[CARD PURCHASE] RPC error details:', {
+          code: rpcError.code,
+          message: rpcError.message,
+          details: rpcError.details,
+          hint: rpcError.hint,
+        });
+        const msg = rpcError.message || '';
 
         if (msg.includes('Not enough HeartCoins')) {
           try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Not enough HeartCoins', type: 'error' } })); } catch {}
@@ -1511,7 +1520,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         } else if (msg.includes('NO_AVAILABLE_SLOT')) {
           try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Unlock a binder slot to buy more cards.', type: 'error' } })); } catch {}
         } else {
-          console.error('[CARD PURCHASE] RPC error', error);
+          console.error('[CARD PURCHASE] RPC error', rpcError);
           try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Purchase failed', type: 'error' } })); } catch {}
         }
         return; // Early return on error; finally will reset flags
@@ -2941,12 +2950,96 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       <div className="mt-2 mb-0 flex flex-col items-center overflow-visible">
                         <button
                           type="button"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.preventDefault();
                             e.stopPropagation();
+
+                            // Guard: if already completed, don't process again
+                            if (isQuestCompleted(quest)) {
+                              console.log('[HeartCoinButton] Quest already completed, skipping');
+                              return;
+                            }
+
                             const targetElement = elementOfDay || 'heart';
-                            console.log('[HeartCoinButton] Element image clicked, warping to:', targetElement);
+                            console.log('[HeartCoinButton] Element image clicked, completing quest and warping to:', targetElement);
                             try { sfx.play('click', 0.8); } catch {}
+
+                            // ========== COMPLETE QUEST DIRECTLY ==========
+                            try {
+                              // 1. Check authentication
+                              const { data: { session } } = await supabaseBrowser.auth.getSession();
+                              if (!session?.user?.id) {
+                                console.error('[HeartCoinButton] No authenticated session for quest completion');
+                              } else {
+                                const userId = session.user.id;
+                                console.log('[HeartCoinButton] Completing quest for user:', userId);
+
+                                // 2. Call claim_daily_checkin RPC
+                                const { data: checkinResult, error: checkinError } = await supabaseBrowser.rpc(
+                                  'claim_daily_checkin',
+                                  { p_source: 'element_of_day' }
+                                );
+
+                                if (checkinError) {
+                                  console.error('[HeartCoinButton] claim_daily_checkin error:', checkinError.message);
+                                } else {
+                                  console.log('[HeartCoinButton] claim_daily_checkin success:', checkinResult);
+                                }
+
+                                // 3. Complete bonus quest via RPC
+                                const { data: rpcResult, error: rpcError } = await supabaseBrowser
+                                  .rpc('complete_bonus_quest_once_per_day', { p_bonus_quest_id: quest.id });
+
+                                if (rpcError) {
+                                  console.error('[HeartCoinButton] complete_bonus_quest error:', rpcError.message);
+                                } else {
+                                  console.log('[HeartCoinButton] Bonus quest completed:', rpcResult);
+
+                                  // Mark as completed locally
+                                  setCompletedQuests(prev => new Set(prev).add(quest.id));
+
+                                  // 4. Award relic if quest was newly inserted
+                                  if (rpcResult?.inserted) {
+                                    try {
+                                      // Fetch element-of-day data to get relic info
+                                      const eodRes = await fetch('/api/element-of-day');
+                                      if (eodRes.ok) {
+                                        const eodData = await eodRes.json();
+                                        if (eodData.relicKey) {
+                                          console.log('[HeartCoinButton] Awarding relic:', eodData.relicKey);
+                                          const relicRes = await fetch('/api/award-relic', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                              userId: userId,
+                                              relicCode: eodData.relicKey,
+                                            }),
+                                          });
+                                          if (relicRes.ok) {
+                                            console.log('[HeartCoinButton] Relic awarded successfully');
+                                            window.dispatchEvent(new CustomEvent('relics:refresh'));
+                                            window.dispatchEvent(new CustomEvent('boosts:refresh'));
+                                          }
+                                        }
+                                      }
+                                    } catch (relicErr) {
+                                      console.error('[HeartCoinButton] Error awarding relic:', relicErr);
+                                    }
+                                  }
+                                }
+
+                                // 5. Dispatch refresh events
+                                window.dispatchEvent(new CustomEvent('element-of-day-claimed', {
+                                  detail: { element: targetElement }
+                                }));
+                                window.dispatchEvent(new CustomEvent('profile:force-refresh'));
+                                await refetchQuests();
+                              }
+                            } catch (questErr) {
+                              console.error('[HeartCoinButton] Error completing quest:', questErr);
+                            }
+
+                            // ========== VISUAL EFFECTS ==========
                             // Close the popup first - call onClose to notify parent
                             setOpen(false);
                             try { onClose?.(); } catch {}

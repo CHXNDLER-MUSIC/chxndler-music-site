@@ -1658,6 +1658,20 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             </div>
                           </div>
                         </div>
+                        {/* Reward display - vertically centered on right side */}
+                        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                          {quest.reward_heartcoins > 0 && (
+                            <div className="flex items-center gap-1">
+                              <img src="/heartcoin.webp" alt="HeartCoin" className="w-6 h-6" style={{ filter: 'drop-shadow(0 0 4px rgba(255,105,180,0.6))' }} />
+                              <span className="text-pink-300 font-bold text-sm" style={{ textShadow: '0 0 6px rgba(255,105,180,0.6)' }}>+{quest.reward_heartcoins}</span>
+                            </div>
+                          )}
+                          {quest.reward_element_card && (
+                            <div className="flex items-center gap-1">
+                              <img src="/elements/elementals.webp" alt="Relic" className="w-6 h-6" style={{ filter: 'drop-shadow(0 0 4px rgba(0,255,255,0.6))' }} />
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <button
                         onClick={() => handleQuestClick(quest)}
@@ -1758,6 +1772,20 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                               {quest.description}
                             </div>
                           </div>
+                        </div>
+                        {/* Reward display - vertically centered on right side */}
+                        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                          {quest.reward_heartcoins > 0 && (
+                            <div className="flex items-center gap-1">
+                              <img src="/heartcoin.webp" alt="HeartCoin" className="w-6 h-6" style={{ filter: 'drop-shadow(0 0 4px rgba(255,105,180,0.6))' }} />
+                              <span className="text-pink-300 font-bold text-sm" style={{ textShadow: '0 0 6px rgba(255,105,180,0.6)' }}>+{quest.reward_heartcoins}</span>
+                            </div>
+                          )}
+                          {quest.reward_element_card && (
+                            <div className="flex items-center gap-1">
+                              <img src="/elements/elementals.webp" alt="Relic" className="w-6 h-6" style={{ filter: 'drop-shadow(0 0 4px rgba(0,255,255,0.6))' }} />
+                            </div>
+                          )}
                         </div>
                       </div>
                       <button

@@ -1,7 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { BonusQuestRow, UserBonusQuestRow, BonusQuestWithCompletion, QuestCompletionResult } from '@/types/bonusQuests';
-import { logHeartcoinTransaction } from '@/utils/heartcoins';
 
 /**
  * Fetches ALL active bonus quests (without is_core filtering) for use in HeartCoinModal.
@@ -54,8 +53,7 @@ export async function getAllQuestsForUser(userId?: string | null): Promise<{
         .from('user_bonus_quest_completions')
         .select('bonus_quest_id')
         .eq('user_id', userId)
-        .gte('completed_at', `${today}T00:00:00Z`)
-        .lt('completed_at', `${today}T23:59:59.999Z`);
+        .eq('completed_date', today);
 
       if (todayError) {
         console.error('[getAllQuestsForUser] Error fetching today\'s completions:', todayError);
@@ -157,14 +155,13 @@ export async function getBonusQuestsForUserWithClient(client: SupabaseClient, us
         completions = data || [];
       }
 
-      // Fetch today's completions using completed_at
+      // Fetch today's completions using completed_date
       const today = new Date().toISOString().split('T')[0];
       const { data: todayData, error: todayError } = await client
         .from('user_bonus_quest_completions')
         .select('bonus_quest_id')
         .eq('user_id', userId)
-        .gte('completed_at', `${today}T00:00:00Z`)
-        .lt('completed_at', `${today}T23:59:59.999Z`);
+        .eq('completed_date', today);
 
       if (todayError) {
         console.error('Error fetching today\'s completions:', todayError);
@@ -284,14 +281,13 @@ export async function getBonusQuestsForUser(userId?: string | null): Promise<Bon
         completions = data || [];
       }
       
-      // Fetch today's completions using completed_at
+      // Fetch today's completions using completed_date
       const today = new Date().toISOString().split('T')[0]; // Get YYYY-MM-DD format
       const { data: todayData, error: todayError } = await supabaseClient
         .from('user_bonus_quest_completions')
         .select('bonus_quest_id')
         .eq('user_id', userId)
-        .gte('completed_at', `${today}T00:00:00Z`)
-        .lt('completed_at', `${today}T23:59:59.999Z`);
+        .eq('completed_date', today);
       
       if (todayError) {
         console.error('Error fetching today\'s completions:', todayError);
@@ -376,103 +372,79 @@ export async function getBonusQuestsForUser(userId?: string | null): Promise<Bon
 
 /**
  * Completes a bonus quest for the user with proper tracking and rewards
- * Now uses user_bonus_quest_completions table for daily tracking
+ * Uses complete_bonus_quest_once_per_day RPC for atomic daily tracking
+ *
+ * RPC signature: complete_bonus_quest_once_per_day(p_user_id uuid, p_bonus_quest_id uuid, p_reward_heartcoins int default null)
+ * Returns:
+ * - { ok: true, status: "completed", reward_heartcoins: <int>, completion_id: <uuid>, completed_on: "YYYY-MM-DD" }
+ * - { ok: false, status: "already_completed_today", reward_heartcoins: 0, completion_id: <uuid>, completed_on: "YYYY-MM-DD" }
  */
 export async function completeBonusQuest(params: {
   supabase: SupabaseClient;
   userId: string;
   bonusQuestId: string;
-}): Promise<{ status: 'completed_today' | 'already_completed_today'; data?: any }> {
-  const { supabase, userId, bonusQuestId } = params;
+  rewardHeartcoins?: number;
+}): Promise<{ status: 'completed_today' | 'already_completed_today'; data?: any; rewardHeartcoins?: number }> {
+  const { supabase, userId, bonusQuestId, rewardHeartcoins } = params;
 
   if (!bonusQuestId) {
     console.error('completeBonusQuest: Missing bonusQuestId', { userId, bonusQuestId });
     throw new Error('bonusQuestId is required');
   }
 
+  if (!userId) {
+    console.error('completeBonusQuest: Missing userId', { userId, bonusQuestId });
+    throw new Error('userId is required');
+  }
+
   try {
-    // Get the quest details to check reward_heartcoins
-    const { data: quest, error: questError } = await supabase
-      .from('bonus_quests')
-      .select('*')
-      .eq('id', bonusQuestId)
-      .single();
+    // Get quest details if rewardHeartcoins not provided
+    let reward = rewardHeartcoins;
+    let questKey = 'unknown';
 
-    if (questError || !quest) {
-      console.error('Failed to fetch quest details:', questError);
-      throw new Error('Quest not found');
-    }
+    if (reward === undefined) {
+      const { data: quest, error: questError } = await supabase
+        .from('bonus_quests')
+        .select('reward_heartcoins, quest_key')
+        .eq('id', bonusQuestId)
+        .single();
 
-    // Insert completion record into user_bonus_quest_completions
-    // The database trigger will prevent duplicates for the same day
-    const { data: insertData, error: insertError } = await supabase
-      .from('user_bonus_quest_completions')
-      .insert({
-        user_id: userId,
-        bonus_quest_id: bonusQuestId
-        // completed_at will be set automatically by the trigger
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      // Check if this is the "already completed today" error
-      if (insertError.message && insertError.message.includes('Quest already completed today')) {
-        console.log(`📋 Quest ${quest.quest_key} already completed today for user ${userId}`);
-        return { status: 'already_completed_today' };
+      if (questError || !quest) {
+        console.error('Failed to fetch quest details:', questError);
+        throw new Error('Quest not found');
       }
-      
-      // Handle other errors
-      console.error('Failed to insert quest completion:', insertError);
-      throw new Error(`Failed to complete quest: ${insertError.message}`);
+      reward = quest.reward_heartcoins ?? 0;
+      questKey = quest.quest_key;
     }
 
-    // Update the user_bonus_quests table for tracking total completions
-    const { data: existingRecord } = await supabase
-      .from('user_bonus_quests')
-      .select('times_completed')
-      .eq('user_id', userId)
-      .eq('bonus_quest_id', bonusQuestId)
-      .maybeSingle();
-
-    if (existingRecord) {
-      // Update existing record
-      await supabase
-        .from('user_bonus_quests')
-        .update({
-          times_completed: existingRecord.times_completed + 1,
-          last_completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', userId)
-        .eq('bonus_quest_id', bonusQuestId);
-    } else {
-      // Create new record
-      await supabase
-        .from('user_bonus_quests')
-        .insert({
-          user_id: userId,
-          bonus_quest_id: bonusQuestId,
-          times_completed: 1,
-          last_completed_at: new Date().toISOString()
-        });
-    }
-
-    // Award HeartCoins if quest has reward
-    if (quest.reward_heartcoins && quest.reward_heartcoins > 0) {
-      await logHeartcoinTransaction(supabase, {
-        user_id: userId,
-        amount: quest.reward_heartcoins,
-        reason: 'BONUS_QUEST',
-        description: `Bonus Quest: ${quest.title}`,
-        transaction_type: 'bonus',
-        metadata: { quest_id: quest.id }
+    // Call RPC to complete the quest (handles insert + user_bonus_quests update + heartcoins atomically)
+    const { data: rpcResult, error: rpcError } = await supabase
+      .rpc('complete_bonus_quest_once_per_day', {
+        p_user_id: userId,
+        p_bonus_quest_id: bonusQuestId,
+        p_reward_heartcoins: reward
       });
+
+    if (rpcError) {
+      console.error('Failed to complete quest via RPC:', rpcError);
+      throw new Error(`Failed to complete quest: ${rpcError.message}`);
     }
 
-    console.log(`✅ Quest ${quest.quest_key} completed successfully! +${quest.reward_heartcoins} HeartCoins awarded to user ${userId}`);
+    // Handle new RPC response format
+    // { ok: true/false, status: "completed" | "already_completed_today", reward_heartcoins, completion_id, completed_on }
+    if (rpcResult.ok === false || rpcResult.status === 'already_completed_today') {
+      console.log(`📋 Quest ${questKey} already completed today for user ${userId}`);
+      return { status: 'already_completed_today', data: rpcResult };
+    }
 
-    return { status: 'completed_today', data: insertData };
+    // ok === true means quest was newly completed; RPC handles heartcoin award internally
+    console.log(`✅ Quest ${questKey} completed successfully! +${rpcResult.reward_heartcoins ?? reward} HeartCoins awarded to user ${userId}`);
+
+    return {
+      status: 'completed_today',
+      data: rpcResult,
+      rewardHeartcoins: rpcResult.reward_heartcoins ?? reward
+    };
 
   } catch (error) {
     console.error('Error in completeBonusQuest:', {
