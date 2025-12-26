@@ -1,8 +1,8 @@
 /**
  * Boost consumption helper for database-driven boosts
  *
- * Uses the public.consume_active_boost RPC to atomically consume boosts
- * and prevent double-consumption via event_id idempotency.
+ * Uses the public.consume_boost_once RPC to atomically consume boosts.
+ * Boosts are 1-time use (uses_total=1, uses_remaining starts at 1, decrements to 0 when used).
  */
 
 import { supabaseBrowser } from '@/lib/supabase-browser';
@@ -18,31 +18,110 @@ export interface ConsumeBoostResult {
   boostKey: string | null;
 }
 
+export interface ActiveBoostCheck {
+  exists: boolean;
+  boostKey: string | null;
+  scope: BoostScope | null;
+  multiplier: number;
+  addAmount: number;
+  usesRemaining: number;
+}
+
+// Mapping from scope to boost key for legacy compatibility
+const SCOPE_TO_BOOST_KEY: Record<BoostScope, string> = {
+  'listen_rewards': 'deep_focus',
+  'journal_rewards': 'reflection_boost',
+  'streak_rewards': 'streak_shield',
+};
+
 /**
- * Attempt to consume an active boost for a given scope.
+ * Check if an active boost exists for the given boost_key and scope.
+ * Does NOT consume the boost - use consumeBoostOnce for that.
  *
+ * @param boostKey - The boost key (e.g., 'deep_focus', 'reflection_boost', 'streak_shield')
  * @param scope - The boost scope: 'listen_rewards', 'journal_rewards', or 'streak_rewards'
- * @param eventId - A stable, unique event ID to prevent double consumption
- *                  Examples:
- *                  - listen_reward:${userId}:${songId}:${dateKey}
- *                  - journal_reward:${journalEntryId}
- *                  - streak_break:${userId}:${dateKey}
+ * @param source - Optional source filter (e.g., 'planet_click', 'relic')
+ */
+export async function checkActiveBoost(
+  boostKey: string,
+  scope: BoostScope,
+  source?: string
+): Promise<ActiveBoostCheck> {
+  try {
+    const now = new Date().toISOString();
+
+    let query = supabaseBrowser
+      .from('user_active_boosts')
+      .select('boost_key, scope, multiplier, add_amount, uses_remaining')
+      .eq('boost_key', boostKey)
+      .eq('scope', scope)
+      .gt('uses_remaining', 0)
+      .lte('starts_at', now)
+      .or(`expires_at.is.null,expires_at.gt.${now}`)
+      .limit(1);
+
+    if (source) {
+      query = query.eq('source', source);
+    }
+
+    const { data, error } = await query.single();
+
+    if (error || !data) {
+      return {
+        exists: false,
+        boostKey: null,
+        scope: null,
+        multiplier: 1,
+        addAmount: 0,
+        usesRemaining: 0
+      };
+    }
+
+    return {
+      exists: true,
+      boostKey: data.boost_key,
+      scope: data.scope as BoostScope,
+      multiplier: data.multiplier ?? 1,
+      addAmount: data.add_amount ?? 0,
+      usesRemaining: data.uses_remaining
+    };
+  } catch (err) {
+    console.error(`[checkActiveBoost] Error for boostKey=${boostKey}, scope=${scope}:`, err);
+    return {
+      exists: false,
+      boostKey: null,
+      scope: null,
+      multiplier: 1,
+      addAmount: 0,
+      usesRemaining: 0
+    };
+  }
+}
+
+/**
+ * Atomically consume a boost using the consume_boost_once RPC.
+ * Only apply the boost effect if didConsume === true.
+ *
+ * @param boostKey - The boost key (e.g., 'deep_focus', 'reflection_boost', 'streak_shield')
+ * @param scope - The boost scope: 'listen_rewards', 'journal_rewards', or 'streak_rewards'
+ * @param source - Optional source filter (e.g., 'planet_click', 'relic')
  *
  * @returns ConsumeBoostResult with multiplier/addAmount applied if didConsume is true
  */
-export async function consumeBoost(
+export async function consumeBoostOnce(
+  boostKey: string,
   scope: BoostScope,
-  eventId: string
+  source?: string
 ): Promise<ConsumeBoostResult> {
   try {
-    const { data, error } = await supabaseBrowser.rpc('consume_active_boost', {
+    const { data, error } = await supabaseBrowser.rpc('consume_boost_once', {
+      p_boost_key: boostKey,
       p_scope: scope,
-      p_event_id: eventId
+      p_source: source ?? null
     });
 
     if (error) {
-      console.warn(`[consumeBoost] RPC error for scope=${scope}:`, error.message);
-      // Return no-boost result on error
+      console.warn(`[consumeBoostOnce] RPC error for boostKey=${boostKey}, scope=${scope}:`, error.message);
       return {
         multiplier: 1,
         addAmount: 0,
@@ -66,8 +145,7 @@ export async function consumeBoost(
     }
 
     // Boost was consumed successfully
-    console.log(`[consumeBoost] Consumed boost for scope=${scope}, eventId=${eventId}:`, {
-      boostKey: data.boost_key,
+    console.log(`[consumeBoostOnce] Consumed boost boostKey=${boostKey}, scope=${scope}:`, {
       multiplier: data.multiplier,
       addAmount: data.add_amount,
       usesRemaining: data.uses_remaining
@@ -82,7 +160,7 @@ export async function consumeBoost(
       boostKey: data.boost_key ?? null
     };
   } catch (err) {
-    console.error(`[consumeBoost] Unexpected error for scope=${scope}:`, err);
+    console.error(`[consumeBoostOnce] Unexpected error for boostKey=${boostKey}, scope=${scope}:`, err);
     return {
       multiplier: 1,
       addAmount: 0,
@@ -92,6 +170,20 @@ export async function consumeBoost(
       boostKey: null
     };
   }
+}
+
+/**
+ * Legacy wrapper for backward compatibility.
+ * Maps scope to boost_key and calls consumeBoostOnce.
+ *
+ * @deprecated Use consumeBoostOnce directly with explicit boost_key
+ */
+export async function consumeBoost(
+  scope: BoostScope,
+  _eventId: string
+): Promise<ConsumeBoostResult> {
+  const boostKey = SCOPE_TO_BOOST_KEY[scope];
+  return consumeBoostOnce(boostKey, scope);
 }
 
 /**
@@ -116,13 +208,7 @@ export interface ActiveBoost {
 const BOOST_DISPLAY_INFO: Record<string, { name: string; effect: string }> = {
   'deep_focus': { name: 'Deep Focus', effect: '2× Listen Rewards' },
   'reflection_boost': { name: 'Reflection Boost', effect: '2× Journal Rewards' },
-  'streak_shield': { name: 'Streak Shield', effect: '+1 Streak Rewards' },
-};
-
-const SCOPE_TO_BOOST_KEY: Record<BoostScope, string> = {
-  'listen_rewards': 'deep_focus',
-  'journal_rewards': 'reflection_boost',
-  'streak_rewards': 'streak_shield',
+  'streak_shield': { name: 'Streak Shield', effect: 'Protects Streak' },
 };
 
 export async function fetchActiveBoosts(userId: string): Promise<ActiveBoost[]> {

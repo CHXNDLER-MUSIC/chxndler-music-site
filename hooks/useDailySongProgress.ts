@@ -16,7 +16,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { logHeartcoinTransaction } from '@/utils/heartcoins';
-import { consumeBoost } from '@/lib/boosts';
+import { consumeBoostOnce } from '@/lib/boosts';
 
 // Types
 interface DailyProgressState {
@@ -194,11 +194,8 @@ export function useDailySongProgress({
     }
 
     try {
-      // Generate stable event ID for idempotent boost consumption
-      const eventId = `listen_reward:${userId}:${songId}:${day}`;
-
       // Attempt to consume an active listen boost (Deep Focus)
-      const boostResult = await consumeBoost('listen_rewards', eventId);
+      const boostResult = await consumeBoostOnce('deep_focus', 'listen_rewards');
 
       // Calculate final reward amount
       const baseAmount = 1;
