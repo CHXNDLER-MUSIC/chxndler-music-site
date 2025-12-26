@@ -6,9 +6,6 @@ import type { ElementType } from "@/lib/planetConfig";
 import { RELIC_CELEBRATION_EVENT } from "./RelicCelebration";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
-// Bonus quest ID for Element of the Day
-const ELEMENT_OF_DAY_BONUS_QUEST_ID = "4c24a82f-92ba-44f4-9386-d8c6438498bd";
-
 interface ElementOfDayData {
   element: ElementType;
   intention: string | null;
@@ -30,8 +27,10 @@ export default function ElementOfDayModal() {
   const [data, setData] = useState<ElementOfDayData | null>(null);
   const [claimed, setClaimed] = useState(false);
   // Bonus quest state
+  const [bonusQuestId, setBonusQuestId] = useState<string | null>(null);
   const [isCompletingElementQuest, setIsCompletingElementQuest] = useState(false);
   const [elementQuestCompleted, setElementQuestCompleted] = useState(false);
+
   const hoverAudioRef = useRef<HTMLAudioElement | null>(null);
   const clickAudioRef = useRef<HTMLAudioElement | null>(null);
   const alienWaveAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -78,23 +77,37 @@ export default function ElementOfDayModal() {
     elementSoundRef.current.play().catch(() => {});
   }, []);
 
-  // Check if user already completed the element bonus quest today (on mount)
-  // RLS handles user_id filtering, so we only filter by bonus_quest_id and date
+  // On mount: fetch quest id and check if already completed today
   useEffect(() => {
-    const checkBonusQuestCompletion = async () => {
+    const initBonusQuest = async () => {
       try {
-        // Get today's date in UTC (YYYY-MM-DD format)
-        const todayUTC = new Date().toISOString().split('T')[0];
+        // 1. Fetch quest id from bonus_quests where quest_key='TAP_ELEMENT_OF_DAY'
+        const { data: quest, error: questError } = await supabaseBrowser
+          .from('bonus_quests')
+          .select('id')
+          .eq('quest_key', 'TAP_ELEMENT_OF_DAY')
+          .single();
 
-        // Query user_bonus_quest_completions for this bonus_quest_id and today's date
-        // Do NOT filter by user_id - RLS handles that automatically
+        if (questError || !quest) {
+          console.error('[ElementOfDayModal] Error fetching bonus quest:', questError);
+          return;
+        }
+
+        const questId = quest.id;
+        setBonusQuestId(questId);
+        console.log('[ElementOfDayModal] Found bonus quest id:', questId);
+
+        // 2. Check if completion exists today using completed_on (date field)
+        const todayDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
         const { data: completions, error } = await supabaseBrowser
           .from('user_bonus_quest_completions')
-          .select('id, completed_at')
-          .eq('bonus_quest_id', ELEMENT_OF_DAY_BONUS_QUEST_ID)
-          .gte('completed_at', `${todayUTC}T00:00:00Z`)
-          .lt('completed_at', `${todayUTC}T23:59:59.999Z`)
+          .select('id')
+          .eq('bonus_quest_id', questId)
+          .eq('completed_on', todayDate)
           .limit(1);
+
+        // RLS handles user_id filtering automatically
 
         if (error) {
           console.error('[ElementOfDayModal] Error checking bonus quest completion:', error);
@@ -104,14 +117,13 @@ export default function ElementOfDayModal() {
         if (completions && completions.length > 0) {
           console.log('[ElementOfDayModal] Bonus quest already completed today:', completions[0]);
           setElementQuestCompleted(true);
-          // Streak days would need to be fetched from user_bonus_quests if needed
         }
       } catch (err) {
-        console.error('[ElementOfDayModal] Error checking bonus quest completion:', err);
+        console.error('[ElementOfDayModal] Error in initBonusQuest:', err);
       }
     };
 
-    checkBonusQuestCompletion();
+    initBonusQuest();
   }, []);
 
   const handleClose = useCallback(() => {
@@ -124,7 +136,7 @@ export default function ElementOfDayModal() {
   // Element of Day click -> claim_daily_checkin RPC + complete_bonus_quest RPC
   const handleImageClick = useCallback(async () => {
     // Guard against double-submit or already completed
-    if (!data || claimed || isCompletingElementQuest || elementQuestCompleted) return;
+    if (!data || claimed || isCompletingElementQuest || elementQuestCompleted || !bonusQuestId) return;
 
     // ========== AUTH CHECK - Must be authenticated before any RPC calls ==========
     const { data: { session } } = await supabaseBrowser.auth.getSession();
@@ -179,76 +191,71 @@ export default function ElementOfDayModal() {
       }
 
       // ========== 2. INSERT into user_bonus_quest_completions ==========
+      const todayDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
       console.log('[ElementOfDayModal] Inserting bonus quest completion:', {
-        bonus_quest_id: ELEMENT_OF_DAY_BONUS_QUEST_ID
+        bonus_quest_id: bonusQuestId,
+        completed_on: todayDate
       });
 
       let bonusQuestInserted = false;
 
-      // First check if already completed today
-      const todayUTC = new Date().toISOString().split('T')[0];
-      const { data: existingCompletion } = await supabaseBrowser
+      // Try to insert - unique index will prevent duplicates
+      const { data: insertData, error: insertError } = await supabaseBrowser
         .from('user_bonus_quest_completions')
-        .select('id')
-        .eq('bonus_quest_id', ELEMENT_OF_DAY_BONUS_QUEST_ID)
-        .gte('completed_at', `${todayUTC}T00:00:00Z`)
-        .lt('completed_at', `${todayUTC}T23:59:59.999Z`)
-        .limit(1);
+        .insert({
+          user_id: userId,
+          bonus_quest_id: bonusQuestId,
+          completed_on: todayDate,
+        })
+        .select()
+        .single();
 
-      if (existingCompletion && existingCompletion.length > 0) {
-        console.log('[ElementOfDayModal] Bonus quest already completed today, skipping insert');
-        setElementQuestCompleted(true);
-      } else {
-        // Insert new completion record
-        const { data: insertData, error: insertError } = await supabaseBrowser
-          .from('user_bonus_quest_completions')
-          .insert({
-            user_id: userId,
-            bonus_quest_id: ELEMENT_OF_DAY_BONUS_QUEST_ID,
-          })
-          .select()
-          .single();
-
-        if (insertError) {
+      if (insertError) {
+        // Check for unique violation (23505 is PostgreSQL unique_violation code)
+        if (insertError.code === '23505') {
+          console.log('[ElementOfDayModal] Already completed today (unique violation), skipping relic award');
+        } else {
           console.error('[ElementOfDayModal] Error inserting bonus quest completion:', {
             message: insertError.message,
             details: insertError.details,
             hint: insertError.hint,
             code: insertError.code,
           });
-        } else {
-          console.log('[ElementOfDayModal] Bonus quest completion inserted:', insertData);
-          bonusQuestInserted = true;
-          setElementQuestCompleted(true);
+        }
+        setElementQuestCompleted(true);
+      } else {
+        console.log('[ElementOfDayModal] Bonus quest completion inserted:', insertData);
+        bonusQuestInserted = true;
+        setElementQuestCompleted(true);
 
-          // Update or create user_bonus_quests record for total completion tracking
-          const { data: existingRecord } = await supabaseBrowser
+        // Update or create user_bonus_quests record for total completion tracking
+        const { data: existingRecord } = await supabaseBrowser
+          .from('user_bonus_quests')
+          .select('times_completed')
+          .eq('user_id', userId)
+          .eq('bonus_quest_id', bonusQuestId)
+          .maybeSingle();
+
+        if (existingRecord) {
+          await supabaseBrowser
             .from('user_bonus_quests')
-            .select('times_completed')
+            .update({
+              times_completed: existingRecord.times_completed + 1,
+              last_completed_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
             .eq('user_id', userId)
-            .eq('bonus_quest_id', ELEMENT_OF_DAY_BONUS_QUEST_ID)
-            .maybeSingle();
-
-          if (existingRecord) {
-            await supabaseBrowser
-              .from('user_bonus_quests')
-              .update({
-                times_completed: existingRecord.times_completed + 1,
-                last_completed_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              })
-              .eq('user_id', userId)
-              .eq('bonus_quest_id', ELEMENT_OF_DAY_BONUS_QUEST_ID);
-          } else {
-            await supabaseBrowser
-              .from('user_bonus_quests')
-              .insert({
-                user_id: userId,
-                bonus_quest_id: ELEMENT_OF_DAY_BONUS_QUEST_ID,
-                times_completed: 1,
-                last_completed_at: new Date().toISOString()
-              });
-          }
+            .eq('bonus_quest_id', bonusQuestId);
+        } else {
+          await supabaseBrowser
+            .from('user_bonus_quests')
+            .insert({
+              user_id: userId,
+              bonus_quest_id: bonusQuestId,
+              times_completed: 1,
+              last_completed_at: new Date().toISOString()
+            });
         }
       }
 
@@ -318,7 +325,7 @@ export default function ElementOfDayModal() {
         }, 100);
       }, 1000); // Wait 1 second before relic celebration
     }, 300);
-  }, [data, claimed, isCompletingElementQuest, elementQuestCompleted, playElementSound]);
+  }, [data, claimed, isCompletingElementQuest, elementQuestCompleted, bonusQuestId, playElementSound]);
 
   useEffect(() => {
     const handleShow = async (e: CustomEvent<ElementOfDayData>) => {

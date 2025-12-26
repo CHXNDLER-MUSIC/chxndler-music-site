@@ -19,6 +19,7 @@ import { ELEMENT_COLORS, Element } from '@/lib/planets';
 import { triggerMerchCelebration } from '@/utils/merchCelebration';
 import { triggerHeartCoinCelebration } from '@/utils/heartcoinCelebration';
 import { triggerElementCardCelebration } from '@/utils/elementCardCelebration';
+import { triggerCardCelebration } from '@/utils/cardCelebration';
 
 // Get basePath from env (supports deployments with basePath like /cockpit)
 const basePath = (process.env.NEXT_PUBLIC_BASE_PATH || '').replace(/\/$/, '');
@@ -1501,7 +1502,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         setHeartCoins(newBalance);
         onHeartCoinsChange?.(newBalance);
       }
-      try { sfx.play('card-ding', 0.8); } catch {}
 
       // Kick off refreshes from single source of truth
       const refreshes: Promise<any>[] = [];
@@ -1519,8 +1519,19 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       setCardPurchaseStep('confirm');
       setEnlargedCard(null);
 
-      // Success toast
-      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: `Card acquired${selectedCard?.card_name ? `: ${selectedCard.card_name}` : ''}`, type: 'success' } })); } catch {}
+      // Trigger card celebration, then open binder after celebration ends (3 seconds)
+      const cardImage = selectedCard?.artwork_url || selectedCard?.image_url || '';
+      const cardName = selectedCard?.card_name || 'Card';
+      if (cardImage) {
+        triggerCardCelebration(cardImage, cardName);
+        // Open binder after celebration ends (3 seconds)
+        setTimeout(() => {
+          try { window.dispatchEvent(new CustomEvent('openBinderModal')); } catch {}
+        }, 3000);
+      } else {
+        // No image, just open binder immediately
+        try { window.dispatchEvent(new CustomEvent('openBinderModal')); } catch {}
+      }
     } catch (err: any) {
       console.error('[CARD PURCHASE] Unexpected error', err);
       const message = err?.message || 'Unexpected error during purchase';

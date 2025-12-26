@@ -2693,7 +2693,7 @@ const HUDPanel = React.memo(function HUDPanel({
                             target="_blank"
                             rel="noopener noreferrer"
                             className="apple-btn-waveform-hud"
-                            style={{ marginTop: 1 }}
+                            style={{ marginTop: 1, position: 'relative', overflow: 'hidden' }}
                             title={isProfileFallback ? "Open CHXNDLER on Apple Music" : "Open on Apple Music"}
                             aria-label={isProfileFallback ? "Open CHXNDLER on Apple Music" : `Open ${currentSong?.title || 'current track'} on Apple Music`}
                             data-song={currentSong?.title || ''}
@@ -2753,15 +2753,22 @@ const HUDPanel = React.memo(function HUDPanel({
                             data-slug={currentSong?.id || ''}
                             data-id="yt"
                             onClick={(e) => {
-                              try { e.preventDefault(); } catch {}
+                              e.preventDefault();
+                              e.stopPropagation();
                               try { sfx.play('join-aliens', 0.9); } catch {}
+                              // For channel URLs (homepage), always open directly - can't embed channels
+                              if (isProfileFallback) {
+                                window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
+                                return;
+                              }
+                              // For video links, try embed popover
                               try {
                                 const { toYouTubeEmbed } = require('@/lib/youtube');
                                 const embed = toYouTubeEmbed(youtubeUrl);
                                 if (embed) { setYtEmbedUrl(embed); setShowYouTubePopover(true); }
                                 else { window.open(youtubeUrl, '_blank', 'noopener,noreferrer'); }
                               } catch {
-                                try { window.open(youtubeUrl, '_blank', 'noopener,noreferrer'); } catch {}
+                                window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
                               }
                             }}
                             onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
