@@ -492,9 +492,14 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
 
       if (response?.error) {
         const errorMessage = response.error.message || 'Purchase failed';
-        
+
         if (errorMessage.includes('INSUFFICIENT_FUNDS')) {
           setPurchaseState('insufficient');
+          return;
+        } else if (errorMessage.includes('NO_AVAILABLE_SLOT')) {
+          // User needs to unlock more binder slots
+          alert('Unlock a binder slot to buy more cards.');
+          resetPurchaseState();
           return;
         } else {
           throw new Error(errorMessage);
@@ -503,10 +508,16 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
 
       // Refresh profile to update HeartCoin balance
       await updateProfile({});
-      
+
+      // Refresh binder slots to show the newly purchased card
+      await refreshBinderSlots();
+
+      // Dispatch event to notify other components
+      window.dispatchEvent(new CustomEvent('binder:refresh'));
+
       setPurchaseState('success');
       try { sfx.play('card-ding', 0.8); } catch {}
-      
+
       // Trigger card celebration with the purchased card
       triggerCardCelebration(currentCard.artwork_url, currentCard.card_name);
       
@@ -825,7 +836,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       
       <PopoutShell 
         title="DIGITAL CARD BINDER" 
-        subtitle={`CARDS COLLECTED: ${profile?.cards?.length || 0}`}
+        subtitle={`CARDS COLLECTED: ${binderSlots.filter(s => s.card_id).length}`}
         minWidth={'min(96vw, 440px)'}
         maxHeight={'78vh'}
         fitToPowerTop
@@ -950,78 +961,76 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
             {!showFullCollection ? (
               // Unified Binder Slot Rendering - All Pages
               <div className="relative">
+                {/* Left navigation arrow */}
+                {pageIndex > 0 && (
+                  <div
+                    className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10"
+                    style={{ pointerEvents: 'auto' }}
+                  >
+                    <div
+                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
+                      onClick={() => {
+                        try { sfx.play('click', 0.7); } catch {}
+                        setPageIndex(prev => Math.max(0, prev - 1));
+                      }}
+                      onMouseEnter={(e) => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                      style={{
+                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
+                        backdropFilter: 'blur(10px)',
+                      }}
+                    >
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                      </svg>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
-                  {Array.from({ length: 6 }, (_, index) => {
-                    // Check if there's a collected card for this slot
-                    const collectedCard = profile?.cards?.[index];
-                    const hasCard = !!collectedCard?.cards;
-
-                    // Use card_slots to determine locked slots
-                    const cardSlots = profile?.card_slots ?? 0;
-                    const isLockedSlot = index >= cardSlots;
-
-                    // Show CHXNDLER card in first slot if no card is there
-                    const isFirstSlotWithChxndler = index === 0 && !hasCard;
-
-                    // Force 2nd slot (index 1) to always be empty with dotted border
-                    const isSecondSlotEmpty = index === 1;
+                  {/* Render slots from the view - 6 per page */}
+                  {(profile?.id ? visibleSlots : previewSlots).map((slot, idx) => {
+                    const isLocked = !slot.is_unlocked;
+                    const hasCard = !!slot.card_id;
+                    const isEmpty = slot.is_unlocked && !slot.card_id;
 
                     return (
                       <div
-                        key={`slot-${index}`}
+                        key={`slot-${slot.slot_index}`}
                         className={`rounded-lg border transition-all duration-300 w-28 h-36 bg-black/30 ${
-                          isSecondSlotEmpty
-                            ? 'border-white/10 cursor-pointer hover:scale-105'
-                            : isLockedSlot
+                          isLocked
                             ? 'border-white/5 cursor-default'
-                            : hasCard || isFirstSlotWithChxndler
+                            : hasCard
                             ? 'border-white/10 cursor-pointer hover:scale-105'
                             : 'border-white/10 cursor-pointer hover:scale-105'
                         }`}
                         onMouseEnter={() => {
-                          if ((hasCard || isFirstSlotWithChxndler) && !isLockedSlot) {
+                          if (!isLocked) {
                             try { sfx.play('hover', 0.3); } catch {}
                           }
                         }}
                         onClick={() => {
-                          // 2nd slot is always empty - open HeartCoin modal
-                          if (isSecondSlotEmpty) {
-                            try { sfx.play('click', 0.4); } catch {}
-                            try {
-                              window.dispatchEvent(new CustomEvent('openHeartCoinCards', {
-                                detail: { source: 'binder_empty_slot' }
-                              }));
-                            } catch {}
-                            return;
-                          }
-                          // CHXNDLER card is always clickable (first slot fallback)
-                          if (isFirstSlotWithChxndler) {
-                            try { sfx.play('card-ding', 0.45); } catch {}
-                            setSelectedCard({
-                              name: 'CHXNDLER',
-                              image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
-                              rarity: 'Common',
-                              element: 'ALL'
-                            });
-                            setCardRotation(0);
-                            setCardOpen(true);
-                            return;
-                          }
-                          if (isLockedSlot) {
+                          if (isLocked) {
                             // Do nothing for locked slots
                             return;
                           }
-                          if (hasCard && collectedCard?.cards) {
+                          if (hasCard && slot.card_name) {
+                            // Open expanded card view
                             try { sfx.play('card-ding', 0.8); } catch {}
                             setSelectedCard({
-                              name: collectedCard.cards.card_name,
-                              image: getCardImage(collectedCard.cards.card_name, collectedCard.cards.element),
-                              rarity: collectedCard.cards.rarity,
-                              element: collectedCard.cards.element
+                              name: slot.card_name,
+                              image: slot.artwork_url || getCardImage(slot.card_name, slot.element || 'ALL'),
+                              rarity: slot.rarity || 'Common',
+                              element: slot.element || 'ALL'
                             });
                             setCardRotation(0);
                             setCardOpen(true);
-                          } else if (!hasCard && !isLockedSlot) {
+                          } else if (isEmpty) {
                             // Empty slot: open HeartCoin modal with CARDS tab
                             try { sfx.play('click', 0.4); } catch {}
                             try {
@@ -1031,98 +1040,34 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                             } catch {}
                           }
                         }}
-                        onMouseEnter={() => {
-                          if (isSecondSlotEmpty || isFirstSlotWithChxndler || !isLockedSlot) {
-                            try { sfx.play('hover', 0.3); } catch {}
-                          }
-                        }}
                         style={{
-                          boxShadow: isSecondSlotEmpty
-                            ? 'none'
-                            : hasCard || isFirstSlotWithChxndler
+                          boxShadow: hasCard
                             ? '0 0 25px rgba(255,105,180,0.8), 0 0 40px rgba(255,105,180,0.6), 0 0 60px rgba(255,105,180,0.4)'
-                            : !hasCard && !isFirstSlotWithChxndler && !isLockedSlot
+                            : isEmpty
                             ? '0 0 15px rgba(255,105,180,0.4), 0 0 25px rgba(255,105,180,0.2), 0 0 35px rgba(255,105,180,0.1)'
                             : '0 0 5px rgba(255,105,180,0.1)',
                           aspectRatio: '5/8',
-                          border: isSecondSlotEmpty
-                            ? '2px dotted rgba(255,105,180,0.5)'
-                            : !hasCard && !isFirstSlotWithChxndler && !isLockedSlot
-                            ? '2px dotted rgba(255,105,180,0.5)'
-                            : undefined
+                          border: isEmpty ? '2px dotted rgba(255,105,180,0.5)' : undefined
                         }}
                       >
                         <div className="relative w-full h-full overflow-hidden rounded-lg">
-                          {isSecondSlotEmpty ? (
-                            /* 2nd slot is always empty with no content */
-                            <div className="w-full h-full" />
-                          ) : hasCard && collectedCard?.cards ? (
-                            <>
-                              {(() => {
-                                // Create a card object to check gate state
-                                const cardData = {
-                                  id: collectedCard.cards.id,
-                                  title: collectedCard.cards.card_name,
-                                  card_name: collectedCard.cards.card_name,
-                                  image_url: getCardImage(collectedCard.cards.card_name, collectedCard.cards.element),
-                                  element: collectedCard.cards.element,
-                                  rarity: collectedCard.cards.rarity,
-                                  is_released: collectedCard.cards.is_released ?? true,
-                                  min_tier: (collectedCard.cards.min_tier as CardTier) ?? 'wanderer'
-                                };
-                                const gateState = getCardState(cardData);
-                                const isLocked = gateState === 'comingSoon' || gateState === 'lockedTier';
-                                
-                                return (
-                                  <div className="relative w-full h-full">
-                                    <img
-                                      src={getCardImage(collectedCard.cards.card_name, collectedCard.cards.element)}
-                                      alt={collectedCard.cards.card_name}
-                                      className={
-                                        isLocked
-                                          ? "w-full h-full object-cover blur-xl brightness-50 opacity-60 transition-all duration-300"
-                                          : "w-full h-full object-cover transition-all duration-300"
-                                      }
-                                      draggable={false}
-                                    />
-                                    {isLocked && (
-                                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-                                        <div className={`px-2 py-1 rounded-lg bg-black/60 text-[9px] font-semibold tracking-wide backdrop-blur-md ${
-                                          gateState === 'comingSoon'
-                                            ? 'border border-pink-400/70 text-pink-100 shadow-[0_0_15px_rgba(252,84,175,0.7)]'
-                                            : cardData.min_tier === 'dreamer'
-                                              ? 'border border-yellow-400/70 text-yellow-100 shadow-[0_0_15px_rgba(255,215,0,0.7)]'
-                                              : cardData.min_tier === 'lover'
-                                                ? 'border border-pink-400/70 text-pink-100 shadow-[0_0_15px_rgba(252,84,175,0.7)]'
-                                                : 'border border-pink-400/70 text-pink-100 shadow-[0_0_15px_rgba(252,84,175,0.7)]'
-                                        }`}>
-                                        </div>
-                                      </div>
-                                    )}
-                                    <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-green-500/80 rounded-full flex items-center justify-center">
-                                      <svg viewBox="0 0 24 24" width="10" height="10" fill="white">
-                                        <path d="M20 6L9 17l-5-5"/>
-                                      </svg>
-                                    </div>
-                                  </div>
-                                );
-                              })()}
-                            </>
-                          ) : isFirstSlotWithChxndler ? (
-                            <>
+                          {hasCard && slot.card_name ? (
+                            /* Card with artwork */
+                            <div className="relative w-full h-full">
                               <img
-                                src="https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910"
-                                alt="CHXNDLER"
-                                className="w-full h-full object-cover"
+                                src={slot.artwork_url || getCardImage(slot.card_name, slot.element || 'ALL')}
+                                alt={slot.card_name}
+                                className="w-full h-full object-cover transition-all duration-300"
                                 draggable={false}
                               />
-                              <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-blue-500/80 rounded-full flex items-center justify-center">
+                              <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-green-500/80 rounded-full flex items-center justify-center">
                                 <svg viewBox="0 0 24 24" width="10" height="10" fill="white">
-                                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                  <path d="M20 6L9 17l-5-5"/>
                                 </svg>
                               </div>
-                            </>
-                          ) : isLockedSlot ? (
+                            </div>
+                          ) : isLocked ? (
+                            /* Locked slot */
                             <div className="w-full h-full bg-gradient-to-br from-pink-500/5 to-purple-500/5 flex items-center justify-center">
                               <div
                                 className="text-xs font-bold text-center"
@@ -1137,13 +1082,12 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                               </div>
                             </div>
                           ) : (
-                            <div
-                              className="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-purple-500/10 flex items-center justify-center"
-                            >
-                              <div 
+                            /* Empty unlocked slot */
+                            <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-purple-500/10 flex items-center justify-center">
+                              <div
                                 className="text-xs font-bold"
-                                style={{ 
-                                  color: '#FFB6C1', 
+                                style={{
+                                  color: '#FFB6C1',
                                   textShadow: '0 0 4px rgba(255,182,193,0.6)',
                                   fontSize: '8px'
                                 }}
@@ -1157,68 +1101,18 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     );
                   })}
                 </div>
-                
-                
-                
-                {/* Right arrow to go to second page - positioned within popup on the right side */}
-                <div 
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10"
-                  style={{
-                    pointerEvents: 'auto'
-                  }}
-                >
-                  <div 
-                    className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                    onClick={() => {
-                      try { sfx.play('click', 0.7); } catch {}
-                      const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                      const currentIndex = pages.indexOf(binderPage);
-                      if (currentIndex < pages.length - 1) {
-                        setBinderPage(pages[currentIndex + 1] as any);
-                      }
-                    }}
-                    onMouseEnter={(e) => {
-                      try { sfx.play('hover', 0.3); } catch {}
-                      e.currentTarget.style.transform = 'scale(1.1)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'scale(1)';
-                    }}
-                    style={{
-                      boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                      backdropFilter: 'blur(10px)',
-                    }}
+
+                {/* Right navigation arrow */}
+                {pageIndex < totalPages - 1 && (
+                  <div
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10"
+                    style={{ pointerEvents: 'auto' }}
                   >
-                    <svg 
-                      viewBox="0 0 24 24" 
-                      width="16" 
-                      height="16" 
-                      fill="currentColor"
-                    >
-                      <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-                    </svg>
-                  </div>
-                </div>
-              </div>
-              ) : binderPage === 'second' ? (
-                // User's Binder - Second Page - Show 10 locked slots
-                <div className="relative">
-                  {/* Left arrow to go back to first page */}
-                  <div 
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
+                    <div
                       className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
                       onClick={() => {
                         try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex > 0) {
-                          setBinderPage(pages[currentIndex - 1] as any);
-                        }
+                        setPageIndex(prev => Math.min(totalPages - 1, prev + 1));
                       }}
                       onMouseEnter={(e) => {
                         try { sfx.play('hover', 0.3); } catch {}
@@ -1232,1240 +1126,13 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                         backdropFilter: 'blur(10px)',
                       }}
                     >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
-                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                      </svg>
-                    </div>
-                  </div>
-                  {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 8; // Slots 8-11
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 transition-all duration-300 w-28 h-36"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  
-                  
-                  {/* Right arrow to go to next page - positioned within popup on the right side */}
-                  <div 
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex < pages.length - 1) {
-                          setBinderPage(pages[currentIndex + 1] as any);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                         <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
                       </svg>
                     </div>
                   </div>
-                </div>
-              ) : binderPage === 'third' ? (
-                // User's Binder - Third Page - Show 10 locked slots
-                <div className="relative">
-                  {/* Left arrow to go to previous page */}
-                  <div 
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex > 0) {
-                          setBinderPage(pages[currentIndex - 1] as any);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
-                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                      </svg>
-                    </div>
-                  </div>
-                  
-                  {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 16; // Slots 16-19
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 transition-all duration-300 w-28 h-36"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  
-                  
-                  {/* Right arrow to go to next page */}
-                  <div 
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex < pages.length - 1) {
-                          setBinderPage(pages[currentIndex + 1] as any);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
-                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              ) : binderPage === 'fourth' ? (
-                // User's Binder - Fourth Page - Show 10 locked slots
-                <div className="relative">
-                  {/* Left arrow to go to previous page */}
-                  <div 
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex > 0) {
-                          setBinderPage(pages[currentIndex - 1] as any);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
-                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                      </svg>
-                    </div>
-                  </div>
-                  
-                  {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 24; // Slots 24-27
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 transition-all duration-300 w-28 h-36"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  
-                  
-                  {/* Right arrow to go to next page */}
-                  <div 
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex < pages.length - 1) {
-                          setBinderPage(pages[currentIndex + 1] as any);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
-                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              ) : binderPage === 'fifth' ? (
-                // User's Binder - Fifth Page - Show 10 locked slots
-                <div className="relative">
-                  {/* Left arrow to go to previous page */}
-                  <div 
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex > 0) {
-                          setBinderPage(pages[currentIndex - 1] as any);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
-                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                      </svg>
-                    </div>
-                  </div>
-                  
-                  {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 32; // Slots 32-35
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 transition-all duration-300 w-28 h-36"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  
-                  
-                  {/* Right arrow to go to next page */}
-                  <div 
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex < pages.length - 1) {
-                          setBinderPage(pages[currentIndex + 1] as any);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
-                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              ) : binderPage === 'sixth' ? (
-                // User's Binder - Sixth Page - Show 10 locked slots (NO RIGHT ARROW)
-                <div className="relative">
-                  {/* Left arrow to go to previous page */}
-                  <div 
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex > 0) {
-                          setBinderPage(pages[currentIndex - 1] as any);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
-                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                      </svg>
-                    </div>
-                  </div>
-                  
-                  {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 40; // Slots 40-43
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 transition-all duration-300 w-28 h-36"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  
-                  
-                  {/* Right arrow to go to next page */}
-                  <div 
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex < pages.length - 1) {
-                          setBinderPage(pages[currentIndex + 1] as any);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
-                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              ) : binderPage === 'seventh' ? (
-                // User's Binder - Seventh Page - Show 10 locked slots
-                <div className="relative">
-                  {/* Left arrow to go to previous page */}
-                  <div 
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex > 0) {
-                          setBinderPage(pages[currentIndex - 1] as any);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
-                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                      </svg>
-                    </div>
-                  </div>
-                  
-                  {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 48; // Slots 48-51
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 transition-all duration-300 w-28 h-36"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  
-                  
-                  {/* Right arrow to go to next page */}
-                  <div 
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex < pages.length - 1) {
-                          setBinderPage(pages[currentIndex + 1] as any);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
-                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              ) : binderPage === 'eighth' ? (
-                // User's Binder - Eighth Page - Show 10 locked slots
-                <div className="relative">
-                  {/* Left arrow to go to previous page */}
-                  <div 
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex > 0) {
-                          setBinderPage(pages[currentIndex - 1] as any);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
-                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                      </svg>
-                    </div>
-                  </div>
-                  
-                  {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 56; // Slots 56-59
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 transition-all duration-300 w-28 h-36"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  
-                  
-                  {/* Right arrow to go to next page */}
-                  <div 
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex < pages.length - 1) {
-                          setBinderPage(pages[currentIndex + 1] as any);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
-                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              ) : binderPage === 'ninth' ? (
-                // User's Binder - Ninth Page - Show 10 locked slots
-                <div className="relative">
-                  {/* Left arrow to go to previous page */}
-                  <div 
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex > 0) {
-                          setBinderPage(pages[currentIndex - 1] as any);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
-                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                      </svg>
-                    </div>
-                  </div>
-                  
-                  {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 64; // Slots 64-67
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 transition-all duration-300 w-28 h-36"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  
-                  
-                  {/* Right arrow to go to next page */}
-                  <div 
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex < pages.length - 1) {
-                          setBinderPage(pages[currentIndex + 1] as any);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
-                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              ) : binderPage === 'tenth' ? (
-                // User's Binder - Tenth Page - Show 10 locked slots
-                <div className="relative">
-                  {/* Left arrow to go to previous page */}
-                  <div 
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex > 0) {
-                          setBinderPage(pages[currentIndex - 1] as any);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
-                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                      </svg>
-                    </div>
-                  </div>
-                  
-                  {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 72; // Slots 72-75
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 transition-all duration-300 w-28 h-36"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  
-                  
-                  {/* Right arrow to go to next page */}
-                  <div 
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex < pages.length - 1) {
-                          setBinderPage(pages[currentIndex + 1] as any);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
-                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              ) : binderPage === 'eleventh' ? (
-                // User's Binder - Eleventh Page - Show 10 locked slots
-                <div className="relative">
-                  {/* Left arrow to go to previous page */}
-                  <div 
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex > 0) {
-                          setBinderPage(pages[currentIndex - 1] as any);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
-                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                      </svg>
-                    </div>
-                  </div>
-                  
-                  {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 80; // Slots 80-83
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 transition-all duration-300 w-28 h-36"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  
-                  
-                  {/* Right arrow to go to next page */}
-                  <div 
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex < pages.length - 1) {
-                          setBinderPage(pages[currentIndex + 1] as any);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
-                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              ) : binderPage === 'twelfth' ? (
-                // User's Binder - Twelfth Page - Show 10 locked slots
-                <div className="relative">
-                  {/* Left arrow to go to previous page */}
-                  <div 
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex > 0) {
-                          setBinderPage(pages[currentIndex - 1] as any);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
-                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                      </svg>
-                    </div>
-                  </div>
-                  
-                  {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 88; // Slots 88-91
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 transition-all duration-300 w-28 h-36"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  
-                  
-                  {/* Right arrow to go to next page */}
-                  <div 
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex < pages.length - 1) {
-                          setBinderPage(pages[currentIndex + 1] as any);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
-                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              ) : binderPage === 'thirteenth' ? (
-                // User's Binder - Thirteenth Page - Show 10 locked slots (NO RIGHT ARROW)
-                <div className="relative">
-                  {/* Left arrow to go to previous page */}
-                  <div 
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10"
-                    style={{
-                      pointerEvents: 'auto'
-                    }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400/80 flex items-center justify-center text-pink-200 hover:text-white hover:bg-pink-500/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        try { sfx.play('click', 0.7); } catch {}
-                        const pages = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth'];
-                        const currentIndex = pages.indexOf(binderPage);
-                        if (currentIndex > 0) {
-                          setBinderPage(pages[currentIndex - 1] as any);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      style={{
-                        boxShadow: '0 0 15px rgba(255,105,180,0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        width="16" 
-                        height="16" 
-                        fill="currentColor"
-                      >
-                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                      </svg>
-                    </div>
-                  </div>
-                  
-                  {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-3 gap-y-4">
-                    {Array.from({ length: 6 }, (_, index) => {
-                      const slotIndex = index + 96; // Slots 96-99
-                      
-                      return (
-                        <div
-                          key={`locked-slot-${slotIndex}`}
-                          className="rounded-lg border border-white/5 transition-all duration-300 w-24 h-32"
-                          style={{
-                            boxShadow: '0 0 5px rgba(255,105,180,0.1)'
-                          }}
-                        >
-                          <div className="relative h-full w-full flex items-center justify-center">
-                            <div 
-                              className="text-center"
-                              style={{
-                                color: 'rgba(255,105,180,0.4)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.5px'
-                              }}
-                            >
-                              LOCKED
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  
-                  
-                  {/* NO RIGHT ARROW ON THIRTEENTH PAGE */}
-                </div>
-              ) : null
+                )}
+              </div>
             ) : (
               // Full Collection View
               <>

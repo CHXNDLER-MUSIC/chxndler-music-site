@@ -468,6 +468,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // Open modal when isActive becomes true (for hamburger menu integration)
   useEffect(() => {
     if (isActive && !open) {
+      // Set white beam when opening via hamburger menu
+      try { onBeamColorChange?.('white'); } catch {}
       setOpen(true);
     } else if (!isActive && open && !isFromCollectCard) {
       // Only auto-close if not opened from collect card button
@@ -475,7 +477,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       setIsFromHamburger(false);
       setIsFromCollectCard(false);
     }
-  }, [isActive, open, isFromCollectCard]);
+  }, [isActive, open, isFromCollectCard, onBeamColorChange]);
 
   // Listen for close-heartcoin-modal event
   useEffect(() => {
@@ -1506,6 +1508,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Not enough HeartCoins', type: 'error' } })); } catch {}
         } else if (msg.includes('Not authenticated')) {
           try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Please log in to buy cards', type: 'error' } })); } catch {}
+        } else if (msg.includes('NO_AVAILABLE_SLOT')) {
+          try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Unlock a binder slot to buy more cards.', type: 'error' } })); } catch {}
         } else {
           console.error('[CARD PURCHASE] RPC error', error);
           try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Purchase failed', type: 'error' } })); } catch {}

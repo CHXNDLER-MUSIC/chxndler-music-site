@@ -373,6 +373,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
         isActive={heartCoinOpen}
         onClose={() => setHeartCoinOpen(false)}
         onOpenJournal={() => setJournalOpen(true)}
+        onBeamColorChange={onBeamColorChange}
       />
       {/* Welcome Home Modal */}
       <WelcomeHomeModal
