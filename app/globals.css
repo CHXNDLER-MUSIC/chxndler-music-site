@@ -1108,6 +1108,9 @@ img[src$="/elements/music.webp"] {
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 4px 16px rgba(25,227,255,0.6);
+  position: relative;
+  z-index: 10;
+  isolation: isolate;
 }
 .hud-volume-btn:hover{
   transform: scale(1.08);
@@ -1315,7 +1318,7 @@ img[src$="/elements/music.webp"] {
 }
 .spotify-btn-waveform-hud:hover{
   background: linear-gradient(135deg, #1ed760, #22e55c);
-  transform: scale(1.14);
+  transform: scale(1.06);
   box-shadow: 0 0 18px rgba(29, 185, 84, 0.6);
   border-color: rgba(255,255,255,.6);
 }
@@ -1355,7 +1358,7 @@ img[src$="/elements/music.webp"] {
 }
 .apple-btn-waveform-hud:hover{
   background: linear-gradient(135deg, #FF2D55, #FF1744);
-  transform: scale(1.14);
+  transform: scale(1.06);
   box-shadow: 0 0 18px rgba(255, 59, 48, 0.6);
   border-color: rgba(255,255,255,.6);
 }
@@ -1725,7 +1728,7 @@ button:hover > .heart-coin-glow,
   filter: drop-shadow(0 0 8px rgba(25,227,255,1)) drop-shadow(0 0 18px rgba(25,227,255,0.9));
 }
 .youtube-btn-waveform-hud:hover{
-  transform: scale(1.14);
+  transform: scale(1.06);
   box-shadow: 0 6px 22px rgba(255,0,0,0.85);
   border-color: rgba(255,255,255,.7);
 }

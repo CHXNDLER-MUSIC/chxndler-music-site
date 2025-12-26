@@ -2548,6 +2548,21 @@ const HUDPanel = React.memo(function HUDPanel({
                   const hasLyrics = isHome ? true : !!(currentSong && (currentSong.hasLyrics !== false));
                   const lyricsTitle = isHome ? 'Lyrics for CHXNDLER' : `Lyrics for ${currentSong?.title || 'current track'}`;
                   const lyricsAria = isHome ? 'View lyrics for CHXNDLER' : `View lyrics for ${currentSong?.title || 'current track'}`;
+
+                  // Define streaming URLs at top level to avoid closure issues
+                  const CHXNDLER_SPOTIFY_PROFILE = 'https://open.spotify.com/artist/6O2eoUA8ZWY0lwjsa3E3Yo?si=7gxP4bNnQ1ax1ODrZ6RvtA';
+                  const CHXNDLER_APPLE_PROFILE = 'https://music.apple.com/us/artist/chxndler/1660901437';
+                  const CHXNDLER_YOUTUBE_CHANNEL = 'https://www.youtube.com/@chxndlerthealien/videos';
+
+                  const spotifyUrl = isHome ? CHXNDLER_SPOTIFY_PROFILE : (currentSong?.spotify || CHXNDLER_SPOTIFY_PROFILE);
+                  const appleUrl = isHome ? CHXNDLER_APPLE_PROFILE : (currentSong?.apple || CHXNDLER_APPLE_PROFILE);
+                  const youtubeUrl = isHome ? CHXNDLER_YOUTUBE_CHANNEL : (currentSong?.youtube || CHXNDLER_YOUTUBE_CHANNEL);
+
+                  const isSpotifyProfile = isHome || !currentSong?.spotify;
+                  const isAppleProfile = isHome || !currentSong?.apple;
+                  const isYouTubeProfile = isHome || !currentSong?.youtube;
+
+                  const isElementPlanet = ELEMENT_PLANETS.includes(String(active).toLowerCase());
                   return (
                     <>
                       {/* Controls positioned above waveform */}
@@ -2629,160 +2644,132 @@ const HUDPanel = React.memo(function HUDPanel({
                       )}
 
                       {/* Streaming: Spotify, Apple, YouTube moved left into top controls */}
-                      {(() => {
-                        const CHXNDLER_SPOTIFY_PROFILE = 'https://open.spotify.com/artist/6O2eoUA8ZWY0lwjsa3E3Yo?si=7gxP4bNnQ1ax1ODrZ6RvtA';
-                        const isHome = !currentId;
-                        const spotifyUrl = isHome ? CHXNDLER_SPOTIFY_PROFILE : (currentSong?.spotify || CHXNDLER_SPOTIFY_PROFILE);
-                        const isProfileFallback = isHome || !currentSong?.spotify;
-                        return (
-                          <a
-                            href={spotifyUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="spotify-btn-waveform-hud"
-                            style={{ marginTop: 1 }}
-                            title={isProfileFallback ? "Open CHXNDLER on Spotify" : "Open on Spotify"}
-                            aria-label={isProfileFallback ? "Open CHXNDLER on Spotify" : `Open ${currentSong?.title || 'current track'} on Spotify`}
-                            data-song={currentSong?.title || ''}
-                            data-slug={currentSong?.id || ''}
-                            data-id="sp"
-                            onClick={(e) => {
-                              try { e.preventDefault(); } catch {}
-                              try { sfx.play('join-aliens', 0.9); } catch {}
-                              try {
-                                const { toSpotifyEmbed } = require('@/lib/spotify');
-                                const embed = toSpotifyEmbed(spotifyUrl);
-                                if (embed) { setSpEmbedUrl(embed); setShowSpotifyPopover(true); }
-                                else { window.open(spotifyUrl, '_blank', 'noopener,noreferrer'); }
-                              } catch {
-                                try { window.open(spotifyUrl, '_blank', 'noopener,noreferrer'); } catch {}
-                              }
-                            }}
-                            onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                          >
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                              <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
-                            </svg>
-                          </a>
-                        );
-                      })()}
+                      <a
+                        href={spotifyUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="spotify-btn-waveform-hud"
+                        style={{ marginTop: 1, position: 'relative', width: 32, height: 32, flexShrink: 0, zIndex: 0 }}
+                        title={isSpotifyProfile ? "Open CHXNDLER on Spotify" : "Open on Spotify"}
+                        aria-label={isSpotifyProfile ? "Open CHXNDLER on Spotify" : `Open ${currentSong?.title || 'current track'} on Spotify`}
+                        data-song={currentSong?.title || ''}
+                        data-slug={currentSong?.id || ''}
+                        data-id="sp"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          try { sfx.play('join-aliens', 0.9); } catch {}
+                          try {
+                            const { toSpotifyEmbed } = require('@/lib/spotify');
+                            const embed = toSpotifyEmbed(spotifyUrl);
+                            if (embed) { setSpEmbedUrl(embed); setShowSpotifyPopover(true); }
+                            else { window.open(spotifyUrl, '_blank', 'noopener,noreferrer'); }
+                          } catch {
+                            window.open(spotifyUrl, '_blank', 'noopener,noreferrer');
+                          }
+                        }}
+                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                      >
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                          <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
+                        </svg>
+                      </a>
 
-                      {(() => {
-                        const CHXNDLER_APPLE_PROFILE = 'https://music.apple.com/us/artist/chxndler/1660901437';
-                        const isHome = !currentId;
-                        const appleUrl = isHome ? CHXNDLER_APPLE_PROFILE : (currentSong?.apple || CHXNDLER_APPLE_PROFILE);
-                        const isProfileFallback = isHome || !currentSong?.apple;
-                        const isElementPlanet = ELEMENT_PLANETS.includes(String(active).toLowerCase());
-                        // Show disabled only for element planets with no song apple link
-                        if (isElementPlanet && !currentSong?.apple) {
-                          return (
-                            <div className="apple-btn-unavailable-hud" style={{ marginTop: 1 }} title="Apple Music not available for elemental planets">
-                              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" role="img" aria-label="Music notes" style={{ display: 'block' }}>
-                                <ellipse cx="7.5" cy="18.2" rx="3.2" ry="3.4" />
-                                <ellipse cx="16.5" cy="16" rx="3.2" ry="3.4" />
-                                <rect x="9" y="6" width="2" height="11" rx="1" />
-                                <rect x="18" y="4" width="2" height="11" rx="1" />
-                                <path d="M11 6 L20 4 L20 6.5 L11 8.5 Z" />
-                              </svg>
-                            </div>
-                          );
-                        }
-                        return (
-                          <a
-                            href={appleUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="apple-btn-waveform-hud"
-                            style={{ marginTop: 1, position: 'relative', overflow: 'hidden' }}
-                            title={isProfileFallback ? "Open CHXNDLER on Apple Music" : "Open on Apple Music"}
-                            aria-label={isProfileFallback ? "Open CHXNDLER on Apple Music" : `Open ${currentSong?.title || 'current track'} on Apple Music`}
-                            data-song={currentSong?.title || ''}
-                            data-slug={currentSong?.id || ''}
-                            data-id="am"
-                            onClick={(e) => {
-                              try { e.preventDefault(); } catch {}
-                              try { sfx.play('join-aliens', 0.9); } catch {}
-                              try {
-                                const { toAppleEmbed } = require('@/lib/apple');
-                                const embed = toAppleEmbed(appleUrl);
-                                if (embed) { setAmEmbedUrl(embed); setShowApplePopover(true); }
-                                else { window.open(appleUrl, '_blank', 'noopener,noreferrer'); }
-                              } catch {
-                                try { window.open(appleUrl, '_blank', 'noopener,noreferrer'); } catch {}
-                              }
-                            }}
-                            onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                          >
-                            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" role="img" aria-label="Music notes" style={{ display: 'block' }}>
-                              <ellipse cx="7.5" cy="18.2" rx="3.2" ry="3.4" />
-                              <ellipse cx="16.5" cy="16" rx="3.2" ry="3.4" />
-                              <rect x="9" y="6" width="2" height="11" rx="1" />
-                              <rect x="18" y="4" width="2" height="11" rx="1" />
-                              <path d="M11 6 L20 4 L20 6.5 L11 8.5 Z" />
-                            </svg>
-                          </a>
-                        );
-                      })()}
+                      {isElementPlanet && !currentSong?.apple ? (
+                        <div className="apple-btn-unavailable-hud" style={{ marginTop: 1 }} title="Apple Music not available for elemental planets">
+                          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" role="img" aria-label="Music notes" style={{ display: 'block' }}>
+                            <ellipse cx="7.5" cy="18.2" rx="3.2" ry="3.4" />
+                            <ellipse cx="16.5" cy="16" rx="3.2" ry="3.4" />
+                            <rect x="9" y="6" width="2" height="11" rx="1" />
+                            <rect x="18" y="4" width="2" height="11" rx="1" />
+                            <path d="M11 6 L20 4 L20 6.5 L11 8.5 Z" />
+                          </svg>
+                        </div>
+                      ) : (
+                        <a
+                          href={appleUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="apple-btn-waveform-hud"
+                          style={{ marginTop: 1, position: 'relative', overflow: 'hidden', width: 32, height: 32, flexShrink: 0, zIndex: 1 }}
+                          title={isAppleProfile ? "Open CHXNDLER on Apple Music" : "Open on Apple Music"}
+                          aria-label={isAppleProfile ? "Open CHXNDLER on Apple Music" : `Open ${currentSong?.title || 'current track'} on Apple Music`}
+                          data-song={currentSong?.title || ''}
+                          data-slug={currentSong?.id || ''}
+                          data-id="am"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            try { sfx.play('join-aliens', 0.9); } catch {}
+                            try {
+                              const { toAppleEmbed } = require('@/lib/apple');
+                              const embed = toAppleEmbed(appleUrl);
+                              if (embed) { setAmEmbedUrl(embed); setShowApplePopover(true); }
+                              else { window.open(appleUrl, '_blank', 'noopener,noreferrer'); }
+                            } catch {
+                              window.open(appleUrl, '_blank', 'noopener,noreferrer');
+                            }
+                          }}
+                          onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                        >
+                          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" role="img" aria-label="Music notes" style={{ display: 'block' }}>
+                            <ellipse cx="7.5" cy="18.2" rx="3.2" ry="3.4" />
+                            <ellipse cx="16.5" cy="16" rx="3.2" ry="3.4" />
+                            <rect x="9" y="6" width="2" height="11" rx="1" />
+                            <rect x="18" y="4" width="2" height="11" rx="1" />
+                            <path d="M11 6 L20 4 L20 6.5 L11 8.5 Z" />
+                          </svg>
+                        </a>
+                      )}
 
-                      {(() => {
-                        const CHXNDLER_YOUTUBE_CHANNEL = 'https://www.youtube.com/@chxndlerthealien';
-                        const isHome = !currentId;
-                        const youtubeUrl = isHome ? CHXNDLER_YOUTUBE_CHANNEL : (currentSong?.youtube || CHXNDLER_YOUTUBE_CHANNEL);
-                        const isProfileFallback = isHome || !currentSong?.youtube;
-                        const isElementPlanet = ELEMENT_PLANETS.includes(String(active).toLowerCase());
-                        // Show disabled only for element planets with no song youtube link
-                        if (isElementPlanet && !currentSong?.youtube) {
-                          return (
-                            <div className="youtube-btn-unavailable-hud" title="YouTube not available for elemental planets" style={{ marginTop: 1 }}>
-                              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                                <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
-                              </svg>
-                            </div>
-                          );
-                        }
-                        return (
-                          <a
-                            href={youtubeUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="youtube-btn-waveform-hud"
-                            style={{ marginTop: 1 }}
-                            title={isProfileFallback ? "Open CHXNDLER on YouTube" : `Open ${currentSong?.title || 'current track'} on YouTube`}
-                            aria-label={isProfileFallback ? "Open CHXNDLER on YouTube" : `Open ${currentSong?.title || 'current track'} on YouTube`}
-                            data-song={currentSong?.title || ''}
-                            data-slug={currentSong?.id || ''}
-                            data-id="yt"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              try { sfx.play('join-aliens', 0.9); } catch {}
-                              // For channel URLs (homepage), always open directly - can't embed channels
-                              if (isProfileFallback) {
-                                window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
-                                return;
-                              }
-                              // For video links, try embed popover
-                              try {
-                                const { toYouTubeEmbed } = require('@/lib/youtube');
-                                const embed = toYouTubeEmbed(youtubeUrl);
-                                if (embed) { setYtEmbedUrl(embed); setShowYouTubePopover(true); }
-                                else { window.open(youtubeUrl, '_blank', 'noopener,noreferrer'); }
-                              } catch {
-                                window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
-                              }
-                            }}
-                            onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                          >
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                              <path d="M10 8l6 4-6 4z" />
-                            </svg>
-                          </a>
-                        );
-                      })()}
+                      {isElementPlanet && !currentSong?.youtube ? (
+                        <div className="youtube-btn-unavailable-hud" title="YouTube not available for elemental planets" style={{ marginTop: 1 }}>
+                          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                            <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
+                          </svg>
+                        </div>
+                      ) : (
+                        <a
+                          href={youtubeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="youtube-btn-waveform-hud"
+                          style={{ marginTop: 1, position: 'relative', width: 32, height: 32, flexShrink: 0, zIndex: 3 }}
+                          title={isYouTubeProfile ? "Open CHXNDLER on YouTube" : `Open ${currentSong?.title || 'current track'} on YouTube`}
+                          aria-label={isYouTubeProfile ? "Open CHXNDLER on YouTube" : `Open ${currentSong?.title || 'current track'} on YouTube`}
+                          data-song={currentSong?.title || ''}
+                          data-slug={currentSong?.id || ''}
+                          data-id="yt"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            try { sfx.play('join-aliens', 0.9); } catch {}
+                            // For channel URLs (homepage), always open directly - can't embed channels
+                            if (isYouTubeProfile) {
+                              window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
+                              return;
+                            }
+                            // For video links, try embed popover
+                            try {
+                              const { toYouTubeEmbed } = require('@/lib/youtube');
+                              const embed = toYouTubeEmbed(youtubeUrl);
+                              if (embed) { setYtEmbedUrl(embed); setShowYouTubePopover(true); }
+                              else { window.open(youtubeUrl, '_blank', 'noopener,noreferrer'); }
+                            } catch {
+                              window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
+                            }
+                          }}
+                          onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                        >
+                          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                            <path d="M10 8l6 4-6 4z" />
+                          </svg>
+                        </a>
+                      )}
                       {/* Volume button moved to the right of YouTube */}
                       <button
                         className="hud-volume-btn"
-                        style={{ marginTop: 1, position: 'relative', zIndex: 10 }}
+                        style={{ marginTop: 1, position: 'relative', zIndex: 100, width: 32, height: 32, flexShrink: 0 }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                         onClick={(e) => {
                           e.preventDefault();

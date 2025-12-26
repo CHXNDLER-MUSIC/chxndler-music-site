@@ -18,6 +18,7 @@ import { getElementalPlanetImage } from '@/lib/elementalPlanets';
 import { playerStore } from '@/store/usePlayerStore';
 import { triggerMerchCelebration } from '@/utils/merchCelebration';
 import { triggerHeartCoinCelebration } from '@/utils/heartcoinCelebration';
+import { useUserCards } from '@/hooks/useUserCards';
 
 type Props = {
   open: boolean;
@@ -155,6 +156,14 @@ const storeItems: StoreItem[] = [
 
 export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWelcomeHome, initialTab = 'earn', availableCards = [], currentCardIndex = 0, onCardNavigation }: Props) {
   const { profile, loading: profileLoading, refreshProfile } = useProfile();
+  const { cards: ownedCards } = useUserCards(profile?.id);
+
+  // Check if a card is already owned by the user (digital)
+  const isCardOwned = (cardId?: string) => {
+    if (!cardId || !ownedCards?.length) return false;
+    return ownedCards.some(uc => uc.card_id === cardId);
+  };
+
   const { quests: legacyBonusQuests, status: questsStatus, refetchQuests } = useBonusQuests();
   const questsLoading = questsStatus === 'loading';
   const { items: merchItems, loading: merchLoading } = useMerchItems('physical');
@@ -1264,6 +1273,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
         setMessage(`Successfully purchased digital ${currentCard.card_name || currentCard.cards?.card_name || 'card'}! A confirmation email has been sent.`);
 
+        // Play card-ding sound before celebration
+        try { sfx.play('card-ding', 0.8); } catch {}
+
         // Trigger celebration for digital card purchase
         const cardName = currentCard.card_name || currentCard.cards?.card_name || 'Card';
         const cardImage = currentCard.artwork_url || `/cards/${cardName}.webp`;
@@ -2211,21 +2223,35 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         </div>
                       </div>
                       <div className="flex gap-3 mt-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const type = selectedPurchaseType;
-                            if (!type) return;
-                            try { sfx.play('hover', 0.3); } catch {}
-                            handleCardPurchase(type);
-                          }}
-                          className="px-4 py-2 rounded bg-[#4ECDC4] text-black font-bold text-xs hover:opacity-90"
-                          disabled={selectedPurchaseType === 'digital'
-                            ? (modalLoading || !profile || (profile.heartcoin_balance || 0) < 5)
-                            : (modalLoading || !profile || (profile.heartcoin_balance || 0) < 15)}
-                        >
-                          Confirm
-                        </button>
+                        {/* Check if digital card is already owned */}
+                        {selectedPurchaseType === 'digital' && isCardOwned(displayCards[displayCardIndex]?.id || displayCards[displayCardIndex]?.card_id) ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              try { sfx.play('pause', 0.6); } catch {}
+                            }}
+                            className="px-4 py-2 rounded bg-yellow-500 text-black font-bold text-xs cursor-not-allowed"
+                            style={{ boxShadow: '0 0 10px rgba(234,179,8,0.4)' }}
+                          >
+                            ALREADY COLLECTED
+                          </button>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const type = selectedPurchaseType;
+                              if (!type) return;
+                              try { sfx.play('hover', 0.3); } catch {}
+                              handleCardPurchase(type);
+                            }}
+                            className="px-4 py-2 rounded bg-[#4ECDC4] text-black font-bold text-xs hover:opacity-90"
+                            disabled={selectedPurchaseType === 'digital'
+                              ? (modalLoading || !profile || (profile.heartcoin_balance || 0) < 5)
+                              : (modalLoading || !profile || (profile.heartcoin_balance || 0) < 15)}
+                          >
+                            Confirm
+                          </button>
+                        )}
                         <button
                           onClick={(e) => { e.stopPropagation(); setSelectedPurchaseType(null); }}
                           className="px-4 py-2 rounded bg-white/10 border border-white/30 text-white font-bold text-xs hover:bg-white/20"
@@ -2733,23 +2759,23 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         draggable={false}
                       />
                     </TiltSpinCard>
-
-                    {/* Card indicators - stay with card */}
-                    {displayCards.length > 1 && (
-                      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-1">
-                        {displayCards.map((_, index) => (
-                          <div
-                            key={index}
-                            className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                              index === displayCardIndex
-                                ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]'
-                                : 'bg-white/30'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    )}
                   </div>
+
+                  {/* Card indicators - below card */}
+                  {displayCards.length > 1 && (
+                    <div className="flex justify-center gap-1 mt-2">
+                      {displayCards.map((_, index) => (
+                        <div
+                          key={index}
+                          className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                            index === displayCardIndex
+                              ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]'
+                              : 'bg-white/30'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Navigation arrows - positioned at screen edges */}

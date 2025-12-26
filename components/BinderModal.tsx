@@ -945,7 +945,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
               binderPage === 'first' ? (
                 // User's Binder - First Page - Show 5 initial slots
               <div className="relative">
-                <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5 gap-4">
+                <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
                   {Array.from({ length: 6 }, (_, index) => {
                     // Check if there's a collected card for this slot
                     const collectedCard = profile?.cards?.[index];
@@ -973,6 +973,11 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                             ? 'border-white/10 cursor-pointer hover:scale-105'
                             : 'border-white/10 cursor-pointer hover:scale-105'
                         }`}
+                        onMouseEnter={() => {
+                          if ((hasCard || isFirstSlotWithChxndler) && !isLockedSlot) {
+                            try { sfx.play('hover', 0.3); } catch {}
+                          }
+                        }}
                         onClick={() => {
                           // 2nd slot is always empty - open HeartCoin modal
                           if (isSecondSlotEmpty) {
@@ -1034,7 +1039,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                             : !hasCard && !isFirstSlotWithChxndler && !isLockedSlot
                             ? '0 0 15px rgba(255,105,180,0.4), 0 0 25px rgba(255,105,180,0.2), 0 0 35px rgba(255,105,180,0.1)'
                             : '0 0 5px rgba(255,105,180,0.1)',
-                          aspectRatio: '2/3',
+                          aspectRatio: '5/8',
                           border: isSecondSlotEmpty
                             ? '2px dotted rgba(255,105,180,0.5)'
                             : !hasCard && !isFirstSlotWithChxndler && !isLockedSlot
@@ -1233,7 +1238,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     </div>
                   </div>
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5 gap-4">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 8; // Slots 8-11
                       
@@ -1341,7 +1346,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5 gap-4">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 16; // Slots 16-19
                       
@@ -1449,7 +1454,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5 gap-4">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 24; // Slots 24-27
                       
@@ -1557,7 +1562,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5 gap-4">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 32; // Slots 32-35
                       
@@ -1665,7 +1670,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5 gap-4">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 40; // Slots 40-43
                       
@@ -1773,7 +1778,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5 gap-4">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 48; // Slots 48-51
                       
@@ -1881,7 +1886,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5 gap-4">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 56; // Slots 56-59
                       
@@ -1989,7 +1994,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5 gap-4">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 64; // Slots 64-67
                       
@@ -2097,7 +2102,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5 gap-4">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 72; // Slots 72-75
                       
@@ -2205,7 +2210,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5 gap-4">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 80; // Slots 80-83
                       
@@ -2313,7 +2318,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                   
                   {/* Two rows of 4 locked containers each */}
-                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pb-5 gap-4">
+                  <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
                     {Array.from({ length: 6 }, (_, index) => {
                       const slotIndex = index + 88; // Slots 88-91
                       

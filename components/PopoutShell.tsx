@@ -155,7 +155,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
           {/* Header - only show if title exists */}
           {title && (
             <>
-              <div className="flex justify-center items-center flex-shrink-0" style={{ padding: '10px 14px 0px 14px' }}>
+              <div className="flex justify-center items-center flex-shrink-0" style={{ padding: '4px 14px 0px 14px' }}>
                 <div 
                   style={{ 
                     color: '#FF69B4', 
@@ -185,7 +185,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
               
               {/* Subtitle below the line */}
               {subtitle && (
-                <div className="flex justify-center items-center flex-shrink-0" style={{ padding: '8px 14px 6px 14px' }}>
+                <div className="flex justify-center items-center flex-shrink-0" style={{ padding: '4px 14px 6px 14px' }}>
                   <div 
                     style={{ 
                       color: '#FFFFFF', 

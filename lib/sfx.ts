@@ -32,6 +32,7 @@ class SFXBus {
     "coin-ding": "/audio/coin-ding.mp3",
     "card-ding": "/audio/card-ding.mp3",
     star: "/audio/star.mp3",
+    "alien-wave": "/audio/alien-wave.MP3",
   };
 
   private ensure() {

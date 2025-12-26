@@ -222,6 +222,14 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
     { time: 140.5, label: "Bridge", kind: "bridge" },
     { time: 156.1, label: "Final Chorus", kind: "chorus" }
   ] },
+  { title: "COLLIDE", spotify:"https://open.spotify.com/track/4CCfWIk6SDUwmcUvGvgVQG?si=2788de692cc3435d", apple:"https://music.apple.com/us/album/collide/1814599250?i=1814599264", cover:"/covers/COLLIDE.webp", src: "/tracks/collide.opus", sections: [
+    { time: 18.4, label: "Verse 1", kind: "verse" },
+    { time: 51.0, label: "Chorus 1", kind: "chorus" },
+    { time: 83.6, label: "Verse 2", kind: "verse" },
+    { time: 116.2, label: "Chorus 2", kind: "chorus" },
+    { time: 148.8, label: "Bridge", kind: "bridge" },
+    { time: 164.4, label: "Final Chorus", kind: "chorus" }
+  ] },
   // COLORS OF OUR HOME — three variants
   { title: "COLORS OF OUR HOME",
     cover: "/covers/COLORS OF OUR HOME.webp",

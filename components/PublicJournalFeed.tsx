@@ -136,6 +136,7 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
   }, []);
 
   // Load author public profile info for entries missing denormalized fields
+  // Query public_profiles table directly for profile_image_url
   useEffect(() => {
     const loadMissingAuthorInfo = async () => {
       try {
@@ -150,22 +151,27 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
 
         if (missing.length === 0) return;
 
-        const results = await Promise.all(missing.map(async (userId) => {
-          try {
-            const { data, error } = await supabaseBrowser
-              .rpc('get_public_profile', { p_profile_id: userId })
-              .single();
-            if (error) return [userId, null] as const;
-            return [userId, { name: (data?.name || null), avatar: (data?.profile_image_url || data?.avatar_url || null) }] as const;
-          } catch {
-            return [userId, null] as const;
-          }
-        }));
+        // Query public_profiles table directly for profile_image_url
+        const { data: profilesData, error: profilesError } = await supabaseBrowser
+          .from('public_profiles')
+          .select('id, name, profile_image_url')
+          .in('id', missing);
+
+        if (profilesError) {
+          console.warn('PublicJournalFeed: failed to query public_profiles', profilesError);
+          return;
+        }
 
         const next: Record<string, { name: string | null; avatar: string | null }> = {};
-        results.forEach(([userId, profile]) => {
-          if (profile) next[userId] = profile;
+        (profilesData || []).forEach((profileData: any) => {
+          if (profileData?.id) {
+            next[profileData.id] = {
+              name: profileData.name || null,
+              avatar: profileData.profile_image_url || null
+            };
+          }
         });
+
         if (Object.keys(next).length > 0) {
           setAuthorOverrides(prev => ({ ...prev, ...next }));
         }

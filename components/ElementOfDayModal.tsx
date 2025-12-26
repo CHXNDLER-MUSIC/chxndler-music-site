@@ -529,33 +529,6 @@ export default function ElementOfDayModal() {
                   transition: "opacity 0.3s ease",
                 }}
               />
-              {/* Completed overlay */}
-              {elementQuestCompleted && (
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: "50%",
-                    background: "rgba(0,0,0,0.5)",
-                  }}
-                >
-                  <span
-                    style={{
-                      color: "#4ade80",
-                      fontSize: "14px",
-                      fontWeight: "bold",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.1em",
-                      textShadow: "0 0 8px rgba(74, 222, 128, 0.8)",
-                    }}
-                  >
-                    Completed
-                  </span>
-                </div>
-              )}
             </button>
           </div>
 

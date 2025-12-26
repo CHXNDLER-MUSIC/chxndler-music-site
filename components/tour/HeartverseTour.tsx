@@ -516,9 +516,9 @@ function TourOverlay() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 pointer-events-none">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto" onClick={() => handleAction('close')} />
+    <div className="fixed inset-0 z-[2147483651] pointer-events-none">
+      {/* Backdrop - lower z-index so menu stays visible */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto" onClick={() => handleAction('close')} style={{ zIndex: 1 }} />
       
       {/* Highlight for target element */}
       {targetElement && (
@@ -534,11 +534,12 @@ function TourOverlay() {
             borderRadius: '12px',
             boxShadow: '0 0 20px rgb(34, 197, 94, 0.5), inset 0 0 20px rgb(34, 197, 94, 0.1)',
             animation: 'pulse 2s infinite',
+            zIndex: 2,
           }}
         />
       )}
 
-      {/* Tooltip */}
+      {/* Tooltip - always on top with highest z-index */}
       <div
         className={`absolute pointer-events-auto bg-gray-900/95 backdrop-blur-lg border border-green-500/30 rounded-2xl p-4 sm:p-6 max-w-xs sm:max-w-sm shadow-2xl ${
           !currentStepData.targetId ? 'top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2' : ''
@@ -554,9 +555,10 @@ function TourOverlay() {
                   maxWidth: isMobile ? '280px' : '384px',
                   // Always vertically center since we anchor to the right of the menu/hamburger
                   transform: 'translateY(-50%)',
+                  zIndex: 10,
                 } as React.CSSProperties;
               })()
-            : {}
+            : { zIndex: 10 }
         }
       >
         {/* Glowing border effect */}

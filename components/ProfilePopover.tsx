@@ -1296,74 +1296,6 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
             </button>
           </div>
 
-          {/* BOOST Row */}
-          <div className="flex items-center justify-center px-4 py-1.5 rounded-lg" style={{ background: 'rgba(0,255,255,0.05)', border: '1px solid rgba(0,255,255,0.2)' }}>
-            <div className="flex flex-col items-center w-full">
-              <span
-                className="font-bold text-base mb-1"
-                style={{
-                  color: '#00FFFF',
-                  textShadow: '0 0 10px rgba(0,255,255,0.8), 0 0 20px rgba(0,255,255,0.5)',
-                  letterSpacing: '0.1em'
-                }}
-              >
-                BOOST
-              </span>
-              {activeBoosts.length > 0 ? (
-                <div className="flex flex-col gap-2 w-full">
-                  {activeBoosts.map((boost, idx) => (
-                    <div
-                      key={`${boost.boostKey}-${idx}`}
-                      className="flex flex-col items-center px-3 py-2 rounded-lg"
-                      style={{
-                        background: 'rgba(0,255,255,0.1)',
-                        border: '1px solid rgba(0,255,255,0.3)'
-                      }}
-                    >
-                      <span
-                        className="font-bold text-sm"
-                        style={{
-                          color: '#00FFFF',
-                          textShadow: '0 0 8px rgba(0,255,255,0.7)'
-                        }}
-                      >
-                        {boost.name}
-                      </span>
-                      <span
-                        className="text-xs"
-                        style={{
-                          color: 'rgba(0,255,255,0.9)',
-                          textShadow: '0 0 4px rgba(0,255,255,0.5)'
-                        }}
-                      >
-                        {boost.effect}
-                      </span>
-                      <span
-                        className="text-xs mt-1"
-                        style={{
-                          color: 'rgba(0,255,255,0.7)',
-                          textShadow: '0 0 3px rgba(0,255,255,0.4)'
-                        }}
-                      >
-                        Uses left: {boost.usesLeft}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <span
-                  className="text-sm"
-                  style={{
-                    color: 'rgba(0,255,255,0.5)',
-                    textShadow: '0 0 4px rgba(0,255,255,0.3)'
-                  }}
-                >
-                  No active boosts
-                </span>
-              )}
-            </div>
-          </div>
-
           {/* Profile Image Selection Menu - Full Modal Overlay */}
           {showElementMenu && (
             <div 
@@ -2102,6 +2034,64 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
               visibility: (showRelicsInline || showMerchInline || showElementMenu || showElementInfo) ? 'hidden' : 'visible'
             }}
           >
+              {/* BOOST Section - Above Start Tour */}
+              {activeBoosts.length > 0 && (
+                <div className="flex items-center justify-center px-3 py-1 rounded-lg mb-1.5" style={{ background: 'rgba(0,255,255,0.05)', border: '1px solid rgba(0,255,255,0.3)' }}>
+                  <div className="flex flex-col items-center w-full">
+                    <span
+                      className="font-bold text-xs mb-0.5"
+                      style={{
+                        color: '#00FFFF',
+                        textShadow: '0 0 10px rgba(0,255,255,0.8), 0 0 20px rgba(0,255,255,0.5)',
+                        letterSpacing: '0.1em'
+                      }}
+                    >
+                      BOOST
+                    </span>
+                    <div className="flex flex-col gap-1.5 w-full">
+                      {activeBoosts.map((boost, idx) => (
+                        <div
+                          key={`${boost.boostKey}-${idx}`}
+                          className="flex flex-col items-center px-3 py-1.5 rounded-lg"
+                          style={{
+                            background: 'rgba(0,255,255,0.1)',
+                            border: '1px solid rgba(0,255,255,0.3)'
+                          }}
+                        >
+                          <span
+                            className="font-bold text-sm"
+                            style={{
+                              color: '#00FFFF',
+                              textShadow: '0 0 8px rgba(0,255,255,0.7)'
+                            }}
+                          >
+                            {boost.name}
+                          </span>
+                          <span
+                            className="text-xs"
+                            style={{
+                              color: 'rgba(0,255,255,0.9)',
+                              textShadow: '0 0 4px rgba(0,255,255,0.5)'
+                            }}
+                          >
+                            {boost.effect}
+                          </span>
+                          <span
+                            className="text-xs mt-0.5"
+                            style={{
+                              color: 'rgba(0,255,255,0.7)',
+                              textShadow: '0 0 3px rgba(0,255,255,0.4)'
+                            }}
+                          >
+                            {boost.usesLeft} {boost.usesLeft === 1 ? 'use' : 'uses'} left
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Start Tour Button */}
               <button
                 onClick={handleStartTour}
@@ -2127,14 +2117,14 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                 onMouseEnter={() => {
                   try { sfx.play('hover', 0.3); } catch {}
                 }}
-                className="w-full px-4 py-2 rounded-lg font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
+                className="w-full px-3 py-1.5 rounded-lg font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
                 style={{
                   background: 'linear-gradient(135deg, rgba(255,80,80,0.25), rgba(255,80,80,0.15))',
                   border: '1px solid rgba(255,80,80,0.5)',
                   color: '#FF5050',
                   textShadow: '0 0 8px rgba(255,80,80,0.7)',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(255,80,80,0.2)',
-                  fontSize: '14px'
+                  fontSize: '13px'
                 }}
                 title="Sign out of your account"
               >

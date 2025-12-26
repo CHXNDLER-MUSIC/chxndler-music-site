@@ -16,18 +16,30 @@ import { getLocalDateString } from "@/utils/dateHelpers";
 import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
 import { updateBadgeProgressCounters } from "@/lib/updateBadgeProgress";
 
-// Types for user owned cards and badges
+// Types for user owned cards and badges (joined from user_cards + cards table)
 type OwnedCardRow = {
   id: string;
+  user_id: string;
   card_id: string;
+  slot_index: number | null;
   acquired_at: string;
+  acquisition_source?: string | null;
+  is_public?: boolean | null;
+  is_digital?: boolean | null;
   cards: {
     id: string;
     card_name: string;
     element: string;
     rarity: string;
+    artwork_url?: string | null;
+    description?: string | null;
     is_released?: boolean;
     min_tier?: string;
+    is_starter?: boolean;
+    price_heartcoins?: number | null;
+    physical_price_heartcoins?: number | null;
+    is_physical_available?: boolean;
+    cost_physical_heartcoins?: number | null;
   };
 };
 
@@ -345,24 +357,38 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
 
       // Fetch user cards and badges in parallel
+      // Cards query: joined with cards table, ordered by slot_index then acquired_at
       const [{ data: cardRows, error: cardError }, { data: badgeRows, error: badgeError }] =
         await Promise.all([
           supabaseBrowser
             .from("user_cards")
             .select(`
               id,
+              user_id,
               card_id,
+              slot_index,
               acquired_at,
-              cards (
+              acquisition_source,
+              is_public,
+              is_digital,
+              cards:card_id (
                 id,
                 card_name,
                 element,
                 rarity,
+                artwork_url,
+                description,
                 is_released,
-                min_tier
+                min_tier,
+                is_starter,
+                price_heartcoins,
+                physical_price_heartcoins,
+                is_physical_available,
+                cost_physical_heartcoins
               )
             `)
             .eq("user_id", user.id)
+            .order("slot_index", { ascending: true, nullsFirst: false })
             .order("acquired_at", { ascending: true }),
           supabaseBrowser
             .from("user_badges")
@@ -388,6 +414,15 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         console.error("Error loading user_badges", badgeError);
       }
 
+      // Filter out card rows where the join failed (defensive null handling)
+      const validCardRows = (cardRows || []).filter((row: OwnedCardRow) => {
+        if (!row.cards) {
+          console.warn("[ProfileContext] user_cards row missing cards join", row);
+          return false;
+        }
+        return true;
+      }) as OwnedCardRow[];
+
       // Map database columns to interface format
       const mappedProfile: Profile = {
         id: data.id,
@@ -406,7 +441,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         profile_image_url: data.profile_image_url ?? null,
         daily_streak: data.daily_streak_current ?? 0,
         last_streak_activity_date: data.last_streak_activity_date ?? null,
-        cards: cardRows ?? [],
+        cards: validCardRows,
         badges: badgeRows ?? [],
         // Badge progress counter fields
         total_reflections: data.total_reflections ?? 0,

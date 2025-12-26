@@ -8,7 +8,7 @@ import { useDailyReflectionStatus } from "@/hooks/useDailyReflectionStatus";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { getLocalDateString, getDisplayDateString } from "@/utils/dateHelpers";
 import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
-import { consumeBoost } from "@/lib/boosts";
+import { consumeBoostOnce } from "@/lib/boosts";
 import { logHeartcoinTransaction } from "@/utils/heartcoins";
 import BinderModal from "./BinderModal";
 import BadgesModal from "./BadgesModal";
@@ -369,11 +369,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             console.log('Journal heartcoins already awarded today');
             awardedCoins = 0;
           } else {
-            // Generate stable event ID for idempotent boost consumption
-            const eventId = `journal_reward:${userId}:${todayNY}`;
-
             // Attempt to consume an active journal boost (Reflection Boost)
-            const boostResult = await consumeBoost('journal_rewards', eventId);
+            const boostResult = await consumeBoostOnce('reflection_boost', 'journal_rewards');
 
             // Calculate final reward amount
             const baseAmount = 1;
