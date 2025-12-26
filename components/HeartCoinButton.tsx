@@ -2986,20 +2986,28 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   console.log('[HeartCoinButton] claim_daily_checkin success:', checkinResult);
                                 }
 
-                                // 3. Complete bonus quest via RPC
+                                // 3. Complete bonus quest via RPC (new signature with p_user_id and p_reward_heartcoins)
                                 const { data: rpcResult, error: rpcError } = await supabaseBrowser
-                                  .rpc('complete_bonus_quest_once_per_day', { p_bonus_quest_id: quest.id });
+                                  .rpc('complete_bonus_quest_once_per_day', {
+                                    p_user_id: userId,
+                                    p_bonus_quest_id: quest.id,
+                                    p_reward_heartcoins: quest.reward_heartcoins ?? 0
+                                  });
 
                                 if (rpcError) {
                                   console.error('[HeartCoinButton] complete_bonus_quest error:', rpcError.message);
                                 } else {
-                                  console.log('[HeartCoinButton] Bonus quest completed:', rpcResult);
-
-                                  // Mark as completed locally
+                                  // Mark as completed locally (whether newly completed or already_completed_today)
                                   setCompletedQuests(prev => new Set(prev).add(quest.id));
 
-                                  // 4. Award relic if quest was newly inserted
-                                  if (rpcResult?.inserted) {
+                                  if (rpcResult?.ok === false || rpcResult?.status === 'already_completed_today') {
+                                    console.log('[HeartCoinButton] Quest already completed today:', rpcResult);
+                                  } else {
+                                    console.log('[HeartCoinButton] Bonus quest completed:', rpcResult);
+                                  }
+
+                                  // 4. Award relic if quest was newly completed (ok === true)
+                                  if (rpcResult?.ok === true) {
                                     try {
                                       // Fetch element-of-day data to get relic info
                                       const eodRes = await fetch('/api/element-of-day');

@@ -28,6 +28,7 @@ export default function ElementOfDayModal() {
   const [claimed, setClaimed] = useState(false);
   // Bonus quest state
   const [bonusQuestId, setBonusQuestId] = useState<string | null>(null);
+  const [bonusQuestReward, setBonusQuestReward] = useState<number>(0);
   const [isCompletingElementQuest, setIsCompletingElementQuest] = useState(false);
   const [elementQuestCompleted, setElementQuestCompleted] = useState(false);
 
@@ -81,10 +82,10 @@ export default function ElementOfDayModal() {
   useEffect(() => {
     const initBonusQuest = async () => {
       try {
-        // 1. Fetch quest id from bonus_quests where quest_key='TAP_ELEMENT_OF_DAY'
+        // 1. Fetch quest id and reward from bonus_quests where quest_key='TAP_ELEMENT_OF_DAY'
         const { data: quest, error: questError } = await supabaseBrowser
           .from('bonus_quests')
-          .select('id')
+          .select('id, reward_heartcoins')
           .eq('quest_key', 'TAP_ELEMENT_OF_DAY')
           .single();
 
@@ -95,7 +96,8 @@ export default function ElementOfDayModal() {
 
         const questId = quest.id;
         setBonusQuestId(questId);
-        console.log('[ElementOfDayModal] Found bonus quest id:', questId);
+        setBonusQuestReward(quest.reward_heartcoins ?? 0);
+        console.log('[ElementOfDayModal] Found bonus quest id:', questId, 'reward:', quest.reward_heartcoins);
 
         // 2. Check if completion exists today using completed_date (date field)
         const todayDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
@@ -192,14 +194,20 @@ export default function ElementOfDayModal() {
 
       // ========== 2. COMPLETE BONUS QUEST via RPC ==========
       console.log('[ElementOfDayModal] Completing bonus quest via RPC:', {
-        bonus_quest_id: bonusQuestId
+        user_id: userId,
+        bonus_quest_id: bonusQuestId,
+        reward_heartcoins: bonusQuestReward
       });
 
-      let bonusQuestInserted = false;
+      let bonusQuestNewlyCompleted = false;
 
-      // Call RPC to complete the quest (handles insert + user_bonus_quests update atomically)
+      // Call RPC to complete the quest (handles insert + user_bonus_quests update + heartcoins atomically)
       const { data: rpcResult, error: rpcError } = await supabaseBrowser
-        .rpc('complete_bonus_quest_once_per_day', { p_bonus_quest_id: bonusQuestId });
+        .rpc('complete_bonus_quest_once_per_day', {
+          p_user_id: userId,
+          p_bonus_quest_id: bonusQuestId,
+          p_reward_heartcoins: bonusQuestReward
+        });
 
       if (rpcError) {
         console.error('[ElementOfDayModal] Error completing bonus quest via RPC:', {
@@ -210,22 +218,23 @@ export default function ElementOfDayModal() {
         });
         setElementQuestCompleted(true);
       } else {
-        // RPC returns { inserted: boolean, completed_date: date }
+        // Mark as completed locally regardless of result
         setElementQuestCompleted(true);
 
-        if (rpcResult.inserted) {
+        // RPC returns: { ok: true/false, status: "completed" | "already_completed_today", reward_heartcoins, completion_id, completed_on }
+        if (rpcResult.ok === true) {
           console.log('[ElementOfDayModal] Bonus quest newly completed:', rpcResult);
-          bonusQuestInserted = true;
-        } else {
-          console.log('[ElementOfDayModal] Already completed today, skipping relic award');
+          bonusQuestNewlyCompleted = true;
+        } else if (rpcResult.status === 'already_completed_today') {
+          console.log('[ElementOfDayModal] Already completed today, skipping relic award:', rpcResult);
         }
       }
 
       // ========== 3. REFRESH PROFILE ==========
       window.dispatchEvent(new CustomEvent('profile:force-refresh'));
 
-      // ========== 4. AWARD RELIC (only if bonus quest was newly inserted) ==========
-      if (bonusQuestInserted && data.rewardKey) {
+      // ========== 4. AWARD RELIC (only if bonus quest was newly completed) ==========
+      if (bonusQuestNewlyCompleted && data.rewardKey) {
         console.log('[ElementOfDayModal] Attempting to award relic:', data.rewardKey, 'to user:', userId);
         try {
           const response = await fetch('/api/award-relic', {
@@ -248,8 +257,8 @@ export default function ElementOfDayModal() {
         } catch (relicErr) {
           console.error('[ElementOfDayModal] Error awarding relic:', relicErr);
         }
-      } else if (!bonusQuestInserted) {
-        console.log('[ElementOfDayModal] Bonus quest not newly inserted - skipping relic award');
+      } else if (!bonusQuestNewlyCompleted) {
+        console.log('[ElementOfDayModal] Bonus quest not newly completed - skipping relic award');
       } else if (!data.rewardKey) {
         console.log('[ElementOfDayModal] No rewardKey set for today - skipping relic award');
       }
