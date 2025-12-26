@@ -915,10 +915,12 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
 
           {/* Thin cyan neon line under PROFILE title */}
           <div
-            className="w-full h-px mb-1"
             style={{
-              background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)',
-              boxShadow: '0 0 4px rgba(0,255,255,0.6)'
+              width: '50%',
+              height: '2px',
+              margin: '8px auto 16px auto',
+              background: '#00FFFF',
+              boxShadow: '0 0 8px #00FFFF, 0 0 16px rgba(0,255,255,0.6)'
             }}
           />
 
@@ -1078,21 +1080,33 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                 </button>
               )}
 
-              {/* Journey label */}
+              {/* Journey label - clickable to open MY JOURNEY */}
               <div className="mt-1">
                 {(() => {
                   const { label, color } = getJourneyDisplay();
                   return (
-                    <div
-                      className="text-lg font-semibold tracking-wide"
+                    <button
+                      onClick={() => {
+                        try { sfx.play('click', 0.4); } catch {}
+                        onClose();
+                        window.dispatchEvent(new CustomEvent('openJourneyModal'));
+                      }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }}
+                      className="text-lg font-semibold tracking-wide transition-all duration-200 hover:scale-105"
                       style={{
                         color,
                         textShadow: `0 0 6px ${color}80`,
-                        letterSpacing: '0.06em'
+                        letterSpacing: '0.06em',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: 0
                       }}
                     >
                       {label}
-                    </div>
+                    </button>
                   );
                 })()}
               </div>

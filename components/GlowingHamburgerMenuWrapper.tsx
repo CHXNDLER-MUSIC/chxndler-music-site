@@ -67,6 +67,10 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
       setJournalOpen(true);
     };
 
+    const handleOpenJourneyModal = () => {
+      setJourneyOpen(true);
+    };
+
     // Close all modals event (e.g., when live signal button is clicked)
     const handleCloseAllModals = () => {
       setBadgesOpen(false);
@@ -84,6 +88,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
     window.addEventListener('openHeartCoinModal', handleOpenHeartCoinModal);
     window.addEventListener('openWelcomeHomeModal', handleOpenWelcomeHomeModal);
     window.addEventListener('openJournalModal', handleOpenJournalModal);
+    window.addEventListener('openJourneyModal', handleOpenJourneyModal);
     window.addEventListener('closeAllModals', handleCloseAllModals);
 
     return () => {
@@ -92,6 +97,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
       window.removeEventListener('openHeartCoinModal', handleOpenHeartCoinModal);
       window.removeEventListener('openWelcomeHomeModal', handleOpenWelcomeHomeModal);
       window.removeEventListener('openJournalModal', handleOpenJournalModal);
+      window.removeEventListener('openJourneyModal', handleOpenJourneyModal);
       window.removeEventListener('closeAllModals', handleCloseAllModals);
     };
   }, [onBeamColorChange]);

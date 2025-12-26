@@ -339,8 +339,8 @@ export default function Pure3DPlanets({
 
       const sprite = new THREE.Sprite(material);
       sprite.position.set(...position);
-      // Base scale for the glow (much larger than planet for dramatic emission effect)
-      const baseGlowScale = scale * 18;
+      // Base scale for the glow (proportionate to planet size)
+      const baseGlowScale = scale * 8;
       sprite.scale.set(baseGlowScale, baseGlowScale, 1);
       sprite.renderOrder = -1;
       // Store base scale for animation
@@ -663,7 +663,7 @@ export default function Pure3DPlanets({
       if (isDailyElement) {
         const outerGlow = createLightEmissionSprite(p.glow, 2.8, p.pos); // Larger outer glow
         outerGlow.visible = !!glowActive;
-        (outerGlow.material as THREE.SpriteMaterial).opacity = 0.4;
+        (outerGlow.material as THREE.SpriteMaterial).opacity = 0.25;
         outerGlow.renderOrder = -2;
         // Store reference for animation
         (glowSprite as any).userData.outerGlow = outerGlow;
@@ -1109,22 +1109,22 @@ export default function Pure3DPlanets({
       if (glowingElement) {
         const glowSprite = glowSpriteMapRef.current.get(glowingElement);
         if (glowSprite && glowSprite.material) {
-          // Opacity pulse: 0.7 to 1.0 range for visible light breathing
-          const opacityPulse = 0.85 + Math.sin(elapsed * 2.0) * 0.15;
+          // Opacity pulse: 0.5 to 0.75 range for subtle light breathing
+          const opacityPulse = 0.625 + Math.sin(elapsed * 2.0) * 0.125;
           (glowSprite.material as THREE.SpriteMaterial).opacity = opacityPulse;
 
-          // Scale pulse for dramatic "breathing" glow effect
+          // Scale pulse for subtle "breathing" glow effect
           const baseScale = (glowSprite as any).userData?.baseGlowScale || 32;
-          const scalePulse = baseScale * (1.0 + Math.sin(elapsed * 1.5) * 0.12);
+          const scalePulse = baseScale * (1.0 + Math.sin(elapsed * 1.5) * 0.08);
           glowSprite.scale.set(scalePulse, scalePulse, 1);
 
           // Animate outer glow ring with inverse phase for layered effect
           const outerGlow = (glowSprite as any).userData?.outerGlow as THREE.Sprite | undefined;
           if (outerGlow && outerGlow.material) {
-            const outerOpacity = 0.3 + Math.sin(elapsed * 1.2 + Math.PI) * 0.15;
+            const outerOpacity = 0.18 + Math.sin(elapsed * 1.2 + Math.PI) * 0.08;
             (outerGlow.material as THREE.SpriteMaterial).opacity = outerOpacity;
             const outerBaseScale = (outerGlow as any).userData?.baseGlowScale || 50;
-            const outerScalePulse = outerBaseScale * (1.0 + Math.sin(elapsed * 1.0) * 0.08);
+            const outerScalePulse = outerBaseScale * (1.0 + Math.sin(elapsed * 1.0) * 0.06);
             outerGlow.scale.set(outerScalePulse, outerScalePulse, 1);
           }
         }
