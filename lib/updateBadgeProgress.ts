@@ -23,12 +23,11 @@ export async function updateBadgeProgressCounters(userId: string) {
     const reflectionCount = reflectionData?.length || 0;
     log('Current reflection count:', reflectionCount);
 
-    // Update the user's profile with the current counts
+    // Update the user's profile with the current counts (do NOT send updated_at)
     const { error: updateError } = await supabaseBrowser
       .from('profiles')
       .update({
-        total_reflections: reflectionCount,
-        updated_at: new Date().toISOString()
+        total_reflections: reflectionCount
       })
       .eq('id', userId);
 

@@ -55,11 +55,11 @@ export async function POST(req: NextRequest) {
         .single();
       
       if (profile) {
+        // Do NOT send updated_at - breaks public_profiles_table view
         await admin
           .from('profiles')
-          .update({ 
-            hearts: (profile.hearts || 0) + 1,
-            updated_at: new Date().toISOString()
+          .update({
+            hearts: (profile.hearts || 0) + 1
           })
           .eq('id', user.id);
       }

@@ -6,6 +6,9 @@ import type { ElementType } from "@/lib/planetConfig";
 import { RELIC_CELEBRATION_EVENT } from "./RelicCelebration";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
+// Bonus quest ID for Element of the Day
+const ELEMENT_OF_DAY_BONUS_QUEST_ID = "4c24a82f-92ba-44f4-9386-d8c6438498bd";
+
 interface ElementOfDayData {
   element: ElementType;
   intention: string | null;
@@ -26,6 +29,9 @@ export default function ElementOfDayModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [data, setData] = useState<ElementOfDayData | null>(null);
   const [claimed, setClaimed] = useState(false);
+  // Bonus quest state
+  const [isCompletingElementQuest, setIsCompletingElementQuest] = useState(false);
+  const [elementQuestCompleted, setElementQuestCompleted] = useState(false);
   const hoverAudioRef = useRef<HTMLAudioElement | null>(null);
   const clickAudioRef = useRef<HTMLAudioElement | null>(null);
   const alienWaveAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -33,14 +39,14 @@ export default function ElementOfDayModal() {
 
   // Play hover sound when hovering over the element
   const handleElementHover = useCallback(() => {
-    if (claimed) return;
+    if (claimed || elementQuestCompleted) return;
     if (!hoverAudioRef.current) {
       hoverAudioRef.current = new Audio("/audio/hover.mp3");
       hoverAudioRef.current.volume = 0.5;
     }
     hoverAudioRef.current.currentTime = 0;
     hoverAudioRef.current.play().catch(() => {});
-  }, [claimed]);
+  }, [claimed, elementQuestCompleted]);
 
   // Play click sound when clicking the element
   const playClickSound = useCallback(() => {
@@ -72,6 +78,42 @@ export default function ElementOfDayModal() {
     elementSoundRef.current.play().catch(() => {});
   }, []);
 
+  // Check if user already completed the element bonus quest today (on mount)
+  // RLS handles user_id filtering, so we only filter by bonus_quest_id and date
+  useEffect(() => {
+    const checkBonusQuestCompletion = async () => {
+      try {
+        // Get today's date in UTC (YYYY-MM-DD format)
+        const todayUTC = new Date().toISOString().split('T')[0];
+
+        // Query user_bonus_quest_completions for this bonus_quest_id and today's date
+        // Do NOT filter by user_id - RLS handles that automatically
+        const { data: completions, error } = await supabaseBrowser
+          .from('user_bonus_quest_completions')
+          .select('id, completed_at')
+          .eq('bonus_quest_id', ELEMENT_OF_DAY_BONUS_QUEST_ID)
+          .gte('completed_at', `${todayUTC}T00:00:00Z`)
+          .lt('completed_at', `${todayUTC}T23:59:59.999Z`)
+          .limit(1);
+
+        if (error) {
+          console.error('[ElementOfDayModal] Error checking bonus quest completion:', error);
+          return;
+        }
+
+        if (completions && completions.length > 0) {
+          console.log('[ElementOfDayModal] Bonus quest already completed today:', completions[0]);
+          setElementQuestCompleted(true);
+          // Streak days would need to be fetched from user_bonus_quests if needed
+        }
+      } catch (err) {
+        console.error('[ElementOfDayModal] Error checking bonus quest completion:', err);
+      }
+    };
+
+    checkBonusQuestCompletion();
+  }, []);
+
   const handleClose = useCallback(() => {
     setIsOpen(false);
     setData(null);
@@ -79,85 +121,181 @@ export default function ElementOfDayModal() {
   }, []);
 
   // Handle clicking on the element image to claim reward
-  // Element of Day click -> claim_daily_checkin RPC
+  // Element of Day click -> claim_daily_checkin RPC + complete_bonus_quest RPC
   const handleImageClick = useCallback(async () => {
-    if (!data || claimed) return;
+    // Guard against double-submit or already completed
+    if (!data || claimed || isCompletingElementQuest || elementQuestCompleted) return;
+
+    // ========== AUTH CHECK - Must be authenticated before any RPC calls ==========
+    const { data: { session } } = await supabaseBrowser.auth.getSession();
+    if (!session?.user?.id) {
+      console.error('[ElementOfDayModal] No authenticated session');
+      return;
+    }
+    const userId = session.user.id;
+    console.log('[ElementOfDayModal] Authenticated user:', userId);
 
     // Play element-specific sound
     playElementSound(data.element);
 
     // Stop pulsing by marking as claimed
     setClaimed(true);
+    setIsCompletingElementQuest(true);
 
-    // Call claim_daily_checkin RPC to record the check-in
     try {
-      const { data: session } = await supabaseBrowser.auth.getSession();
-      if (session?.session?.user) {
-        const { data: rpcResult, error: rpcError } = await supabaseBrowser.rpc(
-          'claim_daily_checkin',
-          { p_source: 'element_of_day' }
+      // ========== 1. CALL claim_daily_checkin RPC ==========
+      console.log('[ElementOfDayModal] Calling claim_daily_checkin with:', { p_source: 'element_of_day' });
+
+      const { data: checkinResult, error: checkinError } = await supabaseBrowser.rpc(
+        'claim_daily_checkin',
+        { p_source: 'element_of_day' }
+      );
+
+      if (checkinError) {
+        console.error('[ElementOfDayModal] claim_daily_checkin error', {
+          message: checkinError.message,
+          details: checkinError.details,
+          hint: checkinError.hint,
+          code: checkinError.code,
+        });
+        // Don't return - still try bonus quest
+      } else {
+        console.log('[ElementOfDayModal] claim_daily_checkin success:', checkinResult);
+
+        // Dispatch event so QuestList can update its UI
+        window.dispatchEvent(
+          new CustomEvent('element-of-day-claimed', {
+            detail: {
+              element: data.element,
+              checkinDate: checkinResult?.checkin_date_ny,
+              dailyStreak: checkinResult?.daily_streak_current,
+              alreadyCheckedIn: checkinResult?.already_checked_in,
+            },
+          })
         );
 
-        if (rpcError) {
-          console.error('[ElementOfDayModal] claim_daily_checkin RPC error:', rpcError);
-        } else {
-          console.log('[ElementOfDayModal] claim_daily_checkin RPC success:', rpcResult);
+        // Trigger profile refresh to update daily_streak_current in UI
+        window.dispatchEvent(new CustomEvent('profile:force-refresh'));
+      }
 
-          // Dispatch event so QuestList can update its UI
-          window.dispatchEvent(
-            new CustomEvent('element-of-day-claimed', {
-              detail: {
-                element: data.element,
-                checkinDate: rpcResult?.checkin_date_ny,
-                dailyStreak: rpcResult?.daily_streak_current,
-                alreadyCheckedIn: rpcResult?.already_checked_in,
-              },
-            })
-          );
+      // ========== 2. INSERT into user_bonus_quest_completions ==========
+      console.log('[ElementOfDayModal] Inserting bonus quest completion:', {
+        bonus_quest_id: ELEMENT_OF_DAY_BONUS_QUEST_ID
+      });
 
-          // Award the relic to user's collection if there's a rewardKey
-          // Always attempt to award - the API handles duplicates gracefully
-          if (data.rewardKey) {
-            console.log('[ElementOfDayModal] Attempting to award relic:', data.rewardKey, 'to user:', session.session.user.id);
-            try {
-              const response = await fetch('/api/award-relic', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  userId: session.session.user.id,
-                  relicCode: data.rewardKey,
-                }),
-              });
-              const result = await response.json();
-              if (!response.ok) {
-                console.error('[ElementOfDayModal] award-relic API error:', result);
-              } else {
-                console.log('[ElementOfDayModal] Relic awarded successfully:', result);
-                // Dispatch event to refresh relics collection
-                window.dispatchEvent(new CustomEvent('relics:refresh'));
-              }
-            } catch (relicErr) {
-              console.error('[ElementOfDayModal] Error awarding relic:', relicErr);
-            }
-          } else {
-            console.log('[ElementOfDayModal] No rewardKey set for today - skipping relic award');
-          }
+      let bonusQuestInserted = false;
 
-          // Trigger profile refresh to update daily_streak_current in UI
-          window.dispatchEvent(new CustomEvent('profile:force-refresh'));
-        }
+      // First check if already completed today
+      const todayUTC = new Date().toISOString().split('T')[0];
+      const { data: existingCompletion } = await supabaseBrowser
+        .from('user_bonus_quest_completions')
+        .select('id')
+        .eq('bonus_quest_id', ELEMENT_OF_DAY_BONUS_QUEST_ID)
+        .gte('completed_at', `${todayUTC}T00:00:00Z`)
+        .lt('completed_at', `${todayUTC}T23:59:59.999Z`)
+        .limit(1);
+
+      if (existingCompletion && existingCompletion.length > 0) {
+        console.log('[ElementOfDayModal] Bonus quest already completed today, skipping insert');
+        setElementQuestCompleted(true);
       } else {
-        console.log('[ElementOfDayModal] User not logged in, skipping daily check-in');
+        // Insert new completion record
+        const { data: insertData, error: insertError } = await supabaseBrowser
+          .from('user_bonus_quest_completions')
+          .insert({
+            user_id: userId,
+            bonus_quest_id: ELEMENT_OF_DAY_BONUS_QUEST_ID,
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('[ElementOfDayModal] Error inserting bonus quest completion:', {
+            message: insertError.message,
+            details: insertError.details,
+            hint: insertError.hint,
+            code: insertError.code,
+          });
+        } else {
+          console.log('[ElementOfDayModal] Bonus quest completion inserted:', insertData);
+          bonusQuestInserted = true;
+          setElementQuestCompleted(true);
+
+          // Update or create user_bonus_quests record for total completion tracking
+          const { data: existingRecord } = await supabaseBrowser
+            .from('user_bonus_quests')
+            .select('times_completed')
+            .eq('user_id', userId)
+            .eq('bonus_quest_id', ELEMENT_OF_DAY_BONUS_QUEST_ID)
+            .maybeSingle();
+
+          if (existingRecord) {
+            await supabaseBrowser
+              .from('user_bonus_quests')
+              .update({
+                times_completed: existingRecord.times_completed + 1,
+                last_completed_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              })
+              .eq('user_id', userId)
+              .eq('bonus_quest_id', ELEMENT_OF_DAY_BONUS_QUEST_ID);
+          } else {
+            await supabaseBrowser
+              .from('user_bonus_quests')
+              .insert({
+                user_id: userId,
+                bonus_quest_id: ELEMENT_OF_DAY_BONUS_QUEST_ID,
+                times_completed: 1,
+                last_completed_at: new Date().toISOString()
+              });
+          }
+        }
+      }
+
+      // ========== 3. REFRESH PROFILE ==========
+      window.dispatchEvent(new CustomEvent('profile:force-refresh'));
+
+      // ========== 4. AWARD RELIC (only if bonus quest was newly inserted) ==========
+      if (bonusQuestInserted && data.rewardKey) {
+        console.log('[ElementOfDayModal] Attempting to award relic:', data.rewardKey, 'to user:', userId);
+        try {
+          const response = await fetch('/api/award-relic', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: userId,
+              relicCode: data.rewardKey,
+            }),
+          });
+          const result = await response.json();
+          if (!response.ok) {
+            console.error('[ElementOfDayModal] award-relic API error:', result);
+          } else {
+            console.log('[ElementOfDayModal] Relic awarded successfully:', result);
+            // Dispatch events to refresh relics collection and boosts (after boost is created)
+            window.dispatchEvent(new CustomEvent('relics:refresh'));
+            window.dispatchEvent(new CustomEvent('boosts:refresh'));
+          }
+        } catch (relicErr) {
+          console.error('[ElementOfDayModal] Error awarding relic:', relicErr);
+        }
+      } else if (!bonusQuestInserted) {
+        console.log('[ElementOfDayModal] Bonus quest not newly inserted - skipping relic award');
+      } else if (!data.rewardKey) {
+        console.log('[ElementOfDayModal] No rewardKey set for today - skipping relic award');
       }
     } catch (err) {
-      console.error('[ElementOfDayModal] Error calling claim_daily_checkin:', err);
+      console.error('[ElementOfDayModal] Unexpected error:', err);
+    } finally {
+      // Reset the in-flight guard
+      setIsCompletingElementQuest(false);
     }
 
     // Close modal after brief delay
     setTimeout(() => {
       setIsOpen(false);
 
-      // Dispatch relic celebration event after 1 second
+      // Dispatch relic celebration event after 1 second (only if we had a rewardKey)
       setTimeout(() => {
         if (data.rewardKey) {
           window.dispatchEvent(
@@ -180,7 +318,7 @@ export default function ElementOfDayModal() {
         }, 100);
       }, 1000); // Wait 1 second before relic celebration
     }, 300);
-  }, [data, claimed, playElementSound]);
+  }, [data, claimed, isCompletingElementQuest, elementQuestCompleted, playElementSound]);
 
   useEffect(() => {
     const handleShow = async (e: CustomEvent<ElementOfDayData>) => {
@@ -344,7 +482,8 @@ export default function ElementOfDayModal() {
             <button
               onClick={handleImageClick}
               onMouseEnter={handleElementHover}
-              className="relative cursor-pointer transition-transform hover:scale-105"
+              disabled={claimed || elementQuestCompleted || isCompletingElementQuest}
+              className="relative transition-transform hover:scale-105"
               style={{
                 width: 140,
                 height: 140,
@@ -353,11 +492,12 @@ export default function ElementOfDayModal() {
                 border: "none",
                 padding: 0,
                 overflow: "visible",
+                cursor: (claimed || elementQuestCompleted || isCompletingElementQuest) ? "default" : "pointer",
               }}
-              aria-label="Claim reward"
+              aria-label={elementQuestCompleted ? "Already completed" : "Claim reward"}
             >
-              {/* Pulsing glow behind the image - only when not claimed */}
-              {!claimed && (
+              {/* Pulsing glow behind the image - only when not claimed/completed */}
+              {!claimed && !elementQuestCompleted && (
                 <div
                   style={{
                     position: "absolute",
@@ -368,7 +508,7 @@ export default function ElementOfDayModal() {
                   }}
                 />
               )}
-              {/* The element image with pulse animation - stops when claimed */}
+              {/* The element image with pulse animation - stops when claimed/completed */}
               <img
                 src={config?.icon}
                 alt={config?.name}
@@ -377,11 +517,38 @@ export default function ElementOfDayModal() {
                   width: "100%",
                   height: "100%",
                   objectFit: "contain",
-                  animation: claimed ? "none" : "elementPulse 2s ease-in-out infinite",
-                  opacity: claimed ? 0.5 : 1,
+                  animation: (claimed || elementQuestCompleted) ? "none" : "elementPulse 2s ease-in-out infinite",
+                  opacity: (claimed || elementQuestCompleted) ? 0.5 : 1,
                   transition: "opacity 0.3s ease",
                 }}
               />
+              {/* Completed overlay */}
+              {elementQuestCompleted && (
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "50%",
+                    background: "rgba(0,0,0,0.5)",
+                  }}
+                >
+                  <span
+                    style={{
+                      color: "#4ade80",
+                      fontSize: "14px",
+                      fontWeight: "bold",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.1em",
+                      textShadow: "0 0 8px rgba(74, 222, 128, 0.8)",
+                    }}
+                  >
+                    Completed
+                  </span>
+                </div>
+              )}
             </button>
           </div>
 

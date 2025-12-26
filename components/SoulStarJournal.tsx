@@ -8,6 +8,8 @@ import { useDailyReflectionStatus } from "@/hooks/useDailyReflectionStatus";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { getLocalDateString, getDisplayDateString } from "@/utils/dateHelpers";
 import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
+import { consumeBoost } from "@/lib/boosts";
+import { logHeartcoinTransaction } from "@/utils/heartcoins";
 import BinderModal from "./BinderModal";
 import BadgesModal from "./BadgesModal";
 import UserBadges from "./UserBadges";
@@ -336,15 +338,84 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       // Award heartcoins for journal entry (idempotent - only once per NY day per user)
       let awardedCoins = 0;
       try {
-        const { data: awardResult, error: awardError } = await supabaseBrowser.rpc('award_journal_heartcoins');
-        if (awardError) {
-          console.warn('Failed to award journal heartcoins:', awardError.message);
-        } else if (awardResult) {
-          console.log('Journal heartcoins award result:', awardResult);
-          awardedCoins = awardResult.awarded || 0;
+        // Get current user for idempotency check
+        const { data: { session } } = await supabaseBrowser.auth.getSession();
+        if (!session?.user?.id) {
+          console.warn('No authenticated user, skipping journal heartcoin award');
+        } else {
+          const userId = session.user.id;
+
+          // Calculate today in NY timezone for idempotency
+          const todayNY = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'America/New_York',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          }).format(new Date());
+
+          // Check if already awarded today (idempotency check)
+          const { data: existingAward } = await supabaseBrowser
+            .from('heartcoin_transactions')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('transaction_type', 'earn')
+            .ilike('description', '%Journal%')
+            .gte('created_at', `${todayNY}T00:00:00-05:00`)
+            .lt('created_at', `${todayNY}T23:59:59-05:00`)
+            .limit(1)
+            .maybeSingle();
+
+          if (existingAward) {
+            console.log('Journal heartcoins already awarded today');
+            awardedCoins = 0;
+          } else {
+            // Generate stable event ID for idempotent boost consumption
+            const eventId = `journal_reward:${userId}:${todayNY}`;
+
+            // Attempt to consume an active journal boost (Reflection Boost)
+            const boostResult = await consumeBoost('journal_rewards', eventId);
+
+            // Calculate final reward amount
+            const baseAmount = 1;
+            const finalAmount = boostResult.didConsume
+              ? baseAmount * boostResult.multiplier + boostResult.addAmount
+              : baseAmount;
+
+            const description = boostResult.didConsume
+              ? `Journal Entry (Reflection Boost ${boostResult.multiplier}x)`
+              : 'Journal Entry';
+
+            await logHeartcoinTransaction(supabaseBrowser, {
+              user_id: userId,
+              amount: finalAmount,
+              reason: 'JOURNAL_ENTRY',
+              description,
+              transaction_type: 'earn',
+              metadata: {
+                source: 'journal_entry',
+                date_ny: todayNY,
+                boost_applied: boostResult.didConsume,
+                boost_key: boostResult.boostKey,
+                multiplier: boostResult.multiplier,
+                add_amount: boostResult.addAmount
+              }
+            });
+
+            awardedCoins = finalAmount;
+            console.log('Journal heartcoins award result:', {
+              awarded: finalAmount,
+              boostApplied: boostResult.didConsume,
+              multiplier: boostResult.multiplier
+            });
+
+            // Dispatch event to refresh boosts in UI if a boost was consumed
+            if (boostResult.didConsume && typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('boosts:refresh'));
+            }
+          }
         }
       } catch (awardErr) {
-        console.warn('Error calling award_journal_heartcoins RPC:', awardErr);
+        console.warn('Error awarding journal heartcoins:', awardErr);
       }
 
       // Refresh profile data to update journal entries and reflection status
@@ -1124,23 +1195,12 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            {/* Soul Star Button */}
-                            <button
-                              type="button"
-                              className={`flex items-center gap-1 transition-all duration-200 hover:scale-110 px-2 py-1 ${
-                                starringEntryId === entry.entry_id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-                              }`}
-                              disabled={starringEntryId === entry.entry_id}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                sfx.play('card-ding', 0.45);
-                                handleToggleStar(entry.entry_id);
-                              }}
-                              onMouseEnter={() => {
-                                try { sfx.play('hover', 0.6); } catch {}
-                              }}
+                            {/* Soul Star Display (read-only for own entries) */}
+                            <div
+                              className="flex items-center gap-1 px-2 py-1 cursor-default"
                               style={{
-                                background: 'transparent'
+                                background: 'transparent',
+                                opacity: 0.7
                               }}
                             >
                               <Image
@@ -1149,23 +1209,19 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                                 width={24}
                                 height={24}
                                 style={{
-                                  filter: starredByMe.has(entry.entry_id)
-                                    ? `drop-shadow(0 0 10px ${entryTheme.color}) drop-shadow(0 0 20px ${entryTheme.glow}) brightness(1.3)`
-                                    : `drop-shadow(0 0 6px ${entryTheme.color}) drop-shadow(0 0 10px ${entryTheme.glow}) brightness(1.0)`
+                                  filter: `drop-shadow(0 0 6px ${entryTheme.color}) drop-shadow(0 0 10px ${entryTheme.glow}) brightness(1.0)`
                                 }}
                               />
                               <span
                                 className="text-sm font-semibold"
                                 style={{
                                   color: entryTheme.color,
-                                  textShadow: starredByMe.has(entry.entry_id)
-                                    ? `0 0 8px ${entryTheme.glow}, 0 0 12px ${entryTheme.glow}`
-                                    : `0 0 4px ${entryTheme.glow}`
+                                  textShadow: `0 0 4px ${entryTheme.glow}`
                                 }}
                               >
                                 {entry.stars_count ?? 0}
                               </span>
-                            </button>
+                            </div>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();

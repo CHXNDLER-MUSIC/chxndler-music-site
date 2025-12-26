@@ -243,6 +243,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const pendingTrackRef = useRef<string | null>(state.pendingTrack);
 
   // Record listen session to song_listen_sessions
+  // Note: Boost consumption for listen rewards now happens in useDailySongProgress
+  // when the 50% completion threshold is reached and heartcoins are awarded.
   const recordListenSession = async (trackId: string, startedAt: Date, endedAt: Date) => {
     // Prevent double-recording
     if (isRecordingRef.current) return;
@@ -266,50 +268,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Calculate today in NY timezone for effect check
-      const todayNY = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'America/New_York',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      }).format(new Date());
-
-      // Check for active LISTEN_MULTIPLIER effect
-      let multiplier = 1;
-      try {
-        const { data: effectData } = await supabaseBrowser
-          .from('user_effects')
-          .select('id, metadata')
-          .eq('user_id', session.user.id)
-          .eq('kind', 'LISTEN_MULTIPLIER')
-          .eq('active_date', todayNY)
-          .is('consumed_at', null)
-          .single();
-
-        if (effectData) {
-          multiplier = (effectData.metadata as { multiplier?: number })?.multiplier || 2;
-          console.log(`🎧 Deep Focus active! Listen multiplier: ${multiplier}x`);
-
-          // Mark effect as consumed
-          await supabaseBrowser
-            .from('user_effects')
-            .update({ consumed_at: new Date().toISOString() })
-            .eq('id', effectData.id);
-        }
-      } catch (effectErr) {
-        // Effect check failed, continue with multiplier=1
-        console.log('🎧 No listen multiplier effect active');
-      }
-
-      // Insert listen session
+      // Insert listen session (boost consumption happens in useDailySongProgress)
       const sessionData = {
         user_id: session.user.id,
         song_id: trackId,
         started_at: startedAt.toISOString(),
         ended_at: endedAt.toISOString(),
         duration_seconds: durationSeconds,
-        source: 'player',
-        metadata: multiplier > 1 ? { multiplier, listen_units: multiplier } : null
+        source: 'player'
       };
 
       const { error: insertError } = await supabaseBrowser
@@ -319,7 +285,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       if (insertError) {
         console.error('🎧 Failed to record listen session:', insertError);
       } else {
-        console.log(`🎧 Recorded listen session: ${trackId}, ${durationSeconds}s, ${multiplier}x multiplier`);
+        console.log(`🎧 Recorded listen session: ${trackId}, ${durationSeconds}s`);
       }
     } catch (err) {
       console.error('🎧 Error recording listen session:', err);
@@ -845,21 +811,38 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     playTrack: async (trackId: string) => {
       const normId = normalizeSlug(trackId);
-      const trackInfo = TRACK_INFO[normId] || TRACK_INFO[trackId];
+      let trackInfo = TRACK_INFO[normId] || TRACK_INFO[trackId];
+
+      // If track not found in static list, create dynamic track info
+      // This allows playing songs from database that aren't hardcoded
       if (!trackInfo) {
-        console.warn(`Track not found: ${trackId}`);
-        return;
+        console.log(`🎵 Track not in TRACK_INFO, creating dynamic info for: ${trackId}`);
+        trackInfo = {
+          id: normId || trackId,
+          title: (trackId || '').toUpperCase().replace(/-/g, ' '),
+          artist: 'CHXNDLER',
+          oneLiner: 'Listen now'
+        };
       }
 
       // Find the track source using the shared mapper
       let trackSource = "";
       const key = trackKeyFromSlug(normId) as TrackKey | null;
-      trackSource = key ? bestSourceFor(TRACKS[key]) : `/tracks/${normId}.opus`;
+      if (key && TRACKS[key]) {
+        trackSource = bestSourceFor(TRACKS[key]);
+        console.log(`🎵 Found track source via TRACKS mapping: ${key} -> ${trackSource}`);
+      } else {
+        // Fallback to direct file path
+        trackSource = `/tracks/${normId}.opus`;
+        console.log(`🎵 Using fallback track source: ${trackSource}`);
+      }
 
       if (!trackSource) {
-        console.warn(`No source found for track: ${trackId}`);
+        console.warn(`🎵 No source found for track: ${trackId}`);
         return;
       }
+
+      console.log(`🎵 playTrack: ${trackId} -> ${normId} -> ${trackSource}`);
 
       // Update current track info immediately
       setState(s => ({ ...s, currentTrack: trackInfo, isLoading: true }));
@@ -1072,19 +1055,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
               setState(s => ({ ...s, currentTrack: trackInfo }));
             }
 
-            // If there's already a pending track waiting for warp to complete,
-            // or if warp hasn't completed yet (warpCompleted is false after a song selection),
-            // don't play immediately - set as pending track and let the warpCompleted effect handle it
-            // Use refs to get current values (avoids stale closure issue)
-            if (pendingTrackRef.current || !warpCompletedRef.current) {
-              console.log('🎵 AudioProvider: Warp not complete yet, setting as pending track:', currentMainId);
-              setState(s => ({ ...s, pendingTrack: currentMainId }));
-              return;
-            }
-
-            // Warp has already completed, so we can play immediately
-            console.log('🎵 AudioProvider: Switching to new track:', currentMainId);
-            api.playTrack(currentMainId).catch(console.error);
+            // A new song was selected via playerStore.setMain() - this triggers a warp effect
+            // Reset warpCompleted to false and set as pending track to wait for warp to finish
+            // The warp SFX completion (markWarpCompleted) will trigger auto-play via the effect
+            console.log('🎵 AudioProvider: New song selected, setting as pending track and waiting for warp:', currentMainId);
+            setState(s => ({ ...s, pendingTrack: currentMainId, warpCompleted: false }));
           }
         });
 
@@ -1096,6 +1071,59 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     subscribeToPlayerStore();
   }, [state.currentTrack?.id, state.playing, api.playTrack]);
+
+  // Store playTrack in a ref to avoid stale closure issues
+  const playTrackRef = useRef(api.playTrack);
+  useEffect(() => {
+    playTrackRef.current = api.playTrack;
+  }, [api.playTrack]);
+
+  // Listen for direct song play requests (e.g., from daily quests LISTEN button)
+  // This bypasses the warp completion check for immediate playback
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    console.log('🎵 Setting up song:play-now event listener');
+
+    const handleSongPlayNow = (e: CustomEvent) => {
+      const trackSlug = e?.detail?.slug;
+      const source = e?.detail?.source || 'unknown';
+
+      console.log('🎵 song:play-now event received:', { trackSlug, source });
+
+      if (!trackSlug) {
+        console.warn('🎵 song:play-now event received without slug');
+        return;
+      }
+
+      console.log(`🎵 Direct play request from ${source}:`, trackSlug);
+
+      // Clear pending track state since we're playing immediately
+      setState(s => ({ ...s, pendingTrack: null, warpCompleted: true }));
+
+      // Play the track directly using ref to avoid stale closure
+      playTrackRef.current(trackSlug).catch(err => {
+        console.error('🎵 Failed to play track:', err);
+      });
+    };
+
+    window.addEventListener('song:play-now', handleSongPlayNow as EventListener);
+
+    // Also expose a global function as fallback for direct calls
+    (window as any).__playTrackDirect = (slug: string, source: string = 'global') => {
+      console.log(`🎵 Direct play via global function from ${source}:`, slug);
+      setState(s => ({ ...s, pendingTrack: null, warpCompleted: true }));
+      playTrackRef.current(slug).catch(err => {
+        console.error('🎵 Failed to play track:', err);
+      });
+    };
+
+    return () => {
+      console.log('🎵 Removing song:play-now event listener');
+      window.removeEventListener('song:play-now', handleSongPlayNow as EventListener);
+      delete (window as any).__playTrackDirect;
+    };
+  }, []); // Empty deps - only set up once
 
   const value = useMemo(() => ({ ...state, ...api }), [state, api]);
   return <AudioCtx.Provider value={value}>{children}</AudioCtx.Provider>;

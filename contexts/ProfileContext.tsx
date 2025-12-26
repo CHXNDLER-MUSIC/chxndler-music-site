@@ -484,8 +484,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const user = session?.user;
       if (!user) return;
 
-      // Map interface fields to database columns  
-      const dbUpdates: any = { updated_at: new Date().toISOString() };
+      // Map interface fields to database columns
+      // Note: Do NOT send updated_at - it conflicts with the public_profiles_table view trigger
+      const dbUpdates: any = {};
       if (updates.name !== undefined) dbUpdates.name = updates.name;
       if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
       if (updates.element !== undefined) dbUpdates.element = updates.element;
@@ -590,12 +591,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         throw new Error("Profile not found. Please complete your registration first");
       }
 
-      // Update the profile name
+      // Update the profile name (profiles table only - do NOT send updated_at)
       const { data, error } = await supabaseBrowser
         .from("profiles")
-        .update({ 
-          name: name.trim(),
-          updated_at: new Date().toISOString()
+        .update({
+          name: name.trim()
         })
         .eq("id", user.id)
         .select("id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour, card_slots")

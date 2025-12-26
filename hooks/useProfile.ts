@@ -114,17 +114,22 @@ export function useProfile(): UseProfileReturn {
     }
 
     try {
-      // Filter out has_completed_onboarding from updates if column doesn't exist
-      const updateData = { ...updates, updated_at: new Date().toISOString() };
-      
+      // Build safe update payload - ONLY allowed columns, never send updated_at
+      // It conflicts with the public_profiles_table view trigger
+      const { updated_at, created_at, id, ...safeUpdates } = updates as any;
+
+      // Dev log: print exact payload keys being sent
+      console.log('[useProfile.updateProfile] Payload keys:', Object.keys(safeUpdates));
+
       let { data, error } = await supabaseBrowser
         .from('profiles')
-        .update(updateData)
+        .update(safeUpdates)
         .eq('id', user.id)
-        .select('id, email, phone, name, element, profile_complete, created_at, updated_at')
+        .select('id, email, phone, name, element, profile_complete, created_at, updated_at, profile_image_url')
         .single();
 
       if (error) {
+        console.error('[useProfile.updateProfile] Error:', error.code, error.message, error);
         throw new Error(error.message);
       }
 

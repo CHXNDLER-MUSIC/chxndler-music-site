@@ -62,12 +62,11 @@ export async function POST(request: Request) {
       );
     }
     
-    // Update user's element in the profiles table
+    // Update user's element in the profiles table (do NOT send updated_at)
     const { data, error } = await supabaseClient
       .from('profiles')
-      .update({ 
-        element: selected_element,
-        updated_at: new Date().toISOString()
+      .update({
+        element: selected_element
       })
       .eq('id', session.user.id)
       .select('*')

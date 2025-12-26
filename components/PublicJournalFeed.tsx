@@ -198,10 +198,15 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
     setIsCardFlipped(prev => !prev);
   };
 
-  const handleToggleStar = async (entryId: string) => {
+  const handleToggleStar = async (entryId: string, entryOwnerId: string) => {
     // Require authentication to star entries
     if (!currentUserId) {
       // Anon users can't star - just return silently
+      return;
+    }
+
+    // Prevent self-starring - guard against own entries
+    if (currentUserId.toLowerCase() === entryOwnerId.toLowerCase()) {
       return;
     }
 
@@ -543,48 +548,58 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
                   >
                     {entry.element?.toUpperCase()}
                   </div>
-                  {/* Soul Star Button */}
-                  <button
-                    type="button"
-                    className={`flex items-center gap-1 transition-all duration-200 hover:scale-110 px-1 py-1 ${
-                      starringEntryId === entry.entry_id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-                    }`}
-                    disabled={starringEntryId === entry.entry_id || !currentUserId}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      try { sfx.play('card-ding', 0.45); } catch {}
-                      handleToggleStar(entry.entry_id);
-                    }}
-                    onMouseEnter={() => {
-                      try { sfx.play('hover', 0.6); } catch {}
-                    }}
-                    style={{
-                      background: 'transparent'
-                    }}
-                  >
-                    <Image
-                      src="/elements/soul-star.webp"
-                      alt="Soul Star"
-                      width={28}
-                      height={28}
-                      style={{
-                        filter: starredByMe.has(entry.entry_id)
-                          ? `drop-shadow(0 0 10px ${entryTheme.color}) drop-shadow(0 0 20px ${entryTheme.glow}) brightness(1.3)`
-                          : `drop-shadow(0 0 6px ${entryTheme.color}) drop-shadow(0 0 10px ${entryTheme.glow}) brightness(1.0)`
-                      }}
-                    />
-                    <span
-                      className="text-sm font-semibold"
-                      style={{
-                        color: entryTheme.color,
-                        textShadow: starredByMe.has(entry.entry_id)
-                          ? `0 0 8px ${entryTheme.glow}, 0 0 12px ${entryTheme.glow}`
-                          : `0 0 4px ${entryTheme.glow}`
-                      }}
-                    >
-                      {(entry as any).stars_count ?? 0}
-                    </span>
-                  </button>
+                  {/* Soul Star Button - Always visible, disabled for own entries */}
+                  {(() => {
+                    const isOwnEntry = currentUserId && entry.user_id && currentUserId.toLowerCase() === entry.user_id.toLowerCase();
+                    return (
+                      <button
+                        type="button"
+                        className={`flex items-center gap-1 transition-all duration-200 px-1 py-1 ${
+                          isOwnEntry ? 'cursor-default' : starringEntryId === entry.entry_id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-110'
+                        }`}
+                        disabled={isOwnEntry || starringEntryId === entry.entry_id || !currentUserId}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!isOwnEntry) {
+                            try { sfx.play('card-ding', 0.45); } catch {}
+                            handleToggleStar(entry.entry_id, entry.user_id);
+                          }
+                        }}
+                        onMouseEnter={() => {
+                          if (!isOwnEntry) {
+                            try { sfx.play('hover', 0.6); } catch {}
+                          }
+                        }}
+                        style={{
+                          background: 'transparent',
+                          opacity: isOwnEntry ? 0.7 : 1
+                        }}
+                      >
+                        <Image
+                          src="/elements/soul-star.webp"
+                          alt="Soul Star"
+                          width={28}
+                          height={28}
+                          style={{
+                            filter: starredByMe.has(entry.entry_id)
+                              ? `drop-shadow(0 0 10px ${entryTheme.color}) drop-shadow(0 0 20px ${entryTheme.glow}) brightness(1.3)`
+                              : `drop-shadow(0 0 6px ${entryTheme.color}) drop-shadow(0 0 10px ${entryTheme.glow}) brightness(1.0)`
+                          }}
+                        />
+                        <span
+                          className="text-sm font-semibold"
+                          style={{
+                            color: entryTheme.color,
+                            textShadow: starredByMe.has(entry.entry_id)
+                              ? `0 0 8px ${entryTheme.glow}, 0 0 12px ${entryTheme.glow}`
+                              : `0 0 4px ${entryTheme.glow}`
+                          }}
+                        >
+                          {(entry as any).stars_count ?? 0}
+                        </span>
+                      </button>
+                    );
+                  })()}
                 </div>
               </div>
 

@@ -345,7 +345,7 @@ THE ELEMENTS OF THE HEARTVERSE
                       audio.play().catch(e => console.log('Star audio play failed:', e));
                     } catch {}
 
-                    // Save to database if user is logged in
+                    // Save to database if user is logged in (do NOT send updated_at)
                     if (user && profile) {
                       setSaving(true);
                       try {
@@ -353,8 +353,7 @@ THE ELEMENTS OF THE HEARTVERSE
                           .from('profiles')
                           .update({
                             element: selectedElement,
-                            profile_image_url: `/elements/${selectedElement}.webp`,
-                            updated_at: new Date().toISOString()
+                            profile_image_url: `/elements/${selectedElement}.webp`
                           })
                           .eq('id', user.id);
 

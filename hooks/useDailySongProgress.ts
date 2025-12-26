@@ -16,6 +16,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { logHeartcoinTransaction } from '@/utils/heartcoins';
+import { consumeBoost } from '@/lib/boosts';
 
 // Types
 interface DailyProgressState {
@@ -136,13 +137,19 @@ export function useDailySongProgress({
     isProcessingRef.current = true;
 
     try {
+      // Clamp values to prevent database overflow
+      // Max reasonable song duration: 1 hour = 3600 seconds
+      const clampedListenedSeconds = Math.min(Math.max(0, Math.floor(listenedSeconds)), 36000);
+      const clampedDurationSeconds = Math.min(Math.max(1, Math.floor(durationSeconds)), 36000);
+      const clampedPercent = Math.min(Math.max(0, Math.round(completionPercent * 100) / 100), 100);
+
       const progressData: any = {
         user_id: userId,
         song_id: songId,
         day,
-        listened_seconds: Math.floor(listenedSeconds),
-        duration_seconds: Math.floor(durationSeconds),
-        completion_percent: Math.round(completionPercent * 100) / 100, // 2 decimal places
+        listened_seconds: clampedListenedSeconds,
+        duration_seconds: clampedDurationSeconds,
+        completion_percent: clampedPercent,
         updated_at: new Date().toISOString()
       };
 
@@ -187,23 +194,52 @@ export function useDailySongProgress({
     }
 
     try {
+      // Generate stable event ID for idempotent boost consumption
+      const eventId = `listen_reward:${userId}:${songId}:${day}`;
+
+      // Attempt to consume an active listen boost (Deep Focus)
+      const boostResult = await consumeBoost('listen_rewards', eventId);
+
+      // Calculate final reward amount
+      const baseAmount = 1;
+      const finalAmount = boostResult.didConsume
+        ? baseAmount * boostResult.multiplier + boostResult.addAmount
+        : baseAmount;
+
+      const description = boostResult.didConsume
+        ? `Listened to 50% of a song (Deep Focus ${boostResult.multiplier}x)`
+        : `Listened to 50% of a song`;
+
       await logHeartcoinTransaction(supabaseBrowser, {
         user_id: userId,
-        amount: 1,
+        amount: finalAmount,
         reason: 'SONG_LISTEN_COMPLETE',
-        description: `Listened to 50% of a song`,
+        description,
         transaction_type: 'bonus',
         metadata: {
           song_id: songId,
           song_slug: songSlug,
           day,
-          source: 'daily_progress'
+          source: 'daily_progress',
+          boost_applied: boostResult.didConsume,
+          boost_key: boostResult.boostKey,
+          multiplier: boostResult.multiplier,
+          add_amount: boostResult.addAmount
         }
       });
 
       // Mark as completed in our local cache
       completedRef.current.add(cacheKey);
-      console.log(`🎵 Daily progress: Awarded 1 HeartCoin for completing ${songSlug}!`);
+
+      if (boostResult.didConsume) {
+        console.log(`🎵 Daily progress: Awarded ${finalAmount} HeartCoins for completing ${songSlug} (Deep Focus ${boostResult.multiplier}x, ${boostResult.usesRemaining} uses left)!`);
+        // Dispatch event to refresh boosts in UI
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('boosts:refresh'));
+        }
+      } else {
+        console.log(`🎵 Daily progress: Awarded ${finalAmount} HeartCoin for completing ${songSlug}!`);
+      }
     } catch (err) {
       console.error('🎵 Daily progress: Failed to award HeartCoin:', err);
     }
@@ -254,7 +290,8 @@ export function useDailySongProgress({
         const { currentTime, duration, paused } = audioElement;
 
         // Wait for valid duration (handle Safari loadedmetadata timing)
-        if (!duration || duration <= 0 || isNaN(duration)) {
+        // Also check for Infinity which can occur with streaming audio
+        if (!duration || duration <= 0 || isNaN(duration) || !isFinite(duration)) {
           console.log('🎵 Daily progress: Waiting for valid duration...');
           return;
         }

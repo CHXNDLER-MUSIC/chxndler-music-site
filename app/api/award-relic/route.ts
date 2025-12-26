@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     // Find the relic by code
     const { data: relic, error: relicError } = await supabase
       .from('relics')
-      .select('id, code, label')
+      .select('id, code, label, kind')
       .eq('code', relicCode)
       .maybeSingle();
 
@@ -72,6 +72,7 @@ export async function POST(request: Request) {
         alreadyOwned: true,
         relicCode,
         relicLabel: relic.label,
+        relicKind: relic.kind,
       });
     }
 
@@ -107,6 +108,44 @@ export async function POST(request: Request) {
       console.warn('[award-relic API] Could not update relics count:', updateError);
     }
 
+    // If this is a BOOST relic, create a user_active_boosts entry
+    if (relic.kind?.toLowerCase() === 'boost') {
+      // Map relic code to boost configuration
+      const boostConfigMap: Record<string, { scope: string; multiplier: number; add_amount: number; uses: number }> = {
+        'deep_focus': { scope: 'listen_rewards', multiplier: 2, add_amount: 0, uses: 1 },
+        'reflection_boost': { scope: 'journal_rewards', multiplier: 2, add_amount: 0, uses: 1 },
+        'streak_shield': { scope: 'streak_rewards', multiplier: 1, add_amount: 1, uses: 1 },
+      };
+
+      const boostConfig = boostConfigMap[relicCode.toLowerCase()];
+
+      if (boostConfig) {
+        // Calculate expiration (24 hours from now)
+        const now = new Date();
+        const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+        // Create user_active_boosts entry
+        const { error: boostError } = await supabase
+          .from('user_active_boosts')
+          .insert({
+            user_id: userId,
+            boost_key: relicCode.toLowerCase(),
+            scope: boostConfig.scope,
+            multiplier: boostConfig.multiplier,
+            add_amount: boostConfig.add_amount,
+            uses_remaining: boostConfig.uses,
+            starts_at: now.toISOString(),
+            expires_at: expiresAt.toISOString(),
+          });
+
+        if (boostError) {
+          console.warn('[award-relic API] Could not create user_active_boosts:', boostError);
+        } else {
+          console.log('[award-relic API] Created user_active_boosts:', relicCode.toLowerCase(), 'for user:', userId);
+        }
+      }
+    }
+
     console.log('[award-relic API] Relic awarded successfully:', relicCode, 'to user:', userId);
 
     return NextResponse.json({
@@ -114,6 +153,7 @@ export async function POST(request: Request) {
       alreadyOwned: false,
       relicCode,
       relicLabel: relic.label,
+      relicKind: relic.kind,
     });
   } catch (err: any) {
     console.error('[award-relic API] Unexpected error:', err);

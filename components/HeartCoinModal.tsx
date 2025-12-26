@@ -532,13 +532,31 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         break;
 
       case 'LISTEN_SONG_OF_DAY':
-        // Close modal and warp to today's song planet via playerStore (triggers warp effect)
+        // Close modal, warp to song planet, and auto-play
         if (songOfDaySlug) {
+          console.log('[LISTEN] Song of day LISTEN clicked:', songOfDaySlug);
+
+          // IMPORTANT: Start playback IMMEDIATELY on user gesture to avoid autoplay blocking
+          // Browser autoplay policy requires playback to start from user interaction
+          console.log('[LISTEN] Triggering immediate playback for:', songOfDaySlug);
+          if (typeof (window as any).__playTrackDirect === 'function') {
+            (window as any).__playTrackDirect(songOfDaySlug, 'daily-quest-listen');
+          } else {
+            window.dispatchEvent(new CustomEvent('song:play-now', {
+              detail: { slug: songOfDaySlug, source: 'daily-quest-listen' }
+            }));
+          }
+
           onClose();
           setTimeout(() => {
             console.log('[WARP] trigger from daily quest LISTEN button', { songOfDaySlug });
             try {
+              // Set main track in player store (updates UI state)
               playerStore.getState().setMain(songOfDaySlug);
+              // Dispatch warp event to move 3D camera to the planet
+              window.dispatchEvent(new CustomEvent('planet:warp-to-song', {
+                detail: { id: songOfDaySlug, source: 'daily-quest' }
+              }));
             } catch (e) {
               console.error('[WARP] Failed to set main song:', e);
             }

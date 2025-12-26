@@ -771,6 +771,57 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     setFilteredCards(filtered);
   }, [cards, selectedCardElement, selectedRarity]);
 
+  // Auto-navigate to selected card when opened from COLLECT CARD button
+  useEffect(() => {
+    // Only run when opened from collect card button with a selected song
+    if (!isFromCollectCard || !selectedSong || cards.length === 0) return;
+
+    // Find the card by matching name (case-insensitive)
+    const normalizedSelectedSong = selectedSong.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const matchedCard = cards.find(card => {
+      const cardName = (card.card_name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      return cardName === normalizedSelectedSong;
+    });
+
+    if (matchedCard && matchedCard.element) {
+      // Auto-select the card's element
+      const elementUpper = matchedCard.element.toUpperCase();
+      if (selectedCardElement !== elementUpper) {
+        setSelectedCardElement(elementUpper);
+      }
+
+      // Find the card index in the filtered list after element is set
+      // We need to compute what the filtered list will be
+      const filteredForElement = cards.filter(card =>
+        card.element?.toLowerCase() === matchedCard.element.toLowerCase()
+      );
+
+      // Sort same as in filtering: element cards first
+      const elementName = matchedCard.element.charAt(0).toUpperCase() + matchedCard.element.slice(1).toLowerCase();
+      filteredForElement.sort((a, b) => {
+        const aIsElementCard = a.card_name?.toLowerCase() === elementName.toLowerCase();
+        const bIsElementCard = b.card_name?.toLowerCase() === elementName.toLowerCase();
+        if (aIsElementCard && !bIsElementCard) return -1;
+        if (!aIsElementCard && bIsElementCard) return 1;
+        return 0;
+      });
+
+      // Find the index of the matched card
+      const cardIndex = filteredForElement.findIndex(card =>
+        card.id === matchedCard.id ||
+        (card.card_name || '').toLowerCase().replace(/[^a-z0-9]/g, '') === normalizedSelectedSong
+      );
+
+      if (cardIndex >= 0) {
+        setCurrentCardIndex(cardIndex);
+      }
+
+      // Only clear selectedSong to prevent re-running, but keep isFromCollectCard
+      // so the modal doesn't auto-close (see isActive useEffect)
+      setSelectedSong('');
+    }
+  }, [isFromCollectCard, selectedSong, cards, selectedCardElement]);
+
   // Pre-load cards when the modal opens (not just when CARDS tab is active)
   // This ensures cards are ready when user navigates to CARDS tab
   useEffect(() => {
@@ -1545,25 +1596,27 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       const result = await response.json();
       console.log('[CARD PURCHASE] API response:', result);
 
-      if (!response.ok || !result.success) {
-        console.error('[CARD PURCHASE] Physical purchase failed:', result.error);
-        try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: result.error || 'Purchase failed', type: 'error' } })); } catch {}
+      // Check for failure: HTTP error OR ok:false in response
+      if (!response.ok || result.ok === false) {
+        const errorMsg = result.error || `Purchase failed (${response.status})`;
+        console.error('[CARD PURCHASE] Physical purchase failed:', errorMsg);
+        try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: errorMsg, type: 'error' } })); } catch {}
         return;
       }
 
-      // Only proceed to shipping form if we have a valid orderId
-      if (!result.orderId) {
-        console.error('[CARD PURCHASE] No orderId returned from API');
+      // Only proceed to shipping form if we have a valid order_id
+      if (!result.order_id) {
+        console.error('[CARD PURCHASE] No order_id returned from API');
         try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Order creation failed - no order ID returned', type: 'error' } })); } catch {}
         return;
       }
 
-      const orderId = result.orderId as string | undefined;
-      const newBalance = result.newBalance as number | undefined;
-      const cost = result.cost as number | undefined;
-      console.log('[CARD PURCHASE] orders.id', orderId);
-      console.log('[CARD PURCHASE] cost', cost);
-      console.log('[CARD PURCHASE] newBalance', newBalance);
+      const orderId = result.order_id as string;
+      const newBalance = result.new_balance as number | undefined;
+      const cost = selectedCard?.physicalCost || 20;
+      console.log('[CARD PURCHASE] order_id:', orderId);
+      console.log('[CARD PURCHASE] cost:', cost);
+      console.log('[CARD PURCHASE] new_balance:', newBalance);
 
       // Update local balance
       if (typeof newBalance === 'number') {
@@ -2804,7 +2857,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     </div>
                     {/* Special rendering for TAP_ELEMENT_OF_DAY */}
                     {quest.quest_key === 'TAP_ELEMENT_OF_DAY' && (
-                      <div className="-mt-1 -mb-2 flex flex-col items-center py-4">
+                      <div className="-mt-2 -mb-3 flex flex-col items-center py-1">
                         <button
                           type="button"
                           onClick={(e) => {

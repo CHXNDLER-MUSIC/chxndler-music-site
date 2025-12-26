@@ -224,7 +224,7 @@ export default function HoloHubMenu({
   anchorOffsetPx,
   closeSignal = 0,
   suspend = false,
-  isElementPlanet = false,
+  isLightningPlanet = false,
 }: {
   items?: HubItem[];
   radius?: number;
@@ -242,8 +242,8 @@ export default function HoloHubMenu({
   closeSignal?: number;
   // Temporarily hide panel contents without changing open state
   suspend?: boolean;
-  // True when viewing an element planet (DARKNESS, LIGHTNING, WATER, HEART) - disables streaming buttons
-  isElementPlanet?: boolean;
+  // True when viewing LIGHTNING planet - disables Spotify button only
+  isLightningPlanet?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [inlineUrl, setInlineUrl] = useState<string | null>(null);
@@ -651,9 +651,8 @@ export default function HoloHubMenu({
           const isFirst = i === 0;
           const isLast = i === entries.length - 1;
           const size = itemSize;
-          // Streaming buttons (Spotify, Apple Music, YouTube) are disabled on element planets
-          const isStreamingButton = ['sp', 'am', 'yt'].includes(it.id);
-          const isDisabled = isElementPlanet && isStreamingButton;
+          // Spotify button is disabled on LIGHTNING planet only
+          const isDisabled = isLightningPlanet && it.id === 'sp';
           return (
             <button
               key={it.id}
@@ -735,9 +734,8 @@ export default function HoloHubMenu({
                 const isFirst = i === 0;
                 const isLast = i === entries.length - 1;
                 const size = itemSize;
-                // Streaming buttons (Spotify, Apple Music, YouTube) are disabled on element planets
-                const isStreamingButton = ['sp', 'am', 'yt'].includes(it.id);
-                const isDisabled = isElementPlanet && isStreamingButton;
+                // Spotify button is disabled on LIGHTNING planet only
+                const isDisabled = isLightningPlanet && it.id === 'sp';
                 return (
                   <button
                     key={it.id}
@@ -1197,7 +1195,7 @@ export default function HoloHubMenu({
         .item:active{ transform: translate(var(--tx,0), var(--ty,0)) translate(-50%, -50%) scale(0.95); }
         /* Focus ring should follow the item's own tint, not the hub color */
         .item:focus{ outline: 2px solid var(--tint, #38B6FF); outline-offset: 2px; }
-        /* Disabled state for streaming buttons on element planets */
+        /* Disabled state for Spotify button on LIGHTNING planet */
         .item-disabled, .item:disabled {
           pointer-events: none !important;
           cursor: not-allowed !important;

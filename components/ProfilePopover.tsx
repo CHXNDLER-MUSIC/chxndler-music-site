@@ -9,6 +9,7 @@ import { elementIcons } from '@/lib/elementIcons';
 import { sfx } from '@/lib/sfx';
 import { MerchItem } from '@/types/merch';
 import { TiltSpinCard } from '@/components/TiltSpinCard';
+import { fetchActiveBoosts as fetchActiveBoostsFromDB, type ActiveBoost } from '@/lib/boosts';
 
 interface Badge {
   id: string;
@@ -81,7 +82,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
   const [relicRotationModal, setRelicRotationModal] = useState(0);
   const [showElementInfo, setShowElementInfo] = useState(false);
   const [currentElementIndex, setCurrentElementIndex] = useState(0);
-  const [activeBoosts, setActiveBoosts] = useState<{ kind: string; label: string }[]>([]);
+  const [activeBoosts, setActiveBoosts] = useState<ActiveBoost[]>([]);
   const [totalSoulStars, setTotalSoulStars] = useState(0);
 
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -135,58 +136,34 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
     return () => window.removeEventListener('relics:refresh', handleRelicsRefresh);
   }, [user]);
 
-  // Fetch active boosts for today (NY timezone)
+  // Fetch active boosts from user_active_boosts table
   useEffect(() => {
     if (!isOpen || !user) {
       setActiveBoosts([]);
       return;
     }
 
-    const fetchActiveBoosts = async () => {
-      try {
-        // Calculate today in NY timezone
-        const todayNY = new Intl.DateTimeFormat('en-CA', {
-          timeZone: 'America/New_York',
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
-        }).format(new Date());
-
-        const { data, error } = await supabaseBrowser
-          .from('user_effects')
-          .select('kind, metadata')
-          .eq('user_id', user.id)
-          .eq('active_date', todayNY)
-          .is('consumed_at', null);
-
-        if (error) {
-          console.warn('Failed to fetch active boosts:', error);
-          return;
-        }
-
-        if (data && data.length > 0) {
-          const boostLabels: Record<string, string> = {
-            'JOURNAL_BONUS': '📝 Reflection (2x Journal)',
-            'LISTEN_MULTIPLIER': '🎧 Deep Focus (2x Listen)',
-            'STREAK_SHIELD': '🛡️ Streak Shield'
-          };
-          setActiveBoosts(
-            data.map(effect => ({
-              kind: effect.kind,
-              label: boostLabels[effect.kind] || effect.kind
-            }))
-          );
-        } else {
-          setActiveBoosts([]);
-        }
-      } catch (err) {
-        console.warn('Error fetching active boosts:', err);
-        setActiveBoosts([]);
-      }
+    const loadActiveBoosts = async () => {
+      const boosts = await fetchActiveBoostsFromDB(user.id);
+      setActiveBoosts(boosts);
     };
 
-    fetchActiveBoosts();
+    loadActiveBoosts();
   }, [isOpen, user]);
+
+  // Listen for boosts:refresh event to update UI after boost consumption
+  useEffect(() => {
+    if (!user) return;
+
+    const handleBoostsRefresh = async () => {
+      console.log('[ProfilePopover] Received boosts:refresh event, refetching...');
+      const boosts = await fetchActiveBoostsFromDB(user.id);
+      setActiveBoosts(boosts);
+    };
+
+    window.addEventListener('boosts:refresh', handleBoostsRefresh);
+    return () => window.removeEventListener('boosts:refresh', handleBoostsRefresh);
+  }, [user]);
 
   // Fetch total soul stars when popover opens
   useEffect(() => {
@@ -690,11 +667,11 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
 
     setSaving(true);
     try {
+      // Only update profiles table - never public_profiles_table (it's a read-only view)
       const { error } = await supabaseBrowser
         .from('profiles')
         .update({
-          name: editedName.trim(),
-          updated_at: new Date().toISOString()
+          name: editedName.trim()
         })
         .eq('id', user.id);
 
@@ -724,42 +701,46 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
 
     setSaving(true);
     try {
-      // Update profile with new name and profile_image_url
-      const updates: any = {};
-      
+      // Build update payload with ONLY allowed columns - never send updated_at
+      // Only update profiles table - never public_profiles_table (it's a read-only view)
+      const updates: { name?: string; profile_image_url?: string } = {};
+
       if (editedName.trim() !== profile.name) {
         updates.name = editedName.trim();
       }
-      
+
       if (selectedImageUrl !== (profile.profile_image_url || getElementImageUrl(profile.element))) {
         updates.profile_image_url = selectedImageUrl;
-        try { sfx.play('flip', 0.6); } catch {}
       }
 
       if (Object.keys(updates).length > 0) {
-        updates.updated_at = new Date().toISOString();
+        // Dev log: print exact payload keys being sent (ensure updated_at is NOT included)
+        console.log('[handleSave] Updating profiles table with payload keys:', Object.keys(updates));
 
-        const { error } = await supabaseBrowser
+        const { data, error } = await supabaseBrowser
           .from('profiles')
           .update(updates)
-          .eq('id', user.id);
+          .eq('id', user.id)
+          .select()
+          .single();
 
         if (error) {
-          console.error('Error updating profile:', error);
+          console.error('[handleSave] Error updating profile:', error.code, error.message, error);
+          // TODO: Show UI toast/notification for user feedback
           return;
         }
 
-        // Refresh profile context
+        console.log('[handleSave] Profile updated successfully:', data?.id);
+
+        // Refresh profile context to update UI immediately
         await refreshProfile();
-        
-        try {
-          sfx.play('success', 0.6);
-        } catch {}
+
+        try { sfx.play('success', 0.6); } catch {}
       }
 
       onClose();
     } catch (error) {
-      console.error('Error saving profile changes:', error);
+      console.error('[handleSave] Error saving profile changes:', error);
     } finally {
       setSaving(false);
     }
@@ -1328,20 +1309,44 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                 BOOST
               </span>
               {activeBoosts.length > 0 ? (
-                <div className="flex flex-wrap gap-2 justify-center">
+                <div className="flex flex-col gap-2 w-full">
                   {activeBoosts.map((boost, idx) => (
-                    <span
-                      key={`${boost.kind}-${idx}`}
-                      className="text-sm px-3 py-1 rounded-full"
+                    <div
+                      key={`${boost.boostKey}-${idx}`}
+                      className="flex flex-col items-center px-3 py-2 rounded-lg"
                       style={{
-                        color: '#00FFFF',
-                        textShadow: '0 0 6px rgba(0,255,255,0.6)',
-                        background: 'rgba(0,255,255,0.15)',
-                        border: '1px solid rgba(0,255,255,0.4)'
+                        background: 'rgba(0,255,255,0.1)',
+                        border: '1px solid rgba(0,255,255,0.3)'
                       }}
                     >
-                      {boost.label}
-                    </span>
+                      <span
+                        className="font-bold text-sm"
+                        style={{
+                          color: '#00FFFF',
+                          textShadow: '0 0 8px rgba(0,255,255,0.7)'
+                        }}
+                      >
+                        {boost.name}
+                      </span>
+                      <span
+                        className="text-xs"
+                        style={{
+                          color: 'rgba(0,255,255,0.9)',
+                          textShadow: '0 0 4px rgba(0,255,255,0.5)'
+                        }}
+                      >
+                        {boost.effect}
+                      </span>
+                      <span
+                        className="text-xs mt-1"
+                        style={{
+                          color: 'rgba(0,255,255,0.7)',
+                          textShadow: '0 0 3px rgba(0,255,255,0.4)'
+                        }}
+                      >
+                        Uses left: {boost.usesLeft}
+                      </span>
+                    </div>
                   ))}
                 </div>
               ) : (
@@ -1418,35 +1423,13 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                   {getAllElements().map((element) => (
                     <button
                       key={element.name}
-                      onClick={async () => {
+                      onClick={() => {
                         if (!user) return;
 
-                        // Update local state immediately
+                        // Update local state only - save will happen when clicking green check
                         setSelectedImageUrl(element.url);
                         setShowElementMenu(false);
                         try { sfx.play('flip', 0.6); } catch {}
-
-                        // Save element and profile image to Supabase
-                        try {
-                          const { error } = await supabaseBrowser
-                            .from('profiles')
-                            .update({
-                              element: element.name,
-                              profile_image_url: element.url,
-                              updated_at: new Date().toISOString()
-                            })
-                            .eq('id', user.id);
-
-                          if (error) {
-                            console.error('Error updating element:', error);
-                            return;
-                          }
-
-                          // Refresh profile context
-                          await refreshProfile();
-                        } catch (error) {
-                          console.error('Error saving element:', error);
-                        }
                       }}
                       onMouseEnter={() => {
                         try { sfx.play('hover', 0.3); } catch {}
@@ -1506,34 +1489,13 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                     return (
                       <button
                         key={`relic-${relic.id}`}
-                        onClick={async () => {
+                        onClick={() => {
                           if (!user || !isUnlocked || !relic.icon_url) return;
 
-                          // Update local state immediately
+                          // Update local state only - save will happen when clicking green check
                           setSelectedImageUrl(relic.icon_url);
                           setShowElementMenu(false);
                           try { sfx.play('flip', 0.6); } catch {}
-
-                          // Save profile image to Supabase
-                          try {
-                            const { error } = await supabaseBrowser
-                              .from('profiles')
-                              .update({
-                                profile_image_url: relic.icon_url,
-                                updated_at: new Date().toISOString()
-                              })
-                              .eq('id', user.id);
-
-                            if (error) {
-                              console.error('Error updating profile image:', error);
-                              return;
-                            }
-
-                            // Refresh profile context
-                            await refreshProfile();
-                          } catch (error) {
-                            console.error('Error saving profile image:', error);
-                          }
                         }}
                         onMouseEnter={() => {
                           try { sfx.play('hover', 0.3); } catch {}
@@ -2095,13 +2057,12 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                   const currentElement = getCurrentElementData();
                   
                   try {
-                    // Update user's element in profile
+                    // Update user's element in profile (profiles table only)
                     const { error } = await supabaseBrowser
                       .from('profiles')
                       .update({
                         element: currentElement.name,
-                        profile_image_url: currentElement.url,
-                        updated_at: new Date().toISOString()
+                        profile_image_url: currentElement.url
                       })
                       .eq('id', user.id);
 
@@ -2110,7 +2071,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                       return;
                     }
 
-                    // Refresh profile context and update local state
+                    // Refresh profile context to update UI immediately
                     await refreshProfile();
                     setSelectedImageUrl(currentElement.url);
                     

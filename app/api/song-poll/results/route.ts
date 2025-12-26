@@ -3,6 +3,9 @@ import { createSupabaseServerClientWithJwt, getSupabaseAdmin } from '@/lib/supab
 import { PollService } from '@/lib/pollService';
 import { PollResults } from '@/types/poll';
 
+// Prevent static prerendering - this route requires runtime env vars
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     // Use admin client to get poll results (no auth required for viewing results)

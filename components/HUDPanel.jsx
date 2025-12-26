@@ -1188,13 +1188,13 @@ const HUDPanel = React.memo(function HUDPanel({
     }
 
     try {
+      // Update profiles table only - do NOT send updated_at (breaks public_profiles_table view)
       const { error } = await supabaseClient
         .from('profiles')
         .update({
           name: profileName.trim(),
           element: selectedElement,
-          profile_complete: true,
-          updated_at: new Date().toISOString()
+          profile_complete: true
         })
         .eq('id', currentProfileId);
 
@@ -2630,7 +2630,7 @@ const HUDPanel = React.memo(function HUDPanel({
 
                       {/* Streaming: Spotify, Apple, YouTube moved left into top controls */}
                       {(() => {
-                        const CHXNDLER_SPOTIFY_PROFILE = 'https://open.spotify.com/artist/6O2eoUA8ZWY0lwjsa3E3Yo';
+                        const CHXNDLER_SPOTIFY_PROFILE = 'https://open.spotify.com/artist/6O2eoUA8ZWY0lwjsa3E3Yo?si=7gxP4bNnQ1ax1ODrZ6RvtA';
                         const spotifyUrl = currentSong?.spotify || CHXNDLER_SPOTIFY_PROFILE;
                         const isProfileFallback = !currentSong?.spotify;
                         return (
@@ -2646,8 +2646,14 @@ const HUDPanel = React.memo(function HUDPanel({
                             data-slug={currentSong?.id || ''}
                             data-id="sp"
                             onClick={(e) => {
-                              try { e.preventDefault(); } catch {}
                               try { sfx.play('join-aliens', 0.9); } catch {}
+                              // For artist profile, open directly in Spotify
+                              if (isProfileFallback) {
+                                // Let the default anchor behavior handle it (opens in new tab)
+                                return;
+                              }
+                              // For song links, try embed popover
+                              try { e.preventDefault(); } catch {}
                               try {
                                 const { toSpotifyEmbed } = require('@/lib/spotify');
                                 const embed = toSpotifyEmbed(spotifyUrl);
@@ -2667,35 +2673,14 @@ const HUDPanel = React.memo(function HUDPanel({
                       })()}
 
                       {(() => {
-                        const appleUrl = currentSong?.apple;
+                        const CHXNDLER_APPLE_PROFILE = 'https://music.apple.com/us/artist/chxndler/1660901437';
+                        const appleUrl = currentSong?.apple || CHXNDLER_APPLE_PROFILE;
+                        const isProfileFallback = !currentSong?.apple;
                         const isElementPlanet = ELEMENT_PLANETS.includes(String(active).toLowerCase());
-                        if (currentId && appleUrl && !isElementPlanet) {
+                        // Show disabled only for element planets with no song apple link
+                        if (isElementPlanet && !currentSong?.apple) {
                           return (
-                            <a
-                              href={appleUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="apple-btn-waveform-hud"
-                              style={{ marginTop: 1 }}
-                              title="Open on Apple Music"
-                              aria-label={`Open ${currentSong?.title || 'current track'} on Apple Music`}
-                              data-song={currentSong?.title || ''}
-                              data-slug={currentSong?.id || ''}
-                              data-id="am"
-                              onClick={(e) => {
-                                try { e.preventDefault(); } catch {}
-                                try { sfx.play('join-aliens', 0.9); } catch {}
-                                try {
-                                  const { toAppleEmbed } = require('@/lib/apple');
-                                  const embed = toAppleEmbed(appleUrl);
-                                  if (embed) { setAmEmbedUrl(embed); setShowApplePopover(true); }
-                                  else { window.open(appleUrl, '_blank', 'noopener,noreferrer'); }
-                                } catch {
-                                  try { window.open(appleUrl, '_blank', 'noopener,noreferrer'); } catch {}
-                                }
-                              }}
-                              onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                            >
+                            <div className="apple-btn-unavailable-hud" style={{ marginTop: 1 }} title="Apple Music not available for elemental planets">
                               <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" role="img" aria-label="Music notes" style={{ display: 'block' }}>
                                 <ellipse cx="7.5" cy="18.2" rx="3.2" ry="3.4" />
                                 <ellipse cx="16.5" cy="16" rx="3.2" ry="3.4" />
@@ -2703,11 +2688,41 @@ const HUDPanel = React.memo(function HUDPanel({
                                 <rect x="18" y="4" width="2" height="11" rx="1" />
                                 <path d="M11 6 L20 4 L20 6.5 L11 8.5 Z" />
                               </svg>
-                            </a>
+                            </div>
                           );
                         }
                         return (
-                          <div className="apple-btn-unavailable-hud" style={{ marginTop: 1 }} title={isElementPlanet ? 'Apple Music not available for elemental planets' : (!currentId) ? 'Apple Music not available on homepage' : `No Apple Music link available for ${currentSong?.title || 'current track'}`}>
+                          <a
+                            href={appleUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="apple-btn-waveform-hud"
+                            style={{ marginTop: 1 }}
+                            title={isProfileFallback ? "Open CHXNDLER on Apple Music" : "Open on Apple Music"}
+                            aria-label={isProfileFallback ? "Open CHXNDLER on Apple Music" : `Open ${currentSong?.title || 'current track'} on Apple Music`}
+                            data-song={currentSong?.title || ''}
+                            data-slug={currentSong?.id || ''}
+                            data-id="am"
+                            onClick={(e) => {
+                              try { sfx.play('join-aliens', 0.9); } catch {}
+                              // For artist profile, open directly in Apple Music
+                              if (isProfileFallback) {
+                                // Let the default anchor behavior handle it (opens in new tab)
+                                return;
+                              }
+                              // For song links, try embed popover
+                              try { e.preventDefault(); } catch {}
+                              try {
+                                const { toAppleEmbed } = require('@/lib/apple');
+                                const embed = toAppleEmbed(appleUrl);
+                                if (embed) { setAmEmbedUrl(embed); setShowApplePopover(true); }
+                                else { window.open(appleUrl, '_blank', 'noopener,noreferrer'); }
+                              } catch {
+                                try { window.open(appleUrl, '_blank', 'noopener,noreferrer'); } catch {}
+                              }
+                            }}
+                            onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                          >
                             <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" role="img" aria-label="Music notes" style={{ display: 'block' }}>
                               <ellipse cx="7.5" cy="18.2" rx="3.2" ry="3.4" />
                               <ellipse cx="16.5" cy="16" rx="3.2" ry="3.4" />
@@ -2715,7 +2730,7 @@ const HUDPanel = React.memo(function HUDPanel({
                               <rect x="18" y="4" width="2" height="11" rx="1" />
                               <path d="M11 6 L20 4 L20 6.5 L11 8.5 Z" />
                             </svg>
-                          </div>
+                          </a>
                         );
                       })()}
 
@@ -6550,14 +6565,13 @@ const HUDPanel = React.memo(function HUDPanel({
                             }
                             
                             try {
-                              // Save complete profile to database
+                              // Save complete profile to database (do NOT send updated_at)
                               const { error } = await supabaseClient
                                 .from('profiles')
-                                .update({ 
+                                .update({
                                   name: profileName.trim(),
                                   element: selectedElement,
-                                  profile_complete: true,
-                                  updated_at: new Date().toISOString()
+                                  profile_complete: true
                                 })
                                 .eq('id', currentProfileId);
 

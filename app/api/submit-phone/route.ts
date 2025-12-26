@@ -52,12 +52,11 @@ export async function POST(req: NextRequest) {
       }
 
       if (existingProfile) {
-        // Update existing profile with phone number
+        // Update existing profile with phone number (do NOT send updated_at)
         const { error: updateError } = await admin
           .from('profiles')
-          .update({ 
-            phone: cleanPhone,
-            updated_at: new Date().toISOString()
+          .update({
+            phone: cleanPhone
           })
           .eq('id', userId);
 
@@ -66,8 +65,8 @@ export async function POST(req: NextRequest) {
           throw updateError;
         }
 
-        return NextResponse.json({ 
-          success: true, 
+        return NextResponse.json({
+          success: true,
           message: 'Phone number updated in your profile!',
           type: 'profile_updated'
         });
@@ -78,8 +77,7 @@ export async function POST(req: NextRequest) {
           .insert({
             id: userId,
             phone: cleanPhone,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            created_at: new Date().toISOString()
           });
 
         if (insertError) {
