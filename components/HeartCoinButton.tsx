@@ -2873,8 +2873,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     className="absolute inset-0 rounded-full animate-pulse"
                                     style={{
                                       background: 'radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0.6) 40%, transparent 70%)',
-                                      transform: 'scale(2.2)',
-                                      filter: 'blur(6px)'
+                                      transform: 'scale(1.6)',
+                                      filter: 'blur(4px)'
                                     }}
                                   />
                                   <img
@@ -2909,8 +2909,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   className="absolute inset-0 rounded-full animate-pulse"
                                   style={{
                                     background: 'radial-gradient(circle, rgba(255,255,0,1) 0%, rgba(255,255,0,0.6) 40%, transparent 70%)',
-                                    transform: 'scale(2.2)',
-                                    filter: 'blur(6px)'
+                                    transform: 'scale(1.6)',
+                                    filter: 'blur(4px)'
                                   }}
                                 />
                                 <img
@@ -3181,8 +3181,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       className="absolute inset-0 rounded-full animate-pulse"
                                       style={{
                                         background: 'radial-gradient(circle, rgba(255,0,255,1) 0%, rgba(255,0,255,0.6) 40%, transparent 70%)',
-                                        transform: 'scale(2.2)',
-                                        filter: 'blur(6px)'
+                                        transform: 'scale(1.6)',
+                                        filter: 'blur(4px)'
                                       }}
                                     />
                                     <img src="/elements/antennas.webp" alt="" className="w-10 h-10 relative" />
@@ -3196,8 +3196,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       className="absolute inset-0 rounded-full animate-pulse"
                                       style={{
                                         background: 'radial-gradient(circle, rgba(78,205,196,1) 0%, rgba(78,205,196,0.6) 40%, transparent 70%)',
-                                        transform: 'scale(2.2)',
-                                        filter: 'blur(6px)'
+                                        transform: 'scale(1.6)',
+                                        filter: 'blur(4px)'
                                       }}
                                     />
                                     <img src="/elements/merch.webp" alt="" className="w-10 h-10 relative" />
@@ -3211,8 +3211,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       className="absolute inset-0 rounded-full animate-pulse"
                                       style={{
                                         background: 'radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0.6) 40%, transparent 70%)',
-                                        transform: 'scale(2.2)',
-                                        filter: 'blur(6px)'
+                                        transform: 'scale(1.6)',
+                                        filter: 'blur(4px)'
                                       }}
                                     />
                                     <img

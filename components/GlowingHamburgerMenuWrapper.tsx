@@ -15,6 +15,15 @@ import WelcomeHomeModal from "./WelcomeHomeModal";
 import { useUIState } from "@/lib/use-ui-state";
 import { useTour } from "@/contexts/TourContext";
 import { useMenuState } from "@/contexts/MenuStateContext";
+import { useElementOfDayClaim, ElementOfDay } from "@/hooks/useElementOfDayClaim";
+
+// Map element of day to beam color
+const ELEMENT_TO_BEAM_COLOR: Record<NonNullable<ElementOfDay>, string> = {
+  heart: 'pink',
+  water: 'cyan',
+  lightning: 'yellow',
+  darkness: 'white'
+};
 
 interface GlowingHamburgerMenuWrapperProps {
   hidden?: boolean;
@@ -35,6 +44,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
   const { hasEnteredHeartverse } = useUIState();
   const tour = useTour();
   const { isMenuOpen, setMenuOpen } = useMenuState();
+  const { element: elementOfDay } = useElementOfDayClaim();
 
   useLogOnChange('codeOpen state changed:', { codeOpen });
 
@@ -64,6 +74,10 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
     };
 
     const handleOpenJournalModal = () => {
+      // Set beam color based on element of day
+      if (elementOfDay && ELEMENT_TO_BEAM_COLOR[elementOfDay]) {
+        try { onBeamColorChange?.(ELEMENT_TO_BEAM_COLOR[elementOfDay]); } catch {}
+      }
       setJournalOpen(true);
     };
 
@@ -100,7 +114,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
       window.removeEventListener('openJourneyModal', handleOpenJourneyModal);
       window.removeEventListener('closeAllModals', handleCloseAllModals);
     };
-  }, [onBeamColorChange]);
+  }, [onBeamColorChange, elementOfDay]);
 
   const handleItemClick = (label: string) => {
     setLastClickedItem(label);
@@ -138,8 +152,9 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
         case "JOURNAL":
         case "COMPLETED": {
           // Logging handled by modal state debug hook
-          // Ensure no other displays (e.g., livestream) open when Journal opens
-          try { onBeamColorChange?.('off'); } catch {}
+          // Set beam color based on element of day when opening journal
+          const journalBeamColor = elementOfDay && ELEMENT_TO_BEAM_COLOR[elementOfDay] ? ELEMENT_TO_BEAM_COLOR[elementOfDay] : 'pink';
+          try { onBeamColorChange?.(journalBeamColor); } catch {}
           // Open the journal on pointerup to avoid any chance of click-through
           let opened = false;
           const openJournal = (ev: Event) => {
@@ -179,6 +194,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
             // Set a flag to indicate this is from the STORE menu
             (window as any).priceHeartCoinsFromStore = true;
           }
+          try { onBeamColorChange?.('white'); } catch {}
           setHeartCoinOpen(true);
           break;
         case "CHXNDLER":

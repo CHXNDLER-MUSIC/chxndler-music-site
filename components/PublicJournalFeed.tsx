@@ -61,23 +61,23 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
   const [authorOverrides, setAuthorOverrides] = useState<Record<string, { name: string | null; avatar: string | null }>>({});
 
   // Helper: Resolve avatar URL with correct priority order
-  // 1. entry.author_avatar_url (from DB)
-  // 2. profile.profile_image_url (ONLY if entry.user_id === current user) - PRIORITIZE current user's fresh profile
-  // 3. authorOverrides[entry.user_id]?.avatar (for missing denormalized fields)
+  // 1. Current user's fresh profile (for own entries) - always use latest
+  // 2. Fresh data from public_profiles (authorOverrides) - preferred over stale DB data
+  // 3. entry.author_avatar_url (from DB - may be stale)
   // 4. default avatar "/elements/alien.webp"
   const resolveAvatarUrl = (entry: { user_id: string; author_avatar_url?: string | null }) => {
-    // First priority: DB-stored author avatar
-    if (entry.author_avatar_url) {
-      return entry.author_avatar_url;
-    }
-    // Second priority: current user's profile context (for own entries) - use case-insensitive comparison
+    // First priority: current user's profile context (for own entries) - always use fresh profile
     const isOwnEntry = user?.id && entry.user_id?.toLowerCase() === user.id?.toLowerCase();
     if (isOwnEntry && profile?.profile_image_url) {
       return profile.profile_image_url;
     }
-    // Third priority: fetched public profile override (for other users)
+    // Second priority: fresh data from public_profiles (authorOverrides)
     if (authorOverrides[entry.user_id]?.avatar) {
       return authorOverrides[entry.user_id].avatar;
+    }
+    // Third priority: DB-stored author avatar (may be stale)
+    if (entry.author_avatar_url) {
+      return entry.author_avatar_url;
     }
     // Fallback: default avatar
     return "/elements/alien.webp";
@@ -135,27 +135,25 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
     spinAudioRef.current.volume = 0.5;
   }, []);
 
-  // Load author public profile info for entries missing denormalized fields
-  // Query public_profiles table directly for profile_image_url
+  // Load author public profile info from public_profiles table
+  // Always fetch fresh data to ensure profile images are up-to-date
   useEffect(() => {
-    const loadMissingAuthorInfo = async () => {
+    const loadAuthorProfiles = async () => {
       try {
-        const missing = Array.from(new Set(
+        // Get ALL unique user IDs from entries (not just missing ones)
+        const allUserIds = Array.from(new Set(
           (entries || [])
-            .filter(e => !e.author_name || !e.author_avatar_url)
             .map(e => e.user_id)
             .filter(Boolean)
-        ))
-        // Skip any we already have overrides for
-        .filter((userId) => !authorOverrides[userId]);
+        ));
 
-        if (missing.length === 0) return;
+        if (allUserIds.length === 0) return;
 
-        // Query public_profiles table directly for profile_image_url
+        // Query public_profiles table directly for fresh profile_image_url
         const { data: profilesData, error: profilesError } = await supabaseBrowser
           .from('public_profiles')
           .select('id, name, profile_image_url')
-          .in('id', missing);
+          .in('id', allUserIds);
 
         if (profilesError) {
           console.warn('PublicJournalFeed: failed to query public_profiles', profilesError);
@@ -173,7 +171,7 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
         });
 
         if (Object.keys(next).length > 0) {
-          setAuthorOverrides(prev => ({ ...prev, ...next }));
+          setAuthorOverrides(next);
         }
       } catch (err) {
         console.warn('PublicJournalFeed: failed to load public author profiles', err);
@@ -181,9 +179,9 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
     };
 
     if (entries && entries.length > 0) {
-      loadMissingAuthorInfo();
+      loadAuthorProfiles();
     }
-  }, [entries, authorOverrides]);
+  }, [entries]);
 
   // Reset card state when enlarged card changes
   useEffect(() => {

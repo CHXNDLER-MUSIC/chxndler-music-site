@@ -501,8 +501,8 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
             onClick={() => {
               try { sfx.play('close', 0.8); } catch {}
               setOpen(false);
-              // Show blue display when closing binder popup
-              try { onOpenBlueDisplay?.(); } catch {}
+              // Turn off the beam when closing binder popup
+              try { onBeamColorChange?.('off'); } catch {}
             }}
             className="absolute top-2 right-4 text-pink-400 hover:text-pink-200 cursor-pointer w-8 h-8 rounded-full border border-pink-400/80 flex items-center justify-center"
             style={{ 

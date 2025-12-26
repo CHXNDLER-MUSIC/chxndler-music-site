@@ -11,6 +11,7 @@ import { triggerCardCelebration } from "@/utils/cardCelebration";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import TiltSpinCard from "@/components/TiltSpinCard";
 import { useUserCards } from "@/hooks/useUserCards";
+import { useBinderSlots, BinderSlot } from "@/hooks/useBinderSlots";
 
 // Add keyframes for pulsing animation
 const pulseKeyframes = `
@@ -95,6 +96,7 @@ interface PhysicalCardOrder {
 export default function BinderModal({ open, onClose, preselectedCard, preselectedElement, pulsingCards = false, onOpenHeartCoin }: Props) {
   const { profile, updateProfile } = useProfile();
   const { cards: ownedCards } = useUserCards(profile?.id);
+  const { slots: binderSlots, refresh: refreshBinderSlots } = useBinderSlots(profile?.id);
   const [cardOpen, setCardOpen] = useState(false);
   const [showFullCollection, setShowFullCollection] = useState(false);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
@@ -106,7 +108,23 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [cardRotation, setCardRotation] = useState(0);
   const [isAnimatingFlip, setIsAnimatingFlip] = useState(false);
-  const [binderPage, setBinderPage] = useState<'first' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth' | 'seventh' | 'eighth' | 'ninth' | 'tenth' | 'eleventh' | 'twelfth' | 'thirteenth'>('first');
+  const [pageIndex, setPageIndex] = useState(0);
+
+  // Binder pagination constants
+  const PAGE_SIZE = 6;
+  const totalSlots = binderSlots.length || 78; // Default to 78 slots if no data
+  const totalPages = Math.max(1, Math.ceil(totalSlots / PAGE_SIZE));
+  const visibleSlots = binderSlots.slice(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE);
+
+  // Preview slots for logged-out state
+  const previewSlots: BinderSlot[] = [
+    { user_id: '', slot_index: 0, is_unlocked: true, card_id: 'chxndler-preview', card_name: 'CHXNDLER', artwork_url: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910', element: 'ALL', rarity: 'Common', is_starter: true },
+    { user_id: '', slot_index: 1, is_unlocked: false, card_id: null, card_name: null, artwork_url: null, element: null, rarity: null, is_starter: null },
+    { user_id: '', slot_index: 2, is_unlocked: false, card_id: null, card_name: null, artwork_url: null, element: null, rarity: null, is_starter: null },
+    { user_id: '', slot_index: 3, is_unlocked: false, card_id: null, card_name: null, artwork_url: null, element: null, rarity: null, is_starter: null },
+    { user_id: '', slot_index: 4, is_unlocked: false, card_id: null, card_name: null, artwork_url: null, element: null, rarity: null, is_starter: null },
+    { user_id: '', slot_index: 5, is_unlocked: false, card_id: null, card_name: null, artwork_url: null, element: null, rarity: null, is_starter: null },
+  ];
   // Purchase flow state machine
   const [selectedPurchaseType, setSelectedPurchaseType] = useState<'digital' | 'physical' | null>(null);
   const [purchaseState, setPurchaseState] = useState<'idle' | 'insufficient' | 'digital-preview' | 'confirm-digital' | 'confirm-physical' | 'physical-form' | 'success'>('idle');
@@ -816,19 +834,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
           try { sfx.play('close', 0.8); } catch {}
           onClose();
         }}
-        pageIndicator={!showFullCollection ? `${binderPage === 'first' ? '1' :
-         binderPage === 'second' ? '2' :
-         binderPage === 'third' ? '3' :
-         binderPage === 'fourth' ? '4' :
-         binderPage === 'fifth' ? '5' :
-         binderPage === 'sixth' ? '6' :
-         binderPage === 'seventh' ? '7' :
-         binderPage === 'eighth' ? '8' :
-         binderPage === 'ninth' ? '9' :
-         binderPage === 'tenth' ? '10' :
-         binderPage === 'eleventh' ? '11' :
-         binderPage === 'twelfth' ? '12' :
-         binderPage === 'thirteenth' ? '13' : '1'} / 13` : undefined}
+        pageIndicator={!showFullCollection ? `${pageIndex + 1} / ${totalPages}` : undefined}
         compact
         fullOverlay={cardOpen && selectedCard ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md" style={{ padding: '16px 20px' }}>
@@ -942,8 +948,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
           {/* Dynamic Content - Binder Cards or Full Collection */}
           <div className="relative overflow-hidden flex-shrink-0" style={{ maxHeight: '100%' }}>
             {!showFullCollection ? (
-              binderPage === 'first' ? (
-                // User's Binder - First Page - Show 5 initial slots
+              // Unified Binder Slot Rendering - All Pages
               <div className="relative">
                 <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
                   {Array.from({ length: 6 }, (_, index) => {
