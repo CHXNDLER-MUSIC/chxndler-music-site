@@ -695,52 +695,49 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
     }
   };
 
-  // Handle saving changes
+  // Handle saving profile image changes ONLY
   const handleSave = async () => {
     if (!profile || !user) return;
 
+    // Check if the selected image is different from current profile image
+    const currentImageUrl = profile.profile_image_url || getElementImageUrl(profile.element);
+    if (selectedImageUrl === currentImageUrl) {
+      // No change, just close
+      onClose();
+      return;
+    }
+
     setSaving(true);
     try {
-      // Build update payload with ONLY allowed columns - never send updated_at
-      // Only update profiles table - never public_profiles_table (it's a read-only view)
-      const updates: { name?: string; profile_image_url?: string } = {};
+      // Log the exact update we're about to perform
+      console.log('[handleSave] Updating profile image:', {
+        table: 'profiles',
+        id: user.id,
+        profile_image_url: selectedImageUrl
+      });
 
-      if (editedName.trim() !== profile.name) {
-        updates.name = editedName.trim();
+      // Update ONLY profile_image_url - no other fields
+      const { data, error } = await supabaseBrowser
+        .from('profiles')
+        .update({ profile_image_url: selectedImageUrl })
+        .eq('id', user.id)
+        .select('id, profile_image_url');
+
+      if (error) {
+        console.error('[handleSave] Error updating profile_image_url:', error.code, error.message, error);
+        return;
       }
 
-      if (selectedImageUrl !== (profile.profile_image_url || getElementImageUrl(profile.element))) {
-        updates.profile_image_url = selectedImageUrl;
-      }
+      console.log('[handleSave] Profile image updated successfully:', data);
 
-      if (Object.keys(updates).length > 0) {
-        // Dev log: print exact payload keys being sent (ensure updated_at is NOT included)
-        console.log('[handleSave] Updating profiles table with payload keys:', Object.keys(updates));
+      // Refresh profile context to update UI immediately
+      await refreshProfile();
 
-        const { data, error } = await supabaseBrowser
-          .from('profiles')
-          .update(updates)
-          .eq('id', user.id)
-          .select()
-          .single();
-
-        if (error) {
-          console.error('[handleSave] Error updating profile:', error.code, error.message, error);
-          // TODO: Show UI toast/notification for user feedback
-          return;
-        }
-
-        console.log('[handleSave] Profile updated successfully:', data?.id);
-
-        // Refresh profile context to update UI immediately
-        await refreshProfile();
-
-        try { sfx.play('success', 0.6); } catch {}
-      }
+      try { sfx.play('alien-wave', 0.6); } catch {}
 
       onClose();
     } catch (error) {
-      console.error('[handleSave] Error saving profile changes:', error);
+      console.error('[handleSave] Error saving profile image:', error);
     } finally {
       setSaving(false);
     }
@@ -899,30 +896,20 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
             ×
           </button>
 
-          {/* PROFILE Header */}
-          <div className="text-center mb-0.5">
+          {/* PROFILE Header with underline */}
+          <div className="text-center mb-1">
             <h1
-              className="text-2xl font-bold"
+              className="text-2xl font-bold inline-block pb-2"
               style={{
                 color: '#00FFFF',
                 textShadow: '0 0 12px rgba(0,255,255,0.8)',
-                letterSpacing: '0.1em'
+                letterSpacing: '0.1em',
+                borderBottom: '1px solid #00FFFF'
               }}
             >
               PROFILE
             </h1>
           </div>
-
-          {/* Thin cyan neon line under PROFILE title */}
-          <div
-            style={{
-              width: '50%',
-              height: '2px',
-              margin: '8px auto 16px auto',
-              background: '#00FFFF',
-              boxShadow: '0 0 8px #00FFFF, 0 0 16px rgba(0,255,255,0.6)'
-            }}
-          />
 
           {/* Top section with Profile Image and Header */}
           <div className="flex items-start justify-between mb-1">
@@ -957,11 +944,11 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                   />
                 </button>
 
-                {/* Checkmark confirmation button - Top Right of Image */}
-                {(editedName.trim() !== profile?.name || selectedImageUrl !== (profile?.profile_image_url || getElementImageUrl(profile?.element))) && (
+                {/* Checkmark confirmation button - Top Right of Image - ONLY show when image has changed */}
+                {!isEditingName && selectedImageUrl !== (profile?.profile_image_url || getElementImageUrl(profile?.element)) && (
                   <button
                     onClick={handleSave}
-                    disabled={saving || !editedName.trim()}
+                    disabled={saving}
                     className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
                     style={{
                       background: 'rgba(0,255,0,0.2)',
@@ -1081,7 +1068,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
               )}
 
               {/* Journey label - clickable to open MY JOURNEY */}
-              <div className="mt-1">
+              <div className="mt-0">
                 {(() => {
                   const { label, color } = getJourneyDisplay();
                   return (
@@ -1094,7 +1081,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                       onMouseEnter={() => {
                         try { sfx.play('hover', 0.3); } catch {}
                       }}
-                      className="text-lg font-semibold tracking-wide transition-all duration-200 hover:scale-105"
+                      className="text-xl font-semibold tracking-wide transition-all duration-200 hover:scale-105"
                       style={{
                         color,
                         textShadow: `0 0 6px ${color}80`,
@@ -1112,7 +1099,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
               </div>
               
               {/* Element */}
-              <div className="flex items-center mt-2">
+              <div className="flex items-center mt-0">
                 <button
                   onClick={() => {
                     if (profile?.element) {
@@ -1150,7 +1137,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
           </div>
 
           {/* Stats Row - Daily Streak, HeartCoins, Soul Stars */}
-          <div className="flex items-center justify-between px-2 py-2 mb-0.5 rounded-lg" style={{ background: 'rgba(0,0,0,0.3)' }}>
+          <div className="flex items-center justify-between px-2 py-1.5 mb-0 rounded-lg" style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.1)' }}>
             {/* Daily Streak - Left */}
             <div className="flex flex-col items-center">
               <div className="flex items-center gap-1.5">
@@ -1253,12 +1240,12 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
           </div>
 
           {/* Relics & Merch Buttons Row */}
-          <div className="flex items-center justify-between px-4 py-1 mb-0.5 rounded-lg" style={{ background: 'rgba(0,0,0,0.3)' }}>
+          <div className="flex items-center justify-between px-2 py-1 mb-0.5 rounded-lg gap-2" style={{ background: 'rgba(0,0,0,0.3)' }}>
             {/* Relics Button - Left */}
             <button
               onClick={() => { setShowRelicsInline(true); setShowMerchInline(false); try { sfx.play('click', 0.6); } catch {} }}
               onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 hover:scale-105"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-1.5 rounded-lg transition-all duration-200 hover:scale-105"
               style={{
                 background: 'linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,215,0,0.1))',
                 border: '1px solid rgba(255,215,0,0.5)',
@@ -1285,7 +1272,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
             <button
               onClick={() => { setShowMerchInline(true); setShowRelicsInline(false); try { sfx.play('click', 0.6); } catch {} }}
               onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 hover:scale-105"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-1.5 rounded-lg transition-all duration-200 hover:scale-105"
               style={{
                 background: 'linear-gradient(135deg, rgba(168,85,247,0.2), rgba(168,85,247,0.1))',
                 border: '1px solid rgba(168,85,247,0.5)',
@@ -1310,7 +1297,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
           </div>
 
           {/* BOOST Row */}
-          <div className="flex items-center justify-center px-4 py-1.5 rounded-lg" style={{ background: 'rgba(0,0,0,0.3)' }}>
+          <div className="flex items-center justify-center px-4 py-1.5 rounded-lg" style={{ background: 'rgba(0,255,255,0.05)', border: '1px solid rgba(0,255,255,0.2)' }}>
             <div className="flex flex-col items-center w-full">
               <span
                 className="font-bold text-base mb-1"
@@ -1518,8 +1505,11 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                         className={`relative w-14 h-14 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 disabled:opacity-60 disabled:cursor-not-allowed ${
                             selectedImageUrl === relic.icon_url
                               ? 'border-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.6)]'
-                              : 'border-white/30 hover:border-cyan-400/60'
+                              : isUnlocked
+                                ? 'border-cyan-400'
+                                : 'border-white/30 hover:border-cyan-400/60'
                           }`}
+                        style={isUnlocked && selectedImageUrl !== relic.icon_url ? { boxShadow: '0 0 8px rgba(0,255,255,0.6), 0 0 16px rgba(0,255,255,0.3)' } : {}}
                         title={isUnlocked ? (relic.relic_name || `Relic ${i + 1}`) : 'Locked'}
                       >
                         {hasImage ? (
@@ -1694,10 +1684,12 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                       <button
                         type="button"
                         onClick={() => { if (isUnlocked && hasImage) { setSelectedRelicInline(relic.icon_url!); try { sfx.play('click', 0.6); } catch {} } }}
+                        onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
                         key={`relic-inline-${relic.id}`}
-                        className="aspect-square rounded-lg border border-white/20 bg-black/40 relative overflow-hidden transition-transform hover:scale-[1.03] disabled:opacity-60 disabled:cursor-not-allowed"
+                        className={`aspect-square rounded-lg bg-black/40 relative overflow-hidden transition-all hover:scale-[1.03] disabled:opacity-60 disabled:cursor-not-allowed ${isUnlocked ? 'border border-cyan-400' : 'border border-white/20'}`}
                         style={{
-                          minHeight: '68px'
+                          minHeight: '68px',
+                          ...(isUnlocked ? { boxShadow: '0 0 8px rgba(0,255,255,0.6), 0 0 16px rgba(0,255,255,0.3)' } : {})
                         }}
                         disabled={!isUnlocked}
                         title={isUnlocked ? (hasImage ? `View ${relic.relic_name}` : relic.relic_name || `Relic ${i + 1}`) : 'Locked'}
@@ -1829,8 +1821,6 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                   </div>
                   {/* Full-size image container */}
                   <div className="relative flex-1 min-h-0 flex items-center justify-center overflow-hidden bg-black/80 p-2">
-                    {/* Simple glow circle behind the image */}
-                    <div className="absolute w-48 h-48 bg-[#00FFFF]/30 rounded-full blur-xl" style={{ zIndex: 0 }} />
                     <TiltSpinCard
                       className="relative w-full h-full animate-[pulse-float_3s_ease-in-out_infinite]"
                       style={{
@@ -1887,9 +1877,10 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                         onClick={() => { if (isUnlocked && hasImage) { setSelectedMerchInline(item as MerchItem); try { sfx.play('click', 0.6); } catch {} } }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
                         key={`merch-inline-${item.id}`}
-                        className="aspect-square rounded-lg border border-white/20 bg-black/40 relative overflow-hidden transition-transform hover:scale-[1.03] disabled:opacity-60 disabled:cursor-not-allowed"
+                        className={`aspect-square rounded-lg bg-black/40 relative overflow-hidden transition-all hover:scale-[1.03] disabled:opacity-60 disabled:cursor-not-allowed ${isUnlocked ? 'border border-cyan-400' : 'border border-white/20'}`}
                         style={{
-                          minHeight: '82px'
+                          minHeight: '82px',
+                          ...(isUnlocked ? { boxShadow: '0 0 8px rgba(0,255,255,0.6), 0 0 16px rgba(0,255,255,0.3)' } : {})
                         }}
                         disabled={!isUnlocked}
                         title={isUnlocked ? (hasImage ? `View ${item.name}` : item.name || `Merch ${i + 1}`) : 'Locked'}
@@ -2035,31 +2026,19 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                 }}
               />
 
-              {/* Element Info Layout - Split with info on right */}
-              <div className="flex gap-4 mb-2">
-                {/* Left side - Element Icon */}
-                <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
-                  <img
-                    src={getElementInfo(getCurrentElementData().name).icon}
-                    alt={getElementInfo(getCurrentElementData().name).title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                
-                {/* Right side - Element Title and Description */}
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold mb-1"
-                    style={{
-                      color: getElementInfo(getCurrentElementData().name).color,
-                      textShadow: `0 0 8px ${getElementInfo(getCurrentElementData().name).color}60`
-                    }}
-                  >
-                    {getElementInfo(getCurrentElementData().name).title} = {getElementInfo(getCurrentElementData().name).subtitle}
-                  </h3>
-                  <p className="text-sm leading-normal text-white/90">
-                    {getElementInfo(getCurrentElementData().name).description}
-                  </p>
-                </div>
+              {/* Element Info Layout */}
+              <div className="mb-2">
+                <h3 className="text-lg font-bold mb-1 text-center"
+                  style={{
+                    color: getElementInfo(getCurrentElementData().name).color,
+                    textShadow: `0 0 8px ${getElementInfo(getCurrentElementData().name).color}60`
+                  }}
+                >
+                  {getElementInfo(getCurrentElementData().name).title} = {getElementInfo(getCurrentElementData().name).subtitle}
+                </h3>
+                <p className="text-sm leading-normal text-white/90">
+                  {getElementInfo(getCurrentElementData().name).description}
+                </p>
               </div>
 
 
@@ -2319,7 +2298,8 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                       type="button"
                       onClick={() => { if (isUnlocked && hasImage) { setSelectedRelicModal(relic.icon_url!); try { sfx.play('click', 0.6); } catch {} } }}
                       key={`relic-modal-${relic.id}`}
-                      className="aspect-square rounded-lg border-2 border-white/20 bg-black/40 relative overflow-hidden transition-transform hover:scale-[1.03] disabled:opacity-60 disabled:cursor-not-allowed"
+                      className={`aspect-square rounded-lg bg-black/40 relative overflow-hidden transition-all hover:scale-[1.03] disabled:opacity-60 disabled:cursor-not-allowed ${isUnlocked ? 'border-2 border-cyan-400' : 'border-2 border-white/20'}`}
+                      style={isUnlocked ? { boxShadow: '0 0 8px rgba(0,255,255,0.6), 0 0 16px rgba(0,255,255,0.3)' } : {}}
                       disabled={!isUnlocked}
                       title={isUnlocked ? (hasImage ? `View ${relic.relic_name}` : relic.relic_name || `Relic ${i + 1}`) : 'Locked'}
                     >

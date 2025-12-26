@@ -1481,20 +1481,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       const { data, error } = await supabaseBrowser.rpc('purchase_digital_card', { p_card_id: selectedCardId });
 
       if (error) {
-        console.error('[CARD PURCHASE] RPC error', {
-          message: (error as any)?.message,
-          code: (error as any)?.code,
-          details: (error as any)?.details,
-          hint: (error as any)?.hint,
-          full: error,
-        });
+        const msg = (error as any)?.message || '';
 
-        const msg = (error as any)?.message?.toLowerCase?.() || '';
-        const alreadyOwned = msg.includes('already') || msg.includes('owned') || msg.includes('conflict') || msg.includes('duplicate');
-        if (alreadyOwned) {
-          try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Already owned', type: 'info' } })); } catch {}
+        if (msg.includes('Not enough HeartCoins')) {
+          try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Not enough HeartCoins', type: 'error' } })); } catch {}
+        } else if (msg.includes('Not authenticated')) {
+          try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Please log in to buy cards', type: 'error' } })); } catch {}
         } else {
-          try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Couldn’t complete purchase', type: 'error' } })); } catch {}
+          console.error('[CARD PURCHASE] RPC error', error);
+          try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Purchase failed', type: 'error' } })); } catch {}
         }
         return; // Early return on error; finally will reset flags
       }

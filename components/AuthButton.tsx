@@ -8,7 +8,7 @@ import { sfx } from '@/lib/sfx';
 import WelcomeHomeModal from '@/components/WelcomeHomeModal';
 import ProfilePopover from '@/components/ProfilePopover';
 import { useUIStore } from '@/store/useUIStore';
-import { ElementIcon } from '@/lib/elementIcons';
+import { ElementIcon, elementIcons } from '@/lib/elementIcons';
 
 export default function AuthButton() {
   const { user, loading: authLoading, clearSession } = useAuth();
@@ -227,12 +227,17 @@ export default function AuthButton() {
         {/* Profile Image - only show when user has complete profile */}
         {buttonMode === 'profile' && currentElement && (
           <div className="mr-2">
-            <ElementIcon 
-              name={currentElement} 
-              alt={currentElement} 
-              width={32} 
+            <img
+              src={profile?.profile_image_url || elementIcons[currentElement as keyof typeof elementIcons] || elementIcons.heart}
+              alt={currentElement}
+              width={32}
               height={32}
-              className="w-8 h-8 object-cover"
+              className="w-8 h-8 rounded-full object-cover"
+              onError={(e) => {
+                // Fallback to element icon if profile image fails to load
+                const target = e.target as HTMLImageElement;
+                target.src = elementIcons[currentElement as keyof typeof elementIcons] || elementIcons.heart;
+              }}
             />
           </div>
         )}
