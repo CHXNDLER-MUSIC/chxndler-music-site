@@ -912,6 +912,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [enlargedCard, setEnlargedCard] = useState<Card | null>(null);
   const [showCardConfirm, setShowCardConfirm] = useState<'digital' | 'physical' | null>(null);
   const [cardPurchaseStep, setCardPurchaseStep] = useState<'confirm' | 'shipping' | 'done'>('confirm');
+  const [pendingPhysicalOrderId, setPendingPhysicalOrderId] = useState<string | null>(null);
   const [cardShippingAttempted, setCardShippingAttempted] = useState(false);
   const [isEnlargedCardFlipped, setIsEnlargedCardFlipped] = useState(false);
   const [cardRotation, setCardRotation] = useState(0); // For 360° spin mode
@@ -1604,17 +1605,22 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         return;
       }
 
-      // Only proceed to shipping form if we have a valid order_id
-      if (!result.order_id) {
-        console.error('[CARD PURCHASE] No order_id returned from API');
-        try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Order creation failed - no order ID returned', type: 'error' } })); } catch {}
+      // Extract order_id - handle both direct response and array response
+      const extractedOrderId =
+        Array.isArray(result)
+          ? result[0]?.order_id
+          : result?.order_id;
+
+      if (!extractedOrderId || typeof extractedOrderId !== 'string') {
+        console.error('[CARD PURCHASE] INVALID order_id from purchase result', result);
+        try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Order creation failed - invalid order ID', type: 'error' } })); } catch {}
         return;
       }
 
-      const orderId = result.order_id as string;
+      setPendingPhysicalOrderId(extractedOrderId);
       const newBalance = result.new_balance as number | undefined;
       const cost = selectedCard?.physicalCost || 20;
-      console.log('[CARD PURCHASE] order_id:', orderId);
+      console.log('[CARD PURCHASE] order_id:', extractedOrderId);
       console.log('[CARD PURCHASE] cost:', cost);
       console.log('[CARD PURCHASE] new_balance:', newBalance);
 
@@ -1686,7 +1692,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     }
 
     setShippingStatus('saving');
-    console.log('[CARD SHIPPING] using orders.id', purchaseDraft.orderId);
+
+    console.log('FINAL shipping order_id', pendingPhysicalOrderId, typeof pendingPhysicalOrderId);
+
+    if (!pendingPhysicalOrderId) {
+      console.error('[CARD SHIPPING] No pendingPhysicalOrderId');
+      setShippingStatus('error');
+      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'No order ID available', type: 'error' } })); } catch {}
+      return;
+    }
 
     try {
       const shippingUrl = `${basePath}/api/cards/updateShipping`;
@@ -1694,7 +1708,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          orderId: purchaseDraft.orderId,
+          orderId: pendingPhysicalOrderId,
           full_name: shippingForm.full_name,
           address_line1: shippingForm.address_line1,
           address_line2: shippingForm.address_line2 || null,
@@ -1715,7 +1729,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         return;
       }
 
-      console.log('[CARD SHIPPING] Shipping submitted for order:', purchaseDraft.orderId);
+      console.log('[CARD SHIPPING] Shipping submitted for order:', pendingPhysicalOrderId);
       setShippingStatus('success');
 
       // Play success sound
@@ -1730,6 +1744,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         setCardPurchaseStep('confirm');
         setEnlargedCard(null);
         setPurchaseDraft(null);
+        setPendingPhysicalOrderId(null);
         setShippingStatus('idle');
         setShippingForm({
           full_name: '',
@@ -2934,6 +2949,20 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             } else if (quest.quest_key === 'LISTEN_SONG_OF_DAY') {
                               console.log('[LISTEN BUTTON] Clicked! songOfDaySlug:', songOfDaySlug);
                               try { sfx.play('click', 0.6); } catch {}
+
+                              // IMPORTANT: Start playback IMMEDIATELY on user gesture to avoid autoplay blocking
+                              // Browser autoplay policy requires playback to start from user interaction
+                              if (songOfDaySlug) {
+                                console.log('[LISTEN BUTTON] Triggering immediate playback for:', songOfDaySlug);
+                                if (typeof (window as any).__playTrackDirect === 'function') {
+                                  (window as any).__playTrackDirect(songOfDaySlug, 'daily-quest-listen');
+                                } else {
+                                  window.dispatchEvent(new CustomEvent('song:play-now', {
+                                    detail: { slug: songOfDaySlug, source: 'daily-quest-listen' }
+                                  }));
+                                }
+                              }
+
                               // Close the HeartCoin popup first (notify parent to close)
                               onClose?.();
                               // Close the HeartCoin modal
@@ -2943,12 +2972,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               if (songOfDaySlug) {
                                 console.log('[LISTEN BUTTON] Dispatching song:warp-request with slug:', songOfDaySlug);
                                 setTimeout(() => {
-                                  // Dispatch song:warp-request to trigger full warp sequence (camera + visual effect)
-                                  // Include autoPlay: true to start playback after warp completes
+                                  // Dispatch song:warp-request to trigger warp sequence (camera + visual effect)
+                                  // autoPlay: false since we already started playback above
                                   window.dispatchEvent(new CustomEvent('song:warp-request', {
-                                    detail: { songSlug: songOfDaySlug, source: 'daily-quest', autoPlay: true }
+                                    detail: { songSlug: songOfDaySlug, source: 'daily-quest', autoPlay: false }
                                   }));
-                                  console.log('[LISTEN BUTTON] Warp request dispatched with autoPlay!');
+                                  console.log('[LISTEN BUTTON] Warp request dispatched!');
                                 }, 300);
                               } else {
                                 console.log('[LISTEN BUTTON] ERROR: songOfDaySlug is null/undefined');
@@ -4012,6 +4041,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       prev > 0 ? prev - 1 : filteredCards.length - 1
                                     );
                                   }}
+                                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
                                   className={`w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center transition-all duration-200 border-2 ${
                                     filteredCards.length > 1
                                       ? 'text-white hover:text-yellow-400 border-white/30 hover:border-yellow-400/60 hover:scale-125'
@@ -4026,7 +4056,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 </button>
                                 
                                 {/* Card Image */}
-                                <div className="w-32 h-44 rounded-lg border-2 border-yellow-500/80 overflow-hidden relative cursor-pointer hover:border-yellow-400/90 transition-all duration-200 hover:scale-105">
+                                <div
+                                  className="w-32 h-44 rounded-lg border-2 border-yellow-500/80 overflow-hidden relative cursor-pointer hover:border-yellow-400/90 transition-all duration-200 hover:scale-105"
+                                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                                >
                                 <img
                                   src={card.artwork_url || `/cards/${card.card_name}.webp`}
                                   alt={card.card_name}
@@ -4056,6 +4089,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     prev < filteredCards.length - 1 ? prev + 1 : 0
                                   );
                                 }}
+                                onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
                                 className={`w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center transition-all duration-200 border-2 ${
                                   filteredCards.length > 1
                                     ? 'text-white hover:text-yellow-400 border-white/30 hover:border-yellow-400/60 hover:scale-125'
@@ -4388,7 +4422,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           {/* Enlarged Card Modal - positioned within heart coin modal */}
           {enlargedCard && (
             <div
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 rounded-lg"
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center z-50 rounded-lg py-4"
               onClick={() => {
                 setEnlargedCard(null);
                 setCardRotation(0);
@@ -4396,25 +4430,27 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 setCardPurchaseStep('confirm');
               }}
             >
-              {/* Close Button - positioned in top left of modal overlay */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  try { sfx.play('close', 0.7); } catch {}
-                  setEnlargedCard(null);
-                  setIsEnlargedCardFlipped(false);
-                  setCardRotation(0);
-                  setShowCardConfirm(null);
-                  setCardPurchaseStep('confirm');
-                }}
-                onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-                className="absolute top-3 left-3 w-7 h-7 bg-transparent border-2 border-white rounded-full flex items-center justify-center text-white text-sm font-bold transition-all duration-200 z-10 hover:scale-110 hover:shadow-[0_0_20px_rgba(255,255,255,0.8)]"
-                style={{ textShadow: '0 0 8px rgba(255,255,255,0.9)', boxShadow: '0 0 12px rgba(255,255,255,0.6)' }}
-              >
-                ×
-              </button>
+              {/* Close Button - positioned in top left of modal overlay, hidden during shipping */}
+              {!(showCardConfirm === 'physical' && cardPurchaseStep === 'shipping') && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    try { sfx.play('close', 0.7); } catch {}
+                    setEnlargedCard(null);
+                    setIsEnlargedCardFlipped(false);
+                    setCardRotation(0);
+                    setShowCardConfirm(null);
+                    setCardPurchaseStep('confirm');
+                  }}
+                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                  className="absolute top-3 left-3 w-7 h-7 bg-transparent border-2 border-white rounded-full flex items-center justify-center text-white text-sm font-bold transition-all duration-200 z-10 hover:scale-110 hover:shadow-[0_0_20px_rgba(255,255,255,0.8)]"
+                  style={{ textShadow: '0 0 8px rgba(255,255,255,0.9)', boxShadow: '0 0 12px rgba(255,255,255,0.6)' }}
+                >
+                  ×
+                </button>
+              )}
 
-              {/* Digital Purchase Button - positioned at top of modal */}
+              {/* Digital Purchase Button - at top of display */}
               {!showCardConfirm && (
                 <button
                   onClick={(e) => {
@@ -4423,7 +4459,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     setShowCardConfirm('digital');
                   }}
                   onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-                  className="absolute top-4 left-1/2 -translate-x-1/2 px-6 py-3 rounded border border-yellow-500/60 bg-yellow-500/20 hover:bg-yellow-500/40 hover:scale-110 hover:border-yellow-400 hover:shadow-[0_0_25px_rgba(255,215,0,0.7)] transition-all duration-200 text-white font-semibold text-sm flex items-center gap-2 whitespace-nowrap z-20"
+                  className="mt-4 px-6 py-3 rounded border border-yellow-500/60 bg-yellow-500/20 hover:bg-yellow-500/40 hover:scale-110 hover:border-yellow-400 hover:shadow-[0_0_25px_rgba(255,215,0,0.7)] transition-all duration-200 text-white font-semibold text-sm flex items-center gap-2 whitespace-nowrap z-20"
                   style={{ textShadow: '0 0 4px rgba(255,215,0,0.6)', boxShadow: '0 0 12px rgba(255,215,0,0.3)' }}
                 >
                   {enlargedCard.digitalCost || 5}
@@ -4432,23 +4468,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 </button>
               )}
 
-              {/* Physical Purchase Button - positioned at bottom of modal */}
-              {!showCardConfirm && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    try { sfx.play('click', 0.6); } catch {}
-                    setShowCardConfirm('physical');
-                  }}
-                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-                  className="absolute bottom-4 left-1/2 -translate-x-1/2 px-6 py-3 rounded border border-green-500/60 bg-green-500/20 hover:bg-green-500/40 hover:scale-110 hover:border-green-400 hover:shadow-[0_0_25px_rgba(34,197,94,0.7)] transition-all duration-200 text-white font-semibold text-sm flex items-center gap-2 whitespace-nowrap z-20"
-                  style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)', boxShadow: '0 0 12px rgba(34,197,94,0.3)' }}
-                >
-                  {enlargedCard.physicalCost || 20}
-                  <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5" />
-                  PHYSICAL
-                </button>
-              )}
+              {/* Spacer to push card to center */}
+              <div className="flex-1" />
 
               <div
                 className="relative w-56 mx-4 flex flex-col items-center"
@@ -4466,45 +4487,44 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       {enlargedCard.card_name}
                     </div>
 
-                    {/* Purchase Type */}
-                    <div
-                      className="text-sm text-white/70 uppercase"
-                      style={{ textShadow: '0 0 6px rgba(255,255,255,0.5)' }}
-                    >
-                      {showCardConfirm === 'digital' ? 'DIGITAL' : 'PHYSICAL'}
-                    </div>
+                    {/* Purchase Type, User Balance and Cost - hidden during shipping step */}
+                    {!(showCardConfirm === 'physical' && cardPurchaseStep === 'shipping') && (
+                      <>
+                        <div
+                          className="text-sm text-white/70 uppercase"
+                          style={{ textShadow: '0 0 6px rgba(255,255,255,0.5)' }}
+                        >
+                          {showCardConfirm === 'digital' ? 'DIGITAL' : 'PHYSICAL'}
+                        </div>
 
-                    {/* User Balance */}
-                    <div className="flex items-center gap-2 text-white">
-                      <span className="text-sm opacity-70">YOU</span>
-                      <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-6 h-6" />
-                      <span
-                        className="text-lg font-bold"
-                        style={{ textShadow: '0 0 8px rgba(255,215,0,0.8)' }}
-                      >
-                        {heartCoins}
-                      </span>
-                    </div>
+                        <div className="flex items-center gap-2 text-white">
+                          <span className="text-sm opacity-70">YOU</span>
+                          <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-6 h-6" />
+                          <span
+                            className="text-lg font-bold"
+                            style={{ textShadow: '0 0 8px rgba(255,215,0,0.8)' }}
+                          >
+                            {heartCoins}
+                          </span>
+                        </div>
 
-                    {/* Cost */}
-                    <div className="flex items-center gap-2 text-white">
-                      <span className="text-sm opacity-70">COST</span>
-                      <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-6 h-6" />
-                      <span
-                        className="text-lg font-bold"
-                        style={{ textShadow: '0 0 8px rgba(255,215,0,0.8)' }}
-                      >
-                        {showCardConfirm === 'digital' ? (enlargedCard.digitalCost || 5) : (enlargedCard.physicalCost || 20)}
-                      </span>
-                    </div>
+                        <div className="flex items-center gap-2 text-white">
+                          <span className="text-sm opacity-70">COST</span>
+                          <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-6 h-6" />
+                          <span
+                            className="text-lg font-bold"
+                            style={{ textShadow: '0 0 8px rgba(255,215,0,0.8)' }}
+                          >
+                            {showCardConfirm === 'digital' ? (enlargedCard.digitalCost || 5) : (enlargedCard.physicalCost || 20)}
+                          </span>
+                        </div>
+                      </>
+                    )}
 
                     {/* Confirm Button - or Shipping Form for physical cards */}
                     {showCardConfirm === 'physical' && cardPurchaseStep === 'shipping' ? (
                       /* Shipping Form for physical card purchase */
                       <div className="w-full space-y-2">
-                        <div className="text-sm text-yellow-400 mb-2 text-center" style={{ textShadow: '0 0 4px rgba(255,255,0,0.6)' }}>
-                          Enter shipping details to complete purchase:
-                        </div>
                         <input
                           type="text"
                           placeholder="Full Name"
@@ -4670,7 +4690,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     <img
                       src={enlargedCard.artwork_url || `/cards/${enlargedCard.card_name}.webp`}
                       alt={enlargedCard.card_name}
-                      className="absolute inset-0 w-full h-full rounded-lg shadow-2xl object-contain pointer-events-none"
+                      className="absolute inset-0 w-full h-full rounded-3xl shadow-2xl object-contain pointer-events-none"
                       style={{
                         filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
                         backfaceVisibility: 'hidden',
@@ -4683,7 +4703,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     <img
                       src="/cards/BACK.webp"
                       alt="Card back"
-                      className="absolute inset-0 w-full h-full rounded-lg shadow-2xl object-contain pointer-events-none"
+                      className="absolute inset-0 w-full h-full rounded-3xl shadow-2xl object-contain pointer-events-none"
                       style={{
                         filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))',
                         backfaceVisibility: 'hidden',
@@ -4695,6 +4715,27 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   </TiltSpinCard>
                 )}
               </div>
+
+              {/* Spacer to push physical button to bottom */}
+              <div className="flex-1" />
+
+              {/* Physical Purchase Button - at bottom of display */}
+              {!showCardConfirm && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    try { sfx.play('click', 0.6); } catch {}
+                    setShowCardConfirm('physical');
+                  }}
+                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                  className="mb-4 px-6 py-3 rounded border border-green-500/60 bg-green-500/20 hover:bg-green-500/40 hover:scale-110 hover:border-green-400 hover:shadow-[0_0_25px_rgba(34,197,94,0.7)] transition-all duration-200 text-white font-semibold text-sm flex items-center gap-2 whitespace-nowrap z-20"
+                  style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)', boxShadow: '0 0 12px rgba(34,197,94,0.3)' }}
+                >
+                  {enlargedCard.physicalCost || 20}
+                  <img src="/elements/heart-coin.webp" alt="Heart Coin" className="w-5 h-5" />
+                  PHYSICAL
+                </button>
+              )}
             </div>
           )}
 

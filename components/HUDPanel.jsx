@@ -2631,8 +2631,9 @@ const HUDPanel = React.memo(function HUDPanel({
                       {/* Streaming: Spotify, Apple, YouTube moved left into top controls */}
                       {(() => {
                         const CHXNDLER_SPOTIFY_PROFILE = 'https://open.spotify.com/artist/6O2eoUA8ZWY0lwjsa3E3Yo?si=7gxP4bNnQ1ax1ODrZ6RvtA';
-                        const spotifyUrl = currentSong?.spotify || CHXNDLER_SPOTIFY_PROFILE;
-                        const isProfileFallback = !currentSong?.spotify;
+                        const isHome = !currentId;
+                        const spotifyUrl = isHome ? CHXNDLER_SPOTIFY_PROFILE : (currentSong?.spotify || CHXNDLER_SPOTIFY_PROFILE);
+                        const isProfileFallback = isHome || !currentSong?.spotify;
                         return (
                           <a
                             href={spotifyUrl}
@@ -2646,14 +2647,8 @@ const HUDPanel = React.memo(function HUDPanel({
                             data-slug={currentSong?.id || ''}
                             data-id="sp"
                             onClick={(e) => {
-                              try { sfx.play('join-aliens', 0.9); } catch {}
-                              // For artist profile, open directly in Spotify
-                              if (isProfileFallback) {
-                                // Let the default anchor behavior handle it (opens in new tab)
-                                return;
-                              }
-                              // For song links, try embed popover
                               try { e.preventDefault(); } catch {}
+                              try { sfx.play('join-aliens', 0.9); } catch {}
                               try {
                                 const { toSpotifyEmbed } = require('@/lib/spotify');
                                 const embed = toSpotifyEmbed(spotifyUrl);
@@ -2674,8 +2669,9 @@ const HUDPanel = React.memo(function HUDPanel({
 
                       {(() => {
                         const CHXNDLER_APPLE_PROFILE = 'https://music.apple.com/us/artist/chxndler/1660901437';
-                        const appleUrl = currentSong?.apple || CHXNDLER_APPLE_PROFILE;
-                        const isProfileFallback = !currentSong?.apple;
+                        const isHome = !currentId;
+                        const appleUrl = isHome ? CHXNDLER_APPLE_PROFILE : (currentSong?.apple || CHXNDLER_APPLE_PROFILE);
+                        const isProfileFallback = isHome || !currentSong?.apple;
                         const isElementPlanet = ELEMENT_PLANETS.includes(String(active).toLowerCase());
                         // Show disabled only for element planets with no song apple link
                         if (isElementPlanet && !currentSong?.apple) {
@@ -2704,14 +2700,8 @@ const HUDPanel = React.memo(function HUDPanel({
                             data-slug={currentSong?.id || ''}
                             data-id="am"
                             onClick={(e) => {
-                              try { sfx.play('join-aliens', 0.9); } catch {}
-                              // For artist profile, open directly in Apple Music
-                              if (isProfileFallback) {
-                                // Let the default anchor behavior handle it (opens in new tab)
-                                return;
-                              }
-                              // For song links, try embed popover
                               try { e.preventDefault(); } catch {}
+                              try { sfx.play('join-aliens', 0.9); } catch {}
                               try {
                                 const { toAppleEmbed } = require('@/lib/apple');
                                 const embed = toAppleEmbed(appleUrl);
@@ -2735,17 +2725,13 @@ const HUDPanel = React.memo(function HUDPanel({
                       })()}
 
                       {(() => {
+                        const CHXNDLER_YOUTUBE_CHANNEL = 'https://www.youtube.com/@chxndlerthealien';
+                        const isHome = !currentId;
+                        const youtubeUrl = isHome ? CHXNDLER_YOUTUBE_CHANNEL : (currentSong?.youtube || CHXNDLER_YOUTUBE_CHANNEL);
+                        const isProfileFallback = isHome || !currentSong?.youtube;
                         const isElementPlanet = ELEMENT_PLANETS.includes(String(active).toLowerCase());
-                        if (!currentId) {
-                          return (
-                            <div className="youtube-btn-unavailable-hud" title="YouTube not available on homepage" style={{ marginTop: 1 }}>
-                              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                                <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
-                              </svg>
-                            </div>
-                          );
-                        }
-                        if (isElementPlanet) {
+                        // Show disabled only for element planets with no song youtube link
+                        if (isElementPlanet && !currentSong?.youtube) {
                           return (
                             <div className="youtube-btn-unavailable-hud" title="YouTube not available for elemental planets" style={{ marginTop: 1 }}>
                               <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
@@ -2754,37 +2740,28 @@ const HUDPanel = React.memo(function HUDPanel({
                             </div>
                           );
                         }
-                        if (!currentSong?.youtube) {
-                          return (
-                            <div className="youtube-btn-unavailable-hud" title={`No YouTube link available for ${currentSong?.title || 'current track'}`} style={{ marginTop: 1 }}>
-                              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                                <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
-                              </svg>
-                            </div>
-                          );
-                        }
                         return (
                           <a
-                            href={currentSong.youtube}
+                            href={youtubeUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="youtube-btn-waveform-hud"
                             style={{ marginTop: 1 }}
-                            title={`Open ${currentSong.title} on YouTube`}
-                            aria-label={`Open ${currentSong.title} on YouTube`}
-                            data-song={currentSong.title}
-                            data-slug={currentSong.id}
+                            title={isProfileFallback ? "Open CHXNDLER on YouTube" : `Open ${currentSong?.title || 'current track'} on YouTube`}
+                            aria-label={isProfileFallback ? "Open CHXNDLER on YouTube" : `Open ${currentSong?.title || 'current track'} on YouTube`}
+                            data-song={currentSong?.title || ''}
+                            data-slug={currentSong?.id || ''}
                             data-id="yt"
                             onClick={(e) => {
                               try { e.preventDefault(); } catch {}
                               try { sfx.play('join-aliens', 0.9); } catch {}
                               try {
                                 const { toYouTubeEmbed } = require('@/lib/youtube');
-                                const embed = toYouTubeEmbed(currentSong.youtube);
+                                const embed = toYouTubeEmbed(youtubeUrl);
                                 if (embed) { setYtEmbedUrl(embed); setShowYouTubePopover(true); }
-                                else { window.open(currentSong.youtube, '_blank', 'noopener,noreferrer'); }
+                                else { window.open(youtubeUrl, '_blank', 'noopener,noreferrer'); }
                               } catch {
-                                try { window.open(currentSong.youtube, '_blank', 'noopener,noreferrer'); } catch {}
+                                try { window.open(youtubeUrl, '_blank', 'noopener,noreferrer'); } catch {}
                               }
                             }}
                             onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
@@ -2798,9 +2775,11 @@ const HUDPanel = React.memo(function HUDPanel({
                       {/* Volume button moved to the right of YouTube */}
                       <button
                         className="hud-volume-btn"
-                        style={{ marginTop: 1 }}
+                        style={{ marginTop: 1, position: 'relative', zIndex: 10 }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
                           try { sfx.play('click', 0.4); } catch {}
                           setShowHudVolumePopover(v => {
                             const next = !v;

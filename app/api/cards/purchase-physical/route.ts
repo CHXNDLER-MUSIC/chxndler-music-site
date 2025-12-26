@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
+import { createClient } from '@supabase/supabase-js';
 
 /**
  * Extract access token from Supabase auth cookies
@@ -36,19 +36,7 @@ export async function POST(req: NextRequest) {
   console.log('[purchase-physical] POST request received');
 
   try {
-    // 1. Extract auth token from cookies
-    const cookieStore = await cookies();
-    const token = extractAccessToken(cookieStore);
-
-    if (!token) {
-      console.log('[purchase-physical] No auth token found');
-      return NextResponse.json(
-        { ok: false, error: 'Not authenticated - please log in' },
-        { status: 401 }
-      );
-    }
-
-    // 2. Parse request body
+    // 1. Parse request body
     let cardId: string;
     try {
       const body = await req.json();
@@ -69,25 +57,42 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('[purchase-physical] Processing purchase for cardId:', cardId);
+    // 2. Extract access token from Supabase auth cookies
+    const cookieStore = await cookies();
+    const accessToken = extractAccessToken(cookieStore);
 
-    // 3. Create Supabase client with user's JWT (RLS-aware)
-    const supabase = createSupabaseServerClientWithJwt(token);
-
-    // 4. Verify user authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      console.log('[purchase-physical] Invalid auth token:', authError?.message);
+    if (!accessToken) {
+      console.log('[purchase-physical] No auth token found');
       return NextResponse.json(
-        { ok: false, error: 'Invalid authentication token' },
+        { ok: false, error: 'Not authenticated - please log in' },
         { status: 401 }
       );
     }
 
-    console.log('[purchase-physical] User authenticated:', user.id);
+    console.log('[purchase-physical] Processing purchase for cardId:', cardId);
 
-    // 5. Call the RPC to perform atomic purchase
-    const { data: orderId, error: rpcError } = await supabase.rpc('purchase_physical_card', {
+    // 3. Create Supabase client with anon key and user's access token in Authorization header
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('[purchase-physical] Missing Supabase environment variables');
+      return NextResponse.json(
+        { ok: false, error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
+    });
+
+    // 4. Call the RPC to perform atomic purchase (auth.uid() is set via the JWT)
+    const { data, error: rpcError } = await supabase.rpc('purchase_physical_card', {
       p_card_id: cardId,
     });
 
@@ -97,13 +102,15 @@ export async function POST(req: NextRequest) {
       // Parse known error types from RPC
       const errorMsg = rpcError.message || 'Purchase failed';
       let userMessage = 'Purchase failed';
+      let statusCode = 400;
 
       if (errorMsg.includes('INSUFFICIENT_FUNDS')) {
         userMessage = 'Insufficient HeartCoins for this purchase';
       } else if (errorMsg.includes('ITEM_NOT_FOUND')) {
         userMessage = 'Card not found or not available for physical purchase';
-      } else if (errorMsg.includes('UNAUTHORIZED')) {
+      } else if (errorMsg.includes('UNAUTHORIZED') || errorMsg.includes('JWT')) {
         userMessage = 'Please log in to make a purchase';
+        statusCode = 401;
       } else if (errorMsg.includes('USER_NOT_FOUND')) {
         userMessage = 'User profile not found';
       } else {
@@ -111,23 +118,18 @@ export async function POST(req: NextRequest) {
       }
 
       return NextResponse.json(
-        { ok: false, error: userMessage, details: rpcError.message },
-        { status: 400 }
+        { ok: false, error: userMessage },
+        { status: statusCode }
       );
     }
 
-    // 6. Fetch the updated balance
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('heartcoin_balance')
-      .eq('id', user.id)
-      .single();
-
-    const newBalance = profile?.heartcoin_balance ?? undefined;
+    // 5. Return success response
+    // The RPC should return order_id and new_balance (or adjust based on your function's return type)
+    const orderId = data?.order_id ?? data;
+    const newBalance = data?.new_balance ?? undefined;
 
     console.log('[purchase-physical] SUCCESS order_id:', orderId, 'new_balance:', newBalance);
 
-    // 7. Return success response
     return NextResponse.json({
       ok: true,
       order_id: orderId,
@@ -137,11 +139,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('[purchase-physical] Unexpected error:', error);
     return NextResponse.json(
-      {
-        ok: false,
-        error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { ok: false, error: 'Internal server error' },
       { status: 500 }
     );
   }
