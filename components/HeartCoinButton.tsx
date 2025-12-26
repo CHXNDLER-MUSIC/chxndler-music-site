@@ -1605,13 +1605,23 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         return;
       }
 
-      // Extract order_id - handle both direct response and array response
-      const extractedOrderId =
-        Array.isArray(result)
-          ? result[0]?.order_id
-          : result?.order_id;
+      // Extract order_id - handle array (Supabase RPC result) or string
+      const rawOrderId = result?.order_id;
 
-      if (!extractedOrderId || typeof extractedOrderId !== 'string') {
+      let extractedOrderId: string | undefined;
+
+      if (Array.isArray(rawOrderId)) {
+        const first = rawOrderId[0];
+        if (typeof first === 'string') {
+          extractedOrderId = first;
+        } else if (first && typeof first === 'object') {
+          extractedOrderId = first.id || first.order_id;
+        }
+      } else if (typeof rawOrderId === 'string') {
+        extractedOrderId = rawOrderId;
+      }
+
+      if (!extractedOrderId) {
         console.error('[CARD PURCHASE] INVALID order_id from purchase result', result);
         try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Order creation failed - invalid order ID', type: 'error' } })); } catch {}
         return;
@@ -1651,12 +1661,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         itemName: selectedCard?.card_name || 'Physical Card',
         idempotencyKey,
         image: selectedCard?.artwork_url,
-        orderId: orderId  // Store orderId for shipping step
+        orderId: extractedOrderId  // Store orderId for shipping step
       });
 
       // Transition to shipping step
       setCardPurchaseStep('shipping');
-      console.log('[CARD PURCHASE] Transitioned to shipping step with orderId:', orderId);
+      console.log('[CARD PURCHASE] Transitioned to shipping step with orderId:', extractedOrderId);
 
       // Success toast
       try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: `Order created! Please provide shipping details.`, type: 'success' } })); } catch {}
