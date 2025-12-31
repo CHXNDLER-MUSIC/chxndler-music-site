@@ -280,9 +280,9 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
     { time: 130.4, label: "Bridge", kind: "bridge" },
     { time: 145.1, label: "Final Chorus", kind: "chorus" }
   ] },
-  { title: "WE'RE JUST FRIENDS", youtube:"https://www.youtube.com/watch?v=eQ4uBMn6cQ0" },
-  { title: "HOUSE PARTY", youtube:"https://www.youtube.com/watch?v=B6EyIK-gE1c" },
-  { title: "PARIS", youtube:"https://www.youtube.com/watch?v=J2qrS9EGRw8" },
+  { title: "WE'RE JUST FRIENDS", spotify:"https://open.spotify.com/track/2IffMAupdw2alpsISKFs8y?si=b8b55f8734a04a46", youtube:"https://www.youtube.com/watch?v=eQ4uBMn6cQ0" },
+  { title: "HOUSE PARTY", spotify:"https://open.spotify.com/track/0b5y0gHMf3wLYX69B8S6g4?si=75a45f33ec1f47c0", youtube:"https://www.youtube.com/watch?v=B6EyIK-gE1c" },
+  { title: "PARIS", spotify:"https://open.spotify.com/track/2luPTqZK9w5fJ30T4rLZut?si=9f27fb47e15941c4", apple:"https://music.apple.com/us/album/paris-single/1779879728", youtube:"https://www.youtube.com/watch?v=J2qrS9EGRw8" },
 ];
 
 const MAPPED = RAW.map((t, idx) => {

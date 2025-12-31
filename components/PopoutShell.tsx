@@ -254,7 +254,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
           {/* Full overlay - covers entire popout including header */}
           {fullOverlay && (
             <div
-              className="absolute inset-0 z-[60] rounded-[14px] overflow-hidden"
+              className="absolute inset-0 z-[60] rounded-[14px]"
             >
               {fullOverlay}
             </div>

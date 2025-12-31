@@ -148,20 +148,39 @@ export function useDailySongProgress({
         return;
       }
 
-      // Clamp values to prevent database overflow
-      // Max reasonable song duration: 10 hours = 36000 seconds
-      const clampedListenedSeconds = Math.min(Math.max(0, Math.floor(listenedSeconds)), 36000);
-      const clampedDurationSeconds = Math.min(Math.max(1, Math.floor(durationSeconds)), 36000);
-      // Clamp percent to 0-100 with 2 decimal precision (e.g., 99.99)
-      const clampedPercent = Math.min(Math.max(0, Math.floor(completionPercent * 100) / 100), 100);
+      // Ensure duration_seconds and listened_seconds are integers
+      const safeDurationSeconds = Math.floor(durationSeconds);
+      const safeListenedSeconds = Math.floor(listenedSeconds);
+
+      // Fix numeric overflow: completion_percent must be 0-100, rounded to 2 decimals, never NaN/Infinity
+      const rawPercent = (safeListenedSeconds / safeDurationSeconds) * 100;
+      const safePercent = Math.min(
+        100,
+        Math.max(
+          0,
+          Number(rawPercent.toFixed(2))
+        )
+      );
+
+      // Final validation: skip if safePercent is still NaN or Infinity
+      if (!isFinite(safePercent)) {
+        console.log('🎵 Daily progress: Skipping upsert - safePercent is invalid', {
+          rawPercent,
+          safePercent,
+          safeListenedSeconds,
+          safeDurationSeconds
+        });
+        isProcessingRef.current = false;
+        return;
+      }
 
       const progressData: any = {
         user_id: userId,
         song_id: songId,
         day,
-        listened_seconds: clampedListenedSeconds,
-        duration_seconds: clampedDurationSeconds,
-        completion_percent: clampedPercent,
+        listened_seconds: safeListenedSeconds,
+        duration_seconds: safeDurationSeconds,
+        completion_percent: safePercent,
         updated_at: new Date().toISOString()
       };
 

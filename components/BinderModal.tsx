@@ -838,7 +838,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
         title="DIGITAL CARD BINDER" 
         subtitle={`CARDS COLLECTED: ${binderSlots.filter(s => s.card_id).length}`}
         minWidth={'min(96vw, 440px)'}
-        maxHeight={'calc(100vh - 8vh - 120px)'}
+        maxHeight={'calc(100vh - 8vh - 340px)'}
         onClose={() => {
           try { sfx.play('close', 0.8); } catch {}
           onClose();
@@ -846,7 +846,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
         pageIndicator={!showFullCollection ? `${pageIndex + 1} / ${totalPages}` : undefined}
         compact
         fullOverlay={cardOpen && selectedCard ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md" style={{ padding: '16px 20px' }}>
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md" style={{ padding: '16px 40px' }}>
             {/* Large card display - fills entire container */}
             <div
               className="relative flex items-center justify-center w-full h-full"
@@ -884,13 +884,12 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
 
               {/* TiltSpinCard wrapper for drag-to-spin interaction */}
               <div
-                className="relative"
+                className="relative flex items-center justify-center"
                 style={{
                   width: 'auto',
-                  height: '92%',
-                  maxHeight: '92%',
-                  maxWidth: '95%',
-                  aspectRatio: '2/3',
+                  height: 'auto',
+                  maxHeight: '90%',
+                  maxWidth: '70%',
                   animation: 'cardPulse 3s ease-in-out infinite',
                 }}
               >
@@ -917,8 +916,10 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   <img
                     src={selectedCard?.image || "https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910"}
                     alt={selectedCard?.name || "Card"}
-                    className="absolute inset-0 w-full h-full rounded-3xl object-cover pointer-events-none"
+                    className="rounded-3xl pointer-events-none"
                     style={{
+                      maxHeight: '100%',
+                      maxWidth: '100%',
                       backfaceVisibility: 'hidden',
                       WebkitBackfaceVisibility: 'hidden',
                       transform: `rotateY(${cardRotation}deg)`,
@@ -933,8 +934,10 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   <img
                     src="https://ik.imagekit.io/CHXNDLER/card/back.png?updatedAt=1762388351170"
                     alt="Card Back"
-                    className="absolute inset-0 w-full h-full rounded-3xl object-cover pointer-events-none"
+                    className="absolute inset-0 rounded-3xl pointer-events-none"
                     style={{
+                      maxHeight: '100%',
+                      maxWidth: '100%',
                       backfaceVisibility: 'hidden',
                       WebkitBackfaceVisibility: 'hidden',
                       transform: `rotateY(${cardRotation + 180}deg)`,
@@ -990,7 +993,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                 )}
 
-                <div className="grid grid-cols-3 place-items-center pl-6 pr-10 -mt-4 pb-5 gap-x-3 gap-y-1">
+                <div className="grid grid-cols-3 place-items-center pl-6 pr-10 mt-1 pb-5 gap-x-3 gap-y-1">
                   {/* Render slots from the view - 6 per page */}
                   {(profile?.id ? visibleSlots : previewSlots).map((slot, idx) => {
                     const isLocked = !slot.is_unlocked;
@@ -1000,7 +1003,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     return (
                       <div
                         key={`slot-${slot.slot_index}`}
-                        className={`rounded-lg border transition-all duration-300 w-[7.5rem] aspect-[5/7] bg-black/30 ${
+                        className={`rounded-lg border transition-all duration-300 w-[5.75rem] aspect-[5/7] bg-black/30 ${
                           isLocked
                             ? 'border-white/5 cursor-default'
                             : hasCard

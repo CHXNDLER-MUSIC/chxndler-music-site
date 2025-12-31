@@ -6,9 +6,8 @@ import type { ElementType } from "@/lib/planetConfig";
 import { RELIC_CELEBRATION_EVENT } from "./RelicCelebration";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
-// Hardcoded bonus quest ID and key for Element of the Day
+// Hardcoded bonus quest ID for Element of the Day
 const BONUS_QUEST_ID = '4c24a82f-92ba-44f4-9386-d8c6438498bd';
-const BONUS_QUEST_KEY = 'TAP_ELEMENT_OF_DAY';
 
 interface ElementOfDayData {
   element: ElementType;
@@ -33,7 +32,6 @@ export default function ElementOfDayModal() {
   // Bonus quest state
   const [isCompletingElementQuest, setIsCompletingElementQuest] = useState(false);
   const [elementQuestCompleted, setElementQuestCompleted] = useState(false);
-  const [awardedRelicId, setAwardedRelicId] = useState<string | null>(null);
 
   const hoverAudioRef = useRef<HTMLAudioElement | null>(null);
   const clickAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -158,7 +156,7 @@ export default function ElementOfDayModal() {
   }, []);
 
   // Handle clicking on the element image to claim reward
-  // Element of Day click -> claim_daily_checkin RPC + complete_bonus_quest RPC
+  // Single RPC call: claim_element_of_day handles checkin, quest completion, and relic award
   const handleImageClick = useCallback(async () => {
     // Guard against double-submit or already completed
     if (!data || claimed || isCompletingElementQuest || elementQuestCompleted) return;
@@ -183,138 +181,66 @@ export default function ElementOfDayModal() {
     setClaimed(true);
     setIsCompletingElementQuest(true);
 
-    let relicIdAwarded: string | null = null;
-
     try {
-      // ========== 1. CALL claim_daily_checkin RPC ==========
-      console.log('[ElementOfDayModal] Calling claim_daily_checkin with:', { p_source: 'element_of_day' });
+      // ========== SINGLE RPC CALL: claim_element_of_day ==========
+      console.log('[ElementOfDayModal] Calling claim_element_of_day RPC:', { p_user_id: userId });
 
-      const { data: checkinResult, error: checkinError } = await supabaseBrowser.rpc(
-        'claim_daily_checkin',
-        { p_source: 'element_of_day' }
+      const { data: rpcResult, error: rpcError } = await supabaseBrowser.rpc(
+        'claim_element_of_day',
+        { p_user_id: userId }
       );
 
-      if (checkinError) {
-        console.error('[ElementOfDayModal] claim_daily_checkin error', {
-          message: checkinError.message,
-          details: checkinError.details,
-          hint: checkinError.hint,
-          code: checkinError.code,
-        });
-        // Don't return - still try bonus quest
-      } else {
-        console.log('[ElementOfDayModal] claim_daily_checkin success:', checkinResult);
+      if (rpcError) {
+        console.error('[claim_element_of_day] raw error:', rpcError);
 
+        // Let user retry - reset claimed state, do NOT set completion state
+        setClaimed(false);
+        window.dispatchEvent(new CustomEvent('toast:show', {
+          detail: { message: 'Failed to claim element. Please try again.', type: 'error' }
+        }));
+        return;
+      }
+
+      console.log('[claim_element_of_day] result:', rpcResult);
+
+      // Only mark completed if RPC succeeded with ok: true
+      if (rpcResult?.ok) {
+        setElementQuestCompleted(true);
+
+        // Tailor toast based on response
+        if (rpcResult.did_complete_quest_today) {
+          window.dispatchEvent(new CustomEvent('toast:show', {
+            detail: { message: 'Bonus quest completed', type: 'success' }
+          }));
+        } else {
+          window.dispatchEvent(new CustomEvent('toast:show', {
+            detail: { message: 'Already completed today', type: 'info' }
+          }));
+        }
+
+        // ========== REFRESH UI STATE ==========
+        // Refresh profile context (for binder_slots, streak changes)
+        window.dispatchEvent(new CustomEvent('profile:force-refresh'));
+        // Refresh relics collection
+        window.dispatchEvent(new CustomEvent('relics:refresh'));
+        // Refresh boosts (if applicable)
+        window.dispatchEvent(new CustomEvent('boosts:refresh'));
         // Dispatch event so QuestList can update its UI
         window.dispatchEvent(
           new CustomEvent('element-of-day-claimed', {
-            detail: {
-              element: data.element,
-              checkinDate: checkinResult?.checkin_date_ny,
-              dailyStreak: checkinResult?.daily_streak_current,
-              alreadyCheckedIn: checkinResult?.already_checked_in,
-            },
+            detail: { element: data.element },
           })
         );
-
-        // Trigger profile refresh to update daily_streak_current in UI
-        window.dispatchEvent(new CustomEvent('profile:force-refresh'));
-      }
-
-      // ========== 2. AWARD RELIC FIRST (to get relic ID for details) ==========
-      if (data.rewardKey) {
-        console.log('[ElementOfDayModal] Attempting to award relic:', data.rewardKey, 'to user:', userId);
-        try {
-          const response = await fetch('/api/award-relic', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: userId,
-              relicCode: data.rewardKey,
-            }),
-          });
-          const result = await response.json();
-          if (!response.ok) {
-            console.error('[ElementOfDayModal] award-relic API error:', result);
-          } else {
-            console.log('[ElementOfDayModal] Relic awarded successfully:', result);
-            relicIdAwarded = result.relicId || result.userRelicId || null;
-            setAwardedRelicId(relicIdAwarded);
-            // Dispatch events to refresh relics collection and boosts (after boost is created)
-            window.dispatchEvent(new CustomEvent('relics:refresh'));
-            window.dispatchEvent(new CustomEvent('boosts:refresh'));
-          }
-        } catch (relicErr) {
-          console.error('[ElementOfDayModal] Error awarding relic:', relicErr);
-        }
-      } else {
-        console.log('[ElementOfDayModal] No rewardKey set for today - skipping relic award');
-      }
-
-      // ========== 3. COMPLETE BONUS QUEST via canonical RPC ==========
-      const questDetails = {
-        quest_key: BONUS_QUEST_KEY,
-        source: 'element_of_day',
-        element: data.element,
-        awarded_relic_id: relicIdAwarded,
-      };
-
-      console.log('[ElementOfDayModal] Completing bonus quest via RPC:', {
-        p_user_id: userId,
-        p_details: questDetails,
-      });
-
-      const { data: rpcResult, error: rpcError } = await supabaseBrowser
-        .rpc('complete_bonus_quest', {
-          p_user_id: userId,
-          p_details: questDetails,
-        });
-
-      if (rpcError) {
-        console.error('[ElementOfDayModal] Error completing bonus quest via RPC:', {
-          code: rpcError.code,
-          message: rpcError.message,
-          details: rpcError.details,
-          hint: rpcError.hint,
-        });
-        // Mark as completed locally even on error to prevent repeated attempts
-        setElementQuestCompleted(true);
-        window.dispatchEvent(new CustomEvent('toast:show', {
-          detail: { message: 'Failed to complete quest. Please try again.', type: 'error' }
-        }));
-      } else {
-        console.log('[ElementOfDayModal] Bonus quest RPC result:', rpcResult);
-        setElementQuestCompleted(true);
-
-        // ========== 4. CHECK did_insert FOR TOAST MESSAGE ==========
-        if (rpcResult?.ok && rpcResult?.did_insert) {
-          // Newly completed - show success
-          window.dispatchEvent(new CustomEvent('toast:show', {
-            detail: { message: 'Reward claimed.', type: 'success' }
-          }));
-
-          // ========== 5. REFRESH PROFILE CONTEXT (for binder_slots changes) ==========
-          window.dispatchEvent(new CustomEvent('profile:force-refresh'));
-
-          // ========== 6. REFRESH BOOSTS (if applicable) ==========
-          window.dispatchEvent(new CustomEvent('boosts:refresh'));
-        } else if (rpcResult?.did_insert === false) {
-          // Already completed today
-          window.dispatchEvent(new CustomEvent('toast:show', {
-            detail: { message: 'Already claimed today.', type: 'info' }
-          }));
-        } else {
-          // Fallback success case
-          window.dispatchEvent(new CustomEvent('toast:show', {
-            detail: { message: 'Reward claimed.', type: 'success' }
-          }));
-          window.dispatchEvent(new CustomEvent('profile:force-refresh'));
-          window.dispatchEvent(new CustomEvent('boosts:refresh'));
-        }
       }
 
     } catch (err) {
-      console.error('[ElementOfDayModal] Unexpected error:', err);
+      console.error('[claim_element_of_day] unexpected error:', err);
+
+      // Let user retry - reset claimed state, do NOT set completion state
+      setClaimed(false);
+      window.dispatchEvent(new CustomEvent('toast:show', {
+        detail: { message: 'An unexpected error occurred.', type: 'error' }
+      }));
     } finally {
       // Reset the in-flight guard
       setIsCompletingElementQuest(false);

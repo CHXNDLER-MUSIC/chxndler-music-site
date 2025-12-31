@@ -88,10 +88,9 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
       {open && (
         <div 
           className="fixed inset-0 z-[2147483646] flex items-start justify-center p-4"
-          style={{ 
-            alignItems: 'flex-start', 
-            paddingTop: '80px',
-            cursor: 'none'
+          style={{
+            alignItems: 'flex-start',
+            paddingTop: '80px'
           }}
         >
           <div
@@ -105,8 +104,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
               background: 'rgba(0,0,0,0.8)',
               border: '1px solid rgba(252,84,175,0.6)',
               boxShadow: '0 -8px 25px rgba(252,84,175,0.4), 0 -4px 15px rgba(252,84,175,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(252,84,175,0.45)',
-              backdropFilter: 'blur(12px) saturate(140%)',
-              cursor: 'none'
+              backdropFilter: 'blur(12px) saturate(140%)'
             }}
           >
             {/* Soft bottom glow */}
@@ -164,8 +162,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                 boxShadow: '0 0 15px rgba(252,84,175,0.8), 0 0 25px rgba(252,84,175,0.5), 0 0 35px rgba(252,84,175,0.3)',
                 textShadow: '0 0 8px rgba(252,84,175,0.8), 0 0 15px rgba(252,84,175,0.6)',
                 background: 'rgba(252,84,175,0.1)',
-                backdropFilter: 'blur(2px)',
-                cursor: 'none'
+                backdropFilter: 'blur(2px)'
               }}
             >
               <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
@@ -206,8 +203,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                   }`}
                   style={{
                     textShadow: activeTab === "WE BELIEVE" ? '0 0 8px rgba(252,84,175,0.8)' : 'none',
-                    boxShadow: activeTab === "WE BELIEVE" ? '0 0 20px rgba(252,84,175,0.4), inset 0 0 20px rgba(252,84,175,0.1)' : 'none',
-                    cursor: 'none'
+                    boxShadow: activeTab === "WE BELIEVE" ? '0 0 20px rgba(252,84,175,0.4), inset 0 0 20px rgba(252,84,175,0.1)' : 'none'
                   }}
                 >
                   WE BELIEVE
@@ -227,8 +223,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                   }`}
                   style={{
                     textShadow: activeTab === "CHXNDLER" ? '0 0 8px rgba(252,84,175,0.8)' : 'none',
-                    boxShadow: activeTab === "CHXNDLER" ? '0 0 20px rgba(252,84,175,0.4), inset 0 0 20px rgba(252,84,175,0.1)' : 'none',
-                    cursor: 'none'
+                    boxShadow: activeTab === "CHXNDLER" ? '0 0 20px rgba(252,84,175,0.4), inset 0 0 20px rgba(252,84,175,0.1)' : 'none'
                   }}
                 >
                   CHXNDLER
@@ -248,8 +243,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                   }`}
                   style={{
                     textShadow: activeTab === "ELEMENTS" ? '0 0 8px rgba(252,84,175,0.8)' : 'none',
-                    boxShadow: activeTab === "ELEMENTS" ? '0 0 20px rgba(252,84,175,0.4), inset 0 0 20px rgba(252,84,175,0.1)' : 'none',
-                    cursor: 'none'
+                    boxShadow: activeTab === "ELEMENTS" ? '0 0 20px rgba(252,84,175,0.4), inset 0 0 20px rgba(252,84,175,0.1)' : 'none'
                   }}
                 >
                   ELEMENTS
@@ -342,12 +336,11 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                         try { sfx.play('hover', 0.3); } catch {}
                       }}
                       className="border-2 transition-all duration-200 hover:scale-105 flex items-center justify-center" 
-                      style={{ 
-                        borderColor: '#FFFF00', 
-                        backgroundColor: 'rgba(255, 255, 0, 0.1)', 
+                      style={{
+                        borderColor: '#FFFF00',
+                        backgroundColor: 'rgba(255, 255, 0, 0.1)',
                         boxShadow: '0 0 15px rgba(255, 255, 0, 0.3)',
                         borderRadius: '8px 0 0 0',
-                        cursor: 'none',
                         width: '120px',
                         height: '60px',
                         padding: '8px',
@@ -368,12 +361,11 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                         try { sfx.play('hover', 0.3); } catch {}
                       }}
                       className="border-2 transition-all duration-200 hover:scale-105 flex items-center justify-center" 
-                      style={{ 
-                        borderColor: '#FF1493', 
-                        backgroundColor: 'rgba(255, 20, 147, 0.1)', 
+                      style={{
+                        borderColor: '#FF1493',
+                        backgroundColor: 'rgba(255, 20, 147, 0.1)',
                         boxShadow: '0 0 15px rgba(255, 20, 147, 0.3)',
                         borderRadius: '0 8px 0 0',
-                        cursor: 'none',
                         width: '120px',
                         height: '60px',
                         padding: '8px',
@@ -394,12 +386,11 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                         try { sfx.play('hover', 0.3); } catch {}
                       }}
                       className="border-2 transition-all duration-200 hover:scale-105 flex items-center justify-center" 
-                      style={{ 
-                        borderColor: '#9A00FF', 
-                        backgroundColor: 'rgba(154, 0, 255, 0.1)', 
+                      style={{
+                        borderColor: '#9A00FF',
+                        backgroundColor: 'rgba(154, 0, 255, 0.1)',
                         boxShadow: '0 0 15px rgba(154, 0, 255, 0.3)',
                         borderRadius: '0 0 0 8px',
-                        cursor: 'none',
                         width: '120px',
                         height: '60px',
                         padding: '8px',
@@ -420,12 +411,11 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                         try { sfx.play('hover', 0.3); } catch {}
                       }}
                       className="border-2 transition-all duration-200 hover:scale-105 flex items-center justify-center" 
-                      style={{ 
-                        borderColor: '#00E5FF', 
-                        backgroundColor: 'rgba(0, 229, 255, 0.1)', 
+                      style={{
+                        borderColor: '#00E5FF',
+                        backgroundColor: 'rgba(0, 229, 255, 0.1)',
                         boxShadow: '0 0 15px rgba(0, 229, 255, 0.3)',
                         borderRadius: '0 0 8px 0',
-                        cursor: 'none',
                         width: '120px',
                         height: '60px',
                         padding: '8px',
@@ -485,7 +475,6 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                         background: 'none',
                         border: 'none',
                         padding: 0,
-                        cursor: 'none',
                         textDecoration: 'underline'
                       }}
                     >

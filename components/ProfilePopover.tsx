@@ -1075,40 +1075,42 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                 </button>
               )}
 
-              {/* Journey label - clickable to open MY JOURNEY */}
-              <div className="mt-0">
-                {(() => {
-                  const { label, color } = getJourneyDisplay();
-                  return (
-                    <button
-                      onClick={() => {
-                        try { sfx.play('click', 0.4); } catch {}
-                        onClose();
-                        window.dispatchEvent(new CustomEvent('openJourneyModal'));
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      className="text-xl font-semibold tracking-wide transition-all duration-200 hover:scale-105"
-                      style={{
-                        color,
-                        textShadow: `0 0 6px ${color}80`,
-                        letterSpacing: '0.06em',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: 0
-                      }}
-                    >
-                      {label}
-                    </button>
-                  );
-                })()}
-              </div>
-              
-              {/* Element */}
-              <div className="flex items-center mt-0">
-                <button
+              {/* Journey, Element, and BOOST row */}
+              <div className="flex items-center justify-between w-full mt-0">
+                {/* Left side - Journey and Element stacked */}
+                <div className="flex flex-col">
+                  {/* Journey label - clickable to open MY JOURNEY */}
+                  {(() => {
+                    const { label, color } = getJourneyDisplay();
+                    return (
+                      <button
+                        onClick={() => {
+                          try { sfx.play('click', 0.4); } catch {}
+                          onClose();
+                          window.dispatchEvent(new CustomEvent('openJourneyModal'));
+                        }}
+                        onMouseEnter={() => {
+                          try { sfx.play('hover', 0.3); } catch {}
+                        }}
+                        className="text-xl font-semibold tracking-wide transition-all duration-200 hover:scale-105"
+                        style={{
+                          color,
+                          textShadow: `0 0 6px ${color}80`,
+                          letterSpacing: '0.06em',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: 0,
+                          textAlign: 'left'
+                        }}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })()}
+
+                  {/* Element */}
+                  <button
                   onClick={() => {
                     if (profile?.element) {
                       // Close profile image menu if it's open
@@ -1139,68 +1141,74 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                 >
                   {profile?.element ? profile.element.toUpperCase() : 'NONE'}
                 </button>
-              </div>
-            </div>
-            
-          </div>
+                </div>
 
-          {/* BOOST Section - Above Stats Row */}
-          {activeBoosts.length > 0 && (
-            <div className="flex items-center justify-center px-3 py-1.5 mb-1 rounded-lg" style={{ background: 'rgba(0,255,255,0.08)', border: '1px solid rgba(0,255,255,0.4)' }}>
-              <div className="flex flex-col items-center w-full">
-                <span
-                  className="font-bold text-xs mb-1"
+                {/* Right side - BOOST Section */}
+                <div
+                  className="flex flex-col items-center px-3 py-2 rounded-lg"
                   style={{
-                    color: '#00FFFF',
-                    textShadow: '0 0 10px rgba(0,255,255,0.8), 0 0 20px rgba(0,255,255,0.5)',
-                    letterSpacing: '0.1em'
+                    background: 'rgba(0,255,255,0.08)',
+                    border: '1px solid rgba(0,255,255,0.4)',
+                    minHeight: '60px'
                   }}
                 >
-                  BOOST
-                </span>
-                <div className="flex flex-col gap-1.5 w-full">
-                  {activeBoosts.map((boost, idx) => (
-                    <div
-                      key={`${boost.boostKey}-${idx}`}
-                      className="flex flex-col items-center px-3 py-1.5 rounded-lg"
+                  <span
+                    className="font-bold text-xs mb-1"
+                    style={{
+                      color: '#00FFFF',
+                      textShadow: '0 0 10px rgba(0,255,255,0.8)',
+                      letterSpacing: '0.1em'
+                    }}
+                  >
+                    BOOST
+                  </span>
+                  {activeBoosts.length > 0 ? (
+                    <div className="flex flex-col gap-1">
+                      {activeBoosts.map((boost, idx) => (
+                        <div
+                          key={`${boost.boostKey}-${idx}`}
+                          className="flex flex-col items-center px-2 py-1 rounded-md"
+                          style={{
+                            background: 'rgba(0,255,255,0.15)',
+                            border: '1px solid rgba(0,255,255,0.3)'
+                          }}
+                        >
+                          <span
+                            className="font-semibold text-xs"
+                            style={{
+                              color: '#00FFFF',
+                              textShadow: '0 0 6px rgba(0,255,255,0.6)'
+                            }}
+                          >
+                            {boost.name}
+                          </span>
+                          <span
+                            className="text-xs"
+                            style={{
+                              color: 'rgba(0,255,255,0.7)',
+                              fontSize: '9px'
+                            }}
+                          >
+                            {boost.usesLeft} left
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <span
+                      className="text-lg font-bold"
                       style={{
-                        background: 'rgba(0,255,255,0.1)',
-                        border: '1px solid rgba(0,255,255,0.3)'
+                        color: 'rgba(0,255,255,0.4)'
                       }}
                     >
-                      <span
-                        className="font-bold text-sm"
-                        style={{
-                          color: '#00FFFF',
-                          textShadow: '0 0 8px rgba(0,255,255,0.7)'
-                        }}
-                      >
-                        {boost.name}
-                      </span>
-                      <span
-                        className="text-xs"
-                        style={{
-                          color: 'rgba(0,255,255,0.9)',
-                          textShadow: '0 0 4px rgba(0,255,255,0.5)'
-                        }}
-                      >
-                        {boost.effect}
-                      </span>
-                      <span
-                        className="text-xs mt-0.5"
-                        style={{
-                          color: 'rgba(0,255,255,0.7)',
-                          textShadow: '0 0 3px rgba(0,255,255,0.4)'
-                        }}
-                      >
-                        {boost.usesLeft} {boost.usesLeft === 1 ? 'use' : 'uses'} left
-                      </span>
-                    </div>
-                  ))}
+                      --
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
-          )}
+
+          </div>
 
           {/* Stats Row - Daily Streak, HeartCoins, Soul Stars */}
           <div className="flex items-center justify-between px-2 py-1.5 mb-0 rounded-lg" style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.1)' }}>
