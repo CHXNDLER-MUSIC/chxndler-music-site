@@ -51,9 +51,10 @@ interface ProfilePopoverProps {
   onClose: () => void;
   anchorElement?: HTMLElement | null;
   showRelicsOnOpen?: boolean;
+  showMerchOnOpen?: boolean;
 }
 
-export default function ProfilePopover({ isOpen, onClose, anchorElement, showRelicsOnOpen }: ProfilePopoverProps) {
+export default function ProfilePopover({ isOpen, onClose, anchorElement, showRelicsOnOpen, showMerchOnOpen }: ProfilePopoverProps) {
   const { profile, user, updateProfile, refreshProfile } = useProfile();
   const { start: startTour } = useTour();
   
@@ -210,6 +211,13 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
       setShowRelicsInline(true);
     }
   }, [isOpen, showRelicsOnOpen]);
+
+  // Auto-open merch collection when showMerchOnOpen is true
+  useEffect(() => {
+    if (isOpen && showMerchOnOpen) {
+      setShowMerchInline(true);
+    }
+  }, [isOpen, showMerchOnOpen]);
 
   // Close on escape key and outside click
   useEffect(() => {
@@ -1136,6 +1144,64 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
             
           </div>
 
+          {/* BOOST Section - Above Stats Row */}
+          {activeBoosts.length > 0 && (
+            <div className="flex items-center justify-center px-3 py-1.5 mb-1 rounded-lg" style={{ background: 'rgba(0,255,255,0.08)', border: '1px solid rgba(0,255,255,0.4)' }}>
+              <div className="flex flex-col items-center w-full">
+                <span
+                  className="font-bold text-xs mb-1"
+                  style={{
+                    color: '#00FFFF',
+                    textShadow: '0 0 10px rgba(0,255,255,0.8), 0 0 20px rgba(0,255,255,0.5)',
+                    letterSpacing: '0.1em'
+                  }}
+                >
+                  BOOST
+                </span>
+                <div className="flex flex-col gap-1.5 w-full">
+                  {activeBoosts.map((boost, idx) => (
+                    <div
+                      key={`${boost.boostKey}-${idx}`}
+                      className="flex flex-col items-center px-3 py-1.5 rounded-lg"
+                      style={{
+                        background: 'rgba(0,255,255,0.1)',
+                        border: '1px solid rgba(0,255,255,0.3)'
+                      }}
+                    >
+                      <span
+                        className="font-bold text-sm"
+                        style={{
+                          color: '#00FFFF',
+                          textShadow: '0 0 8px rgba(0,255,255,0.7)'
+                        }}
+                      >
+                        {boost.name}
+                      </span>
+                      <span
+                        className="text-xs"
+                        style={{
+                          color: 'rgba(0,255,255,0.9)',
+                          textShadow: '0 0 4px rgba(0,255,255,0.5)'
+                        }}
+                      >
+                        {boost.effect}
+                      </span>
+                      <span
+                        className="text-xs mt-0.5"
+                        style={{
+                          color: 'rgba(0,255,255,0.7)',
+                          textShadow: '0 0 3px rgba(0,255,255,0.4)'
+                        }}
+                      >
+                        {boost.usesLeft} {boost.usesLeft === 1 ? 'use' : 'uses'} left
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Stats Row - Daily Streak, HeartCoins, Soul Stars */}
           <div className="flex items-center justify-between px-2 py-1.5 mb-0 rounded-lg" style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.1)' }}>
             {/* Daily Streak - Left */}
@@ -2034,64 +2100,6 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
               visibility: (showRelicsInline || showMerchInline || showElementMenu || showElementInfo) ? 'hidden' : 'visible'
             }}
           >
-              {/* BOOST Section - Above Start Tour */}
-              {activeBoosts.length > 0 && (
-                <div className="flex items-center justify-center px-3 py-1 rounded-lg mb-1.5" style={{ background: 'rgba(0,255,255,0.05)', border: '1px solid rgba(0,255,255,0.3)' }}>
-                  <div className="flex flex-col items-center w-full">
-                    <span
-                      className="font-bold text-xs mb-0.5"
-                      style={{
-                        color: '#00FFFF',
-                        textShadow: '0 0 10px rgba(0,255,255,0.8), 0 0 20px rgba(0,255,255,0.5)',
-                        letterSpacing: '0.1em'
-                      }}
-                    >
-                      BOOST
-                    </span>
-                    <div className="flex flex-col gap-1.5 w-full">
-                      {activeBoosts.map((boost, idx) => (
-                        <div
-                          key={`${boost.boostKey}-${idx}`}
-                          className="flex flex-col items-center px-3 py-1.5 rounded-lg"
-                          style={{
-                            background: 'rgba(0,255,255,0.1)',
-                            border: '1px solid rgba(0,255,255,0.3)'
-                          }}
-                        >
-                          <span
-                            className="font-bold text-sm"
-                            style={{
-                              color: '#00FFFF',
-                              textShadow: '0 0 8px rgba(0,255,255,0.7)'
-                            }}
-                          >
-                            {boost.name}
-                          </span>
-                          <span
-                            className="text-xs"
-                            style={{
-                              color: 'rgba(0,255,255,0.9)',
-                              textShadow: '0 0 4px rgba(0,255,255,0.5)'
-                            }}
-                          >
-                            {boost.effect}
-                          </span>
-                          <span
-                            className="text-xs mt-0.5"
-                            style={{
-                              color: 'rgba(0,255,255,0.7)',
-                              textShadow: '0 0 3px rgba(0,255,255,0.4)'
-                            }}
-                          >
-                            {boost.usesLeft} {boost.usesLeft === 1 ? 'use' : 'uses'} left
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* Start Tour Button */}
               <button
                 onClick={handleStartTour}

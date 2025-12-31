@@ -368,23 +368,32 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
     }
   };
 
-  // Handle clicking the element image - navigates to 3D planet view with element selected
+  // Handle clicking the element image - triggers warp effect, then opens element of day display
   const handleElementImageClick = () => {
     try { sfx.play('click', 0.8); } catch {}
 
     // Close the heart coin popup
     onCloseHeartCoinPopup?.();
 
-    // Open the blue display (3D planet view)
-    onOpenBlueDisplay?.();
-
-    // Dispatch event to select the element planet in the 3D view
-    // This will focus the camera on the element and show the WARP button popup
-    window.dispatchEvent(new CustomEvent('element-planet:select', {
+    // Dispatch planet:warp event to trigger warp visual effect
+    console.log('[QuestList] Dispatching planet:warp event for element:', todaysElement.name);
+    window.dispatchEvent(new CustomEvent('planet:warp', {
       detail: {
-        element: todaysElement.name
+        element: todaysElement.name,
+        isDailyElement: true,
+        isCenterPlanet: false
       }
     }));
+
+    // After warp effect completes (~3500ms), open the blue display and element of day modal
+    const WARP_DURATION_MS = 3500;
+    setTimeout(() => {
+      // Open the blue display (3D planet view)
+      onOpenBlueDisplay?.();
+
+      // Dispatch event to show the element of day modal
+      window.dispatchEvent(new CustomEvent('elementOfDay:open'));
+    }, WARP_DURATION_MS);
   };
 
   const handleJournalOpen = () => {

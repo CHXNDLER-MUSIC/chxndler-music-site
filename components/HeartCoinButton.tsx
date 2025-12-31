@@ -24,6 +24,9 @@ import { triggerCardCelebration } from '@/utils/cardCelebration';
 // Get basePath from env (supports deployments with basePath like /cockpit)
 const basePath = (process.env.NEXT_PUBLIC_BASE_PATH || '').replace(/\/$/, '');
 
+// Element of the Day bonus quest ID - completion happens in ElementOfDay modal, not here
+const ELEMENT_OF_DAY_BONUS_QUEST_ID = '4c24a82f-92ba-44f4-9386-d8c6438498bd';
+
 // Helper function to convert MerchItem to StoreItem for backward compatibility
 const merchItemToStoreItem = (merchItem: MerchItem): StoreItem => {
   // Special-case: beanie back image should use profile_url_2 when available
@@ -1501,38 +1504,73 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       // Log Supabase URL for debugging
       console.log('[CARD PURCHASE] supabaseUrl', (supabaseBrowser as any)?.rest?.url ?? process.env.NEXT_PUBLIC_SUPABASE_URL);
 
-      // Single authoritative call to backend
-      const { data, error: rpcError } = await supabaseBrowser.rpc('purchase_digital_card', { p_card_id: selectedCardId });
+      // Manual purchase flow (RPC function may not exist)
+      const userId = profile.id;
+      const currentBalance = profile.heartcoin_balance ?? heartCoins ?? 0;
 
-      if (rpcError) {
-        console.error('[CARD PURCHASE] RPC error details:', {
-          code: rpcError.code,
-          message: rpcError.message,
-          details: rpcError.details,
-          hint: rpcError.hint,
+      // Double-check balance
+      if (currentBalance < cost) {
+        console.error('[CARD PURCHASE] Balance check failed', { currentBalance, cost });
+        try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Insufficient HeartCoins', type: 'error' } })); } catch {}
+        return;
+      }
+
+      // Step 1: Grant card ownership by inserting into user_cards
+      const { error: userCardError } = await supabaseBrowser
+        .from('user_cards')
+        .insert({
+          user_id: userId,
+          card_id: selectedCardId,
+          source: 'purchase'
         });
-        const msg = rpcError.message || '';
 
-        if (msg.includes('Not enough HeartCoins')) {
-          try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Not enough HeartCoins', type: 'error' } })); } catch {}
-        } else if (msg.includes('Not authenticated')) {
-          try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Please log in to buy cards', type: 'error' } })); } catch {}
-        } else if (msg.includes('NO_AVAILABLE_SLOT')) {
-          try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Unlock a binder slot to buy more cards.', type: 'error' } })); } catch {}
-        } else {
-          console.error('[CARD PURCHASE] RPC error', rpcError);
-          try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Purchase failed', type: 'error' } })); } catch {}
+      if (userCardError) {
+        // Check if it's a duplicate (user already owns card)
+        if (userCardError.code === '23505') {
+          console.log('[CARD PURCHASE] User already owns this card');
+          try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'You already own this card!', type: 'info' } })); } catch {}
+          return;
         }
-        return; // Early return on error; finally will reset flags
+        console.error('[CARD PURCHASE] Failed to grant card ownership:', userCardError);
+        try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Purchase failed - could not grant card', type: 'error' } })); } catch {}
+        return;
       }
 
-      console.log('[CARD PURCHASE] RPC success', data);
-      // Success path: update local UI balance immediately if returned
-      const newBalance = (data as any)?.new_balance as number | undefined;
-      if (typeof newBalance === 'number') {
-        setHeartCoins(newBalance);
-        onHeartCoinsChange?.(newBalance);
+      // Step 2: Deduct HeartCoins from balance
+      const newBalance = currentBalance - cost;
+      const { error: balanceError } = await supabaseBrowser
+        .from('profiles')
+        .update({ heartcoin_balance: newBalance, updated_at: new Date().toISOString() })
+        .eq('id', userId);
+
+      if (balanceError) {
+        console.error('[CARD PURCHASE] Failed to deduct balance:', balanceError);
+        // Try to rollback - delete the user_card we just created
+        await supabaseBrowser.from('user_cards').delete().eq('user_id', userId).eq('card_id', selectedCardId);
+        try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Purchase failed - balance update error', type: 'error' } })); } catch {}
+        return;
       }
+
+      // Step 3: Log the transaction
+      await supabaseBrowser
+        .from('heartcoin_transactions')
+        .insert({
+          user_id: userId,
+          amount: -cost,
+          transaction_type: 'purchase',
+          description: `Purchased digital card: ${selectedCard?.card_name || 'Card'}`,
+          metadata: {
+            card_id: selectedCardId,
+            card_name: selectedCard?.card_name,
+            purchase_type: 'digital_card'
+          }
+        });
+
+      console.log('[CARD PURCHASE] Manual purchase success', { newBalance });
+
+      // Update local UI balance
+      setHeartCoins(newBalance);
+      onHeartCoinsChange?.(newBalance);
 
       // Kick off refreshes from single source of truth
       const refreshes: Promise<any>[] = [];
@@ -2961,90 +2999,36 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             }
 
                             const targetElement = elementOfDay || 'heart';
-                            console.log('[HeartCoinButton] Element image clicked, completing quest and warping to:', targetElement);
+                            console.log('[HeartCoinButton] Element image clicked for quest:', quest.id);
                             try { sfx.play('click', 0.8); } catch {}
 
-                            // ========== COMPLETE QUEST DIRECTLY ==========
-                            try {
-                              // 1. Check authentication
-                              const { data: { session } } = await supabaseBrowser.auth.getSession();
-                              if (!session?.user?.id) {
-                                console.error('[HeartCoinButton] No authenticated session for quest completion');
-                              } else {
-                                const userId = session.user.id;
-                                console.log('[HeartCoinButton] Completing quest for user:', userId);
+                            // ========== ELEMENT OF THE DAY: TRIGGER WARP THEN OPEN MODAL ==========
+                            // Quest completion happens in the ElementOfDay modal, not here
+                            if (quest.id === ELEMENT_OF_DAY_BONUS_QUEST_ID) {
+                              console.log('[HeartCoinButton] Element of Day quest - triggering warp then opening modal');
+                              // Close the HeartCoin popup first
+                              setOpen(false);
+                              try { onClose?.(); } catch {}
 
-                                // 2. Call claim_daily_checkin RPC
-                                const { data: checkinResult, error: checkinError } = await supabaseBrowser.rpc(
-                                  'claim_daily_checkin',
-                                  { p_source: 'element_of_day' }
-                                );
-
-                                if (checkinError) {
-                                  console.error('[HeartCoinButton] claim_daily_checkin error:', checkinError.message);
-                                } else {
-                                  console.log('[HeartCoinButton] claim_daily_checkin success:', checkinResult);
-                                }
-
-                                // 3. Complete bonus quest via RPC (new signature with p_user_id and p_reward_heartcoins)
-                                const { data: rpcResult, error: rpcError } = await supabaseBrowser
-                                  .rpc('complete_bonus_quest_once_per_day', {
-                                    p_user_id: userId,
-                                    p_bonus_quest_id: quest.id,
-                                    p_reward_heartcoins: quest.reward_heartcoins ?? 0
-                                  });
-
-                                if (rpcError) {
-                                  console.error('[HeartCoinButton] complete_bonus_quest error:', rpcError.message);
-                                } else {
-                                  // Mark as completed locally (whether newly completed or already_completed_today)
-                                  setCompletedQuests(prev => new Set(prev).add(quest.id));
-
-                                  if (rpcResult?.ok === false || rpcResult?.status === 'already_completed_today') {
-                                    console.log('[HeartCoinButton] Quest already completed today:', rpcResult);
-                                  } else {
-                                    console.log('[HeartCoinButton] Bonus quest completed:', rpcResult);
+                              // Dispatch planet:warp event to trigger warp visual effect
+                              setTimeout(() => {
+                                console.log('[HeartCoinButton] Dispatching planet:warp event for element:', targetElement);
+                                window.dispatchEvent(new CustomEvent('planet:warp', {
+                                  detail: {
+                                    element: targetElement,
+                                    isDailyElement: true,
+                                    isCenterPlanet: false
                                   }
-
-                                  // 4. Award relic if quest was newly completed (ok === true)
-                                  if (rpcResult?.ok === true) {
-                                    try {
-                                      // Fetch element-of-day data to get relic info
-                                      const eodRes = await fetch('/api/element-of-day');
-                                      if (eodRes.ok) {
-                                        const eodData = await eodRes.json();
-                                        if (eodData.relicKey) {
-                                          console.log('[HeartCoinButton] Awarding relic:', eodData.relicKey);
-                                          const relicRes = await fetch('/api/award-relic', {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({
-                                              userId: userId,
-                                              relicCode: eodData.relicKey,
-                                            }),
-                                          });
-                                          if (relicRes.ok) {
-                                            console.log('[HeartCoinButton] Relic awarded successfully');
-                                            window.dispatchEvent(new CustomEvent('relics:refresh'));
-                                            window.dispatchEvent(new CustomEvent('boosts:refresh'));
-                                          }
-                                        }
-                                      }
-                                    } catch (relicErr) {
-                                      console.error('[HeartCoinButton] Error awarding relic:', relicErr);
-                                    }
-                                  }
-                                }
-
-                                // 5. Dispatch refresh events
-                                window.dispatchEvent(new CustomEvent('element-of-day-claimed', {
-                                  detail: { element: targetElement }
                                 }));
-                                window.dispatchEvent(new CustomEvent('profile:force-refresh'));
-                                await refetchQuests();
-                              }
-                            } catch (questErr) {
-                              console.error('[HeartCoinButton] Error completing quest:', questErr);
+
+                                // After warp effect completes (~3500ms), show element of day modal
+                                const WARP_DURATION_MS = 3500;
+                                setTimeout(() => {
+                                  window.dispatchEvent(new CustomEvent('elementOfDay:open'));
+                                }, WARP_DURATION_MS);
+                              }, 150); // Let popup close first
+
+                              return; // Don't complete quest here - it will be completed in the ElementOfDay modal
                             }
 
                             // ========== VISUAL EFFECTS ==========

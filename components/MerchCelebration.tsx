@@ -33,9 +33,14 @@ export default function MerchCelebration() {
       // Show celebration
       setIsVisible(true);
 
-      // Hide after 3 seconds
+      // Hide after 3 seconds, then open profile popover with merch collection
       setTimeout(() => {
         setIsVisible(false);
+
+        // Dispatch event to open profile popover with merch collection shown
+        window.dispatchEvent(new CustomEvent('openProfilePopover', {
+          detail: { showMerch: true }
+        }));
       }, 3000);
     };
 

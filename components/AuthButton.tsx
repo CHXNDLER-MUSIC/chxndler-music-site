@@ -17,6 +17,7 @@ export default function AuthButton() {
   const [showWelcomeHome, setShowWelcomeHome] = useState(false);
   const [showProfilePopover, setShowProfilePopover] = useState(false);
   const [showRelicsOnOpen, setShowRelicsOnOpen] = useState(false);
+  const [showMerchOnOpen, setShowMerchOnOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const { openNamePrompt, openElementSelection } = useUIStore();
 
@@ -54,14 +55,16 @@ export default function AuthButton() {
     }
   }, [clearSession]);
 
-  // Listen for openProfilePopover event (triggered after relic celebration)
+  // Listen for openProfilePopover event (triggered after relic/merch celebration)
   useEffect(() => {
     const handleOpenProfile = (event: Event) => {
       // Only open if user has a complete profile
       if (user && profile?.profile_complete) {
-        const customEvent = event as CustomEvent<{ showRelics?: boolean }>;
+        const customEvent = event as CustomEvent<{ showRelics?: boolean; showMerch?: boolean }>;
         const shouldShowRelics = customEvent.detail?.showRelics ?? false;
+        const shouldShowMerch = customEvent.detail?.showMerch ?? false;
         setShowRelicsOnOpen(shouldShowRelics);
+        setShowMerchOnOpen(shouldShowMerch);
         setShowProfilePopover(true);
       }
     };
@@ -260,9 +263,11 @@ export default function AuthButton() {
         onClose={() => {
           setShowProfilePopover(false);
           setShowRelicsOnOpen(false);
+          setShowMerchOnOpen(false);
         }}
         anchorElement={buttonRef.current}
         showRelicsOnOpen={showRelicsOnOpen}
+        showMerchOnOpen={showMerchOnOpen}
       />
     </>
   );

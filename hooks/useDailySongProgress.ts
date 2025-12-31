@@ -137,11 +137,23 @@ export function useDailySongProgress({
     isProcessingRef.current = true;
 
     try {
+      // Validate inputs - skip if any values are invalid
+      if (!isFinite(listenedSeconds) || !isFinite(durationSeconds) || !isFinite(completionPercent)) {
+        console.log('🎵 Daily progress: Skipping upsert - invalid values detected', {
+          listenedSeconds,
+          durationSeconds,
+          completionPercent
+        });
+        isProcessingRef.current = false;
+        return;
+      }
+
       // Clamp values to prevent database overflow
-      // Max reasonable song duration: 1 hour = 3600 seconds
+      // Max reasonable song duration: 10 hours = 36000 seconds
       const clampedListenedSeconds = Math.min(Math.max(0, Math.floor(listenedSeconds)), 36000);
       const clampedDurationSeconds = Math.min(Math.max(1, Math.floor(durationSeconds)), 36000);
-      const clampedPercent = Math.min(Math.max(0, Math.round(completionPercent * 100) / 100), 100);
+      // Clamp percent to 0-100 with 2 decimal precision (e.g., 99.99)
+      const clampedPercent = Math.min(Math.max(0, Math.floor(completionPercent * 100) / 100), 100);
 
       const progressData: any = {
         user_id: userId,

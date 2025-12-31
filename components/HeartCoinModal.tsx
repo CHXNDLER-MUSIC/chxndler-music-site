@@ -531,12 +531,24 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
     switch (questKey) {
       case 'TAP_ELEMENT_OF_DAY':
-        // Close modal and dispatch event to navigate to 3D planet view
+        // Close modal and trigger warp effect, then show element of day display
         onClose();
         setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('element-planet:select', {
-            detail: { element: elementOfDay || 'heart' }
+          // Dispatch planet:warp event to trigger warp visual effect
+          console.log('[HeartCoinModal] Dispatching planet:warp event for element:', elementOfDay || 'heart');
+          window.dispatchEvent(new CustomEvent('planet:warp', {
+            detail: {
+              element: elementOfDay || 'heart',
+              isDailyElement: true,
+              isCenterPlanet: false
+            }
           }));
+
+          // After warp effect completes (~3500ms), show element of day modal
+          const WARP_DURATION_MS = 3500;
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('elementOfDay:open'));
+          }, WARP_DURATION_MS);
         }, 200);
         break;
 

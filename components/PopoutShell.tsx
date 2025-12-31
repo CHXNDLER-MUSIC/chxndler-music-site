@@ -75,7 +75,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
           style={{
             width: 'min(85vw, 600px)',
             minWidth: minWidth,
-            height: 'auto',
+            height: fitToPowerTop ? (computedMaxHeight ?? (maxHeight ?? (compact ? '50vh' : '45vh'))) : (maxHeight ?? (compact ? '50vh' : '45vh')),
             maxHeight: fitToPowerTop ? (computedMaxHeight ?? (maxHeight ?? (compact ? '50vh' : '45vh'))) : (maxHeight ?? (compact ? '50vh' : '45vh')),
             minHeight: compact ? '300px' : '400px',
             display: 'flex',
@@ -185,7 +185,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
               
               {/* Subtitle below the line */}
               {subtitle && (
-                <div className="flex justify-center items-center flex-shrink-0" style={{ padding: '4px 14px 6px 14px' }}>
+                <div className="flex justify-center items-center flex-shrink-0" style={{ padding: '0px 14px 2px 14px' }}>
                   <div 
                     style={{ 
                       color: '#FFFFFF', 
@@ -219,7 +219,7 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
             <div
               className="absolute left-1/2 transform -translate-x-1/2"
               style={{
-                bottom: '8px',
+                bottom: '4px',
                 color: '#FF69B4',
                 fontSize: '12px',
                 fontWeight: 'bold',

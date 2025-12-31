@@ -838,9 +838,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
         title="DIGITAL CARD BINDER" 
         subtitle={`CARDS COLLECTED: ${binderSlots.filter(s => s.card_id).length}`}
         minWidth={'min(96vw, 440px)'}
-        maxHeight={'78vh'}
-        fitToPowerTop
-        powerGapPx={4}
+        maxHeight={'calc(100vh - 8vh - 120px)'}
         onClose={() => {
           try { sfx.play('close', 0.8); } catch {}
           onClose();
@@ -957,7 +955,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
 
 
           {/* Dynamic Content - Binder Cards or Full Collection */}
-          <div className="relative overflow-hidden flex-shrink-0" style={{ maxHeight: '100%' }}>
+          <div className="relative flex-shrink-0" style={{ maxHeight: '100%' }}>
             {!showFullCollection ? (
               // Unified Binder Slot Rendering - All Pages
               <div className="relative">
@@ -992,7 +990,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   </div>
                 )}
 
-                <div className="grid grid-cols-3 place-items-center pl-8 pr-12 pt-2 pb-5 gap-4">
+                <div className="grid grid-cols-3 place-items-center pl-6 pr-10 -mt-4 pb-5 gap-x-3 gap-y-1">
                   {/* Render slots from the view - 6 per page */}
                   {(profile?.id ? visibleSlots : previewSlots).map((slot, idx) => {
                     const isLocked = !slot.is_unlocked;
@@ -1002,7 +1000,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     return (
                       <div
                         key={`slot-${slot.slot_index}`}
-                        className={`rounded-lg border transition-all duration-300 w-28 h-36 bg-black/30 ${
+                        className={`rounded-lg border transition-all duration-300 w-[7.5rem] aspect-[5/7] bg-black/30 ${
                           isLocked
                             ? 'border-white/5 cursor-default'
                             : hasCard
@@ -1042,11 +1040,10 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                         }}
                         style={{
                           boxShadow: hasCard
-                            ? '0 0 25px rgba(255,105,180,0.8), 0 0 40px rgba(255,105,180,0.6), 0 0 60px rgba(255,105,180,0.4)'
+                            ? '0 0 12px rgba(255,105,180,0.6), 0 0 20px rgba(255,105,180,0.4)'
                             : isEmpty
-                            ? '0 0 15px rgba(255,105,180,0.4), 0 0 25px rgba(255,105,180,0.2), 0 0 35px rgba(255,105,180,0.1)'
-                            : '0 0 5px rgba(255,105,180,0.1)',
-                          aspectRatio: '5/8',
+                            ? '0 0 8px rgba(255,105,180,0.3), 0 0 14px rgba(255,105,180,0.15)'
+                            : '0 0 3px rgba(255,105,180,0.1)',
                           border: isEmpty ? '2px dotted rgba(255,105,180,0.5)' : undefined
                         }}
                       >
@@ -1057,7 +1054,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                               <img
                                 src={slot.artwork_url || getCardImage(slot.card_name, slot.element || 'ALL')}
                                 alt={slot.card_name}
-                                className="w-full h-full object-cover transition-all duration-300"
+                                className="w-full h-full object-contain transition-all duration-300"
                                 draggable={false}
                               />
                               <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-green-500/80 rounded-full flex items-center justify-center">

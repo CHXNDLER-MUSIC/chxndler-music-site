@@ -18,7 +18,6 @@ import StoreProvider from "@/components/StoreProvider";
 import { ProfileProvider } from "@/contexts/ProfileContext";
 import { TourProvider } from "@/contexts/TourContext";
 import { MenuStateProvider } from "@/contexts/MenuStateContext";
-import CustomCursor from "@/components/CustomCursor";
 import HeartCoinCelebration from "@/components/HeartCoinCelebration";
 import ElementCardCelebration from "@/components/ElementCardCelebration";
 import MerchCelebration from "@/components/MerchCelebration";
@@ -132,7 +131,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ) : null}
       </head>
       <body className="font-sans bg-[#020016]">
-        <CustomCursor />
         <AuthProvider>
           <ProfileProvider>
             <AudioProvider>
