@@ -886,11 +886,14 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
               <div
                 className="relative flex items-center justify-center"
                 style={{
+                  width: '100%',
+                  height: '100%',
                   animation: 'cardPulse 3s ease-in-out infinite',
                 }}
               >
                 <TiltSpinCard
-                  className="relative w-full h-full"
+                  className="relative flex items-center justify-center"
+                  style={{ width: '100%', height: '100%' }}
                   maxRotateX={10}
                   sensitivity={0.3}
                   returnDuration={400}
@@ -914,9 +917,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     alt={selectedCard?.name || "Card"}
                     className="rounded-2xl pointer-events-none"
                     style={{
-                      height: 'calc(100% - 32px)',
-                      width: 'auto',
-                      maxWidth: 'calc(100% - 80px)',
+                      maxHeight: '95%',
+                      maxWidth: '85%',
                       objectFit: 'contain',
                       backfaceVisibility: 'hidden',
                       WebkitBackfaceVisibility: 'hidden',
@@ -934,9 +936,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     alt="Card Back"
                     className="absolute rounded-2xl pointer-events-none"
                     style={{
-                      height: 'calc(100% - 32px)',
-                      width: 'auto',
-                      maxWidth: 'calc(100% - 80px)',
+                      maxHeight: '95%',
+                      maxWidth: '85%',
                       objectFit: 'contain',
                       top: '50%',
                       left: '50%',

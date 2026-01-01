@@ -1191,15 +1191,21 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                           >
                             {boost.effect}
                           </span>
-                          <span
-                            className="text-xs"
-                            style={{
-                              color: 'rgba(0,255,255,0.6)',
-                              fontSize: '9px'
-                            }}
-                          >
-                            Uses left: {boost.usesLeft}
-                          </span>
+                          {(boost.usesLeft !== null || boost.expiresAt) && (
+                            <span
+                              className="text-xs"
+                              style={{
+                                color: 'rgba(0,255,255,0.6)',
+                                fontSize: '9px'
+                              }}
+                            >
+                              {boost.usesLeft !== null
+                                ? `Uses left: ${boost.usesLeft}`
+                                : boost.expiresAt
+                                  ? `Ends: ${new Date(boost.expiresAt).toLocaleString()}`
+                                  : null}
+                            </span>
+                          )}
                         </div>
                       ))}
                     </div>

@@ -14,8 +14,8 @@ export default function AuthCallbackPage() {
     const urlParams = new URLSearchParams(window.location.search);
     const isFromEmailSignup = urlParams.get('profileSetup') === '1';
 
-    console.log('🔍 Auth callback context:', { 
-      isFromEmailSignup, 
+    console.log('🔍 Auth callback context:', {
+      isFromEmailSignup,
       searchParams: window.location.search,
       fullUrl: window.location.href,
       allParams: Object.fromEntries(urlParams.entries())
@@ -37,9 +37,9 @@ export default function AuthCallbackPage() {
         // No profile exists yet - create one and mark as needing onboarding
         await supabaseClient
           .from('profiles')
-          .insert({ 
-            id: session.user.id, 
-            email: session.user.email || null, 
+          .insert({
+            id: session.user.id,
+            email: session.user.email || null,
             name: null,
             profile_complete: false
           })
@@ -47,8 +47,8 @@ export default function AuthCallbackPage() {
         needsOnboarding = true;
       } else {
         // Profile exists - check if onboarding is complete using same logic as profile hook
-        needsOnboarding = !existing.profile_complete || 
-                          !existing.name || 
+        needsOnboarding = !existing.profile_complete ||
+                          !existing.name ||
                           existing.name.trim() === '';
       }
     } catch (e) {
@@ -65,7 +65,7 @@ export default function AuthCallbackPage() {
 
     // User has completed onboarding - proceed to normal home
     console.log('✅ User onboarding complete - redirecting to home');
-    
+
     // Force a profile refresh by emitting a custom event with a small delay
     // to ensure the session is fully established
     setTimeout(() => {
@@ -78,73 +78,75 @@ export default function AuthCallbackPage() {
         console.error('Error dispatching profile refresh events:', e);
       }
     }, 100);
-    
+
     router.push('/');
   };
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    // Helper to clear timeout safely
+    const clearSafetyTimeout = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    };
+
     async function handleAuthCallback() {
       try {
+        // === EXTREMELY CLEAR LOGGING ===
+        console.log('='.repeat(60));
         console.log('🚨 AUTH CALLBACK PAGE HIT! 🚨');
-        console.log('🚨 CURRENT URL:', window.location.href);
+        console.log('='.repeat(60));
 
-        // Set a safety timeout to prevent infinite loading
-        timeoutId = setTimeout(() => {
-          console.error('⏰ AUTH CALLBACK TIMEOUT - redirecting to home with error');
-          router.replace('/?error=timeout');
-        }, 10000); // 10 second timeout
+        const fullCallbackUrl = window.location.href;
+        console.log('📍 FULL CALLBACK URL:', fullCallbackUrl);
 
-        // First, try to let Supabase auto-detect the session from URL
-        console.log('🔄 Attempting to get current session...');
-        const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
-        
-        console.log('🔍 Initial session check:', {
-          hasSession: !!sessionData?.session,
-          hasUser: !!sessionData?.session?.user,
-          userId: sessionData?.session?.user?.id,
-          userEmail: sessionData?.session?.user?.email,
-          error: sessionError?.message
-        });
-
-        // If we have a session, use it
-        if (sessionData?.session?.user) {
-          console.log('✅ Found existing session, proceeding with auth');
-          clearTimeout(timeoutId);
-          await handleSuccessfulAuth(sessionData.session);
-          return;
-        }
-
-        // If no session, try to exchange OAuth code or parse tokens from URL hash manually
-        console.log('🔄 No session found, checking URL for tokens/code...');
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const searchParams = new URLSearchParams(window.location.search);
-        const accessToken = hashParams.get('access_token');
-        const refreshToken = hashParams.get('refresh_token');
         const oauthCode = searchParams.get('code');
-        
-        console.log('🔍 URL token/code check:', {
-          hasAccessToken: !!accessToken,
-          hasRefreshToken: !!refreshToken,
-          hasOAuthCode: !!oauthCode,
-          fullHash: window.location.hash,
-          fullSearch: window.location.search
-        });
+        const hasCode = !!oauthCode;
 
-        // Handle code flow (OAuth like Google, or PKCE magic links)
-        if (oauthCode) {
-          console.log('🔄 Found auth code, exchanging for session...');
-          const { data: exchangeData, error: exchangeError } = await supabaseClient.auth.exchangeCodeForSession(oauthCode);
+        console.log('🔑 HAS ?code= PARAMETER:', hasCode);
+        if (hasCode) {
+          console.log('🔑 CODE VALUE (first 20 chars):', oauthCode?.substring(0, 20) + '...');
+        }
+        console.log('='.repeat(60));
+
+        // Set a safety timeout to prevent infinite loading (30s while debugging)
+        timeoutId = setTimeout(() => {
+          console.error('⏰ AUTH CALLBACK TIMEOUT (30s) - redirecting to home with error');
+          router.replace('/?error=timeout');
+        }, 30000); // 30 second timeout for debugging
+
+        // === PRIMARY PATH: If ?code= exists, exchange it for session ===
+        if (hasCode) {
+          console.log('🔄 CODE DETECTED - calling exchangeCodeForSession with FULL URL...');
+
+          const { data: exchangeData, error: exchangeError } = await supabaseClient.auth.exchangeCodeForSession(fullCallbackUrl);
+
+          console.log('='.repeat(60));
+          console.log('📦 exchangeCodeForSession RESULT:');
+          console.log('   - Has data:', !!exchangeData);
+          console.log('   - Has session:', !!exchangeData?.session);
+          console.log('   - Has user:', !!exchangeData?.session?.user);
+          console.log('   - User ID:', exchangeData?.session?.user?.id ?? 'N/A');
+          console.log('   - User email:', exchangeData?.session?.user?.email ?? 'N/A');
+          console.log('   - Has error:', !!exchangeError);
+          if (exchangeError) {
+            console.log('   - Error message:', exchangeError.message);
+            console.log('   - Error name:', exchangeError.name);
+          }
+          console.log('='.repeat(60));
 
           if (exchangeError) {
-            console.error('❌ Error exchanging code for session:', exchangeError);
+            console.error('❌ exchangeCodeForSession FAILED:', exchangeError.message);
+            clearSafetyTimeout();
 
             // Check if this is a PKCE verifier error (magic link opened in wrong browser)
             if (exchangeError.message?.includes('code verifier') ||
                 exchangeError.message?.includes('PKCE') ||
                 exchangeError.message?.includes('code_verifier')) {
-              clearTimeout(timeoutId);
               router.replace('/?error=wrong_browser');
               return;
             }
@@ -153,35 +155,79 @@ export default function AuthCallbackPage() {
             if (exchangeError.message?.includes('expired') ||
                 exchangeError.message?.includes('invalid') ||
                 exchangeError.message?.includes('already used')) {
-              clearTimeout(timeoutId);
               router.replace('/?error=link_expired');
               return;
             }
 
-            // Generic code exchange error
-            clearTimeout(timeoutId);
-            router.replace(`/?error=code_exchange&details=${encodeURIComponent(exchangeError.message || 'Unknown error')}`);
+            // Generic code exchange error - encode the error message
+            const encodedError = encodeURIComponent(exchangeError.message || 'Unknown error');
+            router.replace(`/?error=${encodedError}`);
             return;
-          } else if (exchangeData?.session?.user) {
-            console.log('✅ Successfully exchanged code for session');
-            clearTimeout(timeoutId);
+          }
+
+          if (exchangeData?.session?.user) {
+            console.log('✅ CODE EXCHANGE SUCCESSFUL! Proceeding with auth flow...');
+            clearSafetyTimeout();
             await handleSuccessfulAuth(exchangeData.session);
             return;
           }
+
+          // Code existed but no session returned and no error - unusual state
+          console.error('❌ Code exchange returned no session and no error');
+          clearSafetyTimeout();
+          router.replace('/?error=no_session_after_exchange');
+          return;
         }
 
+        // === FALLBACK: No ?code= parameter ===
+        console.log('⚠️ NO ?code= PARAMETER - checking for existing session or tokens...');
+
+        // Check for existing session first
+        const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+
+        console.log('🔍 Existing session check:', {
+          hasSession: !!sessionData?.session,
+          hasUser: !!sessionData?.session?.user,
+          userId: sessionData?.session?.user?.id,
+          userEmail: sessionData?.session?.user?.email,
+          error: sessionError?.message
+        });
+
+        if (sessionData?.session?.user) {
+          console.log('✅ Found existing session, proceeding with auth');
+          clearSafetyTimeout();
+          await handleSuccessfulAuth(sessionData.session);
+          return;
+        }
+
+        // Check URL hash for tokens (implicit flow)
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+
+        console.log('🔍 URL hash token check:', {
+          hasAccessToken: !!accessToken,
+          hasRefreshToken: !!refreshToken,
+          fullHash: window.location.hash
+        });
+
         if (accessToken) {
-          console.log('🔄 Found tokens in URL, setting session...');
+          console.log('🔄 Found tokens in URL hash, setting session...');
           const { data: setSessionData, error: setSessionError } = await supabaseClient.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken || ''
           });
 
           if (setSessionError) {
-            console.error('❌ Error setting session:', setSessionError);
-          } else if (setSessionData?.session?.user) {
+            console.error('❌ Error setting session from tokens:', setSessionError);
+            clearSafetyTimeout();
+            router.replace(`/?error=${encodeURIComponent(setSessionError.message)}`);
+            return;
+          }
+
+          if (setSessionData?.session?.user) {
             console.log('✅ Successfully set session from URL tokens');
-            clearTimeout(timeoutId);
+            clearSafetyTimeout();
             await handleSuccessfulAuth(setSessionData.session);
             return;
           }
@@ -191,35 +237,25 @@ export default function AuthCallbackPage() {
         const hashError = hashParams.get('error');
         const errorDescription = hashParams.get('error_description');
         const urlError = searchParams.get('error');
-        
+
         console.log('🔍 Error parameter check:', {
           hashError,
           errorDescription,
           urlError
         });
-        
+
         if (hashError || urlError) {
           const errorMsg = hashError || urlError;
-          
-          // Enhanced error handling: Check if we have a valid session despite the error
+
+          // Check if we have a valid session despite the error
           const { data: { session: existingSession } } = await supabaseClient.auth.getSession();
-          
-          if (existingSession && 
-              errorMsg === 'access_denied' && 
+
+          if (existingSession &&
+              errorMsg === 'access_denied' &&
               errorDescription && errorDescription.includes("Email link is invalid or has expired")) {
-            
-            // We have a valid session despite the expired link error - treat as success
-            console.warn('⚠️ Ignoring Supabase auth error because a session already exists:', errorMsg, errorDescription);
-            
-            // Check if this came from an email signup flow
-            const urlParams = new URLSearchParams(window.location.search);
-            const isFromEmailSignup = urlParams.get('profileSetup') === '1';
-            
-            // If from email signup, always show name prompt. Otherwise, conservatively send to completeProfile
-            clearTimeout(timeoutId);
-            if (isFromEmailSignup) {
-              console.log('📧 Detected email signup flow in error fallback - redirecting to name prompt');
-            }
+
+            console.warn('⚠️ Ignoring error because session exists:', errorMsg);
+            clearSafetyTimeout();
             router.push('/?completeProfile=1');
             return;
           }
@@ -229,44 +265,35 @@ export default function AuthCallbackPage() {
             errorMsg === 'access_denied' &&
             errorDescription && errorDescription.includes('Email link is invalid or has expired')
           ) {
-            console.warn('⚠️ Magic link is invalid/expired. Guiding user to sign in again.');
-            clearTimeout(timeoutId);
+            console.warn('⚠️ Magic link is invalid/expired.');
+            clearSafetyTimeout();
             router.replace('/?magic_link_expired=1');
             return;
           }
-          
-          // No valid session exists, treat as genuine error
+
+          // Genuine error
           console.error('❌ Auth error detected:', errorMsg, errorDescription);
-          clearTimeout(timeoutId);
-          router.replace(`/?error=auth_failed&details=${encodeURIComponent(errorMsg)}`);
+          clearSafetyTimeout();
+          router.replace(`/?error=${encodeURIComponent(errorMsg || 'auth_failed')}`);
           return;
         }
 
-        // As a final safeguard, wait briefly for any late session detection, then re-check
-        await new Promise((r) => setTimeout(r, 200));
-        const { data: finalCheck } = await supabaseClient.auth.getSession();
-        if (finalCheck?.session?.user) {
-          console.log('✅ Session appeared after brief wait');
-          clearTimeout(timeoutId);
-          await handleSuccessfulAuth(finalCheck.session);
-          return;
-        }
-
-        // If we get here, no auth methods worked
-        console.error('❌ All authentication methods failed - no session or tokens found');
-        console.log('🔍 Final debug info:', {
+        // NO CODE, NO TOKENS, NO ERROR - redirect with missing_code error
+        console.error('❌ NO ?code= PARAMETER FOUND - cannot complete OAuth callback');
+        console.log('🔍 Final URL state:', {
           fullUrl: window.location.href,
-          hash: window.location.hash,
           search: window.location.search,
-          sessionError: sessionError?.message
+          hash: window.location.hash
         });
-        
-        clearTimeout(timeoutId);
-        router.replace('/?error=no_session');
+
+        clearSafetyTimeout();
+        router.replace('/?error=missing_code');
+
       } catch (error) {
-        console.error('❌ Unexpected error during auth callback:', error);
-        clearTimeout(timeoutId);
-        router.replace('/?error=unexpected');
+        console.error('❌ UNEXPECTED ERROR during auth callback:', error);
+        clearSafetyTimeout();
+        const errorMessage = error instanceof Error ? error.message : 'unexpected';
+        router.replace(`/?error=${encodeURIComponent(errorMessage)}`);
       }
     }
 
@@ -274,16 +301,14 @@ export default function AuthCallbackPage() {
 
     // Cleanup timeout on unmount
     return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
+      clearSafetyTimeout();
     };
   }, [router]);
 
   // Show a simple loading screen while processing
   return (
     <div className="min-h-screen flex items-center justify-center bg-black">
-      <div 
+      <div
         className="text-center"
         style={{
           color: '#00FFFF',

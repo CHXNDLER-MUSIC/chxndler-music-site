@@ -272,26 +272,33 @@ export default function OnboardingTour({
     
     // Special positioning for menu items - places tooltip to the RIGHT of menu
     if (step.id.startsWith('menu-')) {
-      const menuContainer = getTarget('[data-tour-id="nav-toggle"]')?.closest('.fixed') as HTMLElement;
-      const menuDropdown = menuContainer?.querySelector('.absolute') as HTMLElement;
-      
+      // Directly select the nav-panel dropdown by its data-tour-id
+      const menuDropdown = document.querySelector('[data-tour-id="nav-panel"]') as HTMLElement;
+
       if (menuDropdown) {
         const dropdownRect = menuDropdown.getBoundingClientRect();
-        
-        // Position at the same vertical position as the menu dropdown
-        const top = dropdownRect.top;
-        
+
         // Position to the right of the menu with spacing to avoid overlap
-        const left = dropdownRect.right + 20;
-        
+        const marginFromMenu = viewportWidth <= 768 ? 12 : 24;
+        let left = dropdownRect.right + marginFromMenu;
+
+        // Ensure tooltip doesn't go off-screen on the right
+        const maxLeft = viewportWidth - bubbleWidth - 16;
+        if (left > maxLeft) {
+          left = maxLeft;
+        }
+
+        // Vertically align with the target element within the menu
+        const top = Math.max(20, Math.min(element.getBoundingClientRect().top, viewportHeight - bubbleHeight - 20));
+
         setBubblePosition({ top, left });
-        
+
         // Update spotlight for menu dropdown
         const cx = dropdownRect.left + dropdownRect.width / 2;
         const cy = dropdownRect.top + dropdownRect.height / 2;
         const r = Math.max(80, Math.ceil(Math.hypot(dropdownRect.width, dropdownRect.height) * 0.6));
         spotlightRef.current = { cx, cy, r };
-        
+
         if (overlayRef.current) {
           const gradient = `radial-gradient(${r}px ${r}px at ${cx}px ${cy}px, rgba(0,0,0,0) 0%, rgba(0,0,0,0.2) 65%, rgba(0,0,0,0.6) 100%)`;
           overlayRef.current.style.background = gradient;

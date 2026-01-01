@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BonusQuestWithCompletion, QuestCompletionResult } from '@/types/bonusQuests';
-import { getAllQuestsForUser, completeBonusQuestLegacy } from '@/lib/bonusQuests';
+import { completeBonusQuestLegacy } from '@/lib/bonusQuests';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useProfile } from '@/contexts/ProfileContext';
 
@@ -56,49 +56,41 @@ export function useBonusQuests(): UseBonusQuestsReturn {
     setErrorMessage(null);
 
     try {
-      // Add timeout to prevent infinite loading (increased from 8s to 15s)
+      // Add timeout to prevent infinite loading
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Request timeout')), 15000)
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
       );
-      
-      // Add retry logic for network issues
-      const fetchWithRetry = async (retries = 2): Promise<any> => {
-        for (let i = 0; i <= retries; i++) {
-          try {
-            // Use getAllQuestsForUser which properly splits by category
-            const { allQuests } = await getAllQuestsForUser(currentUserId);
-            return allQuests; // Return ALL quests (DAILY + BONUS) - filter by category in component
-          } catch (err) {
-            if (i === retries) throw err;
-            // Wait before retry (exponential backoff)
-            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
-          }
-        }
+
+      // Fetch quests via API route (bypasses RLS for public quest viewing)
+      const fetchFromApi = async (): Promise<any> => {
+        const url = currentUserId
+          ? `/api/quests?userId=${currentUserId}`
+          : '/api/quests';
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Failed to fetch quests');
+        const data = await res.json();
+        return data.quests || [];
       };
 
-      // Always fetch public quests; overlay completion if user exists
       const questsData = await Promise.race([
-        fetchWithRetry(),
+        fetchFromApi(),
         timeoutPromise
       ]);
 
       setQuests(questsData);
       setStatus("success");
-      setHasLoggedError(false); // Reset error logging flag on success
+      setHasLoggedError(false);
     } catch (error) {
-      // Only log error once per mount to prevent console spam
       if (!hasLoggedError) {
         console.error('Error fetching bonus quests:', error);
         setHasLoggedError(true);
       }
-      
+
       setStatus("error");
-      // Use fallback error message to reduce noise
-      const errorMessage = error instanceof Error && error.message === 'Request timeout' 
+      const errorMessage = error instanceof Error && error.message === 'Request timeout'
         ? 'Network timeout - please check your connection and try again'
-        : 'Bonus quests temporarily unavailable';
+        : 'Quests temporarily unavailable';
       setErrorMessage(errorMessage);
-      // Set empty array as fallback so UI continues to work
       setQuests([]);
     } finally {
       setHasInitialLoad(true);

@@ -197,10 +197,11 @@ export async function consumeBoost(
  */
 export interface ActiveBoost {
   boostKey: string;
-  scope: BoostScope;
+  scope: string;
   name: string;
   effect: string;
-  usesLeft: number;
+  usesLeft: number | null;
+  expiresAt: string | null;
   multiplier: number;
   addAmount: number;
 }
@@ -209,19 +210,36 @@ const BOOST_DISPLAY_INFO: Record<string, { name: string; effect: string }> = {
   'deep_focus': { name: 'Deep Focus', effect: '2× Listen Rewards' },
   'reflection_boost': { name: 'Reflection Boost', effect: '2× Journal Rewards' },
   'streak_shield': { name: 'Streak Shield', effect: 'Protects Streak' },
+  'journal_2x': { name: '2× Journal', effect: '2× Journal Rewards' },
+  'heartcoins_2x': { name: '2× HeartCoins', effect: '2× HeartCoin Rewards' },
+  'binder_slot': { name: '+1 Binder Slot', effect: 'Extra Binder Slot' },
 };
+
+/**
+ * Prettify a boost_key into a friendly name.
+ * e.g. "streak_shield" -> "Streak Shield"
+ */
+function prettifyBoostKey(key: string): string {
+  return key
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
 
 export async function fetchActiveBoosts(userId: string): Promise<ActiveBoost[]> {
   try {
     const now = new Date().toISOString();
 
+    // Query active boosts:
+    // - expires_at is null OR expires_at > now
+    // - uses_remaining is null OR uses_remaining > 0
     const { data, error } = await supabaseBrowser
       .from('user_active_boosts')
-      .select('boost_key, scope, multiplier, add_amount, uses_remaining')
+      .select('boost_key, scope, multiplier, add_amount, uses_remaining, expires_at')
       .eq('user_id', userId)
-      .gt('uses_remaining', 0)
-      .lte('starts_at', now)
-      .or(`expires_at.is.null,expires_at.gt.${now}`);
+      .or(`expires_at.is.null,expires_at.gt.${now}`)
+      .or('uses_remaining.is.null,uses_remaining.gt.0')
+      .order('starts_at', { ascending: false });
 
     if (error) {
       console.warn('[fetchActiveBoosts] Error fetching boosts:', error.message);
@@ -244,16 +262,17 @@ export async function fetchActiveBoosts(userId: string): Promise<ActiveBoost[]> 
 
     return Array.from(boostsByScope.values()).map(boost => {
       const displayInfo = BOOST_DISPLAY_INFO[boost.boost_key] || {
-        name: boost.boost_key,
+        name: prettifyBoostKey(boost.boost_key),
         effect: boost.multiplier > 1 ? `${boost.multiplier}× Rewards` : `+${boost.add_amount} Rewards`
       };
 
       return {
         boostKey: boost.boost_key,
-        scope: boost.scope as BoostScope,
+        scope: boost.scope,
         name: displayInfo.name,
         effect: displayInfo.effect,
         usesLeft: boost.uses_remaining,
+        expiresAt: boost.expires_at,
         multiplier: boost.multiplier ?? 1,
         addAmount: boost.add_amount ?? 0
       };

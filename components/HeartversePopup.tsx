@@ -40,16 +40,22 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
         className="absolute inset-0 backdrop-blur-md"
         onClick={onClose}
       />
-      <div 
-        className={positioning === 'top-left' ? 'absolute z-[2147483648] max-w-md' : 'absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 mx-4 max-w-lg w-full z-[2147483648]'}
+      <div
+        className={positioning === 'top-left' ? 'absolute z-[2147483648] max-w-md' : 'fixed flex justify-center z-[2147483648]'}
         style={{
-          ...((positioning === 'top-left') ? {top: '100px', left: '50px', backgroundColor: 'red'} : {marginTop: positioning === 'higher' ? '-25vh' : '0'}),
+          ...((positioning === 'top-left') ? {top: '100px', left: '50px', backgroundColor: 'red'} : {
+            top: 'var(--profile-bar-boundary, 64px)',
+            bottom: 'calc(var(--light-beam-boundary) + var(--beam-height))',
+            left: 0,
+            right: 0,
+            alignItems: 'flex-start'
+          }),
           touchAction: 'none',
           overscrollBehaviorX: 'none',
           userSelect: 'none'
         }}
       >
-        <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-[#FC54AF]/60 bg-white/5 shadow-[0_0_26px_rgba(56,182,255,0.35)] h-[70vh] max-h-[85vh] overflow-hidden flex flex-col">
+        <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-[#FC54AF]/60 bg-white/5 shadow-[0_0_26px_rgba(56,182,255,0.35)] max-h-full max-w-lg w-full mx-4 overflow-hidden flex flex-col">
           <div
             className="absolute inset-0 rounded-2xl pointer-events-none"
             style={{

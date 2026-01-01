@@ -245,32 +245,38 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   // Record listen session to song_listen_sessions
   // Note: Boost consumption for listen rewards now happens in useDailySongProgress
   // when the 50% completion threshold is reached and heartcoins are awarded.
-  const recordListenSession = async (trackId: string, startedAt: Date, endedAt: Date) => {
+  // Returns true on success, false on failure.
+  const recordListenSession = async (trackId: string, startedAt: Date, endedAt: Date): Promise<boolean> => {
     // Prevent double-recording
-    if (isRecordingRef.current) return;
+    if (isRecordingRef.current) return false;
 
     const durationSeconds = Math.floor((endedAt.getTime() - startedAt.getTime()) / 1000);
 
     // Ignore sessions shorter than 10 seconds
     if (durationSeconds < 10) {
       console.log(`🎧 Listen session too short (${durationSeconds}s), skipping record`);
-      return;
+      return false;
     }
 
     isRecordingRef.current = true;
 
     try {
       // Get current user
-      const { data: { session } } = await supabaseBrowser.auth.getSession();
-      if (!session?.user?.id) {
+      const { data: { user }, error: userError } = await supabaseBrowser.auth.getUser();
+      if (userError) {
+        console.error('🎧 Failed to get user:', userError.message);
+        isRecordingRef.current = false;
+        return false;
+      }
+      if (!user) {
         console.log('🎧 No authenticated user, skipping listen record');
         isRecordingRef.current = false;
-        return;
+        return false;
       }
 
       // Insert listen session (boost consumption happens in useDailySongProgress)
       const sessionData = {
-        user_id: session.user.id,
+        user_id: user.id,
         song_id: trackId,
         started_at: startedAt.toISOString(),
         ended_at: endedAt.toISOString(),
@@ -283,14 +289,23 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         .insert(sessionData);
 
       if (insertError) {
-        console.error('🎧 Failed to record listen session:', insertError);
-      } else {
-        console.log(`🎧 Recorded listen session: ${trackId}, ${durationSeconds}s`);
+        console.error('🎧 Failed to record listen session:');
+        console.error('  code:', insertError.code);
+        console.error('  message:', insertError.message);
+        console.error('  details:', insertError.details);
+        console.error('  hint:', insertError.hint);
+        console.error('  full error:', JSON.stringify(insertError));
+        isRecordingRef.current = false;
+        return false;
       }
+
+      console.log(`🎧 Recorded listen session: ${trackId}, ${durationSeconds}s`);
+      isRecordingRef.current = false;
+      return true;
     } catch (err) {
       console.error('🎧 Error recording listen session:', err);
-    } finally {
       isRecordingRef.current = false;
+      return false;
     }
   };
 

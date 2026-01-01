@@ -1,7 +1,23 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+// Routes that should bypass auth checks completely
+const AUTH_BYPASS_ROUTES = [
+  '/auth/callback',
+  '/auth/confirm',
+];
+
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Allow auth callback routes to pass through without any auth checks
+  // This is critical - the callback page needs to receive the ?code= parameter
+  // and exchange it for a session before any auth validation can occur
+  if (AUTH_BYPASS_ROUTES.some(route => pathname.startsWith(route))) {
+    console.log('[MIDDLEWARE] Bypassing auth for:', pathname);
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   });

@@ -157,7 +157,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
           left: 0,
           right: 0,
           top: 'var(--profile-bar-boundary, 64px)',
-          bottom: 'var(--light-beam-boundary, 120px)',
+          bottom: 'calc(var(--light-beam-boundary, 120px) + var(--beam-height, 0px))',
           alignItems: 'flex-start',
           paddingTop: '200px'
         }}
@@ -180,15 +180,15 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
           left: 0,
           right: 0,
           top: 'var(--profile-bar-boundary, 64px)',
-          bottom: 'var(--light-beam-boundary, 120px)',
-          alignItems: 'flex-end'
+          bottom: 'calc(var(--light-beam-boundary, 120px) + var(--beam-height, 0px))',
+          alignItems: 'flex-start'
         }}
       >
         <div
           className="welcome-hologram-container pointer-events-auto"
           style={{
             width: 'min(92vw, 700px)',
-            minHeight: 'auto',
+            height: '100%',
             padding: '18px 14px 18px 14px',
             borderRadius: 18,
             background: 'rgba(0,0,0,0.6)',

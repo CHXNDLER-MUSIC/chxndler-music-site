@@ -425,10 +425,9 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                   isHighlight ? "bg-cyan-400/20 text-cyan-100" : "text-cyan-200/90 hover:bg-cyan-400/10 hover:text-cyan-100"
                 }`}
                 ref={i === 0 ? optMeasureRef : undefined}
-                onMouseEnter={() => { 
-                  setHighlight(i); 
-                  try { setTimeout(() => playerStore.getState().setHover(s.id), 0); } catch{}; 
-                  try { sfx.play('change', 0.35); } catch {}; 
+                onMouseEnter={() => {
+                  setHighlight(i);
+                  try { setTimeout(() => playerStore.getState().setHover(s.id), 0); } catch{};
                   try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {};
                   // Track hover event
                   track("song_hovered", {
