@@ -1163,18 +1163,18 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                     BOOST
                   </span>
                   {activeBoosts.length > 0 ? (
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-1.5">
                       {activeBoosts.map((boost, idx) => (
                         <div
                           key={`${boost.boostKey}-${idx}`}
-                          className="flex flex-col items-center px-2 py-1 rounded-md"
+                          className="flex flex-col items-center px-3 py-1.5 rounded-md"
                           style={{
                             background: 'rgba(0,255,255,0.15)',
                             border: '1px solid rgba(0,255,255,0.3)'
                           }}
                         >
                           <span
-                            className="font-semibold text-xs"
+                            className="font-bold text-xs"
                             style={{
                               color: '#00FFFF',
                               textShadow: '0 0 6px rgba(0,255,255,0.6)'
@@ -1185,11 +1185,20 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                           <span
                             className="text-xs"
                             style={{
-                              color: 'rgba(0,255,255,0.7)',
+                              color: 'rgba(0,255,255,0.85)',
+                              fontSize: '10px'
+                            }}
+                          >
+                            {boost.effect}
+                          </span>
+                          <span
+                            className="text-xs"
+                            style={{
+                              color: 'rgba(0,255,255,0.6)',
                               fontSize: '9px'
                             }}
                           >
-                            {boost.usesLeft} left
+                            Uses left: {boost.usesLeft}
                           </span>
                         </div>
                       ))}

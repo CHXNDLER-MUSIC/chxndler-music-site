@@ -177,102 +177,95 @@ export default function ElementOfDayModal() {
     // Play element-specific sound
     playElementSound(data.element);
 
-    // Stop pulsing by marking as claimed
-    setClaimed(true);
     setIsCompletingElementQuest(true);
 
     try {
       // ========== SINGLE RPC CALL: claim_element_of_day ==========
-      console.log('[ElementOfDayModal] Calling claim_element_of_day RPC:', { p_user_id: userId });
+      const { data: rpcResult, error: rpcError } = await supabaseBrowser.rpc('claim_element_of_day');
 
-      const { data: rpcResult, error: rpcError } = await supabaseBrowser.rpc(
-        'claim_element_of_day',
-        { p_user_id: userId }
-      );
+      console.log('[claim_element_of_day] data:', rpcResult);
 
       if (rpcError) {
-        console.error('[claim_element_of_day] raw error:', rpcError);
+        console.error('[claim_element_of_day] error:', rpcError);
+        console.error('[claim_element_of_day] error props:', Object.getOwnPropertyNames(rpcError ?? {}));
+        console.error('[claim_element_of_day] error string:', String(rpcError));
+        console.dir(rpcError, { depth: 5 });
 
-        // Let user retry - reset claimed state, do NOT set completion state
-        setClaimed(false);
+        // Let user retry - do NOT set claimed/completed true
         window.dispatchEvent(new CustomEvent('toast:show', {
           detail: { message: 'Failed to claim element. Please try again.', type: 'error' }
         }));
         return;
       }
 
-      console.log('[claim_element_of_day] result:', rpcResult);
-
-      // Only mark completed if RPC succeeded with ok: true
-      if (rpcResult?.ok) {
+      // Any ok === true is treated as success (regardless of did_complete_quest_today or did_award_relic)
+      if (rpcResult?.ok === true) {
+        // Immediately lock the element and stop glow
+        setClaimed(true);
         setElementQuestCompleted(true);
 
-        // Tailor toast based on response
-        if (rpcResult.did_complete_quest_today) {
-          window.dispatchEvent(new CustomEvent('toast:show', {
-            detail: { message: 'Bonus quest completed', type: 'success' }
-          }));
-        } else {
-          window.dispatchEvent(new CustomEvent('toast:show', {
-            detail: { message: 'Already completed today', type: 'info' }
-          }));
-        }
+        // Show success toast - relic bonus is optional
+        const toastMessage = rpcResult.did_award_relic
+          ? 'Relic awarded!'
+          : 'Element claimed. Streak updated.';
+        window.dispatchEvent(new CustomEvent('toast:show', {
+          detail: { message: toastMessage, type: 'success' }
+        }));
 
         // ========== REFRESH UI STATE ==========
-        // Refresh profile context (for binder_slots, streak changes)
         window.dispatchEvent(new CustomEvent('profile:force-refresh'));
-        // Refresh relics collection
         window.dispatchEvent(new CustomEvent('relics:refresh'));
-        // Refresh boosts (if applicable)
         window.dispatchEvent(new CustomEvent('boosts:refresh'));
-        // Dispatch event so QuestList can update its UI
         window.dispatchEvent(
           new CustomEvent('element-of-day-claimed', {
             detail: { element: data.element },
           })
         );
+
+        // Close modal after brief delay (only on success)
+        setTimeout(() => {
+          setIsOpen(false);
+
+          // Dispatch relic celebration event after 1 second (only if we had a rewardKey)
+          setTimeout(() => {
+            if (data.rewardKey) {
+              window.dispatchEvent(
+                new CustomEvent(RELIC_CELEBRATION_EVENT, {
+                  detail: {
+                    element: data.element,
+                    rewardKey: data.rewardKey,
+                    relicLabel: data.relicLabel,
+                    relicImageUrl: data.relicImageUrl,
+                    relicKind: data.relicKind,
+                  },
+                })
+              );
+            }
+
+            // Reset local state after celebration starts
+            setTimeout(() => {
+              setData(null);
+              setClaimed(false);
+            }, 100);
+          }, 1000);
+        }, 300);
+
+        return; // Prevent any further processing
       }
+
+      // ok was not true - show error and let user retry
+      window.dispatchEvent(new CustomEvent('toast:show', {
+        detail: { message: 'Failed to claim element. Please try again.', type: 'error' }
+      }));
 
     } catch (err) {
       console.error('[claim_element_of_day] unexpected error:', err);
-
-      // Let user retry - reset claimed state, do NOT set completion state
-      setClaimed(false);
       window.dispatchEvent(new CustomEvent('toast:show', {
         detail: { message: 'An unexpected error occurred.', type: 'error' }
       }));
     } finally {
-      // Reset the in-flight guard
       setIsCompletingElementQuest(false);
     }
-
-    // Close modal after brief delay
-    setTimeout(() => {
-      setIsOpen(false);
-
-      // Dispatch relic celebration event after 1 second (only if we had a rewardKey)
-      setTimeout(() => {
-        if (data.rewardKey) {
-          window.dispatchEvent(
-            new CustomEvent(RELIC_CELEBRATION_EVENT, {
-              detail: {
-                element: data.element,
-                rewardKey: data.rewardKey,
-                relicLabel: data.relicLabel,
-                relicImageUrl: data.relicImageUrl,
-                relicKind: data.relicKind,
-              },
-            })
-          );
-        }
-
-        // Reset state after celebration starts
-        setTimeout(() => {
-          setData(null);
-          setClaimed(false);
-        }, 100);
-      }, 1000); // Wait 1 second before relic celebration
-    }, 300);
   }, [data, claimed, isCompletingElementQuest, elementQuestCompleted, playElementSound]);
 
   // Listen for 'element-of-day:show' event (existing event)

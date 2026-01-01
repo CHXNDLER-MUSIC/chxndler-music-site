@@ -886,10 +886,6 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
               <div
                 className="relative flex items-center justify-center"
                 style={{
-                  width: 'auto',
-                  height: 'auto',
-                  maxHeight: '90%',
-                  maxWidth: '70%',
                   animation: 'cardPulse 3s ease-in-out infinite',
                 }}
               >
@@ -916,10 +912,12 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   <img
                     src={selectedCard?.image || "https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910"}
                     alt={selectedCard?.name || "Card"}
-                    className="rounded-3xl pointer-events-none"
+                    className="rounded-2xl pointer-events-none"
                     style={{
-                      maxHeight: '100%',
-                      maxWidth: '100%',
+                      height: 'calc(100% - 32px)',
+                      width: 'auto',
+                      maxWidth: 'calc(100% - 80px)',
+                      objectFit: 'contain',
                       backfaceVisibility: 'hidden',
                       WebkitBackfaceVisibility: 'hidden',
                       transform: `rotateY(${cardRotation}deg)`,
@@ -934,13 +932,17 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                   <img
                     src="https://ik.imagekit.io/CHXNDLER/card/back.png?updatedAt=1762388351170"
                     alt="Card Back"
-                    className="absolute inset-0 rounded-3xl pointer-events-none"
+                    className="absolute rounded-2xl pointer-events-none"
                     style={{
-                      maxHeight: '100%',
-                      maxWidth: '100%',
+                      height: 'calc(100% - 32px)',
+                      width: 'auto',
+                      maxWidth: 'calc(100% - 80px)',
+                      objectFit: 'contain',
+                      top: '50%',
+                      left: '50%',
+                      transform: `translate(-50%, -50%) rotateY(${cardRotation + 180}deg)`,
                       backfaceVisibility: 'hidden',
                       WebkitBackfaceVisibility: 'hidden',
-                      transform: `rotateY(${cardRotation + 180}deg)`,
                       transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
                       boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
                       border: '2px solid rgba(255,255,255,0.1)',

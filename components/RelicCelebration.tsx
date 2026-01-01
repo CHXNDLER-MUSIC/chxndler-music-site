@@ -66,7 +66,8 @@ export default function RelicCelebration() {
           // SLOT type -> open binder display
           window.dispatchEvent(new CustomEvent('openDigitalBinder'));
         } else if (isBoost) {
-          // BOOST type -> open profile display only (no relics collection)
+          // BOOST type -> refresh boosts first, then open profile display
+          window.dispatchEvent(new CustomEvent('boosts:refresh'));
           window.dispatchEvent(new CustomEvent('openProfilePopover', {
             detail: { showRelics: false }
           }));
