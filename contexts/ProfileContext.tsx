@@ -691,10 +691,14 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         setProfile(null);
         setUser(null);
         setJournalEntries([]);
-        setAllBadges([]);
+        // Don't clear allBadges - badges are public data viewable by anyone
+        // Only clear user-specific badge data
         setUserBadges([]);
         setBadgesLoading(false);
         setLoading(false);
+
+        // Still fetch badges for logged-out users since they're public
+        fetchAllBadges();
       }
     });
 

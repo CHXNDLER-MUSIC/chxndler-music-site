@@ -46,6 +46,7 @@ export type QuestKey =
 export interface QuestCompletionResult {
   success: boolean;
   message: string;
+  alreadyCompleted?: boolean;  // true if quest was already completed today (no new coins)
   rewards?: {
     heartcoins?: number;
     element_card?: boolean;

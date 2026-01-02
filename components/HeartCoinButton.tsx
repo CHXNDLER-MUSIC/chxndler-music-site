@@ -332,6 +332,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [inviteFriendShared, setInviteFriendShared] = useState(false);
   const [elementSongReturned, setElementSongReturned] = useState(false);
   const [completedQuests, setCompletedQuests] = useState<Set<string>>(new Set());
+  const [processingQuestId, setProcessingQuestId] = useState<string | null>(null);
   const [shippingInfo, setShippingInfo] = useState({
     fullName: '',
     street: '',
@@ -398,6 +399,17 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   useEffect(() => {
     setDailyQuests(prev => ({ ...prev, journalEntry: journalCompleted }));
   }, [journalCompleted]);
+
+  // Listen for journalCompleted event to immediately update local state
+  useEffect(() => {
+    const handleJournalCompleted = () => {
+      setDailyQuests(prev => ({ ...prev, journalEntry: true }));
+    };
+    window.addEventListener('journalCompleted', handleJournalCompleted);
+    return () => {
+      window.removeEventListener('journalCompleted', handleJournalCompleted);
+    };
+  }, []);
 
   // Update local state when external heartCoins change or profile loads
   useEffect(() => {
@@ -1126,6 +1138,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
   // Handle bonus quest completion
   const handleBonusQuestComplete = async (quest: BonusQuestWithCompletion) => {
+    // Prevent re-clicks while processing
+    if (processingQuestId === quest.id) return;
+
     try {
       // Special flow for INVITE_FRIEND: trigger share first, then record completion
       if (quest.quest_key === 'INVITE_FRIEND') {
@@ -1177,7 +1192,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           }, 2500);
           return;
         }
-        
+
         // Mark as shared but don't complete the quest yet
         try { sfx.play('change-channel', 0.6); } catch {}
         setInviteFriendShared(true);
@@ -1189,6 +1204,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         }, 3000);
         return; // Don't complete the quest yet
       }
+
+      // Mark as processing and completed locally immediately
+      setProcessingQuestId(quest.id);
+      setCompletedQuests(prev => new Set(prev).add(quest.id));
 
       const result = await completeQuest(quest);
 
@@ -1205,7 +1224,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           setStatusType('success');
           setShowCheckInSuccess(true);
         } else {
-          // Award heart coins for other quests using existing system
+          // Award heart coins for other quests only if NEW completion (has rewards)
           if (result.rewards?.heartcoins) {
             await updateHeartCoins(heartCoins + result.rewards.heartcoins);
           }
@@ -1224,6 +1243,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
         try { sfx.play('click', 0.7); } catch {}
       } else {
+        // Remove from completed if it actually failed
+        setCompletedQuests(prev => {
+          const next = new Set(prev);
+          next.delete(quest.id);
+          return next;
+        });
         setCheckInMessage(result.message);
         setStatusType('error');
         setTimeout(() => {
@@ -1233,12 +1258,20 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       }
     } catch (error) {
       console.error('Error completing bonus quest:', error);
+      // Remove from completed on error
+      setCompletedQuests(prev => {
+        const next = new Set(prev);
+        next.delete(quest.id);
+        return next;
+      });
       setCheckInMessage('An error occurred while completing the quest');
       setStatusType('error');
       setTimeout(() => {
         setCheckInMessage("");
         setStatusType('idle');
       }, 3000);
+    } finally {
+      setProcessingQuestId(null);
     }
   };
 
@@ -1348,26 +1381,62 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
   // Handle bonus quest confirm step for invite friend
   const handleBonusQuestConfirm = async (quest: BonusQuestWithCompletion) => {
+    // Prevent re-clicks while processing
+    if (processingQuestId === quest.id) return;
+
     try {
+      // Mark as processing immediately
+      setProcessingQuestId(quest.id);
+      // Mark as completed locally immediately to update UI
+      setCompletedQuests(prev => new Set(prev).add(quest.id));
+      setInviteFriendShared(false); // Reset the shared state
+
       try { sfx.play('card-ding', 0.8); } catch {}
       const result = await completeQuest(quest);
-      
+
       if (result.success) {
-        // Award heart coins using existing system
-        if (result.rewards?.heartcoins && profile) {
-          await updateHeartCoins(heartCoins + result.rewards.heartcoins);
+        // Check if this was already completed today (no new coins awarded)
+        const alreadyCompleted = result.alreadyCompleted === true;
+
+        if (alreadyCompleted) {
+          // Already completed today - show soft toast, no coin animation
+          setCheckInMessage('Already completed today');
+          try {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('toast:show', {
+                detail: { message: 'Already completed today', type: 'success' }
+              }));
+            }
+          } catch {}
+          setStatusType('success');
+        } else {
+          // NEW completion - RPC awarded HeartCoin in DB, refresh profile to get updated balance
+          // The refreshProfile() will trigger the +1 celebration animation via ProfileContext
+          await updateHeartCoins(heartCoins + 1);
+          setCheckInMessage(`Quest completed! +1 Heart Coin earned`);
+          setStatusType('success');
         }
-        
-        setCheckInMessage(`Quest completed! +${quest.reward_heartcoins} Heart Coins earned`);
-        setStatusType('success');
+
         setTimeout(() => {
           setCheckInMessage("");
           setStatusType('idle');
         }, 3000);
-        setInviteFriendShared(false); // Reset the shared state
-        setCompletedQuests(prev => new Set(prev).add(quest.id)); // Mark as completed locally
       } else {
-        setCheckInMessage(result.message || 'Failed to complete quest');
+        // Remove from completed if it actually failed
+        setCompletedQuests(prev => {
+          const next = new Set(prev);
+          next.delete(quest.id);
+          return next;
+        });
+        // Show toast for actual errors
+        try {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('toast:show', {
+              detail: { message: result.message || 'Quest failed. Try again.', type: 'error' }
+            }));
+          }
+        } catch {}
+        setCheckInMessage(result.message || 'Quest failed. Try again.');
         setStatusType('error');
         setTimeout(() => {
           setCheckInMessage("");
@@ -1375,13 +1444,28 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         }, 2500);
       }
     } catch (error: any) {
-      console.error('Error confirming bonus quest:', error);
-      setCheckInMessage('Failed to confirm quest completion');
+      // Remove from completed on error
+      setCompletedQuests(prev => {
+        const next = new Set(prev);
+        next.delete(quest.id);
+        return next;
+      });
+      // Show toast for error
+      try {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('toast:show', {
+            detail: { message: 'Quest failed. Try again.', type: 'error' }
+          }));
+        }
+      } catch {}
+      setCheckInMessage('Quest failed. Try again.');
       setStatusType('error');
       setTimeout(() => {
         setCheckInMessage("");
         setStatusType('idle');
       }, 2500);
+    } finally {
+      setProcessingQuestId(null);
     }
   };
 
@@ -3540,6 +3624,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         }}
                         disabled={
                           isLoggedIn && (
+                            processingQuestId === quest.id ||
                             (!quest.can_complete && !inviteFriendShared && quest.quest_key !== 'LISTEN_ELEMENT_SONG') ||
                             (isQuestCompleted(quest) && quest.quest_key !== 'LISTEN_ELEMENT_SONG') ||
                             (quest.quest_key === 'SECRET_PHRASE' && secretPhraseLoading) ||

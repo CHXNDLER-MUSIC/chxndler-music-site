@@ -809,7 +809,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
           top: 'var(--profile-bar-boundary, 64px)',
           left: 0,
           right: 0,
-          bottom: 'var(--light-beam-boundary)'
+          bottom: 'calc(var(--light-beam-boundary) + var(--beam-height))'
         }}
       >
         <div
@@ -830,7 +830,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
           top: 'var(--profile-bar-boundary, 64px)',
           left: 0,
           right: 0,
-          bottom: 'var(--light-beam-boundary)',
+          bottom: 'calc(var(--light-beam-boundary) + var(--beam-height))',
           paddingTop: '16px'
         }}
       >

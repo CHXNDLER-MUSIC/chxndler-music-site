@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BonusQuestWithCompletion, QuestCompletionResult } from '@/types/bonusQuests';
-import { completeBonusQuestLegacy } from '@/lib/bonusQuests';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useProfile } from '@/contexts/ProfileContext';
 
@@ -103,7 +102,8 @@ export function useBonusQuests(): UseBonusQuestsReturn {
     fetchQuests();
   }, [currentUserId, fetchQuests]);
 
-  // Complete a quest
+  // Complete a quest using the idempotent RPC
+  // Returns a QuestCompletionResult with alreadyCompleted flag for UI handling
   const completeQuest = useCallback(async (
     quest: BonusQuestWithCompletion
   ): Promise<QuestCompletionResult> => {
@@ -115,39 +115,74 @@ export function useBonusQuests(): UseBonusQuestsReturn {
     }
 
     try {
-      const result = await completeBonusQuestLegacy(
-        currentUserId,
-        quest,
-        undefined, // source
-        // TODO: Wire up existing heart coins handler
-        (amount: number) => {
-          console.log(`Awarded ${amount} heart coins`);
-          // This should call your existing heart coins update function
-        },
-        // TODO: Wire up existing element card handler
-        () => {
-          console.log('Awarded element card');
-          // This should call your existing element card award function
-        }
-      );
+      // Call the idempotent RPC directly - do NOT pass reward values from frontend
+      const { data, error } = await supabaseBrowser.rpc('complete_bonus_quest_once_per_day', {
+        p_user_id: currentUserId,
+        p_bonus_quest_id: quest.id  // IMPORTANT: Pass bonus_quest_id, NOT quest_id
+      });
 
-      // If quest was completed successfully, refetch quests and refresh profile to update HeartCoin balance
-      if (result.success) {
-        await Promise.all([
-          fetchQuests(),
-          refreshProfile() // Refresh profile to update HeartCoin balance in UI
-        ]);
+      // Handle unique constraint violation (23505) as success - already completed (NOT an error)
+      if (error?.code === '23505') {
+        await fetchQuests(); // Refetch to update UI state
+        return {
+          success: true,
+          alreadyCompleted: true,
+          message: 'Already completed today'
+        };
       }
 
-      return result;
-    } catch (error) {
-      console.error('Error completing quest:', error);
+      if (error) {
+        // Only log unexpected errors, not duplicates
+        return {
+          success: false,
+          message: 'Quest failed. Try again.'
+        };
+      }
+
+      // Normalize response - handle both "completed" and "already_completed" statuses
+      const isAlreadyCompleted = data?.status === 'already_completed' || data?.status === 'already_completed_today' || data?.ok === false;
+
+      // Refetch quests and refresh profile for ALL successful completions
+      await Promise.all([
+        fetchQuests(),
+        refreshProfile() // Refresh profile to update HeartCoin balance in UI
+      ]);
+
+      if (isAlreadyCompleted) {
+        return {
+          success: true,
+          alreadyCompleted: true,
+          message: 'Already completed today'
+        };
+      }
+
+      // New completion - coins were awarded by RPC
+      return {
+        success: true,
+        alreadyCompleted: false,
+        message: 'Quest completed successfully!',
+        rewards: {
+          heartcoins: quest.reward_heartcoins > 0 ? quest.reward_heartcoins : undefined,
+          element_card: quest.reward_element_card ? true : undefined
+        }
+      };
+    } catch (error: any) {
+      // Catch 23505 error if thrown differently (graceful handling, not an error)
+      if (error?.code === '23505' || error?.message?.includes('23505')) {
+        await fetchQuests();
+        return {
+          success: true,
+          alreadyCompleted: true,
+          message: 'Already completed today'
+        };
+      }
+
       return {
         success: false,
-        message: 'An error occurred while completing the quest'
+        message: 'Quest failed. Try again.'
       };
     }
-  }, [currentUserId, fetchQuests]);
+  }, [currentUserId, fetchQuests, refreshProfile]);
 
   return {
     quests,

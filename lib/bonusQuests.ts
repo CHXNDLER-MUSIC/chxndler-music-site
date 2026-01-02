@@ -371,89 +371,99 @@ export async function getBonusQuestsForUser(userId?: string | null): Promise<Bon
 }
 
 /**
+ * Normalized response type for bonus quest completion
+ */
+export interface BonusQuestCompletionResult {
+  status: 'completed' | 'already_completed';
+  awarded: boolean;
+  amount: number;
+  data?: any;
+}
+
+/**
  * Completes a bonus quest for the user with proper tracking and rewards
  * Uses complete_bonus_quest_once_per_day RPC for atomic daily tracking
  *
- * RPC signature: complete_bonus_quest_once_per_day(p_user_id uuid, p_bonus_quest_id uuid, p_reward_heartcoins int default null)
+ * RPC signature: complete_bonus_quest_once_per_day(p_user_id uuid, p_bonus_quest_id uuid)
  * Returns:
- * - { ok: true, status: "completed", reward_heartcoins: <int>, completion_id: <uuid>, completed_on: "YYYY-MM-DD" }
- * - { ok: false, status: "already_completed_today", reward_heartcoins: 0, completion_id: <uuid>, completed_on: "YYYY-MM-DD" }
+ * - { status: "completed", awarded: true, amount: N } for newly completed quests
+ * - { status: "already_completed", awarded: false, amount: 0 } for duplicate attempts (no error)
+ *
+ * IMPORTANT: This is the ONLY function that should be used for bonus quest completion.
+ * All other legacy functions are deprecated.
+ */
+export async function completeBonusQuestOncePerDay(params: {
+  userId: string;
+  bonusQuestId: string;
+  supabase?: SupabaseClient;
+}): Promise<BonusQuestCompletionResult> {
+  const { userId, bonusQuestId, supabase = supabaseClient } = params;
+
+  if (!bonusQuestId) {
+    throw new Error('bonusQuestId is required');
+  }
+
+  if (!userId) {
+    throw new Error('userId is required');
+  }
+
+  try {
+    // Call RPC to complete the quest (handles insert + user_bonus_quests update + heartcoins atomically)
+    // Do NOT pass reward values or dates from the frontend - the RPC handles everything
+    const { data: rpcResult, error: rpcError } = await supabase
+      .rpc('complete_bonus_quest_once_per_day', {
+        p_user_id: userId,
+        p_bonus_quest_id: bonusQuestId
+      });
+
+    // Handle unique constraint violation (23505) as "already_completed" - NOT an error
+    if (rpcError?.code === '23505') {
+      return { status: 'already_completed', awarded: false, amount: 0 };
+    }
+
+    if (rpcError) {
+      throw new Error(`Quest failed. Try again.`);
+    }
+
+    // Handle RPC response - normalize status values
+    if (rpcResult?.status === 'already_completed' || rpcResult?.status === 'already_completed_today' || rpcResult?.ok === false) {
+      return { status: 'already_completed', awarded: false, amount: 0, data: rpcResult };
+    }
+
+    // status === "completed" means quest was newly completed with coin award
+    const awardedAmount = rpcResult?.awarded_heartcoins ?? rpcResult?.heartcoins ?? 1;
+    return { status: 'completed', awarded: true, amount: awardedAmount, data: rpcResult };
+
+  } catch (error: any) {
+    // Catch 23505 error if thrown differently
+    if (error?.code === '23505' || error?.message?.includes('23505')) {
+      return { status: 'already_completed', awarded: false, amount: 0 };
+    }
+
+    // Re-throw with clean message
+    throw new Error('Quest failed. Try again.');
+  }
+}
+
+/**
+ * @deprecated Use completeBonusQuestOncePerDay instead
+ * Alias for backward compatibility
  */
 export async function completeBonusQuest(params: {
   supabase: SupabaseClient;
   userId: string;
   bonusQuestId: string;
-  rewardHeartcoins?: number;
-}): Promise<{ status: 'completed_today' | 'already_completed_today'; data?: any; rewardHeartcoins?: number }> {
-  const { supabase, userId, bonusQuestId, rewardHeartcoins } = params;
-
-  if (!bonusQuestId) {
-    console.error('completeBonusQuest: Missing bonusQuestId', { userId, bonusQuestId });
-    throw new Error('bonusQuestId is required');
-  }
-
-  if (!userId) {
-    console.error('completeBonusQuest: Missing userId', { userId, bonusQuestId });
-    throw new Error('userId is required');
-  }
-
-  try {
-    // Get quest details if rewardHeartcoins not provided
-    let reward = rewardHeartcoins;
-    let questKey = 'unknown';
-
-    if (reward === undefined) {
-      const { data: quest, error: questError } = await supabase
-        .from('bonus_quests')
-        .select('reward_heartcoins, quest_key')
-        .eq('id', bonusQuestId)
-        .single();
-
-      if (questError || !quest) {
-        console.error('Failed to fetch quest details:', questError);
-        throw new Error('Quest not found');
-      }
-      reward = quest.reward_heartcoins ?? 0;
-      questKey = quest.quest_key;
-    }
-
-    // Call RPC to complete the quest (handles insert + user_bonus_quests update + heartcoins atomically)
-    const { data: rpcResult, error: rpcError } = await supabase
-      .rpc('complete_bonus_quest_once_per_day', {
-        p_user_id: userId,
-        p_bonus_quest_id: bonusQuestId,
-        p_reward_heartcoins: reward
-      });
-
-    if (rpcError) {
-      console.error('Failed to complete quest via RPC:', rpcError);
-      throw new Error(`Failed to complete quest: ${rpcError.message}`);
-    }
-
-    // Handle new RPC response format
-    // { ok: true/false, status: "completed" | "already_completed_today", reward_heartcoins, completion_id, completed_on }
-    if (rpcResult.ok === false || rpcResult.status === 'already_completed_today') {
-      console.log(`📋 Quest ${questKey} already completed today for user ${userId}`);
-      return { status: 'already_completed_today', data: rpcResult };
-    }
-
-    // ok === true means quest was newly completed; RPC handles heartcoin award internally
-    console.log(`✅ Quest ${questKey} completed successfully! +${rpcResult.reward_heartcoins ?? reward} HeartCoins awarded to user ${userId}`);
-
-    return {
-      status: 'completed_today',
-      data: rpcResult,
-      rewardHeartcoins: rpcResult.reward_heartcoins ?? reward
-    };
-
-  } catch (error) {
-    console.error('Error in completeBonusQuest:', {
-      userId,
-      bonusQuestId,
-      error
-    });
-    throw error;
-  }
+}): Promise<{ status: 'completed' | 'already_completed'; awarded: boolean; data?: any }> {
+  const result = await completeBonusQuestOncePerDay({
+    userId: params.userId,
+    bonusQuestId: params.bonusQuestId,
+    supabase: params.supabase
+  });
+  return {
+    status: result.status,
+    awarded: result.awarded,
+    data: result.data
+  };
 }
 
 /**
@@ -498,7 +508,7 @@ export async function completeBonusQuestWithClient(
       bonusQuestId: quest.id
     });
 
-    if (result.status === 'already_completed_today') {
+    if (result.status === 'already_completed') {
       return {
         success: true,
         message: 'Quest already completed today!'
@@ -509,8 +519,8 @@ export async function completeBonusQuestWithClient(
       success: true,
       message: 'Quest completed successfully!',
       rewards: {
-        heartcoins: quest.reward_heartcoins > 0 ? quest.reward_heartcoins : undefined,
-        element_card: quest.reward_element_card ? true : undefined
+        heartcoins: result.awarded && quest.reward_heartcoins > 0 ? quest.reward_heartcoins : undefined,
+        element_card: result.awarded && quest.reward_element_card ? true : undefined
       }
     };
 
@@ -541,28 +551,31 @@ export async function completeBonusQuestLegacy(
       bonusQuestId: quest.id
     });
 
-    if (result.status === 'already_completed_today') {
+    if (result.status === 'already_completed') {
+      // Still mark as success but no rewards
       return {
         success: true,
         message: 'Quest already completed today!'
       };
     }
 
-    // Call optional callbacks only for new completions
-    if (quest.reward_heartcoins > 0) {
-      onHeartCoinsAwarded?.(quest.reward_heartcoins);
-    }
-    if (quest.reward_element_card) {
-      onElementCardAwarded?.();
+    // Call optional callbacks only for NEW completions (awarded === true)
+    if (result.awarded) {
+      if (quest.reward_heartcoins > 0) {
+        onHeartCoinsAwarded?.(quest.reward_heartcoins);
+      }
+      if (quest.reward_element_card) {
+        onElementCardAwarded?.();
+      }
     }
 
     return {
       success: true,
       message: 'Quest completed successfully!',
-      rewards: {
+      rewards: result.awarded ? {
         heartcoins: quest.reward_heartcoins > 0 ? quest.reward_heartcoins : undefined,
         element_card: quest.reward_element_card ? true : undefined
-      }
+      } : undefined
     };
 
   } catch (error) {

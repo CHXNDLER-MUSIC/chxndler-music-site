@@ -2769,11 +2769,19 @@ const HUDPanel = React.memo(function HUDPanel({
                       {/* Volume button moved to the right of YouTube */}
                       <button
                         className="hud-volume-btn"
-                        style={{ marginTop: 1, position: 'relative', zIndex: 100, width: 32, height: 32, flexShrink: 0 }}
+                        style={{ marginTop: 1, position: 'relative', zIndex: 100, width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto', isolation: 'isolate' }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                        onTouchStart={(e) => {
+                          // Prevent touch events from propagating to underlying elements
+                          e.stopPropagation();
+                        }}
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
+                          // Close any open popovers that might have been triggered by accident
+                          setShowApplePopover(false);
+                          setShowSpotifyPopover(false);
+                          setShowYouTubePopover(false);
                           try { sfx.play('click', 0.4); } catch {}
                           setShowHudVolumePopover(v => {
                             const next = !v;

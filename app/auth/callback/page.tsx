@@ -93,21 +93,36 @@ export default function AuthCallbackPage() {
       }
     };
 
+    // Helper to clear URL hash without triggering navigation
+    const clearHashFromUrl = () => {
+      if (window.location.hash) {
+        console.log('🧹 Clearing hash from URL to prevent re-processing');
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    };
+
     async function handleAuthCallback() {
       try {
-        // === EXTREMELY CLEAR LOGGING ===
+        // === COMPREHENSIVE LOGGING ===
         console.log('='.repeat(60));
         console.log('🚨 AUTH CALLBACK PAGE HIT! 🚨');
         console.log('='.repeat(60));
 
-        const fullCallbackUrl = window.location.href;
-        console.log('📍 FULL CALLBACK URL:', fullCallbackUrl);
+        const fullUrl = window.location.href;
+        const search = window.location.search;
+        const hash = window.location.hash;
 
-        const searchParams = new URLSearchParams(window.location.search);
+        console.log('📍 URL:', fullUrl);
+        console.log('📍 Search:', search);
+        console.log('📍 Hash:', hash);
+
+        const searchParams = new URLSearchParams(search);
         const oauthCode = searchParams.get('code');
         const hasCode = !!oauthCode;
+        const hasHashToken = hash.includes('access_token=');
 
         console.log('🔑 HAS ?code= PARAMETER:', hasCode);
+        console.log('🔑 HAS #access_token= in hash:', hasHashToken);
         if (hasCode) {
           console.log('🔑 CODE VALUE (first 20 chars):', oauthCode?.substring(0, 20) + '...');
         }
@@ -119,11 +134,11 @@ export default function AuthCallbackPage() {
           router.replace('/?error=timeout');
         }, 30000); // 30 second timeout for debugging
 
-        // === PRIMARY PATH: If ?code= exists, exchange it for session ===
+        // === FLOW 1: PKCE flow - If ?code= exists, exchange it for session ===
         if (hasCode) {
-          console.log('🔄 CODE DETECTED - calling exchangeCodeForSession with FULL URL...');
+          console.log('🔄 PKCE FLOW: CODE DETECTED - calling exchangeCodeForSession with FULL URL...');
 
-          const { data: exchangeData, error: exchangeError } = await supabaseClient.auth.exchangeCodeForSession(fullCallbackUrl);
+          const { data: exchangeData, error: exchangeError } = await supabaseClient.auth.exchangeCodeForSession(fullUrl);
 
           console.log('='.repeat(60));
           console.log('📦 exchangeCodeForSession RESULT:');
@@ -179,13 +194,92 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        // === FALLBACK: No ?code= parameter ===
-        console.log('⚠️ NO ?code= PARAMETER - checking for existing session or tokens...');
+        // === FLOW 2: Magic link hash token flow - If #access_token= exists ===
+        if (hasHashToken) {
+          console.log('🔄 MAGIC LINK FLOW: #access_token= detected in hash');
+          console.log('🔄 Calling getSession() to process hash tokens...');
 
-        // Check for existing session first
+          // Supabase client automatically detects and processes tokens in URL hash
+          const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+
+          console.log('='.repeat(60));
+          console.log('📦 getSession() RESULT (after hash token):');
+          console.log('   - Has session:', !!sessionData?.session);
+          console.log('   - Has user:', !!sessionData?.session?.user);
+          console.log('   - User ID:', sessionData?.session?.user?.id ?? 'N/A');
+          console.log('   - User email:', sessionData?.session?.user?.email ?? 'N/A');
+          console.log('   - Has error:', !!sessionError);
+          if (sessionError) {
+            console.log('   - Error message:', sessionError.message);
+          }
+          console.log('='.repeat(60));
+
+          if (sessionError) {
+            console.error('❌ getSession after hash token FAILED:', sessionError.message);
+            clearSafetyTimeout();
+            clearHashFromUrl();
+            router.replace(`/?error=${encodeURIComponent(sessionError.message)}`);
+            return;
+          }
+
+          if (sessionData?.session?.user) {
+            console.log('✅ MAGIC LINK SESSION ESTABLISHED! Proceeding with auth flow...');
+            clearSafetyTimeout();
+            clearHashFromUrl();
+            await handleSuccessfulAuth(sessionData.session);
+            return;
+          }
+
+          // Hash token existed but no session - try setSession as fallback
+          console.log('⚠️ getSession() did not return session, trying setSession as fallback...');
+          const hashParams = new URLSearchParams(hash.substring(1));
+          const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
+
+          if (accessToken) {
+            const { data: setSessionData, error: setSessionError } = await supabaseClient.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken || ''
+            });
+
+            console.log('📦 setSession RESULT:', {
+              hasSession: !!setSessionData?.session,
+              hasUser: !!setSessionData?.session?.user,
+              error: setSessionError?.message
+            });
+
+            if (setSessionError) {
+              console.error('❌ setSession FAILED:', setSessionError.message);
+              clearSafetyTimeout();
+              clearHashFromUrl();
+              router.replace(`/?error=${encodeURIComponent(setSessionError.message)}`);
+              return;
+            }
+
+            if (setSessionData?.session?.user) {
+              console.log('✅ setSession SUCCESSFUL! Proceeding with auth flow...');
+              clearSafetyTimeout();
+              clearHashFromUrl();
+              await handleSuccessfulAuth(setSessionData.session);
+              return;
+            }
+          }
+
+          // Hash tokens existed but couldn't establish session
+          console.error('❌ Could not establish session from hash tokens');
+          clearSafetyTimeout();
+          clearHashFromUrl();
+          router.replace('/?error=hash_token_failed');
+          return;
+        }
+
+        // === FALLBACK: No ?code= and no #access_token= ===
+        console.log('⚠️ NO ?code= AND NO #access_token= - checking for existing session...');
+
+        // Check for existing session
         const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
 
-        console.log('🔍 Existing session check:', {
+        console.log('📦 getSession() RESULT (existing check):', {
           hasSession: !!sessionData?.session,
           hasUser: !!sessionData?.session?.user,
           userId: sessionData?.session?.user?.id,
@@ -200,40 +294,8 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        // Check URL hash for tokens (implicit flow)
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const accessToken = hashParams.get('access_token');
-        const refreshToken = hashParams.get('refresh_token');
-
-        console.log('🔍 URL hash token check:', {
-          hasAccessToken: !!accessToken,
-          hasRefreshToken: !!refreshToken,
-          fullHash: window.location.hash
-        });
-
-        if (accessToken) {
-          console.log('🔄 Found tokens in URL hash, setting session...');
-          const { data: setSessionData, error: setSessionError } = await supabaseClient.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken || ''
-          });
-
-          if (setSessionError) {
-            console.error('❌ Error setting session from tokens:', setSessionError);
-            clearSafetyTimeout();
-            router.replace(`/?error=${encodeURIComponent(setSessionError.message)}`);
-            return;
-          }
-
-          if (setSessionData?.session?.user) {
-            console.log('✅ Successfully set session from URL tokens');
-            clearSafetyTimeout();
-            await handleSuccessfulAuth(setSessionData.session);
-            return;
-          }
-        }
-
         // Check for error parameters in the URL
+        const hashParams = new URLSearchParams(hash.substring(1));
         const hashError = hashParams.get('error');
         const errorDescription = hashParams.get('error_description');
         const urlError = searchParams.get('error');
@@ -256,6 +318,7 @@ export default function AuthCallbackPage() {
 
             console.warn('⚠️ Ignoring error because session exists:', errorMsg);
             clearSafetyTimeout();
+            clearHashFromUrl();
             router.push('/?completeProfile=1');
             return;
           }
@@ -267,6 +330,7 @@ export default function AuthCallbackPage() {
           ) {
             console.warn('⚠️ Magic link is invalid/expired.');
             clearSafetyTimeout();
+            clearHashFromUrl();
             router.replace('/?magic_link_expired=1');
             return;
           }
@@ -274,12 +338,13 @@ export default function AuthCallbackPage() {
           // Genuine error
           console.error('❌ Auth error detected:', errorMsg, errorDescription);
           clearSafetyTimeout();
+          clearHashFromUrl();
           router.replace(`/?error=${encodeURIComponent(errorMsg || 'auth_failed')}`);
           return;
         }
 
         // NO CODE, NO TOKENS, NO ERROR - redirect with missing_code error
-        console.error('❌ NO ?code= PARAMETER FOUND - cannot complete OAuth callback');
+        console.error('❌ NO ?code= OR #access_token= FOUND - cannot complete auth callback');
         console.log('🔍 Final URL state:', {
           fullUrl: window.location.href,
           search: window.location.search,
