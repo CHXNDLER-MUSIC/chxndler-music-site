@@ -724,6 +724,18 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   // Daily song progress tracking - awards HeartCoin at 50% completion
   // Uses audioRef.current as source of truth for currentTime/duration
   // trackingSlug is the original slug (not normalized) for accurate DB lookup
+
+  // Debug: log what values are being passed to the tracking hook
+  useEffect(() => {
+    if (state.playing || state.trackingSlug) {
+      console.log('🎵 AudioProvider: Tracking hook inputs:', {
+        hasAudioElement: !!audioRef.current,
+        trackingSlug: state.trackingSlug,
+        isPlaying: state.playing
+      });
+    }
+  }, [state.playing, state.trackingSlug]);
+
   useDailySongProgress({
     audioElement: audioRef.current,
     trackSlug: state.trackingSlug || null,
@@ -1114,6 +1126,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
       try {
         // Set playing state immediately for instant UI feedback
+        console.log('🎵 playTrack: Setting playing=true, trackingSlug=' + trackId);
         setState(s => ({ ...s, playing: true, isLoading: false }));
         await a.play();
         console.log('🎵 Successfully started playing:', normId);

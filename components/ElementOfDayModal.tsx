@@ -185,7 +185,14 @@ export default function ElementOfDayModal() {
 
       console.log('[claim_element_of_day] data:', rpcResult);
 
-      if (rpcError) {
+      // Check if error is "already claimed" (duplicate key violation on bonus quest)
+      const isDuplicateError = rpcError && (
+        rpcError.code === '23505' ||
+        rpcError.message?.includes('duplicate key') ||
+        rpcError.details?.includes('already exists')
+      );
+
+      if (rpcError && !isDuplicateError) {
         console.error('[claim_element_of_day] error:', rpcError);
         console.error('[claim_element_of_day] error props:', Object.getOwnPropertyNames(rpcError ?? {}));
         console.error('[claim_element_of_day] error string:', String(rpcError));
@@ -198,8 +205,12 @@ export default function ElementOfDayModal() {
         return;
       }
 
-      // Any ok === true is treated as success (regardless of did_complete_quest_today or did_award_relic)
-      if (rpcResult?.ok === true) {
+      if (isDuplicateError) {
+        console.log('[claim_element_of_day] Already claimed today (duplicate key) - treating as success');
+      }
+
+      // Treat as success if RPC returned ok:true OR if it was a duplicate error (already claimed)
+      if (rpcResult?.ok === true || isDuplicateError) {
         // Immediately lock the element and stop glow
         setClaimed(true);
         setElementQuestCompleted(true);
