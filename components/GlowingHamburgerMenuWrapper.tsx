@@ -247,9 +247,12 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
       />
       {/* Binder popout */}
       {binderOpen && (
-        <BinderModal 
+        <BinderModal
           open={binderOpen}
-          onClose={() => setBinderOpen(false)}
+          onClose={() => {
+            setBinderOpen(false);
+            try { onBeamColorChange?.('off'); } catch {}
+          }}
         />
       )}
       {/* Badges popout */}

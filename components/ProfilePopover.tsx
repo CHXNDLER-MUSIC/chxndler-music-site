@@ -1176,7 +1176,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                         <img
                           src="/relics/listening_boost.webp"
                           alt="Listening Boost"
-                          onClick={() => setSelectedBoostPopup(selectedBoostPopup === 'listening' ? null : 'listening')}
+                          onClick={() => { sfx.play('flip'); setSelectedBoostPopup(selectedBoostPopup === 'listening' ? null : 'listening'); }}
                           className="w-8 h-8 object-contain cursor-pointer hover:scale-110 transition-transform"
                           style={{
                             filter: isActive ? 'drop-shadow(0 0 6px rgba(0,255,255,0.8))' : 'grayscale(100%) opacity(0.4)',
@@ -1196,7 +1196,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                         <img
                           src="/relics/streak_shield.webp"
                           alt="Streak Shield"
-                          onClick={() => setSelectedBoostPopup(selectedBoostPopup === 'streak' ? null : 'streak')}
+                          onClick={() => { sfx.play('flip'); setSelectedBoostPopup(selectedBoostPopup === 'streak' ? null : 'streak'); }}
                           className="w-8 h-8 object-contain cursor-pointer hover:scale-110 transition-transform"
                           style={{
                             filter: isActive ? 'drop-shadow(0 0 6px rgba(0,255,255,0.8))' : 'grayscale(100%) opacity(0.4)',
@@ -1216,7 +1216,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                         <img
                           src="/relics/reflection.webp"
                           alt="Reflection Boost"
-                          onClick={() => setSelectedBoostPopup(selectedBoostPopup === 'reflection' ? null : 'reflection')}
+                          onClick={() => { sfx.play('flip'); setSelectedBoostPopup(selectedBoostPopup === 'reflection' ? null : 'reflection'); }}
                           className="w-8 h-8 object-contain cursor-pointer hover:scale-110 transition-transform"
                           style={{
                             filter: isActive ? 'drop-shadow(0 0 6px rgba(0,255,255,0.8))' : 'grayscale(100%) opacity(0.4)',

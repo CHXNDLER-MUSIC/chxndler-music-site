@@ -281,6 +281,34 @@ export function PlanetRewardsProvider({
 
       setLastReward(reward);
 
+      // Award listening boost to user_active_boosts
+      try {
+        const boostPayload = {
+          user_id: user.id,
+          boost_key: 'boost_listening',
+          scope: 'listen_rewards',
+          source: 'element_of_day',
+          multiplier: 2,
+          add_amount: 0,
+          uses_total: 1,
+          uses_remaining: 1,
+          starts_at: new Date().toISOString(),
+          expires_at: null,
+        };
+
+        const { error: boostError } = await supabaseBrowser
+          .from('user_active_boosts')
+          .insert(boostPayload);
+
+        if (boostError) {
+          console.warn('[PlanetRewardsProvider] Failed to insert boost:', boostError.message);
+        } else {
+          console.log('[PlanetRewardsProvider] Boost awarded: boost_listening');
+        }
+      } catch (boostErr) {
+        console.error('[PlanetRewardsProvider] Error awarding boost:', boostErr);
+      }
+
       // Award HeartCoin for element of the day quest completion
       try {
         await logHeartcoinTransaction(supabaseBrowser, {

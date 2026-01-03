@@ -2101,12 +2101,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         style={{ ...blurWrapperStyle, top: 0 }}
       >
         <PrewarmThree />
-        <AmbientSpace 
-          ambientSrc={!profile ? "/tracks/space-music.opus" : "/tracks/welcome-back.opus"} 
-          introSrc={homeMode && homeIntroEnabled && !welcomeHasPlayed ? (!profile ? "/tracks/welcome-to-the-heartverse.opus" : "/tracks/welcome-back.opus") : undefined} 
-          playingMusic={isPlaying} 
-          suspend={ambientSuspended} 
-          userSelectedSong={userSelected} 
+        <AmbientSpace
+          ambientSrc="/tracks/space-music.opus"
+          // Welcome tracks are now played via audioManager.playTrack() in onWarpSfxEnd for tracking in user_song_daily_progress
+          introSrc={undefined}
+          playingMusic={isPlaying}
+          suspend={ambientSuspended}
+          userSelectedSong={userSelected}
         />
         
         {/* 3D Planet System - COMPLETELY DISABLED */}
@@ -2190,10 +2191,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
             // Mark warp as completed for unified audio system
             try { audioManager?.markWarpCompleted(); } catch {}
-            // Auto-play ambient space music via unified audio when landing on home
+            // Auto-play welcome track via unified audio when landing on home
+            // Play Welcome Back for logged-in users, Welcome to the Heartverse for guests
             try {
               if (!pendingTrackPlay && !userSelected) {
-                audioManager?.playTrack('space-music');
+                const welcomeTrack = profile?.id ? 'welcome-back' : 'welcome-to-the-heartverse';
+                console.log(`🎵 Playing welcome track: ${welcomeTrack} (logged in: ${!!profile?.id})`);
+                audioManager?.playTrack(welcomeTrack);
               }
             } catch {}
 
@@ -2241,10 +2245,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           setWarpFullyComplete(true);
           // Ensure unified audio system can auto-play now if a pending track exists
           try { audioManager?.markWarpCompleted(); } catch {}
-          // If landing on home (no song pending), start ambient space music via unified audio
+          // If landing on home (no song pending), start welcome track via unified audio
+          // Play Welcome Back for logged-in users, Welcome to the Heartverse for guests
           try {
             if (!pendingTrackPlay && !userSelected) {
-              audioManager?.playTrack('space-music');
+              const welcomeTrack = profile?.id ? 'welcome-back' : 'welcome-to-the-heartverse';
+              console.log(`🎵 Playing welcome track (main): ${welcomeTrack} (logged in: ${!!profile?.id})`);
+              audioManager?.playTrack(welcomeTrack);
             }
           } catch {}
           
@@ -2734,8 +2741,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 key={safariRefreshKey} // Force re-render on Safari when needed
                 style={(() => {
                   const normalCondition = cockpitVisible && showHUD;
-                  // Blue display shows when cockpit is fully visible but hidden during warp
-                  const shouldShow = normalCondition && !isWarping;
+                  // Blue display shows when cockpit is fully visible but hidden during any warp
+                  // Check both isWarping (Start button) and warpActive (song selection warps)
+                  const shouldShow = normalCondition && !isWarping && !warpActive;
                   // Debug visibility conditions (optional)
                   debugLog({
                     homeMode,
@@ -2748,11 +2756,11 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                     normalCondition,
                     shouldShow
                   });
-                  
+
                   return {
                     // Allow planets to be visible even when UI is locked (before Start is pressed)
                     opacity: shouldShow ? 1 : 0,
-                    pointerEvents: (normalCondition && !isWarping) ? 'auto' : 'none', 
+                    pointerEvents: (normalCondition && !isWarping && !warpActive) ? 'auto' : 'none',
                     visibility: shouldShow ? 'visible' : 'hidden',
                     transition: 'opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)',
                     willChange: 'opacity',

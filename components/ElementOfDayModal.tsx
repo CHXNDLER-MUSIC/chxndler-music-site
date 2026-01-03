@@ -204,6 +204,35 @@ export default function ElementOfDayModal() {
         setClaimed(true);
         setElementQuestCompleted(true);
 
+        // ========== AWARD BOOST TO user_active_boosts ==========
+        // Award a listening boost for Element of Day completion
+        try {
+          const boostPayload = {
+            user_id: userId,
+            boost_key: 'boost_listening',
+            scope: 'listen_rewards',
+            source: 'element_of_day',
+            multiplier: 2,
+            add_amount: 0,
+            uses_total: 1,
+            uses_remaining: 1,
+            starts_at: new Date().toISOString(),
+            expires_at: null, // No expiration - just 1 use
+          };
+
+          const { error: boostError } = await supabaseBrowser
+            .from('user_active_boosts')
+            .insert(boostPayload);
+
+          if (boostError) {
+            console.warn('[ElementOfDayModal] Failed to insert boost:', boostError.message);
+          } else {
+            console.log('[ElementOfDayModal] Boost awarded: boost_listening');
+          }
+        } catch (boostErr) {
+          console.error('[ElementOfDayModal] Error awarding boost:', boostErr);
+        }
+
         // ========== AWARD RELIC VIA API ==========
         // If there's a rewardKey, explicitly award the relic to ensure it's in user_relics
         let relicAwarded = rpcResult.did_award_relic || false;
@@ -228,8 +257,8 @@ export default function ElementOfDayModal() {
 
         // Show success toast
         const toastMessage = relicAwarded
-          ? 'Relic awarded!'
-          : 'Element claimed. Streak updated.';
+          ? 'Relic + Listening Boost awarded!'
+          : 'Element claimed! Listening Boost (2x) awarded.';
         window.dispatchEvent(new CustomEvent('toast:show', {
           detail: { message: toastMessage, type: 'success' }
         }));
