@@ -369,11 +369,26 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   };
 
   // Handle clicking the element image - triggers warp effect, then opens element of day display
+  // Also plays the element track so it gets tracked in user_song_daily_progress
   const handleElementImageClick = () => {
     try { sfx.play('click', 0.8); } catch {}
 
     // Close the heart coin popup
     onCloseHeartCoinPopup?.();
+
+    // Get the element track slug (matches TRACK_INFO keys: 'water', 'lightning', 'darkness', 'heart')
+    const elementTrackSlug = todaysElement.name.toLowerCase();
+    console.log('[QuestList] Element image clicked, playing element track:', elementTrackSlug);
+
+    // Start playback of the element track immediately (for user_song_daily_progress tracking)
+    // This ensures a row is created in user_song_daily_progress for the element track
+    if (typeof (window as any).__playTrackDirect === 'function') {
+      (window as any).__playTrackDirect(elementTrackSlug, 'element-of-day-quest');
+    } else {
+      window.dispatchEvent(new CustomEvent('song:play-now', {
+        detail: { slug: elementTrackSlug, source: 'element-of-day-quest' }
+      }));
+    }
 
     // Dispatch planet:warp event to trigger warp visual effect
     console.log('[QuestList] Dispatching planet:warp event for element:', todaysElement.name);

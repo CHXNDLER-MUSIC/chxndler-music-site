@@ -13,6 +13,7 @@ type BadgeWithProgress = {
   description?: string;
   icon_url?: string;
   category?: string;
+  sub_category?: string;
   requirement?: string;
   progress?: number;
   current?: number;
@@ -290,19 +291,25 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
   };
 
   const getElementFromBadge = (badge: BadgeWithProgress) => {
-    // Note: sub_category field not available in current schema
-    
+    // Use sub_category if available (database field)
+    if (badge.sub_category) {
+      const sub = badge.sub_category.toUpperCase();
+      if (sub === 'HEART' || sub === 'WATER' || sub === 'LIGHTNING' || sub === 'DARKNESS') {
+        return sub;
+      }
+    }
+
     // Fallback: parse from badge name for elemental streak badges
     if (badge.category === 'elemental-streak' && badge.badge_name) {
       const name = badge.badge_name.toLowerCase();
-      
-      // Check for specific element patterns
-      if (name.includes('heart') || name.includes('love') || name.includes('devotion') || name.includes('radiance') || name.includes('pulse') || name.includes('bloom')) return 'HEART';
+
+      // Check for specific element patterns - order matters, check HEART first for ember/glow
+      if (name.includes('heart') || name.includes('love') || name.includes('devotion') || name.includes('radiance') || name.includes('pulse') || name.includes('bloom') || name.includes('warmth') || name.includes('compassion') || name.includes('empathy') || name.includes('soulmate') || name.includes('ember') || name.includes('glow')) return 'HEART';
       if (name.includes('water') || name.includes('ocean') || name.includes('tide') || name.includes('flow') || name.includes('drift') || name.includes('surge') || name.includes('depth') || name.includes('ripple')) return 'WATER';
-      if (name.includes('lightning') || name.includes('spark') || name.includes('flash') || name.includes('charge') || name.includes('storm') || name.includes('ember') || name.includes('glow')) return 'LIGHTNING';
+      if (name.includes('lightning') || name.includes('spark') || name.includes('flash') || name.includes('charge') || name.includes('storm') || name.includes('bolt') || name.includes('electric')) return 'LIGHTNING';
       if (name.includes('darkness') || name.includes('shadow') || name.includes('night') || name.includes('dusk') || name.includes('midnight') || name.includes('veil') || name.includes('eclipse')) return 'DARKNESS';
     }
-    
+
     // Legacy fallback: parse from description
     if (badge.description) {
       const description = badge.description;
@@ -311,7 +318,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       if (description.includes('⚡ LIGHTNING')) return 'LIGHTNING';
       if (description.includes('🌑 DARKNESS')) return 'DARKNESS';
     }
-    
+
     return null;
   };
 
@@ -821,33 +828,11 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                       {category.id === 'elemental-streak' ? (
                         // Element circles for elemental streak
                         <div className="space-y-3">
-                          <div className="flex justify-between items-center">
-                            {/* Back to elements button when element is selected */}
-                            {elementFilter ? (
-                              <button
-                                onClick={() => {
-                                  try { sfx.play('click', 0.6); } catch {}
-                                  setElementFilter(null);
-                                  setCurrentPage(0);
-                                }}
-                                className="px-3 py-1 text-[10px] font-bold rounded border border-cyan-400/60 hover:border-cyan-400/80 transition-all duration-200"
-                                style={{
-                                  background: 'rgba(0,191,255,0.1)',
-                                  color: '#00BFFF',
-                                  textShadow: '0 0 4px rgba(0,191,255,0.8)',
-                                  boxShadow: '0 0 8px rgba(0,191,255,0.3)',
-                              }}
-                              >
-                                ← BACK TO ELEMENTS
-                              </button>
-                            ) : (
-                              <div className="w-32"></div>
-                            )}
-                            
-                            <div 
+                          <div className="flex justify-center items-center">
+                            <div
                               className="text-center"
-                              style={{ 
-                                color: category.color, 
+                              style={{
+                                color: category.color,
                                 textShadow: `0 0 8px ${category.color}80`,
                                 fontSize: '14px',
                                 fontWeight: 'bold'
@@ -855,8 +840,6 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                             >
                               {category.name}
                             </div>
-                            
-                            <div className="w-32"></div>
                           </div>
                           <div className="flex justify-center gap-4" style={{ marginTop: '0px' }}>
                             {getElementalElements().map(element => {
@@ -868,7 +851,8 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                                   <button
                                     onClick={() => {
                                       try { sfx.play('click', 0.7); } catch {}
-                                      setElementFilter(element.name);
+                                      // Toggle: if already selected, deselect; otherwise select
+                                      setElementFilter(elementFilter === element.name ? null : element.name);
                                       setCurrentPage(0);
                                     }}
                                     className="relative w-16 h-16 rounded-full border-2 transition-all duration-300 hover:scale-105 flex items-center justify-center group overflow-hidden"

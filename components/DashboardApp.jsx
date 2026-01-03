@@ -2146,20 +2146,31 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           const mapped = slug ? youtubeSkyFor(slug) : undefined;
 
           // Debug logging for sky selection
-          if (process.env.NODE_ENV === 'development') {
-            console.log('[SKY] Computing youtubeUrl:', { slug, mapped, homeMode, isLanded, pendingTrackPlay, userSelected, ytSkyStartedSlug });
+          console.log('[SKY] Computing youtubeUrl:', { slug, mapped, homeMode, isLanded, pendingTrackPlay, userSelected });
+
+          // If a song is selected (curTrack is set and we're not in home mode), show its sky
+          // Check song sky FIRST before home mode to ensure song selection takes priority
+          if (slug && mapped && !homeMode) {
+            console.log('[SKY] Returning song sky:', mapped);
+            return mapped;
           }
 
           // On the homepage:
           // - During intro (before START), show the lightspeed sky
           // - After landing, switch to the calm space sky
-          if (homeMode) return isLanded ? HOME_YOUTUBE_SKY : 'https://youtu.be/KFssNa5WvKc';
-          // Off-home (song view): show the mapped YouTube sky as soon as a selection is happening
-          // or after playback has started (ytSkyStartedSlug guard), so users see it right after clicking.
-          if (slug && mapped) {
-            if (pendingTrackPlay || userSelected) return mapped;
-            if (ytSkyStartedSlug && slug === ytSkyStartedSlug) return mapped;
+          if (homeMode) {
+            const homeSky = isLanded ? HOME_YOUTUBE_SKY : 'https://youtu.be/KFssNa5WvKc';
+            console.log('[SKY] Returning home sky:', homeSky);
+            return homeSky;
           }
+
+          // Fallback: if we have a mapped sky but conditions above didn't match
+          if (slug && mapped) {
+            console.log('[SKY] Returning fallback song sky:', mapped);
+            return mapped;
+          }
+
+          console.log('[SKY] Returning undefined');
           return undefined;
         })()}
         // Use provided YouTube clip for lightspeed overlay on opening and Start

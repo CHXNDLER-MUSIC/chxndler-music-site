@@ -61,6 +61,7 @@ export function useDailySongProgress({
   const lastUpsertRef = useRef<number>(0);
   const isProcessingRef = useRef<boolean>(false);
   const currentSongIdRef = useRef<string | null>(null);
+  const initialRowCreatedRef = useRef<boolean>(false); // Track if initial row was created for current track
 
   // Lookup song UUID from slug
   const getSongId = useCallback(async (slug: string): Promise<string | null> => {
@@ -303,6 +304,23 @@ export function useDailySongProgress({
         return;
       }
 
+      // Reset initial row flag for new track
+      initialRowCreatedRef.current = false;
+
+      // IMMEDIATE initial upsert: Create the row right away when playback starts
+      // This ensures the row exists in user_song_daily_progress immediately on LISTEN click
+      const { currentTime: initialTime, duration: initialDuration } = audioElement;
+      if (initialDuration && initialDuration > 0 && isFinite(initialDuration)) {
+        const initialPercent = (initialTime / initialDuration) * 100;
+        console.log(`🎵 Daily progress: Creating initial row for ${trackSlug} (${initialPercent.toFixed(1)}%)`);
+        await upsertProgress(userId, songId, day, initialTime, initialDuration, initialPercent, false);
+        lastUpsertRef.current = Date.now();
+        initialRowCreatedRef.current = true;
+      } else {
+        // Duration not ready yet - the interval will create it on first valid tick
+        console.log(`🎵 Daily progress: Waiting for duration to create initial row for ${trackSlug}`);
+      }
+
       // Start tracking interval (1s)
       intervalId = window.setInterval(async () => {
         if (!mounted) return;
@@ -325,9 +343,17 @@ export function useDailySongProgress({
         const completionPercent = (currentTime / duration) * 100;
 
         // Throttle upserts to every 5 seconds minimum
+        // EXCEPTION: Allow immediate upsert if initial row hasn't been created yet
         const now = Date.now();
-        if (now - lastUpsertRef.current < 5000) return;
+        const isInitialRow = !initialRowCreatedRef.current;
+        if (!isInitialRow && now - lastUpsertRef.current < 5000) return;
         lastUpsertRef.current = now;
+
+        // Mark initial row as created
+        if (isInitialRow) {
+          console.log(`🎵 Daily progress: Creating initial row via interval for ${trackSlug}`);
+          initialRowCreatedRef.current = true;
+        }
 
         // Check if we've hit the 50% threshold
         const shouldComplete = completionPercent >= 50 && !completedRef.current.has(cacheKey);

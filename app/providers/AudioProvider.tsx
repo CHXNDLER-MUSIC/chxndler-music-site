@@ -272,105 +272,144 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     warpCompleted: false
   });
 
-  // Listen session tracking refs
-  const sessionStartRef = useRef<Date | null>(null);
-  const sessionTrackIdRef = useRef<string | null>(null);
-  const isRecordingRef = useRef<boolean>(false);
+  // Listen session tracking - robust lifecycle
+  type ListenSession = {
+    trackId: string;
+    startedAt: Date;
+    listenedSeconds: number;
+    flushed: boolean;
+  };
+  const sessionRef = useRef<ListenSession | null>(null);
+  const listenIntervalRef = useRef<number | null>(null);
   const currentTrackRef = useRef<string | null>(null);
+  const lastCurrentTimeRef = useRef<number>(0); // Track previous currentTime for repeat detection
 
   // Refs to track warp state for playerStore subscription (avoids stale closure issues)
   const warpCompletedRef = useRef<boolean>(state.warpCompleted);
   const pendingTrackRef = useRef<string | null>(state.pendingTrack);
 
-  // Record listen session to song_listen_sessions
-  // Note: Boost consumption for listen rewards now happens in useDailySongProgress
-  // when the 50% completion threshold is reached and heartcoins are awarded.
-  // Returns true on success, false on failure.
-  const recordListenSession = async (trackId: string, startedAt: Date, endedAt: Date): Promise<boolean> => {
-    // Prevent double-recording
-    if (isRecordingRef.current) return false;
+  // Flush session to DB - call this before switching tracks, on pause, on ended, on visibility hidden, on beforeunload
+  // minSeconds: minimum listened_seconds required to record (2 for pause, 0 for track end/switch)
+  const flushSession = async (minSeconds: number = 0): Promise<boolean> => {
+    const session = sessionRef.current;
+    if (!session || session.flushed) return false;
 
-    // Calculate listened_seconds as integer >= 0
-    const listenedSeconds = Math.max(0, Math.floor((endedAt.getTime() - startedAt.getTime()) / 1000));
+    const listenedSeconds = Math.max(0, Math.floor(session.listenedSeconds));
 
-    // Ignore sessions shorter than 10 seconds
-    if (listenedSeconds < 10) {
-      console.log(`🎧 Listen session too short (${listenedSeconds}s), skipping record`);
+    // Check minimum threshold
+    if (listenedSeconds < minSeconds) {
+      console.log(`🎧 Session below threshold (${listenedSeconds}s < ${minSeconds}s), skipping flush`);
       return false;
     }
 
-    isRecordingRef.current = true;
+    // Mark as flushed immediately to prevent duplicates
+    session.flushed = true;
+
+    // Stop the listen interval
+    if (listenIntervalRef.current) {
+      clearInterval(listenIntervalRef.current);
+      listenIntervalRef.current = null;
+    }
 
     try {
       // Get current user
       const { data: { user }, error: userError } = await supabaseBrowser.auth.getUser();
       if (userError) {
         console.error('🎧 Failed to get user:', userError.message);
-        isRecordingRef.current = false;
         return false;
       }
       if (!user) {
         console.log('🎧 No authenticated user, skipping listen record');
-        isRecordingRef.current = false;
         return false;
       }
 
-      // Build payload matching exact DB column names:
-      // user_id, song_id (TEXT), started_at, ended_at, duration_ms, listened_seconds, duration_seconds, source, metadata
-      const sessionData = {
+      // Get audio duration if available
+      const audio = audioRef.current;
+      const durationSeconds = audio?.duration && !isNaN(audio.duration)
+        ? Math.floor(audio.duration)
+        : null;
+      const durationMs = durationSeconds !== null ? durationSeconds * 1000 : null;
+
+      // Build payload with exact snake_case DB columns
+      const payload = {
         user_id: user.id,
-        song_id: String(trackId), // Ensure song_id is always a string
-        started_at: startedAt.toISOString(),
-        ended_at: endedAt.toISOString(),
-        listened_seconds: listenedSeconds, // Required: integer >= 0
-        duration_seconds: listenedSeconds, // Same as listened_seconds for this session
-        duration_ms: listenedSeconds * 1000, // Derived from duration_seconds
+        song_id: String(session.trackId),
+        started_at: session.startedAt.toISOString(),
+        ended_at: new Date().toISOString(),
+        listened_seconds: listenedSeconds,
+        duration_seconds: durationSeconds,
+        duration_ms: durationMs,
         source: 'player',
         metadata: null
       };
 
-      console.log('🎧 Inserting listen session with payload:', JSON.stringify(sessionData, null, 2));
+      console.log('🎧 Flushing session:', JSON.stringify(payload, null, 2));
 
       const { error: insertError } = await supabaseBrowser
         .from('song_listen_sessions')
-        .insert(sessionData);
+        .insert(payload);
 
       if (insertError) {
-        console.error('🎧 Failed to record listen session:');
+        console.error('🎧 Insert failed:');
         console.error('  code:', insertError.code);
         console.error('  message:', insertError.message);
         console.error('  details:', insertError.details);
         console.error('  hint:', insertError.hint);
-        console.error('  payload:', JSON.stringify(sessionData, null, 2));
-        isRecordingRef.current = false;
+        console.error('  payload:', JSON.stringify(payload, null, 2));
         return false;
       }
 
-      console.log(`🎧 Recorded listen session: ${trackId}, ${listenedSeconds}s`);
-      isRecordingRef.current = false;
+      console.log(`🎧 Recorded: ${session.trackId}, ${listenedSeconds}s`);
       return true;
     } catch (err) {
-      console.error('🎧 Error recording listen session:', err);
-      isRecordingRef.current = false;
+      console.error('🎧 Error flushing session:', err);
       return false;
     }
   };
 
-  // Start tracking a new listen session
+  // Start a new listen session for a track
   const startListenSession = (trackId: string) => {
-    sessionStartRef.current = new Date();
-    sessionTrackIdRef.current = trackId;
-    console.log(`🎧 Started listen session for: ${trackId}`);
+    // Flush any existing session first
+    if (sessionRef.current && !sessionRef.current.flushed) {
+      flushSession(0); // Flush with 0 min when switching tracks
+    }
+
+    // Clear any existing interval
+    if (listenIntervalRef.current) {
+      clearInterval(listenIntervalRef.current);
+      listenIntervalRef.current = null;
+    }
+
+    // Reset lastCurrentTimeRef to avoid false repeat detection
+    lastCurrentTimeRef.current = 0;
+
+    // Create new session
+    sessionRef.current = {
+      trackId,
+      startedAt: new Date(),
+      listenedSeconds: 0,
+      flushed: false
+    };
+
+    // Start 1-second interval to track listen time
+    listenIntervalRef.current = window.setInterval(() => {
+      const audio = audioRef.current;
+      if (audio && !audio.paused && sessionRef.current && !sessionRef.current.flushed) {
+        sessionRef.current.listenedSeconds += 1;
+      }
+    }, 1000);
+
+    console.log(`🎧 Started session: ${trackId}`);
   };
 
-  // End and record the current listen session
-  const endListenSession = () => {
-    if (sessionStartRef.current && sessionTrackIdRef.current) {
-      const endedAt = new Date();
-      recordListenSession(sessionTrackIdRef.current, sessionStartRef.current, endedAt);
+  // End the current session (flush if meaningful)
+  const endListenSession = (minSeconds: number = 2) => {
+    if (listenIntervalRef.current) {
+      clearInterval(listenIntervalRef.current);
+      listenIntervalRef.current = null;
     }
-    sessionStartRef.current = null;
-    sessionTrackIdRef.current = null;
+    flushSession(minSeconds);
+    sessionRef.current = null;
   };
 
   // Lazily create audio element once on client
@@ -384,28 +423,79 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     document.body.appendChild(a);
     audioRef.current = a;
 
-    const onTime = () => setState(s => ({ ...s, currentTime: a.currentTime }));
+    const onTime = () => {
+      const currentTime = a.currentTime;
+      const lastTime = lastCurrentTimeRef.current;
+      const duration = a.duration || 0;
+
+      // Detect repeat: currentTime jumped backwards significantly (from near end to near start)
+      // This catches loop mode and manual repeat without onended firing
+      if (
+        duration > 10 && // Only for tracks longer than 10 seconds
+        lastTime > duration - 5 && // Was near the end (within 5 seconds)
+        currentTime < 3 && // Now near the start
+        sessionRef.current &&
+        !sessionRef.current.flushed &&
+        sessionRef.current.listenedSeconds >= 2 // Had meaningful listen time
+      ) {
+        console.log(`🎧 Repeat detected: ${lastTime.toFixed(1)}s -> ${currentTime.toFixed(1)}s (duration: ${duration.toFixed(1)}s)`);
+        // Flush the completed playthrough and start a new session
+        flushSession(0).then(() => {
+          if (currentTrackRef.current && !a.paused) {
+            startListenSession(currentTrackRef.current);
+          }
+        });
+      }
+
+      // Update last time ref
+      lastCurrentTimeRef.current = currentTime;
+
+      // Update state
+      setState(s => ({ ...s, currentTime }));
+    };
     const onDur = () => setState(s => ({ ...s, duration: a.duration || 0 }));
     const onPlay = () => {
       console.log('🎵 AudioProvider: onPlay event fired');
       setState(s => ({ ...s, playing: true, isLoading: false }));
-      // Start listen session tracking
-      if (currentTrackRef.current && !sessionStartRef.current) {
-        startListenSession(currentTrackRef.current);
+      // Start listen session tracking (or resume if paused)
+      if (currentTrackRef.current) {
+        if (!sessionRef.current || sessionRef.current.flushed || sessionRef.current.trackId !== currentTrackRef.current) {
+          startListenSession(currentTrackRef.current);
+        } else if (!listenIntervalRef.current) {
+          // Resume the interval if session exists but interval stopped
+          listenIntervalRef.current = window.setInterval(() => {
+            const audio = audioRef.current;
+            if (audio && !audio.paused && sessionRef.current && !sessionRef.current.flushed) {
+              sessionRef.current.listenedSeconds += 1;
+            }
+          }, 1000);
+        }
       }
     };
     const onPause = () => {
       console.log('🎵 AudioProvider: onPause event fired');
       setState(s => ({ ...s, playing: false }));
-      // End listen session tracking
-      endListenSession();
+      // Flush listen session with 2-second minimum threshold
+      if (sessionRef.current && !sessionRef.current.flushed) {
+        flushSession(2);
+      }
     };
     const onVol = () => setState(s => ({ ...s, volume: a.volume }));
     const onLoadStart = () => setState(s => ({ ...s, isLoading: true }));
     const onLoadEnd = () => setState(s => ({ ...s, isLoading: false }));
     
     const onEnded = () => {
-      console.log('🎵 AudioProvider: Song ended, restarting...');
+      console.log('🎵 AudioProvider: Song ended');
+      // Flush the listen session before restarting (min 0 seconds for track end)
+      if (sessionRef.current && !sessionRef.current.flushed) {
+        flushSession(0).then(() => {
+          // Start a new session for the repeated playback
+          if (currentTrackRef.current) {
+            startListenSession(currentTrackRef.current);
+          }
+        });
+      }
+      // Restart the track
       if (a.src && a.src !== 'null' && a.src !== '') {
         a.currentTime = 0;
         a.play().catch((err) => {
@@ -524,24 +614,105 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const newTrackId = state.currentTrack?.id || null;
     const previousTrackId = currentTrackRef.current;
 
-    // If track changed while playing, end the old session and start a new one
-    if (previousTrackId && newTrackId !== previousTrackId && sessionStartRef.current) {
-      endListenSession();
+    // If track changed, flush the old session before starting new one
+    if (previousTrackId && newTrackId !== previousTrackId && sessionRef.current && !sessionRef.current.flushed) {
+      flushSession(0); // 0 minimum when switching tracks
     }
 
     // Update the ref
     currentTrackRef.current = newTrackId;
 
     // If a new track started and we're playing, start a new session
-    if (newTrackId && state.playing && !sessionStartRef.current) {
+    if (newTrackId && state.playing && (!sessionRef.current || sessionRef.current.flushed || sessionRef.current.trackId !== newTrackId)) {
       startListenSession(newTrackId);
     }
   }, [state.currentTrack?.id, state.playing]);
 
+  // Handle visibilitychange and beforeunload to flush sessions
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && sessionRef.current && !sessionRef.current.flushed) {
+        console.log('🎧 Page hidden, flushing session');
+        flushSession(2); // Require at least 2 seconds
+      }
+    };
+
+    const handleBeforeUnload = () => {
+      if (sessionRef.current && !sessionRef.current.flushed) {
+        console.log('🎧 Page unloading, flushing session');
+        // Use fetch with keepalive for best-effort flush on unload
+        const session = sessionRef.current;
+        const listenedSeconds = Math.max(0, Math.floor(session.listenedSeconds));
+        if (listenedSeconds >= 2) {
+          // Mark as flushed to prevent double-send
+          session.flushed = true;
+          try {
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+            const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+            if (supabaseUrl && supabaseAnonKey) {
+              // Get auth token from localStorage
+              const storageKey = `sb-${new URL(supabaseUrl).hostname.split('.')[0]}-auth-token`;
+              const authData = localStorage.getItem(storageKey);
+              if (authData) {
+                const parsed = JSON.parse(authData);
+                const userId = parsed?.user?.id;
+                const accessToken = parsed?.access_token;
+                if (userId && accessToken) {
+                  const audio = audioRef.current;
+                  const durationSeconds = audio?.duration && !isNaN(audio.duration) ? Math.floor(audio.duration) : null;
+                  const payload = {
+                    user_id: userId,
+                    song_id: String(session.trackId),
+                    started_at: session.startedAt.toISOString(),
+                    ended_at: new Date().toISOString(),
+                    listened_seconds: listenedSeconds,
+                    duration_seconds: durationSeconds,
+                    duration_ms: durationSeconds !== null ? durationSeconds * 1000 : null,
+                    source: 'player',
+                    metadata: null
+                  };
+                  // Use fetch with keepalive - allows request to complete after page unloads
+                  fetch(`${supabaseUrl}/rest/v1/song_listen_sessions`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'apikey': supabaseAnonKey,
+                      'Authorization': `Bearer ${accessToken}`,
+                      'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify(payload),
+                    keepalive: true
+                  }).catch(() => {}); // Ignore errors on unload
+                  console.log('🎧 Sent session via keepalive fetch');
+                }
+              }
+            }
+          } catch (err) {
+            console.error('🎧 beforeunload flush failed:', err);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
   // End session on unmount
   useEffect(() => {
     return () => {
-      endListenSession();
+      if (listenIntervalRef.current) {
+        clearInterval(listenIntervalRef.current);
+        listenIntervalRef.current = null;
+      }
+      if (sessionRef.current && !sessionRef.current.flushed) {
+        flushSession(0);
+      }
     };
   }, []);
 

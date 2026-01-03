@@ -157,6 +157,7 @@ interface BadgeDefinition {
   requirement_count: number;
   icon_url: string | null;
   category: string | null;
+  sub_category: string | null;
   created_at: string;
 }
 

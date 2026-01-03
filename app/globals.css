@@ -1620,7 +1620,7 @@ button:hover > .heart-coin-glow,
   height: 32px;
   border-radius: 50%;
   background: radial-gradient(circle at 30% 30%, #FF6B6B, #FF0000);
-  border: 3px solid rgba(255,255,255,0.5);
+  border: 1px solid rgba(255,255,255,0.4);
   color: #FFFFFF;
   display: flex;
   align-items: center;

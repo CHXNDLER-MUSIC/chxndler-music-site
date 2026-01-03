@@ -2525,16 +2525,16 @@ const HUDPanel = React.memo(function HUDPanel({
           </div>
 
           {/* Waveform Media Player - positioned below dropdown with proper spacing */}
-          <div ref={playerRef} className="absolute" style={{ 
-            left: inConsole ? 0 : 2, // Shift very slightly more to the left
-            right: oneLinerRight - 4, // Extend 4px further to the right
+          <div ref={playerRef} className="absolute" style={{
+            left: inConsole ? 4 : 4, // Match dropdown left position
+            right: oneLinerRight + 2, // Match dropdown right position
             // Adjust height to allow internal bottom buffer
             height: '60px',
             // Keep player snug to the blue display; slightly lower
             // Move the visual nudge into the bottom offset so it stays inside the overflow-hidden blue display
-            // Position the control row directly below the music dropdown: align player top ~8px under dropdown
-            // Dropdown is anchored with bottom: calc(80px - 24px + 68px); player height is 60px
-            bottom: 'calc((80px - 24px + 68px) - 60px - 8px)'
+            // Position the control row directly below the music dropdown: align player bottom with cover art bottom
+            // Cover art bottom is at 60px, player height is 60px
+            bottom: 64
           }}>
             <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '10px', paddingBottom: 10, position: 'relative' }}>
               <div className="flex flex-wrap items-start gap-3 pt-0 pr-2 pl-2 pb-0">
@@ -2580,20 +2580,20 @@ const HUDPanel = React.memo(function HUDPanel({
                         backgroundColor: 'transparent',
                         pointerEvents: 'auto'
                       }}>
-                      <button 
+                      <button
                         onClick={handlePlayPause}
                         className="hud-play-btn-enhanced"
                         aria-label={audioManager.playing ? "Pause" : "Play"}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                        style={{ marginTop: 1 }}
+                        style={{ marginTop: 1, width: 36, height: 36 }}
                       >
                         {audioManager.playing ? (
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                          <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
                             <rect x="6" y="4" width="4" height="16" rx="1"/>
                             <rect x="14" y="4" width="4" height="16" rx="1"/>
                           </svg>
                         ) : (
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                          <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M7 4v16l12-8z"/>
                           </svg>
                       )}
@@ -7182,7 +7182,7 @@ const HUDPanel = React.memo(function HUDPanel({
         {/* Song selector and Media Player positioned outside content opacity container to avoid beamOnly blocking */}
         <div className="absolute" style={{ 
           left: inConsole ? 4 : 4,
-          bottom: 'calc(80px - 24px + 68px)', // Nudge dropdown higher slightly (+12px)
+          bottom: 'calc(80px - 24px + 60px)', // Align dropdown top with cover art top
           // Reserve dynamic space to the right so the dropdown never overlaps the cover
           right: oneLinerRight + 2, // Reduced padding to screen edge
           maxWidth: 'none',
