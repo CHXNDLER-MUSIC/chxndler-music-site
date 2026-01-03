@@ -85,6 +85,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
   const [currentElementIndex, setCurrentElementIndex] = useState(0);
   const [activeBoosts, setActiveBoosts] = useState<ActiveBoost[]>([]);
   const [totalSoulStars, setTotalSoulStars] = useState(0);
+  const [selectedBoostPopup, setSelectedBoostPopup] = useState<string | null>(null);
 
   const popoverRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -1145,7 +1146,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
 
                 {/* Right side - BOOST Section */}
                 <div
-                  className="flex flex-col items-center px-3 py-2 rounded-lg"
+                  className="flex flex-col items-center px-3 py-2 rounded-lg relative"
                   style={{
                     background: 'rgba(0,255,255,0.08)',
                     border: '1px solid rgba(0,255,255,0.4)',
@@ -1162,62 +1163,140 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                   >
                     BOOST
                   </span>
-                  {activeBoosts.length > 0 ? (
-                    <div className="flex flex-col gap-1.5">
-                      {activeBoosts.map((boost, idx) => (
-                        <div
-                          key={`${boost.boostKey}-${idx}`}
-                          className="flex flex-col items-center px-3 py-1.5 rounded-md"
+                  <div className="flex items-center gap-2">
+                    {/* Listening Boost Icon */}
+                    {(() => {
+                      const listeningBoost = activeBoosts.find(b =>
+                        b.boostKey === 'deep_focus' ||
+                        b.boostKey === 'boost_listening' ||
+                        b.boostKey === 'boost_deep_focus'
+                      );
+                      const isActive = !!listeningBoost;
+                      return (
+                        <img
+                          src="/relics/listening_boost.webp"
+                          alt="Listening Boost"
+                          onClick={() => setSelectedBoostPopup(selectedBoostPopup === 'listening' ? null : 'listening')}
+                          className="w-8 h-8 object-contain cursor-pointer hover:scale-110 transition-transform"
                           style={{
-                            background: 'rgba(0,255,255,0.15)',
-                            border: '1px solid rgba(0,255,255,0.3)'
+                            filter: isActive ? 'drop-shadow(0 0 6px rgba(0,255,255,0.8))' : 'grayscale(100%) opacity(0.4)',
+                            transition: 'filter 0.3s ease, transform 0.2s ease'
                           }}
-                        >
-                          <span
-                            className="font-bold text-xs"
-                            style={{
-                              color: '#00FFFF',
-                              textShadow: '0 0 6px rgba(0,255,255,0.6)'
-                            }}
-                          >
-                            {boost.name}
-                          </span>
-                          <span
-                            className="text-xs"
-                            style={{
-                              color: 'rgba(0,255,255,0.85)',
-                              fontSize: '10px'
-                            }}
-                          >
-                            {boost.effect}
-                          </span>
-                          {(boost.usesLeft !== null || boost.expiresAt) && (
-                            <span
-                              className="text-xs"
-                              style={{
-                                color: 'rgba(0,255,255,0.6)',
-                                fontSize: '9px'
-                              }}
-                            >
-                              {boost.usesLeft !== null
-                                ? `Uses left: ${boost.usesLeft}`
-                                : boost.expiresAt
-                                  ? `Ends: ${new Date(boost.expiresAt).toLocaleString()}`
-                                  : null}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <span
-                      className="text-lg font-bold"
+                        />
+                      );
+                    })()}
+                    {/* Streak Shield Icon (Center) */}
+                    {(() => {
+                      const streakBoost = activeBoosts.find(b =>
+                        b.boostKey === 'streak_shield' ||
+                        b.boostKey === 'boost_streak_shield'
+                      );
+                      const isActive = !!streakBoost;
+                      return (
+                        <img
+                          src="/relics/streak_shield.webp"
+                          alt="Streak Shield"
+                          onClick={() => setSelectedBoostPopup(selectedBoostPopup === 'streak' ? null : 'streak')}
+                          className="w-8 h-8 object-contain cursor-pointer hover:scale-110 transition-transform"
+                          style={{
+                            filter: isActive ? 'drop-shadow(0 0 6px rgba(0,255,255,0.8))' : 'grayscale(100%) opacity(0.4)',
+                            transition: 'filter 0.3s ease, transform 0.2s ease'
+                          }}
+                        />
+                      );
+                    })()}
+                    {/* Reflection Boost Icon */}
+                    {(() => {
+                      const reflectionBoost = activeBoosts.find(b =>
+                        b.boostKey === 'reflection_boost' ||
+                        b.boostKey === 'boost_reflection'
+                      );
+                      const isActive = !!reflectionBoost;
+                      return (
+                        <img
+                          src="/relics/reflection.webp"
+                          alt="Reflection Boost"
+                          onClick={() => setSelectedBoostPopup(selectedBoostPopup === 'reflection' ? null : 'reflection')}
+                          className="w-8 h-8 object-contain cursor-pointer hover:scale-110 transition-transform"
+                          style={{
+                            filter: isActive ? 'drop-shadow(0 0 6px rgba(0,255,255,0.8))' : 'grayscale(100%) opacity(0.4)',
+                            transition: 'filter 0.3s ease, transform 0.2s ease'
+                          }}
+                        />
+                      );
+                    })()}
+                  </div>
+                  {/* Boost Popup */}
+                  {selectedBoostPopup && (
+                    <div
+                      className="absolute top-full mt-2 left-1/2 -translate-x-1/2 z-50 rounded-lg px-4 py-3 text-center"
                       style={{
-                        color: 'rgba(0,255,255,0.4)'
+                        background: 'rgba(0,20,40,0.95)',
+                        border: '1px solid rgba(0,255,255,0.5)',
+                        boxShadow: '0 0 20px rgba(0,255,255,0.3)',
+                        minWidth: '160px'
                       }}
+                      onClick={() => setSelectedBoostPopup(null)}
                     >
-                      --
-                    </span>
+                      {selectedBoostPopup === 'listening' && (() => {
+                        const boost = activeBoosts.find(b =>
+                          b.boostKey === 'deep_focus' ||
+                          b.boostKey === 'boost_listening' ||
+                          b.boostKey === 'boost_deep_focus'
+                        );
+                        return (
+                          <>
+                            <div className="font-bold text-sm" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.6)' }}>
+                              Deep Focus
+                            </div>
+                            <div className="text-xs mt-1" style={{ color: 'rgba(0,255,255,0.85)' }}>
+                              2× Listen Rewards
+                            </div>
+                            <div className="text-xs mt-1" style={{ color: boost ? 'rgba(0,255,255,0.7)' : 'rgba(255,255,255,0.4)' }}>
+                              Uses left: {boost?.usesLeft ?? 0}
+                            </div>
+                          </>
+                        );
+                      })()}
+                      {selectedBoostPopup === 'streak' && (() => {
+                        const boost = activeBoosts.find(b =>
+                          b.boostKey === 'streak_shield' ||
+                          b.boostKey === 'boost_streak_shield'
+                        );
+                        return (
+                          <>
+                            <div className="font-bold text-sm" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.6)' }}>
+                              Streak Shield
+                            </div>
+                            <div className="text-xs mt-1" style={{ color: 'rgba(0,255,255,0.85)' }}>
+                              +1 Streak Protection
+                            </div>
+                            <div className="text-xs mt-1" style={{ color: boost ? 'rgba(0,255,255,0.7)' : 'rgba(255,255,255,0.4)' }}>
+                              Uses left: {boost?.usesLeft ?? 0}
+                            </div>
+                          </>
+                        );
+                      })()}
+                      {selectedBoostPopup === 'reflection' && (() => {
+                        const boost = activeBoosts.find(b =>
+                          b.boostKey === 'reflection_boost' ||
+                          b.boostKey === 'boost_reflection'
+                        );
+                        return (
+                          <>
+                            <div className="font-bold text-sm" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.6)' }}>
+                              Reflection Boost
+                            </div>
+                            <div className="text-xs mt-1" style={{ color: 'rgba(0,255,255,0.85)' }}>
+                              2× Journal Rewards
+                            </div>
+                            <div className="text-xs mt-1" style={{ color: boost ? 'rgba(0,255,255,0.7)' : 'rgba(255,255,255,0.4)' }}>
+                              Uses left: {boost?.usesLeft ?? 0}
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
                   )}
                 </div>
               </div>
