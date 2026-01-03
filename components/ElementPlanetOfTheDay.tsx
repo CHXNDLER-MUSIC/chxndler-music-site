@@ -113,6 +113,12 @@ export default function ElementPlanetOfTheDay({ className = "" }: ElementPlanetO
       if (error) {
         throw error;
       }
+
+      // Refresh profile to update card_slots count, then dispatch binder refresh
+      await refreshProfile();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('binder:refresh'));
+      }
     }
 
     if (reward.kind === "DOWNLOAD" && reward.file_url) {

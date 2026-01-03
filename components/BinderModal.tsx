@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
@@ -11,7 +11,7 @@ import { triggerCardCelebration } from "@/utils/cardCelebration";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import TiltSpinCard from "@/components/TiltSpinCard";
 import { useUserCards } from "@/hooks/useUserCards";
-import { useBinderSlots, BinderSlot } from "@/hooks/useBinderSlots";
+import { useBinderSlots, BinderSlot, TOTAL_SLOTS } from "@/hooks/useBinderSlots";
 
 // Add keyframes for pulsing animation
 const pulseKeyframes = `
@@ -55,6 +55,48 @@ const pulseKeyframes = `
       transform: translateY(-6px);
     }
   }
+
+  @keyframes slotUnlock {
+    0% {
+      transform: scale(1);
+      box-shadow: 0 0 3px rgba(255,105,180,0.1);
+      border-color: rgba(255,255,255,0.05);
+    }
+    30% {
+      transform: scale(1.15);
+      box-shadow: 0 0 30px rgba(255,105,180,0.9), 0 0 60px rgba(255,105,180,0.6), 0 0 90px rgba(147,51,234,0.4);
+      border-color: rgba(255,105,180,0.8);
+    }
+    50% {
+      transform: scale(1.1);
+      box-shadow: 0 0 25px rgba(255,105,180,0.8), 0 0 50px rgba(255,105,180,0.5);
+    }
+    100% {
+      transform: scale(1);
+      box-shadow: 0 0 8px rgba(255,105,180,0.3), 0 0 14px rgba(255,105,180,0.15);
+      border-color: rgba(255,255,255,0.1);
+    }
+  }
+
+  @keyframes unlockShimmer {
+    0% {
+      background-position: -100% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+      transform: translateX(-50%) translateY(4px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
 `;
 
 type Props = {
@@ -94,9 +136,18 @@ interface PhysicalCardOrder {
 }
 
 export default function BinderModal({ open, onClose, preselectedCard, preselectedElement, pulsingCards = false, onOpenHeartCoin }: Props) {
-  const { profile, updateProfile } = useProfile();
+  const { profile, updateProfile, refreshProfile } = useProfile();
   const { cards: ownedCards } = useUserCards(profile?.id);
-  const { slots: binderSlots, refresh: refreshBinderSlots } = useBinderSlots(profile?.id);
+  const {
+    slots: binderSlots,
+    refresh: refreshBinderSlots,
+    totalOwnedCards,
+    unlockedSlotsCount,
+    cardsInSlots,
+    hasEmptySlot,
+    firstEmptySlotIndex,
+    displayUnlockedSlots
+  } = useBinderSlots(profile?.id);
   const [cardOpen, setCardOpen] = useState(false);
   const [showFullCollection, setShowFullCollection] = useState(false);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
@@ -109,12 +160,45 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
   const [cardRotation, setCardRotation] = useState(0);
   const [isAnimatingFlip, setIsAnimatingFlip] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
+  const [hoveredLockedSlot, setHoveredLockedSlot] = useState<number | null>(null);
+  const [newlyUnlockedSlots, setNewlyUnlockedSlots] = useState<Set<number>>(new Set());
+  const [prevUnlockedCount, setPrevUnlockedCount] = useState<number>(displayUnlockedSlots);
 
-  // Binder pagination constants
+  // Binder pagination constants - use fixed TOTAL_SLOTS
   const PAGE_SIZE = 6;
-  const totalSlots = binderSlots.length || 78; // Default to 78 slots if no data
-  const totalPages = Math.max(1, Math.ceil(totalSlots / PAGE_SIZE));
-  const visibleSlots = binderSlots.slice(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(TOTAL_SLOTS / PAGE_SIZE));
+
+  // Generate all slots for the current page, filling in data from binderSlots where available
+  const visibleSlots: BinderSlot[] = useMemo(() => {
+    const startIndex = pageIndex * PAGE_SIZE;
+    const endIndex = Math.min(startIndex + PAGE_SIZE, TOTAL_SLOTS);
+    const slots: BinderSlot[] = [];
+
+    for (let i = startIndex; i < endIndex; i++) {
+      // Check if we have data for this slot from the view
+      const existingSlot = binderSlots.find(s => s.slot_index === i);
+
+      if (existingSlot) {
+        slots.push(existingSlot);
+      } else {
+        // Generate a slot based on display logic
+        const isUnlocked = i < displayUnlockedSlots;
+        slots.push({
+          user_id: profile?.id || '',
+          slot_index: i,
+          is_unlocked: isUnlocked,
+          card_id: null,
+          card_name: null,
+          artwork_url: null,
+          element: null,
+          rarity: null,
+          is_starter: null
+        });
+      }
+    }
+
+    return slots;
+  }, [pageIndex, binderSlots, displayUnlockedSlots, profile?.id]);
 
   // Preview slots for logged-out state
   const previewSlots: BinderSlot[] = [
@@ -438,6 +522,14 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
 
 
   const handlePurchaseClick = (type: 'digital' | 'physical') => {
+    // For digital cards, check if there's an empty binder slot available
+    if (type === 'digital' && !hasEmptySlot) {
+      // No empty slot available - show message and don't proceed
+      try { sfx.play('error', 0.6); } catch {}
+      alert('Claim Element of the Day to unlock a binder slot.');
+      return;
+    }
+
     setSelectedPurchaseType(type);
     if (type === 'digital') {
       // Always show digital preview for digital purchases
@@ -663,10 +755,16 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       }
       
       // TODO: Add card to user_cards table via API
-      
-      // Refresh profile to get updated balance from API
-      await refreshProfile();
-      
+
+      // Refresh profile and binder slots to get updated balance and counts
+      await Promise.all([
+        refreshProfile(),
+        refreshBinderSlots()
+      ]);
+
+      // Dispatch event to notify other components
+      window.dispatchEvent(new CustomEvent('binder:refresh'));
+
       setPurchaseState('success');
       try { sfx.play('card-ding', 0.8); } catch {}
       
@@ -706,6 +804,29 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       setIsAuthenticated(false);
     }
   }, [profile]);
+
+  // Detect when slots are unlocked and trigger animation
+  useEffect(() => {
+    if (displayUnlockedSlots > prevUnlockedCount) {
+      // New slots have been unlocked - add them to the animation set
+      const newSlots = new Set<number>();
+      for (let i = prevUnlockedCount; i < displayUnlockedSlots; i++) {
+        newSlots.add(i);
+      }
+      setNewlyUnlockedSlots(newSlots);
+
+      // Play unlock sound
+      try { sfx.play('card-ding', 0.7); } catch {}
+
+      // Clear the animation after it completes (1.2s)
+      const timer = setTimeout(() => {
+        setNewlyUnlockedSlots(new Set());
+      }, 1200);
+
+      return () => clearTimeout(timer);
+    }
+    setPrevUnlockedCount(displayUnlockedSlots);
+  }, [displayUnlockedSlots, prevUnlockedCount]);
 
   // Inject keyframes when component mounts and pulsingCards is true
   useEffect(() => {
@@ -834,11 +955,11 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       {/* Inject pulsing animation styles */}
       <style dangerouslySetInnerHTML={{ __html: pulseKeyframes }} />
       
-      <PopoutShell 
-        title="DIGITAL CARD BINDER" 
-        subtitle={`CARDS COLLECTED: ${binderSlots.filter(s => s.card_id).length}`}
+      <PopoutShell
+        title="DIGITAL CARD BINDER"
+        subtitle={`CARDS COLLECTED: ${cardsInSlots} • BINDER SLOTS: ${displayUnlockedSlots}`}
         minWidth={'min(96vw, 440px)'}
-        maxHeight={'calc(100vh - 8vh - 340px)'}
+        maxHeight={'calc(100vh - 8vh - var(--display-touch-top))'}
         onClose={() => {
           try { sfx.play('close', 0.8); } catch {}
           onClose();
@@ -1002,11 +1123,13 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     const isLocked = !slot.is_unlocked;
                     const hasCard = !!slot.card_id;
                     const isEmpty = slot.is_unlocked && !slot.card_id;
+                    const isNewlyUnlocked = newlyUnlockedSlots.has(slot.slot_index);
+                    const isHovered = hoveredLockedSlot === slot.slot_index;
 
                     return (
                       <div
                         key={`slot-${slot.slot_index}`}
-                        className={`rounded-lg border transition-all duration-300 w-[5.75rem] aspect-[5/7] bg-black/30 ${
+                        className={`relative rounded-lg border transition-all duration-300 w-[5.75rem] aspect-[5/7] bg-black/30 ${
                           isLocked
                             ? 'border-white/5 cursor-default'
                             : hasCard
@@ -1014,8 +1137,15 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                             : 'border-white/10 cursor-pointer hover:scale-105'
                         }`}
                         onMouseEnter={() => {
-                          if (!isLocked) {
+                          if (isLocked) {
+                            setHoveredLockedSlot(slot.slot_index);
+                          } else {
                             try { sfx.play('hover', 0.3); } catch {}
+                          }
+                        }}
+                        onMouseLeave={() => {
+                          if (isLocked) {
+                            setHoveredLockedSlot(null);
                           }
                         }}
                         onClick={() => {
@@ -1050,7 +1180,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                             : isEmpty
                             ? '0 0 8px rgba(255,105,180,0.3), 0 0 14px rgba(255,105,180,0.15)'
                             : '0 0 3px rgba(255,105,180,0.1)',
-                          border: isEmpty ? '2px dotted rgba(255,105,180,0.5)' : undefined
+                          border: isEmpty ? '2px dotted rgba(255,105,180,0.5)' : undefined,
+                          animation: isNewlyUnlocked ? 'slotUnlock 1.2s ease-out forwards' : undefined
                         }}
                       >
                         <div className="relative w-full h-full overflow-hidden rounded-lg">
@@ -1081,8 +1212,59 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                                   letterSpacing: '0.5px'
                                 }}
                               >
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  width="16"
+                                  height="16"
+                                  fill="currentColor"
+                                  style={{ margin: '0 auto 2px' }}
+                                >
+                                  <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                                </svg>
                                 LOCKED
                               </div>
+
+                              {/* Tooltip on hover */}
+                              {isHovered && (
+                                <div
+                                  className="absolute z-50 pointer-events-none"
+                                  style={{
+                                    bottom: '100%',
+                                    left: '50%',
+                                    transform: 'translateX(-50%)',
+                                    marginBottom: '8px',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  <div
+                                    className="px-3 py-2 rounded-lg text-xs font-medium"
+                                    style={{
+                                      background: 'linear-gradient(135deg, rgba(147,51,234,0.95) 0%, rgba(236,72,153,0.95) 100%)',
+                                      color: 'white',
+                                      boxShadow: '0 4px 20px rgba(147,51,234,0.4), 0 0 30px rgba(236,72,153,0.3)',
+                                      border: '1px solid rgba(255,255,255,0.2)',
+                                      textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                                      animation: 'fadeIn 0.2s ease-out'
+                                    }}
+                                  >
+                                    Claim Element of the Day to unlock
+                                  </div>
+                                  {/* Tooltip arrow */}
+                                  <div
+                                    style={{
+                                      position: 'absolute',
+                                      bottom: '-6px',
+                                      left: '50%',
+                                      transform: 'translateX(-50%)',
+                                      width: 0,
+                                      height: 0,
+                                      borderLeft: '6px solid transparent',
+                                      borderRight: '6px solid transparent',
+                                      borderTop: '6px solid rgba(192,62,143,0.95)'
+                                    }}
+                                  />
+                                </div>
+                              )}
                             </div>
                           ) : (
                             /* Empty unlocked slot */

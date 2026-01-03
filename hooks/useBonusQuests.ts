@@ -104,6 +104,8 @@ export function useBonusQuests(): UseBonusQuestsReturn {
 
   // Complete a quest using the idempotent RPC
   // Returns a QuestCompletionResult with alreadyCompleted flag for UI handling
+  // New RPC signature: complete_bonus_quest_once_per_day({ p_quest_id })
+  // Returns: { ok, quest_id, completed_on_date, inserted, heartcoin_awarded }
   const completeQuest = useCallback(async (
     quest: BonusQuestWithCompletion
   ): Promise<QuestCompletionResult> => {
@@ -115,15 +117,28 @@ export function useBonusQuests(): UseBonusQuestsReturn {
     }
 
     try {
-      // Call the idempotent RPC directly - do NOT pass reward values from frontend
+      // Call the RPC with the new signature (user is inferred from auth context)
       const { data, error } = await supabaseBrowser.rpc('complete_bonus_quest_once_per_day', {
-        p_user_id: currentUserId,
-        p_bonus_quest_id: quest.id  // IMPORTANT: Pass bonus_quest_id, NOT quest_id
+        p_quest_id: quest.id
       });
+
+      // Handle 404 - RPC function not found (backend updated, need refresh)
+      if (error?.code === 'PGRST202' || error?.message?.includes('404') || error?.code === '42883') {
+        console.error('[completeQuest] RPC 404 error:', error.code, error.message);
+        return {
+          success: false,
+          message: 'Quest service updated, hard refresh'
+        };
+      }
 
       // Handle unique constraint violation (23505) as success - already completed (NOT an error)
       if (error?.code === '23505') {
-        await fetchQuests(); // Refetch to update UI state
+        // Update local state immediately to show COMPLETED
+        setQuests(prev => prev.map(q =>
+          q.id === quest.id
+            ? { ...q, can_complete: false, completed_today: 1 }
+            : q
+        ));
         return {
           success: true,
           alreadyCompleted: true,
@@ -132,44 +147,68 @@ export function useBonusQuests(): UseBonusQuestsReturn {
       }
 
       if (error) {
-        // Only log unexpected errors, not duplicates
+        console.error('[completeQuest] RPC error:', error.code, error.message, error.details);
         return {
           success: false,
           message: 'Quest failed. Try again.'
         };
       }
 
-      // Normalize response - handle both "completed" and "already_completed" statuses
-      const isAlreadyCompleted = data?.status === 'already_completed' || data?.status === 'already_completed_today' || data?.ok === false;
+      // New response format: { ok, quest_id, completed_on_date, inserted, heartcoin_awarded }
+      // Treat BOTH inserted=true AND inserted=false as completed (inserted=false means already completed today)
+      const isCompleted = data?.ok === true;
+      const isNewCompletion = data?.inserted === true;
+      const heartcoinAwarded = data?.heartcoin_awarded === true;
 
-      // Refetch quests and refresh profile for ALL successful completions
-      await Promise.all([
-        fetchQuests(),
-        refreshProfile() // Refresh profile to update HeartCoin balance in UI
-      ]);
+      if (isCompleted) {
+        // Immediately update local state so button flips to COMPLETED
+        setQuests(prev => prev.map(q =>
+          q.id === quest.id
+            ? { ...q, can_complete: false, completed_today: 1, times_completed: q.times_completed + (isNewCompletion ? 1 : 0) }
+            : q
+        ));
 
-      if (isAlreadyCompleted) {
+        // Refresh heartcoin balance only if coins were actually awarded
+        // Await to ensure profile is updated before returning to caller
+        if (heartcoinAwarded) {
+          await refreshProfile();
+        }
+
+        if (!isNewCompletion) {
+          // inserted=false means already completed today
+          return {
+            success: true,
+            alreadyCompleted: true,
+            message: 'Already completed today'
+          };
+        }
+
+        // New completion with coins awarded
         return {
           success: true,
-          alreadyCompleted: true,
-          message: 'Already completed today'
+          alreadyCompleted: false,
+          message: 'Quest completed successfully!',
+          rewards: {
+            heartcoins: quest.reward_heartcoins > 0 ? quest.reward_heartcoins : undefined,
+            element_card: quest.reward_element_card ? true : undefined
+          }
         };
       }
 
-      // New completion - coins were awarded by RPC
+      // Unexpected response - log and treat as error
+      console.error('[completeQuest] Unexpected response:', data);
       return {
-        success: true,
-        alreadyCompleted: false,
-        message: 'Quest completed successfully!',
-        rewards: {
-          heartcoins: quest.reward_heartcoins > 0 ? quest.reward_heartcoins : undefined,
-          element_card: quest.reward_element_card ? true : undefined
-        }
+        success: false,
+        message: 'Quest failed. Try again.'
       };
     } catch (error: any) {
       // Catch 23505 error if thrown differently (graceful handling, not an error)
       if (error?.code === '23505' || error?.message?.includes('23505')) {
-        await fetchQuests();
+        setQuests(prev => prev.map(q =>
+          q.id === quest.id
+            ? { ...q, can_complete: false, completed_today: 1 }
+            : q
+        ));
         return {
           success: true,
           alreadyCompleted: true,
@@ -177,12 +216,13 @@ export function useBonusQuests(): UseBonusQuestsReturn {
         };
       }
 
+      console.error('[completeQuest] Exception:', error);
       return {
         success: false,
         message: 'Quest failed. Try again.'
       };
     }
-  }, [currentUserId, fetchQuests, refreshProfile]);
+  }, [currentUserId, refreshProfile]);
 
   return {
     quests,

@@ -57,6 +57,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
   const hoverRef = useRef(null);
   const clickRef = useRef(null);
   const hoverBtnRef = useRef(null);
+  const elementFilterHoverRef = useRef(null);
   const [activeElement, setActiveElement] = useState(null);
 
   const normalizeSlug = (slug) => (slug ? String(slug).toLowerCase().replace(/'/g, '') : '');
@@ -324,7 +325,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
               type="button"
               onMouseEnter={() => {
                 try {
-                  const a = hoverRef.current;
+                  const a = elementFilterHoverRef.current;
                   if (a) {
                     a.currentTime = 0;
                     a.volume = 0.3;
@@ -388,7 +389,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                     type="button"
                     data-element={el}
                     onMouseEnter={() => {
-                      try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {}
+                      try { const a = elementFilterHoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {}
                     }}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -488,6 +489,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
             <source src="/audio/song-select.mp3" type="audio/mpeg" />
             <source src="/audio/hover.mp3" type="audio/mpeg" />
           </audio>
+          <audio ref={elementFilterHoverRef} src="/audio/change-channel.mp3" preload="auto" />
         </div>,
         document.body
       ) : null}

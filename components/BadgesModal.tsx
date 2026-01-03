@@ -820,11 +820,11 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                     {/* Category Image */}
                     <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-white/30 group-hover:border-white/50 transition-colors">
                       <div className="absolute inset-1 bg-gradient-to-br from-gray-800/80 to-black/90 rounded-full" />
-                      <div className="relative z-10 w-full h-full flex items-center justify-center">
+                      <div className="relative z-10 w-full h-full flex items-center justify-center p-2">
                         <img
-                          src={`${category.image}?v=2`}
+                          src={`${category.image}?t=20260103&id=${category.id}`}
                           alt={category.displayName}
-                          className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-full"
+                          className="w-full h-full object-contain"
                           draggable={false}
                         />
                       </div>

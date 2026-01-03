@@ -3,6 +3,11 @@
  *
  * Uses the public.consume_boost_once RPC to atomically consume boosts.
  * Boosts are 1-time use (uses_total=1, uses_remaining starts at 1, decrements to 0 when used).
+ *
+ * Canonical boost keys (use these when calling consume_active_boost):
+ * - boost_listening: Applied when a song listen is recorded
+ * - boost_reflection: Applied after journal/reflection submission
+ * - boost_streak_shield: Prevents streak from breaking
  */
 
 import { supabaseBrowser } from '@/lib/supabase-browser';
@@ -184,6 +189,46 @@ export async function consumeBoost(
 ): Promise<ConsumeBoostResult> {
   const boostKey = SCOPE_TO_BOOST_KEY[scope];
   return consumeBoostOnce(boostKey, scope);
+}
+
+/**
+ * Consume an active boost using the consume_active_boost RPC.
+ * This is the canonical way to consume boosts in the system.
+ *
+ * @param userId - The user's ID
+ * @param boostKey - One of: 'boost_listening', 'boost_reflection', 'boost_streak_shield'
+ * @returns boolean - true if a boost was consumed, false otherwise
+ */
+export async function consumeActiveBoost(
+  userId: string,
+  boostKey: 'boost_listening' | 'boost_reflection' | 'boost_streak_shield'
+): Promise<boolean> {
+  try {
+    const { data, error } = await supabaseBrowser.rpc('consume_active_boost', {
+      p_user_id: userId,
+      p_boost_key: boostKey
+    });
+
+    if (error) {
+      console.warn(`[consumeActiveBoost] RPC error for boostKey=${boostKey}:`, error.message);
+      return false;
+    }
+
+    const consumed = data === true;
+
+    if (consumed) {
+      console.log(`[consumeActiveBoost] Successfully consumed boost: ${boostKey}`);
+      // Dispatch event to refresh boosts in UI
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('boosts:refresh'));
+      }
+    }
+
+    return consumed;
+  } catch (err) {
+    console.error(`[consumeActiveBoost] Unexpected error for boostKey=${boostKey}:`, err);
+    return false;
+  }
 }
 
 /**

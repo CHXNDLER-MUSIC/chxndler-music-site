@@ -16,7 +16,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { logHeartcoinTransaction } from '@/utils/heartcoins';
-import { consumeBoostOnce } from '@/lib/boosts';
+import { consumeActiveBoost } from '@/lib/boosts';
 
 // Types
 interface DailyProgressState {
@@ -225,17 +225,16 @@ export function useDailySongProgress({
     }
 
     try {
-      // Attempt to consume an active listen boost (Deep Focus)
-      const boostResult = await consumeBoostOnce('deep_focus', 'listen_rewards');
+      // Attempt to consume an active listening boost
+      const boostConsumed = await consumeActiveBoost(userId, 'boost_listening');
 
-      // Calculate final reward amount
+      // Calculate final reward amount (2x if boost was consumed)
       const baseAmount = 1;
-      const finalAmount = boostResult.didConsume
-        ? baseAmount * boostResult.multiplier + boostResult.addAmount
-        : baseAmount;
+      const multiplier = boostConsumed ? 2 : 1;
+      const finalAmount = baseAmount * multiplier;
 
-      const description = boostResult.didConsume
-        ? `Listened to 50% of a song (Deep Focus ${boostResult.multiplier}x)`
+      const description = boostConsumed
+        ? `Listened to 50% of a song (Listening Boost 2x)`
         : `Listened to 50% of a song`;
 
       await logHeartcoinTransaction(supabaseBrowser, {
@@ -249,22 +248,17 @@ export function useDailySongProgress({
           song_slug: songSlug,
           day,
           source: 'daily_progress',
-          boost_applied: boostResult.didConsume,
-          boost_key: boostResult.boostKey,
-          multiplier: boostResult.multiplier,
-          add_amount: boostResult.addAmount
+          boost_applied: boostConsumed,
+          boost_key: boostConsumed ? 'boost_listening' : null,
+          multiplier
         }
       });
 
       // Mark as completed in our local cache
       completedRef.current.add(cacheKey);
 
-      if (boostResult.didConsume) {
-        console.log(`🎵 Daily progress: Awarded ${finalAmount} HeartCoins for completing ${songSlug} (Deep Focus ${boostResult.multiplier}x, ${boostResult.usesRemaining} uses left)!`);
-        // Dispatch event to refresh boosts in UI
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('boosts:refresh'));
-        }
+      if (boostConsumed) {
+        console.log(`🎵 Daily progress: Awarded ${finalAmount} HeartCoins for completing ${songSlug} (Listening Boost 2x)!`);
       } else {
         console.log(`🎵 Daily progress: Awarded ${finalAmount} HeartCoin for completing ${songSlug}!`);
       }

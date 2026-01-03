@@ -222,6 +222,22 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
     { time: 140.5, label: "Bridge", kind: "bridge" },
     { time: 156.1, label: "Final Chorus", kind: "chorus" }
   ] },
+  { title: "BRAIN FREEZE", spotify:"https://open.spotify.com/track/5ou8AyA71rLFK6Ysxr2CpT", apple:"https://music.apple.com/us/album/brain-freeze/1823925483?i=1823925484", cover:"/covers/BRAIN FREEZE.webp", src: "/tracks/brain-freeze.mp3", sections: [
+    { time: 18.7, label: "Verse 1", kind: "verse" },
+    { time: 51.3, label: "Chorus 1", kind: "chorus" },
+    { time: 84.6, label: "Verse 2", kind: "verse" },
+    { time: 117.2, label: "Chorus 2", kind: "chorus" },
+    { time: 149.8, label: "Bridge", kind: "bridge" },
+    { time: 165.4, label: "Final Chorus", kind: "chorus" }
+  ] },
+  { title: "GAME BOY HEART (ゲームボーイの心)", spotify:"https://open.spotify.com/track/5VypE0QkaggJemaNG6sMsF", apple:"https://music.apple.com/us/album/game-boy-heart-%E3%82%B2%E3%83%BC%E3%83%A0%E3%83%9C%E3%83%BC%E3%82%A4%E3%81%AE%E5%BF%83/1826340576?i=1826340577", cover:"/covers/GAME BOY HEART.webp", src: "/tracks/game-boy-heart.mp3", sections: [
+    { time: 15.5, label: "Verse 1", kind: "verse" },
+    { time: 47.2, label: "Chorus 1", kind: "chorus" },
+    { time: 78.8, label: "Verse 2", kind: "verse" },
+    { time: 110.4, label: "Chorus 2", kind: "chorus" },
+    { time: 142.1, label: "Bridge", kind: "bridge" },
+    { time: 158.7, label: "Final Chorus", kind: "chorus" }
+  ] },
   { title: "COLLIDE", spotify:"https://open.spotify.com/track/4CCfWIk6SDUwmcUvGvgVQG?si=2788de692cc3435d", apple:"https://music.apple.com/us/album/collide/1814599250?i=1814599264", cover:"/covers/COLLIDE.webp", src: "/tracks/collide.opus", sections: [
     { time: 18.4, label: "Verse 1", kind: "verse" },
     { time: 51.0, label: "Chorus 1", kind: "chorus" },
@@ -281,6 +297,20 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
     { time: 145.1, label: "Final Chorus", kind: "chorus" }
   ] },
   { title: "WE'RE JUST FRIENDS", spotify:"https://open.spotify.com/track/2IffMAupdw2alpsISKFs8y?si=b8b55f8734a04a46", youtube:"https://www.youtube.com/watch?v=eQ4uBMn6cQ0" },
+  { title: "WE'RE JUST FRIENDS (DMVRCO Remix)", spotify:"https://open.spotify.com/track/1WfJUtDFUiz0rUdlGfLQBA", apple:"https://music.apple.com/us/album/were-just-friends-dmvrco-remix/1680307531?i=1680307532", src: "/tracks/we're-just-friends-dmvrco-remix.opus", sections: [
+    { time: 20.5, label: "Build Up", kind: "verse" },
+    { time: 53.2, label: "Drop 1", kind: "chorus" },
+    { time: 85.9, label: "Break", kind: "verse" },
+    { time: 118.6, label: "Drop 2", kind: "chorus" },
+    { time: 151.3, label: "Outro", kind: "verse" }
+  ] },
+  { title: "WE'RE JUST FRIENDS (mickey jas Remix)", spotify:"https://open.spotify.com/track/28wYsy2LrfVUT5glavy7hJ", apple:"https://music.apple.com/us/album/were-just-friends-mickey-jas-remix/1785153493?i=1785153499", src: "/tracks/we're-just-friends-mickey-jas-remix.opus", sections: [
+    { time: 16.2, label: "Build Up", kind: "verse" },
+    { time: 48.9, label: "Drop 1", kind: "chorus" },
+    { time: 81.5, label: "Break", kind: "verse" },
+    { time: 114.2, label: "Drop 2", kind: "chorus" },
+    { time: 146.9, label: "Outro", kind: "verse" }
+  ] },
   { title: "HOUSE PARTY", spotify:"https://open.spotify.com/track/0b5y0gHMf3wLYX69B8S6g4?si=75a45f33ec1f47c0", youtube:"https://www.youtube.com/watch?v=B6EyIK-gE1c" },
   { title: "PARIS", spotify:"https://open.spotify.com/track/2luPTqZK9w5fJ30T4rLZut?si=9f27fb47e15941c4", apple:"https://music.apple.com/us/album/paris-single/1779879728", youtube:"https://www.youtube.com/watch?v=J2qrS9EGRw8" },
 ];

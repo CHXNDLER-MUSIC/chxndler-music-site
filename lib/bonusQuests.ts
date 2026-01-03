@@ -384,10 +384,11 @@ export interface BonusQuestCompletionResult {
  * Completes a bonus quest for the user with proper tracking and rewards
  * Uses complete_bonus_quest_once_per_day RPC for atomic daily tracking
  *
- * RPC signature: complete_bonus_quest_once_per_day(p_user_id uuid, p_bonus_quest_id uuid)
- * Returns:
- * - { status: "completed", awarded: true, amount: N } for newly completed quests
- * - { status: "already_completed", awarded: false, amount: 0 } for duplicate attempts (no error)
+ * NEW RPC signature: complete_bonus_quest_once_per_day({ p_quest_id })
+ * User is inferred from auth context.
+ * Returns: { ok, quest_id, completed_on_date, inserted, heartcoin_awarded }
+ * - inserted=true means newly completed, heartcoin_awarded=true means coins given
+ * - inserted=false means already completed today (no error, just no new coins)
  *
  * IMPORTANT: This is the ONLY function that should be used for bonus quest completion.
  * All other legacy functions are deprecated.
@@ -397,24 +398,23 @@ export async function completeBonusQuestOncePerDay(params: {
   bonusQuestId: string;
   supabase?: SupabaseClient;
 }): Promise<BonusQuestCompletionResult> {
-  const { userId, bonusQuestId, supabase = supabaseClient } = params;
+  const { bonusQuestId, supabase = supabaseClient } = params;
 
   if (!bonusQuestId) {
     throw new Error('bonusQuestId is required');
   }
 
-  if (!userId) {
-    throw new Error('userId is required');
-  }
-
   try {
-    // Call RPC to complete the quest (handles insert + user_bonus_quests update + heartcoins atomically)
-    // Do NOT pass reward values or dates from the frontend - the RPC handles everything
+    // Call RPC with new signature (user inferred from auth context)
     const { data: rpcResult, error: rpcError } = await supabase
       .rpc('complete_bonus_quest_once_per_day', {
-        p_user_id: userId,
-        p_bonus_quest_id: bonusQuestId
+        p_quest_id: bonusQuestId
       });
+
+    // Handle 404 - RPC function not found (backend updated, need refresh)
+    if (rpcError?.code === 'PGRST202' || rpcError?.message?.includes('404') || rpcError?.code === '42883') {
+      throw new Error('Quest service updated, hard refresh');
+    }
 
     // Handle unique constraint violation (23505) as "already_completed" - NOT an error
     if (rpcError?.code === '23505') {
@@ -422,17 +422,33 @@ export async function completeBonusQuestOncePerDay(params: {
     }
 
     if (rpcError) {
-      throw new Error(`Quest failed. Try again.`);
+      console.error('[completeBonusQuestOncePerDay] RPC error:', rpcError.code, rpcError.message);
+      throw new Error('Quest failed. Try again.');
     }
 
-    // Handle RPC response - normalize status values
-    if (rpcResult?.status === 'already_completed' || rpcResult?.status === 'already_completed_today' || rpcResult?.ok === false) {
-      return { status: 'already_completed', awarded: false, amount: 0, data: rpcResult };
+    // New response format: { ok, quest_id, completed_on_date, inserted, heartcoin_awarded }
+    const isCompleted = rpcResult?.ok === true;
+    const isNewCompletion = rpcResult?.inserted === true;
+    const heartcoinAwarded = rpcResult?.heartcoin_awarded === true;
+
+    if (isCompleted) {
+      if (!isNewCompletion) {
+        // inserted=false means already completed today
+        return { status: 'already_completed', awarded: false, amount: 0, data: rpcResult };
+      }
+
+      // New completion with coins awarded
+      return {
+        status: 'completed',
+        awarded: heartcoinAwarded,
+        amount: heartcoinAwarded ? 1 : 0,
+        data: rpcResult
+      };
     }
 
-    // status === "completed" means quest was newly completed with coin award
-    const awardedAmount = rpcResult?.awarded_heartcoins ?? rpcResult?.heartcoins ?? 1;
-    return { status: 'completed', awarded: true, amount: awardedAmount, data: rpcResult };
+    // Unexpected response
+    console.error('[completeBonusQuestOncePerDay] Unexpected response:', rpcResult);
+    throw new Error('Quest failed. Try again.');
 
   } catch (error: any) {
     // Catch 23505 error if thrown differently
@@ -441,7 +457,7 @@ export async function completeBonusQuestOncePerDay(params: {
     }
 
     // Re-throw with clean message
-    throw new Error('Quest failed. Try again.');
+    throw error;
   }
 }
 

@@ -90,13 +90,37 @@ export const TRACK_INFO: Record<string, TrackInfo> = {
     skyTexture: '/sky/ocean-girl-sky.webp',
     oneLiner: 'Love flows back like the tide.'
   },
+  'ocean-girl-remix': {
+    id: 'ocean-girl-remix',
+    title: 'OCEAN GIRL (REMIX)',
+    artist: 'CHXNDLER',
+    coverUrl: '/covers/OCEAN GIRL (REMIX).webp',
+    skyTexture: '/sky/ocean-girl-sky.webp',
+    oneLiner: 'Love flows back like the tide.'
+  },
   'be-my-bee': {
     id: 'be-my-bee',
     title: 'BE MY BEE',
-    artist: 'CHXNDLER', 
+    artist: 'CHXNDLER',
     coverUrl: '/covers/BE MY BEE.webp',
     skyTexture: '/sky/be-my-bee-sky.webp',
     oneLiner: 'Love\'s sweet buzz, then the sting.'
+  },
+  'brain-freeze': {
+    id: 'brain-freeze',
+    title: 'BRAIN FREEZE',
+    artist: 'CHXNDLER',
+    coverUrl: '/covers/BRAIN FREEZE.webp',
+    skyTexture: '/sky/brain-freeze-sky.webp',
+    oneLiner: 'A rush of emotion and chaos from chasing summer highs.'
+  },
+  'collide': {
+    id: 'collide',
+    title: 'COLLIDE',
+    artist: 'CHXNDLER',
+    coverUrl: '/covers/COLLIDE.webp',
+    skyTexture: '/sky/collide-sky.webp',
+    oneLiner: 'Two souls crash into fate.'
   },
   'game-boy-heart': {
     id: 'game-boy-heart',
@@ -143,6 +167,22 @@ export const TRACK_INFO: Record<string, TrackInfo> = {
     title: 'WE\'RE JUST FRIENDS',
     artist: 'CHXNDLER',
     coverUrl: '/covers/WE\'RE JUST FRIENDS.webp',
+    skyTexture: '/sky/were-just-friends-sky.webp',
+    oneLiner: 'Lines blur between us.'
+  },
+  'were-just-friends-dmvrco-remix': {
+    id: 'were-just-friends-dmvrco-remix',
+    title: 'WE\'RE JUST FRIENDS (DMVRCO Remix)',
+    artist: 'CHXNDLER',
+    coverUrl: '/covers/WE\'RE JUST FRIENDS (DMVRCO REMIX).webp',
+    skyTexture: '/sky/were-just-friends-sky.webp',
+    oneLiner: 'Lines blur between us.'
+  },
+  'were-just-friends-mickey-jas-remix': {
+    id: 'were-just-friends-mickey-jas-remix',
+    title: 'WE\'RE JUST FRIENDS (mickey jas Remix)',
+    artist: 'CHXNDLER',
+    coverUrl: '/covers/WE\'RE JUST FRIENDS (MICKEY JAS REMIX).webp',
     skyTexture: '/sky/were-just-friends-sky.webp',
     oneLiner: 'Lines blur between us.'
   },
@@ -250,11 +290,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     // Prevent double-recording
     if (isRecordingRef.current) return false;
 
-    const durationSeconds = Math.floor((endedAt.getTime() - startedAt.getTime()) / 1000);
+    // Calculate listened_seconds as integer >= 0
+    const listenedSeconds = Math.max(0, Math.floor((endedAt.getTime() - startedAt.getTime()) / 1000));
 
     // Ignore sessions shorter than 10 seconds
-    if (durationSeconds < 10) {
-      console.log(`🎧 Listen session too short (${durationSeconds}s), skipping record`);
+    if (listenedSeconds < 10) {
+      console.log(`🎧 Listen session too short (${listenedSeconds}s), skipping record`);
       return false;
     }
 
@@ -274,15 +315,21 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
 
-      // Insert listen session (boost consumption happens in useDailySongProgress)
+      // Build payload matching exact DB column names:
+      // user_id, song_id (TEXT), started_at, ended_at, duration_ms, listened_seconds, duration_seconds, source, metadata
       const sessionData = {
         user_id: user.id,
-        song_id: trackId,
+        song_id: String(trackId), // Ensure song_id is always a string
         started_at: startedAt.toISOString(),
         ended_at: endedAt.toISOString(),
-        duration_seconds: durationSeconds,
-        source: 'player'
+        listened_seconds: listenedSeconds, // Required: integer >= 0
+        duration_seconds: listenedSeconds, // Same as listened_seconds for this session
+        duration_ms: listenedSeconds * 1000, // Derived from duration_seconds
+        source: 'player',
+        metadata: null
       };
+
+      console.log('🎧 Inserting listen session with payload:', JSON.stringify(sessionData, null, 2));
 
       const { error: insertError } = await supabaseBrowser
         .from('song_listen_sessions')
@@ -294,12 +341,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         console.error('  message:', insertError.message);
         console.error('  details:', insertError.details);
         console.error('  hint:', insertError.hint);
-        console.error('  full error:', JSON.stringify(insertError));
+        console.error('  payload:', JSON.stringify(sessionData, null, 2));
         isRecordingRef.current = false;
         return false;
       }
 
-      console.log(`🎧 Recorded listen session: ${trackId}, ${durationSeconds}s`);
+      console.log(`🎧 Recorded listen session: ${trackId}, ${listenedSeconds}s`);
       isRecordingRef.current = false;
       return true;
     } catch (err) {
@@ -724,6 +771,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      console.log('🎵 selectTrack: Setting up track for warp sequence:', normId);
+
       // Update currentTrack state FIRST to prevent the playerStore subscription
       // from triggering a duplicate playTrack call
       setState(s => ({ ...s, currentTrack: trackInfo }));
@@ -738,90 +787,38 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         console.warn('Failed to update playerStore:', err);
       }
 
-      // 1. Stop current music immediately
+      // Stop current music immediately
       console.log('🎵 Stopping current music for track selection');
       stopAllAudioInternal();
       setState(s => ({ ...s, playing: false }));
 
-      // 2. Play warp sound effect
-      try {
-        console.log('🎵 Playing warp sound effect');
-        await playAudioOnce(SFX.WARP);
-        console.log('🎵 Warp sound effect completed');
-        
-        // Small delay after warp to ensure audio session is clear
-        await new Promise(resolve => setTimeout(resolve, 100));
-      } catch (err) {
-        console.error('Failed to play warp effect:', err);
-      }
+      // NOTE: Do NOT play warp sound here - the visual warp system in DashboardApp
+      // handles the warp effect. This prevents double warp sounds.
 
-      // 3. Load the selected track and auto-play after warp completes
+      // Set up the pending track for post-warp playback
+      // The warp visual will call markWarpCompleted() when done, which triggers auto-play
+      setState(s => ({
+        ...s,
+        pendingTrack: normId,
+        warpCompleted: false,
+        src: trackSource,
+        currentTrack: trackInfo
+      }));
+
+      // Pre-load the track so it's ready to play when warp completes
       const a = audioRef.current;
       if (!a) return;
 
-      console.log('🎵 Loading selected track:', normId, 'with source:', trackSource);
+      console.log('🎵 Pre-loading track for post-warp playback:', normId, 'source:', trackSource);
       a.src = trackSource;
-      console.log('🎵 Audio element src set to:', a.src);
-      try { 
-        a.load();
-        console.log('🎵 Audio load() called successfully');
-        
-        // Wait for audio to be ready
-        await new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(() => {
-            cleanup();
-            reject(new Error('Audio load timeout'));
-          }, 10000);
-          
-          const onCanPlay = () => {
-            cleanup();
-            resolve();
-          };
-          const onError = (e: Event) => {
-            cleanup();
-            console.error('Audio load error:', e);
-            reject(new Error('Audio load failed'));
-          };
-          const cleanup = () => {
-            clearTimeout(timeout);
-            a.removeEventListener('canplay', onCanPlay);
-            a.removeEventListener('error', onError);
-          };
-          
-          if (a.readyState >= 3) {
-            clearTimeout(timeout);
-            resolve();
-          } else {
-            a.addEventListener('canplay', onCanPlay, { once: true });
-            a.addEventListener('error', onError, { once: true });
-          }
-        });
-      } catch (loadErr) {
-        console.error('Failed to load track:', loadErr);
-        setState(s => ({ ...s, isLoading: false }));
-        return;
-      }
-      
-      // 4. Update state with the loaded track and start playback
-      // Don't override duration - let the audio metadata loading handle it
-      setState(s => ({ 
-        ...s, 
-        src: trackSource, 
-        currentTrack: trackInfo,
-        currentTime: 0,
-        // Set playing true optimistically for snappy UI; onPlay event will confirm
-        playing: true,
-        isLoading: false
-      }));
-
       try {
-        await a.play();
-        console.log('🎵 Auto-played selected track after warp:', normId);
-      } catch (err) {
-        console.error('Failed to auto-play after warp:', err);
-        // Reflect failure in state so UI shows correct status
-        setState(s => ({ ...s, playing: false }));
+        a.load();
+        console.log('🎵 Track pre-loaded successfully');
+      } catch (loadErr) {
+        console.error('Failed to pre-load track:', loadErr);
       }
+
+      // Playback will be triggered by the warpCompleted effect when markWarpCompleted() is called
     },
 
     playTrack: async (trackId: string) => {

@@ -237,8 +237,11 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
             try { sfx.play('click', 0.5); } catch {}
             onClose();
           }}
-          className="absolute top-2 right-4 text-cyan-400 hover:text-cyan-200 cursor-pointer w-8 h-8 rounded-full border border-cyan-400/80 flex items-center justify-center"
-          style={{ 
+          onMouseEnter={() => {
+            try { sfx.play('hover', 0.35); } catch {}
+          }}
+          className="absolute top-2 right-4 text-cyan-400 hover:text-cyan-200 hover:scale-110 cursor-pointer w-8 h-8 rounded-full border border-cyan-400/80 flex items-center justify-center transition-transform duration-150"
+          style={{
             fontSize: '16px',
             boxShadow: '0 0 15px rgba(0,255,255,0.8), 0 0 25px rgba(0,255,255,0.5), 0 0 35px rgba(0,255,255,0.3)',
             textShadow: '0 0 8px rgba(0,255,255,0.8), 0 0 15px rgba(0,255,255,0.6)',

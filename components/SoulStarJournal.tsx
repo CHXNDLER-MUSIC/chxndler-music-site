@@ -8,7 +8,7 @@ import { useDailyReflectionStatus } from "@/hooks/useDailyReflectionStatus";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { getLocalDateString, getDisplayDateString } from "@/utils/dateHelpers";
 import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
-import { consumeBoostOnce } from "@/lib/boosts";
+import { consumeActiveBoost } from "@/lib/boosts";
 import { logHeartcoinTransaction } from "@/utils/heartcoins";
 import BinderModal from "./BinderModal";
 import BadgesModal from "./BadgesModal";
@@ -369,17 +369,16 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             console.log('Journal heartcoins already awarded today');
             awardedCoins = 0;
           } else {
-            // Attempt to consume an active journal boost (Reflection Boost)
-            const boostResult = await consumeBoostOnce('reflection_boost', 'journal_rewards');
+            // Attempt to consume an active reflection boost
+            const boostConsumed = await consumeActiveBoost(userId, 'boost_reflection');
 
-            // Calculate final reward amount
+            // Calculate final reward amount (2x if boost was consumed)
             const baseAmount = 1;
-            const finalAmount = boostResult.didConsume
-              ? baseAmount * boostResult.multiplier + boostResult.addAmount
-              : baseAmount;
+            const multiplier = boostConsumed ? 2 : 1;
+            const finalAmount = baseAmount * multiplier;
 
-            const description = boostResult.didConsume
-              ? `Journal Entry (Reflection Boost ${boostResult.multiplier}x)`
+            const description = boostConsumed
+              ? `Journal Entry (Reflection Boost 2x)`
               : 'Journal Entry';
 
             await logHeartcoinTransaction(supabaseBrowser, {
@@ -391,24 +390,18 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               metadata: {
                 source: 'journal_entry',
                 date_ny: todayNY,
-                boost_applied: boostResult.didConsume,
-                boost_key: boostResult.boostKey,
-                multiplier: boostResult.multiplier,
-                add_amount: boostResult.addAmount
+                boost_applied: boostConsumed,
+                boost_key: boostConsumed ? 'boost_reflection' : null,
+                multiplier
               }
             });
 
             awardedCoins = finalAmount;
             console.log('Journal heartcoins award result:', {
               awarded: finalAmount,
-              boostApplied: boostResult.didConsume,
-              multiplier: boostResult.multiplier
+              boostApplied: boostConsumed,
+              multiplier
             });
-
-            // Dispatch event to refresh boosts in UI if a boost was consumed
-            if (boostResult.didConsume && typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('boosts:refresh'));
-            }
           }
         }
       } catch (awardErr) {
@@ -430,6 +423,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         isSubmitted: true
       }));
 
+      // Switch to FULL LOG PUBLIC tab to show the user's entry
+      setShowHistory(true);
+      setActiveTab('public');
+
       // === RITUAL ANIMATION SEQUENCE ===
       // Store pending reward data for after animation completes
       if (awardedCoins > 0) {
@@ -440,9 +437,6 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       if (buttonPosition) {
         setRitualStartPosition(buttonPosition);
       }
-
-      // Close the journal panel first
-      onClose();
 
       // Small delay to ensure panel close animation starts, then show ritual overlay
       setTimeout(() => {

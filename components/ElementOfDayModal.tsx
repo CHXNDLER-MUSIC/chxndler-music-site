@@ -204,8 +204,30 @@ export default function ElementOfDayModal() {
         setClaimed(true);
         setElementQuestCompleted(true);
 
-        // Show success toast - relic bonus is optional
-        const toastMessage = rpcResult.did_award_relic
+        // ========== AWARD RELIC VIA API ==========
+        // If there's a rewardKey, explicitly award the relic to ensure it's in user_relics
+        let relicAwarded = rpcResult.did_award_relic || false;
+        if (data.rewardKey && userId) {
+          try {
+            const awardRes = await fetch('/api/award-relic', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId, relicCode: data.rewardKey }),
+            });
+            const awardData = await awardRes.json();
+            if (awardRes.ok && awardData.success) {
+              relicAwarded = true;
+              console.log('[ElementOfDayModal] Relic awarded via API:', data.rewardKey);
+            } else {
+              console.warn('[ElementOfDayModal] Award relic API error:', awardData);
+            }
+          } catch (awardErr) {
+            console.error('[ElementOfDayModal] Failed to award relic:', awardErr);
+          }
+        }
+
+        // Show success toast
+        const toastMessage = relicAwarded
           ? 'Relic awarded!'
           : 'Element claimed. Streak updated.';
         window.dispatchEvent(new CustomEvent('toast:show', {
@@ -378,17 +400,18 @@ export default function ElementOfDayModal() {
         }}
       >
         <div
-          className="relative pointer-events-auto flex flex-col justify-center"
+          className="relative pointer-events-auto flex flex-col items-center"
           style={{
             width: "calc(var(--display-width) + 32px)",
             maxWidth: "90vw",
             height: "100%",
             padding: "24px",
+            paddingTop: "32px",
             borderRadius: 20,
             background: "rgba(0,0,0,0.85)",
             border: `2px solid ${elementColor}80`,
             boxShadow: `0 0 40px ${elementColor}50, 0 0 80px ${elementColor}30`,
-            overflow: "visible",
+            overflow: "hidden",
           }}
         >
           {/* Close button */}
@@ -410,7 +433,7 @@ export default function ElementOfDayModal() {
 
           {/* Header */}
           <div
-            className="text-center mb-4"
+            className="text-center mb-2"
             style={{
               color: elementColor,
               textShadow: `0 0 12px ${elementColor}80`,
@@ -424,7 +447,7 @@ export default function ElementOfDayModal() {
 
           {/* Decorative line */}
           <div
-            className="w-full h-px mb-6"
+            className="w-full h-px mb-3"
             style={{
               background: `linear-gradient(90deg, transparent, ${elementColor}80 20%, ${elementColor} 50%, ${elementColor}80 80%, transparent)`,
               boxShadow: `0 0 8px ${elementColor}60`,
@@ -432,7 +455,7 @@ export default function ElementOfDayModal() {
           />
 
           {/* Element Image with glow and pulse - clickable */}
-          <div className="flex justify-center mb-6" style={{ overflow: "visible" }}>
+          <div className="flex justify-center mb-4" style={{ overflow: "visible" }}>
             <button
               onClick={handleImageClick}
               onMouseEnter={handleElementHover}

@@ -1,6 +1,7 @@
 // User progress tracking for badges and streaks
 
 import { UserProgress, Element, AchievementType, checkStreakBadgeUnlock, checkAchievementBadgeUnlock } from './badges';
+import { consumeActiveBoost } from './boosts';
 
 const STORAGE_KEY = 'heartverse_user_progress';
 
@@ -58,17 +59,23 @@ export function saveUserProgress(progress: UserProgress): void {
 }
 
 // Update streak based on current visit
-export function updateStreak(progress: UserProgress): { 
-  updatedProgress: UserProgress; 
-  newBadges: any[]; 
-  streakBroken: boolean; 
-} {
+// When a streak would break, attempts to consume a streak shield boost first
+export async function updateStreak(
+  progress: UserProgress,
+  userId?: string | null
+): Promise<{
+  updatedProgress: UserProgress;
+  newBadges: any[];
+  streakBroken: boolean;
+  shieldUsed: boolean;
+}> {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
+
   let updatedProgress = { ...progress };
   let streakBroken = false;
-  
+  let shieldUsed = false;
+
   if (!progress.lastVisit) {
     // First visit ever
     updatedProgress.currentStreak = 1;
@@ -76,13 +83,13 @@ export function updateStreak(progress: UserProgress): {
     updatedProgress.lastVisit = now;
   } else {
     const lastVisitDate = new Date(
-      progress.lastVisit.getFullYear(), 
-      progress.lastVisit.getMonth(), 
+      progress.lastVisit.getFullYear(),
+      progress.lastVisit.getMonth(),
       progress.lastVisit.getDate()
     );
-    
+
     const daysDifference = Math.floor((today.getTime() - lastVisitDate.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     if (daysDifference === 0) {
       // Same day visit - no streak change
       updatedProgress.lastVisit = now;
@@ -92,23 +99,41 @@ export function updateStreak(progress: UserProgress): {
       updatedProgress.longestStreak = Math.max(updatedProgress.longestStreak, updatedProgress.currentStreak);
       updatedProgress.lastVisit = now;
     } else {
-      // Streak broken - reset to 1
-      streakBroken = updatedProgress.currentStreak > 0;
-      updatedProgress.currentStreak = 1;
-      updatedProgress.lastVisit = now;
+      // Streak would break - check for streak shield first
+      let protected_ = false;
+
+      if (userId && updatedProgress.currentStreak > 0) {
+        // Attempt to consume streak shield boost
+        protected_ = await consumeActiveBoost(userId, 'boost_streak_shield');
+        if (protected_) {
+          shieldUsed = true;
+          console.log('[updateStreak] Streak protected by shield!');
+        }
+      }
+
+      if (protected_) {
+        // Shield protected the streak - keep current streak, update last visit
+        updatedProgress.lastVisit = now;
+      } else {
+        // Streak broken - reset to 1
+        streakBroken = updatedProgress.currentStreak > 0;
+        updatedProgress.currentStreak = 1;
+        updatedProgress.lastVisit = now;
+      }
     }
   }
-  
+
   // Check for newly unlocked badges
   const newBadges = checkStreakBadgeUnlock(updatedProgress);
-  
+
   // Save updated progress
   saveUserProgress(updatedProgress);
-  
+
   return {
     updatedProgress,
     newBadges,
-    streakBroken
+    streakBroken,
+    shieldUsed
   };
 }
 

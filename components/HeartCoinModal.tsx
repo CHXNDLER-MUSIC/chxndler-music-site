@@ -164,7 +164,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     return ownedCards.some(uc => uc.card_id === cardId);
   };
 
-  const { quests: legacyBonusQuests, status: questsStatus, refetchQuests } = useBonusQuests();
+  const { quests: legacyBonusQuests, status: questsStatus, refetchQuests, completeQuest } = useBonusQuests();
   const questsLoading = questsStatus === 'loading';
   const { items: merchItems, loading: merchLoading } = useMerchItems('physical');
   const { purchaseWithHeartCoins, isProcessing } = useMerchPurchase();
@@ -519,8 +519,18 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     return false;
   };
 
+  // Helper to immediately mark a quest as completed in the local UI state
+  const markQuestCompletedLocally = (questId: string) => {
+    const updateQuest = (q: BonusQuestWithCompletion) =>
+      q.id === questId
+        ? { ...q, can_complete: false, completed_today: 1, times_completed: q.times_completed + 1 }
+        : q;
+    setDbDailyQuests(prev => prev.map(updateQuest));
+    setDbBonusQuests(prev => prev.map(updateQuest));
+  };
+
   // Quest click handler - maps quest_key to appropriate actions
-  const handleQuestClick = (quest: BonusQuestWithCompletion) => {
+  const handleQuestClick = async (quest: BonusQuestWithCompletion) => {
     if (isQuestCompleted(quest)) return;
     if (!profile) {
       handleLoginToComplete();
@@ -616,14 +626,43 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       case 'INVITE_FRIEND':
         // Use native share if available, otherwise copy to clipboard
         const shareMessage = "I thought of you. I think this world could feel like home for you too. https://chxndler.world/";
+        let shareSucceeded = false;
+
         if (navigator.share) {
-          navigator.share({ text: shareMessage }).catch(() => {});
+          try {
+            await navigator.share({ text: shareMessage });
+            shareSucceeded = true;
+          } catch {
+            // User cancelled or error - still allow completion
+            shareSucceeded = true;
+          }
         } else {
-          navigator.clipboard.writeText(shareMessage).then(() => {
+          try {
+            await navigator.clipboard.writeText(shareMessage);
             alert("Invite message copied to clipboard!");
-          }).catch(() => {
+            shareSucceeded = true;
+          } catch {
             alert(shareMessage);
-          });
+            shareSucceeded = true;
+          }
+        }
+
+        // After share action, call RPC to complete the quest
+        if (shareSucceeded) {
+          const result = await completeQuest(quest);
+          if (!result.success) {
+            // Handle 404 or other errors - do NOT flip UI
+            if (result.message === 'Quest service updated, hard refresh') {
+              alert('Quest service updated, hard refresh');
+            } else {
+              console.error('[INVITE_FRIEND] Quest completion failed:', result.message);
+              alert('Quest failed. Please try again.');
+            }
+          } else {
+            // Success (both new completion and already-completed-today)
+            // Immediately update local UI state so button flips to COMPLETED
+            markQuestCompletedLocally(quest.id);
+          }
         }
         break;
 

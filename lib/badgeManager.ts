@@ -31,17 +31,22 @@ export class BadgeManager {
   }
 
   // Update user's element
-  setElement(element: Element): void {
+  setElement(element: Element, userId?: string | null): void {
     setUserElement(element);
     // Re-check element-based streak badges
-    this.checkStreakBadges();
+    this.checkStreakBadges(userId);
   }
 
   // Check streak badges (called on daily visit)
-  checkStreakBadges(): void {
+  // Pass userId to enable streak shield protection when streak would break
+  async checkStreakBadges(userId?: string | null): Promise<void> {
     const progress = loadUserProgress();
-    const { newBadges } = updateStreak(progress);
-    
+    const { newBadges, shieldUsed } = await updateStreak(progress, userId);
+
+    if (shieldUsed) {
+      console.log('[BadgeManager] Streak was protected by streak shield!');
+    }
+
     newBadges.forEach(badge => {
       this.queueNotification(badge);
     });

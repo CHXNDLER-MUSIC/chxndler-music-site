@@ -1224,11 +1224,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           setStatusType('success');
           setShowCheckInSuccess(true);
         } else {
-          // Award heart coins for other quests only if NEW completion (has rewards)
-          if (result.rewards?.heartcoins) {
-            await updateHeartCoins(heartCoins + result.rewards.heartcoins);
-          }
-          // Show success message
+          // Show success message (hook already refreshed profile if heartcoins were awarded)
           setCheckInMessage(result.message);
           setStatusType('success');
           setShowCheckInSuccess(true);
@@ -1410,9 +1406,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           } catch {}
           setStatusType('success');
         } else {
-          // NEW completion - RPC awarded HeartCoin in DB, refresh profile to get updated balance
-          // The refreshProfile() will trigger the +1 celebration animation via ProfileContext
-          await updateHeartCoins(heartCoins + 1);
+          // NEW completion - hook already refreshed profile when heartcoin_awarded was true
           setCheckInMessage(`Quest completed! +1 Heart Coin earned`);
           setStatusType('success');
         }

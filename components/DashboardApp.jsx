@@ -639,6 +639,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
   function onSongChange(id, options){
     // [WARP] Entry point for all song changes
+    console.log('[WARP] ====== onSongChange CALLED ======');
     console.log('[WARP] start - onSongChange entry point', { id, options, tracksCount: tracks?.length || 0 });
 
     // In-app song change without spotlight/beam/route reloads
@@ -680,11 +681,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     if (idx < 0) {
       console.error('[WARP] start - early return: track not found', { id, slug });
       console.warn('DashboardApp: onSongChange - track not found for id:', id, 'slug:', slug);
-      if (process.env.NODE_ENV === "development") {
-        console.log('[WARP] Available tracks:', tracks.map(t => ({title: t.title, slug: t.slug})));
-      }
+      console.log('[WARP] Available tracks:', tracks.map(t => ({title: t.title, slug: t.slug})));
       return;
     }
+    console.log('[WARP] Track found at index:', idx, 'selectedTrack:', tracks[idx]?.slug);
     const selectedTrack = tracks[idx];
     if (process.env.NODE_ENV === "development") {
       console.log('🎵 Song selected:', selectedTrack.title);
@@ -2144,6 +2144,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
           const slug = curTrack?.slug;
           const mapped = slug ? youtubeSkyFor(slug) : undefined;
+
+          // Debug logging for sky selection
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[SKY] Computing youtubeUrl:', { slug, mapped, homeMode, isLanded, pendingTrackPlay, userSelected, ytSkyStartedSlug });
+          }
+
           // On the homepage:
           // - During intro (before START), show the lightspeed sky
           // - After landing, switch to the calm space sky
