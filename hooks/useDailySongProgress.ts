@@ -71,14 +71,20 @@ export function useDailySongProgress({
     }
 
     try {
+      console.log(`🎵 Daily progress: Querying songs table for slug "${slug}"`);
       const { data, error } = await supabaseBrowser
         .from('songs')
         .select('id')
         .eq('slug', slug)
         .single();
 
-      if (error || !data) {
-        console.log(`🎵 Daily progress: Song not found for slug "${slug}"`);
+      if (error) {
+        console.log(`🎵 Daily progress: Error querying song for slug "${slug}":`, error.message, error.code);
+        return null;
+      }
+
+      if (!data) {
+        console.log(`🎵 Daily progress: No song found for slug "${slug}"`);
         return null;
       }
 
@@ -191,6 +197,15 @@ export function useDailySongProgress({
         progressData.completed_at = new Date().toISOString();
       }
 
+      console.log('🎵 Daily progress: Upserting progress data:', {
+        user_id: userId.substring(0, 8) + '...',
+        song_id: songId.substring(0, 8) + '...',
+        day,
+        listened_seconds: safeListenedSeconds,
+        duration_seconds: safeDurationSeconds,
+        completion_percent: safePercent
+      });
+
       const { error } = await supabaseBrowser
         .from('user_song_daily_progress')
         .upsert(progressData, {
@@ -199,9 +214,9 @@ export function useDailySongProgress({
         });
 
       if (error) {
-        console.error('🎵 Daily progress: Upsert failed:', error.message);
+        console.error('🎵 Daily progress: Upsert failed:', error.message, error.code, error.details);
       } else {
-        console.log(`🎵 Daily progress: Updated - ${Math.floor(completionPercent)}% complete${markCompleted ? ' (COMPLETED!)' : ''}`);
+        console.log(`🎵 Daily progress: Upsert SUCCESS - ${Math.floor(completionPercent)}% complete${markCompleted ? ' (COMPLETED!)' : ''}`);
       }
     } catch (err) {
       console.error('🎵 Daily progress: Error upserting:', err);
@@ -287,11 +302,15 @@ export function useDailySongProgress({
     if (!trackSlug) return;
     if (!isPlaying) return;
 
+    console.log('🎵 Daily progress: All conditions met, starting tracking for:', trackSlug);
+
     let intervalId: number | null = null;
     let mounted = true;
 
     const trackProgress = async () => {
       if (!mounted) return;
+
+      console.log('🎵 Daily progress: trackProgress called for:', trackSlug);
 
       // Get current user
       const { data: { session } } = await supabaseBrowser.auth.getSession();
@@ -300,10 +319,16 @@ export function useDailySongProgress({
         return;
       }
       const userId = session.user.id;
+      console.log('🎵 Daily progress: Got user session:', userId.substring(0, 8) + '...');
 
       // Get song UUID from slug
+      console.log('🎵 Daily progress: Looking up song ID for slug:', trackSlug);
       const songId = await getSongId(trackSlug);
-      if (!songId) return;
+      if (!songId) {
+        console.log('🎵 Daily progress: getSongId returned null for:', trackSlug);
+        return;
+      }
+      console.log('🎵 Daily progress: Found song ID:', songId.substring(0, 8) + '...');
 
       currentSongIdRef.current = songId;
       const day = getTodayNY();

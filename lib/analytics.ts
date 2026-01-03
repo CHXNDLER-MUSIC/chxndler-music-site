@@ -404,6 +404,34 @@ export async function clearClickAnalytics() {
   return { success: false, error: 'Not implemented - use API directly' };
 }
 
+// Circuit breaker: track failed event/table/error combinations to prevent infinite retries
+// Key format: `${eventName}:${table}:${errorCode}`
+const trackEventCircuitBreaker = new Set<string>();
+// Circuit breaker cooldown: 10 minutes
+const CIRCUIT_BREAKER_COOLDOWN_MS = 10 * 60 * 1000;
+const circuitBreakerTimestamps = new Map<string, number>();
+
+function isCircuitBroken(key: string): boolean {
+  if (!trackEventCircuitBreaker.has(key)) return false;
+  const timestamp = circuitBreakerTimestamps.get(key) || 0;
+  const now = Date.now();
+  // Reset circuit breaker after cooldown
+  if (now - timestamp > CIRCUIT_BREAKER_COOLDOWN_MS) {
+    trackEventCircuitBreaker.delete(key);
+    circuitBreakerTimestamps.delete(key);
+    return false;
+  }
+  return true;
+}
+
+function tripCircuitBreaker(key: string) {
+  trackEventCircuitBreaker.add(key);
+  circuitBreakerTimestamps.set(key, Date.now());
+}
+
+// Track if we've already warned about schema issues (session-level)
+let schemaWarnedOnce = false;
+
 export async function trackEvent(
   eventName: string,
   options?: {
@@ -412,17 +440,13 @@ export async function trackEvent(
     userId?: string | null;
   }
 ) {
-  // Avoid spamming the console: warn once per session about schema mismatch
-  // when falling back from events_v2 to legacy tables.
-  let warnedOnce = false;
-  const warnOnce = (msg: string, extra?: any) => {
-    if (warnedOnce) return;
-    warnedOnce = true;
-    try {
-      if (extra) console.warn(msg, extra);
-      else console.warn(msg);
-    } catch {}
-  };
+  // Check circuit breaker for this event type before making any requests
+  const circuitKey = `${eventName}:events_v2`;
+  if (isCircuitBroken(circuitKey)) {
+    // Silently skip - we've already failed for this event type recently
+    return { success: false, error: 'circuit_breaker_open' } as const;
+  }
+
   try {
     const { createClient } = await import('@/lib/supabaseClient');
     const supabase = createClient();
@@ -437,119 +461,45 @@ export async function trackEvent(
         user_id: options?.userId ?? null,
       });
 
-    // Fallback: support older schemas that used `event` instead of `event_name`.
-    // Some PostgREST errors report stale schema cache; if we see PGRST204, try the legacy column too.
-    let firstError: any = error;
-    if (error && ((error as any)?.code === 'PGRST204' || (error as any)?.code === '42P01')) {
-      try {
-        warnOnce('[Analytics] events_v2 missing or schema cache stale. Retrying with legacy `event` column.');
-        const retry = await supabase
-          .from('events_v2')
-          .insert({
-            // @ts-ignore legacy column name for compatibility
-            event: eventName,
-            source: options?.source ?? 'unknown',
-            metadata: options?.metadata ?? null,
-            user_id: options?.userId ?? null,
-          });
-        error = retry.error as any;
-      } catch (e) {
-        // Preserve the original error if retry throws unexpectedly
-        error = firstError;
+    // If primary insert succeeds, we're done
+    if (!error) {
+      return { success: true } as const;
+    }
+
+    const errorCode = (error as any)?.code;
+    const isSchemaMiss = errorCode === 'PGRST204' || errorCode === '42P01' || errorCode === 'PGRST106';
+
+    // Trip circuit breaker for this event type to prevent repeated failures
+    if (isSchemaMiss) {
+      tripCircuitBreaker(circuitKey);
+
+      // Warn once per session about schema issues
+      if (!schemaWarnedOnce) {
+        schemaWarnedOnce = true;
+        console.warn('[Analytics] events_v2 table missing or schema cache stale. Analytics disabled until schema is fixed. Run SUPABASE_SETUP.sql or refresh PostgREST.');
       }
     }
 
-    // Final fallback: write a minimal record into analytics.events if available.
-    // This lets analytics continue working even if events_v2 isn’t set up yet.
-    if (error && ((error as any)?.code === 'PGRST204' || (error as any)?.code === '42P01')) {
-      try {
-        warnOnce('[Analytics] Falling back to analytics.events. Consider running SUPABASE_SETUP.sql to create events_v2.');
-        const fallback = await supabase
-          // Target analytics schema explicitly
-          .schema('analytics')
-          .from('events')
-          .insert({
-            event_type: eventName,
-            // Pack v2-only fields into payload so data isn’t lost
-            payload: {
-              source: options?.source ?? 'unknown',
-              metadata: options?.metadata ?? null,
-              user_id: options?.userId ?? null,
-              v: 'v2-fallback'
-            }
-          });
-        // If fallback succeeds, treat as success
-        if (!fallback.error) {
-          return { success: true } as const;
-        }
-        // Otherwise, surface the fallback error
-        error = fallback.error as any;
-      } catch (e) {
-        // Keep the last actionable error
-        error = (e as any) ?? error;
-      }
-    }
-
-    if (error) {
-      // Some Supabase/PostgREST error objects don't stringify well or have non-enumerable props.
-      // Normalize into a JSON-safe, always-populated payload to avoid `{}` logs.
-      const normalizedError = (() => {
-        const anyErr = error as any;
-        return {
-          message: anyErr?.message ?? (typeof error === 'string' ? error : null),
-          name: anyErr?.name ?? null,
-          code: anyErr?.code ?? null,
-          details: anyErr?.details ?? null,
-          hint: anyErr?.hint ?? null,
-          status: anyErr?.status ?? null,
-          errorType: typeof error,
-        };
-      })();
-
-      const logPayload = {
-        ...normalizedError,
-        eventName: String(eventName),
-        source: options?.source ?? 'unknown',
-        hasMetadata: !!options?.metadata,
-        hasUserId: !!options?.userId,
-        table: 'events_v2',
-        // Include initial error snapshot if we attempted a fallback
-        firstError: firstError && firstError !== error ? {
-          message: (firstError as any)?.message ?? null,
-          code: (firstError as any)?.code ?? null,
-        } : undefined,
-      } as const;
-
-      // Reduce noise for known setup issues; provide a concise hint.
-      const code = (error as any)?.code;
-      const isSchemaMiss = code === 'PGRST204' || code === '42P01';
-      const hint = isSchemaMiss
-        ? 'events_v2 is missing or has stale schema cache. Run SUPABASE_SETUP.sql (events_v2 section) or refresh PostgREST.'
-        : undefined;
-      const concise = {
-        ...logPayload,
-        hint,
+    // For non-schema errors, still log but don't retry endlessly
+    if (!isSchemaMiss) {
+      const normalizedError = {
+        message: (error as any)?.message ?? null,
+        code: errorCode ?? null,
+        eventName,
       };
-      try {
-        console.warn('trackEvent warning:', JSON.stringify(concise));
-      } catch {
-        console.warn('trackEvent warning:', concise);
-      }
-      return { success: false, error } as const;
+      console.warn('trackEvent error:', normalizedError);
     }
-    return { success: true } as const;
+
+    return { success: false, error } as const;
   } catch (e) {
+    // Trip circuit breaker on exceptions too
+    tripCircuitBreaker(circuitKey);
+
     const err = e as any;
-    const crashPayload = {
+    console.error('trackEvent crashed:', {
       message: err?.message ?? String(err),
-      name: err?.name ?? null,
-      stack: err?.stack ?? null,
-    } as const;
-    try {
-      console.error('trackEvent crashed:', JSON.stringify(crashPayload));
-    } catch {
-      console.error('trackEvent crashed:', crashPayload);
-    }
+      eventName,
+    });
     return { success: false, error: e } as const;
   }
 }

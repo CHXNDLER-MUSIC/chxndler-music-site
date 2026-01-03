@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three-stdlib';
 import { debug } from '@/lib/logger';
+import { isDebug, debugLog } from '@/lib/debug';
 import {
   createHologramMaterial,
   updateHologramTime,
@@ -655,7 +656,6 @@ export default function Pure3DPlanets({
       const glowSprite = createLightEmissionSprite(p.glow, 1.8, p.pos);
       // Daily element glow is visible if glowActive and it's the daily element (stays visible all day)
       const isDailyElement = glowingElement === p.id;
-      console.log(`[GLOW] Planet ${p.id}: isDailyElement=${isDailyElement}, glowActive=${glowActive}, glowingElement=${glowingElement}`);
       glowSprite.visible = !!(glowActive && isDailyElement);
       try { glowSpriteMapRef.current.set(p.id, glowSprite); } catch {}
 
@@ -1463,6 +1463,10 @@ export default function Pure3DPlanets({
   }, [isClient, quality, songs.length]);
 
     // Toggle glow visibility when props change without rebuilding the scene
+    // Use refs to track previous values and only log when actually changed
+    const prevGlowingElementRef = useRef<ElementType | null>(null);
+    const prevGlowActiveRef = useRef<boolean>(false);
+
     useEffect(() => {
       try {
         glowSpriteMapRef.current.forEach((sprite, id) => {
@@ -1475,7 +1479,14 @@ export default function Pure3DPlanets({
             outerGlow.visible = shouldGlow;
           }
         });
-        console.log(`[GLOW] Props changed: glowingElement=${glowingElement}, glowActive=${glowActive}`);
+        // Only log if values actually changed
+        const elementChanged = prevGlowingElementRef.current !== glowingElement;
+        const activeChanged = prevGlowActiveRef.current !== glowActive;
+        if ((elementChanged || activeChanged) && isDebug()) {
+          debugLog(`[GLOW] Props changed: glowingElement=${glowingElement}, glowActive=${glowActive}`);
+        }
+        prevGlowingElementRef.current = glowingElement;
+        prevGlowActiveRef.current = glowActive;
       } catch {}
     }, [glowingElement, glowActive]);
 
@@ -1845,7 +1856,9 @@ export default function Pure3DPlanets({
       }
     } catch {}
 
-    console.log('[WARP] trigger from planet button', { planetPopup: planetPopup ? { name: planetPopup.name, slug: planetPopup.slug, isSong: planetPopup.isSong } : null, hasOnSongChange: !!onSongChange, songsCount: songs.length });
+    if (isDebug()) {
+      debugLog('[WARP] trigger from planet button', { planetPopup: planetPopup ? { name: planetPopup.name, slug: planetPopup.slug, isSong: planetPopup.isSong } : null, hasOnSongChange: !!onSongChange, songsCount: songs.length });
+    }
     if (!planetPopup) {
       console.error('[WARP] ERROR: planetPopup is null - cannot trigger warp');
       warpTriggeredRef.current = false;
@@ -1857,7 +1870,9 @@ export default function Pure3DPlanets({
     const isElementOfDay = !isSong && element !== 'center' && element === glowingElement;
     // Check if we should attempt to claim (only if not already claimed)
     const shouldAttemptClaim = isElementOfDay && !hasClaimedElementOfDay;
-    console.log('[WARP] trigger from planet button - resolved', { selectedPlanet: name, resolvedSlug: slug, isSong, element, isElementOfDay, shouldAttemptClaim, glowingElement });
+    if (isDebug()) {
+      debugLog('[WARP] trigger from planet button - resolved', { selectedPlanet: name, resolvedSlug: slug, isSong, element, isElementOfDay, shouldAttemptClaim, glowingElement });
+    }
 
     // Close the popup IMMEDIATELY - before anything else
     setPlanetPopup(null);

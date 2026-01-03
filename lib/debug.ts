@@ -4,26 +4,40 @@
 //   - localStorage.debug = "1" (persists across sessions)
 //   - ?debug=1 in URL (one-time)
 //   - window.__CHX_DEBUG = true (runtime)
+//
+// Note: In production, debug is disabled by default unless explicitly enabled via localStorage.
 
 export const DEBUG_MEDIA = process.env.NEXT_PUBLIC_MEDIA_DEBUG === '1';
 
+// Check if we're in development mode
+const isDev = process.env.NODE_ENV === 'development';
+
 // Check if debug mode is enabled (supports localStorage for persistence)
+// In production: requires explicit localStorage.debug = "1" or ?debug=1
+// In development: also enabled via URL param or window.__CHX_DEBUG
 function isDebugEnabled(): boolean {
   try {
     if (typeof window === 'undefined') return false;
     const w = window as any;
-    // Check cached value first
+
+    // Check cached value first (speeds up repeated checks)
     if (typeof w.__CHX_DEBUG !== 'undefined') return !!w.__CHX_DEBUG;
-    // Check localStorage
+
+    // Check localStorage (works in both dev and prod)
     const lsVal = localStorage.getItem('debug');
     if (lsVal === '1' || lsVal === 'true') {
       w.__CHX_DEBUG = true;
       return true;
     }
-    // Check URL param
+
+    // Check URL param (only in dev, or if explicitly set)
     const params = new URLSearchParams(window.location.search);
     const urlVal = (params.get('debug') || '').toLowerCase();
-    const enabled = urlVal === '1' || urlVal === 'true' || urlVal === 'yes';
+    const urlEnabled = urlVal === '1' || urlVal === 'true' || urlVal === 'yes';
+
+    // In dev mode, URL param enables debug
+    // In prod mode, only localStorage enables debug (URL param ignored for security)
+    const enabled = isDev ? urlEnabled : false;
     w.__CHX_DEBUG = enabled;
     return enabled;
   } catch {

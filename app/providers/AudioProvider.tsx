@@ -1031,6 +1031,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       }
 
       console.log(`🎵 playTrack: ${trackId} -> ${normId} -> ${trackSource}`);
+      console.log(`🎵 playTrack: Setting trackingSlug to original: "${trackId}"`);
 
       // Update current track info immediately
       // Store original trackId as trackingSlug for daily progress tracking (before normalization)
@@ -1298,6 +1299,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     // Also expose a global function as fallback for direct calls
     (window as any).__playTrackDirect = (slug: string, source: string = 'global') => {
+      console.log(`🎵 __playTrackDirect called with slug: "${slug}", source: "${source}"`);
       setState(s => ({ ...s, pendingTrack: null, warpCompleted: true }));
       playTrackRef.current(slug).catch(err => {
         console.error('🎵 Failed to play track:', err);

@@ -1,8 +1,9 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef, useMemo } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
-import type { User } from "@supabase/supabase-js";
+import type { User, Session } from "@supabase/supabase-js";
+import { isDebug, debugLog } from "@/lib/debug";
 
 interface AuthContextValue {
   user: User | null;
@@ -12,9 +13,20 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+// Helper to create a stable fingerprint for session comparison
+function sessionFingerprint(session: Session | null): string {
+  if (!session) return "no-session";
+  return `${session.user?.id || ""}:${session.access_token?.slice(-8) || ""}`;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Refs to prevent duplicate initialization and state updates
+  const didInitRef = useRef(false);
+  const lastSessionFingerprintRef = useRef<string>("init");
+  const subscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
 
   const clearSession = async () => {
     try {
@@ -26,31 +38,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.clear();
       sessionStorage.clear();
       setUser(null);
-      console.log('AuthProvider: Session cleared manually');
+      lastSessionFingerprintRef.current = "no-session";
+      if (isDebug()) debugLog('AuthProvider: Session cleared manually');
     } catch (error) {
       console.error('AuthProvider: Error clearing session:', error);
     }
   };
 
   useEffect(() => {
+    // Guard against double-initialization (React StrictMode in dev)
+    if (didInitRef.current) {
+      return;
+    }
+    didInitRef.current = true;
+
     const getInitialSession = async () => {
       try {
         const { data: { session }, error } = await supabaseBrowser.auth.getSession();
-        
+
         if (error) {
           console.error('AuthProvider: Error getting session:', error.message);
-        } else {
+          setLoading(false);
+          return;
+        }
+
+        const fingerprint = sessionFingerprint(session);
+
+        // Only update state if fingerprint changed
+        if (fingerprint !== lastSessionFingerprintRef.current) {
+          lastSessionFingerprintRef.current = fingerprint;
           setUser(session?.user ?? null);
-          if (process.env.NODE_ENV === "development") {
-            console.log('AuthProvider: Initial session loaded:', { 
-              browser: navigator.userAgent.includes('Chrome') ? 'Chrome' : navigator.userAgent.includes('Safari') ? 'Safari' : 'Other',
-              hasUser: !!session?.user, 
+
+          if (isDebug()) {
+            debugLog('AuthProvider: Initial session loaded:', {
+              hasUser: !!session?.user,
               userId: session?.user?.id,
-              hasAccessToken: !!session?.access_token,
-              hasRefreshToken: !!session?.refresh_token
             });
           }
-          
+
           // Set initial cookies if session exists
           if (session?.access_token) {
             const isSecure = window.location.protocol === 'https:';
@@ -70,17 +95,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     getInitialSession();
 
-    // Subscribe to auth state changes
+    // Subscribe to auth state changes (only once)
     const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange(
       async (event, session) => {
-        if (process.env.NODE_ENV === "development") {
-          console.log('AuthProvider: Auth state changed:', { 
-            event, 
+        const fingerprint = sessionFingerprint(session);
+
+        // Skip if this is INITIAL_SESSION and fingerprint matches (we already handled it)
+        if (event === 'INITIAL_SESSION' && fingerprint === lastSessionFingerprintRef.current) {
+          if (isDebug()) debugLog('AuthProvider: Skipping duplicate INITIAL_SESSION');
+          return;
+        }
+
+        // Skip if fingerprint hasn't changed (no real auth change)
+        if (fingerprint === lastSessionFingerprintRef.current) {
+          return;
+        }
+
+        lastSessionFingerprintRef.current = fingerprint;
+
+        if (isDebug()) {
+          debugLog('AuthProvider: Auth state changed:', {
+            event,
             hasUser: !!session?.user,
-            userId: session?.user?.id 
+            userId: session?.user?.id
           });
         }
-        
+
         // Sync session tokens to cookies for API routes
         if (session?.access_token) {
           const isSecure = window.location.protocol === 'https:';
@@ -94,19 +134,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           document.cookie = 'sb-access-token=; path=/; max-age=0';
           document.cookie = 'sb-refresh-token=; path=/; max-age=0';
         }
-        
+
         setUser(session?.user ?? null);
         setLoading(false);
       }
     );
 
+    subscriptionRef.current = subscription;
+
     return () => {
-      subscription.unsubscribe();
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
     };
   }, []);
 
+  // Memoize context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({ user, loading, clearSession }), [user, loading]);
+
   return (
-    <AuthContext.Provider value={{ user, loading, clearSession }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

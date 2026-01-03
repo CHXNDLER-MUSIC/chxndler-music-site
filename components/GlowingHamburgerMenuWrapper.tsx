@@ -241,9 +241,12 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
         />
       </div>
       {/* Journal popout */}
-      <SoulStarJournal 
+      <SoulStarJournal
         isOpen={journalOpen}
-        onClose={() => setJournalOpen(false)}
+        onClose={() => {
+          setJournalOpen(false);
+          try { onBeamColorChange?.('off'); } catch {}
+        }}
       />
       {/* Binder popout */}
       {binderOpen && (

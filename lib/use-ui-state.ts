@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { isDebug, debugLog } from "@/lib/debug";
 
 type UIState = {
   hasEnteredHeartverse: boolean;
@@ -25,49 +26,57 @@ type UIState = {
   setIsUserInteracting: (v: boolean) => void;
 };
 
-// Enhanced Heartverse state with persistence and clear debugging
+// Enhanced Heartverse state with persistence and guards against redundant updates
 export const useUIState = create<UIState>()(
   persist(
     (set, get) => ({
       hasEnteredHeartverse: false,
       setHasEnteredHeartverse: (value) => {
-        if (typeof window !== 'undefined') {
-          console.log("🚀 HeartverseState: setHasEnteredHeartverse", {
-            previousValue: get().hasEnteredHeartverse,
+        const current = get().hasEnteredHeartverse;
+        // Guard: skip if value unchanged
+        if (current === value) return;
+        if (isDebug()) {
+          debugLog("🚀 HeartverseState: setHasEnteredHeartverse", {
+            previousValue: current,
             newValue: value,
-            timestamp: new Date().toISOString()
           });
         }
         set({ hasEnteredHeartverse: value });
       },
       enterHeartverse: () => {
-        if (typeof window !== 'undefined') {
-          console.log("🚀 HeartverseState: enterHeartverse called", {
-            previousValue: get().hasEnteredHeartverse,
+        const current = get().hasEnteredHeartverse;
+        // Guard: skip if already true
+        if (current === true) return;
+        if (isDebug()) {
+          debugLog("🚀 HeartverseState: enterHeartverse called", {
+            previousValue: current,
             newValue: true,
-            timestamp: new Date().toISOString()
           });
         }
         set({ hasEnteredHeartverse: true });
       },
       warpFullyComplete: false,
       setWarpFullyComplete: (value) => {
-        if (typeof window !== 'undefined') {
-          console.log("🚀 HeartverseState: setWarpFullyComplete", {
-            previousValue: get().warpFullyComplete,
+        const current = get().warpFullyComplete;
+        // Guard: skip if value unchanged
+        if (current === value) return;
+        if (isDebug()) {
+          debugLog("🚀 HeartverseState: setWarpFullyComplete", {
+            previousValue: current,
             newValue: value,
-            timestamp: new Date().toISOString()
           });
         }
         set({ warpFullyComplete: value });
       },
       userClickedStart: false,
       setUserClickedStart: (value) => {
-        if (typeof window !== 'undefined') {
-          console.log("🚀 HeartverseState: setUserClickedStart", {
-            previousValue: get().userClickedStart,
+        const current = get().userClickedStart;
+        // Guard: skip if value unchanged
+        if (current === value) return;
+        if (isDebug()) {
+          debugLog("🚀 HeartverseState: setUserClickedStart", {
+            previousValue: current,
             newValue: value,
-            timestamp: new Date().toISOString()
           });
         }
         set({ userClickedStart: value });
@@ -75,29 +84,41 @@ export const useUIState = create<UIState>()(
       // Planetarium camera + selection state (non-persistent)
       selectedPlanetId: null,
       setSelectedPlanetId: (id) => {
-        if (typeof window !== 'undefined') {
-          console.log('🎯 UIState: setSelectedPlanetId', { id });
+        const current = get().selectedPlanetId;
+        // Guard: skip if value unchanged
+        if (current === id) return;
+        if (isDebug()) {
+          debugLog('🎯 UIState: setSelectedPlanetId', { from: current, to: id });
         }
         set({ selectedPlanetId: id });
       },
       focusedPlanetId: null,
       setFocusedPlanetId: (id) => {
-        if (typeof window !== 'undefined') {
-          console.log('🎯 UIState: setFocusedPlanetId', { id });
+        const current = get().focusedPlanetId;
+        // Guard: skip if value unchanged
+        if (current === id) return;
+        if (isDebug()) {
+          debugLog('🎯 UIState: setFocusedPlanetId', { from: current, to: id });
         }
         set({ focusedPlanetId: id });
       },
       cameraMode: 'free',
       setCameraMode: (mode) => {
-        if (typeof window !== 'undefined') {
-          console.log('🎯 UIState: setCameraMode', { mode });
+        const current = get().cameraMode;
+        // Guard: skip if value unchanged
+        if (current === mode) return;
+        if (isDebug()) {
+          debugLog('🎯 UIState: setCameraMode', { from: current, to: mode });
         }
         set({ cameraMode: mode });
       },
       isUserInteracting: false,
       setIsUserInteracting: (v) => {
-        if (typeof window !== 'undefined') {
-          console.log('🎯 UIState: setIsUserInteracting', { v });
+        const current = get().isUserInteracting;
+        // Guard: skip if value unchanged
+        if (current === v) return;
+        if (isDebug()) {
+          debugLog('🎯 UIState: setIsUserInteracting', { from: current, to: v });
         }
         set({ isUserInteracting: v });
       },

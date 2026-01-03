@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { isDebug, debugLog } from "@/lib/debug";
 
 export type ElementOfDay = "heart" | "water" | "lightning" | "darkness" | null;
 
@@ -34,6 +35,21 @@ function normalizeElement(s: string | null | undefined): ElementOfDay {
   return null;
 }
 
+// Module-level cache to prevent refetching within the same session
+const fetchCache = new Map<string, {
+  element: ElementOfDay;
+  rewardKey: string | null;
+  intention: string | null;
+  relicLabel: string | null;
+  relicImageUrl: string | null;
+  serverDate: string;
+  isClaimed: boolean;
+  timestamp: number;
+}>();
+
+// Cache TTL: 5 minutes (prevents excessive refetches but allows daily update)
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
 export function useElementOfDayClaim(): ElementOfDayClaimState {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -44,16 +60,45 @@ export function useElementOfDayClaim(): ElementOfDayClaimState {
   const [relicImageUrl, setRelicImageUrl] = useState<string | null>(null);
   const [isClaimed, setIsClaimed] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Store the server date to ensure consistency
-  const [serverDate, setServerDate] = useState<string | null>(null);
 
-  // Key based on user and server date (if available)
-  const todayKey = useMemo(() => `${user?.id || "anon"}:${serverDate || "init"}`, [user?.id, serverDate]);
-  const lastFetchRef = useRef<string | null>(null);
+  // Refs to track fetch status and prevent duplicate fetches
+  const isFetchingRef = useRef(false);
+  const didInitialFetchRef = useRef(false);
+  const lastUserIdRef = useRef<string | null | undefined>(undefined);
 
-  const fetchToday = useCallback(async () => {
+  // Stable user ID for comparison
+  const userId = user?.id ?? null;
+
+  const fetchToday = useCallback(async (forceRefetch = false) => {
+    // Prevent concurrent fetches
+    if (isFetchingRef.current) {
+      return;
+    }
+
+    // Check cache first
+    const cacheKey = `${userId || "anon"}`;
+    const cached = fetchCache.get(cacheKey);
+    const now = Date.now();
+
+    if (!forceRefetch && cached && (now - cached.timestamp) < CACHE_TTL_MS) {
+      // Use cached data
+      if (isDebug()) {
+        debugLog('[useElementOfDayClaim] Using cached data for', cacheKey);
+      }
+      setElement(cached.element);
+      setRewardKey(cached.rewardKey);
+      setIntention(cached.intention);
+      setRelicLabel(cached.relicLabel);
+      setRelicImageUrl(cached.relicImageUrl);
+      setIsClaimed(cached.isClaimed);
+      setLoading(false);
+      return;
+    }
+
+    isFetchingRef.current = true;
     setLoading(true);
     setError(null);
+
     try {
       // Fetch today's element from server API (uses server time in America/New_York)
       const res = await fetch("/api/element-of-day");
@@ -69,7 +114,6 @@ export function useElementOfDayClaim(): ElementOfDayClaimState {
         setIntention(null);
         setRelicLabel(null);
         setRelicImageUrl(null);
-        setServerDate(null);
       } else {
         const normalized = normalizeElement(data.element);
         setElement(normalized);
@@ -77,27 +121,47 @@ export function useElementOfDayClaim(): ElementOfDayClaimState {
         setIntention(data.intentionOfDay ?? null);
         setRelicLabel(data.relicLabel ?? null);
         setRelicImageUrl(data.relicImageUrl ?? null);
-        setServerDate(data.serverDate);
-        console.log('[useElementOfDayClaim] Fetched data:', { element: normalized, intention: data.intentionOfDay, relicLabel: data.relicLabel });
-      }
 
-      // Check claim status for this user using server date
-      const dateToCheck = data.serverDate;
-      if (user?.id && dateToCheck) {
-        const { count, error: claimErr } = await supabaseBrowser
-          .from("user_element_claims")
-          .select("*", { count: "exact", head: true })
-          .eq("user_id", user.id)
-          .eq("day", dateToCheck);
-
-        if (claimErr) {
-          console.warn("useElementOfDayClaim: user_element_claims fetch error:", claimErr.message);
-          setIsClaimed(false);
-        } else {
-          setIsClaimed((count ?? 0) > 0);
+        if (isDebug()) {
+          debugLog('[useElementOfDayClaim] Fetched data:', {
+            element: normalized,
+            intention: data.intentionOfDay,
+            relicLabel: data.relicLabel
+          });
         }
-      } else {
-        setIsClaimed(false);
+
+        // Check claim status for this user using server date
+        const dateToCheck = data.serverDate;
+        let claimStatus = false;
+
+        if (userId && dateToCheck) {
+          const { count, error: claimErr } = await supabaseBrowser
+            .from("user_element_claims")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", userId)
+            .eq("day", dateToCheck);
+
+          if (claimErr) {
+            console.warn("useElementOfDayClaim: user_element_claims fetch error:", claimErr.message);
+            claimStatus = false;
+          } else {
+            claimStatus = (count ?? 0) > 0;
+          }
+        }
+
+        setIsClaimed(claimStatus);
+
+        // Update cache
+        fetchCache.set(cacheKey, {
+          element: normalized,
+          rewardKey: data.relicKey ?? null,
+          intention: data.intentionOfDay ?? null,
+          relicLabel: data.relicLabel ?? null,
+          relicImageUrl: data.relicImageUrl ?? null,
+          serverDate: data.serverDate,
+          isClaimed: claimStatus,
+          timestamp: now,
+        });
       }
     } catch (err) {
       console.error("useElementOfDayClaim: fetch error", err);
@@ -108,22 +172,28 @@ export function useElementOfDayClaim(): ElementOfDayClaimState {
       setIsClaimed(false);
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
-  }, [user?.id]);
+  }, [userId]); // Only depends on userId
 
+  // Effect to fetch on mount and when user changes
   useEffect(() => {
-    // Initial fetch
-    if (lastFetchRef.current === null) {
-      lastFetchRef.current = "init";
+    // Track if user changed
+    const userChanged = lastUserIdRef.current !== userId;
+    lastUserIdRef.current = userId;
+
+    // Initial fetch (only once per mount)
+    if (!didInitialFetchRef.current) {
+      didInitialFetchRef.current = true;
       fetchToday();
       return;
     }
-    // Re-fetch when user changes (but only if we already fetched once)
-    if (lastFetchRef.current !== todayKey && serverDate) {
-      lastFetchRef.current = todayKey;
-      fetchToday();
+
+    // Refetch when user changes (logged in / logged out)
+    if (userChanged) {
+      fetchToday(true); // Force refetch on user change
     }
-  }, [todayKey, fetchToday, serverDate]);
+  }, [userId, fetchToday]);
 
   const claim = useCallback(async (): Promise<ClaimRPCResponse | null> => {
     setError(null);
@@ -141,10 +211,18 @@ export function useElementOfDayClaim(): ElementOfDayClaimState {
 
       const resp = data as ClaimRPCResponse;
       const normalized = normalizeElement(resp?.element);
+
       if (typeof resp?.ok !== "undefined") {
         // Update local state from RPC response
         if (resp.ok || resp.already_claimed) {
           setIsClaimed(true);
+
+          // Update cache with claimed status
+          const cacheKey = `${userId || "anon"}`;
+          const cached = fetchCache.get(cacheKey);
+          if (cached) {
+            fetchCache.set(cacheKey, { ...cached, isClaimed: true, timestamp: Date.now() });
+          }
         }
         if (typeof resp.reward_key !== "undefined") setRewardKey(resp.reward_key ?? null);
         if (typeof resp.intention_of_day !== "undefined") setIntention(resp.intention_of_day ?? null);
@@ -157,7 +235,10 @@ export function useElementOfDayClaim(): ElementOfDayClaimState {
       setError("Couldn't claim reward");
       return null;
     }
-  }, []);
+  }, [userId]);
+
+  // Stable refetch function that forces cache refresh
+  const refetch = useCallback(() => fetchToday(true), [fetchToday]);
 
   return {
     loading,
@@ -169,7 +250,6 @@ export function useElementOfDayClaim(): ElementOfDayClaimState {
     isClaimed,
     error,
     claim,
-    refetch: fetchToday,
+    refetch,
   };
 }
-
