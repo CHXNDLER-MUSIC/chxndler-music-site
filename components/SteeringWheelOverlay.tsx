@@ -73,7 +73,9 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
   const showTestCelebrations = process.env.NEXT_PUBLIC_SHOW_TEST_CELEBRATIONS === 'true';
 
   // Track if wheel video failed to load (hide wheel gracefully if video assets missing)
-  const [wheelVideoFailed, setWheelVideoFailed] = useState(false);
+  // Default to true since wheel video files don't exist in /public/cockpit/
+  // This prevents 404 requests for wheel_transparent.mp4/webm
+  const [wheelVideoFailed, setWheelVideoFailed] = useState(true);
 
   // Use the uiUnlocked prop passed from DashboardApp instead of reading from window
   const isUIUnlocked = uiUnlocked;

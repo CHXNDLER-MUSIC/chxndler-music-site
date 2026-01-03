@@ -268,8 +268,20 @@ export function useDailySongProgress({
     }
   }, []);
 
+  // Track previous values to only log when they actually change
+  const prevTrackSlugRef = useRef<string | null>(null);
+  const prevIsPlayingRef = useRef<boolean>(false);
+
   // Main progress tracking effect
   useEffect(() => {
+    // Only log when relevant values change
+    const trackChanged = trackSlug !== prevTrackSlugRef.current;
+    const playStateChanged = isPlaying !== prevIsPlayingRef.current;
+    if (trackChanged || playStateChanged) {
+      prevTrackSlugRef.current = trackSlug;
+      prevIsPlayingRef.current = isPlaying;
+    }
+
     if (!enabled) return;
     if (!audioElement) return;
     if (!trackSlug) return;

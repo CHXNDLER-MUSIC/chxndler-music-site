@@ -906,6 +906,41 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     }
   }, [curTrack?.slug, homeMode]);
 
+  // Compute YouTube sky URL as a stable useMemo to avoid re-computation on every render
+  const computedYoutubeUrl = useMemo(() => {
+    // Prioritize element warp YouTube URL when warping to element planets
+    if (elementWarpYoutubeUrl) return elementWarpYoutubeUrl;
+
+    const slug = curTrack?.slug;
+    const mapped = slug ? youtubeSkyFor(slug) : undefined;
+
+    // If a song is selected (curTrack is set and we're not in home mode), show its sky
+    if (slug && mapped && !homeMode) {
+      return mapped;
+    }
+
+    // On the homepage: during intro show lightspeed sky, after landing show calm space sky
+    if (homeMode) {
+      return isLanded ? HOME_YOUTUBE_SKY : 'https://youtu.be/KFssNa5WvKc';
+    }
+
+    // Fallback: if we have a mapped sky but conditions above didn't match
+    if (slug && mapped) {
+      return mapped;
+    }
+
+    return undefined;
+  }, [elementWarpYoutubeUrl, curTrack?.slug, homeMode, isLanded]);
+
+  // Log only when computedYoutubeUrl actually changes (not on every render)
+  const prevYoutubeUrlRef = React.useRef(undefined);
+  useEffect(() => {
+    if (computedYoutubeUrl !== prevYoutubeUrlRef.current) {
+      debugLog('[SKY] youtubeUrl changed:', { from: prevYoutubeUrlRef.current, to: computedYoutubeUrl });
+      prevYoutubeUrlRef.current = computedYoutubeUrl;
+    }
+  }, [computedYoutubeUrl]);
+
   // Note: Song selection is now handled directly by calling onSongChange from user gestures
 
   // (Removed) implicit sky change on track change to avoid accidental warps.
@@ -1978,74 +2013,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           style={{ top: 0, left: 0, right: 0, bottom: 0 }}
           aria-hidden="true" 
         />
-        {/* Render the steering wheel video immediately on opening screen */}
-        <div
-          style={{
-            position: 'fixed',
-            // Slight upward nudge to align with cockpit wheel area
-            bottom: '0vh',
-            left: '50vw',
-            transform: 'translateX(-50%)',
-            width: 'calc(clamp(460px, 80vmin, 980px) * 0.8)',
-            height: 'calc(clamp(460px, 80vmin, 980px) * 0.8)',
-            // Above dimming overlay (z-[89]) and lightbeam base (z-[100]) to ensure visibility
-            zIndex: 101,
-            pointerEvents: 'none',
-            contain: 'layout paint',
-            willChange: 'opacity, transform',
-            outline: (typeof window !== 'undefined' && window.localStorage.getItem('WHEEL_DEBUG') === '1') ? '2px dashed rgba(255,0,0,0.5)' : undefined,
-          }}
-        >
-          {(() => {
-            const isSafariUA = (() => {
-              try {
-                const ua = navigator.userAgent;
-                return /safari/i.test(ua) && !/chrome|crios|android/i.test(ua);
-              } catch { return false; }
-            })();
-            const canPlayHvc = (() => {
-              try {
-                const v = document.createElement('video');
-                const c1 = v.canPlayType('video/mp4; codecs="hvc1"');
-                const c2 = v.canPlayType('video/mp4; codecs="hev1"');
-                const c3 = v.canPlayType('video/quicktime');
-                return !!(c1 || c2 || c3);
-              } catch { return false; }
-            })();
-            const wheelSrc = (isSafariUA && canPlayHvc)
-              ? "/cockpit/wheel_transparent.mov"
-              : "/cockpit/wheel_less_transparent.webm";
-            if (wheelPlain) {
-              return (
-            <video
-              src={wheelSrc}
-              autoPlay
-              muted
-              loop
-              playsInline
-              aria-label="wheel-video-plain"
-              style={{ width: '100%', height: '100%', objectFit: 'cover', background: 'transparent' }}
-              onError={(e) => { e.currentTarget.style.display = 'none'; }}
-            />
-            );
-            }
-            return (
-            <LumaKeyVideo
-              srcMp4={wheelSrc}
-              threshold={0.02}
-              softness={0.04}
-              saturation={1.0}
-              contrast={1.15}
-              offsetYRatio={0}
-              paused={false}
-              forceEnabled
-              highQuality
-              className="block"
-              style={{ width: '100%', height: '100%', background: 'transparent' }}
-            />
-            );
-          })()}
-        </div>
+        {/* Steering wheel video disabled - video files don't exist in /public/cockpit/ */}
+        {/* Re-enable when wheel_transparent.mp4/.webm or wheel_less_transparent.webm are added */}
       </main>
     );
   }
@@ -2139,41 +2108,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         offsetY="-1vh"
         // Use the current track's YouTube sky as soon as a selection is in progress
         // or playback has started; keep looping even if audio pauses.
-        youtubeUrl={(() => {
-          // Prioritize element warp YouTube URL when warping to element planets
-          if (elementWarpYoutubeUrl) return elementWarpYoutubeUrl;
-
-          const slug = curTrack?.slug;
-          const mapped = slug ? youtubeSkyFor(slug) : undefined;
-
-          // Debug logging for sky selection
-          console.log('[SKY] Computing youtubeUrl:', { slug, mapped, homeMode, isLanded, pendingTrackPlay, userSelected });
-
-          // If a song is selected (curTrack is set and we're not in home mode), show its sky
-          // Check song sky FIRST before home mode to ensure song selection takes priority
-          if (slug && mapped && !homeMode) {
-            console.log('[SKY] Returning song sky:', mapped);
-            return mapped;
-          }
-
-          // On the homepage:
-          // - During intro (before START), show the lightspeed sky
-          // - After landing, switch to the calm space sky
-          if (homeMode) {
-            const homeSky = isLanded ? HOME_YOUTUBE_SKY : 'https://youtu.be/KFssNa5WvKc';
-            console.log('[SKY] Returning home sky:', homeSky);
-            return homeSky;
-          }
-
-          // Fallback: if we have a mapped sky but conditions above didn't match
-          if (slug && mapped) {
-            console.log('[SKY] Returning fallback song sky:', mapped);
-            return mapped;
-          }
-
-          console.log('[SKY] Returning undefined');
-          return undefined;
-        })()}
+        youtubeUrl={computedYoutubeUrl}
         // Use provided YouTube clip for lightspeed overlay on opening and Start
         lightspeedYoutubeUrl={'https://youtu.be/KFssNa5WvKc'}
         onWarpSfxEnd={() => {

@@ -1756,38 +1756,41 @@ export default function Pure3DPlanets({
     console.log('[WARP] warpToPlanet:', key, isElementPlanet ? '(element)' : '(song)');
   }, [sceneReady, setCameraMode, setFocusedPlanetId]);
 
+  // Ref to hold latest warpToPlanet to avoid re-adding event listeners
+  const warpToPlanetRef = React.useRef(warpToPlanet);
+  React.useEffect(() => { warpToPlanetRef.current = warpToPlanet; }, [warpToPlanet]);
+
+  // Track if warp listeners are already set up to prevent duplicate setup
+  const warpListenersSetupRef = React.useRef(false);
+
   // Listen for warp events fired from dropdown, warp helper, and element warps
   useEffect(() => {
-    // Handler for song warps (planet:warp-to-song)
+    if (typeof window === 'undefined') return;
+    if (warpListenersSetupRef.current) return; // Already set up
+    warpListenersSetupRef.current = true;
+
+    // Handler for song warps (planet:warp-to-song) - uses ref to get latest function
     const songHandler = (e: any) => {
       const id = e?.detail?.id;
-      const source = e?.detail?.source;
-      console.log('[Pure3DPlanets] Received planet:warp-to-song event! id:', id, 'source:', source);
       if (id) {
-        console.log('[Pure3DPlanets] Calling warpToPlanet with:', id);
-        warpToPlanet(id);
-      } else {
-        console.log('[Pure3DPlanets] ERROR: No id in event detail');
+        warpToPlanetRef.current(id);
       }
     };
     // Handler for element warps (planet:warp)
     const elementHandler = (e: any) => {
       const element = e?.detail?.element;
-      console.log('[Pure3DPlanets] Received planet:warp event! element:', element);
-      if (element) warpToPlanet(element);
+      if (element) warpToPlanetRef.current(element);
     };
-    if (typeof window !== 'undefined') {
-      console.log('[Pure3DPlanets] Setting up warp event listeners');
-      window.addEventListener('planet:warp-to-song', songHandler);
-      window.addEventListener('planet:warp', elementHandler);
-    }
+
+    window.addEventListener('planet:warp-to-song', songHandler);
+    window.addEventListener('planet:warp', elementHandler);
+
     return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('planet:warp-to-song', songHandler);
-        window.removeEventListener('planet:warp', elementHandler);
-      }
+      warpListenersSetupRef.current = false;
+      window.removeEventListener('planet:warp-to-song', songHandler);
+      window.removeEventListener('planet:warp', elementHandler);
     };
-  }, [warpToPlanet]);
+  }, []); // Empty deps - set up once, use ref for latest warpToPlanet
 
   if (!isClient) {
     // Return empty container to prevent flash of loading text

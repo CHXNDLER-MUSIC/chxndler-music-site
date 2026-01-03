@@ -236,6 +236,7 @@ type AudioState = {
   isLoading: boolean;
   pendingTrack: string | null;
   warpCompleted: boolean;
+  trackingSlug: string | null; // Original slug for daily progress tracking (not normalized)
 };
 
 type AudioControls = {
@@ -269,7 +270,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     currentTrack: null,
     isLoading: false,
     pendingTrack: null,
-    warpCompleted: false
+    warpCompleted: false,
+    trackingSlug: null
   });
 
   // Listen session tracking - robust lifecycle
@@ -721,9 +723,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   // Daily song progress tracking - awards HeartCoin at 50% completion
   // Uses audioRef.current as source of truth for currentTime/duration
+  // trackingSlug is the original slug (not normalized) for accurate DB lookup
   useDailySongProgress({
     audioElement: audioRef.current,
-    trackSlug: state.currentTrack?.id || null,
+    trackSlug: state.trackingSlug || null,
     isPlaying: state.playing,
     enabled: true // Only tracks when authenticated user is playing a song
   });
@@ -946,7 +949,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
       // Update currentTrack state FIRST to prevent the playerStore subscription
       // from triggering a duplicate playTrack call
-      setState(s => ({ ...s, currentTrack: trackInfo }));
+      // Also set trackingSlug with original trackId for daily progress tracking
+      setState(s => ({ ...s, currentTrack: trackInfo, trackingSlug: trackId }));
 
       // Update playerStore.mainId to keep play/pause button in sync
       // This ensures the player UI shows the correct track after warp
@@ -973,7 +977,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         pendingTrack: normId,
         warpCompleted: false,
         src: trackSource,
-        currentTrack: trackInfo
+        currentTrack: trackInfo,
+        trackingSlug: trackId // Keep original slug for tracking
       }));
 
       // Pre-load the track so it's ready to play when warp completes
@@ -1028,7 +1033,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       console.log(`🎵 playTrack: ${trackId} -> ${normId} -> ${trackSource}`);
 
       // Update current track info immediately
-      setState(s => ({ ...s, currentTrack: trackInfo, isLoading: true }));
+      // Store original trackId as trackingSlug for daily progress tracking (before normalization)
+      setState(s => ({ ...s, currentTrack: trackInfo, isLoading: true, trackingSlug: trackId }));
 
       // Only stop audio if we're switching to a different track
       const currentAudio = audioRef.current;
@@ -1235,7 +1241,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             // Set current track info immediately for UI updates
             const trackInfo = TRACK_INFO[currentMainId];
             if (trackInfo) {
-              setState(s => ({ ...s, currentTrack: trackInfo }));
+              setState(s => ({ ...s, currentTrack: trackInfo, trackingSlug: currentMainId }));
             }
 
             // A new song was selected via playerStore.setMain() - this triggers a warp effect
@@ -1263,23 +1269,21 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   // Listen for direct song play requests (e.g., from daily quests LISTEN button)
   // This bypasses the warp completion check for immediate playback
+  // Track if listener is already set up to prevent duplicate setup logs
+  const listenerSetupRef = useRef(false);
   useEffect(() => {
     if (typeof window === 'undefined') return;
-
-    console.log('🎵 Setting up song:play-now event listener');
+    if (listenerSetupRef.current) return; // Already set up
+    listenerSetupRef.current = true;
 
     const handleSongPlayNow = (e: CustomEvent) => {
       const trackSlug = e?.detail?.slug;
       const source = e?.detail?.source || 'unknown';
 
-      console.log('🎵 song:play-now event received:', { trackSlug, source });
-
       if (!trackSlug) {
         console.warn('🎵 song:play-now event received without slug');
         return;
       }
-
-      console.log(`🎵 Direct play request from ${source}:`, trackSlug);
 
       // Clear pending track state since we're playing immediately
       setState(s => ({ ...s, pendingTrack: null, warpCompleted: true }));
@@ -1294,7 +1298,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     // Also expose a global function as fallback for direct calls
     (window as any).__playTrackDirect = (slug: string, source: string = 'global') => {
-      console.log(`🎵 Direct play via global function from ${source}:`, slug);
       setState(s => ({ ...s, pendingTrack: null, warpCompleted: true }));
       playTrackRef.current(slug).catch(err => {
         console.error('🎵 Failed to play track:', err);
@@ -1302,7 +1305,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     };
 
     return () => {
-      console.log('🎵 Removing song:play-now event listener');
+      listenerSetupRef.current = false;
       window.removeEventListener('song:play-now', handleSongPlayNow as EventListener);
       delete (window as any).__playTrackDirect;
     };

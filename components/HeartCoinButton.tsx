@@ -2972,7 +2972,18 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       {quest.quest_key === 'TAP_ELEMENT_OF_DAY' ? (
                         <>
                           <span className="text-base font-bold">+</span>
-                          <img src="/elements/relics.webp" alt="Relic" className="w-10 h-10 ml-1" style={{ filter: 'drop-shadow(0 0 8px yellow) drop-shadow(0 0 16px yellow)' }} />
+                          <img
+                            src="/elements/relics.webp"
+                            alt="Relic"
+                            className="w-10 h-10 ml-1"
+                            style={{
+                              filter: isQuestCompleted(quest)
+                                ? 'grayscale(0.6) brightness(0.5)'
+                                : 'drop-shadow(0 0 8px yellow) drop-shadow(0 0 16px yellow)',
+                              opacity: isQuestCompleted(quest) ? 0.5 : 1,
+                              transition: 'filter 0.3s ease, opacity 0.3s ease'
+                            }}
+                          />
                         </>
                       ) : (
                         <>
@@ -2990,7 +3001,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 src="/elements/elementals.webp"
                                 alt=""
                                 className="w-8 h-8"
-                                style={{ filter: 'drop-shadow(0 0 8px cyan) drop-shadow(0 0 16px cyan)' }}
+                                style={{
+                                  filter: isQuestCompleted(quest)
+                                    ? 'grayscale(0.6) brightness(0.5)'
+                                    : 'drop-shadow(0 0 8px cyan) drop-shadow(0 0 16px cyan)',
+                                  opacity: isQuestCompleted(quest) ? 0.5 : 1,
+                                  transition: 'filter 0.3s ease, opacity 0.3s ease'
+                                }}
                               />
                               Element of the Day
                             </>
@@ -3161,7 +3178,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               alt={`${elementOfDay || 'heart'} element`}
                               className="w-12 h-12 rounded-full object-cover relative"
                               style={{
-                                filter: isQuestCompleted(quest) ? 'grayscale(1)' : 'none'
+                                filter: isQuestCompleted(quest) ? 'grayscale(0.6) brightness(0.5)' : 'none',
+                                opacity: isQuestCompleted(quest) ? 0.5 : 1,
+                                transition: 'filter 0.3s ease, opacity 0.3s ease'
                               }}
                             />
                           </div>

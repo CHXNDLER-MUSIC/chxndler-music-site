@@ -81,22 +81,28 @@ export default function SkyboxVideo({
   // Compute YouTube autoplay embed if provided
   const { ytEmbedUrl, ytThumbUrl } = React.useMemo(() => {
     try {
-      console.log('[SkyboxVideo] Computing embed for youtubeUrl:', youtubeUrl);
       if (!youtubeUrl) {
-        console.log('[SkyboxVideo] No youtubeUrl provided');
         return { ytEmbedUrl: null as string | null, ytThumbUrl: null as string | null };
       }
       const { toAutoplayingYouTubeEmbed, parseYouTubeId } = require("@/lib/youtube");
       const embed = toAutoplayingYouTubeEmbed(String(youtubeUrl));
       const id = parseYouTubeId(String(youtubeUrl));
       const thumb = id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null;
-      console.log('[SkyboxVideo] Computed embed:', { embed, id, thumb });
       return { ytEmbedUrl: embed, ytThumbUrl: thumb };
     } catch (err) {
       console.error('[SkyboxVideo] Error computing embed:', err);
       return { ytEmbedUrl: null, ytThumbUrl: null };
     }
   }, [youtubeUrl]);
+
+  // Log only when youtubeUrl actually changes
+  const prevYoutubeUrlRef = React.useRef<string | undefined>(undefined);
+  React.useEffect(() => {
+    if (youtubeUrl !== prevYoutubeUrlRef.current) {
+      if (DEBUG_MEDIA) dlog('[SkyboxVideo] youtubeUrl changed:', { from: prevYoutubeUrlRef.current, to: youtubeUrl, ytEmbedUrl });
+      prevYoutubeUrlRef.current = youtubeUrl;
+    }
+  }, [youtubeUrl, ytEmbedUrl]);
   const [ytReady, setYtReady] = React.useState(false);
   // Lightspeed YouTube embed (optional)
   const { lsYtEmbedUrl, lsYtThumbUrl } = React.useMemo(() => {

@@ -1197,7 +1197,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                           src="/relics/streak_shield.webp"
                           alt="Streak Shield"
                           onClick={() => { sfx.play('flip'); setSelectedBoostPopup(selectedBoostPopup === 'streak' ? null : 'streak'); }}
-                          className="w-8 h-8 object-contain cursor-pointer hover:scale-110 transition-transform"
+                          className="w-10 h-10 object-contain cursor-pointer hover:scale-110 transition-transform"
                           style={{
                             filter: isActive ? 'drop-shadow(0 0 6px rgba(0,255,255,0.8))' : 'grayscale(100%) opacity(0.4)',
                             transition: 'filter 0.3s ease, transform 0.2s ease'
