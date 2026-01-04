@@ -451,13 +451,13 @@ export async function trackEvent(
     const { createClient } = await import('@/lib/supabaseClient');
     const supabase = createClient();
 
-    // Primary path: public.events_v2 with event_name column
+    // Primary path: public.events_v2 with name column
     let { error } = await supabase
       .from('events_v2')
       .insert({
-        event_name: eventName,
+        name: eventName,
         source: options?.source ?? 'unknown',
-        metadata: options?.metadata ?? null,
+        metadata: options?.metadata ?? {},
         user_id: options?.userId ?? null,
       });
 
@@ -523,7 +523,7 @@ export async function loadEventsV2Analytics() {
       const { count, error } = await supabase
         .from('events_v2')
         .select('*', { count: 'exact', head: true })
-        .eq('event_name', query.name);
+        .eq('name', query.name);
       
       if (error) {
         console.error(`[Analytics] Failed to load ${query.name} count:`, error);
@@ -547,7 +547,7 @@ export async function getEventCount(eventName: string) {
     const { count, error } = await supabase
       .from('events_v2')
       .select('*', { count: 'exact', head: true })
-      .eq('event_name', eventName);
+      .eq('name', eventName);
     
     if (error) {
       console.error(`[Analytics] Failed to get count for ${eventName}:`, error);

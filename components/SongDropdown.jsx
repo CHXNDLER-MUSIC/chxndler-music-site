@@ -77,7 +77,10 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
   // Get element display name (uppercase) for element warps
   const elementDisplayName = useMemo(() => {
     if (!isElementWarp) return null;
-    return String(currentId).toUpperCase();
+    const id = String(currentId).toUpperCase();
+    // Display "Heartverse" instead of "CENTER" for the center planet
+    if (id === 'CENTER') return 'Heartverse';
+    return id;
   }, [isElementWarp, currentId]);
 
   // Set mounted state for portal

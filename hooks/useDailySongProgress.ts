@@ -35,6 +35,7 @@ interface UseDailySongProgressOptions {
   trackSlug: string | null;
   isPlaying: boolean;
   enabled?: boolean;
+  songOfDaySlug?: string | null; // Only award HeartCoin if playing Song of the Day
 }
 
 // Helper: Get current date in NY timezone as YYYY-MM-DD
@@ -54,7 +55,8 @@ export function useDailySongProgress({
   audioElement,
   trackSlug,
   isPlaying,
-  enabled = true
+  enabled = true,
+  songOfDaySlug = null
 }: UseDailySongProgressOptions) {
   // Track completion state per song per day to prevent double-awards
   const completedRef = useRef<Set<string>>(new Set()); // Set of "songId:day" keys
@@ -71,20 +73,14 @@ export function useDailySongProgress({
     }
 
     try {
-      console.log(`🎵 Daily progress: Querying songs table for slug "${slug}"`);
       const { data, error } = await supabaseBrowser
         .from('songs')
         .select('id')
         .eq('slug', slug)
         .single();
 
-      if (error) {
-        console.log(`🎵 Daily progress: Error querying song for slug "${slug}":`, error.message, error.code);
-        return null;
-      }
-
-      if (!data) {
-        console.log(`🎵 Daily progress: No song found for slug "${slug}"`);
+      if (error || !data) {
+        console.warn(`🎵 Daily progress: Song not found for slug "${slug}"`);
         return null;
       }
 
@@ -197,15 +193,6 @@ export function useDailySongProgress({
         progressData.completed_at = new Date().toISOString();
       }
 
-      console.log('🎵 Daily progress: Upserting progress data:', {
-        user_id: userId.substring(0, 8) + '...',
-        song_id: songId.substring(0, 8) + '...',
-        day,
-        listened_seconds: safeListenedSeconds,
-        duration_seconds: safeDurationSeconds,
-        completion_percent: safePercent
-      });
-
       const { error } = await supabaseBrowser
         .from('user_song_daily_progress')
         .upsert(progressData, {
@@ -214,9 +201,7 @@ export function useDailySongProgress({
         });
 
       if (error) {
-        console.error('🎵 Daily progress: Upsert failed:', error.message, error.code, error.details);
-      } else {
-        console.log(`🎵 Daily progress: Upsert SUCCESS - ${Math.floor(completionPercent)}% complete${markCompleted ? ' (COMPLETED!)' : ''}`);
+        console.error('🎵 Daily progress: Upsert failed:', error.message);
       }
     } catch (err) {
       console.error('🎵 Daily progress: Error upserting:', err);
@@ -283,26 +268,33 @@ export function useDailySongProgress({
     }
   }, []);
 
-  // Track previous values to only log when they actually change
-  const prevTrackSlugRef = useRef<string | null>(null);
-  const prevIsPlayingRef = useRef<boolean>(false);
-
   // Main progress tracking effect
   useEffect(() => {
-    // Only log when relevant values change
-    const trackChanged = trackSlug !== prevTrackSlugRef.current;
-    const playStateChanged = isPlaying !== prevIsPlayingRef.current;
-    if (trackChanged || playStateChanged) {
-      prevTrackSlugRef.current = trackSlug;
-      prevIsPlayingRef.current = isPlaying;
+    // Debug: Log all conditions
+    console.log('🎵 Daily progress effect triggered:', {
+      enabled,
+      hasAudioElement: !!audioElement,
+      trackSlug,
+      isPlaying,
+      songOfDaySlug
+    });
+
+    if (!enabled) {
+      console.log('🎵 Daily progress: Skipping - not enabled');
+      return;
     }
-
-    if (!enabled) return;
-    if (!audioElement) return;
-    if (!trackSlug) return;
-    if (!isPlaying) return;
-
-    console.log('🎵 Daily progress: All conditions met, starting tracking for:', trackSlug);
+    if (!audioElement) {
+      console.log('🎵 Daily progress: Skipping - no audio element');
+      return;
+    }
+    if (!trackSlug) {
+      console.log('🎵 Daily progress: Skipping - no track slug');
+      return;
+    }
+    if (!isPlaying) {
+      console.log('🎵 Daily progress: Skipping - not playing');
+      return;
+    }
 
     let intervalId: number | null = null;
     let mounted = true;
@@ -310,25 +302,24 @@ export function useDailySongProgress({
     const trackProgress = async () => {
       if (!mounted) return;
 
-      console.log('🎵 Daily progress: trackProgress called for:', trackSlug);
+      console.log('🎵 Daily progress: trackProgress called for slug:', trackSlug);
 
       // Get current user
       const { data: { session } } = await supabaseBrowser.auth.getSession();
       if (!session?.user?.id) {
-        console.log('🎵 Daily progress: No authenticated user');
+        console.log('🎵 Daily progress: No authenticated user, skipping');
         return;
       }
       const userId = session.user.id;
-      console.log('🎵 Daily progress: Got user session:', userId.substring(0, 8) + '...');
+      console.log('🎵 Daily progress: User authenticated:', userId.substring(0, 8) + '...');
 
       // Get song UUID from slug
-      console.log('🎵 Daily progress: Looking up song ID for slug:', trackSlug);
       const songId = await getSongId(trackSlug);
       if (!songId) {
-        console.log('🎵 Daily progress: getSongId returned null for:', trackSlug);
+        console.log('🎵 Daily progress: Could not get song ID for slug:', trackSlug);
         return;
       }
-      console.log('🎵 Daily progress: Found song ID:', songId.substring(0, 8) + '...');
+      console.log('🎵 Daily progress: Got song ID:', songId.substring(0, 8) + '...');
 
       currentSongIdRef.current = songId;
       const day = getTodayNY();
@@ -347,15 +338,21 @@ export function useDailySongProgress({
       // IMMEDIATE initial upsert: Create the row right away when playback starts
       // This ensures the row exists in user_song_daily_progress immediately on LISTEN click
       const { currentTime: initialTime, duration: initialDuration } = audioElement;
+      console.log('🎵 Daily progress: Audio state for initial upsert:', {
+        currentTime: initialTime,
+        duration: initialDuration,
+        isValidDuration: initialDuration && initialDuration > 0 && isFinite(initialDuration)
+      });
+
       if (initialDuration && initialDuration > 0 && isFinite(initialDuration)) {
         const initialPercent = (initialTime / initialDuration) * 100;
-        console.log(`🎵 Daily progress: Creating initial row for ${trackSlug} (${initialPercent.toFixed(1)}%)`);
+        console.log('🎵 Daily progress: Creating initial row with percent:', initialPercent.toFixed(2));
         await upsertProgress(userId, songId, day, initialTime, initialDuration, initialPercent, false);
         lastUpsertRef.current = Date.now();
         initialRowCreatedRef.current = true;
+        console.log('🎵 Daily progress: Initial row created successfully');
       } else {
-        // Duration not ready yet - the interval will create it on first valid tick
-        console.log(`🎵 Daily progress: Waiting for duration to create initial row for ${trackSlug}`);
+        console.log('🎵 Daily progress: Skipping initial upsert - duration not yet available');
       }
 
       // Start tracking interval (1s)
@@ -369,7 +366,6 @@ export function useDailySongProgress({
         // Wait for valid duration (handle Safari loadedmetadata timing)
         // Also check for Infinity which can occur with streaming audio
         if (!duration || duration <= 0 || isNaN(duration) || !isFinite(duration)) {
-          console.log('🎵 Daily progress: Waiting for valid duration...');
           return;
         }
 
@@ -388,7 +384,6 @@ export function useDailySongProgress({
 
         // Mark initial row as created
         if (isInitialRow) {
-          console.log(`🎵 Daily progress: Creating initial row via interval for ${trackSlug}`);
           initialRowCreatedRef.current = true;
         }
 
@@ -406,9 +401,16 @@ export function useDailySongProgress({
           shouldComplete
         );
 
-        // Award HeartCoin if completing for the first time
+        // Award HeartCoin if completing for the first time AND it's the Song of the Day
         if (shouldComplete) {
-          await awardCompletionHeartCoin(userId, songId, trackSlug, day);
+          // Only award HeartCoin for Song of the Day
+          const isSongOfDay = songOfDaySlug && trackSlug === songOfDaySlug;
+          if (isSongOfDay) {
+            await awardCompletionHeartCoin(userId, songId, trackSlug, day);
+            console.log(`🎵 Daily progress: Song of the Day completed! Awarding HeartCoin for ${trackSlug}`);
+          } else {
+            console.log(`🎵 Daily progress: Song completed but not Song of the Day (${trackSlug} !== ${songOfDaySlug}), no HeartCoin awarded`);
+          }
 
           // Clear interval since we're done tracking this song/day
           if (intervalId) {
@@ -432,6 +434,7 @@ export function useDailySongProgress({
     audioElement,
     trackSlug,
     isPlaying,
+    songOfDaySlug,
     getSongId,
     checkExistingProgress,
     upsertProgress,

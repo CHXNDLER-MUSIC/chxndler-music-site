@@ -384,11 +384,9 @@ export interface BonusQuestCompletionResult {
  * Completes a bonus quest for the user with proper tracking and rewards
  * Uses complete_bonus_quest_once_per_day RPC for atomic daily tracking
  *
- * NEW RPC signature: complete_bonus_quest_once_per_day({ p_quest_id })
+ * RPC signature: complete_bonus_quest_once_per_day({ p_quest_id })
  * User is inferred from auth context.
- * Returns: { ok, quest_id, completed_on_date, inserted, heartcoin_awarded }
- * - inserted=true means newly completed, heartcoin_awarded=true means coins given
- * - inserted=false means already completed today (no error, just no new coins)
+ * Returns: { status: "completed" | "already_completed", awarded: boolean, completion_date_ny: "YYYY-MM-DD", heartcoin_balance: number }
  *
  * IMPORTANT: This is the ONLY function that should be used for bonus quest completion.
  * All other legacy functions are deprecated.
@@ -405,8 +403,8 @@ export async function completeBonusQuestOncePerDay(params: {
   }
 
   try {
-    // Call RPC with new signature (user inferred from auth context)
-    const { data: rpcResult, error: rpcError } = await supabase
+    // Call RPC (user inferred from auth context)
+    const { data: rpcResult, error: rpcError, status } = await supabase
       .rpc('complete_bonus_quest_once_per_day', {
         p_quest_id: bonusQuestId
       });
@@ -414,6 +412,11 @@ export async function completeBonusQuestOncePerDay(params: {
     // Handle 404 - RPC function not found (backend updated, need refresh)
     if (rpcError?.code === 'PGRST202' || rpcError?.message?.includes('404') || rpcError?.code === '42883') {
       throw new Error('Quest service updated, hard refresh');
+    }
+
+    // Handle HTTP 409 conflict as already_completed
+    if (status === 409 || rpcError?.code === '409') {
+      return { status: 'already_completed', awarded: false, amount: 0 };
     }
 
     // Handle unique constraint violation (23505) as "already_completed" - NOT an error
@@ -426,18 +429,29 @@ export async function completeBonusQuestOncePerDay(params: {
       throw new Error('Quest failed. Try again.');
     }
 
-    // New response format: { ok, quest_id, completed_on_date, inserted, heartcoin_awarded }
-    const isCompleted = rpcResult?.ok === true;
-    const isNewCompletion = rpcResult?.inserted === true;
-    const heartcoinAwarded = rpcResult?.heartcoin_awarded === true;
+    // New response format: { status: "completed" | "already_completed", awarded: boolean, completion_date_ny: "YYYY-MM-DD", heartcoin_balance: number }
+    const responseStatus = rpcResult?.status;
+    const wasAwarded = rpcResult?.awarded === true;
 
-    if (isCompleted) {
+    // Both "completed" and "already_completed" are success states
+    if (responseStatus === 'completed' || responseStatus === 'already_completed') {
+      return {
+        status: responseStatus,
+        awarded: wasAwarded,
+        amount: wasAwarded ? 1 : 0,
+        data: rpcResult
+      };
+    }
+
+    // Legacy response format fallback: { ok, quest_id, completed_on_date, inserted, heartcoin_awarded }
+    if (rpcResult?.ok === true) {
+      const isNewCompletion = rpcResult?.inserted === true;
+      const heartcoinAwarded = rpcResult?.heartcoin_awarded === true;
+
       if (!isNewCompletion) {
-        // inserted=false means already completed today
         return { status: 'already_completed', awarded: false, amount: 0, data: rpcResult };
       }
 
-      // New completion with coins awarded
       return {
         status: 'completed',
         awarded: heartcoinAwarded,
@@ -453,6 +467,11 @@ export async function completeBonusQuestOncePerDay(params: {
   } catch (error: any) {
     // Catch 23505 error if thrown differently
     if (error?.code === '23505' || error?.message?.includes('23505')) {
+      return { status: 'already_completed', awarded: false, amount: 0 };
+    }
+
+    // Handle 409 conflict in catch block as well
+    if (error?.status === 409 || error?.message?.includes('409')) {
       return { status: 'already_completed', awarded: false, amount: 0 };
     }
 

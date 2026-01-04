@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useDailySongProgress } from "@/hooks/useDailySongProgress";
+import { usePlanetRewardsContext } from "@/components/PlanetRewardsProvider";
 
 // Track info for audio and visual display
 export type TrackInfo = {
@@ -725,22 +726,23 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   // Uses audioRef.current as source of truth for currentTime/duration
   // trackingSlug is the original slug (not normalized) for accurate DB lookup
 
-  // Debug: log what values are being passed to the tracking hook
-  useEffect(() => {
-    if (state.playing || state.trackingSlug) {
-      console.log('🎵 AudioProvider: Tracking hook inputs:', {
-        hasAudioElement: !!audioRef.current,
-        trackingSlug: state.trackingSlug,
-        isPlaying: state.playing
-      });
-    }
-  }, [state.playing, state.trackingSlug]);
+  // Get Song of the Day from PlanetRewardsContext for HeartCoin awards
+  const { songOfDaySlug } = usePlanetRewardsContext();
+
+  // Debug: Log what we're passing to the daily progress hook
+  console.log('🎵 AudioProvider: Passing to useDailySongProgress:', {
+    hasAudioElement: !!audioRef.current,
+    trackingSlug: state.trackingSlug,
+    isPlaying: state.playing,
+    songOfDaySlug
+  });
 
   useDailySongProgress({
     audioElement: audioRef.current,
     trackSlug: state.trackingSlug || null,
     isPlaying: state.playing,
-    enabled: true // Only tracks when authenticated user is playing a song
+    enabled: true, // Only tracks when authenticated user is playing a song
+    songOfDaySlug // Only award HeartCoin for Song of the Day
   });
 
   // Normalize incoming slugs so dropdown selections (e.g. `we're-just-friends`) map to TRACK_INFO ids (e.g. `were-just-friends`)
@@ -1042,8 +1044,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      console.log(`🎵 playTrack: ${trackId} -> ${normId} -> ${trackSource}`);
-      console.log(`🎵 playTrack: Setting trackingSlug to original: "${trackId}"`);
+      console.log(`🎵 playTrack: ${trackId} -> ${normId}`);
 
       // Update current track info immediately
       // Store original trackId as trackingSlug for daily progress tracking (before normalization)
@@ -1126,7 +1127,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
       try {
         // Set playing state immediately for instant UI feedback
-        console.log('🎵 playTrack: Setting playing=true, trackingSlug=' + trackId);
         setState(s => ({ ...s, playing: true, isLoading: false }));
         await a.play();
         console.log('🎵 Successfully started playing:', normId);
@@ -1312,7 +1312,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     // Also expose a global function as fallback for direct calls
     (window as any).__playTrackDirect = (slug: string, source: string = 'global') => {
-      console.log(`🎵 __playTrackDirect called with slug: "${slug}", source: "${source}"`);
       setState(s => ({ ...s, pendingTrack: null, warpCompleted: true }));
       playTrackRef.current(slug).catch(err => {
         console.error('🎵 Failed to play track:', err);

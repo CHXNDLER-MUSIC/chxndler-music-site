@@ -7,6 +7,7 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { track } from "@/lib/analytics";
 import { useBonusQuests } from '@/hooks/useBonusQuests';
+import { useElementOfDayClaim } from '@/hooks/useElementOfDayClaim';
 import { useUserCards } from "@/hooks/useUserCards";
 import { BonusQuestWithCompletion } from '@/types/bonusQuests';
 import { useMerchItems } from '@/hooks/useMerchItems';
@@ -284,6 +285,7 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, onOpenBinder, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, isActive = false, journalCompleted = false, onJournalCompleted, onClose, onBeamColorChange, ...restProps }: Props) {
   const { profile, refreshProfile, setIsJournalOpen } = useProfile();
   const { elementOfDay, songOfDayTitle, songOfDaySlug } = usePlanetRewardsContext();
+  const { isClaimed: isElementOfDayClaimed } = useElementOfDayClaim();
 
   // New hooks for database-driven merch
   const { items: merchItems, loading: merchLoading, error: merchError } = useMerchItems('physical');
@@ -1020,6 +1022,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
   // Helper function to check if quest is completed (either from DB or local state)
   const isQuestCompleted = (quest: any) => {
+    // For Element of Day quest, check the dedicated claim status
+    if (quest.quest_key === 'TAP_ELEMENT_OF_DAY') {
+      return isElementOfDayClaimed || quest.completed_today > 0 || completedQuests.has(quest.id);
+    }
     // For daily quests, check completed_today or local state
     if (quest.quest_key === 'JOURNAL_ENTRY_OF_DAY') {
       return dailyQuests.journalEntry || quest.completed_today > 0 || completedQuests.has(quest.id);
@@ -2648,6 +2654,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               // Clear any active merch selection to prevent stale state
               setActiveMerchItem(null);
               try { onClose?.(); } catch {}
+              try { onBeamColorChange?.('off'); } catch {}
             }}
             onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
             className="absolute top-2 right-4 text-white hover:text-gray-200 cursor-pointer w-8 h-8 rounded-full border border-white/80 flex items-center justify-center transition-transform duration-200 hover:scale-110"
@@ -3001,13 +3008,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 src="/elements/elementals.webp"
                                 alt=""
                                 className="w-8 h-8"
-                                style={{
-                                  filter: isQuestCompleted(quest)
-                                    ? 'grayscale(0.6) brightness(0.5)'
-                                    : 'drop-shadow(0 0 8px cyan) drop-shadow(0 0 16px cyan)',
-                                  opacity: isQuestCompleted(quest) ? 0.5 : 1,
-                                  transition: 'filter 0.3s ease, opacity 0.3s ease'
-                                }}
+                                style={{ filter: 'drop-shadow(0 0 8px cyan) drop-shadow(0 0 16px cyan)' }}
                               />
                               Element of the Day
                             </>

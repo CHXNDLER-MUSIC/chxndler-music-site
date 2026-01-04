@@ -324,7 +324,7 @@ export default function MusicAnalyticsVisual({ onClose }: MusicAnalyticsVisualPr
         const { count, error } = await supabase
           .from('events_v2')
           .select('*', { count: 'exact', head: true })
-          .eq('event_name', query.name);
+          .eq('name', query.name);
         
         if (error) {
           console.error(`[Analytics] Failed to load ${query.name} count:`, error);

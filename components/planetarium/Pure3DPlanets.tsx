@@ -1105,8 +1105,8 @@ export default function Pure3DPlanets({
         holoHUD.texture.offset.y %= 1;
       }
 
-      // Prominent light emission pulse for the daily element (stays glowing all day)
-      if (glowingElement) {
+      // Prominent light emission pulse for the daily element (only when glowActive)
+      if (glowingElement && glowActive) {
         const glowSprite = glowSpriteMapRef.current.get(glowingElement);
         if (glowSprite && glowSprite.material) {
           // Opacity pulse: 0.5 to 0.75 range for subtle light breathing
@@ -1135,6 +1135,13 @@ export default function Pure3DPlanets({
           const planetBaseScale = (elementSprite as any).userData?.baseScale || 9;
           const planetPulse = planetBaseScale * (1.0 + Math.sin(elapsed * 2.5) * 0.05);
           elementSprite.scale.set(planetPulse, planetPulse, 1);
+        }
+      } else if (glowingElement && !glowActive) {
+        // Reset element sprite to base scale when glow is disabled (claimed)
+        const elementSprite = elementSpriteMapRef.current.get(glowingElement);
+        if (elementSprite) {
+          const planetBaseScale = (elementSprite as any).userData?.baseScale || 9;
+          elementSprite.scale.set(planetBaseScale, planetBaseScale, 1);
         }
       }
 

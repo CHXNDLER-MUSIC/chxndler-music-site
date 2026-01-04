@@ -104,8 +104,8 @@ export function useBonusQuests(): UseBonusQuestsReturn {
 
   // Complete a quest using the idempotent RPC
   // Returns a QuestCompletionResult with alreadyCompleted flag for UI handling
-  // New RPC signature: complete_bonus_quest_once_per_day({ p_quest_id })
-  // Returns: { ok, quest_id, completed_on_date, inserted, heartcoin_awarded }
+  // RPC signature: complete_bonus_quest_once_per_day({ p_quest_id })
+  // Returns: { status: "completed" | "already_completed", awarded: boolean, completion_date_ny: "YYYY-MM-DD", heartcoin_balance: number }
   const completeQuest = useCallback(async (
     quest: BonusQuestWithCompletion
   ): Promise<QuestCompletionResult> => {
@@ -117,8 +117,8 @@ export function useBonusQuests(): UseBonusQuestsReturn {
     }
 
     try {
-      // Call the RPC with the new signature (user is inferred from auth context)
-      const { data, error } = await supabaseBrowser.rpc('complete_bonus_quest_once_per_day', {
+      // Call the RPC (user is inferred from auth context)
+      const { data, error, status } = await supabaseBrowser.rpc('complete_bonus_quest_once_per_day', {
         p_quest_id: quest.id
       });
 
@@ -128,6 +128,23 @@ export function useBonusQuests(): UseBonusQuestsReturn {
         return {
           success: false,
           message: 'Quest service updated, hard refresh'
+        };
+      }
+
+      // Handle HTTP 409 conflict as already_completed (legacy backend compatibility)
+      if (status === 409 || error?.code === '409') {
+        // Update local state immediately to show COMPLETED
+        setQuests(prev => prev.map(q =>
+          q.id === quest.id
+            ? { ...q, can_complete: false, completed_today: 1 }
+            : q
+        ));
+        // Optionally refetch to confirm today's completions
+        fetchQuests();
+        return {
+          success: true,
+          alreadyCompleted: true,
+          message: 'Already completed today'
         };
       }
 
@@ -154,13 +171,14 @@ export function useBonusQuests(): UseBonusQuestsReturn {
         };
       }
 
-      // New response format: { ok, quest_id, completed_on_date, inserted, heartcoin_awarded }
-      // Treat BOTH inserted=true AND inserted=false as completed (inserted=false means already completed today)
-      const isCompleted = data?.ok === true;
-      const isNewCompletion = data?.inserted === true;
-      const heartcoinAwarded = data?.heartcoin_awarded === true;
+      // New response format: { status: "completed" | "already_completed", awarded: boolean, completion_date_ny: "YYYY-MM-DD", heartcoin_balance: number }
+      const responseStatus = data?.status;
+      const wasAwarded = data?.awarded === true;
 
-      if (isCompleted) {
+      // Both "completed" and "already_completed" are success states
+      if (responseStatus === 'completed' || responseStatus === 'already_completed') {
+        const isNewCompletion = responseStatus === 'completed' && wasAwarded;
+
         // Immediately update local state so button flips to COMPLETED
         setQuests(prev => prev.map(q =>
           q.id === quest.id
@@ -170,12 +188,12 @@ export function useBonusQuests(): UseBonusQuestsReturn {
 
         // Refresh heartcoin balance only if coins were actually awarded
         // Await to ensure profile is updated before returning to caller
-        if (heartcoinAwarded) {
+        // This will also trigger the celebration animation via ProfileContext
+        if (wasAwarded) {
           await refreshProfile();
         }
 
-        if (!isNewCompletion) {
-          // inserted=false means already completed today
+        if (responseStatus === 'already_completed') {
           return {
             success: true,
             alreadyCompleted: true,
@@ -184,6 +202,41 @@ export function useBonusQuests(): UseBonusQuestsReturn {
         }
 
         // New completion with coins awarded
+        return {
+          success: true,
+          alreadyCompleted: false,
+          message: 'Quest completed successfully!',
+          rewards: {
+            heartcoins: quest.reward_heartcoins > 0 ? quest.reward_heartcoins : undefined,
+            element_card: quest.reward_element_card ? true : undefined
+          }
+        };
+      }
+
+      // Legacy response format fallback: { ok, quest_id, completed_on_date, inserted, heartcoin_awarded }
+      if (data?.ok === true) {
+        const isNewCompletion = data?.inserted === true;
+        const heartcoinAwarded = data?.heartcoin_awarded === true;
+
+        // Immediately update local state so button flips to COMPLETED
+        setQuests(prev => prev.map(q =>
+          q.id === quest.id
+            ? { ...q, can_complete: false, completed_today: 1, times_completed: q.times_completed + (isNewCompletion ? 1 : 0) }
+            : q
+        ));
+
+        if (heartcoinAwarded) {
+          await refreshProfile();
+        }
+
+        if (!isNewCompletion) {
+          return {
+            success: true,
+            alreadyCompleted: true,
+            message: 'Already completed today'
+          };
+        }
+
         return {
           success: true,
           alreadyCompleted: false,
@@ -216,13 +269,28 @@ export function useBonusQuests(): UseBonusQuestsReturn {
         };
       }
 
+      // Handle 409 conflict in catch block as well
+      if (error?.status === 409 || error?.message?.includes('409')) {
+        setQuests(prev => prev.map(q =>
+          q.id === quest.id
+            ? { ...q, can_complete: false, completed_today: 1 }
+            : q
+        ));
+        fetchQuests();
+        return {
+          success: true,
+          alreadyCompleted: true,
+          message: 'Already completed today'
+        };
+      }
+
       console.error('[completeQuest] Exception:', error);
       return {
         success: false,
         message: 'Quest failed. Try again.'
       };
     }
-  }, [currentUserId, refreshProfile]);
+  }, [currentUserId, refreshProfile, fetchQuests]);
 
   return {
     quests,

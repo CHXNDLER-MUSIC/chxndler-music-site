@@ -675,8 +675,10 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                       try { sfx.play('click', 0.7); } catch {}
                       setShowCard(false);
                       try {
-                        (window as any).priceHeartCoinsInitialTab = 'cards';
-                        (window as any).priceHeartCoinsSelectedCard = currentTrack?.title || title;
+                        // Clear any stale window globals to prevent conflicts with event-based flow
+                        // The openHeartCoinCards event handler sets the correct tab state
+                        delete (window as any).priceHeartCoinsInitialTab;
+                        delete (window as any).priceHeartCoinsSelectedCard;
                         delete (window as any).priceHeartCoinsFromStore;
                       } catch {}
                       try {
@@ -752,12 +754,13 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                       transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
                     }}
                     onError={(e)=>{
+                      const target = e.currentTarget as HTMLImageElement;
                       const fallback = src.replace('/covers/', '/cards/');
                       if (fallback && fallback !== src) {
-                        (e.currentTarget as HTMLImageElement).onerror = () => { (e.currentTarget as HTMLImageElement).src = CARD_URLS['back'] || '/cards/BACK.webp'; };
-                        (e.currentTarget as HTMLImageElement).src = fallback;
+                        target.onerror = () => { target.src = CARD_URLS['back'] || '/cards/BACK.webp'; };
+                        target.src = fallback;
                       } else {
-                        (e.currentTarget as HTMLImageElement).src = CARD_URLS['back'] || '/cards/BACK.webp';
+                        target.src = CARD_URLS['back'] || '/cards/BACK.webp';
                       }
                     }}
                     draggable={false}

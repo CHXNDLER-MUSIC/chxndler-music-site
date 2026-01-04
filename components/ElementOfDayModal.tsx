@@ -86,6 +86,7 @@ export default function ElementOfDayModal() {
         // Check if completion exists today using completed_date (date field)
         const todayDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
+        // Check user_bonus_quest_completions table
         const { data: completions, error } = await supabaseBrowser
           .from('user_bonus_quest_completions')
           .select('id')
@@ -97,11 +98,27 @@ export default function ElementOfDayModal() {
 
         if (error) {
           console.error('[ElementOfDayModal] Error checking bonus quest completion:', error);
-          return;
         }
 
         if (completions && completions.length > 0) {
           console.log('[ElementOfDayModal] Bonus quest already completed today:', completions[0]);
+          setElementQuestCompleted(true);
+          return;
+        }
+
+        // Also check user_element_claims table (Element of Day uses this table)
+        const { count: claimsCount, error: claimsError } = await supabaseBrowser
+          .from('user_element_claims')
+          .select('*', { count: 'exact', head: true })
+          .eq('day', todayDate);
+
+        if (claimsError) {
+          console.error('[ElementOfDayModal] Error checking element claims:', claimsError);
+          return;
+        }
+
+        if ((claimsCount ?? 0) > 0) {
+          console.log('[ElementOfDayModal] Element already claimed today');
           setElementQuestCompleted(true);
         }
       } catch (err) {
@@ -117,6 +134,23 @@ export default function ElementOfDayModal() {
     const handleOpenEvent = async () => {
       console.log('[ElementOfDayModal] Received elementOfDay:open event');
       try {
+        // Check if already claimed today before showing
+        const todayDate = new Date().toISOString().split('T')[0];
+        const { count: claimsCount } = await supabaseBrowser
+          .from('user_element_claims')
+          .select('*', { count: 'exact', head: true })
+          .eq('day', todayDate);
+
+        if ((claimsCount ?? 0) > 0) {
+          console.log('[ElementOfDayModal] Element already claimed today (on open)');
+          setElementQuestCompleted(true);
+          setClaimed(true);
+        } else {
+          // Reset state for fresh claim attempt
+          setElementQuestCompleted(false);
+          setClaimed(false);
+        }
+
         // Fetch element of day data from API
         const res = await fetch('/api/element-of-day');
         if (res.ok) {
@@ -533,7 +567,8 @@ export default function ElementOfDayModal() {
                   objectFit: "contain",
                   animation: (claimed || elementQuestCompleted) ? "none" : "elementPulse 2s ease-in-out infinite",
                   opacity: (claimed || elementQuestCompleted) ? 0.5 : 1,
-                  transition: "opacity 0.3s ease",
+                  filter: (claimed || elementQuestCompleted) ? "grayscale(0.6) brightness(0.5)" : "none",
+                  transition: "opacity 0.3s ease, filter 0.3s ease",
                 }}
               />
             </button>

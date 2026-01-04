@@ -377,7 +377,10 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
         data-tour-id="heartcoins"
         style={{ display: 'none' }}
         isActive={heartCoinOpen}
-        onClose={() => setHeartCoinOpen(false)}
+        onClose={() => {
+          setHeartCoinOpen(false);
+          try { onBeamColorChange?.('off'); } catch {}
+        }}
         onOpenJournal={() => setJournalOpen(true)}
         onBeamColorChange={onBeamColorChange}
       />

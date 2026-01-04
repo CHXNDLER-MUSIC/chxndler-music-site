@@ -111,7 +111,6 @@ export default function ProfileBar({
     if (!warpFullyComplete && hasEnteredHeartverse) {
       // If user has entered Heartverse but warp isn't marked complete, force it
       const fallbackTimer = setTimeout(() => {
-        console.log('ProfileBar: Fallback - user entered but warp not complete, forcing warpFullyComplete');
         setWarpFullyComplete(true);
       }, 500); // Short delay for all browsers
 
@@ -122,7 +121,6 @@ export default function ProfileBar({
   // Respond to profile refresh trigger
   useEffect(() => {
     if (profileRefreshTrigger > 0) {
-      console.log('Profile refresh trigger activated, refreshing profile...');
       refreshProfile();
     }
   }, [profileRefreshTrigger, refreshProfile]);
@@ -130,7 +128,6 @@ export default function ProfileBar({
   // Listen for direct profile refresh events
   useEffect(() => {
     const handleDirectProfileRefresh = () => {
-      console.log('ProfileBar: Direct profile refresh event received');
       refreshProfile();
     };
 
@@ -143,18 +140,6 @@ export default function ProfileBar({
     };
   }, [refreshProfile]);
 
-  // Debug profile changes
-  useEffect(() => {
-    console.log('ProfileBar: contextProfile changed:', {
-      name: contextProfile?.name,
-      element: contextProfile?.element,
-      profile_complete: contextProfile?.profile_complete,
-      profileLoading: profileLoading,
-      authLoading: authLoading,
-      hasUser: !!user,
-      userId: user?.id
-    });
-  }, [contextProfile, profileLoading, authLoading, user]);
 
 
   // Check if journal was completed today
@@ -442,22 +427,6 @@ export default function ProfileBar({
 
   const currentElementData = ELEMENTS.find(e => e.name === currentElement) || ELEMENTS[0];
 
-  // Safe debug log after all variables are declared
-  console.log("DEBUG ProfileBar render", {
-    browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",
-    warpFullyComplete,
-    hasEnteredHeartverse,
-    hasUser: isLoggedIn,
-    hasProfile: hasProfile,
-    authLoading: authLoading,
-    profileLoading: profileLoading,
-    loading: loading,
-    heartCoinBalance,
-    profileName: contextProfile?.name,
-    profileElement: currentElement,
-    userId: user?.id,
-    timestamp: new Date().toISOString()
-  });
 
   return (
     <div 
