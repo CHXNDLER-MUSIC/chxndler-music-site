@@ -1564,11 +1564,16 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   }, []); // Run on every mount
 
   // Temporary watchdog: for the first 5s, forcibly stop any stray track audio
+  // BUT respect __BLOCK_MAIN_AUDIO flag - if false, allow track audio to play
   React.useEffect(() => {
     let active = true;
     const deadline = Date.now() + 5000;
     const tick = () => {
       if (!active) return;
+      // If audio is unblocked (e.g., after warp when space-music should play), skip watchdog
+      if (typeof window !== 'undefined' && window.__BLOCK_MAIN_AUDIO === false) {
+        return;
+      }
       try {
         const audios = document.querySelectorAll('audio');
         audios.forEach((a) => {
@@ -2116,7 +2121,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           console.log("🎵 Warp SFX ended");
           // Notify unified audio system that warp completed so pending tracks auto-play
           try { audioManager?.markWarpCompleted(); } catch {}
-          
+
+          // Guard: only play space-music once per warp
+          let spaceMusicTriggered = false;
+
           // FALLBACK: Ensure supporting systems are ready if Start button warp
           // NOTE: Beam/HUD enabling is handled by playButtonAndRevealUI below
           // to ensure proper sequence: warp.mp3 -> button.mp3 -> beam -> HUD
@@ -2126,29 +2134,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
             // Mark warp as completed for unified audio system
             try { audioManager?.markWarpCompleted(); } catch {}
-            // Play space-music through main AudioProvider (connected to play/pause)
-            // AND play welcome track as independent one-shot audio (not connected to play/pause)
-            try {
-              if (!pendingTrackPlay && !userSelected) {
-                // Play space-music through AudioProvider - this connects it to play/pause button
-                console.log('🎵 Playing space-music through AudioProvider (connected to play/pause)');
-                audioManager?.playTrack('space-music');
-
-                // Play welcome track as independent one-shot audio
-                // This does NOT connect to play/pause button
-                if (profile?.id) {
-                  console.log('🎵 Playing welcome-back as independent one-shot audio');
-                  const welcomeAudio = new Audio('/tracks/welcome-back.opus');
-                  welcomeAudio.volume = 0.9;
-                  welcomeAudio.play().catch((e) => console.warn('Welcome audio failed:', e));
-                } else {
-                  console.log('🎵 Playing welcome-to-the-heartverse as independent one-shot audio');
-                  const welcomeAudio = new Audio('/tracks/welcome-to-the-heartverse.opus');
-                  welcomeAudio.volume = 0.9;
-                  welcomeAudio.play().catch((e) => console.warn('Welcome audio failed:', e));
-                }
-              }
-            } catch {}
 
             // Ensure user entered Heartverse state
             try {
@@ -2167,28 +2152,33 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             // This prevents AmbientSpace from playing a duplicate space-music track
             setAmbientSuspended(true);
           }
-          
+
           // Mark that warp effect is fully complete (including sound effects)
           setWarpFullyComplete(true);
           // Ensure unified audio system can auto-play now if a pending track exists
           try { audioManager?.markWarpCompleted(); } catch {}
+
           // If landing on home (no song pending), start space-music via main player
           // and play welcome track as independent one-shot audio
+          // This runs ONCE for all code paths
           try {
-            if (!pendingTrackPlay && !userSelected) {
+            if (!pendingTrackPlay && !userSelected && !spaceMusicTriggered) {
+              spaceMusicTriggered = true;
+              // Clear the audio block flag so space-music can play
+              if (typeof window !== 'undefined') { window.__BLOCK_MAIN_AUDIO = false; }
               // Play space-music through AudioProvider - connected to play/pause button
-              console.log('🎵 Playing space-music (main path) through AudioProvider');
+              console.log('🎵 Playing space-music through AudioProvider');
               audioManager?.playTrack('space-music');
 
               // Play welcome track as independent one-shot audio
               // This does NOT connect to play/pause button
               if (profile?.id) {
-                console.log('🎵 Playing welcome-back as independent one-shot audio (main path)');
+                console.log('🎵 Playing welcome-back as independent one-shot audio');
                 const welcomeAudio = new Audio('/tracks/welcome-back.opus');
                 welcomeAudio.volume = 0.9;
                 welcomeAudio.play().catch((e) => console.warn('Welcome audio failed:', e));
               } else {
-                console.log('🎵 Playing welcome-to-the-heartverse as independent one-shot audio (main path)');
+                console.log('🎵 Playing welcome-to-the-heartverse as independent one-shot audio');
                 const welcomeAudio = new Audio('/tracks/welcome-to-the-heartverse.opus');
                 welcomeAudio.volume = 0.9;
                 welcomeAudio.play().catch((e) => console.warn('Welcome audio failed:', e));

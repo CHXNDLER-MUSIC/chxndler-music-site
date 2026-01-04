@@ -13,6 +13,9 @@ import TiltSpinCard from "@/components/TiltSpinCard";
 import { useUserCards } from "@/hooks/useUserCards";
 import { useBinderSlots, BinderSlot, TOTAL_SLOTS } from "@/hooks/useBinderSlots";
 
+// Guest mode defaults (when user is not authenticated)
+const GUEST_DEFAULT_SLOTS = 2;
+
 // Add keyframes for pulsing animation
 const pulseKeyframes = `
   @keyframes pulseGlow {
@@ -200,11 +203,12 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     return slots;
   }, [pageIndex, binderSlots, displayUnlockedSlots, profile?.id]);
 
-  // Preview slots for logged-out state
+  // Preview slots for logged-out state (guest mode)
+  // Slot 0: CHXNDLER preview card, Slots 1-2: empty unlocked, Slots 3+: locked
   const previewSlots: BinderSlot[] = [
     { user_id: '', slot_index: 0, is_unlocked: true, card_id: 'chxndler-preview', card_name: 'CHXNDLER', artwork_url: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910', element: 'ALL', rarity: 'Common', is_starter: true },
-    { user_id: '', slot_index: 1, is_unlocked: false, card_id: null, card_name: null, artwork_url: null, element: null, rarity: null, is_starter: null },
-    { user_id: '', slot_index: 2, is_unlocked: false, card_id: null, card_name: null, artwork_url: null, element: null, rarity: null, is_starter: null },
+    { user_id: '', slot_index: 1, is_unlocked: true, card_id: null, card_name: null, artwork_url: null, element: null, rarity: null, is_starter: null },
+    { user_id: '', slot_index: 2, is_unlocked: true, card_id: null, card_name: null, artwork_url: null, element: null, rarity: null, is_starter: null },
     { user_id: '', slot_index: 3, is_unlocked: false, card_id: null, card_name: null, artwork_url: null, element: null, rarity: null, is_starter: null },
     { user_id: '', slot_index: 4, is_unlocked: false, card_id: null, card_name: null, artwork_url: null, element: null, rarity: null, is_starter: null },
     { user_id: '', slot_index: 5, is_unlocked: false, card_id: null, card_name: null, artwork_url: null, element: null, rarity: null, is_starter: null },
@@ -957,7 +961,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       
       <PopoutShell
         title="DIGITAL CARD BINDER"
-        subtitle={`CARDS COLLECTED: ${cardsInSlots} • BINDER SLOTS: ${displayUnlockedSlots}`}
+        subtitle={`CARDS COLLECTED: ${profile?.id ? cardsInSlots : 0} • BINDER SLOTS: ${profile?.id ? displayUnlockedSlots : GUEST_DEFAULT_SLOTS}`}
         minWidth={'min(96vw, 440px)'}
         maxHeight={'calc(100vh - 8vh - var(--display-touch-top))'}
         onClose={() => {
@@ -1165,7 +1169,18 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                             setCardRotation(0);
                             setCardOpen(true);
                           } else if (isEmpty) {
-                            // Empty slot: open HeartCoin modal with CARDS tab
+                            // Empty slot: check if logged in first
+                            if (!profile?.id) {
+                              // Guest mode: show login prompt
+                              try { sfx.play('error', 0.6); } catch {}
+                              try {
+                                window.dispatchEvent(new CustomEvent('toast:show', {
+                                  detail: { message: 'Log in to collect cards', type: 'error' }
+                                }));
+                              } catch {}
+                              return;
+                            }
+                            // Logged in: open HeartCoin modal with CARDS tab
                             try { sfx.play('click', 0.4); } catch {}
                             try {
                               window.dispatchEvent(new CustomEvent('openHeartCoinCards', {
