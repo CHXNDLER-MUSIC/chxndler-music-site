@@ -131,7 +131,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const { profile } = useProfile();
   
   // Global UI state for profile bar visibility
-  const { setHasEnteredHeartverse, enterHeartverse, setWarpFullyComplete, warpFullyComplete, userClickedStart, setUserClickedStart } = useUIState();
+  const { hasEnteredHeartverse, setHasEnteredHeartverse, enterHeartverse, setWarpFullyComplete, warpFullyComplete, userClickedStart, setUserClickedStart } = useUIState();
   
   // Global wheel render mode (LUMA vs PLAIN). Must be top-level to obey Hooks rules.
   // Use false initially to match SSR, then sync with localStorage after hydration

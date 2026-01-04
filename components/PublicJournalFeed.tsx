@@ -62,7 +62,7 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
 
   // Helper: Resolve avatar URL with correct priority order
   // 1. Current user's fresh profile (for own entries) - always use latest
-  // 2. Fresh data from public_profiles (authorOverrides) - preferred over stale DB data
+  // 2. Fresh data from public_profiles_table (authorOverrides) - preferred over stale DB data
   // 3. entry.author_avatar_url (from DB - may be stale)
   // 4. default avatar "/elements/alien.webp"
   const resolveAvatarUrl = (entry: { user_id: string; author_avatar_url?: string | null }) => {
@@ -71,7 +71,7 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
     if (isOwnEntry && profile?.profile_image_url) {
       return profile.profile_image_url;
     }
-    // Second priority: fresh data from public_profiles (authorOverrides)
+    // Second priority: fresh data from public_profiles_table (authorOverrides)
     if (authorOverrides[entry.user_id]?.avatar) {
       return authorOverrides[entry.user_id].avatar;
     }
@@ -135,7 +135,7 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
     spinAudioRef.current.volume = 0.5;
   }, []);
 
-  // Load author public profile info from public_profiles table
+  // Load author public profile info from public_profiles_table (view with proper RLS for anon access)
   // Always fetch fresh data to ensure profile images are up-to-date
   useEffect(() => {
     const loadAuthorProfiles = async () => {
@@ -149,14 +149,14 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
 
         if (allUserIds.length === 0) return;
 
-        // Query public_profiles table directly for fresh profile_image_url
+        // Query public_profiles_table (view with anon RLS) for fresh profile_image_url
         const { data: profilesData, error: profilesError } = await supabaseBrowser
-          .from('public_profiles')
+          .from('public_profiles_table')
           .select('id, name, profile_image_url')
           .in('id', allUserIds);
 
         if (profilesError) {
-          console.warn('PublicJournalFeed: failed to query public_profiles', profilesError);
+          console.warn('PublicJournalFeed: failed to query public_profiles_table', profilesError);
           return;
         }
 
