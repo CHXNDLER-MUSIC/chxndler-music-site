@@ -729,14 +729,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   // Get Song of the Day from PlanetRewardsContext for HeartCoin awards
   const { songOfDaySlug } = usePlanetRewardsContext();
 
-  // Debug: Log what we're passing to the daily progress hook
-  console.log('🎵 AudioProvider: Passing to useDailySongProgress:', {
-    hasAudioElement: !!audioRef.current,
-    trackingSlug: state.trackingSlug,
-    isPlaying: state.playing,
-    songOfDaySlug
-  });
-
   useDailySongProgress({
     audioElement: audioRef.current,
     trackSlug: state.trackingSlug || null,
@@ -1050,14 +1042,21 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       // Store original trackId as trackingSlug for daily progress tracking (before normalization)
       setState(s => ({ ...s, currentTrack: trackInfo, isLoading: true, trackingSlug: trackId }));
 
+      // Always flush any existing listen session when starting a new track
+      // This ensures session tracking works even when track is pre-loaded
+      if (sessionRef.current && !sessionRef.current.flushed) {
+        console.log('🎧 Flushing session before playing new track');
+        await flushSession(0);
+      }
+
       // Only stop audio if we're switching to a different track
       const currentAudio = audioRef.current;
       const isSameTrack = currentAudio && currentAudio.src && currentAudio.src.includes(normId);
-      
+
       if (!isSameTrack) {
         // Stop any existing audio only when switching tracks
         stopAllAudioInternal();
-        
+
         // Small delay to ensure audio has fully stopped before starting new track
         await new Promise(resolve => setTimeout(resolve, 50));
       } else {

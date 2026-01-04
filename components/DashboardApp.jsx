@@ -2126,13 +2126,27 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
             // Mark warp as completed for unified audio system
             try { audioManager?.markWarpCompleted(); } catch {}
-            // Auto-play welcome track via unified audio when landing on home
-            // Play Welcome Back for logged-in users, Welcome to the Heartverse for guests
+            // Play space-music through main AudioProvider (connected to play/pause)
+            // AND play welcome track as independent one-shot audio (not connected to play/pause)
             try {
               if (!pendingTrackPlay && !userSelected) {
-                const welcomeTrack = profile?.id ? 'welcome-back' : 'welcome-to-the-heartverse';
-                console.log(`🎵 Playing welcome track: ${welcomeTrack} (logged in: ${!!profile?.id})`);
-                audioManager?.playTrack(welcomeTrack);
+                // Play space-music through AudioProvider - this connects it to play/pause button
+                console.log('🎵 Playing space-music through AudioProvider (connected to play/pause)');
+                audioManager?.playTrack('space-music');
+
+                // Play welcome track as independent one-shot audio
+                // This does NOT connect to play/pause button
+                if (profile?.id) {
+                  console.log('🎵 Playing welcome-back as independent one-shot audio');
+                  const welcomeAudio = new Audio('/tracks/welcome-back.opus');
+                  welcomeAudio.volume = 0.9;
+                  welcomeAudio.play().catch((e) => console.warn('Welcome audio failed:', e));
+                } else {
+                  console.log('🎵 Playing welcome-to-the-heartverse as independent one-shot audio');
+                  const welcomeAudio = new Audio('/tracks/welcome-to-the-heartverse.opus');
+                  welcomeAudio.volume = 0.9;
+                  welcomeAudio.play().catch((e) => console.warn('Welcome audio failed:', e));
+                }
               }
             } catch {}
 
@@ -2149,47 +2163,39 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             setPowerBusy(false);
             setLandingRevealReady(true);
 
-            // Enable ambient space music after START button warp completes
-            setAmbientSuspended(false);
-            // Auto-trigger ambient space music after start button warp
-            try {
-              window.dispatchEvent(new CustomEvent('ambient:play'));
-            } catch {}
-
-            // Auto-trigger play button to start space music and sync button state
-            setTimeout(() => {
-              try {
-                const ambient = document.querySelector('audio[data-ambient="1"]');
-                if (ambient && ambient.paused) {
-                  ambient.play().catch(() => {});
-                  // Trigger ambient state update for play button sync
-                  window.dispatchEvent(new CustomEvent('ambient:userPlay'));
-                }
-              } catch {}
-            }, 500); // Small delay to ensure audio is ready
+            // Keep ambient suspended since space-music is now handled by AudioProvider
+            // This prevents AmbientSpace from playing a duplicate space-music track
+            setAmbientSuspended(true);
           }
-          
-          // Keep main player audio blocked on home warp (until a song is selected)
-          try { 
-            if (!pendingTrackPlay && !userSelected && typeof window !== 'undefined') { 
-              window.__BLOCK_MAIN_AUDIO = true; 
-            } 
-          } catch (e) {}
           
           // Mark that warp effect is fully complete (including sound effects)
           setWarpFullyComplete(true);
           // Ensure unified audio system can auto-play now if a pending track exists
           try { audioManager?.markWarpCompleted(); } catch {}
-          // If landing on home (no song pending), start welcome track via unified audio
-          // Play Welcome Back for logged-in users, Welcome to the Heartverse for guests
+          // If landing on home (no song pending), start space-music via main player
+          // and play welcome track as independent one-shot audio
           try {
             if (!pendingTrackPlay && !userSelected) {
-              const welcomeTrack = profile?.id ? 'welcome-back' : 'welcome-to-the-heartverse';
-              console.log(`🎵 Playing welcome track (main): ${welcomeTrack} (logged in: ${!!profile?.id})`);
-              audioManager?.playTrack(welcomeTrack);
+              // Play space-music through AudioProvider - connected to play/pause button
+              console.log('🎵 Playing space-music (main path) through AudioProvider');
+              audioManager?.playTrack('space-music');
+
+              // Play welcome track as independent one-shot audio
+              // This does NOT connect to play/pause button
+              if (profile?.id) {
+                console.log('🎵 Playing welcome-back as independent one-shot audio (main path)');
+                const welcomeAudio = new Audio('/tracks/welcome-back.opus');
+                welcomeAudio.volume = 0.9;
+                welcomeAudio.play().catch((e) => console.warn('Welcome audio failed:', e));
+              } else {
+                console.log('🎵 Playing welcome-to-the-heartverse as independent one-shot audio (main path)');
+                const welcomeAudio = new Audio('/tracks/welcome-to-the-heartverse.opus');
+                welcomeAudio.volume = 0.9;
+                welcomeAudio.play().catch((e) => console.warn('Welcome audio failed:', e));
+              }
             }
           } catch {}
-          
+
           // Disable warp to prevent additional warp sounds
           setAllowWarp(false);
 
@@ -2320,24 +2326,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               // NOTE: Do NOT set setBeamEnabled or setShowHUD here
               // They will be set by playButtonAndRevealUI after button.mp3 finishes
 
-              // Enable ambient space music after homepage reveal
-              setAmbientSuspended(false);
-              // Auto-trigger ambient space music after homepage warp
-              try {
-                window.dispatchEvent(new CustomEvent('ambient:play'));
-              } catch {}
-
-              // Auto-trigger play button to start space music and sync button state
-              setTimeout(() => {
-                try {
-                  const ambient = document.querySelector('audio[data-ambient="1"]');
-                  if (ambient && ambient.paused) {
-                    ambient.play().catch(() => {});
-                    // Trigger ambient state update for play button sync
-                    window.dispatchEvent(new CustomEvent('ambient:userPlay'));
-                  }
-                } catch {}
-              }, 500); // Small delay to ensure audio is ready
+              // Keep ambient suspended since space-music is handled by AudioProvider
+              setAmbientSuspended(true);
+              // Space-music and welcome-back are played in the earlier onWarpSfxEnd section
+              // No need to trigger ambient:play here
               // Welcome modal is now shown immediately on START click (not after warp)
             } catch {}
             // Ensure homepage shows all planets after warp

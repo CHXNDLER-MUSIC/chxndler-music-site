@@ -270,31 +270,10 @@ export function useDailySongProgress({
 
   // Main progress tracking effect
   useEffect(() => {
-    // Debug: Log all conditions
-    console.log('🎵 Daily progress effect triggered:', {
-      enabled,
-      hasAudioElement: !!audioElement,
-      trackSlug,
-      isPlaying,
-      songOfDaySlug
-    });
-
-    if (!enabled) {
-      console.log('🎵 Daily progress: Skipping - not enabled');
-      return;
-    }
-    if (!audioElement) {
-      console.log('🎵 Daily progress: Skipping - no audio element');
-      return;
-    }
-    if (!trackSlug) {
-      console.log('🎵 Daily progress: Skipping - no track slug');
-      return;
-    }
-    if (!isPlaying) {
-      console.log('🎵 Daily progress: Skipping - not playing');
-      return;
-    }
+    if (!enabled) return;
+    if (!audioElement) return;
+    if (!trackSlug) return;
+    if (!isPlaying) return;
 
     let intervalId: number | null = null;
     let mounted = true;
@@ -302,24 +281,14 @@ export function useDailySongProgress({
     const trackProgress = async () => {
       if (!mounted) return;
 
-      console.log('🎵 Daily progress: trackProgress called for slug:', trackSlug);
-
       // Get current user
       const { data: { session } } = await supabaseBrowser.auth.getSession();
-      if (!session?.user?.id) {
-        console.log('🎵 Daily progress: No authenticated user, skipping');
-        return;
-      }
+      if (!session?.user?.id) return;
       const userId = session.user.id;
-      console.log('🎵 Daily progress: User authenticated:', userId.substring(0, 8) + '...');
 
       // Get song UUID from slug
       const songId = await getSongId(trackSlug);
-      if (!songId) {
-        console.log('🎵 Daily progress: Could not get song ID for slug:', trackSlug);
-        return;
-      }
-      console.log('🎵 Daily progress: Got song ID:', songId.substring(0, 8) + '...');
+      if (!songId) return;
 
       currentSongIdRef.current = songId;
       const day = getTodayNY();
@@ -338,21 +307,11 @@ export function useDailySongProgress({
       // IMMEDIATE initial upsert: Create the row right away when playback starts
       // This ensures the row exists in user_song_daily_progress immediately on LISTEN click
       const { currentTime: initialTime, duration: initialDuration } = audioElement;
-      console.log('🎵 Daily progress: Audio state for initial upsert:', {
-        currentTime: initialTime,
-        duration: initialDuration,
-        isValidDuration: initialDuration && initialDuration > 0 && isFinite(initialDuration)
-      });
-
       if (initialDuration && initialDuration > 0 && isFinite(initialDuration)) {
         const initialPercent = (initialTime / initialDuration) * 100;
-        console.log('🎵 Daily progress: Creating initial row with percent:', initialPercent.toFixed(2));
         await upsertProgress(userId, songId, day, initialTime, initialDuration, initialPercent, false);
         lastUpsertRef.current = Date.now();
         initialRowCreatedRef.current = true;
-        console.log('🎵 Daily progress: Initial row created successfully');
-      } else {
-        console.log('🎵 Daily progress: Skipping initial upsert - duration not yet available');
       }
 
       // Start tracking interval (1s)
