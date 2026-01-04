@@ -1208,18 +1208,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                             setCardRotation(0);
                             setCardOpen(true);
                           } else if (isEmpty) {
-                            // Empty slot: check if logged in first
-                            if (!profile?.id) {
-                              // Guest mode: show login prompt
-                              try { sfx.play('error', 0.6); } catch {}
-                              try {
-                                window.dispatchEvent(new CustomEvent('toast:show', {
-                                  detail: { message: 'Log in to collect cards', type: 'error' }
-                                }));
-                              } catch {}
-                              return;
-                            }
-                            // Logged in: open HeartCoin modal with CARDS tab
+                            // Empty slot: open HeartCoin modal with CARDS tab
                             try { sfx.play('click', 0.4); } catch {}
                             try {
                               window.dispatchEvent(new CustomEvent('openHeartCoinCards', {

@@ -1724,50 +1724,87 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                           )}
                         </div>
                       </div>
+                      {/* Large element image for TAP_ELEMENT_OF_DAY quest */}
+                      {quest.quest_key === 'TAP_ELEMENT_OF_DAY' && (
+                        <div className="flex justify-center my-3">
+                          {!profile?.id ? (
+                            <div
+                              className="text-center py-4 px-6 rounded-lg border border-[#4ECDC4]/40"
+                              style={{
+                                background: 'rgba(78,205,196,0.1)',
+                                color: '#4ECDC4',
+                                textShadow: '0 0 8px rgba(78,205,196,0.5)'
+                              }}
+                            >
+                              <span className="text-sm font-bold">Log in to complete</span>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleQuestClick(quest)}
+                              disabled={isQuestCompleted(quest)}
+                              className="w-16 h-16 rounded-full overflow-hidden transition-all hover:scale-105"
+                              style={{
+                                boxShadow: isQuestCompleted(quest)
+                                  ? '0 0 20px rgba(0,255,0,0.6)'
+                                  : '0 0 15px rgba(255,105,180,0.4)',
+                                border: isQuestCompleted(quest)
+                                  ? '2px solid #00FF00'
+                                  : '2px solid rgba(255,105,180,0.6)'
+                              }}
+                            >
+                              <img
+                                src={getElementalPlanetImage(elementOfDay || 'heart') || '/textures/planet_heart.webp'}
+                                alt="Element of the Day"
+                                className="w-full h-full object-cover"
+                              />
+                            </button>
+                          )}
+                        </div>
+                      )}
                       <button
                         onClick={() => handleQuestClick(quest)}
-                        disabled={!!profile && isQuestCompleted(quest)}
+                        disabled={!!profile?.id && isQuestCompleted(quest)}
                         className="mt-3 px-3 py-2 text-xs rounded border transition-colors font-bold w-full hover:opacity-80"
                         style={{
-                          background: !profile
+                          background: !profile?.id
                             ? 'rgba(78,205,196,0.2)'
                             : isQuestCompleted(quest)
                             ? 'rgba(0,255,0,0.2)'
                             : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
                             ? 'rgba(255,255,0,0.15)'
                             : 'rgba(255,255,255,0.1)',
-                          color: !profile
+                          color: !profile?.id
                             ? '#4ECDC4'
                             : isQuestCompleted(quest)
                             ? '#00FF00'
                             : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
                             ? '#FFFF00'
                             : '#FFFFFF',
-                          borderColor: !profile
+                          borderColor: !profile?.id
                             ? '#4ECDC4'
                             : isQuestCompleted(quest)
                             ? '#00FF00'
                             : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
                             ? '#FFFF00'
                             : 'rgba(255,255,255,0.6)',
-                          textShadow: !profile
+                          textShadow: !profile?.id
                             ? '0 0 8px rgba(78,205,196,0.5)'
                             : isQuestCompleted(quest)
                             ? '0 0 8px #00FF00, 0 0 16px #00FF00'
                             : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
                             ? '0 0 8px rgba(255,255,0,0.5)'
                             : 'none',
-                          boxShadow: !profile
+                          boxShadow: !profile?.id
                             ? 'none'
                             : isQuestCompleted(quest)
                             ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)'
                             : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
                             ? '0 0 10px rgba(255,255,0,0.3)'
                             : 'none',
-                          cursor: !profile || isQuestCompleted(quest) ? 'default' : 'pointer'
+                          cursor: !profile?.id || isQuestCompleted(quest) ? 'default' : 'pointer'
                         }}
                       >
-                        {!profile
+                        {!profile?.id
                           ? 'Log in to complete'
                           : isQuestCompleted(quest)
                           ? 'COMPLETED'

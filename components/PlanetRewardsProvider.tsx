@@ -171,18 +171,10 @@ export function PlanetRewardsProvider({
   }, [user?.id, fetchTodayElement]);
 
   const claimPlanetReward = useCallback(async (element: ElementType): Promise<PlanetReward | null> => {
-    // If user is not authenticated, still show the celebration but prompt sign in
+    // If user is not authenticated, prompt sign in without showing celebration
     if (!user) {
-      // Show the celebration display even without claiming
-      const displayReward: PlanetReward = {
-        type: 'BOOST',
-        element,
-        code: 'element_of_day_display',
-        label: 'Sign in to claim your daily blessing',
-      } as any;
-      setLastReward(displayReward);
       onSignInRequired?.();
-      return displayReward;
+      return null;
     }
 
     // Prevent duplicate claims while in-flight or during brief cooldown

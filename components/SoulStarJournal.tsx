@@ -994,15 +994,17 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       {showHistory ? (
         /* Full Log View - Public or Private based on activeTab */
         <div
-          className="w-full max-w-4xl sm:min-w-[460px] mx-auto pointer-events-auto"
+          className="w-full max-w-4xl sm:min-w-[460px] mx-auto pointer-events-auto transition-all duration-300"
           style={{
             height: '100%',
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
             background: 'rgba(0, 0, 0, 0.7)',
-            border: `1px solid ${elementTheme.color}60`,
-            boxShadow: `0 0 30px ${elementTheme.color}60, 0 0 60px ${elementTheme.color}40, 0 0 100px ${elementTheme.color}20`,
+            border: `1px solid ${activeTab === 'public' ? '#00FF00' : '#FF69B4'}60`,
+            boxShadow: activeTab === 'public'
+              ? '0 0 30px #00FF0060, 0 0 60px #00FF0040, 0 0 100px #00FF0020'
+              : '0 0 30px #FF69B460, 0 0 60px #FF69B440, 0 0 100px #FF69B420',
             borderRadius: '14px',
             backdropFilter: 'blur(8px)'
           }}
@@ -1085,7 +1087,15 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           </div>
 
           {/* Tabs Switcher - below yellow line, Public left, Private right */}
-          <div className="flex items-center justify-center gap-4 px-3 py-1 border-b border-white/20">
+          <div
+            className="flex items-center justify-center gap-4 px-3 py-1 border-b transition-all duration-300"
+            style={{
+              borderColor: activeTab === 'public' ? '#00FF0040' : '#FF69B440',
+              boxShadow: activeTab === 'public'
+                ? '0 4px 15px #00FF0030, 0 2px 8px #00FF0020'
+                : '0 4px 15px #FF69B430, 0 2px 8px #FF69B420'
+            }}
+          >
             <button
               onClick={() => {
                 try { sfx.play('change-channel', 0.8); } catch {}
@@ -1749,12 +1759,13 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   {(!user?.id || !profile?.element) ? (
                     <button
                       onClick={() => {
-                        sfx.play('button', 0.8);
                         if (!hasAttemptedCast) {
-                          // First click: just change the button text
+                          // First click: play star sound and change button text
+                          sfx.play('star', 0.8);
                           setHasAttemptedCast(true);
                         } else {
-                          // Second click: close journal and open welcome home
+                          // Second click: play button sound and open welcome home
+                          sfx.play('button', 0.8);
                           onClose();
                           // Set flag to reopen journal after profile creation
                           sessionStorage.setItem('reopenJournalAfterLogin', 'true');
@@ -1766,7 +1777,13 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                         }
                       }}
                       className="flex-1 px-4 py-2 rounded-lg text-base font-semibold transition-all duration-200 hover:opacity-90"
-                      style={{
+                      style={hasAttemptedCast ? {
+                        background: 'rgba(57, 255, 20, 0.15)',
+                        color: '#39FF14',
+                        border: '2px solid #39FF14',
+                        boxShadow: '0 0 20px #39FF14, 0 0 40px #39FF1460, inset 0 0 15px #39FF1430',
+                        textShadow: '0 0 8px #39FF14, 0 0 15px #39FF14, 0 0 25px #39FF14'
+                      } : {
                         background: 'rgba(255, 255, 0, 0.15)',
                         color: '#FFFF00',
                         border: '2px solid #FFFF00',

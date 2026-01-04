@@ -3082,110 +3082,134 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     {/* Special rendering for TAP_ELEMENT_OF_DAY */}
                     {quest.quest_key === 'TAP_ELEMENT_OF_DAY' && (
                       <div className="mt-2 mb-0 flex flex-col items-center overflow-visible">
-                        <button
-                          type="button"
-                          onClick={async (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
+                        {!isLoggedIn ? (
+                          <button
+                            onClick={() => {
+                              try { sfx.play('click', 0.8); } catch {}
+                              // Close heart coin display first
+                              setOpen(false);
+                              onClose?.();
+                              window.dispatchEvent(new CustomEvent('close-heartcoin-modal'));
+                              // Then open WELCOME HOME modal
+                              setTimeout(() => {
+                                window.dispatchEvent(new CustomEvent('openWelcomeHomeModal'));
+                              }, 150);
+                            }}
+                            className="text-center py-3 px-4 rounded-lg border border-[#4ECDC4]/40 cursor-pointer hover:opacity-80 transition-opacity"
+                            style={{
+                              background: 'rgba(78,205,196,0.1)',
+                              color: '#4ECDC4',
+                              textShadow: '0 0 8px rgba(78,205,196,0.5)'
+                            }}
+                          >
+                            <span className="text-sm font-bold">Log in to complete</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
 
-                            // Guard: if already completed, don't process again
-                            if (isQuestCompleted(quest)) {
-                              console.log('[HeartCoinButton] Quest already completed, skipping');
-                              return;
-                            }
+                              // Guard: if already completed, don't process again
+                              if (isQuestCompleted(quest)) {
+                                console.log('[HeartCoinButton] Quest already completed, skipping');
+                                return;
+                              }
 
-                            const targetElement = elementOfDay || 'heart';
-                            console.log('[HeartCoinButton] Element image clicked for quest:', quest.id);
-                            try { sfx.play('click', 0.8); } catch {}
+                              const targetElement = elementOfDay || 'heart';
+                              console.log('[HeartCoinButton] Element image clicked for quest:', quest.id);
+                              try { sfx.play('click', 0.8); } catch {}
 
-                            // ========== ELEMENT OF THE DAY: TRIGGER WARP THEN OPEN MODAL ==========
-                            // Quest completion happens in the ElementOfDay modal, not here
-                            if (quest.id === ELEMENT_OF_DAY_BONUS_QUEST_ID) {
-                              console.log('[HeartCoinButton] Element of Day quest - triggering warp then opening modal');
-                              // Close the HeartCoin popup first
+                              // ========== ELEMENT OF THE DAY: TRIGGER WARP THEN OPEN MODAL ==========
+                              // Quest completion happens in the ElementOfDay modal, not here
+                              if (quest.id === ELEMENT_OF_DAY_BONUS_QUEST_ID) {
+                                console.log('[HeartCoinButton] Element of Day quest - triggering warp then opening modal');
+                                // Close the HeartCoin popup first
+                                setOpen(false);
+                                try { onClose?.(); } catch {}
+
+                                // Dispatch planet:warp event to trigger warp visual effect
+                                setTimeout(() => {
+                                  console.log('[HeartCoinButton] Dispatching planet:warp event for element:', targetElement);
+                                  window.dispatchEvent(new CustomEvent('planet:warp', {
+                                    detail: {
+                                      element: targetElement,
+                                      isDailyElement: true,
+                                      isCenterPlanet: false
+                                    }
+                                  }));
+
+                                  // After warp effect completes (~3500ms), show element of day modal
+                                  const WARP_DURATION_MS = 3500;
+                                  setTimeout(() => {
+                                    window.dispatchEvent(new CustomEvent('elementOfDay:open'));
+                                  }, WARP_DURATION_MS);
+                                }, 150); // Let popup close first
+
+                                return; // Don't complete quest here - it will be completed in the ElementOfDay modal
+                              }
+
+                              // ========== VISUAL EFFECTS ==========
+                              // Close the popup first - call onClose to notify parent
                               setOpen(false);
                               try { onClose?.(); } catch {}
-
-                              // Dispatch planet:warp event to trigger warp visual effect
+                              // Also dispatch event to close any HeartCoin modals
+                              window.dispatchEvent(new CustomEvent('close-heartcoin-modal'));
+                              // Delay to let heart coin display close before warp
                               setTimeout(() => {
-                                console.log('[HeartCoinButton] Dispatching planet:warp event for element:', targetElement);
+                                // Dispatch planet:warp event FIRST to trigger warp animation
+                                console.log('[HeartCoinButton] Dispatching planet:warp event');
                                 window.dispatchEvent(new CustomEvent('planet:warp', {
-                                  detail: {
-                                    element: targetElement,
-                                    isDailyElement: true,
-                                    isCenterPlanet: false
-                                  }
+                                  detail: { element: targetElement }
                                 }));
-
-                                // After warp effect completes (~3500ms), show element of day modal
-                                const WARP_DURATION_MS = 3500;
+                                // After warp effect, open the 3D planet view
                                 setTimeout(() => {
-                                  window.dispatchEvent(new CustomEvent('elementOfDay:open'));
-                                }, WARP_DURATION_MS);
-                              }, 150); // Let popup close first
-
-                              return; // Don't complete quest here - it will be completed in the ElementOfDay modal
-                            }
-
-                            // ========== VISUAL EFFECTS ==========
-                            // Close the popup first - call onClose to notify parent
-                            setOpen(false);
-                            try { onClose?.(); } catch {}
-                            // Also dispatch event to close any HeartCoin modals
-                            window.dispatchEvent(new CustomEvent('close-heartcoin-modal'));
-                            // Delay to let heart coin display close before warp
-                            setTimeout(() => {
-                              // Dispatch planet:warp event FIRST to trigger warp animation
-                              console.log('[HeartCoinButton] Dispatching planet:warp event');
-                              window.dispatchEvent(new CustomEvent('planet:warp', {
-                                detail: { element: targetElement }
-                              }));
-                              // After warp effect, open the 3D planet view
-                              setTimeout(() => {
-                                if (onOpenBlueDisplay) {
-                                  console.log('[HeartCoinButton] Calling onOpenBlueDisplay');
-                                  onOpenBlueDisplay();
-                                } else {
-                                  window.dispatchEvent(new CustomEvent('open-blue-display'));
-                                }
-                                // After blue display opens, show Element of the Day modal
-                                setTimeout(() => {
-                                  console.log('[HeartCoinButton] Showing Element of the Day modal');
-                                  window.dispatchEvent(new CustomEvent('element-of-day:show', {
-                                    detail: { element: targetElement }
-                                  }));
-                                }, 1500); // Wait for blue display to fully open
-                              }, 3000); // Wait for warp animation to complete
-                            }, 150); // Let heart coin display close first
-                          }}
-                          className="flex items-center cursor-pointer hover:scale-110 transition-transform overflow-visible"
-                          onMouseEnter={() => { try { sfx.play('hover', 0.5); } catch {} }}
-                          style={{ pointerEvents: 'auto', zIndex: 10, overflow: 'visible' }}
-                        >
-                          <div className="relative overflow-visible" style={{ overflow: 'visible' }}>
-                            {/* Glow background */}
-                            {!isQuestCompleted(quest) && (
-                              <div
-                                className="absolute inset-0 rounded-full animate-pulse"
+                                  if (onOpenBlueDisplay) {
+                                    console.log('[HeartCoinButton] Calling onOpenBlueDisplay');
+                                    onOpenBlueDisplay();
+                                  } else {
+                                    window.dispatchEvent(new CustomEvent('open-blue-display'));
+                                  }
+                                  // After blue display opens, show Element of the Day modal
+                                  setTimeout(() => {
+                                    console.log('[HeartCoinButton] Showing Element of the Day modal');
+                                    window.dispatchEvent(new CustomEvent('element-of-day:show', {
+                                      detail: { element: targetElement }
+                                    }));
+                                  }, 1500); // Wait for blue display to fully open
+                                }, 3000); // Wait for warp animation to complete
+                              }, 150); // Let heart coin display close first
+                            }}
+                            className="flex items-center cursor-pointer hover:scale-110 transition-transform overflow-visible"
+                            onMouseEnter={() => { try { sfx.play('hover', 0.5); } catch {} }}
+                            style={{ pointerEvents: 'auto', zIndex: 10, overflow: 'visible' }}
+                          >
+                            <div className="relative overflow-visible" style={{ overflow: 'visible' }}>
+                              {/* Glow background */}
+                              {!isQuestCompleted(quest) && (
+                                <div
+                                  className="absolute inset-0 rounded-full animate-pulse"
+                                  style={{
+                                    background: 'radial-gradient(circle, rgba(255,215,0,0.6) 0%, rgba(255,215,0,0.3) 40%, transparent 70%)',
+                                    transform: 'scale(1.8)',
+                                    filter: 'blur(8px)'
+                                  }}
+                                />
+                              )}
+                              <img
+                                src={getElementIcon(elementOfDay || 'heart')}
+                                alt={`${elementOfDay || 'heart'} element`}
+                                className="w-12 h-12 rounded-full object-cover relative"
                                 style={{
-                                  background: 'radial-gradient(circle, rgba(255,215,0,0.6) 0%, rgba(255,215,0,0.3) 40%, transparent 70%)',
-                                  transform: 'scale(1.8)',
-                                  filter: 'blur(8px)'
+                                  filter: isQuestCompleted(quest) ? 'grayscale(0.6) brightness(0.5)' : 'none',
+                                  opacity: isQuestCompleted(quest) ? 0.5 : 1,
+                                  transition: 'filter 0.3s ease, opacity 0.3s ease'
                                 }}
                               />
-                            )}
-                            <img
-                              src={getElementIcon(elementOfDay || 'heart')}
-                              alt={`${elementOfDay || 'heart'} element`}
-                              className="w-12 h-12 rounded-full object-cover relative"
-                              style={{
-                                filter: isQuestCompleted(quest) ? 'grayscale(0.6) brightness(0.5)' : 'none',
-                                opacity: isQuestCompleted(quest) ? 0.5 : 1,
-                                transition: 'filter 0.3s ease, opacity 0.3s ease'
-                              }}
-                            />
-                          </div>
-                        </button>
+                            </div>
+                          </button>
+                        )}
                       </div>
                     )}
                     {/* Button for other quests */}
@@ -3193,6 +3217,19 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       <div className="mt-2 flex justify-center">
                         <button
                           onClick={() => {
+                            // If not logged in, close heart coin display and open WELCOME HOME modal
+                            if (!isLoggedIn) {
+                              try { sfx.play('click', 0.8); } catch {}
+                              // Close heart coin display first
+                              setOpen(false);
+                              onClose?.();
+                              window.dispatchEvent(new CustomEvent('close-heartcoin-modal'));
+                              // Then open WELCOME HOME modal
+                              setTimeout(() => {
+                                window.dispatchEvent(new CustomEvent('openWelcomeHomeModal'));
+                              }, 150);
+                              return;
+                            }
                             if (quest.quest_key === 'JOURNAL_ENTRY_OF_DAY') {
                               handleJournalEntry();
                             } else if (quest.quest_key === 'LISTEN_SONG_OF_DAY') {
@@ -3233,7 +3270,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               }
                             }
                           }}
-                          disabled={isQuestCompleted(quest)}
+                          disabled={isLoggedIn && isQuestCompleted(quest)}
                           onMouseEnter={() => { try { sfx.play('hover', 0.5); } catch {} }}
                           className="px-5 py-2 text-xs rounded border font-bold transition-all duration-200 pointer-events-auto relative z-10 min-w-[140px] hover:scale-105"
                           style={(() => {
@@ -3249,41 +3286,53 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               return `rgba(${r},${g},${b},${alpha})`;
                             };
                             return {
-                              background: isQuestCompleted(quest)
-                                ? 'rgba(0,255,0,0.1)'
-                                : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
-                                  ? 'rgba(255,255,0,0.15)'
-                                  : 'rgba(255,255,255,0.15)',
-                              color: isQuestCompleted(quest)
-                                ? '#00FF00'
-                                : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
-                                  ? '#FFFF00'
-                                  : '#FFFFFF',
-                              borderColor: isQuestCompleted(quest)
-                                ? '#00FF00'
-                                : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
-                                  ? '#FFFF00'
-                                  : '#FFFFFF',
-                              textShadow: isQuestCompleted(quest)
-                                ? '0 0 8px #00FF00, 0 0 16px #00FF00'
-                                : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
-                                  ? '0 0 8px rgba(255,255,0,0.5)'
-                                  : '0 0 8px rgba(255,255,255,0.5)',
-                              boxShadow: isQuestCompleted(quest)
-                                ? '0 0 10px rgba(0,255,0,0.4), 0 0 20px rgba(0,255,0,0.2)'
-                                : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
-                                  ? '0 0 10px rgba(255,255,0,0.3)'
-                                  : 'none'
+                              background: !isLoggedIn
+                                ? 'rgba(78,205,196,0.2)'
+                                : isQuestCompleted(quest)
+                                  ? 'rgba(0,255,0,0.1)'
+                                  : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                                    ? 'rgba(255,255,0,0.15)'
+                                    : 'rgba(255,255,255,0.15)',
+                              color: !isLoggedIn
+                                ? '#4ECDC4'
+                                : isQuestCompleted(quest)
+                                  ? '#00FF00'
+                                  : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                                    ? '#FFFF00'
+                                    : '#FFFFFF',
+                              borderColor: !isLoggedIn
+                                ? '#4ECDC4'
+                                : isQuestCompleted(quest)
+                                  ? '#00FF00'
+                                  : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                                    ? '#FFFF00'
+                                    : '#FFFFFF',
+                              textShadow: !isLoggedIn
+                                ? '0 0 8px rgba(78,205,196,0.5)'
+                                : isQuestCompleted(quest)
+                                  ? '0 0 8px #00FF00, 0 0 16px #00FF00'
+                                  : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                                    ? '0 0 8px rgba(255,255,0,0.5)'
+                                    : '0 0 8px rgba(255,255,255,0.5)',
+                              boxShadow: !isLoggedIn
+                                ? 'none'
+                                : isQuestCompleted(quest)
+                                  ? '0 0 10px rgba(0,255,0,0.4), 0 0 20px rgba(0,255,0,0.2)'
+                                  : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                                    ? '0 0 10px rgba(255,255,0,0.3)'
+                                    : 'none'
                             };
                           })()}
                         >
-                          {isQuestCompleted(quest)
-                            ? (quest.quest_key === 'JOURNAL_ENTRY_OF_DAY' ? 'REFLECTED' : 'COMPLETED')
-                            : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
-                              ? 'REFLECT'
-                              : quest.quest_key === 'LISTEN_SONG_OF_DAY'
-                                ? 'LISTEN'
-                                : 'COMPLETE'
+                          {!isLoggedIn
+                            ? 'Log in to complete'
+                            : isQuestCompleted(quest)
+                              ? (quest.quest_key === 'JOURNAL_ENTRY_OF_DAY' ? 'REFLECTED' : 'COMPLETED')
+                              : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                                ? 'REFLECT'
+                                : quest.quest_key === 'LISTEN_SONG_OF_DAY'
+                                  ? 'LISTEN'
+                                  : 'COMPLETE'
                           }
                         </button>
                       </div>
