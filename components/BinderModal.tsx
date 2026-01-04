@@ -100,6 +100,17 @@ const pulseKeyframes = `
       transform: translateX(-50%) translateY(0);
     }
   }
+
+  @keyframes guestEmptySlotGlow {
+    0%, 100% {
+      box-shadow: 0 0 8px rgba(255,105,180,0.3), 0 0 16px rgba(255,105,180,0.15);
+      border-color: rgba(255,105,180,0.4);
+    }
+    50% {
+      box-shadow: 0 0 16px rgba(255,105,180,0.6), 0 0 28px rgba(255,105,180,0.35), 0 0 40px rgba(147,51,234,0.2);
+      border-color: rgba(255,105,180,0.7);
+    }
+  }
 `;
 
 type Props = {
@@ -204,15 +215,43 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
   }, [pageIndex, binderSlots, displayUnlockedSlots, profile?.id]);
 
   // Preview slots for logged-out state (guest mode)
-  // Slot 0: CHXNDLER preview card, Slots 1-2: empty unlocked, Slots 3+: locked
-  const previewSlots: BinderSlot[] = [
-    { user_id: '', slot_index: 0, is_unlocked: true, card_id: 'chxndler-preview', card_name: 'CHXNDLER', artwork_url: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910', element: 'ALL', rarity: 'Common', is_starter: true },
-    { user_id: '', slot_index: 1, is_unlocked: true, card_id: null, card_name: null, artwork_url: null, element: null, rarity: null, is_starter: null },
-    { user_id: '', slot_index: 2, is_unlocked: true, card_id: null, card_name: null, artwork_url: null, element: null, rarity: null, is_starter: null },
-    { user_id: '', slot_index: 3, is_unlocked: false, card_id: null, card_name: null, artwork_url: null, element: null, rarity: null, is_starter: null },
-    { user_id: '', slot_index: 4, is_unlocked: false, card_id: null, card_name: null, artwork_url: null, element: null, rarity: null, is_starter: null },
-    { user_id: '', slot_index: 5, is_unlocked: false, card_id: null, card_name: null, artwork_url: null, element: null, rarity: null, is_starter: null },
-  ];
+  // Page 1: CHXNDLER in slot 0, empty slots in 1-2, locked in 3-5
+  // Page 2+: All slots locked
+  const previewSlots: BinderSlot[] = useMemo(() => {
+    const PAGE_SIZE = 6;
+    const startIndex = pageIndex * PAGE_SIZE;
+
+    return Array.from({ length: PAGE_SIZE }, (_, i) => {
+      const slotIndex = startIndex + i;
+
+      // Only page 1 (pageIndex 0) has unlocked slots
+      if (pageIndex === 0) {
+        if (slotIndex === 0) {
+          // First slot: CHXNDLER preview card
+          return {
+            user_id: '', slot_index: slotIndex, is_unlocked: true,
+            card_id: 'chxndler-preview', card_name: 'CHXNDLER',
+            artwork_url: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
+            element: 'ALL', rarity: 'Common', is_starter: true
+          };
+        } else if (slotIndex < 3) {
+          // Slots 1-2: Empty unlocked
+          return {
+            user_id: '', slot_index: slotIndex, is_unlocked: true,
+            card_id: null, card_name: null, artwork_url: null,
+            element: null, rarity: null, is_starter: null
+          };
+        }
+      }
+
+      // All other slots (page 2+ or slots 3-5 on page 1): Locked
+      return {
+        user_id: '', slot_index: slotIndex, is_unlocked: false,
+        card_id: null, card_name: null, artwork_url: null,
+        element: null, rarity: null, is_starter: null
+      };
+    });
+  }, [pageIndex]);
   // Purchase flow state machine
   const [selectedPurchaseType, setSelectedPurchaseType] = useState<'digital' | 'physical' | null>(null);
   const [purchaseState, setPurchaseState] = useState<'idle' | 'insufficient' | 'digital-preview' | 'confirm-digital' | 'confirm-physical' | 'physical-form' | 'success'>('idle');
@@ -961,7 +1000,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       
       <PopoutShell
         title="DIGITAL CARD BINDER"
-        subtitle={`CARDS COLLECTED: ${profile?.id ? cardsInSlots : 0} • BINDER SLOTS: ${profile?.id ? displayUnlockedSlots : GUEST_DEFAULT_SLOTS}`}
+        subtitle={`CARDS COLLECTED: ${profile?.id ? cardsInSlots : 1}`}
         minWidth={'min(96vw, 440px)'}
         maxHeight={'calc(100vh - 8vh - var(--display-touch-top))'}
         onClose={() => {
@@ -1196,7 +1235,11 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                             ? '0 0 8px rgba(255,105,180,0.3), 0 0 14px rgba(255,105,180,0.15)'
                             : '0 0 3px rgba(255,105,180,0.1)',
                           border: isEmpty ? '2px dotted rgba(255,105,180,0.5)' : undefined,
-                          animation: isNewlyUnlocked ? 'slotUnlock 1.2s ease-out forwards' : undefined
+                          animation: isNewlyUnlocked
+                            ? 'slotUnlock 1.2s ease-out forwards'
+                            : (isEmpty && !profile?.id)
+                              ? 'guestEmptySlotGlow 2s ease-in-out infinite'
+                              : undefined
                         }}
                       >
                         <div className="relative w-full h-full overflow-hidden rounded-lg">

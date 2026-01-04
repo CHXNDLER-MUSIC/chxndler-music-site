@@ -2075,14 +2075,18 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         style={{ ...blurWrapperStyle, top: 0 }}
       >
         <PrewarmThree />
-        <AmbientSpace
-          ambientSrc="/tracks/space-music.opus"
-          // Welcome tracks are now played via audioManager.playTrack() in onWarpSfxEnd for tracking in user_song_daily_progress
-          introSrc={undefined}
-          playingMusic={isPlaying}
-          suspend={ambientSuspended}
-          userSelectedSong={userSelected}
-        />
+        {/* AmbientSpace is disabled after entering heartverse since space-music is now
+            handled by AudioProvider (connected to play/pause button) */}
+        {!hasEnteredHeartverse && (
+          <AmbientSpace
+            ambientSrc="/tracks/space-music.opus"
+            // Welcome tracks are now played via audioManager.playTrack() in onWarpSfxEnd for tracking in user_song_daily_progress
+            introSrc={undefined}
+            playingMusic={isPlaying}
+            suspend={ambientSuspended}
+            userSelectedSong={userSelected}
+          />
+        )}
         
         {/* 3D Planet System - COMPLETELY DISABLED */}
         {/* {ENABLE_HEARTVERSE_3D && HeartverseSystemWrapper && <HeartverseSystemWrapper 

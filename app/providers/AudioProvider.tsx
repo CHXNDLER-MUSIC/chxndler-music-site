@@ -1076,11 +1076,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         navigator.mediaSession.setActionHandler('nexttrack', null);
       }
 
-      // Ensure we're still working with the same track (prevent race conditions)
-      if (state.currentTrack?.id !== normId) {
-        console.log('🎵 Track changed during loading, aborting:', normId);
-        return;
-      }
+      // Note: Removed stale state check that was causing race conditions
+      // The check `state.currentTrack?.id !== normId` used closure state
+      // which could be stale, causing valid playback to be aborted
 
       a.src = trackSource;
       try { 

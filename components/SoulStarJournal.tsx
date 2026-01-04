@@ -128,6 +128,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   });
 
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [hasAttemptedCast, setHasAttemptedCast] = useState(false);
   const [activeTab, setActiveTab] = useState<'private' | 'public'>('public');
   const [showCardsModal, setShowCardsModal] = useState(false);
   const [showBadgesModal, setShowBadgesModal] = useState(false);
@@ -160,6 +161,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
     if (isOpen) {
       loadDailyPrompt();
       setShowLoginPrompt(false);
+      setHasAttemptedCast(false); // Reset cast attempt state when journal opens
       // Load starred entries for the private tab
       loadStarredEntries();
     }
@@ -1748,15 +1750,20 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     <button
                       onClick={() => {
                         sfx.play('button', 0.8);
-                        // Close journal and open welcome home, then reopen journal after login
-                        onClose();
-                        // Set flag to reopen journal after profile creation
-                        sessionStorage.setItem('reopenJournalAfterLogin', 'true');
-                        setTimeout(() => {
-                          if (openWelcomeHome) {
-                            openWelcomeHome();
-                          }
-                        }, 100);
+                        if (!hasAttemptedCast) {
+                          // First click: just change the button text
+                          setHasAttemptedCast(true);
+                        } else {
+                          // Second click: close journal and open welcome home
+                          onClose();
+                          // Set flag to reopen journal after profile creation
+                          sessionStorage.setItem('reopenJournalAfterLogin', 'true');
+                          setTimeout(() => {
+                            if (openWelcomeHome) {
+                              openWelcomeHome();
+                            }
+                          }, 100);
+                        }
                       }}
                       className="flex-1 px-4 py-2 rounded-lg text-base font-semibold transition-all duration-200 hover:opacity-90"
                       style={{
@@ -1767,7 +1774,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                         textShadow: '0 0 8px #FFFF00, 0 0 15px #FFFF00, 0 0 25px #FFFF00'
                       }}
                     >
-                      Create ALIEN profile to submit
+                      {hasAttemptedCast ? 'Create ALIEN profile to submit' : 'Cast into the Stars'}
                     </button>
                   ) : (
                     <button

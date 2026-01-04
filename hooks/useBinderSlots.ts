@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
-// Fixed total number of binder slots to display
-export const TOTAL_SLOTS = 24;
+// Fixed total number of binder slots to display (9 pages x 6 slots = 54)
+export const TOTAL_SLOTS = 54;
 
 // Slot from v_user_binder_slots view
 export type BinderSlot = {

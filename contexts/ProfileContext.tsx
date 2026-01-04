@@ -234,6 +234,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error('Error in fetchAllBadges:', err);
       setBadgesError(`Failed to fetch badges: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setBadgesLoading(false);
     }
   }, []);
 
@@ -681,7 +683,6 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         await loadJournalEntries(session.user.id);
         await fetchAllBadges();
         await fetchUserBadges(session.user.id);
-        setBadgesLoading(false);
       } else {
         if (typeof window !== 'undefined') {
           debug("ProfileContext no user session, clearing profile", {
@@ -695,7 +696,6 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         // Don't clear allBadges - badges are public data viewable by anyone
         // Only clear user-specific badge data
         setUserBadges([]);
-        setBadgesLoading(false);
         setLoading(false);
 
         // Still fetch badges for logged-out users since they're public
