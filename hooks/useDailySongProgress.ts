@@ -11,12 +11,16 @@
  * - completed_at (timestamp when first completed)
  *
  * Awards HeartCoin once per user per song per day when 50% threshold is reached.
+ * Also completes the LISTEN_SONG_OF_DAY bonus quest when Song of Day is completed.
  */
 
 import { useEffect, useRef, useCallback } from 'react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { logHeartcoinTransaction } from '@/utils/heartcoins';
 import { consumeActiveBoost } from '@/lib/boosts';
+
+// Cache for LISTEN_SONG_OF_DAY quest ID (looked up once per session)
+let listenSongQuestIdCache: string | null = null;
 
 // Types
 interface DailyProgressState {
@@ -28,6 +32,7 @@ interface DailyProgressState {
   completionPercent: number;
   completed: boolean;
   completedAt: string | null;
+  playNumber: number;          // Sequential play count for repeats
 }
 
 interface UseDailySongProgressOptions {
@@ -59,11 +64,21 @@ export function useDailySongProgress({
   songOfDaySlug = null
 }: UseDailySongProgressOptions) {
   // Track completion state per song per day to prevent double-awards
-  const completedRef = useRef<Set<string>>(new Set()); // Set of "songId:day" keys
+  const completedRef = useRef<Set<string>>(new Set()); // Set of "songId:day:playNumber" keys
   const lastUpsertRef = useRef<number>(0);
   const isProcessingRef = useRef<boolean>(false);
   const currentSongIdRef = useRef<string | null>(null);
   const initialRowCreatedRef = useRef<boolean>(false); // Track if initial row was created for current track
+
+  // Refs for detecting song repeats
+  const prevCurrentTimeRef = useRef<number>(0);
+  const currentPlayNumberRef = useRef<number>(1);
+  const playSessionKeyRef = useRef<string | null>(null); // "songId:day:playNumber" for current session
+
+  // Guard refs for bonus quest completion (keyed by NY date)
+  // Prevents multiple RPC calls even on rerenders or duplicate effect triggers
+  const completedDailySongQuestRef = useRef<Record<string, boolean>>({});
+  const prevCompletedStateRef = useRef<Record<string, boolean>>({}); // Track previous completed state per day
 
   // Lookup song UUID from slug
   const getSongId = useCallback(async (slug: string): Promise<string | null> => {
@@ -77,9 +92,14 @@ export function useDailySongProgress({
         .from('songs')
         .select('id')
         .eq('slug', slug)
-        .single();
+        .maybeSingle();
 
-      if (error || !data) {
+      if (error) {
+        console.error(`🎵 Daily progress: Error fetching song for slug "${slug}":`, error.message);
+        return null;
+      }
+
+      if (!data) {
         console.warn(`🎵 Daily progress: Song not found for slug "${slug}"`);
         return null;
       }
@@ -93,13 +113,50 @@ export function useDailySongProgress({
     }
   }, []);
 
-  // Check if already completed for this song/day (from DB)
-  const checkExistingProgress = useCallback(async (
+  // Get the next play_number for a new play session
+  const getNextPlayNumber = useCallback(async (
     userId: string,
     songId: string,
     day: string
+  ): Promise<number> => {
+    try {
+      const { data, error } = await supabaseBrowser
+        .from('user_song_daily_progress')
+        .select('play_number')
+        .eq('user_id', userId)
+        .eq('song_id', songId)
+        .eq('day', day)
+        .order('play_number', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.warn('🎵 Daily progress: Error fetching play_number:', error.message);
+        return 1;
+      }
+
+      if (!data) {
+        // No existing records, start at 1
+        return 1;
+      }
+
+      // Return next play number
+      return (data.play_number || 0) + 1;
+    } catch (err) {
+      // Error - start at 1
+      console.warn('🎵 Daily progress: Exception fetching play_number:', err);
+      return 1;
+    }
+  }, []);
+
+  // Check if already completed for this song/day/playNumber (from DB)
+  const checkExistingProgress = useCallback(async (
+    userId: string,
+    songId: string,
+    day: string,
+    playNumber: number
   ): Promise<boolean> => {
-    const cacheKey = `${songId}:${day}`;
+    const cacheKey = `${songId}:${day}:${playNumber}`;
 
     // If we already know it's completed, skip DB check
     if (completedRef.current.has(cacheKey)) {
@@ -113,28 +170,38 @@ export function useDailySongProgress({
         .eq('user_id', userId)
         .eq('song_id', songId)
         .eq('day', day)
-        .single();
+        .eq('play_number', playNumber)
+        .maybeSingle();
 
+      if (error) {
+        console.warn('🎵 Daily progress: Error checking existing progress:', error.message);
+        return false;
+      }
+
+      // Row may not exist yet - that's okay
       if (data?.completed) {
         completedRef.current.add(cacheKey);
         return true;
       }
       return false;
-    } catch {
+    } catch (err) {
       // No existing record or error - not completed
+      console.warn('🎵 Daily progress: Exception checking existing progress:', err);
       return false;
     }
   }, []);
 
-  // Upsert progress to database
+  // Upsert progress to database (now includes play_number)
   const upsertProgress = useCallback(async (
     userId: string,
     songId: string,
     day: string,
+    playNumber: number,
     listenedSeconds: number,
     durationSeconds: number,
     completionPercent: number,
-    markCompleted: boolean
+    markCompleted: boolean,
+    isNewSession: boolean = false
   ) => {
     if (isProcessingRef.current) return;
     isProcessingRef.current = true;
@@ -181,11 +248,17 @@ export function useDailySongProgress({
         user_id: userId,
         song_id: songId,
         day,
+        play_number: playNumber,
         listened_seconds: safeListenedSeconds,
         duration_seconds: safeDurationSeconds,
         completion_percent: safePercent,
         updated_at: new Date().toISOString()
       };
+
+      // Set started_at only for new sessions
+      if (isNewSession) {
+        progressData.started_at = new Date().toISOString();
+      }
 
       // Only set completed fields if we're marking as completed
       if (markCompleted) {
@@ -196,7 +269,7 @@ export function useDailySongProgress({
       const { error } = await supabaseBrowser
         .from('user_song_daily_progress')
         .upsert(progressData, {
-          onConflict: 'user_id,song_id,day',
+          onConflict: 'user_id,song_id,day,play_number',
           ignoreDuplicates: false
         });
 
@@ -268,6 +341,109 @@ export function useDailySongProgress({
     }
   }, []);
 
+  // Complete the LISTEN_SONG_OF_DAY bonus quest via RPC
+  // Only triggers when progress transitions from completed=false -> completed=true
+  const completeDailySongQuest = useCallback(async (day: string) => {
+    // Guard: Only trigger once per day
+    if (completedDailySongQuestRef.current[day]) {
+      console.log('🎵 Daily progress: Quest already triggered for today, skipping');
+      return;
+    }
+
+    // Guard: Only trigger on false->true transition
+    const wasCompletedBefore = prevCompletedStateRef.current[day] === true;
+    if (wasCompletedBefore) {
+      console.log('🎵 Daily progress: No false->true transition, skipping quest completion');
+      return;
+    }
+
+    // Mark as triggered BEFORE the RPC call to prevent race conditions
+    completedDailySongQuestRef.current[day] = true;
+
+    try {
+      // Get or lookup the LISTEN_SONG_OF_DAY quest ID
+      if (!listenSongQuestIdCache) {
+        const { data: questData, error: questError } = await supabaseBrowser
+          .from('bonus_quests')
+          .select('id')
+          .eq('quest_key', 'LISTEN_SONG_OF_DAY')
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (questError) {
+          console.warn('🎵 Daily progress: Error fetching quest:', questError.message);
+          return;
+        }
+
+        if (!questData?.id) {
+          console.log('🎵 Daily progress: LISTEN_SONG_OF_DAY quest not found or inactive');
+          return;
+        }
+        listenSongQuestIdCache = questData.id;
+      }
+
+      // Call the idempotent RPC
+      const { data, error } = await supabaseBrowser.rpc('complete_bonus_quest_once_per_day', {
+        p_quest_id: listenSongQuestIdCache
+      });
+
+      // Handle success cases
+      if (!error && data) {
+        const status = data.status;
+        const awarded = data.awarded === true;
+
+        if (status === 'completed' || status === 'already_completed') {
+          // Update previous completed state
+          prevCompletedStateRef.current[day] = true;
+
+          if (status === 'completed' && awarded) {
+            console.log('🎵 Daily progress: LISTEN_SONG_OF_DAY quest completed successfully!');
+          } else {
+            console.log('🎵 Daily progress: LISTEN_SONG_OF_DAY quest already completed today');
+          }
+
+          // Dispatch event to refresh UI state (bonus quests + profile)
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('dailySongQuestCompleted', {
+              detail: { day, awarded, status }
+            }));
+          }
+          return;
+        }
+      }
+
+      // Handle duplicate key errors gracefully (NOT an error)
+      if (error) {
+        const errMsg = error.message?.toLowerCase() || '';
+        const errCode = error.code || '';
+
+        // Duplicate key / already completed - treat as success
+        if (errCode === '23505' || errMsg.includes('duplicate key') || errMsg.includes('unique constraint')) {
+          console.log('🎵 Daily progress: Quest already completed (duplicate key), treating as success');
+          prevCompletedStateRef.current[day] = true;
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('dailySongQuestCompleted', {
+              detail: { day, awarded: false, status: 'already_completed' }
+            }));
+          }
+          return;
+        }
+
+        // Other errors - log but don't spam
+        console.log('🎵 Daily progress: Quest RPC returned error (may be OK):', errCode, errMsg.slice(0, 80));
+      }
+    } catch (err: any) {
+      // Catch duplicate key in exception form
+      const errStr = String(err?.message || err || '').toLowerCase();
+      if (errStr.includes('duplicate key') || errStr.includes('23505') || errStr.includes('unique constraint')) {
+        console.log('🎵 Daily progress: Quest already completed (caught exception), treating as success');
+        prevCompletedStateRef.current[day] = true;
+        return;
+      }
+      console.log('🎵 Daily progress: Quest completion exception (may be OK):', errStr.slice(0, 80));
+    }
+  }, []);
+
   // Main progress tracking effect
   useEffect(() => {
     if (!enabled) return;
@@ -292,26 +468,48 @@ export function useDailySongProgress({
 
       currentSongIdRef.current = songId;
       const day = getTodayNY();
-      const cacheKey = `${songId}:${day}`;
 
-      // If already completed today, no need to track further
-      const alreadyCompleted = await checkExistingProgress(userId, songId, day);
+      // Check if this is a new song/day combination (reset play session)
+      const newSessionKey = `${songId}:${day}`;
+      const isNewSongOrDay = playSessionKeyRef.current !== newSessionKey;
+
+      if (isNewSongOrDay) {
+        // New song or new day - get the next play_number
+        const nextPlayNumber = await getNextPlayNumber(userId, songId, day);
+        currentPlayNumberRef.current = nextPlayNumber;
+        playSessionKeyRef.current = newSessionKey;
+        prevCurrentTimeRef.current = 0;
+        initialRowCreatedRef.current = false;
+        console.log(`🎵 Daily progress: Starting play #${nextPlayNumber} for ${trackSlug}`);
+      }
+
+      const playNumber = currentPlayNumberRef.current;
+      const cacheKey = `${songId}:${day}:${playNumber}`;
+
+      // If already completed this specific play session, no need to track further
+      const alreadyCompleted = await checkExistingProgress(userId, songId, day, playNumber);
       if (alreadyCompleted) {
-        console.log(`🎵 Daily progress: Already completed ${trackSlug} today`);
+        // Mark as already completed in our state refs (prevents false->true transition)
+        prevCompletedStateRef.current[day] = true;
+        completedDailySongQuestRef.current[day] = true;
+        console.log(`🎵 Daily progress: Play #${playNumber} of ${trackSlug} already completed today`);
         return;
       }
 
-      // Reset initial row flag for new track
-      initialRowCreatedRef.current = false;
+      // Mark today's initial state as "not completed" so we can detect false->true transition
+      if (prevCompletedStateRef.current[day] === undefined) {
+        prevCompletedStateRef.current[day] = false;
+      }
 
       // IMMEDIATE initial upsert: Create the row right away when playback starts
       // This ensures the row exists in user_song_daily_progress immediately on LISTEN click
       const { currentTime: initialTime, duration: initialDuration } = audioElement;
-      if (initialDuration && initialDuration > 0 && isFinite(initialDuration)) {
+      if (!initialRowCreatedRef.current && initialDuration && initialDuration > 0 && isFinite(initialDuration)) {
         const initialPercent = (initialTime / initialDuration) * 100;
-        await upsertProgress(userId, songId, day, initialTime, initialDuration, initialPercent, false);
+        await upsertProgress(userId, songId, day, playNumber, initialTime, initialDuration, initialPercent, false, true);
         lastUpsertRef.current = Date.now();
         initialRowCreatedRef.current = true;
+        prevCurrentTimeRef.current = initialTime;
       }
 
       // Start tracking interval (1s)
@@ -331,6 +529,33 @@ export function useDailySongProgress({
         // Stop tracking if audio is paused
         if (paused) return;
 
+        // DETECT SONG RESTART: currentTime goes from >5s back to <2s (song looped or replayed)
+        const prevTime = prevCurrentTimeRef.current;
+        const isRestart = prevTime > 5 && currentTime < 2;
+
+        if (isRestart) {
+          // Song restarted! Increment play_number and create new row
+          const newPlayNumber = await getNextPlayNumber(userId, songId, day);
+          currentPlayNumberRef.current = newPlayNumber;
+          initialRowCreatedRef.current = false;
+          prevCurrentTimeRef.current = currentTime;
+
+          console.log(`🎵 Daily progress: Song restarted! Starting play #${newPlayNumber} for ${trackSlug}`);
+
+          // Create the new row immediately
+          const initialPercent = (currentTime / duration) * 100;
+          await upsertProgress(userId, songId, day, newPlayNumber, currentTime, duration, initialPercent, false, true);
+          lastUpsertRef.current = Date.now();
+          initialRowCreatedRef.current = true;
+          return;
+        }
+
+        // Update previous time for next iteration
+        prevCurrentTimeRef.current = currentTime;
+
+        const currentPlayNum = currentPlayNumberRef.current;
+        const currentCacheKey = `${songId}:${day}:${currentPlayNum}`;
+
         // Calculate completion percentage
         const completionPercent = (currentTime / duration) * 100;
 
@@ -346,36 +571,42 @@ export function useDailySongProgress({
           initialRowCreatedRef.current = true;
         }
 
-        // Check if we've hit the 50% threshold
-        const shouldComplete = completionPercent >= 50 && !completedRef.current.has(cacheKey);
+        // Check if we've hit the 50% threshold for this play session
+        const shouldComplete = completionPercent >= 50 && !completedRef.current.has(currentCacheKey);
 
         // Upsert progress
         await upsertProgress(
           userId,
           songId,
           day,
+          currentPlayNum,
           currentTime,
           duration,
           completionPercent,
-          shouldComplete
+          shouldComplete,
+          isInitialRow
         );
 
         // Award HeartCoin if completing for the first time AND it's the Song of the Day
         if (shouldComplete) {
+          // Mark this play session as completed
+          completedRef.current.add(currentCacheKey);
+
           // Only award HeartCoin for Song of the Day
           const isSongOfDay = songOfDaySlug && trackSlug === songOfDaySlug;
           if (isSongOfDay) {
             await awardCompletionHeartCoin(userId, songId, trackSlug, day);
-            console.log(`🎵 Daily progress: Song of the Day completed! Awarding HeartCoin for ${trackSlug}`);
+            console.log(`🎵 Daily progress: Song of the Day play #${currentPlayNum} completed! Awarding HeartCoin for ${trackSlug}`);
+
+            // Also complete the LISTEN_SONG_OF_DAY bonus quest
+            // This is guarded to only trigger once per day on false->true transition
+            await completeDailySongQuest(day);
           } else {
-            console.log(`🎵 Daily progress: Song completed but not Song of the Day (${trackSlug} !== ${songOfDaySlug}), no HeartCoin awarded`);
+            console.log(`🎵 Daily progress: Play #${currentPlayNum} completed but not Song of the Day (${trackSlug} !== ${songOfDaySlug}), no HeartCoin awarded`);
           }
 
-          // Clear interval since we're done tracking this song/day
-          if (intervalId) {
-            window.clearInterval(intervalId);
-            intervalId = null;
-          }
+          // NOTE: We no longer clear the interval since we want to track repeats!
+          // The interval continues to run to detect when the song restarts
         }
       }, 1000);
     };
@@ -395,9 +626,11 @@ export function useDailySongProgress({
     isPlaying,
     songOfDaySlug,
     getSongId,
+    getNextPlayNumber,
     checkExistingProgress,
     upsertProgress,
-    awardCompletionHeartCoin
+    awardCompletionHeartCoin,
+    completeDailySongQuest
   ]);
 
   // Also track on 'timeupdate' events for more accurate progress

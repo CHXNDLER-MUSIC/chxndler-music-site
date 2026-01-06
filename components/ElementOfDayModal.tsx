@@ -39,6 +39,7 @@ export default function ElementOfDayModal() {
   const clickAudioRef = useRef<HTMLAudioElement | null>(null);
   const alienWaveAudioRef = useRef<HTMLAudioElement | null>(null);
   const elementSoundRef = useRef<HTMLAudioElement | null>(null);
+  const starAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Play hover sound when hovering over the element
   const handleElementHover = useCallback(() => {
@@ -79,6 +80,16 @@ export default function ElementOfDayModal() {
     elementSoundRef.current = new Audio(config.sound);
     elementSoundRef.current.volume = 0.7;
     elementSoundRef.current.play().catch(() => {});
+  }, []);
+
+  // Play star sound when clicking the element image
+  const playStarSound = useCallback(() => {
+    if (!starAudioRef.current) {
+      starAudioRef.current = new Audio("/audio/star.mp3");
+      starAudioRef.current.volume = 0.7;
+    }
+    starAudioRef.current.currentTime = 0;
+    starAudioRef.current.play().catch(() => {});
   }, []);
 
   // Check auth status when modal opens
@@ -233,6 +244,8 @@ export default function ElementOfDayModal() {
     const userId = session.user.id;
     console.log('[ElementOfDayModal] Authenticated user:', userId);
 
+    // Play star sound when clicking the element image
+    playStarSound();
     // Play element-specific sound
     playElementSound(data.element);
 
@@ -301,7 +314,7 @@ export default function ElementOfDayModal() {
 
         // ========== AWARD RELIC VIA API ==========
         // If there's a rewardKey, explicitly award the relic to ensure it's in user_relics
-        let relicAwarded = rpcResult.did_award_relic || false;
+        let relicAwarded = rpcResult?.did_award_relic || false;
         if (data.rewardKey && userId) {
           try {
             const awardRes = await fetch('/api/award-relic', {
@@ -383,7 +396,7 @@ export default function ElementOfDayModal() {
     } finally {
       setIsCompletingElementQuest(false);
     }
-  }, [data, claimed, isCompletingElementQuest, elementQuestCompleted, playElementSound]);
+  }, [data, claimed, isCompletingElementQuest, elementQuestCompleted, playStarSound, playElementSound]);
 
   // Listen for 'element-of-day:show' event (existing event)
   useEffect(() => {
@@ -652,7 +665,7 @@ export default function ElementOfDayModal() {
 
           {/* Element Name */}
           <div
-            className="text-center mb-3"
+            className="text-center mb-1"
             style={{
               color: elementColor,
               textShadow: `0 0 16px ${elementColor}90`,

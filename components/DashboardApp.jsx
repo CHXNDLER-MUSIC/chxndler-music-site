@@ -40,6 +40,7 @@ import HoloStarsButton from "@/components/HoloStarsButton";
 import SoulStareModal from "@/components/SoulStareModal";
 import HeartCoinModal from "@/components/HeartCoinModal";
 import ElementOfDayModal from "@/components/ElementOfDayModal";
+import HeartverseWelcomeModal from "@/components/HeartverseWelcomeModal";
 import RelicCelebration from "@/components/RelicCelebration";
 import { useUIStore } from "@/store/useUIStore";
 import { useProfile } from "@/contexts/ProfileContext";
@@ -2884,6 +2885,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
       {/* Element of the Day Modal - shows after warp to daily element */}
       <ElementOfDayModal />
+
+      {/* Heartverse Welcome Modal - shows after warp to center planet */}
+      <HeartverseWelcomeModal />
 
       {/* Relic Celebration - shows after claiming element of day reward */}
       <RelicCelebration />

@@ -762,7 +762,9 @@ export default function Pure3DPlanets({
     const projectToScreen = (worldPos: THREE.Vector3): { x: number; y: number } => {
       const vector = worldPos.clone();
       vector.project(camera);
-      const rect = container.getBoundingClientRect();
+      // Use renderer's canvas element for accurate screen mapping
+      const canvas = renderer.domElement;
+      const rect = canvas.getBoundingClientRect();
       return {
         x: rect.left + ((vector.x + 1) / 2) * rect.width,
         y: rect.top + ((-vector.y + 1) / 2) * rect.height
@@ -891,7 +893,12 @@ export default function Pure3DPlanets({
         try { sfx.play('click', 0.5); } catch {}
 
         if (obj === sun) {
-          const screenPos = projectToScreen(intersectionPoint);
+          // Calculate screen position from sun's center
+          scene.updateMatrixWorld(true);
+          camera.updateMatrixWorld(true);
+          const centerPos = new THREE.Vector3();
+          obj.getWorldPosition(centerPos);
+          const screenPos = projectToScreen(centerPos);
           setupSelectionEffects(obj, '#FC54AF');
           setPlanetPopup({
             x: screenPos.x,
@@ -910,11 +917,20 @@ export default function Pure3DPlanets({
     const elementId = obj.userData?.elementId as ElementType | undefined;
     if (elementId) {
       // Show popup for element planet (including daily element - warp button will trigger reward claim)
-      const screenPos = projectToScreen(intersectionPoint);
-      setupSelectionEffects(obj, getElementColor(elementId), elementId);
+      // Get the actual sprite from the map for tracking (ensures correct reference)
+      const targetSprite = elementSpriteMapRef.current.get(elementId) || obj;
+      setupSelectionEffects(targetSprite, getElementColor(elementId), elementId);
 
           // Flag if this is the daily element planet for special warp handling
           const isDailyElement = elementId === glowingElement && !hasClaimedElementOfDay;
+
+      // Calculate screen position from planet's center (not click point)
+      // Force matrix updates to ensure accurate position
+      scene.updateMatrixWorld(true);
+      camera.updateMatrixWorld(true);
+      const centerPos = new THREE.Vector3();
+      targetSprite.getWorldPosition(centerPos);
+      const screenPos = projectToScreen(centerPos);
 
       setPlanetPopup({
         x: screenPos.x,
@@ -923,7 +939,7 @@ export default function Pure3DPlanets({
         element: elementId,
         slug: elementId,
         isSong: false,
-        targetObject: obj,
+        targetObject: targetSprite,
         isDailyElement // Pass this flag so warp knows to claim reward
       });
       try { setSelectedPlanetId(elementId); } catch {}
@@ -938,7 +954,12 @@ export default function Pure3DPlanets({
       const song = songs.find((s: any) => (s.slug || s.id) === songSlug);
       const songTitle = song?.title || songSlug;
 
-          const screenPos = projectToScreen(intersectionPoint);
+          // Calculate screen position from song planet's center
+          scene.updateMatrixWorld(true);
+          camera.updateMatrixWorld(true);
+          const centerPos = new THREE.Vector3();
+          obj.getWorldPosition(centerPos);
+          const screenPos = projectToScreen(centerPos);
           setupSelectionEffects(obj, getElementColor(songElement || 'heart'));
       setPlanetPopup({
         x: screenPos.x,
@@ -957,7 +978,12 @@ export default function Pure3DPlanets({
         orbitGroups.forEach((og, idx) => {
           if (og.group.children.includes(obj)) {
             const elementId = planets[idx].id as ElementType;
-            const screenPos = projectToScreen(intersectionPoint);
+            // Calculate screen position from planet's center
+            scene.updateMatrixWorld(true);
+            camera.updateMatrixWorld(true);
+            const centerPos = new THREE.Vector3();
+            obj.getWorldPosition(centerPos);
+            const screenPos = projectToScreen(centerPos);
             setupSelectionEffects(obj, getElementColor(elementId));
             setPlanetPopup({
               x: screenPos.x,
@@ -1190,7 +1216,6 @@ export default function Pure3DPlanets({
 
       // Update popup position to track planet as it rotates
       // Only update if position has changed by more than 2 pixels to avoid excessive re-renders
-      // which can interfere with click event handling on the WARP button
       if (planetPopupRef.current && planetPopupRef.current.targetObject) {
         const worldPos = new THREE.Vector3();
         planetPopupRef.current.targetObject.getWorldPosition(worldPos);
@@ -2071,7 +2096,7 @@ export default function Pure3DPlanets({
             position: 'fixed',
             left: planetPopup.x,
             top: planetPopup.y,
-            transform: 'translate(-50%, -100%) translateY(-20px)',
+            transform: 'translate(-50%, -100%) translateY(-95px)',
             pointerEvents: 'none', // Container doesn't block, but children do
             zIndex: 999999,
             display: 'flex',

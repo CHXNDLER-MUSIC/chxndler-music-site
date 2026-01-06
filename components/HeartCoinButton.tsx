@@ -3107,6 +3107,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         ) : (
                           <button
                             type="button"
+                            disabled={isQuestCompleted(quest)}
                             onClick={async (e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -3181,9 +3182,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 }, 3000); // Wait for warp animation to complete
                               }, 150); // Let heart coin display close first
                             }}
-                            className="flex items-center cursor-pointer hover:scale-110 transition-transform overflow-visible"
-                            onMouseEnter={() => { try { sfx.play('hover', 0.5); } catch {} }}
-                            style={{ pointerEvents: 'auto', zIndex: 10, overflow: 'visible' }}
+                            className={`flex items-center transition-transform overflow-visible ${isQuestCompleted(quest) ? 'cursor-default' : 'cursor-pointer hover:scale-110'}`}
+                            onMouseEnter={() => { if (!isQuestCompleted(quest)) { try { sfx.play('hover', 0.5); } catch {} } }}
+                            style={{ pointerEvents: isQuestCompleted(quest) ? 'none' : 'auto', zIndex: 10, overflow: 'visible' }}
                           >
                             <div className="relative overflow-visible" style={{ overflow: 'visible' }}>
                               {/* Glow background */}
@@ -3236,30 +3237,18 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               console.log('[LISTEN BUTTON] Clicked! songOfDaySlug:', songOfDaySlug);
                               try { sfx.play('click', 0.6); } catch {}
 
-                              // IMPORTANT: Start playback IMMEDIATELY on user gesture to avoid autoplay blocking
-                              // Browser autoplay policy requires playback to start from user interaction
-                              if (songOfDaySlug) {
-                                console.log('[LISTEN BUTTON] Triggering immediate playback for:', songOfDaySlug);
-                                if (typeof (window as any).__playTrackDirect === 'function') {
-                                  (window as any).__playTrackDirect(songOfDaySlug, 'daily-quest-listen');
-                                } else {
-                                  window.dispatchEvent(new CustomEvent('song:play-now', {
-                                    detail: { slug: songOfDaySlug, source: 'daily-quest-listen' }
-                                  }));
-                                }
-                              }
-
                               // Close the HeartCoin popup first (notify parent to close)
                               onClose?.();
                               // Close the HeartCoin modal
                               setOpen(false);
                               window.dispatchEvent(new CustomEvent('close-heartcoin-modal'));
                               // Warp to the song of the day with full visual warp effect
+                              // Song will play AFTER warp completes via pendingTrackPlay mechanism
                               if (songOfDaySlug) {
                                 console.log('[LISTEN BUTTON] Dispatching song:warp-request with slug:', songOfDaySlug);
                                 setTimeout(() => {
                                   // Dispatch song:warp-request to trigger warp sequence (camera + visual effect)
-                                  // autoPlay: false since we already started playback above
+                                  // Song plays after warp completes via pendingTrackPlay in onSongChange
                                   window.dispatchEvent(new CustomEvent('song:warp-request', {
                                     detail: { songSlug: songOfDaySlug, source: 'daily-quest', autoPlay: false }
                                   }));

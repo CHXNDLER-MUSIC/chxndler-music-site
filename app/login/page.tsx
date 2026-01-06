@@ -16,7 +16,7 @@ export default function LoginPage() {
     try {
       const { error } = await supabaseClient.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: window.location.origin + "/auth/callback" },
+        options: { redirectTo: window.location.origin + "/auth/callback?next=/dashboard" },
       });
       if (error) throw error;
     } catch (e: any) {
@@ -34,7 +34,7 @@ export default function LoginPage() {
     try {
       const { error } = await supabaseClient.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: window.location.origin + "/auth/callback?profileSetup=1" },
+        options: { emailRedirectTo: window.location.origin + "/auth/callback?next=/dashboard&profileSetup=1" },
       });
       if (error) throw error;
       setMessage("Check your email for a magic link.");

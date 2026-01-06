@@ -2563,6 +2563,7 @@ const HUDPanel = React.memo(function HUDPanel({
                   const isYouTubeProfile = isHome || !currentSong?.youtube;
 
                   const isElementPlanet = ELEMENT_PLANETS.includes(String(active).toLowerCase());
+                  const isCenterPlanet = String(active).toLowerCase() === 'center';
                   return (
                     <>
                       {/* Controls positioned above waveform */}
@@ -2598,7 +2599,23 @@ const HUDPanel = React.memo(function HUDPanel({
                           </svg>
                       )}
                       </button>
-                      {hasLyrics ? (
+                      {(isCenterPlanet || isElementPlanet) ? (
+                        <div
+                          className="lyrics-btn-unavailable-hud"
+                          style={{ marginTop: 1 }}
+                          title={isCenterPlanet ? "Lyrics not available for Heartverse" : "Lyrics not available for elemental planets"}
+                          aria-disabled="true"
+                          data-id="lyrics"
+                        >
+                          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                            <rect x="5" y="5" width="14" height="10" rx="4" ry="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                            <circle cx="8" cy="16" r="1.2" fill="currentColor" />
+                            <circle cx="6.2" cy="18" r="1.1" fill="currentColor" />
+                            <rect x="10" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                            <rect x="13.6" y="8" width="2.4" height="4.4" rx="0.8" ry="0.8" fill="currentColor" />
+                          </svg>
+                        </div>
+                      ) : hasLyrics ? (
                         <button
                           ref={lyricsBtnRef}
                           type="button"
@@ -2644,39 +2661,47 @@ const HUDPanel = React.memo(function HUDPanel({
                       )}
 
                       {/* Streaming: Spotify, Apple, YouTube moved left into top controls */}
-                      <a
-                        href={spotifyUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="spotify-btn-waveform-hud"
-                        style={{ marginTop: 1, position: 'relative', width: 32, height: 32, flexShrink: 0, zIndex: 0 }}
-                        title={isSpotifyProfile ? "Open CHXNDLER on Spotify" : "Open on Spotify"}
-                        aria-label={isSpotifyProfile ? "Open CHXNDLER on Spotify" : `Open ${currentSong?.title || 'current track'} on Spotify`}
-                        data-song={currentSong?.title || ''}
-                        data-slug={currentSong?.id || ''}
-                        data-id="sp"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          try { sfx.play('join-aliens', 0.9); } catch {}
-                          try {
-                            const { toSpotifyEmbed } = require('@/lib/spotify');
-                            const embed = toSpotifyEmbed(spotifyUrl);
-                            if (embed) { setSpEmbedUrl(embed); setShowSpotifyPopover(true); }
-                            else { window.open(spotifyUrl, '_blank', 'noopener,noreferrer'); }
-                          } catch {
-                            window.open(spotifyUrl, '_blank', 'noopener,noreferrer');
-                          }
-                        }}
-                        onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
-                      >
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                          <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
-                        </svg>
-                      </a>
+                      {isCenterPlanet ? (
+                        <div className="spotify-btn-unavailable-hud" style={{ marginTop: 1 }} title="Spotify not available for Heartverse">
+                          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
+                          </svg>
+                        </div>
+                      ) : (
+                        <a
+                          href={spotifyUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="spotify-btn-waveform-hud"
+                          style={{ marginTop: 1, position: 'relative', width: 32, height: 32, flexShrink: 0, zIndex: 0 }}
+                          title={isSpotifyProfile ? "Open CHXNDLER on Spotify" : "Open on Spotify"}
+                          aria-label={isSpotifyProfile ? "Open CHXNDLER on Spotify" : `Open ${currentSong?.title || 'current track'} on Spotify`}
+                          data-song={currentSong?.title || ''}
+                          data-slug={currentSong?.id || ''}
+                          data-id="sp"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            try { sfx.play('join-aliens', 0.9); } catch {}
+                            try {
+                              const { toSpotifyEmbed } = require('@/lib/spotify');
+                              const embed = toSpotifyEmbed(spotifyUrl);
+                              if (embed) { setSpEmbedUrl(embed); setShowSpotifyPopover(true); }
+                              else { window.open(spotifyUrl, '_blank', 'noopener,noreferrer'); }
+                            } catch {
+                              window.open(spotifyUrl, '_blank', 'noopener,noreferrer');
+                            }
+                          }}
+                          onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
+                        >
+                          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
+                          </svg>
+                        </a>
+                      )}
 
-                      {isElementPlanet && !currentSong?.apple ? (
-                        <div className="apple-btn-unavailable-hud" style={{ marginTop: 1 }} title="Apple Music not available for elemental planets">
+                      {(isCenterPlanet || isElementPlanet) && !currentSong?.apple ? (
+                        <div className="apple-btn-unavailable-hud" style={{ marginTop: 1 }} title={isCenterPlanet ? "Apple Music not available for Heartverse" : "Apple Music not available for elemental planets"}>
                           <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" role="img" aria-label="Music notes" style={{ display: 'block' }}>
                             <ellipse cx="7.5" cy="18.2" rx="3.2" ry="3.4" />
                             <ellipse cx="16.5" cy="16" rx="3.2" ry="3.4" />
@@ -2722,8 +2747,8 @@ const HUDPanel = React.memo(function HUDPanel({
                         </a>
                       )}
 
-                      {isElementPlanet && !currentSong?.youtube ? (
-                        <div className="youtube-btn-unavailable-hud" title="YouTube not available for elemental planets" style={{ marginTop: 1 }}>
+                      {(isCenterPlanet || isElementPlanet) && !currentSong?.youtube ? (
+                        <div className="youtube-btn-unavailable-hud" title={isCenterPlanet ? "YouTube not available for Heartverse" : "YouTube not available for elemental planets"} style={{ marginTop: 1 }}>
                           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
                             <path d="M10 8l6 4-6 4z" fill="currentColor" opacity="0.55" />
                           </svg>

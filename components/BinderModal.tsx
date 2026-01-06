@@ -569,7 +569,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     if (type === 'digital' && !hasEmptySlot) {
       // No empty slot available - show message and don't proceed
       try { sfx.play('error', 0.6); } catch {}
-      alert('Claim Element of the Day to unlock a binder slot.');
+      alert('Complete Element of the day to unlock binder slot');
       return;
     }
 
