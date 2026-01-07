@@ -4537,27 +4537,29 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     </button>
                                   ) : showDigitalForm && !profile?.id ? (
                                     /* Not logged in - prompt to log in */
-                                    <>
-                                      <button
-                                        className="w-full px-4 py-2 rounded border transition-colors mb-1 cursor-not-allowed opacity-50"
-                                        style={{
-                                          backgroundColor: 'rgba(156,163,175,0.2)',
-                                          borderColor: 'rgba(156,163,175,0.6)',
-                                          color: '#9CA3AF',
-                                          textShadow: '0 0 4px rgba(156,163,175,0.5)',
-                                          fontWeight: 'bold'
-                                        }}
-                                        disabled
-                                        onClick={() => {
-                                          try { sfx.play('error', 0.6); } catch {}
-                                        }}
-                                      >
-                                        CONFIRM
-                                      </button>
-                                      <div className="text-red-400 text-xs mb-3 text-center" style={{ textShadow: '0 0 6px rgba(239,68,68,0.6)' }}>
-                                        Log in to earn HeartCoins
-                                      </div>
-                                    </>
+                                    <button
+                                      className="w-full px-4 py-2 rounded border transition-colors mb-3 cursor-pointer hover:scale-105"
+                                      style={{
+                                        backgroundColor: 'rgba(239,68,68,0.2)',
+                                        borderColor: 'rgba(239,68,68,0.6)',
+                                        color: '#FF6B6B',
+                                        textShadow: '0 0 4px rgba(239,68,68,0.8)',
+                                        fontWeight: 'bold'
+                                      }}
+                                      onClick={() => {
+                                        try { sfx.play('click', 0.8); } catch {}
+                                        // Close heart coin display first
+                                        setOpen(false);
+                                        onClose?.();
+                                        window.dispatchEvent(new CustomEvent('close-heartcoin-modal'));
+                                        // Then open WELCOME HOME modal
+                                        setTimeout(() => {
+                                          window.dispatchEvent(new CustomEvent('openWelcomeHomeModal'));
+                                        }, 150);
+                                      }}
+                                    >
+                                      Log in to earn HeartCoins
+                                    </button>
                                   ) : showDigitalForm && heartCoins < card.digitalCost ? (
                                     /* Logged in but insufficient coins */
                                     <>
@@ -5049,23 +5051,25 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           </button>
                         ) : showCardConfirm === 'digital' && !profile?.id ? (
                           /* Not logged in - prompt to log in */
-                          <>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                try { sfx.play('error', 0.6); } catch {}
-                              }}
-                              onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-                              disabled
-                              className="px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg border-gray-500/60 bg-gray-500/20 cursor-not-allowed opacity-50"
-                              style={{ textShadow: '0 0 8px rgba(156,163,175,0.5)', boxShadow: '0 0 15px rgba(156,163,175,0.2)' }}
-                            >
-                              CONFIRM
-                            </button>
-                            <div className="text-red-400 text-xs mt-2" style={{ textShadow: '0 0 6px rgba(239,68,68,0.6)' }}>
-                              Log in to earn HeartCoins
-                            </div>
-                          </>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              try { sfx.play('click', 0.8); } catch {}
+                              // Close heart coin display first
+                              setOpen(false);
+                              onClose?.();
+                              window.dispatchEvent(new CustomEvent('close-heartcoin-modal'));
+                              // Then open WELCOME HOME modal
+                              setTimeout(() => {
+                                window.dispatchEvent(new CustomEvent('openWelcomeHomeModal'));
+                              }, 150);
+                            }}
+                            onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                            className="px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg border-red-500/60 bg-red-500/20 hover:bg-red-500/40 hover:border-red-400 hover:shadow-[0_0_30px_rgba(239,68,68,0.8)] cursor-pointer hover:scale-110"
+                            style={{ textShadow: '0 0 8px rgba(239,68,68,0.8)', boxShadow: '0 0 15px rgba(239,68,68,0.4)' }}
+                          >
+                            Log in to earn HeartCoins
+                          </button>
                         ) : showCardConfirm === 'digital' && heartCoins < (enlargedCard?.digitalCost || 5) ? (
                           /* Logged in but insufficient coins */
                           <>

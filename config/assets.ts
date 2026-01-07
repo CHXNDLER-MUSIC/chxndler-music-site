@@ -389,14 +389,17 @@ export const getTrackBySlug = (slug: string): TrackAsset | undefined => {
 // Utility function to get badge by category ID
 export const getBadgeIcon = (categoryId: string): string => {
   const badgeMap: Record<string, string> = {
+    'soul': BADGE_ICONS.soulStar.src,
     'soul-star': BADGE_ICONS.soulStar.src,
+    'collector': BADGE_ICONS.collector.src,
     'achievements': BADGE_ICONS.collector.src,
     'elemental-streak': BADGE_ICONS.elementalStreak.src,
     'listening': BADGE_ICONS.listening.src,
+    'currency': BADGE_ICONS.heartcoin.src,
     'heartcoin': BADGE_ICONS.heartcoin.src,
     'community': BADGE_ICONS.community.src
   };
-  
+
   return badgeMap[categoryId] || BADGE_ICONS.soul.src;
 };
 
