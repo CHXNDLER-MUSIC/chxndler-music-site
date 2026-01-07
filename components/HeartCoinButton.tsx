@@ -9,6 +9,7 @@ import { track } from "@/lib/analytics";
 import { useBonusQuests } from '@/hooks/useBonusQuests';
 import { useElementOfDayClaim } from '@/hooks/useElementOfDayClaim';
 import { useUserCards } from "@/hooks/useUserCards";
+import { useBinderSlots } from "@/hooks/useBinderSlots";
 import { BonusQuestWithCompletion } from '@/types/bonusQuests';
 import { useMerchItems } from '@/hooks/useMerchItems';
 import { useMerchPurchase } from '@/hooks/useMerchPurchase';
@@ -959,6 +960,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [statusType, setStatusType] = useState<'idle' | 'success' | 'error'>('idle');
   // Hook to allow explicit user_cards refresh after purchases
   const { cards: ownedCards, refresh: refreshUserCards } = useUserCards(profile?.id);
+  // Hook to check if user has empty binder slots for digital card purchases
+  const { hasEmptySlot } = useBinderSlots(profile?.id);
 
   // Check if a card is already owned by the user (digital)
   const isCardOwned = useCallback((cardId?: string) => {
@@ -4532,23 +4535,86 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     >
                                       ALREADY COLLECTED
                                     </button>
+                                  ) : showDigitalForm && !profile?.id ? (
+                                    /* Not logged in - prompt to log in */
+                                    <>
+                                      <button
+                                        className="w-full px-4 py-2 rounded border transition-colors mb-1 cursor-not-allowed opacity-50"
+                                        style={{
+                                          backgroundColor: 'rgba(156,163,175,0.2)',
+                                          borderColor: 'rgba(156,163,175,0.6)',
+                                          color: '#9CA3AF',
+                                          textShadow: '0 0 4px rgba(156,163,175,0.5)',
+                                          fontWeight: 'bold'
+                                        }}
+                                        disabled
+                                        onClick={() => {
+                                          try { sfx.play('error', 0.6); } catch {}
+                                        }}
+                                      >
+                                        CONFIRM
+                                      </button>
+                                      <div className="text-red-400 text-xs mb-3 text-center" style={{ textShadow: '0 0 6px rgba(239,68,68,0.6)' }}>
+                                        Log in to earn HeartCoins
+                                      </div>
+                                    </>
+                                  ) : showDigitalForm && heartCoins < card.digitalCost ? (
+                                    /* Logged in but insufficient coins */
+                                    <>
+                                      <button
+                                        className="w-full px-4 py-2 rounded border transition-colors mb-1 cursor-not-allowed opacity-50"
+                                        style={{
+                                          backgroundColor: 'rgba(255,0,0,0.2)',
+                                          borderColor: 'rgba(255,0,0,0.6)',
+                                          color: '#FF6B6B',
+                                          textShadow: '0 0 4px rgba(255,107,107,0.5)',
+                                          fontWeight: 'bold'
+                                        }}
+                                        disabled
+                                        onClick={() => {
+                                          try { sfx.play('error', 0.6); } catch {}
+                                        }}
+                                      >
+                                        CONFIRM
+                                      </button>
+                                      <div className="text-red-400 text-xs mb-3 text-center" style={{ textShadow: '0 0 6px rgba(239,68,68,0.6)' }}>
+                                        Not enough HeartCoins
+                                      </div>
+                                    </>
+                                  ) : showDigitalForm && !hasEmptySlot ? (
+                                    /* No empty binder slot - disabled CONFIRM with red message */
+                                    <>
+                                      <button
+                                        className="w-full px-4 py-2 rounded border transition-colors mb-1 cursor-not-allowed opacity-50"
+                                        style={{
+                                          backgroundColor: 'rgba(156,163,175,0.2)',
+                                          borderColor: 'rgba(156,163,175,0.6)',
+                                          color: '#9CA3AF',
+                                          textShadow: '0 0 4px rgba(156,163,175,0.5)',
+                                          fontWeight: 'bold'
+                                        }}
+                                        disabled
+                                        onClick={() => {
+                                          try { sfx.play('error', 0.6); } catch {}
+                                        }}
+                                      >
+                                        CONFIRM
+                                      </button>
+                                      <div className="text-red-400 text-xs mb-3 text-center" style={{ textShadow: '0 0 6px rgba(239,68,68,0.6)' }}>
+                                        Complete Element of the Day to unlock binder slot
+                                      </div>
+                                    </>
                                   ) : (
+                                    /* Logged in + sufficient coins + has binder slot - normal flow */
                                     <button
                                       className="w-full px-4 py-2 rounded border transition-colors mb-3"
                                       style={{
-                                        backgroundColor: (profile?.id ? heartCoins : 0) >= (showDigitalForm ? card.digitalCost : card.physicalCost)
-                                          ? 'rgba(0,255,0,0.2)'
-                                          : 'rgba(255,0,0,0.2)',
-                                        borderColor: (profile?.id ? heartCoins : 0) >= (showDigitalForm ? card.digitalCost : card.physicalCost)
-                                          ? 'rgba(0,255,0,0.6)'
-                                          : 'rgba(255,0,0,0.6)',
-                                        color: (profile?.id ? heartCoins : 0) >= (showDigitalForm ? card.digitalCost : card.physicalCost) ? '#90EE90' : '#FF6B6B',
-                                        textShadow: (profile?.id ? heartCoins : 0) >= (showDigitalForm ? card.digitalCost : card.physicalCost)
-                                          ? '0 0 4px rgba(144,238,144,0.8)'
-                                          : '0 0 4px rgba(255,107,107,0.8)',
+                                        backgroundColor: 'rgba(0,255,0,0.2)',
+                                        borderColor: 'rgba(0,255,0,0.6)',
+                                        color: '#90EE90',
+                                        textShadow: '0 0 4px rgba(144,238,144,0.8)',
                                         fontWeight: 'bold'
                                       }}
-                                      disabled={(profile?.id ? heartCoins : 0) < (showDigitalForm ? card.digitalCost : card.physicalCost)}
                                       onClick={() => {
                                         try { sfx.play('click', 0.8); } catch {}
                                         if (showDigitalForm) {
@@ -4981,7 +5047,65 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           >
                             ALREADY COLLECTED
                           </button>
+                        ) : showCardConfirm === 'digital' && !profile?.id ? (
+                          /* Not logged in - prompt to log in */
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                try { sfx.play('error', 0.6); } catch {}
+                              }}
+                              onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                              disabled
+                              className="px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg border-gray-500/60 bg-gray-500/20 cursor-not-allowed opacity-50"
+                              style={{ textShadow: '0 0 8px rgba(156,163,175,0.5)', boxShadow: '0 0 15px rgba(156,163,175,0.2)' }}
+                            >
+                              CONFIRM
+                            </button>
+                            <div className="text-red-400 text-xs mt-2" style={{ textShadow: '0 0 6px rgba(239,68,68,0.6)' }}>
+                              Log in to earn HeartCoins
+                            </div>
+                          </>
+                        ) : showCardConfirm === 'digital' && heartCoins < (enlargedCard?.digitalCost || 5) ? (
+                          /* Logged in but insufficient coins */
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                try { sfx.play('error', 0.6); } catch {}
+                              }}
+                              onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                              disabled
+                              className="px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg border-red-500/60 bg-red-500/20 cursor-not-allowed opacity-50"
+                              style={{ textShadow: '0 0 8px rgba(239,68,68,0.5)', boxShadow: '0 0 15px rgba(239,68,68,0.2)' }}
+                            >
+                              CONFIRM
+                            </button>
+                            <div className="text-red-400 text-xs mt-2" style={{ textShadow: '0 0 6px rgba(239,68,68,0.6)' }}>
+                              Not enough HeartCoins
+                            </div>
+                          </>
+                        ) : showCardConfirm === 'digital' && !hasEmptySlot ? (
+                          /* No empty binder slot - disabled CONFIRM with red message */
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                try { sfx.play('error', 0.6); } catch {}
+                              }}
+                              onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                              disabled
+                              className="px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg border-gray-500/60 bg-gray-500/20 cursor-not-allowed opacity-50"
+                              style={{ textShadow: '0 0 8px rgba(156,163,175,0.5)', boxShadow: '0 0 15px rgba(156,163,175,0.2)' }}
+                            >
+                              CONFIRM
+                            </button>
+                            <div className="text-red-400 text-xs mt-2" style={{ textShadow: '0 0 6px rgba(239,68,68,0.6)' }}>
+                              Complete Element of the Day to unlock binder slot
+                            </div>
+                          </>
                         ) : (
+                          /* Logged in + sufficient coins + has binder slot - normal flow */
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -4995,25 +5119,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 handlePhysicalCardConfirm();
                               }
                             }}
-                            disabled={heartCoins < (showCardConfirm === 'digital' ? (enlargedCard.digitalCost || 5) : (enlargedCard.physicalCost || 20))}
                             onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-                            className={`px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg hover:scale-110 ${
-                              heartCoins >= (showCardConfirm === 'digital' ? (enlargedCard.digitalCost || 5) : (enlargedCard.physicalCost || 20))
-                                ? 'border-green-500/60 bg-green-500/20 hover:bg-green-500/40 hover:border-green-400 hover:shadow-[0_0_30px_rgba(34,197,94,0.8)]'
-                                : 'border-red-500/60 bg-red-500/20 cursor-not-allowed opacity-70 hover:shadow-[0_0_30px_rgba(239,68,68,0.8)]'
-                            }`}
-                            style={heartCoins >= (showCardConfirm === 'digital' ? (enlargedCard.digitalCost || 5) : (enlargedCard.physicalCost || 20))
-                              ? { textShadow: '0 0 8px rgba(34,197,94,0.8)', boxShadow: '0 0 15px rgba(34,197,94,0.4)' }
-                              : { textShadow: '0 0 8px rgba(239,68,68,0.8)', boxShadow: '0 0 15px rgba(239,68,68,0.4)' }
-                            }
+                            className="px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg hover:scale-110 border-green-500/60 bg-green-500/20 hover:bg-green-500/40 hover:border-green-400 hover:shadow-[0_0_30px_rgba(34,197,94,0.8)]"
+                            style={{ textShadow: '0 0 8px rgba(34,197,94,0.8)', boxShadow: '0 0 15px rgba(34,197,94,0.4)' }}
                           >
                             CONFIRM
                           </button>
-                        )}
-
-                        {/* Not enough coins message */}
-                        {!isCardOwned(enlargedCard?.id) && heartCoins < (showCardConfirm === 'digital' ? (enlargedCard.digitalCost || 5) : (enlargedCard.physicalCost || 20)) && (
-                          <div className="text-red-400 text-xs" style={{ textShadow: '0 0 6px rgba(239,68,68,0.6)' }}>Not enough Heart Coins</div>
                         )}
                       </>
                     )}

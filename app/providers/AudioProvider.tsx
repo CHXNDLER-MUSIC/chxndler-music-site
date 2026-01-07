@@ -286,6 +286,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const listenIntervalRef = useRef<number | null>(null);
   const currentTrackRef = useRef<string | null>(null);
   const lastCurrentTimeRef = useRef<number>(0); // Track previous currentTime for repeat detection
+  const flushInFlightRef = useRef<boolean>(false); // Guard against concurrent flushSession calls
+  const authUserRef = useRef<{ id: string } | null>(null); // Cached auth user from subscription
 
   // Refs to track warp state for playerStore subscription (avoids stale closure issues)
   const warpCompletedRef = useRef<boolean>(state.warpCompleted);
@@ -297,11 +299,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const session = sessionRef.current;
     if (!session || session.flushed) return false;
 
+    // Prevent concurrent flush calls
+    if (flushInFlightRef.current) return false;
+    flushInFlightRef.current = true;
+
     const listenedSeconds = Math.max(0, Math.floor(session.listenedSeconds));
 
     // Check minimum threshold
     if (listenedSeconds < minSeconds) {
-      console.log(`🎧 Session below threshold (${listenedSeconds}s < ${minSeconds}s), skipping flush`);
+      flushInFlightRef.current = false;
       return false;
     }
 
@@ -315,14 +321,26 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      // Get current user
-      const { data: { user }, error: userError } = await supabaseBrowser.auth.getUser();
-      if (userError) {
-        console.error('🎧 Failed to get user:', userError.message);
+      // Check session first - missing session is normal for logged-out users
+      const { data: { session: authSession }, error: sessionError } = await supabaseBrowser.auth.getSession();
+
+      // Session missing is expected for logged-out users - not an error
+      if (!authSession) {
+        flushInFlightRef.current = false;
         return false;
       }
+
+      // Only log errors for unexpected issues (network, misconfig), not missing session
+      if (sessionError) {
+        console.error('🎧 Auth error:', sessionError.message);
+        flushInFlightRef.current = false;
+        return false;
+      }
+
+      // Use session.user directly instead of calling getUser()
+      const user = authSession.user;
       if (!user) {
-        console.log('🎧 No authenticated user, skipping listen record');
+        flushInFlightRef.current = false;
         return false;
       }
 
@@ -359,13 +377,16 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         console.error('  details:', insertError.details);
         console.error('  hint:', insertError.hint);
         console.error('  payload:', JSON.stringify(payload, null, 2));
+        flushInFlightRef.current = false;
         return false;
       }
 
       console.log(`🎧 Recorded: ${session.trackId}, ${listenedSeconds}s`);
+      flushInFlightRef.current = false;
       return true;
     } catch (err) {
       console.error('🎧 Error flushing session:', err);
+      flushInFlightRef.current = false;
       return false;
     }
   };
@@ -716,6 +737,45 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       if (sessionRef.current && !sessionRef.current.flushed) {
         flushSession(0);
       }
+    };
+  }, []);
+
+  // Auth subscription - track login/logout state for user-dependent operations
+  useEffect(() => {
+    let mounted = true;
+
+    // Get initial session on mount
+    supabaseBrowser.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
+      authUserRef.current = session?.user ?? null;
+    });
+
+    // Subscribe to auth state changes
+    const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
+
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (session?.user) {
+          authUserRef.current = session.user;
+        }
+      } else if (event === 'SIGNED_OUT' || !session) {
+        // Clear cached user - any in-progress session flush will handle missing auth gracefully
+        authUserRef.current = null;
+        // Clear listen session since user logged out
+        if (sessionRef.current && !sessionRef.current.flushed) {
+          sessionRef.current.flushed = true; // Mark flushed without sending to DB
+        }
+        if (listenIntervalRef.current) {
+          clearInterval(listenIntervalRef.current);
+          listenIntervalRef.current = null;
+        }
+        sessionRef.current = null;
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
     };
   }, []);
 

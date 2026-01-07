@@ -156,7 +156,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         name: 'COLLECTOR',
         displayName: 'COLLECTOR',
         badges: allBadges.length > 0 ? badgesWithUnlocked.filter(badge => badge.category === 'collector') : [],
-        image: '/elements/collector.webp'
+        image: '/badges/collector.webp'
       },
       {
         id: 'elemental-streak',
