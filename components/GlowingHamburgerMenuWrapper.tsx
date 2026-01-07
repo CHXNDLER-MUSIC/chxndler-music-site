@@ -138,6 +138,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
     setTimeout(() => {
       switch (label) {
         case "ABOUT":
+          try { onBeamColorChange?.('pink'); } catch {}
           setChxndlerOpen(true);
           break;
         // Handle dynamic journey titles:
@@ -369,7 +370,12 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
       <ChxndlerButton
         style={{ display: 'none' }}
         open={chxndlerOpen}
-        onOpenChange={setChxndlerOpen}
+        onOpenChange={(open) => {
+          setChxndlerOpen(open);
+          if (!open) {
+            try { onBeamColorChange?.('off'); } catch {}
+          }
+        }}
         onOpenWelcomeHome={() => setWelcomeHomeOpen(true)}
       />
       {/* Hidden HeartCoinButton to handle the store modal functionality */}

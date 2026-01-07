@@ -443,46 +443,6 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                 >
                   Together, they create the emotional ecosystem of the Heartverse — the foundation of every story and song.
                 </div>
-                {!user && !profile && (
-                  <div 
-                    className="text-center mt-2"
-                    style={{ 
-                      fontSize: '14px', 
-                      color: '#FFFFFF !important', 
-                      textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
-                      lineHeight: '1.6'
-                    }}
-                  >
-                    You align with your Element when you{' '}
-                    <button
-                      onClick={() => {
-                        try { sfx.play('click', 0.8); } catch {}
-                        // Close the ABOUT popout first
-                        if (onOpenChange) {
-                          onOpenChange(false);
-                        } else {
-                          setInternalOpen(false);
-                        }
-                        // Open welcome home modal after a brief delay
-                        setTimeout(() => {
-                          onOpenWelcomeHome?.();
-                        }, 100);
-                      }}
-                      className="underline hover:text-pink-300 transition-colors duration-200"
-                      style={{
-                        color: '#00E5FF !important',
-                        textShadow: '0 0 10px #00E5FF, 0 0 20px #00E5FF',
-                        background: 'none',
-                        border: 'none',
-                        padding: 0,
-                        textDecoration: 'underline'
-                      }}
-                    >
-                      create your profile
-                    </button>
-                    .
-                  </div>
-                )}
               </>
             )}
           </div>
