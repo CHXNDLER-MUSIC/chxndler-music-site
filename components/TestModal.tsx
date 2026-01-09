@@ -27,6 +27,11 @@ export default function TestModal({ open, onClose }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
+  function getRedirectUrl(path: string) {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+    return `${baseUrl}${path}`;
+  }
+
   async function signInWithGoogle() {
     setError(null);
     setMessage(null);
@@ -34,7 +39,7 @@ export default function TestModal({ open, onClose }: Props) {
     try {
       const { error } = await supabaseClient.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: window.location.origin + "/auth/callback" },
+        options: { redirectTo: getRedirectUrl("/auth/callback") },
       });
       if (error) throw error;
     } catch (e: any) {
@@ -52,7 +57,7 @@ export default function TestModal({ open, onClose }: Props) {
     try {
       const { error } = await supabaseClient.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: window.location.origin + "/auth/callback?profileSetup=1" },
+        options: { emailRedirectTo: getRedirectUrl("/auth/callback?profileSetup=1") },
       });
       if (error) throw error;
       setMessage("Check your email for a magic link.");

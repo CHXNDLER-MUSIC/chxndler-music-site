@@ -81,6 +81,11 @@ export default function JoinUsPopup({ isOpen, onClose, onOpenChat }: Props) {
     }
   }
 
+  function getRedirectUrl(path: string) {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+    return `${baseUrl}${path}`;
+  }
+
   async function createProfileWithEmail(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -89,15 +94,16 @@ export default function JoinUsPopup({ isOpen, onClose, onOpenChat }: Props) {
     setIsSigningUp(true);
 
     try {
+      const redirectUrl = getRedirectUrl('/auth/callback?profileSetup=1');
       console.log('🚀 Starting email signup for:', email);
-      console.log('🚀 Redirect URL will be:', window.location.origin + '/auth/callback?profileSetup=1');
+      console.log('🚀 Redirect URL will be:', redirectUrl);
 
       // Sign up with email and redirect to auth callback for name prompt
       const { data, error: signUpError } = await supabaseClient.auth.signUp({
         email,
         password: 'temppassword123', // Temporary password
-        options: { 
-          emailRedirectTo: window.location.origin + '/auth/callback?profileSetup=1',
+        options: {
+          emailRedirectTo: redirectUrl,
         }
       });
 

@@ -68,6 +68,11 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
   // Audio is now handled by audioHeartverse controller when modal opens
   // No local audio management needed - the controller handles playback
 
+  function getRedirectUrl(path: string) {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+    return `${baseUrl}${path}`;
+  }
+
   async function signInWithGoogle() {
     setError(null);
     setMessage(null);
@@ -75,8 +80,8 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
     try {
       const { error } = await supabaseClient.auth.signInWithOAuth({
         provider: "google",
-        options: { 
-          redirectTo: window.location.origin + "/auth/callback",
+        options: {
+          redirectTo: getRedirectUrl("/auth/callback"),
           queryParams: {
             access_type: 'offline',
             prompt: 'consent'
@@ -99,9 +104,9 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
     try {
       const { error } = await supabaseClient.auth.signInWithOtp({
         email,
-        options: { 
-          emailRedirectTo: window.location.origin + "/auth/callback",
-          shouldCreateUser: true 
+        options: {
+          emailRedirectTo: getRedirectUrl("/auth/callback"),
+          shouldCreateUser: true
         },
       });
       if (error) throw error;

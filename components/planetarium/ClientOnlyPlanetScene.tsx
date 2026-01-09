@@ -52,6 +52,7 @@ export default function ClientOnlyPlanetScene({
         <Canvas
           camera={{ position: [0, 10, 25], fov: 60 }}
           dpr={[1, 1.5]}
+          frameloop="demand"
           gl={{ 
             powerPreference: 'high-performance',
             antialias: false,
