@@ -13,7 +13,8 @@ function normalizeElement(s: string | null | undefined): ElementType | null {
 }
 
 export function useFocusElementOfDay() {
-  const [focusElement, setFocusElement] = useState<ElementType | null>("heart");
+  // Default to null so camera shows overview/space view, not locked to any element
+  const [focusElement, setFocusElement] = useState<ElementType | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,19 +31,21 @@ export function useFocusElementOfDay() {
 
         if (error) {
           warn("Error fetching element of day:", error.message);
-          // Fall back to heart on error
-          setFocusElement("heart");
+          // Stay null on error - camera will show overview
+          setFocusElement(null);
         } else if (data?.element) {
           const normalized = normalizeElement(data.element);
-          setFocusElement(normalized || "heart");
-          debug("Focus element of day:", normalized || "heart");
+          // Only set focus if there's a valid daily element configured
+          setFocusElement(normalized);
+          debug("Focus element of day:", normalized || "none");
         } else {
-          // No entry for today, fall back to heart
-          setFocusElement("heart");
+          // No entry for today - stay null for overview
+          setFocusElement(null);
         }
       } catch (err) {
         console.error("Failed to fetch element of day:", err);
-        setFocusElement("heart");
+        // Stay null on error - camera will show overview
+        setFocusElement(null);
       } finally {
         setLoading(false);
       }

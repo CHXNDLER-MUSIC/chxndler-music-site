@@ -612,7 +612,6 @@ export default function ElementOfDayModal() {
                     lineHeight: 1.3,
                     textShadow: `0 0 12px ${elementColor}, 0 0 24px ${elementColor}80`,
                     animation: "elementPulse 2s ease-in-out infinite",
-                    pointerEvents: "none",
                   }}
                 >
                   Log in to<br />claim Relic
@@ -664,7 +663,6 @@ export default function ElementOfDayModal() {
                     opacity: (claimed || elementQuestCompleted) ? 0.5 : 1,
                     filter: (claimed || elementQuestCompleted) ? "grayscale(0.6) brightness(0.5)" : "none",
                     transition: "opacity 0.3s ease, filter 0.3s ease",
-                    pointerEvents: "none",
                   }}
                 />
               </button>

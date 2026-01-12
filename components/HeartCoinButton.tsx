@@ -323,6 +323,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [selectedCardElement, setSelectedCardElement] = useState<string | null>(null);
   const [selectedSong, setSelectedSong] = useState<string>('');
   const [currentCardIndex, setCurrentCardIndex] = useState<number>(0);
+  // Target card ID for navigation - set when opening from COLLECT CARD button
+  // This ensures we navigate to the correct card AFTER filteredCards is updated
+  const [targetCardId, setTargetCardId] = useState<string | null>(null);
   const [showPhysicalForm, setShowPhysicalForm] = useState(false);
   const [showPhysicalConfirm, setShowPhysicalConfirm] = useState(false);
   const [showDigitalForm, setShowDigitalForm] = useState(false);
@@ -574,6 +577,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         setOpen(false);
         setIsFromHamburger(false);
         setIsFromCollectCard(false);
+        setTargetCardId(null);
         try { onClose?.(); } catch {}
       }
     };
@@ -798,6 +802,19 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     setFilteredCards(filtered);
   }, [cards, selectedCardElement, selectedRarity]);
 
+  // Navigate to target card after filteredCards is updated
+  // This effect runs AFTER the filter cards effect, ensuring we navigate to the correct index
+  useEffect(() => {
+    if (!targetCardId || filteredCards.length === 0) return;
+
+    const cardIndex = filteredCards.findIndex(card => card.id === targetCardId);
+    if (cardIndex >= 0) {
+      setCurrentCardIndex(cardIndex);
+      // Clear targetCardId after successful navigation
+      setTargetCardId(null);
+    }
+  }, [targetCardId, filteredCards]);
+
   // Auto-navigate to selected card when opened from COLLECT CARD button
   useEffect(() => {
     // Only run when opened from collect card button with a selected song
@@ -810,7 +827,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       return cardName === normalizedSelectedSong;
     });
 
-    if (matchedCard && matchedCard.element) {
+    if (matchedCard && matchedCard.element && matchedCard.id) {
       // Set flag to prevent the element-change effect from resetting the card index
       isAutoNavigatingRef.current = true;
 
@@ -820,31 +837,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         setSelectedCardElement(elementUpper);
       }
 
-      // Find the card index in the filtered list after element is set
-      // We need to compute what the filtered list will be
-      const filteredForElement = cards.filter(card =>
-        card.element?.toLowerCase() === matchedCard.element.toLowerCase()
-      );
-
-      // Sort same as in filtering: element cards first
-      const elementName = matchedCard.element.charAt(0).toUpperCase() + matchedCard.element.slice(1).toLowerCase();
-      filteredForElement.sort((a, b) => {
-        const aIsElementCard = a.card_name?.toLowerCase() === elementName.toLowerCase();
-        const bIsElementCard = b.card_name?.toLowerCase() === elementName.toLowerCase();
-        if (aIsElementCard && !bIsElementCard) return -1;
-        if (!aIsElementCard && bIsElementCard) return 1;
-        return 0;
-      });
-
-      // Find the index of the matched card
-      const cardIndex = filteredForElement.findIndex(card =>
-        card.id === matchedCard.id ||
-        (card.card_name || '').toLowerCase().replace(/[^a-z0-9]/g, '') === normalizedSelectedSong
-      );
-
-      if (cardIndex >= 0) {
-        setCurrentCardIndex(cardIndex);
-      }
+      // Set the target card ID - the navigation effect will find the correct index
+      // after filteredCards is updated by the filter cards effect
+      setTargetCardId(matchedCard.id);
 
       // Clear the auto-navigating flag after a tick to allow state updates to complete
       setTimeout(() => {

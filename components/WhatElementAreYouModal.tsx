@@ -165,11 +165,18 @@ export default function WhatElementAreYouModal() {
         // Don't fail the profile completion if HeartCoin award fails
       }
 
-      // Add a small delay to ensure profile context has propagated before showing tour
+      // Add a small delay to ensure profile context has propagated before showing relic
       setTimeout(() => {
         try {
           console.log('Dispatching heartverse:entered event');
           window.dispatchEvent(new CustomEvent('heartverse:entered'));
+
+          // Dispatch planet:warp event to show HeartverseWelcomeModal (relic display)
+          // Now that onboarding is complete, we can show the relic claim modal
+          console.log('Dispatching planet:warp to show relic display');
+          window.dispatchEvent(new CustomEvent('planet:warp', {
+            detail: { element: 'center', isCenterPlanet: true, isOnboarding: false }
+          }));
         } catch {}
       }, 300);
     } catch (e: any) {

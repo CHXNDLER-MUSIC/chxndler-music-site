@@ -861,43 +861,53 @@ const HUDPanel = React.memo(function HUDPanel({
   useEffect(() => {
     async function fetchHeartCoins() {
       try {
-        // Get current session
+        // Get current session - must exist before we query profiles
         const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-        
+
         if (sessionError) {
-          console.error('Session error:', sessionError);
+          console.error('Session error:', sessionError.message, sessionError.code, sessionError);
           return;
         }
 
+        // Don't fetch profiles if no session - prevents 401 errors
         if (!session?.user) {
           return;
         }
 
-        // Fetch heart coins directly from Supabase
+        // Fetch heart coins using Supabase client (includes auth header automatically)
+        // Use maybeSingle() to gracefully handle missing profile rows
         const { data: profile, error: profileError } = await supabaseClient
           .from('profiles')
           .select('heartcoin_balance')
           .eq('id', session.user.id)
-          .single();
+          .maybeSingle();
 
         if (profileError) {
-          // If profile doesn't exist yet, handle gracefully
-          if (profileError.code === 'PGRST116') {
-            setHeartCoinsCount(0);
-            return;
-          }
-          console.error('Profile error:', profileError);
+          console.error('Profile error:', profileError.message, profileError.code, profileError.details);
           return;
         }
 
+        // If no profile row yet (trigger may still be creating it), default to 0
         setHeartCoinsCount(profile?.heartcoin_balance || 0);
-        
+
       } catch (error) {
-        console.error('Error fetching heart coins:', error);
+        console.error('Error fetching heart coins:', error instanceof Error ? error.message : error);
       }
     }
 
+    // Listen for auth state changes to handle magic link sign-ins
+    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Delay slightly to allow profile trigger to create row
+        setTimeout(() => fetchHeartCoins(), 500);
+      }
+    });
+
     fetchHeartCoins();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Position heart popover similar to lyrics popover
@@ -2880,9 +2890,16 @@ const HUDPanel = React.memo(function HUDPanel({
                                 bottom: -75,
                                 height: 10,
                                 borderRadius: 9999,
-                                background: 'rgba(0,0,0,0.4)',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                overflow: 'hidden',
+                                background: 'rgba(80,80,90,0.7)',
+                                border: '1px solid rgba(25,227,255,0.5)',
+                                boxShadow: `
+                                  0 0 8px rgba(25,227,255,0.35),
+                                  0 0 16px rgba(25,227,255,0.2),
+                                  0 0 24px rgba(25,227,255,0.15),
+                                  inset 0 0 6px rgba(25,227,255,0.15),
+                                  inset 0 1px 2px rgba(255,255,255,0.1)
+                                `,
+                                overflow: 'visible',
                                 cursor: 'pointer',
                                 pointerEvents: 'auto',
                                 zIndex: 100
@@ -2960,19 +2977,23 @@ const HUDPanel = React.memo(function HUDPanel({
                               {/* Progress fill with enhanced bright glow */}
                               <div
                                 style={{
+                                  position: 'absolute',
+                                  left: 0,
+                                  top: 0,
                                   width: `${pct}%`,
                                   height: '100%',
-                                  background: `linear-gradient(90deg, ${elementColor}, ${elementColor}ff, ${elementColor})`,
+                                  background: `linear-gradient(90deg, ${elementColor}cc, ${elementColor}, ${elementColor})`,
                                   borderRadius: 9999,
                                   boxShadow: `
-                                    0 0 12px ${elementColor}ff,
-                                    0 0 24px ${elementColor}dd,
-                                    0 0 36px ${elementColor}aa,
-                                    0 0 48px ${elementColor}77,
-                                    inset 0 1px 0 rgba(255,255,255,0.4)
+                                    0 0 10px ${elementColor},
+                                    0 0 20px ${elementColor}cc,
+                                    0 0 30px ${elementColor}99,
+                                    0 0 40px ${elementColor}66,
+                                    0 -2px 8px ${elementColor}88,
+                                    0 2px 8px ${elementColor}88
                                   `,
                                   transition: 'width 200ms ease-out',
-                                  filter: 'brightness(1.2) saturate(1.1)',
+                                  filter: 'brightness(1.3) saturate(1.2)',
                                   pointerEvents: 'none'
                                 }}
                               />

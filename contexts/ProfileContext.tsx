@@ -211,6 +211,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const [badgesLoading, setBadgesLoading] = useState(true);
   const [badgesError, setBadgesError] = useState<string | null>(null);
 
+  // Guard ref to prevent duplicate profile fetches from INITIAL_SESSION + SIGNED_IN race
+  const isFetchingProfileRef = React.useRef(false);
+
   // Wrapper for setProfile that detects heartcoin balance increases
   // Function to fetch all badges from the database
   const fetchAllBadges = useCallback(async () => {
@@ -292,6 +295,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, [previousHeartcoinBalance]);
 
   const fetchProfile = async () => {
+    // Prevent duplicate concurrent fetch calls
+    if (isFetchingProfileRef.current) return;
+    isFetchingProfileRef.current = true;
+
     try {
       setLoading(true);
 
@@ -342,20 +349,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
 
       if (!data) {
-        // No profile row yet - this might indicate an invalid session
-        console.warn('ProfileContext: No profile data found for authenticated user - session may be invalid');
+        // No profile row yet - auth callback route should create one
+        // Don't sign out - the profile may still be getting created
+        console.warn('ProfileContext: No profile data found for authenticated user');
         setProfile(null);
-        
-        // If user has been authenticated for more than 10 seconds but still no profile, 
-        // the session might be stale - sign them out
-        setTimeout(async () => {
-          const { data: currentSession } = await supabaseBrowser.auth.getSession();
-          if (currentSession?.session?.user?.id === user.id && !profile) {
-            console.warn('ProfileContext: Clearing potentially stale session after timeout');
-            await supabaseBrowser.auth.signOut();
-          }
-        }, 10000);
-        
         return;
       }
 
@@ -500,6 +497,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       setProfileWithCelebration(null);
     } finally {
       setLoading(false);
+      isFetchingProfileRef.current = false;
     }
   };
 
@@ -655,7 +653,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, [profile]);
 
   useEffect(() => {
+    // Track if we've already fetched for this mount to avoid duplicate calls
+    let hasFetchedInitial = false;
+
     // Subscribe to auth state changes
+    // This handles magic link sign-ins and other auth events
     const {
       data: { subscription },
     } = supabaseBrowser.auth.onAuthStateChange(async (event, session) => {
@@ -672,17 +674,23 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
 
       if (session?.user) {
-        if (typeof window !== 'undefined') {
-          debug("ProfileContext user session detected, fetching profile", {
-            browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",
-            userId: session.user.id,
-            timestamp: new Date().toISOString()
-          });
+        // For SIGNED_IN events (magic link, OAuth, etc.), always fetch profile
+        // For INITIAL_SESSION, only fetch if we haven't already
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || !hasFetchedInitial) {
+          hasFetchedInitial = true;
+          if (typeof window !== 'undefined') {
+            debug("ProfileContext user session detected, fetching profile", {
+              browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",
+              userId: session.user.id,
+              event,
+              timestamp: new Date().toISOString()
+            });
+          }
+          await fetchProfile();
+          await loadJournalEntries(session.user.id);
+          await fetchAllBadges();
+          await fetchUserBadges(session.user.id);
         }
-        await fetchProfile();
-        await loadJournalEntries(session.user.id);
-        await fetchAllBadges();
-        await fetchUserBadges(session.user.id);
       } else {
         if (typeof window !== 'undefined') {
           debug("ProfileContext no user session, clearing profile", {
@@ -712,8 +720,44 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     window.addEventListener('auth:profile-updated', handleProfileUpdate);
     window.addEventListener('profile:force-refresh', handleProfileUpdate);
 
-    // Initial fetch on mount
-    fetchProfile();
+    // Check for existing session on mount
+    // This handles page refreshes when user is already logged in
+    // For magic link flows, the onAuthStateChange will fire with SIGNED_IN event
+    const initializeSession = async () => {
+      try {
+        const { data: { session }, error } = await supabaseBrowser.auth.getSession();
+
+        if (error) {
+          console.error("Error checking initial session:", error.message, error.code, error);
+          setLoading(false);
+          return;
+        }
+
+        // If there's an existing session, fetch the profile
+        // The auth listener may also fire, but we track hasFetchedInitial to avoid duplicates
+        if (session?.user && !hasFetchedInitial) {
+          hasFetchedInitial = true;
+          if (typeof window !== 'undefined') {
+            debug("ProfileContext initial session found, fetching profile", {
+              browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",
+              userId: session.user.id,
+              timestamp: new Date().toISOString()
+            });
+          }
+          await fetchProfile();
+          await loadJournalEntries(session.user.id);
+          await fetchUserBadges(session.user.id);
+        } else if (!session) {
+          // No session - user is logged out
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Error in initializeSession:", err);
+        setLoading(false);
+      }
+    };
+
+    initializeSession();
     // Always fetch badges since they're public data
     fetchAllBadges();
 

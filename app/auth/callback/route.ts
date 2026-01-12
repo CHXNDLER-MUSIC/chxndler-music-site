@@ -6,8 +6,7 @@ import { getSupabaseAdmin } from '@/lib/supabaseServer';
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
-  const next = requestUrl.searchParams.get('next') ?? '/dashboard';
-  const profileSetup = requestUrl.searchParams.get('profileSetup');
+  const next = requestUrl.searchParams.get('next') ?? '/';
   const origin = requestUrl.origin;
 
   // If no code, redirect with error
@@ -107,12 +106,10 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Build redirect URL with optional profileSetup param
-  let redirectUrl = `${origin}${next}`;
-  if (profileSetup) {
-    const separator = redirectUrl.includes('?') ? '&' : '?';
-    redirectUrl = `${redirectUrl}${separator}profileSetup=${profileSetup}`;
-  }
+  // Build redirect URL
+  // NOTE: Onboarding flow (name prompt → element selection → relic) is triggered
+  // by the START button click in DashboardApp, NOT by URL parameters
+  const redirectUrl = `${origin}${next}`;
 
   console.log('[auth/callback] Success! Redirecting to:', redirectUrl);
   return NextResponse.redirect(redirectUrl);

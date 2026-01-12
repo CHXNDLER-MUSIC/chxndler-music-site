@@ -391,8 +391,17 @@ export default function HeartverseWelcomeModal() {
 
         {/* Login prompt for non-logged-in users */}
         {isLoggedIn === false && (
-          <div
-            className="text-center mb-4"
+          <button
+            onClick={() => {
+              playClickSound();
+              setIsOpen(false);
+              // Open the Welcome Home (login) modal after a brief delay
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('openWelcomeHomeModal'));
+              }, 150);
+            }}
+            onMouseEnter={handleHover}
+            className="text-center mb-4 cursor-pointer transition-all duration-200 hover:scale-105 bg-transparent border-none"
             style={{
               color: HEARTVERSE_COLOR,
               fontSize: "14px",
@@ -401,7 +410,7 @@ export default function HeartverseWelcomeModal() {
             }}
           >
             Log in to claim this relic
-          </div>
+          </button>
         )}
 
         {/* Already claimed indicator */}
