@@ -26,10 +26,13 @@ export default function WhatElementAreYouModal() {
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   // Check authentication when modal opens
+  // Uses getSession() to avoid AuthSessionMissingError when logged out
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabaseClient.auth.getUser();
-      setCurrentUser(user);
+      // Use getSession() first - does NOT throw when logged out
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      // If no session, user is null - this is expected for logged-out users
+      setCurrentUser(session?.user || null);
     };
 
     if (showElementSelection) {

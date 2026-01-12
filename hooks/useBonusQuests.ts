@@ -29,24 +29,46 @@ export function useBonusQuests(): UseBonusQuestsReturn {
   // Get profile context for refreshing HeartCoin balance
   const { refreshProfile } = useProfile();
 
-  // Get current user (safe: don't error if not logged in)
+  // Get current user via getSession() to avoid AuthSessionMissingError spam when logged out
+  // Uses onAuthStateChange to react to auth changes instead of polling
   useEffect(() => {
-    const getCurrentUser = async () => {
+    let mounted = true;
+
+    const initializeAuth = async () => {
       try {
-        const { data: { user }, error } = await supabaseBrowser.auth.getUser();
+        // Use getSession() first - does NOT throw when logged out
+        const { data: { session }, error } = await supabaseBrowser.auth.getSession();
         if (error) {
-          // Log but do not surface error to UI; quests are public
-          console.warn('Non-fatal: getUser error; treating as logged out:', error);
+          // Only log unexpected errors, not normal logged-out state
+          console.warn('[useBonusQuests] Unexpected session error:', error.message);
         }
-        setCurrentUserId(user?.id || null);
+        if (mounted) {
+          // If no session, user is null - this is expected for logged-out users
+          setCurrentUserId(session?.user?.id || null);
+        }
       } catch (e) {
-        // Also non-fatal; treat as logged out
-        console.warn('Non-fatal: exception in getCurrentUser; treating as logged out');
-        setCurrentUserId(null);
+        // Unexpected exception - treat as logged out silently
+        if (mounted) {
+          setCurrentUserId(null);
+        }
       }
     };
 
-    getCurrentUser();
+    initializeAuth();
+
+    // Subscribe to auth state changes to update user ID reactively
+    const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange(
+      (_event, session) => {
+        if (mounted) {
+          setCurrentUserId(session?.user?.id || null);
+        }
+      }
+    );
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Fetch bonus quests for the current user
@@ -96,11 +118,14 @@ export function useBonusQuests(): UseBonusQuestsReturn {
     }
   }, [currentUserId, hasLoggedError]);
 
-  // Fetch quests when user ID is available
+  // Fetch quests when user ID changes (including initial null -> value or value -> null)
+  // Note: We intentionally exclude fetchQuests from deps to avoid infinite loops
+  // since fetchQuests is recreated when currentUserId changes
   useEffect(() => {
     // Fetch whether logged in or not
     fetchQuests();
-  }, [currentUserId, fetchQuests]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUserId]);
 
   // Complete a quest using the idempotent RPC
   // Returns a QuestCompletionResult with alreadyCompleted flag for UI handling

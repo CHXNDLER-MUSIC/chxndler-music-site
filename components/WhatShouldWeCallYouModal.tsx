@@ -44,11 +44,14 @@ export default function WhatShouldWeCallYouModal() {
 
 
   // Check authentication and prefill name when modal opens
+  // Uses getSession() to avoid AuthSessionMissingError when logged out
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data: { user } } = await supabaseBrowser.auth.getUser();
-        setCurrentUser(user);
+        // Use getSession() first - does NOT throw when logged out
+        const { data: { session } } = await supabaseBrowser.auth.getSession();
+        // If no session, user is null - this is expected for logged-out users
+        setCurrentUser(session?.user || null);
       } finally {
         setAuthChecked(true);
       }

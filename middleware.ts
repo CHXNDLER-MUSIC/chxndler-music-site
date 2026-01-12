@@ -45,30 +45,18 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // IMPORTANT: Do NOT use getSession() here - it doesn't validate the token.
-  // Use getUser() to ensure the session is valid and refresh tokens if needed.
-  // This will also set any refreshed cookies on the response.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // First check if there's a session at all (fast, no network call for logged-out users)
+  // Then validate with getUser() only if session exists (to refresh tokens if needed)
+  const { data: { session } } = await supabase.auth.getSession();
 
-  // Debug logging for API routes
-  if (request.nextUrl.pathname.startsWith('/api/')) {
-    const allCookies = request.cookies.getAll();
-    const cookieNames = allCookies.map(c => c.name);
-    const sbCookies = cookieNames.filter(n => n.startsWith('sb-'));
-
-    console.log('[MIDDLEWARE] ============================================');
-    console.log('[MIDDLEWARE] Path:', request.nextUrl.pathname);
-    console.log('[MIDDLEWARE] All cookie names:', cookieNames);
-    console.log('[MIDDLEWARE] sb-* cookies:', sbCookies);
-    console.log('[MIDDLEWARE] supabase.auth.getUser() result:', {
-      hasUser: !!user,
-      userId: user?.id ?? null,
-      userEmail: user?.email ?? null,
-    });
-    console.log('[MIDDLEWARE] ============================================');
+  let user = null;
+  if (session) {
+    // Only call getUser() when we have a session - this validates the token
+    // and refreshes cookies if needed
+    const { data: userData } = await supabase.auth.getUser();
+    user = userData?.user ?? null;
   }
+  // If no session, user remains null - this is expected for logged-out users (no error logged)
 
   return supabaseResponse;
 }
