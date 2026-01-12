@@ -8,6 +8,22 @@ import { RELIC_CELEBRATION_EVENT } from "./RelicCelebration";
 const HEARTVERSE_COLOR = "#FC54AF";
 const WARP_DURATION_MS = 3500; // Wait for warp effect to complete before showing modal
 
+// Type for the next claimable story relic from RPC
+interface NextStoryRelic {
+  relic_id: string;
+  story_key: string;
+  required_heartcoins: number;
+  relic_label: string;
+  relic_image_url: string | null;
+}
+
+// Story relic display names
+const STORY_RELIC_LABELS: Record<string, string> = {
+  wanderer: 'Wanderer',
+  dreamer: 'Dreamer',
+  lover: 'Lover',
+};
+
 export default function HeartverseWelcomeModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [username, setUsername] = useState<string>("Wanderer");
@@ -15,6 +31,10 @@ export default function HeartverseWelcomeModal() {
   const [isClaiming, setIsClaiming] = useState(false);
   const [alreadyHasRelic, setAlreadyHasRelic] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+
+  // Story relic claiming state
+  const [nextStoryRelic, setNextStoryRelic] = useState<NextStoryRelic | null>(null);
+  const [heartcoinBalance, setHeartcoinBalance] = useState<number>(0);
 
   const hoverAudioRef = useRef<HTMLAudioElement | null>(null);
   const clickAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -51,35 +71,51 @@ export default function HeartverseWelcomeModal() {
     welcomeAudioRef.current.play().catch(() => {});
   }, []);
 
-  // Check if user already has the wanderer relic
-  const checkExistingRelic = useCallback(async (userId: string) => {
+  // Fetch the next claimable story relic using the RPC
+  const fetchNextStoryRelic = useCallback(async () => {
     try {
-      // First, find the wanderer relic by code
-      const { data: relic } = await supabaseBrowser
-        .from('relics')
-        .select('id')
-        .eq('code', 'wanderer')
-        .maybeSingle();
+      const { data, error } = await supabaseBrowser.rpc('get_next_claimable_story_relic');
 
-      if (!relic) {
-        console.log('[HeartverseWelcome] Wanderer relic not found in database');
+      if (error) {
+        console.error('[HeartverseWelcome] Error fetching next story relic:', error);
+        setNextStoryRelic(null);
         return;
       }
 
-      // Check if user owns this relic
-      const { data: existingRelic } = await supabaseBrowser
-        .from('user_relics')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('relic_id', relic.id)
-        .limit(1);
+      console.log('[HeartverseWelcome] Next claimable story relic:', data);
 
-      if (existingRelic && existingRelic.length > 0) {
+      if (data) {
+        setNextStoryRelic(data);
+        setAlreadyHasRelic(false);
+        setClaimed(false);
+      } else {
+        // No more story relics to claim - all claimed or none available
+        setNextStoryRelic(null);
         setAlreadyHasRelic(true);
-        setClaimed(true);
       }
     } catch (err) {
-      console.error('[HeartverseWelcome] Error checking existing relic:', err);
+      console.error('[HeartverseWelcome] Error fetching next story relic:', err);
+      setNextStoryRelic(null);
+    }
+  }, []);
+
+  // Fetch heartcoin balance from profile
+  const fetchHeartcoinBalance = useCallback(async (userId: string) => {
+    try {
+      const { data: profile, error } = await supabaseBrowser
+        .from('profiles')
+        .select('heartcoin_balance')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('[HeartverseWelcome] Error fetching heartcoin balance:', error);
+        return;
+      }
+
+      setHeartcoinBalance(profile?.heartcoin_balance ?? 0);
+    } catch (err) {
+      console.error('[HeartverseWelcome] Error fetching heartcoin balance:', err);
     }
   }, []);
 
@@ -98,8 +134,11 @@ export default function HeartverseWelcomeModal() {
 
       setIsLoggedIn(true);
 
-      // Check if user already has the relic
-      await checkExistingRelic(session.user.id);
+      // Fetch next claimable story relic and heartcoin balance in parallel
+      await Promise.all([
+        fetchNextStoryRelic(),
+        fetchHeartcoinBalance(session.user.id),
+      ]);
 
       // Fetch profile name
       const { data: profile } = await supabaseBrowser
@@ -119,7 +158,7 @@ export default function HeartverseWelcomeModal() {
       const storedName = localStorage.getItem('heartverse_username');
       setUsername(storedName || 'Wanderer');
     }
-  }, [checkExistingRelic]);
+  }, [fetchNextStoryRelic, fetchHeartcoinBalance]);
 
   // Listen for planet:warp event with isCenterPlanet
   useEffect(() => {

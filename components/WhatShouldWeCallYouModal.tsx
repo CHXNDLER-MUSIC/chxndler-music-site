@@ -30,7 +30,7 @@ const isRealName = (name: string | null | undefined, email?: string | null): boo
 export default function WhatShouldWeCallYouModal() {
   // Hooks (fixed order; all at top)
   const { showNamePrompt, namePromptFromAuth, closeNamePrompt, openElementSelection } = useUIStore();
-  
+
   const { updateProfileName, updateProfile, profile } = useProfile();
   const { completeOnboarding, refreshProfile } = useNewProfile();
   const { start: startTour } = useTour();
@@ -42,10 +42,30 @@ export default function WhatShouldWeCallYouModal() {
   const [shouldStartTourAfterEnter, setShouldStartTourAfterEnter] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  // Phase state: 'warp' shows animation, 'name' shows name input
+  const [phase, setPhase] = useState<'warp' | 'name'>('warp');
+
   // Prevent hydration mismatch
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Reset phase when modal opens
+  useEffect(() => {
+    if (showNamePrompt) {
+      setPhase('warp');
+    }
+  }, [showNamePrompt]);
+
+  // Auto-transition from warp to name after animation
+  useEffect(() => {
+    if (showNamePrompt && phase === 'warp' && mounted) {
+      const timer = setTimeout(() => {
+        setPhase('name');
+      }, 2500); // 2.5 second warp animation
+      return () => clearTimeout(timer);
+    }
+  }, [showNamePrompt, phase, mounted]);
 
   // Debug modal state changes
   useEffect(() => {
@@ -311,71 +331,153 @@ export default function WhatShouldWeCallYouModal() {
           }}
         />
 
-        {/* Header */}
-        <div
-          className="text-center mb-2"
-          style={{
-            color: '#00FFFF',
-            textShadow: '0 0 8px rgba(0,255,255,0.6)',
-            fontSize: '18px',
-            fontWeight: 'bold'
-          }}
-        >
-          Choose your Alien name
-        </div>
+        {/* Warp Animation Styles */}
+        <style>{`
+          @keyframes warpPulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; }
+          }
+          @keyframes warpGlow {
+            0%, 100% { filter: blur(0px); text-shadow: 0 0 20px rgba(0,255,255,0.8), 0 0 40px rgba(0,255,255,0.6), 0 0 60px rgba(0,255,255,0.4); }
+            50% { filter: blur(1px); text-shadow: 0 0 30px rgba(0,255,255,1), 0 0 60px rgba(0,255,255,0.8), 0 0 90px rgba(0,255,255,0.6); }
+          }
+          @keyframes warpLines {
+            0% { transform: translateY(100%) scaleY(0); opacity: 0; }
+            50% { transform: translateY(0%) scaleY(1); opacity: 1; }
+            100% { transform: translateY(-100%) scaleY(0); opacity: 0; }
+          }
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          .warp-text {
+            animation: warpGlow 1s ease-in-out infinite;
+          }
+          .warp-container {
+            animation: warpPulse 2s ease-in-out infinite;
+          }
+          .name-form-enter {
+            animation: fadeIn 0.5s ease-out forwards;
+          }
+        `}</style>
 
-        {/* Thin cyan neon line */}
-        <div
-          className="w-full h-px mb-4"
-          style={{
-            background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)',
-            boxShadow: '0 0 4px rgba(0,255,255,0.6)'
-          }}
-        />
+        {phase === 'warp' ? (
+          /* WARP PHASE - Animation */
+          <div className="warp-container flex flex-col items-center justify-center flex-1">
+            {/* Warp speed lines */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              {[...Array(8)].map((_, i) => (
+                <div
+                  key={i}
+                  style={{
+                    position: 'absolute',
+                    left: `${10 + i * 12}%`,
+                    top: 0,
+                    width: '2px',
+                    height: '100%',
+                    background: 'linear-gradient(to bottom, transparent, rgba(0,255,255,0.6), transparent)',
+                    animation: `warpLines 1.5s ease-in-out infinite`,
+                    animationDelay: `${i * 0.15}s`
+                  }}
+                />
+              ))}
+            </div>
 
-        {error && (
-          <div className="relative mb-3 rounded-md bg-red-50/10 border border-red-200/40 p-2 text-sm text-red-200">
-            {error}
+            {/* Main warp text */}
+            <div
+              className="warp-text text-center"
+              style={{
+                color: '#00FFFF',
+                fontSize: '28px',
+                fontWeight: 'bold',
+                letterSpacing: '4px'
+              }}
+            >
+              WARP TO HEARTVERSE
+            </div>
+
+            {/* Subtitle */}
+            <div
+              className="mt-4 text-center"
+              style={{
+                color: 'rgba(0,255,255,0.7)',
+                fontSize: '14px',
+                textShadow: '0 0 8px rgba(0,255,255,0.4)'
+              }}
+            >
+              Initiating transport...
+            </div>
+          </div>
+        ) : (
+          /* NAME PHASE - Input Form */
+          <div className="name-form-enter flex flex-col flex-1">
+            {/* Header */}
+            <div
+              className="text-center mb-2"
+              style={{
+                color: '#00FFFF',
+                textShadow: '0 0 8px rgba(0,255,255,0.6)',
+                fontSize: '18px',
+                fontWeight: 'bold'
+              }}
+            >
+              Choose your Alien name
+            </div>
+
+            {/* Thin cyan neon line */}
+            <div
+              className="w-full h-px mb-4"
+              style={{
+                background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)',
+                boxShadow: '0 0 4px rgba(0,255,255,0.6)'
+              }}
+            />
+
+            {error && (
+              <div className="relative mb-3 rounded-md bg-red-50/10 border border-red-200/40 p-2 text-sm text-red-200">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                required
+                disabled={loading}
+                className="block w-full rounded-md border px-3 py-3 text-sm shadow-sm focus:outline-none disabled:opacity-50"
+                style={{
+                  border: '1px solid rgba(0,255,255,0.4)',
+                  background: 'rgba(0,0,0,0.3)',
+                  color: '#00FFFF',
+                  textShadow: '0 0 4px rgba(0,255,255,0.6)',
+                  backdropFilter: 'blur(4px)',
+                  fontSize: '16px'
+                }}
+                maxLength={50}
+              />
+
+              <button
+                type="submit"
+                disabled={loading || !name.trim()}
+                className="w-full inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-medium transition disabled:opacity-50"
+                style={{
+                  background: 'rgba(0,255,255,0.15)',
+                  border: '1px solid rgba(0,255,255,0.5)',
+                  color: '#00FFFF',
+                  textShadow: '0 0 8px rgba(0,255,255,0.8), 0 0 16px rgba(0,255,255,0.6), 0 0 24px rgba(0,255,255,0.4)',
+                  boxShadow: loading || !name.trim()
+                    ? 'none'
+                    : '0 0 15px rgba(0,255,255,0.4), 0 0 25px rgba(0,255,255,0.2)'
+                }}
+              >
+                {loading ? "SAVING..." : "CONFIRM"}
+              </button>
+            </form>
           </div>
         )}
-
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Your name"
-            required
-            disabled={loading}
-            className="block w-full rounded-md border px-3 py-3 text-sm shadow-sm focus:outline-none disabled:opacity-50"
-            style={{
-              border: '1px solid rgba(0,255,255,0.4)',
-              background: 'rgba(0,0,0,0.3)',
-              color: '#00FFFF',
-              textShadow: '0 0 4px rgba(0,255,255,0.6)',
-              backdropFilter: 'blur(4px)',
-              fontSize: '16px'
-            }}
-            maxLength={50}
-          />
-          
-          <button
-            type="submit"
-            disabled={loading || !name.trim()}
-            className="w-full inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-medium transition disabled:opacity-50"
-            style={{
-              background: 'rgba(0,255,255,0.15)',
-              border: '1px solid rgba(0,255,255,0.5)',
-              color: '#00FFFF',
-              textShadow: '0 0 8px rgba(0,255,255,0.8), 0 0 16px rgba(0,255,255,0.6), 0 0 24px rgba(0,255,255,0.4)',
-              boxShadow: loading || !name.trim()
-                ? 'none' 
-                : '0 0 15px rgba(0,255,255,0.4), 0 0 25px rgba(0,255,255,0.2)'
-            }}
-          >
-            {loading ? "SAVING..." : "CONFIRM"}
-          </button>
-        </form>
         </div>
       </div>
     </>
