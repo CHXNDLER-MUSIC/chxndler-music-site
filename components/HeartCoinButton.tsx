@@ -3613,6 +3613,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           } else if (quest.quest_key === 'LISTEN_ELEMENT_SONG') {
                             // RETURN HOME: Close panel and warp to user's element planet
                             const userElement = profile?.element?.toLowerCase() || 'heart';
+                            const userId = profile?.id;
 
                             // Element audio file paths
                             const elementAudioPaths: Record<string, string> = {
@@ -3631,6 +3632,48 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             setOpen(false);
                             try { onClose?.(); } catch {}
 
+                            // Grant the user their element's digital card (like a free purchase)
+                            const grantElementCard = async () => {
+                              if (!userId) return;
+                              try {
+                                // Find the element card in the cards table
+                                // Look for a card matching the user's element (prioritize digital cards)
+                                const { data: elementCard, error: cardError } = await supabaseBrowser
+                                  .from('cards')
+                                  .select('id, card_name')
+                                  .ilike('element', userElement)
+                                  .order('is_digital', { ascending: false, nullsFirst: false })
+                                  .limit(1)
+                                  .maybeSingle();
+
+                                if (cardError) {
+                                  console.error('[RETURN HOME] Error finding element card:', cardError);
+                                  return;
+                                }
+
+                                if (!elementCard) {
+                                  console.warn('[RETURN HOME] No element card found for:', userElement);
+                                  return;
+                                }
+
+                                // Grant the card to the user (upsert to avoid duplicates)
+                                const { error: grantError } = await supabaseBrowser
+                                  .from('user_cards')
+                                  .upsert(
+                                    { user_id: userId, card_id: elementCard.id, source: 'element_journey' },
+                                    { onConflict: 'user_id,card_id', ignoreDuplicates: true }
+                                  );
+
+                                if (grantError) {
+                                  console.error('[RETURN HOME] Error granting element card:', grantError);
+                                } else {
+                                  console.log('[RETURN HOME] Granted element card:', elementCard.card_name);
+                                }
+                              } catch (err) {
+                                console.error('[RETURN HOME] Error in grantElementCard:', err);
+                              }
+                            };
+
                             // Wait for sound to play, then trigger warp (blue display opens after warp)
                             setTimeout(() => {
                               // Dispatch planet:warp event to trigger warp effect
@@ -3643,9 +3686,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 }
                               }));
 
-                              // After warp effect completes (~3500ms), open blue display
-                              setTimeout(() => {
+                              // After warp effect completes (~3500ms), open blue display and grant card
+                              setTimeout(async () => {
                                 try { onOpenBlueDisplay?.(); } catch {}
+
+                                // Grant the element card when arriving at the planet
+                                await grantElementCard();
 
                                 // Then trigger element card celebration after blue display opens
                                 setTimeout(() => {

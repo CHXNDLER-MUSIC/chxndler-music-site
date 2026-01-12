@@ -5,7 +5,7 @@ export function toYouTubeEmbed(url: string): string | null {
     // Short links: https://youtu.be/VIDEOID
     if (host === 'youtu.be') {
       const id = u.pathname.slice(1);
-      if (id) return `https://www.youtube-nocookie.com/embed/${id}`;
+      if (id) return `https://www.youtube.com/embed/${id}`;
     }
     // Standard and variants
     if (
@@ -16,15 +16,15 @@ export function toYouTubeEmbed(url: string): string | null {
     ) {
       if (u.pathname === '/watch') {
         const id = u.searchParams.get('v');
-        if (id) return `https://www.youtube-nocookie.com/embed/${id}`;
+        if (id) return `https://www.youtube.com/embed/${id}`;
       }
       if (u.pathname.startsWith('/shorts/')) {
         const id = u.pathname.split('/')[2];
-        if (id) return `https://www.youtube-nocookie.com/embed/${id}`;
+        if (id) return `https://www.youtube.com/embed/${id}`;
       }
       if (u.pathname.startsWith('/embed/')) {
         const id = u.pathname.split('/')[2];
-        if (id) return `https://www.youtube-nocookie.com/embed/${id}`;
+        if (id) return `https://www.youtube.com/embed/${id}`;
       }
       if (u.pathname.startsWith('/live/')) {
         const id = u.pathname.split('/')[2];
@@ -79,6 +79,10 @@ export function toAutoplayingYouTubeEmbed(url: string): string | null {
   const embed = toYouTubeEmbed(url);
   if (!embed) return null;
   const id = parseYouTubeId(url) || embed.split('/embed/')[1]?.split(/[?&]/)[0] || '';
+
+  // Get origin for embed validation (helps avoid bot detection)
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+
   const params = new URLSearchParams({
     autoplay: '1',
     mute: '1',
@@ -91,6 +95,14 @@ export function toAutoplayingYouTubeEmbed(url: string): string | null {
     loop: '1',
     // Loop requires playlist to be set to the same video id
     playlist: id,
+    // Enable JS API for better integration
+    enablejsapi: '1',
   });
+
+  // Add origin if available (helps with bot detection)
+  if (origin) {
+    params.set('origin', origin);
+  }
+
   return `${embed}?${params.toString()}`;
 }

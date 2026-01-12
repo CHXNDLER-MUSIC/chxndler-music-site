@@ -250,8 +250,8 @@ export default function OnboardingTour({
   const positionBubble = (element: HTMLElement | null, step: TourStep) => {
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    const bubbleWidth = 240; // Match hamburger menu width (w-60 = 240px)
-    const bubbleHeight = 200;
+    const bubbleWidth = 180; // Narrower bubble
+    const bubbleHeight = 180;
     
     // If no element, center the tooltip (ERROR-PROOF TARGETING)
     if (!element) {
@@ -270,6 +270,43 @@ export default function OnboardingTour({
 
     const rect = element.getBoundingClientRect();
     
+    // Special positioning for hamburger step - places tooltip to the RIGHT of menu
+    if (step.id === 'hamburger') {
+      // Look for the menu dropdown panel
+      const menuDropdown = document.querySelector('[data-tour-id="nav-panel"]') as HTMLElement;
+
+      if (menuDropdown) {
+        const dropdownRect = menuDropdown.getBoundingClientRect();
+
+        // Position to the right of the menu with spacing to avoid overlap
+        const marginFromMenu = viewportWidth <= 768 ? 16 : 28;
+        let left = dropdownRect.right + marginFromMenu;
+
+        // Ensure tooltip doesn't go off-screen on the right
+        const maxLeft = viewportWidth - bubbleWidth - 16;
+        if (left > maxLeft) {
+          left = maxLeft;
+        }
+
+        // Vertically align near the top of the menu
+        const top = Math.max(20, dropdownRect.top + 20);
+
+        setBubblePosition({ top, left });
+
+        // Update spotlight for hamburger button
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const r = Math.max(60, Math.ceil(Math.hypot(rect.width, rect.height) * 0.8));
+        spotlightRef.current = { cx, cy, r };
+
+        if (overlayRef.current) {
+          const gradient = `radial-gradient(${r}px ${r}px at ${cx}px ${cy}px, rgba(0,0,0,0) 0%, rgba(0,0,0,0.2) 65%, rgba(0,0,0,0.6) 100%)`;
+          overlayRef.current.style.background = gradient;
+        }
+        return;
+      }
+    }
+
     // Special positioning for menu items - places tooltip to the RIGHT of menu
     if (step.id.startsWith('menu-')) {
       // Directly select the nav-panel dropdown by its data-tour-id
@@ -279,7 +316,7 @@ export default function OnboardingTour({
         const dropdownRect = menuDropdown.getBoundingClientRect();
 
         // Position to the right of the menu with spacing to avoid overlap
-        const marginFromMenu = viewportWidth <= 768 ? 12 : 24;
+        const marginFromMenu = viewportWidth <= 768 ? 16 : 28;
         let left = dropdownRect.right + marginFromMenu;
 
         // Ensure tooltip doesn't go off-screen on the right
@@ -307,6 +344,37 @@ export default function OnboardingTour({
       }
     }
     
+    // Special positioning for Music and Signal steps - position to the LEFT of the target
+    if (step.id === 'music-dropdown' || step.id === 'signal') {
+      // Position to the left of the element
+      let left = rect.left - bubbleWidth - 20;
+      let top = rect.top + (rect.height / 2) - (bubbleHeight / 2);
+
+      // If not enough space on left, position below
+      if (left < 20) {
+        left = rect.left + (rect.width / 2) - (bubbleWidth / 2);
+        top = rect.bottom + 20;
+      }
+
+      // Keep within viewport bounds
+      left = Math.max(20, Math.min(left, viewportWidth - bubbleWidth - 20));
+      top = Math.max(20, Math.min(top, viewportHeight - bubbleHeight - 20));
+
+      setBubblePosition({ top, left });
+
+      // Update spotlight for the target element
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const r = Math.max(50, Math.ceil(Math.hypot(rect.width, rect.height) * 0.7));
+      spotlightRef.current = { cx, cy, r };
+
+      if (overlayRef.current) {
+        const gradient = `radial-gradient(${r}px ${r}px at ${cx}px ${cy}px, rgba(0,0,0,0) 0%, rgba(0,0,0,0.2) 65%, rgba(0,0,0,0.6) 100%)`;
+        overlayRef.current.style.background = gradient;
+      }
+      return;
+    }
+
     // Default positioning - try to place above or below the element
     let top = rect.top - bubbleHeight - 20;
     let left = rect.left + (rect.width / 2) - (bubbleWidth / 2);
@@ -528,10 +596,11 @@ export default function OnboardingTour({
       {/* Dim overlay */}
       <div
         ref={overlayRef}
-        className={`tour-overlay fixed inset-0 z-[300] transition-opacity duration-300 ${
+        className={`tour-overlay fixed inset-0 transition-opacity duration-300 ${
           isVisible && active ? 'opacity-100' : 'opacity-0'
         }`}
         style={{
+          zIndex: 2147483647,
           pointerEvents: isVisible ? 'auto' : 'none',
           background: 'radial-gradient(120% 120% at 50% 50%, rgba(0,0,0,0.25), rgba(0,0,0,0.45))'
         }}
@@ -540,44 +609,51 @@ export default function OnboardingTour({
       {/* Speech bubble */}
       {active && bubblePosition && (
         <div
-          className={`tour-bubble fixed z-[301] transition-all duration-500 ${
+          className={`tour-bubble fixed transition-all duration-500 ${
             isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-2 scale-95'
           }`}
           style={{
+            zIndex: 2147483648,
             top: bubblePosition.top,
             left: bubblePosition.left,
             pointerEvents: isVisible ? 'auto' : 'none',
           }}
         >
           <div
-            className="relative rounded-2xl p-6"
+            className="relative rounded-2xl p-4"
             style={{
-              width: '240px',
+              width: '180px',
               background: `linear-gradient(180deg, rgba(252,84,175,0.18), rgba(252,84,175,0.12))`,
               border: '1px solid rgba(252,84,175,0.35)',
               backdropFilter: 'blur(16px)',
               boxShadow: `0 20px 40px rgba(0,0,0,0.6), 0 0 40px rgba(252,84,175,0.45), 0 0 80px rgba(252,84,175,0.25), inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -6px 14px rgba(0,0,0,0.4)`,
             }}
           >
-            <div className="pointer-events-none absolute inset-0">
-              <div className="absolute inset-0 opacity-70 tour-sparkles" style={{ 
+            {/* Skip button - top right */}
+            <button
+              onClick={handleSkip}
+              className="absolute top-2 right-2 text-white/50 hover:text-white transition-colors duration-200 text-xs"
+            >
+              ✕
+            </button>
+
+            <div className="pointer-events-none absolute inset-0 rounded-2xl overflow-hidden">
+              <div className="absolute inset-0 opacity-70 tour-sparkles" style={{
                 backgroundImage: `
-                  radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,0.8) 50%, transparent 52%), 
-                  radial-gradient(1.5px 1.5px at 70% 60%, rgba(252,84,175,0.6) 50%, transparent 52%), 
+                  radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,0.8) 50%, transparent 52%),
+                  radial-gradient(1.5px 1.5px at 70% 60%, rgba(252,84,175,0.6) 50%, transparent 52%),
                   radial-gradient(1.2px 1.2px at 40% 80%, rgba(56,182,255,0.5) 50%, transparent 52%),
-                  radial-gradient(1.8px 1.8px at 85% 20%, rgba(255,255,255,0.7) 50%, transparent 52%),
-                  radial-gradient(1.3px 1.3px at 15% 75%, rgba(242,239,29,0.5) 50%, transparent 52%),
-                  radial-gradient(2.2px 2.2px at 60% 15%, rgba(252,84,175,0.4) 50%, transparent 52%)
-                ` 
+                  radial-gradient(1.8px 1.8px at 85% 20%, rgba(255,255,255,0.7) 50%, transparent 52%)
+                `
               }} />
             </div>
-            
+
             {/* Title */}
-            <h3 
-              className="text-xl font-bold text-white mb-3"
+            <h3
+              className="text-base font-bold text-white mb-2 pr-4"
               style={{
                 fontFamily: 'OrbitronLocal, InterLocal, system-ui, sans-serif',
-                letterSpacing: '0.06em',
+                letterSpacing: '0.04em',
                 textShadow: '0 0 15px rgba(252,84,175,0.65)',
               }}
             >
@@ -585,45 +661,34 @@ export default function OnboardingTour({
             </h3>
 
             {/* Body */}
-            <p className="text-white/90 mb-6 leading-relaxed whitespace-pre-line">
+            <p className="text-white/90 text-sm mb-4 leading-relaxed whitespace-pre-line">
               {currentStep?.body || 'Loading tour content...'}
             </p>
 
-            {/* Controls */}
-            <div className="flex justify-between items-center">
-              {/* Skip button */}
-              <button
-                onClick={handleSkip}
-                className="text-white/70 hover:text-white transition-colors duration-200 text-sm underline"
-              >
-                Skip Tour
-              </button>
+            {/* Next button - full width */}
+            <button
+              onClick={handleNext}
+              className="w-full px-4 py-2 rounded-lg font-semibold text-white text-sm transition-all duration-200 hover:scale-105 active:scale-95"
+              style={{
+                background: `linear-gradient(135deg, rgba(252,84,175,0.85), rgba(252,84,175,0.65))`,
+                border: '1px solid rgba(252,84,175,0.5)',
+                boxShadow: `0 4px 8px rgba(0,0,0,0.3), 0 0 15px rgba(252,84,175,0.45), inset 0 1px 0 rgba(255,255,255,0.2)`,
+                textShadow: '0 0 8px rgba(252,84,175,0.9)',
+              }}
+            >
+              {isLastStep ? 'Got it!' : 'Next'}
+            </button>
 
-              {/* Next button */}
-              <button
-                onClick={handleNext}
-                className="px-6 py-2 rounded-lg font-semibold text-white transition-all duration-200 hover:scale-105 active:scale-95"
-                style={{
-                  background: `linear-gradient(135deg, rgba(252,84,175,0.85), rgba(252,84,175,0.65))`,
-                  border: '1px solid rgba(252,84,175,0.5)',
-                  boxShadow: `0 4px 8px rgba(0,0,0,0.3), 0 0 15px rgba(252,84,175,0.45), inset 0 1px 0 rgba(255,255,255,0.2)`,
-                  textShadow: '0 0 8px rgba(252,84,175,0.9)',
-                }}
-              >
-                {isLastStep ? 'Got it!' : 'Next'}
-              </button>
-            </div>
-
-            {/* Step indicator */}
-            <div className="flex justify-center mt-4 space-x-2">
+            {/* Step indicator - smaller dots */}
+            <div className="flex justify-center mt-3 gap-1 flex-wrap">
               {TOUR_STEPS.map((_, index) => (
                 <div
                   key={index}
-                  className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                    index === currentStepIndex 
-                      ? 'bg-cyan-400 shadow-lg shadow-cyan-400/50' 
-                      : index < currentStepIndex 
-                        ? 'bg-cyan-400/60' 
+                  className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
+                    index === currentStepIndex
+                      ? 'bg-cyan-400 shadow-lg shadow-cyan-400/50'
+                      : index < currentStepIndex
+                        ? 'bg-cyan-400/60'
                         : 'bg-white/20'
                   }`}
                 />
@@ -635,9 +700,9 @@ export default function OnboardingTour({
 
       {/* End of Tour modal */}
       {endModalVisible && (
-        <div className={`fixed inset-0 z-[320] flex items-center justify-center transition-opacity duration-300 ${endModalVisible ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`fixed inset-0 flex items-center justify-center transition-opacity duration-300 ${endModalVisible ? 'opacity-100' : 'opacity-0'}`} style={{ zIndex: 2147483649 }}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-          <div className="relative z-[321] w-full max-w-md mx-4 rounded-2xl p-8 text-center" style={{
+          <div className="relative w-full max-w-md mx-4 rounded-2xl p-8 text-center" style={{ zIndex: 2147483650,
             background: 'linear-gradient(180deg, rgba(252,84,175,0.18), rgba(252,84,175,0.12))',
             border: '1px solid rgba(252,84,175,0.35)',
             boxShadow: '0 25px 60px rgba(0,0,0,0.6), 0 0 60px rgba(252,84,175,0.5)'
@@ -668,7 +733,7 @@ export default function OnboardingTour({
         /* 🔥 GLOWING HIGHLIGHT EFFECT - Applied to all tour targets */
         .tour-highlight {
           position: relative !important;
-          z-index: 310 !important;
+          z-index: 2147483647 !important;
           animation: tourGlow 2.2s ease-in-out infinite !important;
           border-radius: 12px !important;
           box-shadow:

@@ -77,17 +77,14 @@ export async function GET(request: NextRequest) {
       if (!existingProfile) {
         console.log('[auth/callback] No profile found, creating one for user:', user.id);
 
-        const displayName = user.user_metadata?.full_name ||
-                           user.user_metadata?.name ||
-                           user.email?.split('@')[0] ||
-                           'Heartverse Wanderer';
-
+        // NOTE: Do NOT set name here - leave it null so the user goes through
+        // the onboarding flow (name prompt -> element selection)
         const { error: insertError } = await supabaseAdmin
           .from('profiles')
           .insert({
             id: user.id,
             email: user.email,
-            name: displayName,
+            name: null, // User will set this in the "What should we call you?" modal
             heartcoin_balance: 0,
             heartcoin_total: 0,
             profile_complete: false,

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import type { ElementType } from "@/lib/planetConfig";
 import { RELIC_CELEBRATION_EVENT } from "./RelicCelebration";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import { suppressNextHeartcoinCelebration } from "@/utils/heartcoinCelebration";
 
 // Hardcoded bonus quest ID for Element of the Day
 const BONUS_QUEST_ID = '4c24a82f-92ba-44f4-9386-d8c6438498bd';
@@ -250,6 +251,9 @@ export default function ElementOfDayModal() {
     playElementSound(data.element);
 
     setIsCompletingElementQuest(true);
+
+    // Suppress heartcoin celebration - we only want to award the relic, not show heartcoin animation
+    suppressNextHeartcoinCelebration();
 
     try {
       // ========== SINGLE RPC CALL: claim_element_of_day ==========

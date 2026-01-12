@@ -652,12 +652,31 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   }, [state.currentTrack?.id, state.playing]);
 
-  // Handle visibilitychange and beforeunload to flush sessions
+  // Handle visibilitychange and beforeunload to flush sessions and stop audio
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden' && sessionRef.current && !sessionRef.current.flushed) {
-        console.log('🎧 Page hidden, flushing session');
-        flushSession(2); // Require at least 2 seconds
+      if (document.visibilityState === 'hidden') {
+        // Stop all audio when page becomes hidden (new tab opened, etc.)
+        const a = audioRef.current;
+        if (a && !a.paused) {
+          console.log('🎧 Page hidden, stopping audio playback');
+          try { a.pause(); } catch {}
+          setState(s => ({ ...s, playing: false }));
+        }
+
+        // Also stop any ambient/intro audio
+        try {
+          const ambientAudio = document.querySelector<HTMLAudioElement>('audio[data-ambient="1"]');
+          const introAudio = document.querySelector<HTMLAudioElement>('audio[data-intro="1"]');
+          if (ambientAudio && !ambientAudio.paused) { ambientAudio.pause(); }
+          if (introAudio && !introAudio.paused) { introAudio.pause(); }
+        } catch {}
+
+        // Flush session if active
+        if (sessionRef.current && !sessionRef.current.flushed) {
+          console.log('🎧 Page hidden, flushing session');
+          flushSession(2); // Require at least 2 seconds
+        }
       }
     };
 

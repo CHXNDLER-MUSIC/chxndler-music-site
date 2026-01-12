@@ -387,11 +387,11 @@ export default function SkyboxVideo({
               <iframe
                 key={`yt-${videoKey || 'home'}`}
                 src={ytEmbedUrl}
-                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
                 title="Background video"
                 loading="eager"
-                referrerPolicy="origin"
-                fetchPriority="high"
+                referrerPolicy="strict-origin-when-cross-origin"
                 style={{ display: 'block', border: 0, width: '100%', height: '100%' }}
                 onLoad={() => { setYtReady(true); }}
               />
@@ -443,11 +443,11 @@ export default function SkyboxVideo({
             <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '177.78vh', height: '100vh', minWidth: '100vw', minHeight: '56.25vw' }}>
               <iframe
                 src={lsYtEmbedUrl}
-                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
                 title="Lightspeed"
                 loading="eager"
-                referrerPolicy="origin"
-                fetchPriority="high"
+                referrerPolicy="strict-origin-when-cross-origin"
                 style={{ display: 'block', border: 0, width: '100%', height: '100%', filter: `brightness(${Math.max(0.9, brightness)})` }}
                 onLoad={() => setLsYtReady(true)}
               />

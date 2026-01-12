@@ -51,14 +51,27 @@ export default function HeartverseWelcomeModal() {
     welcomeAudioRef.current.play().catch(() => {});
   }, []);
 
-  // Check if user already has the heartverse relic
+  // Check if user already has the wanderer relic
   const checkExistingRelic = useCallback(async (userId: string) => {
     try {
+      // First, find the wanderer relic by code
+      const { data: relic } = await supabaseBrowser
+        .from('relics')
+        .select('id')
+        .eq('code', 'wanderer')
+        .maybeSingle();
+
+      if (!relic) {
+        console.log('[HeartverseWelcome] Wanderer relic not found in database');
+        return;
+      }
+
+      // Check if user owns this relic
       const { data: existingRelic } = await supabaseBrowser
         .from('user_relics')
         .select('id')
         .eq('user_id', userId)
-        .eq('relic_code', 'heartverse')
+        .eq('relic_id', relic.id)
         .limit(1);
 
       if (existingRelic && existingRelic.length > 0) {
@@ -110,9 +123,16 @@ export default function HeartverseWelcomeModal() {
 
   // Listen for planet:warp event with isCenterPlanet
   useEffect(() => {
-    const handleWarp = async (e: CustomEvent<{ element: string; isCenterPlanet?: boolean }>) => {
+    const handleWarp = async (e: CustomEvent<{ element: string; isCenterPlanet?: boolean; isOnboarding?: boolean }>) => {
       if (e.detail?.isCenterPlanet) {
         console.log('[HeartverseWelcome] Received center planet warp event');
+
+        // Skip showing this modal if user is in onboarding flow (no name set)
+        // The name prompt modal will be shown instead
+        if (e.detail?.isOnboarding) {
+          console.log('[HeartverseWelcome] Skipping modal - user is in onboarding flow');
+          return;
+        }
 
         // Wait for warp effect to complete
         await new Promise(resolve => setTimeout(resolve, WARP_DURATION_MS));
@@ -152,21 +172,21 @@ export default function HeartverseWelcomeModal() {
     setIsClaiming(true);
 
     try {
-      // Award the heartverse relic via API
+      // Award the wanderer relic via API
       const awardRes = await fetch('/api/award-relic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: session.user.id, relicCode: 'heartverse' }),
+        body: JSON.stringify({ userId: session.user.id, relicCode: 'wanderer' }),
       });
       const awardData = await awardRes.json();
 
       if (awardRes.ok && awardData.success) {
         setClaimed(true);
-        console.log('[HeartverseWelcome] Heartverse relic awarded!');
+        console.log('[HeartverseWelcome] Wanderer Relic awarded!');
 
         // Show success toast
         window.dispatchEvent(new CustomEvent('toast:show', {
-          detail: { message: 'Welcome home! Heartverse Relic awarded.', type: 'success' }
+          detail: { message: 'Welcome home! Wanderer Relic awarded.', type: 'success' }
         }));
 
         // Refresh UI state
@@ -183,10 +203,10 @@ export default function HeartverseWelcomeModal() {
               new CustomEvent(RELIC_CELEBRATION_EVENT, {
                 detail: {
                   element: 'heart',
-                  rewardKey: 'heartverse',
-                  relicLabel: 'Heartverse',
+                  rewardKey: 'wanderer',
+                  relicLabel: 'Wanderer Relic',
                   relicImageUrl: '/elements/relics.webp',
-                  relicKind: 'heartverse',
+                  relicKind: 'achievement',
                 },
               })
             );
@@ -336,7 +356,7 @@ export default function HeartverseWelcomeModal() {
               overflow: "visible",
               cursor: (claimed || isClaiming || alreadyHasRelic || isLoggedIn === false) ? "default" : "pointer",
             }}
-            aria-label={alreadyHasRelic ? "Already claimed" : "Claim Heartverse relic"}
+            aria-label={alreadyHasRelic ? "Already claimed" : "Claim Wanderer Relic"}
           >
             {/* Pulsing glow behind the image - only when not claimed */}
             {!claimed && !alreadyHasRelic && isLoggedIn !== false && (
@@ -353,7 +373,7 @@ export default function HeartverseWelcomeModal() {
             {/* The relics image with pulse animation */}
             <img
               src="/elements/relics.webp"
-              alt="Heartverse Relic"
+              alt="Wanderer Relic"
               style={{
                 position: "relative",
                 zIndex: 10,

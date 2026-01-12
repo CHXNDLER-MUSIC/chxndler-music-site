@@ -1364,6 +1364,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   
   const handleStartClick = React.useCallback(() => {
     console.log("🚀 START CLICKED");
+    console.log("🚀 Profile state:", {
+      id: profile?.id,
+      name: profile?.name,
+      element: profile?.element,
+      profileComplete: profile?.profile_complete
+    });
 
     if (startInFlightRef.current) return;
     startInFlightRef.current = true;
@@ -1371,10 +1377,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // Mark that user actually clicked START
     setUserClickedStart(true);
 
-    // Show Welcome Home modal immediately for logged-out users on first START click
-    if (!profile?.id && !showWelcomeHomeModal) {
-      setShowWelcomeHomeModal(true);
-    }
+    // NOTE: WelcomeHomeModal for non-logged-in users is now shown AFTER warp completes
+    // This ensures the warp to Heartverse (center planet) happens first
 
     // Set flag to identify this as a start button warp
     startButtonWarpRef.current = true;
@@ -1412,6 +1416,19 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     setHomeMode(true);
     setUserSelected(false);
     setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
+
+    // If user profile is not complete (not logged in, no name, OR no element), warp to Heartverse (center planet) for onboarding
+    // This ensures all users who haven't finished setup land on the center planet
+    const hasName = profile?.name && profile.name.trim() !== '';
+    const hasElement = profile?.element && profile.element.trim() !== '';
+    const profileIncomplete = !profile?.id || !hasName || !hasElement;
+    console.log("🚀 Profile incomplete?", profileIncomplete, { hasName, hasElement });
+    if (profileIncomplete) {
+      console.log("🚀 Dispatching planet:warp to Heartverse (center planet)");
+      window.dispatchEvent(new CustomEvent('planet:warp', {
+        detail: { element: 'heart', isCenterPlanet: true, isOnboarding: true }
+      }));
+    }
     
     // SkyboxVideo component handles warp sound to prevent double triggering
     
@@ -1470,17 +1487,40 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       setPowerBusy(false);
       setLandingRevealReady(true);
 
-      // If user has profile but hasn't selected an element yet, show element selection modal
-      if (profile?.id && !profile?.element) {
-        // Small delay to let the landing animation settle before showing modal
-        setTimeout(() => {
+      // Profile setup flow after warp to Heartverse completes
+      // Small delay to let the landing animation settle before showing modal
+      setTimeout(() => {
+        const hasName = profile?.name && profile.name.trim() !== '';
+        const hasElement = profile?.element && profile.element.trim() !== '';
+
+        console.log("🛬 Post-warp profile check:", {
+          id: profile?.id,
+          name: profile?.name,
+          element: profile?.element,
+          hasName,
+          hasElement
+        });
+
+        if (!profile?.id) {
+          // Step 0: User not logged in - show Welcome Home modal for login/signup
+          console.log("🛬 Showing WelcomeHomeModal (not logged in)");
+          setShowWelcomeHomeModal(true);
+        } else if (!hasName) {
+          // Step 1: User logged in but needs to set their name first
+          console.log("🛬 Showing name prompt (no name)");
+          openNamePrompt();
+        } else if (!hasElement) {
+          // Step 2: User has name but needs to select element
+          console.log("🛬 Showing element selection (has name, no element)");
           openElementSelection();
-        }, 500);
-      }
+        } else {
+          console.log("🛬 Profile complete - no modal needed");
+        }
+      }, 500);
 
     }, WARP_DURATION_MS);
 
-  }, [audioManager, profile, openElementSelection]);
+  }, [audioManager, profile, openElementSelection, openNamePrompt, setShowWelcomeHomeModal]);
 
   // Handle opening journal: opens journal view in Soul Sky popover
   const handleOpenJournal = React.useCallback(() => {
@@ -1643,9 +1683,16 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   // Listen for planet:warp event to trigger warp visual effect for element planets
   React.useEffect(() => {
     const handlePlanetWarp = (e) => {
-      const { element, isDailyElement, isCenterPlanet, audioPath } = e.detail || {};
+      const { element, isDailyElement, isCenterPlanet, audioPath, isOnboarding } = e.detail || {};
       if (process.env.NODE_ENV === "development") {
-        console.log('🌍 planet:warp event received:', { element, isDailyElement, isCenterPlanet, audioPath });
+        console.log('🌍 planet:warp event received:', { element, isDailyElement, isCenterPlanet, audioPath, isOnboarding });
+      }
+
+      // Skip processing during onboarding flow - the START button handler manages the warp
+      // This prevents double warp effects and conflicting state changes
+      if (isOnboarding) {
+        console.log('🌍 Skipping planet:warp handling - onboarding flow is managed by START button');
+        return;
       }
 
       // Set YouTube sky for element planets (WATER, CENTER, HEART, DARKNESS, LIGHTNING)

@@ -8,6 +8,7 @@ import { useProfile as useNewProfile } from "@/hooks/useProfile";
 import { useProfile } from "@/contexts/ProfileContext";
 import type { Element } from "@/lib/planets";
 import { ELEMENT_COLORS } from "@/lib/planets";
+import { logHeartcoinTransaction } from "@/utils/heartcoins";
 
 // Element sound mappings
 const ELEMENT_SOUNDS: Record<Element, string> = {
@@ -66,15 +67,17 @@ export default function WhatElementAreYouModal() {
       audio.play().catch(e => console.log('Element audio play failed:', e));
     }
 
-    // Toggle flip state for this card
+    // Only one card can be flipped at a time
+    // If clicking the same card that's already flipped, flip it back
+    // Otherwise, flip the new card and unflip any others
     setFlippedCards(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(elementKey)) {
-        newSet.delete(elementKey);
+      if (prev.has(elementKey)) {
+        // Clicking same card - flip it back
+        return new Set();
       } else {
-        newSet.add(elementKey);
+        // Clicking new card - only this one should be flipped
+        return new Set([elementKey]);
       }
-      return newSet;
     });
 
     // Select this element
@@ -145,6 +148,23 @@ export default function WhatElementAreYouModal() {
       // Trigger profile refresh to update the UI with new element
       triggerProfileRefresh();
 
+      // Award 1 HeartCoin for completing profile setup
+      // This also triggers the HeartCoin celebration animation
+      try {
+        await logHeartcoinTransaction(supabaseClient, {
+          user_id: currentUser.id,
+          amount: 1,
+          reason: 'profile_completion',
+          description: 'Welcome to the Heartverse! Profile setup complete.',
+          transaction_type: 'bonus',
+          metadata: { element: selectedElementData.label }
+        });
+        console.log('🪙 Awarded 1 HeartCoin for profile completion');
+      } catch (heartcoinError) {
+        console.error('Failed to award HeartCoin for profile completion:', heartcoinError);
+        // Don't fail the profile completion if HeartCoin award fails
+      }
+
       // Add a small delay to ensure profile context has propagated before showing tour
       setTimeout(() => {
         try {
@@ -197,6 +217,8 @@ export default function WhatElementAreYouModal() {
 
         .element-card-face {
           position: absolute;
+          top: 0;
+          left: 0;
           width: 100%;
           height: 100%;
           backface-visibility: hidden;
@@ -207,6 +229,7 @@ export default function WhatElementAreYouModal() {
           align-items: center;
           justify-content: center;
           padding: 8px;
+          box-sizing: border-box;
         }
 
         .element-card-front {
@@ -365,7 +388,7 @@ export default function WhatElementAreYouModal() {
                 <div
                   key={element.key}
                   className="element-card-container"
-                  style={{ height: '90px' }}
+                  style={{ height: '90px', width: '100%', position: 'relative' }}
                 >
                   <button
                     type="button"
@@ -375,17 +398,22 @@ export default function WhatElementAreYouModal() {
                     disabled={loading}
                     className={`element-card ${isFlipped ? 'flipped' : ''} ${isHovered ? 'hovered' : ''} ${isSelected ? 'selected' : ''}`}
                     style={{
-                      border: isSelected
-                        ? `2px solid ${elementColor}`
+                      width: '100%',
+                      height: '100%',
+                      border: '2px solid',
+                      borderColor: isSelected
+                        ? elementColor
                         : isHovered
-                          ? `2px solid ${elementColor}80`
-                          : '1px solid rgba(0,255,255,0.3)',
+                          ? `${elementColor}80`
+                          : 'rgba(0,255,255,0.3)',
                       borderRadius: '0.5rem',
                       background: 'transparent',
                       cursor: loading ? 'not-allowed' : 'pointer',
                       boxShadow: isHovered || isSelected
                         ? `0 0 20px ${elementColor}60, 0 0 40px ${elementColor}30, inset 0 0 15px ${elementColor}20`
                         : 'none',
+                      padding: 0,
+                      margin: 0,
                     }}
                   >
                     {/* Front face - shows icon only */}
@@ -451,17 +479,21 @@ export default function WhatElementAreYouModal() {
             type="submit"
             disabled={loading || !selectedElement}
             className="w-full inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition disabled:opacity-50"
-            style={{
-              background: 'rgba(0,255,255,0.15)',
-              border: '1px solid rgba(0,255,255,0.5)',
-              color: '#00FFFF',
-              textShadow: '0 0 8px rgba(0,255,255,0.8), 0 0 16px rgba(0,255,255,0.6), 0 0 24px rgba(0,255,255,0.4)',
-              boxShadow: loading || !selectedElement
-                ? 'none'
-                : '0 0 15px rgba(0,255,255,0.4), 0 0 25px rgba(0,255,255,0.2)'
-            }}
+            style={(() => {
+              const buttonColor = selectedElement ? getElementColor(selectedElement) : '#00FFFF';
+              return {
+                background: `${buttonColor}15`,
+                border: `1px solid ${buttonColor}80`,
+                color: buttonColor,
+                textShadow: `0 0 8px ${buttonColor}, 0 0 16px ${buttonColor}99, 0 0 24px ${buttonColor}66`,
+                boxShadow: loading || !selectedElement
+                  ? 'none'
+                  : `0 0 15px ${buttonColor}66, 0 0 25px ${buttonColor}33, 0 0 35px ${buttonColor}22`,
+                transition: 'all 0.3s ease'
+              };
+            })()}
           >
-            {loading ? "SAVING..." : "ENTER THE HEARTVERSE"}
+            {loading ? "ALIGNING..." : "ALIGN"}
           </button>
         </form>
         </div>

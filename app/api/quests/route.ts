@@ -46,15 +46,31 @@ export async function GET(request: NextRequest) {
         });
       });
 
-      // Fetch today's completions
-      const today = new Date().toISOString().split('T')[0];
+      // Fetch today's completions (using NY timezone for daily reset at midnight ET)
+      // Calculate start of day in NY timezone, then convert to UTC for query
+      const now = new Date();
+
+      // Get current date in NY timezone
+      const nyDateStr = now.toLocaleDateString('en-CA', { timeZone: 'America/New_York' }); // YYYY-MM-DD format
+
+      // Create start and end of day in NY timezone, then get UTC equivalents
+      // We use a simple approach: query completions from the last 24 hours that fall on "today" in NY
+      const startOfDayNY = new Date(`${nyDateStr}T00:00:00`);
+      startOfDayNY.setTime(startOfDayNY.getTime() + (5 * 60 * 60 * 1000)); // Add 5 hours (EST offset, approximate)
+
       const { data: todayCompletions } = await supabase
         .from('user_bonus_quest_completions')
-        .select('bonus_quest_id')
+        .select('bonus_quest_id, completed_at')
         .eq('user_id', userId)
-        .eq('completed_date', today);
+        .gte('completed_at', new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()); // Last 24 hours
 
-      todayCompletions?.forEach(c => todayCompletionSet.add(c.bonus_quest_id));
+      // Filter to only completions that are "today" in NY timezone
+      const todayCompletionsFiltered = todayCompletions?.filter(c => {
+        const completedDate = new Date(c.completed_at).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+        return completedDate === nyDateStr;
+      }) || [];
+
+      todayCompletionsFiltered.forEach(c => todayCompletionSet.add(c.bonus_quest_id));
     }
 
     // Transform quests with completion data
