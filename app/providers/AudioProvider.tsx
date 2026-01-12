@@ -5,6 +5,51 @@ import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useDailySongProgress } from "@/hooks/useDailySongProgress";
 import { usePlanetRewardsContext } from "@/components/PlanetRewardsProvider";
 
+// Anonymous ID management for tracking logged-out user listens
+const ANON_ID_KEY = 'chxndler_anon_id';
+
+function getOrCreateAnonId(): string {
+  if (typeof window === 'undefined') return '';
+
+  let anonId = localStorage.getItem(ANON_ID_KEY);
+  if (!anonId) {
+    // Generate a unique anonymous ID using crypto API
+    anonId = crypto.randomUUID();
+    localStorage.setItem(ANON_ID_KEY, anonId);
+  }
+  return anonId;
+}
+
+// Cache for song slug -> UUID lookups
+const songIdCache = new Map<string, string>();
+
+async function getSongUuidBySlug(slug: string): Promise<string | null> {
+  // Check cache first
+  if (songIdCache.has(slug)) {
+    return songIdCache.get(slug) || null;
+  }
+
+  try {
+    const { data, error } = await supabaseBrowser
+      .from('songs')
+      .select('id')
+      .eq('slug', slug)
+      .single();
+
+    if (error || !data) {
+      console.warn('🎧 Could not find song UUID for slug:', slug);
+      return null;
+    }
+
+    // Cache the result
+    songIdCache.set(slug, data.id);
+    return data.id;
+  } catch (err) {
+    console.error('🎧 Error looking up song UUID:', err);
+    return null;
+  }
+}
+
 // Track info for audio and visual display
 export type TrackInfo = {
   id: string;
@@ -321,13 +366,59 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      // Check session first - missing session is normal for logged-out users
+      // Get audio duration if available (needed for both logged-in and anonymous)
+      const audio = audioRef.current;
+      const durationSeconds = audio?.duration && !isNaN(audio.duration)
+        ? Math.floor(audio.duration)
+        : null;
+
+      // Check session first - missing session means logged-out user
       const { data: { session: authSession }, error: sessionError } = await supabaseBrowser.auth.getSession();
 
-      // Session missing is expected for logged-out users - not an error
+      // Handle logged-out users - track anonymously
       if (!authSession) {
+        // Look up the song UUID for the anonymous_song_listens table
+        const songUuid = await getSongUuidBySlug(session.trackId);
+        if (!songUuid) {
+          console.warn('🎧 Cannot track anonymous listen - song UUID not found for:', session.trackId);
+          flushInFlightRef.current = false;
+          return false;
+        }
+
+        const anonId = getOrCreateAnonId();
+        if (!anonId) {
+          console.warn('🎧 Cannot track anonymous listen - no anon ID');
+          flushInFlightRef.current = false;
+          return false;
+        }
+
+        // Build anonymous tracking payload
+        const anonPayload = {
+          anon_id: anonId,
+          song_id: songUuid,
+          day: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+          listened_seconds: listenedSeconds,
+          duration_seconds: durationSeconds
+        };
+
+        console.log('🎧 Flushing anonymous session:', JSON.stringify(anonPayload, null, 2));
+
+        const { error: anonInsertError } = await supabaseBrowser
+          .from('anonymous_song_listens')
+          .insert(anonPayload);
+
+        if (anonInsertError) {
+          console.error('🎧 Anonymous insert failed:');
+          console.error('  code:', anonInsertError.code);
+          console.error('  message:', anonInsertError.message);
+          console.error('  details:', anonInsertError.details);
+          flushInFlightRef.current = false;
+          return false;
+        }
+
+        console.log(`🎧 Recorded anonymous: ${session.trackId}, ${listenedSeconds}s`);
         flushInFlightRef.current = false;
-        return false;
+        return true;
       }
 
       // Only log errors for unexpected issues (network, misconfig), not missing session
@@ -344,11 +435,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
 
-      // Get audio duration if available
-      const audio = audioRef.current;
-      const durationSeconds = audio?.duration && !isNaN(audio.duration)
-        ? Math.floor(audio.duration)
-        : null;
       const durationMs = durationSeconds !== null ? durationSeconds * 1000 : null;
 
       // Build payload with exact snake_case DB columns
@@ -693,16 +779,19 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
             const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
             if (supabaseUrl && supabaseAnonKey) {
+              const audio = audioRef.current;
+              const durationSeconds = audio?.duration && !isNaN(audio.duration) ? Math.floor(audio.duration) : null;
+
               // Get auth token from localStorage
               const storageKey = `sb-${new URL(supabaseUrl).hostname.split('.')[0]}-auth-token`;
               const authData = localStorage.getItem(storageKey);
+
               if (authData) {
+                // Logged-in user - send to song_listen_sessions
                 const parsed = JSON.parse(authData);
                 const userId = parsed?.user?.id;
                 const accessToken = parsed?.access_token;
                 if (userId && accessToken) {
-                  const audio = audioRef.current;
-                  const durationSeconds = audio?.duration && !isNaN(audio.duration) ? Math.floor(audio.duration) : null;
                   const payload = {
                     user_id: userId,
                     song_id: String(session.trackId),
@@ -727,6 +816,33 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
                     keepalive: true
                   }).catch(() => {}); // Ignore errors on unload
                   console.log('🎧 Sent session via keepalive fetch');
+                }
+              } else {
+                // Anonymous user - send to anonymous_song_listens
+                // Use cached song UUID (song lookups happen during flushSession, so cache should be warm)
+                const songUuid = songIdCache.get(session.trackId);
+                const anonId = localStorage.getItem(ANON_ID_KEY);
+
+                if (songUuid && anonId) {
+                  const anonPayload = {
+                    anon_id: anonId,
+                    song_id: songUuid,
+                    day: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+                    listened_seconds: listenedSeconds,
+                    duration_seconds: durationSeconds
+                  };
+
+                  fetch(`${supabaseUrl}/rest/v1/anonymous_song_listens`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'apikey': supabaseAnonKey,
+                      'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify(anonPayload),
+                    keepalive: true
+                  }).catch(() => {}); // Ignore errors on unload
+                  console.log('🎧 Sent anonymous session via keepalive fetch');
                 }
               }
             }

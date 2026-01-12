@@ -379,9 +379,9 @@ export default function SkyboxVideo({
               style={{
                 position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
                 width: '177.78vh', height: '100vh', minWidth: '100vw', minHeight: '56.25vw',
-                opacity: 1,
+                opacity: showLightspeed ? 0 : 1,
                 filter: `brightness(${brightness})${flying ? ' saturate(1.1) blur(1.2px)' : ''}`,
-                transition: 'transform 650ms ease, filter 650ms ease',
+                transition: 'opacity 300ms ease, transform 650ms ease, filter 650ms ease',
               }}
             >
               <iframe
@@ -391,7 +391,7 @@ export default function SkyboxVideo({
                 allowFullScreen
                 title="Background video"
                 loading="eager"
-                referrerPolicy="strict-origin-when-cross-origin"
+                referrerPolicy="no-referrer-when-downgrade"
                 style={{ display: 'block', border: 0, width: '100%', height: '100%' }}
                 onLoad={() => { setYtReady(true); }}
               />
@@ -447,7 +447,7 @@ export default function SkyboxVideo({
                 allowFullScreen
                 title="Lightspeed"
                 loading="eager"
-                referrerPolicy="strict-origin-when-cross-origin"
+                referrerPolicy="no-referrer-when-downgrade"
                 style={{ display: 'block', border: 0, width: '100%', height: '100%', filter: `brightness(${Math.max(0.9, brightness)})` }}
                 onLoad={() => setLsYtReady(true)}
               />
@@ -505,12 +505,6 @@ export default function SkyboxVideo({
           </>
         )}
 
-        {/* When using a YouTube base, notify base-playing only after warp overlay hides */}
-        {ytEmbedUrl ? (
-          <>
-            {(() => { /* inline effect equivalent in JSX scope not possible; handled via hook below */ })()}
-          </>
-        ) : null}
       </div>
     </div>
   );

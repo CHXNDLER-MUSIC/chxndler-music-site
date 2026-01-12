@@ -460,6 +460,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // Ref to track if we're currently auto-navigating to a card (prevents index reset race condition)
   const isAutoNavigatingRef = useRef(false);
 
+  // Ref to track if navigation just completed - stays true longer to prevent race conditions
+  // This prevents the element-change effect from resetting currentCardIndex after navigation
+  const navigationCompleteRef = useRef(false);
+
   // State for toggling HeartCoins description text
   const [showHeartCoinsInfo, setShowHeartCoinsInfo] = useState(false);
   
@@ -497,6 +501,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       setOpen(false);
       setIsFromHamburger(false);
       setIsFromCollectCard(false);
+      navigationCompleteRef.current = false;
     }
   }, [isActive, open, isFromCollectCard, onBeamColorChange]);
 
@@ -578,6 +583,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         setIsFromHamburger(false);
         setIsFromCollectCard(false);
         setTargetCardId(null);
+        navigationCompleteRef.current = false;
         try { onClose?.(); } catch {}
       }
     };
@@ -756,8 +762,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       }
       // Reset card index when element changes, but NOT during auto-navigation from COLLECT CARD
       // The auto-navigate effect will set the correct index in that case
-      // Check both isAutoNavigatingRef and targetCardId to handle timing edge cases
-      if (!isAutoNavigatingRef.current && !targetCardId) {
+      // Check isAutoNavigatingRef, targetCardId, AND navigationCompleteRef to handle all timing edge cases
+      if (!isAutoNavigatingRef.current && !targetCardId && !navigationCompleteRef.current) {
         setCurrentCardIndex(0);
       }
     }
@@ -813,6 +819,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       setCurrentCardIndex(cardIndex);
       // Clear targetCardId after successful navigation
       setTargetCardId(null);
+
+      // Set navigation complete flag to prevent element-change effect from resetting index
+      // This stays true longer than isAutoNavigatingRef to handle all React re-renders
+      navigationCompleteRef.current = true;
+      setTimeout(() => {
+        navigationCompleteRef.current = false;
+      }, 500);
     }
   }, [targetCardId, filteredCards]);
 
@@ -2649,6 +2662,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               setOpen(false);
               setIsFromHamburger(false);
               setIsFromCollectCard(false);
+              navigationCompleteRef.current = false;
               setEnlargedCard(null);
               setIsEnlargedCardFlipped(false);
               // Clear any active merch selection to prevent stale state
@@ -4337,6 +4351,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 setSelectedRarity('');
                                 setSelectedSong('');
                                 setCurrentCardIndex(0);
+                                navigationCompleteRef.current = false;
                               }}
                               className="flex items-center text-white hover:text-gray-300 transition-colors"
                               style={{ fontSize: '14px' }}
