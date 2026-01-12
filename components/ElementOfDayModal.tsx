@@ -5,9 +5,7 @@ import { createPortal } from "react-dom";
 import type { ElementType } from "@/lib/planetConfig";
 import { RELIC_CELEBRATION_EVENT } from "./RelicCelebration";
 import { supabaseBrowser } from "@/lib/supabase-browser";
-
-// Hardcoded bonus quest ID for Element of the Day
-const BONUS_QUEST_ID = '4c24a82f-92ba-44f4-9386-d8c6438498bd';
+import { getLocalDateString } from "@/utils/dateHelpers";
 
 interface ElementOfDayData {
   element: ElementType;
@@ -104,63 +102,41 @@ export default function ElementOfDayModal() {
     checkAuth();
   }, [isOpen]);
 
-  // On mount: check if user already completed this bonus quest today
+  // On mount: check if user already claimed today's element
   useEffect(() => {
-    const checkBonusQuestCompletion = async () => {
+    const checkDailyElementClaim = async () => {
       try {
-        // Check if completion exists today using completed_at (timestamptz field)
-        const todayDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-        const todayStart = `${todayDate}T00:00:00.000Z`;
-        const tomorrowStart = new Date(new Date(todayDate).getTime() + 24 * 60 * 60 * 1000).toISOString();
+        const todayDate = getLocalDateString(); // YYYY-MM-DD in America/New_York
 
-        // Check user_bonus_quest_completions table - filter by date range on completed_at
-        const { data: completions, error } = await supabaseBrowser
-          .from('user_bonus_quest_completions')
+        // Check user_daily_element_claims table
+        const { data: claims, error } = await supabaseBrowser
+          .from('user_daily_element_claims')
           .select('id')
-          .eq('bonus_quest_id', BONUS_QUEST_ID)
-          .gte('completed_at', todayStart)
-          .lt('completed_at', tomorrowStart)
+          .eq('claimed_on_date', todayDate)
           .limit(1);
 
         // RLS handles user_id filtering automatically
 
         if (error) {
-          console.error('[ElementOfDayModal] Error checking bonus quest completion:', error);
-        }
-
-        console.log('[ElementOfDayModal] Bonus quest completions result:', completions, 'error:', error);
-
-        if (completions && completions.length > 0) {
-          console.log('[ElementOfDayModal] Bonus quest already completed today:', completions[0]);
-          setElementQuestCompleted(true);
+          console.error('[ElementOfDayModal] Error checking daily element claim:', error);
           return;
         }
 
-        // Also check user_element_claims table (Element of Day uses this table)
-        const { count: claimsCount, error: claimsError } = await supabaseBrowser
-          .from('user_element_claims')
-          .select('*', { count: 'exact', head: true })
-          .eq('day', todayDate);
+        console.log('[ElementOfDayModal] Daily element claims result:', claims);
 
-        console.log('[ElementOfDayModal] Element claims count:', claimsCount, 'error:', claimsError);
-
-        if (claimsError) {
-          console.error('[ElementOfDayModal] Error checking element claims:', claimsError);
-          return;
-        }
-
-        if ((claimsCount ?? 0) > 0) {
-          console.log('[ElementOfDayModal] Element already claimed today - setting elementQuestCompleted=true');
+        if (claims && claims.length > 0) {
+          console.log('[ElementOfDayModal] Element already claimed today');
+          setClaimed(true);
           setElementQuestCompleted(true);
         } else {
-          console.log('[ElementOfDayModal] No claims found today - elementQuestCompleted stays false');
+          console.log('[ElementOfDayModal] No claim found today');
         }
       } catch (err) {
-        console.error('[ElementOfDayModal] Error in checkBonusQuestCompletion:', err);
+        console.error('[ElementOfDayModal] Error in checkDailyElementClaim:', err);
       }
     };
 
-    checkBonusQuestCompletion();
+    checkDailyElementClaim();
   }, []);
 
   // Listen for 'elementOfDay:open' event from HeartCoinButton
@@ -169,13 +145,18 @@ export default function ElementOfDayModal() {
       console.log('[ElementOfDayModal] Received elementOfDay:open event');
       try {
         // Check if already claimed today before showing
-        const todayDate = new Date().toISOString().split('T')[0];
-        const { count: claimsCount } = await supabaseBrowser
-          .from('user_element_claims')
-          .select('*', { count: 'exact', head: true })
-          .eq('day', todayDate);
+        const todayDate = getLocalDateString(); // YYYY-MM-DD in America/New_York
+        const { data: claims, error: claimsError } = await supabaseBrowser
+          .from('user_daily_element_claims')
+          .select('id')
+          .eq('claimed_on_date', todayDate)
+          .limit(1);
 
-        if ((claimsCount ?? 0) > 0) {
+        if (claimsError) {
+          console.error('[ElementOfDayModal] Error checking claim on open:', claimsError);
+        }
+
+        if (claims && claims.length > 0) {
           console.log('[ElementOfDayModal] Element already claimed today (on open)');
           setElementQuestCompleted(true);
           setClaimed(true);
@@ -200,7 +181,7 @@ export default function ElementOfDayModal() {
           };
           setData(eventData);
           setIsOpen(true);
-          setClaimed(false);
+          // Note: claimed state is already set above from DB check - don't override
           // Play alien-wave sound when modal appears
           playAlienWaveSound();
         } else {
@@ -263,29 +244,22 @@ export default function ElementOfDayModal() {
     setIsCompletingElementQuest(true);
 
     try {
-      // ========== CLAIM ELEMENT OF THE DAY RPC ==========
-      const { data: rpcData, error } = await supabaseBrowser.rpc('claim_element_of_the_day');
+      // ========== CLAIM DAILY ELEMENT RPC ==========
+      const { data: rpcData, error } = await supabaseBrowser.rpc('claim_daily_element');
 
       if (error) {
-        // Enhanced error logging - never print {}
-        console.error('[claim_element_of_the_day] Error:', {
-          message: error.message || '(no message)',
-          details: error.details || '(no details)',
-          hint: error.hint || '(no hint)',
-          code: error.code || '(no code)',
-          fullError: error,
-        });
-
+        console.error('[ElementOfDayModal] claim_daily_element failed', error);
         window.dispatchEvent(new CustomEvent('toast:show', {
           detail: { message: error.message || 'Failed to claim relic. Please try again.', type: 'error' }
         }));
+        setIsCompletingElementQuest(false);
         return;
       }
 
-      console.log('[claim_element_of_the_day] Response:', rpcData);
+      console.log('[ElementOfDayModal] claim_daily_element response:', rpcData);
 
-      // Handle response based on claimed status
-      if (rpcData?.claimed === true) {
+      // Handle response based on success status
+      if (rpcData?.success === true) {
         // Successfully claimed - update local state
         setClaimed(true);
         setElementQuestCompleted(true);
@@ -295,7 +269,7 @@ export default function ElementOfDayModal() {
           detail: { message: 'Relic claimed!', type: 'success' }
         }));
 
-        // Dispatch refresh events for profile, boosts, and claims
+        // Dispatch refresh events for profile (heartcoin_balance + streak), boosts, and claims
         window.dispatchEvent(new CustomEvent('profile:refresh'));
         window.dispatchEvent(new CustomEvent('boosts:refresh'));
         window.dispatchEvent(new CustomEvent('element-of-day-claimed', {
@@ -310,9 +284,9 @@ export default function ElementOfDayModal() {
             setClaimed(false);
           }, 100);
         }, 300);
-      } else if (rpcData?.claimed === false) {
+      } else if (rpcData?.already_claimed === true) {
         // Already claimed today - update UI to show claimed state, stop pulsing
-        console.log('[claim_element_of_the_day] Already claimed today');
+        console.log('[ElementOfDayModal] Already claimed today');
         setClaimed(true);
         setElementQuestCompleted(true);
 
@@ -320,19 +294,15 @@ export default function ElementOfDayModal() {
           detail: { message: 'Already claimed today!', type: 'info' }
         }));
       } else {
-        // Unexpected response format
-        console.warn('[claim_element_of_the_day] Unexpected response format:', rpcData);
-        setClaimed(true);
-        setElementQuestCompleted(true);
+        // Unexpected response format or success=false without already_claimed
+        console.warn('[ElementOfDayModal] Unexpected response:', rpcData);
+        window.dispatchEvent(new CustomEvent('toast:show', {
+          detail: { message: rpcData?.message || 'Unable to claim relic.', type: 'error' }
+        }));
       }
 
     } catch (err) {
-      // Log full error object for unexpected errors
-      console.error('[claim_element_of_the_day] Unexpected error:', err instanceof Error ? {
-        message: err.message,
-        name: err.name,
-        stack: err.stack,
-      } : err);
+      console.error('[ElementOfDayModal] claim_daily_element unexpected error:', err);
       window.dispatchEvent(new CustomEvent('toast:show', {
         detail: { message: 'An unexpected error occurred.', type: 'error' }
       }));
@@ -346,6 +316,23 @@ export default function ElementOfDayModal() {
     const handleShow = async (e: CustomEvent<ElementOfDayData>) => {
       console.log('[ElementOfDayModal] Received event:', e.detail);
       if (e.detail?.element) {
+        // Check if already claimed today before showing
+        const todayDate = getLocalDateString();
+        const { data: claims } = await supabaseBrowser
+          .from('user_daily_element_claims')
+          .select('id')
+          .eq('claimed_on_date', todayDate)
+          .limit(1);
+
+        const alreadyClaimed = claims && claims.length > 0;
+        if (alreadyClaimed) {
+          setClaimed(true);
+          setElementQuestCompleted(true);
+        } else {
+          setClaimed(false);
+          setElementQuestCompleted(false);
+        }
+
         // Always fetch the latest data from API to ensure intention is available
         try {
           const res = await fetch('/api/element-of-day');
@@ -362,7 +349,6 @@ export default function ElementOfDayModal() {
             };
             setData(eventData);
             setIsOpen(true);
-            setClaimed(false);
             // Play alien-wave sound when modal appears
             playAlienWaveSound();
             return;
@@ -374,7 +360,6 @@ export default function ElementOfDayModal() {
         // Fallback to event data if API fails
         setData(e.detail);
         setIsOpen(true);
-        setClaimed(false);
         // Play alien-wave sound when modal appears
         playAlienWaveSound();
       }
@@ -404,11 +389,6 @@ export default function ElementOfDayModal() {
   const normalizedElement = (data.element || 'heart').toLowerCase() as ElementType;
   const config = ELEMENT_CONFIG[normalizedElement];
   const elementColor = config?.color || "#FC54AF";
-
-  // Debug: log config and state to verify why click might not work
-  console.log('[ElementOfDayModal] Rendering with element:', data.element, 'normalized:', normalizedElement, 'config:', config);
-  console.log('[ElementOfDayModal] State: claimed=', claimed, 'elementQuestCompleted=', elementQuestCompleted, 'isCompletingElementQuest=', isCompletingElementQuest, 'isLoggedIn=', isLoggedIn);
-  console.log('[ElementOfDayModal] Button disabled?', claimed || elementQuestCompleted || isCompletingElementQuest);
 
   return createPortal(
     <>

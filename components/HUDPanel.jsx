@@ -2867,8 +2867,11 @@ const HUDPanel = React.memo(function HUDPanel({
                       {(() => {
                         try {
                           const a = liveAudioRef?.current;
-                          const liveDur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
-                          const liveTime = (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
+                          // Priority: audioManager (unified) > live audio element > state fallbacks
+                          const amDur = audioManager?.duration;
+                          const amTime = audioManager?.currentTime;
+                          const liveDur = (isFinite(amDur) && amDur > 0) ? amDur : (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
+                          const liveTime = (isFinite(amTime) && amTime >= 0) ? amTime : (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
                           const pct = liveDur > 0 ? Math.max(0, Math.min(100, (liveTime / liveDur) * 100)) : 0;
 
                           // Get element-based color for enhanced glow
@@ -3003,16 +3006,18 @@ const HUDPanel = React.memo(function HUDPanel({
                                   background: `linear-gradient(90deg, ${elementColor}dd, ${elementColor}, ${elementColor})`,
                                   borderRadius: 9999,
                                   boxShadow: `
-                                    0 0 8px ${elementColor},
-                                    0 0 16px ${elementColor},
-                                    0 0 24px ${elementColor}bb,
-                                    inset 0 0 6px rgba(255,255,255,0.5),
-                                    inset 0 -2px 4px ${elementColor}88
+                                    0 0 10px ${elementColor},
+                                    0 0 20px ${elementColor},
+                                    0 0 30px ${elementColor}cc,
+                                    0 0 40px ${elementColor}88,
+                                    inset 0 0 8px rgba(255,255,255,0.6),
+                                    inset 0 -2px 6px ${elementColor}aa
                                   `,
                                   transition: 'width 200ms ease-out',
-                                  filter: 'brightness(1.2) saturate(1.2)',
+                                  filter: 'brightness(1.3) saturate(1.3)',
                                   pointerEvents: 'none',
-                                  minWidth: pct > 0 ? '4px' : '0'
+                                  minWidth: pct > 0 ? '6px' : '0',
+                                  zIndex: 10
                                 }}
                               />
                               
@@ -3024,20 +3029,21 @@ const HUDPanel = React.memo(function HUDPanel({
                                     top: '50%',
                                     left: `${pct}%`,
                                     transform: 'translateX(-50%) translateY(-50%)',
-                                    width: 8,
-                                    height: 8,
+                                    width: 10,
+                                    height: 10,
                                     borderRadius: '50%',
-                                    background: `radial-gradient(circle, ${elementColor}, ${elementColor}dd)`,
+                                    background: `radial-gradient(circle, white, ${elementColor})`,
                                     boxShadow: `
-                                      0 0 8px ${elementColor}ff,
-                                      0 0 16px ${elementColor}dd,
-                                      0 0 24px ${elementColor}aa,
-                                      0 0 32px ${elementColor}77,
-                                      0 1px 3px rgba(0,0,0,0.4)
+                                      0 0 10px ${elementColor}ff,
+                                      0 0 20px ${elementColor}dd,
+                                      0 0 30px ${elementColor}bb,
+                                      0 0 40px ${elementColor}88,
+                                      0 1px 4px rgba(0,0,0,0.5)
                                     `,
                                     transition: 'left 200ms ease-out',
                                     pointerEvents: 'none',
-                                    filter: 'brightness(1.3) saturate(1.2)'
+                                    filter: 'brightness(1.4) saturate(1.3)',
+                                    zIndex: 15
                                   }}
                                 />
                               )}

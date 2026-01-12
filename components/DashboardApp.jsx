@@ -1551,14 +1551,15 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       setPowerBusy(false);
       setLandingRevealReady(true);
 
-      // Profile setup flow after warp to Heartverse completes
-      // Small delay to let the landing animation settle before showing modal
+      // Profile setup flow - only for magic link users warping to Heartverse
+      // Regular users just see the Homepage with all planets
       setTimeout(() => {
         // Use same isRealName check as initial profile detection to filter out auto-generated names
         const hasName = isRealName(profile?.name, profile?.email);
         const hasElement = profile?.element && profile.element.trim() !== '';
 
         console.log("🛬 Post-warp profile check:", {
+          cameFromMagicLink: cameFromMagicLinkRef.current,
           id: profile?.id,
           name: profile?.name,
           email: profile?.email,
@@ -1567,20 +1568,25 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           hasElement
         });
 
-        if (!profile?.id) {
-          // Step 0: User not logged in - show Welcome Home modal for login/signup
-          console.log("🛬 Showing WelcomeHomeModal (not logged in)");
-          setShowWelcomeHomeModal(true);
-        } else if (!hasName) {
-          // Step 1: User logged in but needs to set their name first
-          console.log("🛬 Showing name prompt (no name)");
-          openNamePrompt();
-        } else if (!hasElement) {
-          // Step 2: User has name but needs to select element
-          console.log("🛬 Showing element selection (has name, no element)");
-          openElementSelection();
+        // Only show onboarding modals for magic link users
+        if (cameFromMagicLinkRef.current) {
+          if (!profile?.id) {
+            // Step 0: User not logged in - show Welcome Home modal for login/signup
+            console.log("🛬 Showing WelcomeHomeModal (not logged in)");
+            setShowWelcomeHomeModal(true);
+          } else if (!hasName) {
+            // Step 1: User logged in but needs to set their name first
+            console.log("🛬 Showing name prompt (no name)");
+            openNamePrompt();
+          } else if (!hasElement) {
+            // Step 2: User has name but needs to select element
+            console.log("🛬 Showing element selection (has name, no element)");
+            openElementSelection();
+          } else {
+            console.log("🛬 Profile complete - no modal needed");
+          }
         } else {
-          console.log("🛬 Profile complete - no modal needed");
+          console.log("🛬 Not from magic link - showing Homepage view");
         }
       }, 500);
 

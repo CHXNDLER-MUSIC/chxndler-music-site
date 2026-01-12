@@ -5092,7 +5092,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           >
                             ALREADY COLLECTED
                           </button>
-                        ) : showCardConfirm === 'digital' && !profile?.id ? (
+                        ) : (showCardConfirm === 'digital' || showCardConfirm === 'physical') && !profile?.id ? (
                           /* Not logged in - prompt to log in */
                           <button
                             onClick={(e) => {
