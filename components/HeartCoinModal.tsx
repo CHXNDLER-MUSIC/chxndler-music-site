@@ -512,8 +512,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     if (!quest.can_complete && quest.completed_today > 0) {
       return true;
     }
-    // For daily repeatable quests like INVITE_FRIEND, check if cannot complete today
-    if (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete) {
+    // For daily repeatable quests like INVITE_ALIEN, check if cannot complete today
+    if (quest.quest_key === 'INVITE_ALIEN' && !quest.can_complete) {
       return true;
     }
     return false;
@@ -623,7 +623,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         window.open('https://www.instagram.com/chxndlerr', '_blank');
         break;
 
-      case 'INVITE_FRIEND':
+      case 'INVITE_ALIEN':
         // Use native share if available, otherwise copy to clipboard
         const shareMessage = "I thought of you. I think this world could feel like home for you too. https://chxndler.world/";
         let shareSucceeded = false;
@@ -655,7 +655,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
             if (result.message === 'Quest service updated, hard refresh') {
               alert('Quest service updated, hard refresh');
             } else {
-              console.error('[INVITE_FRIEND] Quest completion failed:', result.message);
+              console.error('[INVITE_ALIEN] Quest completion failed:', result.message);
               alert('Quest failed. Please try again.');
             }
           } else {
@@ -696,7 +696,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       'FOLLOW_TIKTOK',
       'FOLLOW_YOUTUBE',
       'FOLLOW_INSTAGRAM',
-      'INVITE_FRIEND',
+      'INVITE_ALIEN',
       'ATTEND_LIVESTREAM',
       'LISTEN_FEATURED_SONG',
       'LISTEN_ELEMENT_SONG',
@@ -1843,7 +1843,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                               <svg className="w-5 h-5 text-white/60" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                               </svg>
-                            ) : quest.quest_key === 'INVITE_FRIEND' ? (
+                            ) : quest.quest_key === 'INVITE_ALIEN' ? (
                               <svg className="w-5 h-5 text-white/60" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
                               </svg>
@@ -1919,7 +1919,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                           : isQuestCompleted(quest)
                           ? 'COMPLETED'
                           : questHasHandler(quest.quest_key)
-                            ? (quest.quest_key === 'INVITE_FRIEND' ? 'INVITE' : quest.quest_key?.startsWith('FOLLOW_') ? 'FOLLOW' : 'START')
+                            ? (quest.quest_key === 'INVITE_ALIEN' ? 'INVITE' : quest.quest_key?.startsWith('FOLLOW_') ? 'FOLLOW' : 'START')
                             : 'INCOMPLETE'}
                       </button>
                     </div>

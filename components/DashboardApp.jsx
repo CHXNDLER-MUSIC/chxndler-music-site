@@ -114,14 +114,23 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       router.replace(`/?${newParams.toString()}`);
     }
     
-    // Check if we should show the name prompt (from auth callback)
-    // NOTE: Do NOT auto-open the name prompt here - let the user click START first
-    // The handleStartClick will show the name prompt AFTER the warp animation completes
-    // This ensures the flow: magic link → START button → warp → name prompt
+    // Check for magic link arrival parameters (profileSetup, completeProfile, welcome, showNamePrompt)
+    // These indicate the user came from clicking a magic link in their email
+    const profileSetup = searchParams.get('profileSetup');
+    const completeProfile = searchParams.get('completeProfile');
+    const welcome = searchParams.get('welcome');
     const shouldShowNamePrompt = searchParams.get('showNamePrompt');
-    if (shouldShowNamePrompt === '1') {
-      // Just clean up URL parameter - don't open modal yet
+
+    // Mark that user came from magic link - this will make START button warp to Heartverse
+    if (profileSetup === '1' || completeProfile === '1' || welcome === '1' || shouldShowNamePrompt === '1') {
+      cameFromMagicLinkRef.current = true;
+      console.log("🔗 User arrived via magic link - will warp to Heartverse on START");
+
+      // Clean up URL parameters
       const newParams = new URLSearchParams(searchParams.toString());
+      newParams.delete('profileSetup');
+      newParams.delete('completeProfile');
+      newParams.delete('welcome');
       newParams.delete('showNamePrompt');
       const newUrl = newParams.toString() ? `/?${newParams.toString()}` : '/';
       router.replace(newUrl);
@@ -258,6 +267,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [welcomeHasPlayed, setWelcomeHasPlayed] = useState(false); // tracks if welcome has been played (resets on page refresh)
   const welcomeOnStartRef = React.useRef(false); // signals that welcome VO should play now
   const startButtonWarpRef = React.useRef(false); // prevents double warp when start button is clicked
+  const cameFromMagicLinkRef = React.useRef(false); // tracks if user arrived via magic link (for Heartverse warp)
   const [shouldShowWelcomeModal, setShouldShowWelcomeModal] = useState(false); // tracks if welcome modal should show after warp
   // Ensure song MP3 starts only after join-alien SFX finishes (played at warp end)
   const buttonSfxWaitRef = React.useRef(null);
@@ -1437,15 +1447,19 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     const hasElement = profile?.element && profile.element.trim() !== '';
     const profileIncomplete = !profile?.id || !hasName || !hasElement;
     console.log("🚀 Profile incomplete?", profileIncomplete, { hasName, hasElement, name: profile?.name, email: profile?.email });
-    if (profileIncomplete) {
-      // Delay the planet:warp dispatch to ensure Pure3DPlanets has mounted
-      // (it's dynamically imported and may not be ready immediately)
+    // Only warp to Heartverse (center planet) if user came from magic link
+    // Otherwise, they go to Homepage view with all planets visible
+    if (cameFromMagicLinkRef.current && profileIncomplete) {
+      // Delay the planet:warp dispatch to ensure Pure3DPlanets has mounted and scene is ready
+      // (it's dynamically imported and scene setup takes time)
       setTimeout(() => {
-        console.log("🚀 Dispatching planet:warp to Heartverse (center planet)");
+        console.log("🚀 Dispatching planet:warp to Heartverse (center planet) - magic link flow");
         window.dispatchEvent(new CustomEvent('planet:warp', {
           detail: { element: 'center', isCenterPlanet: true, isOnboarding: true }
         }));
-      }, 500);
+      }, 1500); // 1.5 seconds - enough time for dynamic import and scene setup
+    } else {
+      console.log("🏠 Going to Homepage view (not from magic link or profile complete)");
     }
     
     // SkyboxVideo component handles warp sound to prevent double triggering
@@ -1481,10 +1495,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         // Play button sound
         try { sfx.play('button', 0.9); } catch {}
 
-        // Re-dispatch planet:warp to center for onboarding users
+        // Re-dispatch planet:warp to center for magic link users
         // This ensures camera focuses on Heartverse even if first dispatch was missed
-        if (profileIncomplete) {
-          console.log("🔧 BACKUP: Re-dispatching planet:warp to center");
+        if (cameFromMagicLinkRef.current && profileIncomplete) {
+          console.log("🔧 BACKUP: Re-dispatching planet:warp to center (magic link flow)");
           window.dispatchEvent(new CustomEvent('planet:warp', {
             detail: { element: 'center', isCenterPlanet: true, isOnboarding: false }
           }));

@@ -234,7 +234,7 @@ export default function ElementOfDayModal() {
     }, 100);
   }, [playClickSound]);
 
-  // Handle clicking on the element image to select element
+  // Handle clicking on the element image to claim Element of the Day relic
   const handleImageClick = useCallback(async () => {
     console.log('[ElementOfDayModal] handleImageClick called!');
     console.log('[ElementOfDayModal] Guard check: data=', !!data, 'claimed=', claimed, 'isCompletingElementQuest=', isCompletingElementQuest, 'elementQuestCompleted=', elementQuestCompleted);
@@ -250,7 +250,7 @@ export default function ElementOfDayModal() {
     if (!session?.user?.id) {
       console.error('[ElementOfDayModal] No authenticated session');
       window.dispatchEvent(new CustomEvent('toast:show', {
-        detail: { message: 'Please log in to select your element.', type: 'error' }
+        detail: { message: 'Please log in to claim your relic.', type: 'error' }
       }));
       return;
     }
@@ -263,50 +263,76 @@ export default function ElementOfDayModal() {
     setIsCompletingElementQuest(true);
 
     try {
-      // ========== SELECT USER ELEMENT RPC ==========
-      const { data: rpcData, error } = await supabaseBrowser.rpc('select_user_element', {
-        p_element: data.element
-      });
+      // ========== CLAIM ELEMENT OF THE DAY RPC ==========
+      const { data: rpcData, error } = await supabaseBrowser.rpc('claim_element_of_the_day');
 
       if (error) {
-        // Enhanced error logging with message, details, and code
-        console.error('[select_user_element] Error:', {
-          message: error.message,
-          details: error.details,
-          code: error.code,
+        // Enhanced error logging - never print {}
+        console.error('[claim_element_of_the_day] Error:', {
+          message: error.message || '(no message)',
+          details: error.details || '(no details)',
+          hint: error.hint || '(no hint)',
+          code: error.code || '(no code)',
+          fullError: error,
         });
 
         window.dispatchEvent(new CustomEvent('toast:show', {
-          detail: { message: 'Failed to select element. Please try again.', type: 'error' }
+          detail: { message: error.message || 'Failed to claim relic. Please try again.', type: 'error' }
         }));
         return;
       }
 
-      console.log('[select_user_element] Success:', rpcData);
+      console.log('[claim_element_of_the_day] Response:', rpcData);
 
-      // Update local state
-      setClaimed(true);
-      setElementQuestCompleted(true);
+      // Handle response based on claimed status
+      if (rpcData?.claimed === true) {
+        // Successfully claimed - update local state
+        setClaimed(true);
+        setElementQuestCompleted(true);
 
-      // Success toast
-      window.dispatchEvent(new CustomEvent('toast:show', {
-        detail: { message: 'Element selected!', type: 'success' }
-      }));
+        // Success toast
+        window.dispatchEvent(new CustomEvent('toast:show', {
+          detail: { message: 'Relic claimed!', type: 'success' }
+        }));
 
-      // Dispatch profile:refresh event
-      window.dispatchEvent(new CustomEvent('profile:refresh'));
+        // Dispatch refresh events for profile, boosts, and claims
+        window.dispatchEvent(new CustomEvent('profile:refresh'));
+        window.dispatchEvent(new CustomEvent('boosts:refresh'));
+        window.dispatchEvent(new CustomEvent('element-of-day-claimed', {
+          detail: { element: data.element, source: 'modal' }
+        }));
 
-      // Close modal after brief delay
-      setTimeout(() => {
-        setIsOpen(false);
+        // Close modal after brief delay
         setTimeout(() => {
-          setData(null);
-          setClaimed(false);
-        }, 100);
-      }, 300);
+          setIsOpen(false);
+          setTimeout(() => {
+            setData(null);
+            setClaimed(false);
+          }, 100);
+        }, 300);
+      } else if (rpcData?.claimed === false) {
+        // Already claimed today - update UI to show claimed state, stop pulsing
+        console.log('[claim_element_of_the_day] Already claimed today');
+        setClaimed(true);
+        setElementQuestCompleted(true);
+
+        window.dispatchEvent(new CustomEvent('toast:show', {
+          detail: { message: 'Already claimed today!', type: 'info' }
+        }));
+      } else {
+        // Unexpected response format
+        console.warn('[claim_element_of_the_day] Unexpected response format:', rpcData);
+        setClaimed(true);
+        setElementQuestCompleted(true);
+      }
 
     } catch (err) {
-      console.error('[select_user_element] Unexpected error:', err);
+      // Log full error object for unexpected errors
+      console.error('[claim_element_of_the_day] Unexpected error:', err instanceof Error ? {
+        message: err.message,
+        name: err.name,
+        stack: err.stack,
+      } : err);
       window.dispatchEvent(new CustomEvent('toast:show', {
         detail: { message: 'An unexpected error occurred.', type: 'error' }
       }));

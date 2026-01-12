@@ -240,7 +240,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
       setBonusQuests(bonus);
 
       // Sync localStorage state for backwards compatibility
-      const inviteFriendQuest = bonus.find(q => q.quest_key === 'INVITE_FRIEND');
+      const inviteFriendQuest = bonus.find(q => q.quest_key === 'INVITE_ALIEN');
       if (inviteFriendQuest) {
         const today = new Date().toDateString();
         const isCompletedToday = inviteFriendQuest.completed_today > 0;
@@ -373,7 +373,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   const getSongOfDayQuest = () => dailyQuests.find(q => q.quest_key === 'LISTEN_SONG_OF_DAY');
   const getJournalQuest = () => dailyQuests.find(q => q.quest_key === 'JOURNAL_ENTRY_OF_DAY');
   const getElementalSongQuest = () => bonusQuests.find(q => q.quest_key === 'LISTEN_ELEMENT_SONG');
-  const getInviteFriendQuest = () => bonusQuests.find(q => q.quest_key === 'INVITE_FRIEND');
+  const getInviteFriendQuest = () => bonusQuests.find(q => q.quest_key === 'INVITE_ALIEN');
   const getLiveShowQuest = () => bonusQuests.find(q => q.quest_key === 'ATTEND_LIVESTREAM');
 
   const showCelebration = (message: string) => {
@@ -552,7 +552,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ questKey: 'INVITE_FRIEND' })
+        body: JSON.stringify({ questKey: 'INVITE_ALIEN' })
       });
       
       if (response.ok) {

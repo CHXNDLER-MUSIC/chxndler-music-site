@@ -353,6 +353,9 @@ export default function Pure3DPlanets({
     const sunY = 12;
     const sun = createElementSprite('/textures/center-planet.webp', 2.5, [0, sunY, 0], 0xff69b4);
     scene.add(sun);
+    // Store center planet in elementSpriteMapRef so warpToPlanet('center') can find it
+    (sun as any).userData = { elementId: 'center' };
+    try { elementSpriteMapRef.current.set('center', sun); } catch {}
 
     // === HOLOGRAM GRID FLOOR ===
     // Create a holographic grid floor beneath the planets

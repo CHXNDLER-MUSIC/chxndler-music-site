@@ -250,7 +250,7 @@ export default function OnboardingTour({
   const positionBubble = (element: HTMLElement | null, step: TourStep) => {
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    const bubbleWidth = 180; // Narrower bubble
+    const bubbleWidth = 150; // Narrower bubble
     const bubbleHeight = 180;
     
     // If no element, center the tooltip (ERROR-PROOF TARGETING)
@@ -439,12 +439,17 @@ export default function OnboardingTour({
         setTargetElement(element);
         
         // Remove previous highlights
-        document.querySelectorAll('.tour-highlight').forEach(el => {
-          el.classList.remove('tour-highlight');
+        document.querySelectorAll('.tour-highlight, .tour-highlight-no-spin').forEach(el => {
+          el.classList.remove('tour-highlight', 'tour-highlight-no-spin');
         });
         
         // Add GLOWING HIGHLIGHT to current element (reusing same styles)
-        element.classList.add('tour-highlight');
+        // Use non-spinning highlight for signal step
+        if (step.id === 'signal') {
+          element.classList.add('tour-highlight-no-spin');
+        } else {
+          element.classList.add('tour-highlight');
+        }
         
         // Position the bubble
         positionBubble(element, step);
@@ -494,8 +499,8 @@ export default function OnboardingTour({
     }
 
     // Remove highlights
-    document.querySelectorAll('.tour-highlight').forEach(el => {
-      el.classList.remove('tour-highlight');
+    document.querySelectorAll('.tour-highlight, .tour-highlight-no-spin').forEach(el => {
+      el.classList.remove('tour-highlight', 'tour-highlight-no-spin');
     });
   };
 
@@ -622,7 +627,7 @@ export default function OnboardingTour({
           <div
             className="relative rounded-2xl p-4"
             style={{
-              width: '180px',
+              width: '150px',
               background: `linear-gradient(180deg, rgba(252,84,175,0.18), rgba(252,84,175,0.12))`,
               border: '1px solid rgba(252,84,175,0.35)',
               backdropFilter: 'blur(16px)',
@@ -744,10 +749,30 @@ export default function OnboardingTour({
         }
 
         /* Ensure tour highlight is visible above all other elements */
-        .tour-highlight, 
-        .tour-highlight * {
+        .tour-highlight,
+        .tour-highlight *,
+        .tour-highlight-no-spin,
+        .tour-highlight-no-spin * {
           pointer-events: auto !important;
           isolation: isolate !important;
+        }
+
+        /* 🔥 NO-SPIN HIGHLIGHT - Same glow but no spinning animation (for Signal step) */
+        .tour-highlight-no-spin {
+          position: relative !important;
+          z-index: 2147483647 !important;
+          animation: tourGlow 2.2s ease-in-out infinite !important;
+          border-radius: 12px !important;
+          box-shadow:
+            0 0 0 3px rgba(252,84,175,0.7) !important,
+            0 0 24px rgba(252,84,175,0.9) !important,
+            0 0 48px rgba(252,84,175,0.7) !important,
+            0 0 96px rgba(252,84,175,0.5) !important;
+        }
+
+        /* No sparkle animation for no-spin variant */
+        .tour-highlight-no-spin::after {
+          display: none !important;
         }
 
         .tour-highlight::after {
