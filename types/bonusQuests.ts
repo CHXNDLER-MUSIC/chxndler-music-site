@@ -34,7 +34,7 @@ export interface BonusQuestWithCompletion extends BonusQuestRow {
 export type QuestKey = 
   | 'LISTEN_ELEMENT_SONG'
   | 'LISTEN_FEATURED_SONG'
-  | 'INVITE_FRIEND'
+  | 'INVITE_ALIEN'
   | 'ATTEND_LIVESTREAM'
   | 'FOLLOW_SPOTIFY'
   | 'FOLLOW_TIKTOK'

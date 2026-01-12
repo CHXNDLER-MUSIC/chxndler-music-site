@@ -288,39 +288,9 @@ export default function ElementOfDayModal() {
       setClaimed(true);
       setElementQuestCompleted(true);
 
-      // Award listening boost to user_active_boosts (Deep Focus - 2× Listen Rewards)
-      try {
-        const boostPayload = {
-          user_id: session.user.id,
-          boost_key: 'boost_listening',
-          scope: 'listen_rewards',
-          source: 'element_of_day',
-          multiplier: 2,
-          add_amount: 0,
-          uses_total: 1,
-          uses_remaining: 1,
-          starts_at: new Date().toISOString(),
-          expires_at: null,
-        };
-
-        const { error: boostError } = await supabaseBrowser
-          .from('user_active_boosts')
-          .insert(boostPayload);
-
-        if (boostError) {
-          console.warn('[ElementOfDayModal] Failed to insert boost:', boostError.message);
-        } else {
-          console.log('[ElementOfDayModal] Boost awarded: boost_listening (Deep Focus)');
-          // Dispatch event to refresh boosts in ProfilePopover
-          window.dispatchEvent(new CustomEvent('boosts:refresh'));
-        }
-      } catch (boostErr) {
-        console.error('[ElementOfDayModal] Error awarding boost:', boostErr);
-      }
-
       // Success toast
       window.dispatchEvent(new CustomEvent('toast:show', {
-        detail: { message: 'Element selected! Deep Focus boost obtained!', type: 'success' }
+        detail: { message: 'Element selected!', type: 'success' }
       }));
 
       // Dispatch profile:refresh event

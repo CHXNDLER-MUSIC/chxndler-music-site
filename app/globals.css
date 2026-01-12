@@ -953,7 +953,7 @@ img[src$="/elements/music.webp"] {
   cursor: pointer;
   border-radius: 6px;
   background: rgba(0,0,0,0.3);
-  overflow: hidden;
+  overflow: visible;
   /* Avoid animating layout properties to prevent jitter on reflows */
   transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
 }

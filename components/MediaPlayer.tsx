@@ -1580,7 +1580,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 const breathingOffset = isPaused ? 
                   Math.sin(performance.now() * 0.002) * currentStyle.breathingStrength : 0;
 
-                const playedPoints = Math.floor(progress * waveformData.length);
+                // Ensure at least 2 points for visible played portion
+                const playedPoints = Math.max(2, Math.floor(progress * waveformData.length));
                 const playedPath = createSmoothPath(waveformData, playedPoints);
                 const fullPath = createSmoothPath(waveformData);
 
@@ -1602,43 +1603,58 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                     {/* Played portion - glowing cosmic wave */}
                     {playedPath && (
                       <>
+                        {/* Super outer glow - wide spread */}
+                        <path
+                          d={playedPath}
+                          stroke={currentStyle.primary}
+                          strokeWidth="20"
+                          opacity="0.4"
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          style={{
+                            transform: `translateY(${breathingOffset}px)`,
+                            filter: `blur(8px)`
+                          }}
+                        />
+
                         {/* Outer glow */}
                         <path
                           d={playedPath}
                           stroke={currentStyle.primary}
-                          strokeWidth="8"
-                          opacity="0.3"
+                          strokeWidth="12"
+                          opacity="0.6"
                           fill="none"
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           filter="url(#cosmicGlow)"
                           style={{
                             transform: `translateY(${breathingOffset}px)`,
-                            filter: `drop-shadow(0 0 10px ${currentStyle.glow}) drop-shadow(0 0 20px ${currentStyle.glow})`
+                            filter: `drop-shadow(0 0 15px ${currentStyle.glow}) drop-shadow(0 0 30px ${currentStyle.glow}) drop-shadow(0 0 45px ${currentStyle.glow})`
                           }}
                         />
-                        
+
                         {/* Main wave line */}
                         <path
                           d={playedPath}
                           stroke={currentStyle.primary}
-                          strokeWidth="2.5"
-                          opacity="0.9"
+                          strokeWidth="4"
+                          opacity="1"
                           fill="none"
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           style={{
                             transform: `translateY(${breathingOffset}px)`,
-                            filter: `drop-shadow(0 0 6px ${currentStyle.glow})`
+                            filter: `drop-shadow(0 0 8px ${currentStyle.glow}) drop-shadow(0 0 16px ${currentStyle.glow})`
                           }}
                         />
-                        
+
                         {/* Core bright line */}
                         <path
                           d={playedPath}
                           stroke="white"
-                          strokeWidth="1"
-                          opacity="0.8"
+                          strokeWidth="2"
+                          opacity="1"
                           fill="none"
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -1649,16 +1665,27 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                       </>
                     )}
                     
-                    {/* Progress indicator - subtle cosmic pulse */}
-                    <circle 
-                      cx={progress * 800} 
+                    {/* Progress indicator - glowing cosmic pulse */}
+                    <circle
+                      cx={progress * 800}
                       cy={waveformData[playedPoints]?.y || 50}
-                      r="3" 
+                      r="6"
                       fill={currentStyle.primary}
-                      opacity="0.8"
+                      opacity="1"
                       style={{
                         transform: `translateY(${breathingOffset}px)`,
-                        filter: `drop-shadow(0 0 8px ${currentStyle.glow}) drop-shadow(0 0 16px ${currentStyle.glow})`
+                        filter: `drop-shadow(0 0 12px ${currentStyle.glow}) drop-shadow(0 0 24px ${currentStyle.glow}) drop-shadow(0 0 36px ${currentStyle.glow})`
+                      }}
+                    />
+                    {/* White core of indicator */}
+                    <circle
+                      cx={progress * 800}
+                      cy={waveformData[playedPoints]?.y || 50}
+                      r="3"
+                      fill="white"
+                      opacity="1"
+                      style={{
+                        transform: `translateY(${breathingOffset}px)`
                       }}
                     />
                   </>

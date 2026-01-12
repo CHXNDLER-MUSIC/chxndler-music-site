@@ -1148,8 +1148,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     if (processingQuestId === quest.id) return;
 
     try {
-      // Special flow for INVITE_FRIEND: trigger share first, then record completion
-      if (quest.quest_key === 'INVITE_FRIEND') {
+      // Special flow for INVITE_ALIEN: trigger share first, then record completion
+      if (quest.quest_key === 'INVITE_ALIEN') {
         const text = "I thought of you. I think this world could feel like home for you too. https://chxndler.world";
 
         const performShare = async () => {
@@ -3363,11 +3363,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         </div>
                       ) : (
                         <div className="flex items-center" style={{
-                          color: (isQuestCompleted(quest) && quest.quest_key !== 'INVITE_FRIEND') ? '#666' : '#90EE90',
-                          textShadow: (isQuestCompleted(quest) && quest.quest_key !== 'INVITE_FRIEND') ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90'
+                          color: (isQuestCompleted(quest) && quest.quest_key !== 'INVITE_ALIEN') ? '#666' : '#90EE90',
+                          textShadow: (isQuestCompleted(quest) && quest.quest_key !== 'INVITE_ALIEN') ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90'
                         }}>
                           <span className="text-base font-bold">
-                            {quest.quest_key === 'INVITE_FRIEND'
+                            {quest.quest_key === 'INVITE_ALIEN'
                               ? 'Daily +1'
                               : (quest.reward_notes || `+${quest.reward_heartcoins}`)}
                           </span>
@@ -3414,7 +3414,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   </div>
                                   {quest.title}
                                 </>
-                              ) : quest.quest_key === 'INVITE_FRIEND' ? (
+                              ) : quest.quest_key === 'INVITE_ALIEN' ? (
                                 <>
                                   <div className="relative">
                                     <div
@@ -3453,7 +3453,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               )}
                             </div>
                             <div className="text-sm" style={{ color: '#FFFFFF', opacity: 0.8 }}>
-                              {quest.quest_key === 'INVITE_FRIEND'
+                              {quest.quest_key === 'INVITE_ALIEN'
                                 ? 'Invite a friend into the Heartverse. Share the signal.'
                                 : quest.description}
                             </div>
@@ -3478,7 +3478,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             return;
                           }
 
-                          if (quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared) {
+                          if (quest.quest_key === 'INVITE_ALIEN' && inviteFriendShared) {
                             handleBonusQuestConfirm(quest);
                           } else if (quest.quest_key === 'ATTEND_LIVESTREAM') {
                             if (attendLivestreamConfirming) {
@@ -3733,11 +3733,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         style={{
                           background: !isLoggedIn
                             ? 'rgba(78,205,196,0.2)'
-                            : (isQuestCompleted(quest) && quest.quest_key !== 'LISTEN_ELEMENT_SONG') || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
+                            : (isQuestCompleted(quest) && quest.quest_key !== 'LISTEN_ELEMENT_SONG') || (quest.quest_key === 'INVITE_ALIEN' && !quest.can_complete)
                             ? 'rgba(0,255,0,0.2)'
                             : quest.quest_key === 'LISTEN_ELEMENT_SONG' && elementSongReturned
                               ? 'rgba(0,255,0,0.2)'
-                              : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
+                              : quest.quest_key === 'INVITE_ALIEN' && inviteFriendShared
                                 ? 'rgba(0,0,0,0.3)'
                                 : quest.quest_key === 'ATTEND_LIVESTREAM' && attendLivestreamConfirming
                                   ? 'rgba(0,0,0,0.3)'
@@ -3748,11 +3748,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       : 'rgba(100,100,100,0.3)',
                           color: !isLoggedIn
                             ? '#4ECDC4'
-                            : (isQuestCompleted(quest) && quest.quest_key !== 'LISTEN_ELEMENT_SONG') || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
+                            : (isQuestCompleted(quest) && quest.quest_key !== 'LISTEN_ELEMENT_SONG') || (quest.quest_key === 'INVITE_ALIEN' && !quest.can_complete)
                             ? '#00FF00'
                             : quest.quest_key === 'LISTEN_ELEMENT_SONG' && elementSongReturned
                               ? '#00FF00'
-                              : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
+                              : quest.quest_key === 'INVITE_ALIEN' && inviteFriendShared
                                 ? '#F2EF1D'
                                 : quest.quest_key === 'ATTEND_LIVESTREAM' && (phraseValidationResult === 'correct' || phraseValidationResult === 'already')
                                   ? '#00FF00'
@@ -3762,18 +3762,18 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       ? '#FF69B4'
                                       : quest.quest_key === 'LISTEN_ELEMENT_SONG'
                                         ? ELEMENT_COLORS[(profile?.element?.toLowerCase() || 'heart') as Element]
-                                        : quest.quest_key === 'INVITE_FRIEND'
+                                        : quest.quest_key === 'INVITE_ALIEN'
                                           ? '#00FFFF'
                                           : quest.can_complete
                                             ? '#FFFFFF'
                                             : '#666',
                           borderColor: !isLoggedIn
                             ? '#4ECDC4'
-                            : (isQuestCompleted(quest) && quest.quest_key !== 'LISTEN_ELEMENT_SONG') || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
+                            : (isQuestCompleted(quest) && quest.quest_key !== 'LISTEN_ELEMENT_SONG') || (quest.quest_key === 'INVITE_ALIEN' && !quest.can_complete)
                             ? '#00FF00'
                             : quest.quest_key === 'LISTEN_ELEMENT_SONG' && elementSongReturned
                               ? '#00FF00'
-                              : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
+                              : quest.quest_key === 'INVITE_ALIEN' && inviteFriendShared
                                 ? '#F2EF1D'
                                 : quest.quest_key === 'ATTEND_LIVESTREAM' && (phraseValidationResult === 'correct' || phraseValidationResult === 'already')
                                   ? '#00FF00'
@@ -3783,27 +3783,27 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       ? '#FF69B4'
                                       : quest.quest_key === 'LISTEN_ELEMENT_SONG'
                                         ? ELEMENT_COLORS[(profile?.element?.toLowerCase() || 'heart') as Element]
-                                        : quest.quest_key === 'INVITE_FRIEND'
+                                        : quest.quest_key === 'INVITE_ALIEN'
                                           ? '#00FFFF'
                                           : quest.can_complete
                                             ? 'rgba(255,255,255,0.6)'
                                             : 'rgba(100,100,100,0.6)',
-                          borderWidth: isQuestCompleted(quest) || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
+                          borderWidth: isQuestCompleted(quest) || (quest.quest_key === 'INVITE_ALIEN' && !quest.can_complete)
                             ? '2px'
                             : quest.quest_key === 'LISTEN_ELEMENT_SONG' && elementSongReturned
                               ? '2px'
-                              : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
+                              : quest.quest_key === 'INVITE_ALIEN' && inviteFriendShared
                                 ? '2px'
                                 : quest.quest_key === 'ATTEND_LIVESTREAM' && (phraseValidationResult === 'correct' || phraseValidationResult === 'already' || attendLivestreamConfirming)
                                   ? '2px'
                                   : '1px',
                           textShadow: !isLoggedIn
                             ? '0 0 8px rgba(78,205,196,0.5)'
-                            : isQuestCompleted(quest) || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
+                            : isQuestCompleted(quest) || (quest.quest_key === 'INVITE_ALIEN' && !quest.can_complete)
                             ? '0 0 8px #00FF00, 0 0 16px #00FF00'
                             : quest.quest_key === 'LISTEN_ELEMENT_SONG' && elementSongReturned
                               ? '0 0 8px #00FF00, 0 0 16px #00FF00'
-                              : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
+                              : quest.quest_key === 'INVITE_ALIEN' && inviteFriendShared
                                 ? '0 0 10px #F2EF1D'
                                 : quest.quest_key === 'ATTEND_LIVESTREAM' && (phraseValidationResult === 'correct' || phraseValidationResult === 'already')
                                   ? '0 0 8px #00FF00, 0 0 16px #00FF00'
@@ -3811,16 +3811,16 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     ? '0 0 10px #F2EF1D'
                                     : quest.quest_key === 'ATTEND_LIVESTREAM'
                                       ? '0 0 10px #FF69B4'
-                                      : quest.quest_key === 'INVITE_FRIEND'
+                                      : quest.quest_key === 'INVITE_ALIEN'
                                         ? '0 0 10px #00FFFF'
                                         : 'none',
                           boxShadow: !isLoggedIn
                             ? 'none'
-                            : isQuestCompleted(quest) || (quest.quest_key === 'INVITE_FRIEND' && !quest.can_complete)
+                            : isQuestCompleted(quest) || (quest.quest_key === 'INVITE_ALIEN' && !quest.can_complete)
                             ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)'
                             : quest.quest_key === 'LISTEN_ELEMENT_SONG' && elementSongReturned
                               ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)'
-                              : quest.quest_key === 'INVITE_FRIEND' && inviteFriendShared
+                              : quest.quest_key === 'INVITE_ALIEN' && inviteFriendShared
                                 ? '0 0 20px rgba(242,239,29,0.8), inset 0 0 10px rgba(242,239,29,0.2)'
                                 : quest.quest_key === 'ATTEND_LIVESTREAM' && (phraseValidationResult === 'correct' || phraseValidationResult === 'already')
                                   ? '0 0 15px rgba(0,255,0,0.6), inset 0 0 10px rgba(0,255,0,0.2)'
@@ -3834,7 +3834,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           ? 'Log in to complete'
                           : quest.quest_key === 'ATTEND_LIVESTREAM' && isQuestCompleted(quest)
                             ? 'CHECKED IN'
-                            : quest.quest_key === 'INVITE_FRIEND' && (isQuestCompleted(quest) || !quest.can_complete)
+                            : quest.quest_key === 'INVITE_ALIEN' && (isQuestCompleted(quest) || !quest.can_complete)
                               ? 'SIGNAL SENT'
                               : isQuestCompleted(quest)
                                 ? 'COMPLETED'
@@ -3844,7 +3844,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     : phraseStatus === 'success'
                                       ? 'PASSWORD ACCEPTED'
                                       : (attendLivestreamConfirming ? 'CONFIRM' : 'CHECK IN'))
-                                : quest.quest_key === 'INVITE_FRIEND'
+                                : quest.quest_key === 'INVITE_ALIEN'
                                   ? (inviteFriendShared ? 'CONFIRM' : 'SEND SIGNAL')
                                   : quest.quest_key === 'SECRET_PHRASE'
                                     ? (secretPhraseInputVisible === quest.id

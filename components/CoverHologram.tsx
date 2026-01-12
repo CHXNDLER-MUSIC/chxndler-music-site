@@ -682,22 +682,24 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                         delete (window as any).priceHeartCoinsFromStore;
                       } catch {}
                       try {
-                        const currentSongTitle = currentTrack?.title || title;
+                        // Always use the title prop (displayed card), not currentTrack (playing song)
+                        const cardTitle = title;
                         const heartCoinEvent = new CustomEvent('openHeartCoinCards', {
                           detail: {
-                            cardTitle: currentSongTitle,
-                            songSlug: currentSongTitle?.toLowerCase().replace(/\s+/g, '-'),
+                            cardTitle: cardTitle,
+                            songSlug: cardTitle?.toLowerCase().replace(/\s+/g, '-'),
                             cardSrc: src
                           }
                         });
                         window.dispatchEvent(heartCoinEvent);
                       } catch {}
                       try {
-                        const currentSongTitle = currentTrack?.title || title;
+                        // Always use the title prop (displayed card), not currentTrack (playing song)
+                        const cardTitle = title;
                         track('collect_card_clicked', {
-                          song_slug: currentSongTitle?.toLowerCase().replace(/\s+/g, '-'),
+                          song_slug: cardTitle?.toLowerCase().replace(/\s+/g, '-'),
                           card_src: src,
-                          payload: { song_title: currentSongTitle, card_image: src, action: 'open_heartcoin_with_card' }
+                          payload: { song_title: cardTitle, card_image: src, action: 'open_heartcoin_with_card' }
                         });
                       } catch {}
                     }}
