@@ -131,44 +131,65 @@ export default function WaveformVisualizer({
           </filter>
         </defs>
         
-        {/* Outer neon glow */}
-        <line 
-          x1="2" 
-          y1={centerY} 
-          x2="98" 
-          y2={centerY} 
-          stroke="#FFFFFF" 
-          strokeWidth="12" 
-          opacity="0.8" 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
-          filter="url(#neonGlow)" 
+        {/* Background track (unplayed portion) */}
+        <line
+          x1="2"
+          y1={centerY}
+          x2="98"
+          y2={centerY}
+          stroke="url(#miniUnplayed)"
+          strokeWidth="6"
+          opacity="0.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
-        {/* Main neon white bar */}
-        <line 
-          x1="2" 
-          y1={centerY} 
-          x2="98" 
-          y2={centerY} 
-          stroke="#FFFFFF" 
-          strokeWidth="8" 
-          opacity="1" 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
-          filter="url(#waveformGlow)" 
-        />
-        {/* Inner bright core */}
-        <line 
-          x1="2" 
-          y1={centerY} 
-          x2="98" 
-          y2={centerY} 
-          stroke="#FFFFFF" 
-          strokeWidth="6" 
-          opacity="1" 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
-        />
+
+        {/* Played portion - outer neon glow */}
+        {progressX > 2 && (
+          <line
+            x1="2"
+            y1={centerY}
+            x2={Math.max(2, progressX)}
+            y2={centerY}
+            stroke={elementColor}
+            strokeWidth="12"
+            opacity="0.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            filter="url(#neonGlow)"
+          />
+        )}
+
+        {/* Played portion - main glow bar */}
+        {progressX > 2 && (
+          <line
+            x1="2"
+            y1={centerY}
+            x2={Math.max(2, progressX)}
+            y2={centerY}
+            stroke={elementColor}
+            strokeWidth="8"
+            opacity="0.9"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            filter="url(#waveformGlow)"
+          />
+        )}
+
+        {/* Played portion - inner bright core */}
+        {progressX > 2 && (
+          <line
+            x1="2"
+            y1={centerY}
+            x2={Math.max(2, progressX)}
+            y2={centerY}
+            stroke="#FFFFFF"
+            strokeWidth="4"
+            opacity="1"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        )}
         
         {/* Current position indicator heart - always visible with enhanced visibility */}
         <path 
