@@ -57,7 +57,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const audioManager = useAudio();
   
   // UI store for profile refresh trigger and name modal (must be before useEffect)
-  const { profileRefreshTrigger, openNamePrompt, openNamePromptFromAuth } = useUIStore();
+  const { profileRefreshTrigger, openNamePrompt, openNamePromptFromAuth, openElementSelection } = useUIStore();
   
   // Authentication error handling
   const [authError, setAuthError] = useState(null);
@@ -1470,9 +1470,17 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       setPowerBusy(false);
       setLandingRevealReady(true);
 
+      // If user has profile but hasn't selected an element yet, show element selection modal
+      if (profile?.id && !profile?.element) {
+        // Small delay to let the landing animation settle before showing modal
+        setTimeout(() => {
+          openElementSelection();
+        }, 500);
+      }
+
     }, WARP_DURATION_MS);
-    
-  }, [audioManager]);
+
+  }, [audioManager, profile, openElementSelection]);
 
   // Handle opening journal: opens journal view in Soul Sky popover
   const handleOpenJournal = React.useCallback(() => {

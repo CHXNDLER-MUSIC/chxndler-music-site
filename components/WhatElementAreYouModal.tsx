@@ -9,6 +9,14 @@ import { useProfile } from "@/contexts/ProfileContext";
 import type { Element } from "@/lib/planets";
 import { ELEMENT_COLORS } from "@/lib/planets";
 
+// Element sound mappings
+const ELEMENT_SOUNDS: Record<Element, string> = {
+  heart: '/audio/heart-pulse.mp3',
+  lightning: '/audio/lightning-spark.mp3',
+  water: '/audio/water-ripple.mp3',
+  darkness: '/audio/shadow-glow.mp3',
+};
+
 const ELEMENTS: { key: Element; name: string; label: string; description: string; icon: string }[] = [
   { key: "heart", name: "HEART", label: "Heart", description: "Love, passion, and connection", icon: "/elements/heart.webp" },
   { key: "lightning", name: "LIGHTNING", label: "Lightning", description: "Energy, power, and innovation", icon: "/elements/lightning.webp" },
@@ -25,6 +33,11 @@ export default function WhatElementAreYouModal() {
   const [error, setError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
+  // Track which cards are flipped (showing back side)
+  const [flippedCards, setFlippedCards] = useState<Set<Element>>(new Set());
+  // Track which card is being hovered
+  const [hoveredCard, setHoveredCard] = useState<Element | null>(null);
+
   // Check authentication when modal opens
   // Uses getSession() to avoid AuthSessionMissingError when logged out
   useEffect(() => {
@@ -37,19 +50,58 @@ export default function WhatElementAreYouModal() {
 
     if (showElementSelection) {
       checkAuth();
+      // Reset flipped cards when modal opens
+      setFlippedCards(new Set());
+      setHoveredCard(null);
     }
   }, [showElementSelection]);
+
+  // Handle card click - flip the card and play element sound
+  const handleCardClick = (elementKey: Element) => {
+    // Play element-specific sound
+    const soundUrl = ELEMENT_SOUNDS[elementKey];
+    if (soundUrl) {
+      const audio = new Audio(soundUrl);
+      audio.volume = 0.7;
+      audio.play().catch(e => console.log('Element audio play failed:', e));
+    }
+
+    // Toggle flip state for this card
+    setFlippedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(elementKey)) {
+        newSet.delete(elementKey);
+      } else {
+        newSet.add(elementKey);
+      }
+      return newSet;
+    });
+
+    // Select this element
+    setSelectedElement(elementKey);
+  };
+
+  // Handle card hover
+  const handleCardHover = (elementKey: Element | null) => {
+    if (elementKey && hoveredCard !== elementKey) {
+      // Play change-channel.mp3 sound on hover
+      const audio = new Audio('/audio/change-channel.mp3');
+      audio.volume = 0.5;
+      audio.play().catch(e => console.log('Hover audio play failed:', e));
+    }
+    setHoveredCard(elementKey);
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedElement) return;
-    
+
     const selectedElementData = ELEMENTS.find(el => el.key === selectedElement);
     if (!selectedElementData) return;
 
     setLoading(true);
     setError(null);
-    
+
     // Case a: No authenticated user
     if (!currentUser) {
       setError("You need to log in to create your ALIEN name before choosing your Element.");
@@ -71,32 +123,33 @@ export default function WhatElementAreYouModal() {
       setLoading(false);
       return;
     }
-    
+
     try {
-      // Play join-alien.mp3 sound
-      const audio = new Audio('/audio/join-alien.mp3');
+      // Play alien-wave.mp3 sound when entering Heartverse
+      const audio = new Audio('/audio/alien-wave.mp3');
+      audio.volume = 0.8;
       audio.play().catch(e => console.log('Audio play failed:', e));
-      
+
       // Use the new updateProfileNameAndElement method with pretty label
       await updateProfileNameAndElement(currentName, selectedElementData.label);
-      
+
       // Complete onboarding now that both name and element are set
       await completeOnboarding(currentName);
-      
+
       // Refresh profile to ensure UI updates
       await refreshProfile();
-      
-      console.log('🎉 Profile completed! Element selected:', selectedElementData.label);
-      
+
+      console.log('Profile completed! Element selected:', selectedElementData.label);
+
       closeElementSelection();
       // Trigger profile refresh to update the UI with new element
       triggerProfileRefresh();
-      
+
       // Add a small delay to ensure profile context has propagated before showing tour
       setTimeout(() => {
-        try { 
+        try {
           console.log('Dispatching heartverse:entered event');
-          window.dispatchEvent(new CustomEvent('heartverse:entered')); 
+          window.dispatchEvent(new CustomEvent('heartverse:entered'));
         } catch {}
       }, 300);
     } catch (e: any) {
@@ -109,10 +162,76 @@ export default function WhatElementAreYouModal() {
   if (!showElementSelection) return null;
   if (typeof document === 'undefined') return null;
 
+  // Get element color for glow effects
+  const getElementColor = (key: Element) => {
+    return key === 'darkness' ? '#FFFFFF' : ELEMENT_COLORS[key];
+  };
+
   return createPortal(
     <>
+      {/* Flip card animation styles */}
+      <style>{`
+        .element-card-container {
+          perspective: 1000px;
+        }
+
+        .element-card {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+          transform-style: preserve-3d;
+        }
+
+        .element-card.flipped {
+          transform: rotateY(180deg);
+        }
+
+        .element-card.hovered:not(.flipped) {
+          transform: scale(1.05);
+        }
+
+        .element-card.hovered.flipped {
+          transform: rotateY(180deg) scale(1.05);
+        }
+
+        .element-card-face {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
+          border-radius: 0.5rem;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 8px;
+        }
+
+        .element-card-front {
+          background: rgba(0,0,0,0.2);
+          backdrop-filter: blur(4px);
+        }
+
+        .element-card-back {
+          background: rgba(0,0,0,0.4);
+          backdrop-filter: blur(4px);
+          transform: rotateY(180deg);
+        }
+
+        @keyframes pulseGlow {
+          0%, 100% { filter: brightness(1) saturate(1); }
+          50% { filter: brightness(1.2) saturate(1.3); }
+        }
+
+        .element-card.selected .element-card-face {
+          animation: pulseGlow 2s ease-in-out infinite;
+        }
+      `}</style>
+
       {/* Hologram base glow */}
-      <div 
+      <div
         className="fixed inset-0 flex items-center justify-center"
         style={{
           zIndex: 2147483648,
@@ -129,9 +248,9 @@ export default function WhatElementAreYouModal() {
           }}
         />
       </div>
-      
+
       {/* Element Selection Modal */}
-      <div 
+      <div
         className="fixed inset-0 flex items-center justify-center"
         style={{
           zIndex: 2147483648,
@@ -153,9 +272,9 @@ export default function WhatElementAreYouModal() {
             position: 'relative'
           }}
         >
-        
+
         {/* Soft bottom glow pseudo element */}
-        <div 
+        <div
           className="absolute"
           style={{
             bottom: '-15px',
@@ -169,9 +288,9 @@ export default function WhatElementAreYouModal() {
             zIndex: -1
           }}
         />
-        
+
         {/* Top bloom glow */}
-        <div 
+        <div
           className="absolute"
           style={{
             top: '-10px',
@@ -187,20 +306,20 @@ export default function WhatElementAreYouModal() {
         />
 
         {/* Header */}
-        <div 
+        <div
           className="text-center mb-2"
-          style={{ 
-            color: '#00FFFF', 
-            textShadow: '0 0 8px rgba(0,255,255,0.6)', 
+          style={{
+            color: '#00FFFF',
+            textShadow: '0 0 8px rgba(0,255,255,0.6)',
             fontSize: '16px',
             fontWeight: 'bold'
           }}
         >
-          WHAT ELEMENT ARE YOU?
+          Choose your elemental affinity
         </div>
-        
+
         {/* Thin cyan neon line */}
-        <div 
+        <div
           className="w-full h-px mb-2"
           style={{
             background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)',
@@ -208,10 +327,6 @@ export default function WhatElementAreYouModal() {
           }}
         />
 
-        <p className="relative text-xs mb-1 text-center" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.6)' }}>
-          Choose your elemental affinity
-        </p>
-        
         <p className="relative text-xs mb-2 text-center" style={{ color: '#FFFFFF', textShadow: '0 0 4px rgba(255,255,255,0.6)' }}>
           You can change this later
         </p>
@@ -240,76 +355,98 @@ export default function WhatElementAreYouModal() {
         <form onSubmit={handleSubmit} className="space-y-2">
           {/* Element Grid */}
           <div className="grid grid-cols-2 gap-2 mb-1">
-            {ELEMENTS.map((element) => (
-              <button
-                key={element.key}
-                type="button"
-                onClick={() => {
-                  // Play change-channel.mp3 sound
-                  const audio = new Audio('/audio/change-channel.mp3');
-                  audio.play().catch(e => console.log('Audio play failed:', e));
-                  setSelectedElement(element.key);
-                }}
-                onMouseEnter={() => {
-                  // Play hover.mp3 sound on hover
-                  const audio = new Audio('/audio/hover.mp3');
-                  audio.play().catch(e => console.log('Hover audio play failed:', e));
-                }}
-                disabled={loading}
-                className="p-2 rounded-lg border transition-all text-left disabled:opacity-50"
-                style={{
-                  border: selectedElement === element.key 
-                    ? `2px solid ${element.key === 'darkness' ? '#FFFFFF' : ELEMENT_COLORS[element.key]}` 
-                    : '1px solid rgba(0,255,255,0.3)',
-                  background: selectedElement === element.key 
-                    ? `${element.key === 'darkness' ? '#FFFFFF' : ELEMENT_COLORS[element.key]}20` 
-                    : 'rgba(0,0,0,0.2)',
-                  backdropFilter: 'blur(4px)',
-                  boxShadow: selectedElement === element.key 
-                    ? `0 0 15px ${element.key === 'darkness' ? '#FFFFFF' : ELEMENT_COLORS[element.key]}40` 
-                    : 'none'
-                }}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <img 
-                    src={element.icon} 
-                    alt={element.name}
-                    className="w-8 h-8"
+            {ELEMENTS.map((element) => {
+              const isFlipped = flippedCards.has(element.key);
+              const isHovered = hoveredCard === element.key;
+              const isSelected = selectedElement === element.key;
+              const elementColor = getElementColor(element.key);
+
+              return (
+                <div
+                  key={element.key}
+                  className="element-card-container"
+                  style={{ height: '90px' }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => !loading && handleCardClick(element.key)}
+                    onMouseEnter={() => !loading && handleCardHover(element.key)}
+                    onMouseLeave={() => handleCardHover(null)}
+                    disabled={loading}
+                    className={`element-card ${isFlipped ? 'flipped' : ''} ${isHovered ? 'hovered' : ''} ${isSelected ? 'selected' : ''}`}
                     style={{
-                      filter: selectedElement === element.key 
-                        ? `drop-shadow(0 0 4px ${element.key === 'darkness' ? '#FFFFFF' : ELEMENT_COLORS[element.key]})` 
-                        : 'drop-shadow(0 0 2px #00FFFF)'
-                    }}
-                  />
-                  <div 
-                    className="font-medium"
-                    style={{
-                      color: selectedElement === element.key 
-                        ? (element.key === 'darkness' ? '#FFFFFF' : ELEMENT_COLORS[element.key])
-                        : '#00FFFF',
-                      textShadow: `0 0 8px ${selectedElement === element.key 
-                        ? (element.key === 'darkness' ? '#FFFFFF' : ELEMENT_COLORS[element.key])
-                        : '#00FFFF'}60`
+                      border: isSelected
+                        ? `2px solid ${elementColor}`
+                        : isHovered
+                          ? `2px solid ${elementColor}80`
+                          : '1px solid rgba(0,255,255,0.3)',
+                      borderRadius: '0.5rem',
+                      background: 'transparent',
+                      cursor: loading ? 'not-allowed' : 'pointer',
+                      boxShadow: isHovered || isSelected
+                        ? `0 0 20px ${elementColor}60, 0 0 40px ${elementColor}30, inset 0 0 15px ${elementColor}20`
+                        : 'none',
                     }}
                   >
-                    {element.label}
-                  </div>
+                    {/* Front face - shows icon only */}
+                    <div
+                      className="element-card-face element-card-front"
+                      style={{
+                        background: isSelected
+                          ? `${elementColor}20`
+                          : isHovered
+                            ? `${elementColor}10`
+                            : 'rgba(0,0,0,0.2)',
+                      }}
+                    >
+                      <img
+                        src={element.icon}
+                        alt={element.name}
+                        className="w-14 h-14"
+                        style={{
+                          filter: isHovered || isSelected
+                            ? `drop-shadow(0 0 8px ${elementColor}) drop-shadow(0 0 16px ${elementColor}80)`
+                            : 'drop-shadow(0 0 2px #00FFFF)',
+                          transition: 'filter 0.3s ease'
+                        }}
+                      />
+                    </div>
+
+                    {/* Back face - shows name and description */}
+                    <div
+                      className="element-card-face element-card-back"
+                      style={{
+                        background: isSelected
+                          ? `${elementColor}25`
+                          : `${elementColor}15`,
+                      }}
+                    >
+                      <div
+                        className="font-bold text-lg mb-1"
+                        style={{
+                          color: elementColor,
+                          textShadow: `0 0 10px ${elementColor}, 0 0 20px ${elementColor}80`
+                        }}
+                      >
+                        {element.name}
+                      </div>
+                      <div
+                        className="text-xs text-center px-2"
+                        style={{
+                          color: elementColor,
+                          textShadow: `0 0 4px ${elementColor}60`,
+                          opacity: 0.9
+                        }}
+                      >
+                        {element.description}
+                      </div>
+                    </div>
+                  </button>
                 </div>
-                <div 
-                  className="text-xs"
-                  style={{
-                    color: selectedElement === element.key 
-                      ? (element.key === 'darkness' ? '#FFFFFF' : ELEMENT_COLORS[element.key])
-                      : '#00FFFF80',
-                    textShadow: 'none'
-                  }}
-                >
-                  {element.description}
-                </div>
-              </button>
-            ))}
+              );
+            })}
           </div>
-          
+
           <button
             type="submit"
             disabled={loading || !selectedElement}
@@ -320,7 +457,7 @@ export default function WhatElementAreYouModal() {
               color: '#00FFFF',
               textShadow: '0 0 8px rgba(0,255,255,0.8), 0 0 16px rgba(0,255,255,0.6), 0 0 24px rgba(0,255,255,0.4)',
               boxShadow: loading || !selectedElement
-                ? 'none' 
+                ? 'none'
                 : '0 0 15px rgba(0,255,255,0.4), 0 0 25px rgba(0,255,255,0.2)'
             }}
           >
