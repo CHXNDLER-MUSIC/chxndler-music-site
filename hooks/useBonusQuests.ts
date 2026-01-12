@@ -127,6 +127,19 @@ export function useBonusQuests(): UseBonusQuestsReturn {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserId]);
 
+  // Listen for quests:refresh event to refetch quests
+  useEffect(() => {
+    const handleRefresh = () => {
+      console.log('[useBonusQuests] Received quests:refresh event');
+      fetchQuests();
+    };
+
+    window.addEventListener('quests:refresh', handleRefresh);
+    return () => {
+      window.removeEventListener('quests:refresh', handleRefresh);
+    };
+  }, [fetchQuests]);
+
   // Complete a quest using the idempotent RPC
   // Returns a QuestCompletionResult with alreadyCompleted flag for UI handling
   // RPC signature: complete_bonus_quest_once_per_day({ p_quest_id })

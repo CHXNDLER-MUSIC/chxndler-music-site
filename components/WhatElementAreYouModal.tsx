@@ -345,7 +345,7 @@ export default function WhatElementAreYouModal() {
             fontWeight: 'bold'
           }}
         >
-          Choose your elemental affinity
+          Choose your Element affinity
         </div>
 
         {/* Thin cyan neon line */}

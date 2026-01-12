@@ -76,26 +76,47 @@ export async function GET(request: NextRequest) {
       if (!existingProfile) {
         console.log('[auth/callback] No profile found, creating one for user:', user.id);
 
-        // NOTE: Do NOT set name here - leave it null so the user goes through
-        // the onboarding flow (name prompt -> element selection)
-        const { error: insertError } = await supabaseAdmin
+        // Use upsert with minimal columns to handle edge cases:
+        // - Email unique constraint conflicts
+        // - Schema variations across deployments
+        // The onboarding modal will set name/element through ProfileContext
+        const { error: upsertError } = await supabaseAdmin
           .from('profiles')
-          .insert({
-            id: user.id,
-            email: user.email,
-            name: null, // User will set this in the "What should we call you?" modal
-            heartcoin_balance: 0,
-            heartcoin_total: 0,
-            profile_complete: false,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+          .upsert(
+            {
+              id: user.id,
+              email: user.email,
+            },
+            {
+              onConflict: 'id',
+              ignoreDuplicates: false
+            }
+          );
+
+        if (upsertError) {
+          // Log detailed error for debugging
+          console.error('[auth/callback] Failed to create/update profile:', {
+            message: upsertError.message,
+            code: upsertError.code,
+            details: upsertError.details,
+            hint: upsertError.hint,
+            userId: user.id,
+            email: user.email
           });
 
-        if (insertError) {
-          // Log but don't fail the auth flow - user is still authenticated
-          console.error('[auth/callback] Failed to create profile:', insertError.message);
+          // Try a second approach - simple insert without email (in case email has unique constraint issues)
+          console.log('[auth/callback] Trying fallback insert without email...');
+          const { error: fallbackError } = await supabaseAdmin
+            .from('profiles')
+            .insert({ id: user.id });
+
+          if (fallbackError) {
+            console.error('[auth/callback] Fallback insert also failed:', fallbackError.message);
+          } else {
+            console.log('[auth/callback] Fallback insert succeeded for:', user.id);
+          }
         } else {
-          console.log('[auth/callback] Profile created successfully for:', user.email);
+          console.log('[auth/callback] Profile created/updated successfully for:', user.email);
         }
       } else {
         console.log('[auth/callback] Profile already exists for user:', user.id);
@@ -106,10 +127,16 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Build redirect URL
-  // NOTE: Onboarding flow (name prompt → element selection → relic) is triggered
-  // by the START button click in DashboardApp, NOT by URL parameters
-  const redirectUrl = `${origin}${next}`;
+  // Build redirect URL with profileSetup parameter for new users
+  // This triggers the onboarding modal flow (name prompt → element selection)
+  const profileSetup = requestUrl.searchParams.get('profileSetup');
+  let redirectUrl = `${origin}${next}`;
+
+  // Pass profileSetup parameter through to trigger onboarding modal
+  if (profileSetup === '1') {
+    const separator = redirectUrl.includes('?') ? '&' : '?';
+    redirectUrl = `${redirectUrl}${separator}profileSetup=1`;
+  }
 
   console.log('[auth/callback] Success! Redirecting to:', redirectUrl);
   return NextResponse.redirect(redirectUrl);

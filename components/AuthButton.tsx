@@ -218,7 +218,7 @@ export default function AuthButton() {
         onMouseEnter={(e) => {
           if (!isDisabled && hasEnteredHeartverse) {
             try { sfx.play('hover', 0.8); } catch {}
-            e.currentTarget.style.transform = 'scale(1.05)';
+            e.currentTarget.style.transform = 'scale(1.15)';
           }
         }}
         onMouseLeave={(e) => {

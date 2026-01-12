@@ -209,14 +209,18 @@ export default function WhatShouldWeCallYouModal() {
   
   return (
     <>
-      {/* Hologram base glow */}
-      <div 
-        className="fixed inset-0 flex items-center justify-center"
+      {/* Hologram base glow - align within profile bar/light beam bounds */}
+      <div
+        className="fixed flex justify-center"
         style={{
-          zIndex: 9999999, // Very high z-index for Chrome compatibility
+          zIndex: 9999999,
           pointerEvents: 'none',
-          paddingTop: '200px',
-          display: 'flex' // Always flex
+          left: 0,
+          right: 0,
+          top: 'var(--profile-bar-boundary, 64px)',
+          bottom: 'calc(var(--light-beam-boundary, 120px) + var(--beam-height, 0px))',
+          alignItems: 'flex-start',
+          paddingTop: '200px'
         }}
       >
         <div
@@ -228,29 +232,34 @@ export default function WhatShouldWeCallYouModal() {
           }}
         />
       </div>
-      
-      {/* Onboarding Modal */}
-      <div 
-        className="fixed inset-0 flex items-center justify-center"
+
+      {/* Onboarding Modal - same position as welcome home display */}
+      <div
+        className="fixed flex justify-center pointer-events-none"
         style={{
-          zIndex: 9999999, // Very high z-index for Chrome compatibility
-          marginTop: '-160px',
-          display: 'flex' // Always flex
+          zIndex: 9999999,
+          left: 0,
+          right: 0,
+          top: 'var(--profile-bar-boundary, 64px)',
+          bottom: 'calc(var(--light-beam-boundary, 120px) + var(--beam-height, 0px))',
+          alignItems: 'flex-start'
         }}
       >
         <div
-          className="onboarding-hologram-container"
+          className="onboarding-hologram-container pointer-events-auto"
           style={{
             width: 'min(92vw, 500px)',
-            minHeight: '30vh',
-            padding: '20px 24px 24px 24px',
+            height: '100%',
+            padding: '16px 24px 20px 24px',
             borderRadius: 18,
             background: 'rgba(0,0,0,0.6)',
             border: '1px solid rgba(0,255,255,0.55)',
             boxShadow: '0 -8px 25px rgba(0,255,255,0.4), 0 -4px 15px rgba(0,255,255,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(0,255,255,0.45)',
             backdropFilter: 'blur(12px) saturate(140%)',
             color: '#00FFFF',
-            position: 'relative'
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column'
           }}
         >
         
@@ -303,38 +312,34 @@ export default function WhatShouldWeCallYouModal() {
         />
 
         {/* Header */}
-        <div 
-          className="text-center mb-4"
-          style={{ 
-            color: '#00FFFF', 
-            textShadow: '0 0 8px rgba(0,255,255,0.6)', 
+        <div
+          className="text-center mb-2"
+          style={{
+            color: '#00FFFF',
+            textShadow: '0 0 8px rgba(0,255,255,0.6)',
             fontSize: '18px',
             fontWeight: 'bold'
           }}
         >
-          WHAT SHOULD WE CALL YOU?
+          Choose your Alien name
         </div>
-        
+
         {/* Thin cyan neon line */}
-        <div 
-          className="w-full h-px mb-6"
+        <div
+          className="w-full h-px mb-4"
           style={{
             background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)',
             boxShadow: '0 0 4px rgba(0,255,255,0.6)'
           }}
         />
 
-        <p className="relative text-sm mb-6 text-center" style={{ color: '#00FFFF', textShadow: '0 0 8px rgba(0,255,255,0.6)' }}>
-          Choose your ALIEN name
-        </p>
-
         {error && (
-          <div className="relative mb-4 rounded-md bg-red-50/10 border border-red-200/40 p-3 text-sm text-red-200">
+          <div className="relative mb-3 rounded-md bg-red-50/10 border border-red-200/40 p-2 text-sm text-red-200">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3">
           <input
             type="text"
             value={name}

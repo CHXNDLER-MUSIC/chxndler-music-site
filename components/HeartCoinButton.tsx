@@ -756,7 +756,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       }
       // Reset card index when element changes, but NOT during auto-navigation from COLLECT CARD
       // The auto-navigate effect will set the correct index in that case
-      if (!isAutoNavigatingRef.current) {
+      // Check both isAutoNavigatingRef and targetCardId to handle timing edge cases
+      if (!isAutoNavigatingRef.current && !targetCardId) {
         setCurrentCardIndex(0);
       }
     }
@@ -841,10 +842,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       // after filteredCards is updated by the filter cards effect
       setTargetCardId(matchedCard.id);
 
-      // Clear the auto-navigating flag after a tick to allow state updates to complete
+      // Clear the auto-navigating flag after effects have had time to complete
+      // Using 100ms to ensure all React batched updates and effects finish
       setTimeout(() => {
         isAutoNavigatingRef.current = false;
-      }, 0);
+      }, 100);
 
       // Only clear selectedSong to prevent re-running, but keep isFromCollectCard
       // so the modal doesn't auto-close (see isActive useEffect)

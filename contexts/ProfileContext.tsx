@@ -623,8 +623,28 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         throw new Error("You must be logged in to update your name");
       }
 
+      // If no profile exists, create one first using upsert
       if (!profile) {
-        throw new Error("Profile not found. Please complete your registration first");
+        console.log("No profile found, creating one for user:", user.id);
+        const { error: upsertError } = await supabaseBrowser
+          .from("profiles")
+          .upsert(
+            {
+              id: user.id,
+              email: user.email,
+              name: name.trim()
+            },
+            { onConflict: 'id' }
+          );
+
+        if (upsertError) {
+          console.error("Error creating profile:", upsertError.message, upsertError);
+          throw new Error("Failed to create profile");
+        }
+
+        // Fetch the newly created profile
+        await fetchProfile();
+        return;
       }
 
       // Update the profile name (profiles table only - do NOT send updated_at)

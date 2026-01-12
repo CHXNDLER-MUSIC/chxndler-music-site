@@ -2320,16 +2320,16 @@ const HUDPanel = React.memo(function HUDPanel({
       ref={inConsole ? containerRef : undefined}
     >
       <DevErrorLogger />
-      <div className="w-full h-full flex items-end justify-center">
+      <div className="w-full h-full flex items-end justify-center" style={{ overflow: 'visible' }}>
           <motion.div
             className={`relative rounded-2xl hud-panel-breathing`}
             // Remove hover glow/scale for the entire HUD display per request
             transition={{ type: "spring", stiffness: 200, damping: 20 }}
             style={inConsole
               // Let the blue display grow to fill the portal slot from the profile bar to the button baseline
-              ? { width: '100%', height: '100%', maxHeight: 'none', transform: 'perspective(1200px) rotateX(6deg)', transformOrigin: 'center', marginTop: 0, willChange: 'opacity, transform', contain: 'layout paint', backfaceVisibility: 'hidden' }
+              ? { width: '100%', height: '100%', maxHeight: 'none', transform: 'perspective(1200px) rotateX(6deg)', transformOrigin: 'center', marginTop: 0, willChange: 'opacity, transform', contain: 'layout', backfaceVisibility: 'hidden', overflow: 'visible' }
               // Keep previous cap for non-console usage
-              : { maxHeight: '350px', transform: 'perspective(1200px) rotateX(6deg)', marginTop: 0, willChange: 'opacity, transform', contain: 'layout paint', backfaceVisibility: 'hidden' }
+              : { maxHeight: '350px', transform: 'perspective(1200px) rotateX(6deg)', marginTop: 0, willChange: 'opacity, transform', contain: 'layout', backfaceVisibility: 'hidden', overflow: 'visible' }
             }
           >
           {/* Background removed: keep HUD box transparent */}
@@ -2338,7 +2338,8 @@ const HUDPanel = React.memo(function HUDPanel({
           background: 'transparent',
           boxShadow: 'none',
           willChange: 'opacity, transform',
-          contain: 'layout paint'
+          contain: 'layout',
+          overflow: 'visible'
         }}>
           {/* Blue background overlay removed */}
           {/* 3D planets — align to full blue display width (outside inner padding) */}
@@ -2544,12 +2545,13 @@ const HUDPanel = React.memo(function HUDPanel({
             // Move the visual nudge into the bottom offset so it stays inside the overflow-hidden blue display
             // Position the control row directly below the music dropdown: align player bottom with cover art bottom
             // Cover art bottom is at 60px, player height is 60px
-            bottom: 64
+            bottom: 64,
+            overflow: 'visible'
           }}>
-            <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '10px', paddingBottom: 10, position: 'relative' }}>
-              <div className="flex flex-wrap items-start gap-3 pt-0 pr-2 pl-2 pb-0">
-                <div className="controls-row flex items-start justify-start gap-4 w-full" style={{ paddingTop: 4 }}>
-                <div className="hud-main-stack" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
+            <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '10px', paddingBottom: 10, position: 'relative', overflow: 'visible' }}>
+              <div className="flex flex-wrap items-start gap-3 pt-0 pr-2 pl-2 pb-0" style={{ overflow: 'visible' }}>
+                <div className="controls-row flex items-start justify-start gap-4 w-full" style={{ paddingTop: 4, overflow: 'visible' }}>
+                <div className="hud-main-stack" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, overflow: 'visible' }}>
                 {/* Top controls: Play/Pause with Lyrics immediately to the right */}
                 {(() => {
                   const isHome = !currentId;
@@ -2881,6 +2883,22 @@ const HUDPanel = React.memo(function HUDPanel({
                           const elementColor = TRACK_ELEMENT_COLORS[element] || '#38B6FF';
 
                           return (
+                            <>
+                            {/* Large ambient glow behind the track bar */}
+                            <div
+                              style={{
+                                position: 'absolute',
+                                left: -20,
+                                right: -124,
+                                bottom: -85,
+                                height: 30,
+                                borderRadius: 9999,
+                                background: 'radial-gradient(ellipse 100% 100%, rgba(25,227,255,0.4) 0%, rgba(25,227,255,0.2) 40%, transparent 70%)',
+                                filter: 'blur(12px)',
+                                pointerEvents: 'none',
+                                zIndex: 99
+                              }}
+                            />
                             <div
                               className="hud-enhanced-track"
                               style={{
@@ -2890,14 +2908,14 @@ const HUDPanel = React.memo(function HUDPanel({
                                 bottom: -75,
                                 height: 10,
                                 borderRadius: 9999,
-                                background: 'rgba(80,80,90,0.7)',
-                                border: '1px solid rgba(25,227,255,0.5)',
+                                background: 'rgba(80,80,90,0.8)',
+                                border: '2px solid rgba(25,227,255,0.8)',
                                 boxShadow: `
-                                  0 0 8px rgba(25,227,255,0.35),
-                                  0 0 16px rgba(25,227,255,0.2),
-                                  0 0 24px rgba(25,227,255,0.15),
-                                  inset 0 0 6px rgba(25,227,255,0.15),
-                                  inset 0 1px 2px rgba(255,255,255,0.1)
+                                  0 0 12px rgba(25,227,255,0.9),
+                                  0 0 24px rgba(25,227,255,0.7),
+                                  0 0 36px rgba(25,227,255,0.5),
+                                  0 0 48px rgba(25,227,255,0.3),
+                                  inset 0 0 8px rgba(25,227,255,0.4)
                                 `,
                                 overflow: 'visible',
                                 cursor: 'pointer',
@@ -2982,19 +3000,19 @@ const HUDPanel = React.memo(function HUDPanel({
                                   top: 0,
                                   width: `${pct}%`,
                                   height: '100%',
-                                  background: `linear-gradient(90deg, ${elementColor}cc, ${elementColor}, ${elementColor})`,
+                                  background: `linear-gradient(90deg, ${elementColor}dd, ${elementColor}, ${elementColor})`,
                                   borderRadius: 9999,
                                   boxShadow: `
-                                    0 0 10px ${elementColor},
-                                    0 0 20px ${elementColor}cc,
-                                    0 0 30px ${elementColor}99,
-                                    0 0 40px ${elementColor}66,
-                                    0 -2px 8px ${elementColor}88,
-                                    0 2px 8px ${elementColor}88
+                                    0 0 8px ${elementColor},
+                                    0 0 16px ${elementColor},
+                                    0 0 24px ${elementColor}bb,
+                                    inset 0 0 6px rgba(255,255,255,0.5),
+                                    inset 0 -2px 4px ${elementColor}88
                                   `,
                                   transition: 'width 200ms ease-out',
-                                  filter: 'brightness(1.3) saturate(1.2)',
-                                  pointerEvents: 'none'
+                                  filter: 'brightness(1.2) saturate(1.2)',
+                                  pointerEvents: 'none',
+                                  minWidth: pct > 0 ? '4px' : '0'
                                 }}
                               />
                               
@@ -3024,6 +3042,7 @@ const HUDPanel = React.memo(function HUDPanel({
                                 />
                               )}
                             </div>
+                            </>
                           );
                         } catch {
                           return null;

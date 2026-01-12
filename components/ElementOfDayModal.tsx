@@ -291,6 +291,23 @@ export default function ElementOfDayModal() {
         setClaimed(true);
         setElementQuestCompleted(true);
 
+        // ========== COMPLETE BONUS QUEST ==========
+        // Explicitly complete the Element of the Day bonus quest
+        try {
+          const { data: questResult, error: questError } = await supabaseBrowser.rpc('complete_bonus_quest_once_per_day', {
+            p_quest_id: BONUS_QUEST_ID
+          });
+
+          if (questError && questError.code !== '23505') {
+            // Log error but don't block the rest of the flow (23505 = already completed, which is fine)
+            console.warn('[ElementOfDayModal] Bonus quest completion error:', questError);
+          } else {
+            console.log('[ElementOfDayModal] Bonus quest completed:', questResult);
+          }
+        } catch (questErr) {
+          console.warn('[ElementOfDayModal] Error completing bonus quest:', questErr);
+        }
+
         // ========== AWARD BOOST VIA API ==========
         // Award a listening boost for Element of Day completion
         try {
@@ -350,6 +367,7 @@ export default function ElementOfDayModal() {
         window.dispatchEvent(new CustomEvent('profile:force-refresh'));
         window.dispatchEvent(new CustomEvent('relics:refresh'));
         window.dispatchEvent(new CustomEvent('boosts:refresh'));
+        window.dispatchEvent(new CustomEvent('quests:refresh'));
         window.dispatchEvent(
           new CustomEvent('element-of-day-claimed', {
             detail: { element: data.element },

@@ -24,13 +24,18 @@ export default function NamePromptOnLogin() {
     const urlHasCompleteProfile = typeof window !== 'undefined' && window.location.search.includes('completeProfile=1');
     const isWelcomeFromMagicLink = searchParams.get('welcome') === '1';
     const urlHasWelcome = typeof window !== 'undefined' && window.location.search.includes('welcome=1');
-    
+    // Also check for profileSetup parameter (used by magic link flow)
+    const isProfileSetup = searchParams.get('profileSetup') === '1';
+    const urlHasProfileSetup = typeof window !== 'undefined' && window.location.search.includes('profileSetup=1');
+
     return {
       shouldComplete,
       urlHasCompleteProfile,
       isWelcomeFromMagicLink,
       urlHasWelcome,
-      shouldOpen: shouldComplete || urlHasCompleteProfile || isWelcomeFromMagicLink || urlHasWelcome
+      isProfileSetup,
+      urlHasProfileSetup,
+      shouldOpen: shouldComplete || urlHasCompleteProfile || isWelcomeFromMagicLink || urlHasWelcome || isProfileSetup || urlHasProfileSetup
     };
   }, [searchParams]);
 
@@ -61,6 +66,8 @@ export default function NamePromptOnLogin() {
     try {
       const params = new URLSearchParams(searchParams.toString());
       params.delete('completeProfile');
+      params.delete('profileSetup');
+      params.delete('welcome');
       const newUrl = params.toString() ? `/?${params.toString()}` : '/';
       debug('Cleaning up URL from', window.location.href, 'to', newUrl);
       router.replace(newUrl);
@@ -73,7 +80,7 @@ export default function NamePromptOnLogin() {
     if (!mounted) return;
 
     if (!parameterChecks.shouldOpen) {
-      debug('No completeProfile or welcome parameter found, not opening modal');
+      debug('No completeProfile, profileSetup, or welcome parameter found, not opening modal');
       return;
     }
 
