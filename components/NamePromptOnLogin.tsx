@@ -80,23 +80,23 @@ export default function NamePromptOnLogin() {
     if (!mounted) return;
 
     if (!parameterChecks.shouldOpen) {
-      debug('No completeProfile, profileSetup, or welcome parameter found, not opening modal');
+      debug('No completeProfile, profileSetup, or welcome parameter found');
       return;
     }
 
-    debug('Opening name prompt from auth');
+    debug('Magic link detected - will show name prompt after START button warp');
 
-    // Open prompt exactly once per arrival - use a small delay to ensure all components are ready
-    const timeoutId = setTimeout(handleOpenPrompt, 100);
+    // DO NOT auto-open the name prompt here - let the user click START first
+    // The handleStartClick in DashboardApp will show the name prompt AFTER the warp animation
+    // This ensures the flow: magic link → START button → warp → name prompt
 
-    // Clean up URL after a longer delay
+    // Clean up URL after a delay
     const cleanupTimeoutId = setTimeout(handleCleanupURL, 2000);
 
     return () => {
-      clearTimeout(timeoutId);
       clearTimeout(cleanupTimeoutId);
     };
-  }, [mounted, parameterChecks.shouldOpen, handleOpenPrompt, handleCleanupURL]);
+  }, [mounted, parameterChecks.shouldOpen, handleCleanupURL]);
 
   // Temporary debug button - remove after testing
   if (typeof window !== 'undefined' && window.location.search.includes('debug=1')) {

@@ -26,6 +26,7 @@ type QuestStatus = {
   inviteFriend: boolean;
   inviteFriendConfirm: boolean;
   liveShow: boolean;
+  songOfDay: boolean; // True if user has completed Song of the Day (completed_at in user_song_daily_progress)
 };
 
 // Load quest status from localStorage on mount
@@ -37,11 +38,14 @@ function useQuestStatus() {
     journalEntry: false,
     inviteFriend: false,
     inviteFriendConfirm: false,
-    liveShow: false
+    liveShow: false,
+    songOfDay: false
   });
   const [todaysElement, setTodaysElement] = useState({ name: "dreamer", color: "pink" });
   const [todaysQuestion, setTodaysQuestion] = useState(getTodaysQuestion());
   const [serverDateKey, setServerDateKey] = useState<string | null>(null);
+  const [songOfDayId, setSongOfDayId] = useState<string | null>(null);
+  const [songOfDayTitle, setSongOfDayTitle] = useState<string | null>(null);
 
   useEffect(() => {
     const clientToday = new Date().toDateString();
@@ -76,9 +80,50 @@ function useQuestStatus() {
               // Sync localStorage with database truth
               localStorage.setItem(`quest_element_${elementDateKey}`, 'true');
             }
+
+            // Store Song of the Day info
+            const songId = data.songOfDayId;
+            const songTitle = data.songOfDayTitle;
+            setSongOfDayId(songId ?? null);
+            setSongOfDayTitle(songTitle ?? null);
+
+            // Check Song of Day completion from user_song_daily_progress
+            // Completed when completed_at is not null for today's song_id
+            let songOfDayDone = false;
+            if (songId) {
+              const { data: progressRow, error: progressErr } = await supabaseBrowser
+                .from('user_song_daily_progress')
+                .select('completed_at')
+                .eq('user_id', sessionData.session.user.id)
+                .eq('song_id', songId)
+                .eq('day', elementDateKey)
+                .not('completed_at', 'is', null)
+                .limit(1)
+                .maybeSingle();
+
+              if (!progressErr && progressRow?.completed_at) {
+                songOfDayDone = true;
+              }
+            }
+
+            // Other quests use client date (they don't have server-time dependencies)
+            const journalDone = localStorage.getItem(`quest_journal_${clientToday}`) === 'true' || hasAnsweredToday();
+            const inviteDone = localStorage.getItem(`quest_invite_${clientToday}`) === 'true';
+            const inviteConfirmDone = localStorage.getItem(`quest_invite_confirm_${clientToday}`) === 'true';
+            const liveshowDone = localStorage.getItem(`quest_liveshow_${clientToday}`) === 'true';
+
+            setQuestStatus({
+              elementOfDay: elementDone,
+              journalEntry: journalDone,
+              inviteFriend: inviteDone,
+              inviteFriendConfirm: inviteConfirmDone,
+              liveShow: liveshowDone,
+              songOfDay: songOfDayDone
+            });
+            return;
           }
         } catch (dbErr) {
-          console.warn('[QuestList] Failed to check daily_checkins table:', dbErr);
+          console.warn('[QuestList] Failed to check daily_checkins or song progress:', dbErr);
         }
 
         // Other quests use client date (they don't have server-time dependencies)
@@ -92,7 +137,8 @@ function useQuestStatus() {
           journalEntry: journalDone,
           inviteFriend: inviteDone,
           inviteFriendConfirm: inviteConfirmDone,
-          liveShow: liveshowDone
+          liveShow: liveshowDone,
+          songOfDay: false
         });
 
         // Set today's element from server response
@@ -123,7 +169,8 @@ function useQuestStatus() {
           journalEntry: journalDone,
           inviteFriend: inviteDone,
           inviteFriendConfirm: inviteConfirmDone,
-          liveShow: liveshowDone
+          liveShow: liveshowDone,
+          songOfDay: false
         });
 
         // Fallback element rotation based on day of year
@@ -144,17 +191,25 @@ function useQuestStatus() {
         setServerDateKey(newServerDate);
         // Re-check element quest status with new date
         const elementDone = localStorage.getItem(`quest_element_${newServerDate}`) === 'true';
-        setQuestStatus(prev => ({ ...prev, elementOfDay: elementDone }));
+        setQuestStatus(prev => ({ ...prev, elementOfDay: elementDone, songOfDay: false }));
       }
     };
 
+    // Listen for dailySongQuestCompleted event (when user completes Song of the Day)
+    const handleSongQuestCompleted = (e: CustomEvent) => {
+      console.log('[QuestList] Song of Day quest completed:', e.detail);
+      setQuestStatus(prev => ({ ...prev, songOfDay: true }));
+    };
+
     window.addEventListener('element-of-day-changed', handleElementChanged as EventListener);
+    window.addEventListener('dailySongQuestCompleted', handleSongQuestCompleted as EventListener);
     return () => {
       window.removeEventListener('element-of-day-changed', handleElementChanged as EventListener);
+      window.removeEventListener('dailySongQuestCompleted', handleSongQuestCompleted as EventListener);
     };
   }, []);
 
-  return { questStatus, setQuestStatus, todaysElement, todaysQuestion, serverDateKey };
+  return { questStatus, setQuestStatus, todaysElement, todaysQuestion, serverDateKey, songOfDayId, songOfDayTitle };
 }
 
 export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCloseHeartCoinPopup }: Props) {
@@ -173,7 +228,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   const [bonusQuests, setBonusQuests] = useState<any[]>([]);
   const [questsLoading, setQuestsLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const { questStatus, setQuestStatus, todaysElement, todaysQuestion, serverDateKey } = useQuestStatus();
+  const { questStatus, setQuestStatus, todaysElement, todaysQuestion, serverDateKey, songOfDayId, songOfDayTitle } = useQuestStatus();
   const { refreshProfile } = useProfile();
 
   // Load all quests from server (both DAILY and BONUS categories)
@@ -988,10 +1043,103 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
           </div>
         </div>
 
+        {/* Quest 1.5: Listen to Song of the Day */}
+        {songOfDayId && (
+          <div
+            className="border border-cyan-400/40 rounded-lg p-3 mb-4"
+            style={{
+              background: 'rgba(0,255,255,0.05)',
+              boxShadow: '0 0 10px rgba(0,255,255,0.2)'
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <h4 className="text-white font-semibold mb-0.5 flex items-center gap-2">
+                  <span className="text-lg">🎵</span>
+                  Song of the Day
+                </h4>
+                <p className="text-white/80 text-sm mb-1">Listen to today's featured track to earn a HeartCoin.</p>
+                {songOfDayTitle && (
+                  <p className="text-pink-300/90 text-xs italic" style={{ textShadow: '0 0 4px rgba(252,84,175,0.4)' }}>
+                    "{songOfDayTitle}"
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    if (questStatus.songOfDay) return;
+                    try { sfx.play('click', 0.8); } catch {}
+                    // Close popup and play the song
+                    onCloseHeartCoinPopup?.();
+                    // Trigger song playback
+                    if (typeof (window as any).__playTrackDirect === 'function') {
+                      (window as any).__playTrackDirect(todaysElement.name.toLowerCase(), 'song-of-day-quest');
+                    } else {
+                      window.dispatchEvent(new CustomEvent('song:play-now', {
+                        detail: { slug: todaysElement.name.toLowerCase(), source: 'song-of-day-quest' }
+                      }));
+                    }
+                  }}
+                  disabled={questStatus.songOfDay || loading}
+                  className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 ${
+                    questStatus.songOfDay
+                      ? 'border-2 text-green-400 cursor-default'
+                      : !isAuthenticated
+                        ? 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300 cursor-pointer'
+                        : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300 cursor-pointer'
+                  }`}
+                  style={{
+                    ...(questStatus.songOfDay ? {
+                      background: 'rgba(0, 255, 0, 0.2)',
+                      borderColor: '#00FF00',
+                      color: '#00FF00',
+                      boxShadow: '0 0 30px rgba(0,255,0,0.8), inset 0 0 15px rgba(0,255,0,0.3), 0 0 60px rgba(0,255,0,0.6)',
+                      textShadow: '0 0 15px rgba(0,255,0,1), 0 0 25px rgba(0,255,0,0.8)',
+                      opacity: 1
+                    } : !isAuthenticated ? {
+                      boxShadow: '0 0 10px rgba(255,255,0,0.3)',
+                      textShadow: '0 0 4px rgba(255,255,0,0.6)'
+                    } : {
+                      boxShadow: '0 0 10px rgba(252,84,175,0.3)',
+                      textShadow: '0 0 4px rgba(252,84,175,0.6)'
+                    })
+                  }}
+                >
+                  {questStatus.songOfDay
+                    ? 'COMPLETED'
+                    : !isAuthenticated
+                      ? 'LOG IN'
+                      : 'LISTEN'
+                  }
+                </button>
+                <div
+                  className={`font-bold text-sm ${
+                    questStatus.songOfDay
+                      ? 'text-green-400'
+                      : !isAuthenticated
+                        ? 'text-yellow-400'
+                        : 'text-pink-400'
+                  }`}
+                  style={{
+                    textShadow: questStatus.songOfDay
+                      ? '0 0 4px rgba(0,255,0,0.6)'
+                      : !isAuthenticated
+                        ? '0 0 4px rgba(255,255,0,0.6)'
+                        : '0 0 4px rgba(252,84,175,0.6)'
+                  }}
+                >
+                  {questStatus.songOfDay ? '✓ Complete' : '+1 HeartCoin'}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Quest 2: Journal Entry */}
-        <div 
+        <div
           className="border border-cyan-400/40 rounded-lg p-4"
-          style={{ 
+          style={{
             background: 'rgba(0,255,255,0.05)',
             boxShadow: '0 0 10px rgba(0,255,255,0.2)'
           }}

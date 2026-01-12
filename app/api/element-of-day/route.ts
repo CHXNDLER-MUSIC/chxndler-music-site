@@ -99,6 +99,7 @@ export async function GET() {
       relicKind,
       songOfDayTitle,
       songOfDaySlug,
+      songOfDayId: data?.song_id ?? null, // Canonical song_id from element_of_day table
     });
   } catch (err: any) {
     console.error('[element-of-day API] Unexpected error:', err);

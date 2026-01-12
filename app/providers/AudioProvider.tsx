@@ -806,14 +806,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   // trackingSlug is the original slug (not normalized) for accurate DB lookup
 
   // Get Song of the Day from PlanetRewardsContext for HeartCoin awards
-  const { songOfDaySlug } = usePlanetRewardsContext();
+  const { songOfDaySlug, songOfDayId } = usePlanetRewardsContext();
 
   useDailySongProgress({
     audioElement: audioRef.current,
     trackSlug: state.trackingSlug || null,
     isPlaying: state.playing,
     enabled: true, // Only tracks when authenticated user is playing a song
-    songOfDaySlug // Only award HeartCoin for Song of the Day
+    songOfDaySlug, // Fallback slug comparison for Song of the Day
+    songOfDayId // Canonical song_id from element_of_day table
   });
 
   // Normalize incoming slugs so dropdown selections (e.g. `we're-just-friends`) map to TRACK_INFO ids (e.g. `were-just-friends`)

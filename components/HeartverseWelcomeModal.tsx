@@ -77,7 +77,13 @@ export default function HeartverseWelcomeModal() {
       const { data, error } = await supabaseBrowser.rpc('get_next_claimable_story_relic');
 
       if (error) {
-        console.error('[HeartverseWelcome] Error fetching next story relic:', error);
+        console.error('[HeartverseWelcome] Error fetching next story relic:', {
+          message: error?.message,
+          details: (error as any)?.details,
+          hint: (error as any)?.hint,
+          code: (error as any)?.code,
+          raw: error,
+        });
         setNextStoryRelic(null);
         return;
       }
@@ -109,7 +115,13 @@ export default function HeartverseWelcomeModal() {
         .single();
 
       if (error) {
-        console.error('[HeartverseWelcome] Error fetching heartcoin balance:', error);
+        console.error('[HeartverseWelcome] Error fetching heartcoin balance:', {
+          message: error?.message,
+          details: (error as any)?.details,
+          hint: (error as any)?.hint,
+          code: (error as any)?.code,
+          raw: error,
+        });
         return;
       }
 
@@ -194,9 +206,13 @@ export default function HeartverseWelcomeModal() {
     setIsOpen(false);
   }, []);
 
-  // Handle clicking on the relics image to claim the heartverse relic
+  // Handle clicking on the relics image to claim the story relic
   const handleImageClick = useCallback(async () => {
-    if (claimed || isClaiming || alreadyHasRelic) return;
+    // Loading guard - prevent double clicks
+    if (isClaiming) return;
+
+    // Only allow clicking if there's a claimable relic
+    if (claimed || !nextStoryRelic) return;
 
     // Check auth
     const { data: { session } } = await supabaseBrowser.auth.getSession();
@@ -211,21 +227,36 @@ export default function HeartverseWelcomeModal() {
     setIsClaiming(true);
 
     try {
-      // Award the wanderer relic via API
-      const awardRes = await fetch('/api/award-relic', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: session.user.id, relicCode: 'wanderer' }),
-      });
-      const awardData = await awardRes.json();
+      // Claim the wanderer relic via RPC
+      const { data, error } = await supabaseBrowser.rpc('claim_wanderer_relic');
 
-      if (awardRes.ok && awardData.success) {
+      console.log('[HeartverseWelcome] Claim wanderer relic result:', data, error);
+
+      if (error) {
+        console.error('[HeartverseWelcome] RPC error:', {
+          message: error?.message,
+          details: (error as any)?.details,
+          hint: (error as any)?.hint,
+          code: (error as any)?.code,
+          raw: error,
+        });
+
+        // Build a meaningful error message
+        const errorMessage = error?.message || (error as any)?.details || 'Failed to claim relic. Please try again.';
+        window.dispatchEvent(new CustomEvent('toast:show', {
+          detail: { message: errorMessage, type: 'error' }
+        }));
+        return;
+      }
+
+      if (data?.ok === true) {
         setClaimed(true);
-        console.log('[HeartverseWelcome] Wanderer Relic awarded!');
+        const relicLabel = STORY_RELIC_LABELS[nextStoryRelic.story_key] || nextStoryRelic.story_key;
+        console.log(`[HeartverseWelcome] ${relicLabel} Relic awarded!`);
 
         // Show success toast
         window.dispatchEvent(new CustomEvent('toast:show', {
-          detail: { message: 'Welcome home! Wanderer Relic awarded.', type: 'success' }
+          detail: { message: 'Wanderer Relic claimed!', type: 'success' }
         }));
 
         // Refresh UI state
@@ -242,31 +273,41 @@ export default function HeartverseWelcomeModal() {
               new CustomEvent(RELIC_CELEBRATION_EVENT, {
                 detail: {
                   element: 'heart',
-                  rewardKey: 'wanderer',
-                  relicLabel: 'Wanderer Relic',
-                  relicImageUrl: '/elements/relics.webp',
-                  relicKind: 'achievement',
+                  rewardKey: nextStoryRelic.story_key,
+                  relicLabel: `${relicLabel} Relic`,
+                  relicImageUrl: nextStoryRelic.relic_image_url || '/elements/relics.webp',
+                  relicKind: 'story',
                 },
               })
             );
           }, 500);
+
+          // After celebration, refetch to get the next relic (if any)
+          setTimeout(() => {
+            fetchNextStoryRelic();
+          }, 2000);
         }, 300);
 
+      } else if (data?.ok === false && data?.reason === 'NOT_CLAIMABLE') {
+        // Not unlocked yet - user doesn't have enough heartcoins
+        window.dispatchEvent(new CustomEvent('toast:show', {
+          detail: { message: 'Not unlocked yet', type: 'info' }
+        }));
+        // Refresh the relic state to update UI
+        await fetchNextStoryRelic();
+      } else if (data?.ok === false && data?.reason === 'ALREADY_CLAIMED') {
+        setClaimed(true);
+        setAlreadyHasRelic(true);
+        window.dispatchEvent(new CustomEvent('toast:show', {
+          detail: { message: 'You already have this relic!', type: 'info' }
+        }));
+        // Refresh to get the next relic
+        await fetchNextStoryRelic();
       } else {
-        console.warn('[HeartverseWelcome] Award relic error:', awardData);
-
-        // Check if already owned
-        if (awardData.error?.includes('already') || awardData.message?.includes('already')) {
-          setClaimed(true);
-          setAlreadyHasRelic(true);
-          window.dispatchEvent(new CustomEvent('toast:show', {
-            detail: { message: 'You already have this relic!', type: 'info' }
-          }));
-        } else {
-          window.dispatchEvent(new CustomEvent('toast:show', {
-            detail: { message: 'Failed to claim relic. Please try again.', type: 'error' }
-          }));
-        }
+        console.warn('[HeartverseWelcome] Unexpected claim response:', data);
+        window.dispatchEvent(new CustomEvent('toast:show', {
+          detail: { message: 'Failed to claim relic. Please try again.', type: 'error' }
+        }));
       }
     } catch (err) {
       console.error('[HeartverseWelcome] Error claiming relic:', err);
@@ -276,7 +317,7 @@ export default function HeartverseWelcomeModal() {
     } finally {
       setIsClaiming(false);
     }
-  }, [claimed, isClaiming, alreadyHasRelic, playClickSound]);
+  }, [claimed, isClaiming, nextStoryRelic, playClickSound, fetchNextStoryRelic]);
 
   // Close on escape key
   useEffect(() => {
@@ -383,7 +424,8 @@ export default function HeartverseWelcomeModal() {
           <button
             onClick={handleImageClick}
             onMouseEnter={handleHover}
-            disabled={claimed || isClaiming || alreadyHasRelic || isLoggedIn === false}
+            disabled={claimed || isClaiming || !nextStoryRelic || isLoggedIn === false}
+            aria-disabled={isClaiming}
             className="relative transition-transform hover:scale-105"
             style={{
               width: 160,
@@ -393,12 +435,13 @@ export default function HeartverseWelcomeModal() {
               border: "none",
               padding: 0,
               overflow: "visible",
-              cursor: (claimed || isClaiming || alreadyHasRelic || isLoggedIn === false) ? "default" : "pointer",
+              cursor: (claimed || isClaiming || !nextStoryRelic || isLoggedIn === false) ? "default" : "pointer",
+              pointerEvents: isClaiming ? "none" : "auto",
             }}
-            aria-label={alreadyHasRelic ? "Already claimed" : "Claim Wanderer Relic"}
+            aria-label={!nextStoryRelic ? "All story relics claimed" : `Claim ${STORY_RELIC_LABELS[nextStoryRelic.story_key] || nextStoryRelic.story_key} Relic`}
           >
-            {/* Pulsing glow behind the image - only when not claimed */}
-            {!claimed && !alreadyHasRelic && isLoggedIn !== false && (
+            {/* Pulsing glow behind the image - only when claimable */}
+            {!claimed && nextStoryRelic && isLoggedIn !== false && !isClaiming && (
               <div
                 style={{
                   position: "absolute",
@@ -409,24 +452,52 @@ export default function HeartverseWelcomeModal() {
                 }}
               />
             )}
-            {/* The relics image with pulse animation */}
+            {/* The relics image with pulse animation when claimable, dimmed when locked */}
             <img
-              src="/elements/relics.webp"
-              alt="Wanderer Relic"
+              src={nextStoryRelic?.relic_image_url || "/elements/relics.webp"}
+              alt={nextStoryRelic ? `${STORY_RELIC_LABELS[nextStoryRelic.story_key] || nextStoryRelic.story_key} Relic` : "Story Relic"}
               style={{
                 position: "relative",
                 zIndex: 10,
                 width: "100%",
                 height: "100%",
                 objectFit: "contain",
-                animation: (claimed || alreadyHasRelic || isLoggedIn === false) ? "none" : "heartversePulse 2.5s ease-in-out infinite",
-                opacity: (claimed || alreadyHasRelic) ? 0.5 : 1,
-                filter: (claimed || alreadyHasRelic) ? "grayscale(0.5) brightness(0.6)" : "none",
+                animation: (claimed || !nextStoryRelic || isLoggedIn === false || isClaiming) ? "none" : "heartversePulse 2.5s ease-in-out infinite",
+                opacity: (claimed || !nextStoryRelic || isClaiming) ? 0.5 : 1,
+                filter: (claimed || !nextStoryRelic || isClaiming) ? "grayscale(0.5) brightness(0.6)" : "none",
                 transition: "opacity 0.3s ease, filter 0.3s ease",
               }}
             />
           </button>
         </div>
+
+        {/* Claim label when relic is available */}
+        {nextStoryRelic && !claimed && isLoggedIn === true && !isClaiming && (
+          <div
+            className="text-center mb-4"
+            style={{
+              color: HEARTVERSE_COLOR,
+              fontSize: "14px",
+              fontWeight: "bold",
+              textShadow: `0 0 8px ${HEARTVERSE_COLOR}60`,
+            }}
+          >
+            Claim your {STORY_RELIC_LABELS[nextStoryRelic.story_key] || nextStoryRelic.story_key} relic
+          </div>
+        )}
+
+        {/* Claiming in progress indicator */}
+        {isClaiming && (
+          <div
+            className="text-center mb-4"
+            style={{
+              color: "rgba(255,255,255,0.7)",
+              fontSize: "14px",
+            }}
+          >
+            Claiming...
+          </div>
+        )}
 
         {/* Login prompt for non-logged-in users */}
         {isLoggedIn === false && (
@@ -452,16 +523,39 @@ export default function HeartverseWelcomeModal() {
           </button>
         )}
 
-        {/* Already claimed indicator */}
-        {alreadyHasRelic && (
+        {/* Progress label when no relic is claimable (locked state) */}
+        {!nextStoryRelic && isLoggedIn === true && !claimed && !isClaiming && (
           <div
             className="text-center mb-4"
             style={{
-              color: "rgba(255,255,255,0.6)",
+              color: "rgba(255,255,255,0.7)",
               fontSize: "14px",
             }}
           >
-            Relic already claimed
+            {(() => {
+              // Determine progress label based on heartcoin balance
+              if (heartcoinBalance < 5) {
+                return "Earn 5 HeartCoins to unlock Dreamer";
+              } else if (heartcoinBalance < 25) {
+                return "Earn 25 HeartCoins to unlock Lover";
+              } else {
+                return "All story relics claimed";
+              }
+            })()}
+          </div>
+        )}
+
+        {/* Just claimed indicator */}
+        {claimed && (
+          <div
+            className="text-center mb-4"
+            style={{
+              color: "rgba(144,238,144,0.9)",
+              fontSize: "14px",
+              fontWeight: "bold",
+            }}
+          >
+            Relic claimed!
           </div>
         )}
 

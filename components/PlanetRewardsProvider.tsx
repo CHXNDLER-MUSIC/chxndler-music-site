@@ -19,6 +19,7 @@ interface PlanetRewardsContextValue {
   intentionOfDay: string | null; // Today's intention text from element_of_day table
   songOfDayTitle: string | null; // Today's song title from element_of_day table
   songOfDaySlug: string | null; // Today's song slug for warp navigation
+  songOfDayId: string | null; // Canonical song_id from element_of_day table
   claimedToday: boolean;
   isSyncing: boolean; // True when element of day is being refetched (e.g., after midnight rollover)
   refetchElementOfDay: () => Promise<void>; // Force refetch element of day from server
@@ -63,6 +64,7 @@ export function PlanetRewardsProvider({
   const [intentionOfDay, setIntentionOfDay] = useState<string | null>(null);
   const [songOfDayTitle, setSongOfDayTitle] = useState<string | null>(null);
   const [songOfDaySlug, setSongOfDaySlug] = useState<string | null>(null);
+  const [songOfDayId, setSongOfDayId] = useState<string | null>(null);
   const [claimedToday, setClaimedToday] = useState<boolean>(false);
   // Store server date for consistency with backend
   const [serverDate, setServerDate] = useState<string | null>(null);
@@ -93,6 +95,7 @@ export function PlanetRewardsProvider({
       setIntentionOfDay(data.intentionOfDay ?? null);
       setSongOfDayTitle(data.songOfDayTitle ?? null);
       setSongOfDaySlug(data.songOfDaySlug ?? null);
+      setSongOfDayId(data.songOfDayId ?? null);
       setServerDate(data.serverDate);
       setIsSyncing(false);
       return data.serverDate;
@@ -368,6 +371,7 @@ export function PlanetRewardsProvider({
         intentionOfDay,
         songOfDayTitle,
         songOfDaySlug,
+        songOfDayId,
         claimedToday,
         isSyncing,
         refetchElementOfDay,
@@ -397,6 +401,9 @@ export function usePlanetRewardsContext() {
       isAuthenticated: false,
       elementOfDay: null as ElementType | null,
       intentionOfDay: null as string | null,
+      songOfDayTitle: null as string | null,
+      songOfDaySlug: null as string | null,
+      songOfDayId: null as string | null,
       claimedToday: false,
       isSyncing: false,
       refetchElementOfDay: async () => {},

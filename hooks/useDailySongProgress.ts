@@ -41,6 +41,7 @@ interface UseDailySongProgressOptions {
   isPlaying: boolean;
   enabled?: boolean;
   songOfDaySlug?: string | null; // Only award HeartCoin if playing Song of the Day
+  songOfDayId?: string | null; // Canonical song_id from element_of_day table
 }
 
 // Helper: Get current date in NY timezone as YYYY-MM-DD
@@ -61,7 +62,8 @@ export function useDailySongProgress({
   trackSlug,
   isPlaying,
   enabled = true,
-  songOfDaySlug = null
+  songOfDaySlug = null,
+  songOfDayId = null
 }: UseDailySongProgressOptions) {
   // Track completion state per song per day to prevent double-awards
   const completedRef = useRef<Set<string>>(new Set()); // Set of "songId:day:playNumber" keys
@@ -79,6 +81,9 @@ export function useDailySongProgress({
   // Prevents multiple RPC calls even on rerenders or duplicate effect triggers
   const completedDailySongQuestRef = useRef<Record<string, boolean>>({});
   const prevCompletedStateRef = useRef<Record<string, boolean>>({}); // Track previous completed state per day
+
+  // Guard ref for Song of the Day RPC - prevents duplicate calls per session per day
+  const sotdCompletionFiredRef = useRef<Record<string, boolean>>({});
 
   // Lookup song UUID from slug
   const getSongId = useCallback(async (slug: string): Promise<string | null> => {
@@ -283,7 +288,7 @@ export function useDailySongProgress({
     }
   }, []);
 
-  // Award HeartCoin for song completion
+  // Award HeartCoin for song completion (legacy - kept for non-Song-of-Day songs)
   const awardCompletionHeartCoin = useCallback(async (
     userId: string,
     songId: string,
@@ -338,6 +343,89 @@ export function useDailySongProgress({
       }
     } catch (err) {
       console.error('🎵 Daily progress: Failed to award HeartCoin:', err);
+    }
+  }, []);
+
+  // Complete Song of the Day via RPC - awards HeartCoin and marks quest complete
+  // Called exactly once per app session per day when 50% threshold is reached
+  const completeSongOfDayIfEligible = useCallback(async (
+    songId: string,
+    day: string
+  ): Promise<boolean> => {
+    const guardKey = `${songId}:${day}`;
+
+    // Guard: prevent duplicate calls per session per day
+    if (sotdCompletionFiredRef.current[guardKey]) {
+      console.log('🎵 Daily progress: Song of Day RPC already fired for today, skipping');
+      return false;
+    }
+
+    // Mark as fired BEFORE the RPC call to prevent race conditions
+    sotdCompletionFiredRef.current[guardKey] = true;
+
+    try {
+      console.log('🎵 Daily progress: Calling complete_song_of_day_once_per_day RPC with song_id:', songId);
+
+      const { data, error } = await supabaseBrowser.rpc('complete_song_of_day_once_per_day', {
+        p_song_id: songId
+      });
+
+      if (error) {
+        console.error('🎵 Daily progress: Song of Day RPC error:', {
+          message: error?.message,
+          details: (error as any)?.details,
+          hint: (error as any)?.hint,
+          code: (error as any)?.code,
+        });
+        // Don't reset the guard - RPC may have partially succeeded
+        return false;
+      }
+
+      console.log('🎵 Daily progress: Song of Day RPC result:', data);
+
+      // Handle response
+      if (data?.ok === true) {
+        console.log('🎵 Daily progress: Song of Day completed successfully!');
+
+        // Only trigger celebration if HeartCoin was actually awarded
+        if (data?.heartcoin_awarded === true) {
+          // Import and trigger HeartCoin celebration
+          const { triggerHeartCoinCelebration } = await import('@/utils/heartcoinCelebration');
+          triggerHeartCoinCelebration(1);
+          console.log('🎵 Daily progress: HeartCoin celebration triggered');
+        }
+
+        // Dispatch event to refresh UI state (Daily Quests + profile)
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('dailySongQuestCompleted', {
+            detail: { day, awarded: data?.heartcoin_awarded, status: 'completed' }
+          }));
+          window.dispatchEvent(new CustomEvent('profile:force-refresh'));
+          window.dispatchEvent(new CustomEvent('relics:refresh'));
+        }
+
+        // Update local state refs
+        prevCompletedStateRef.current[day] = true;
+        completedDailySongQuestRef.current[day] = true;
+
+        return true;
+      } else if (data?.ok === false && data?.reason === 'not_song_of_day') {
+        // Not the song of the day - do nothing (don't error)
+        console.log('🎵 Daily progress: Song is not the Song of the Day, skipping');
+        return false;
+      } else if (data?.ok === false && data?.reason === 'already_completed') {
+        // Already completed today - update local state
+        console.log('🎵 Daily progress: Song of Day already completed today');
+        prevCompletedStateRef.current[day] = true;
+        completedDailySongQuestRef.current[day] = true;
+        return false;
+      } else {
+        console.warn('🎵 Daily progress: Unexpected Song of Day RPC response:', data);
+        return false;
+      }
+    } catch (err) {
+      console.error('🎵 Daily progress: Song of Day RPC exception:', err);
+      return false;
     }
   }, []);
 
@@ -592,17 +680,21 @@ export function useDailySongProgress({
           // Mark this play session as completed
           completedRef.current.add(currentCacheKey);
 
-          // Only award HeartCoin for Song of the Day
-          const isSongOfDay = songOfDaySlug && trackSlug === songOfDaySlug;
-          if (isSongOfDay) {
-            await awardCompletionHeartCoin(userId, songId, trackSlug, day);
-            console.log(`🎵 Daily progress: Song of the Day play #${currentPlayNum} completed! Awarding HeartCoin for ${trackSlug}`);
+          // Check if this is the Song of the Day using the canonical song_id
+          // Compare by song_id (UUID) which is more reliable than slug
+          const isSongOfDayById = songOfDayId && songId === songOfDayId;
+          // Fallback to slug comparison if songOfDayId is not available
+          const isSongOfDayBySlug = !songOfDayId && songOfDaySlug && trackSlug === songOfDaySlug;
+          const isSongOfDay = isSongOfDayById || isSongOfDayBySlug;
 
-            // Also complete the LISTEN_SONG_OF_DAY bonus quest
-            // This is guarded to only trigger once per day on false->true transition
-            await completeDailySongQuest(day);
+          if (isSongOfDay) {
+            console.log(`🎵 Daily progress: Song of the Day play #${currentPlayNum} completed for ${trackSlug}`);
+
+            // Use the new RPC to complete Song of the Day (handles HeartCoin + quest in one call)
+            // This is idempotent and will only award once per day
+            await completeSongOfDayIfEligible(songId, day);
           } else {
-            console.log(`🎵 Daily progress: Play #${currentPlayNum} completed but not Song of the Day (${trackSlug} !== ${songOfDaySlug}), no HeartCoin awarded`);
+            console.log(`🎵 Daily progress: Play #${currentPlayNum} completed but not Song of the Day (songId: ${songId} !== songOfDayId: ${songOfDayId}), no HeartCoin awarded`);
           }
 
           // NOTE: We no longer clear the interval since we want to track repeats!
@@ -625,12 +717,12 @@ export function useDailySongProgress({
     trackSlug,
     isPlaying,
     songOfDaySlug,
+    songOfDayId,
     getSongId,
     getNextPlayNumber,
     checkExistingProgress,
     upsertProgress,
-    awardCompletionHeartCoin,
-    completeDailySongQuest
+    completeSongOfDayIfEligible
   ]);
 
   // Also track on 'timeupdate' events for more accurate progress

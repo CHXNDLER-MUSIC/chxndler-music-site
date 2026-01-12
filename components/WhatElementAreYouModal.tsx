@@ -165,18 +165,14 @@ export default function WhatElementAreYouModal() {
         // Don't fail the profile completion if HeartCoin award fails
       }
 
-      // Add a small delay to ensure profile context has propagated before showing relic
+      // Add a small delay to ensure profile context has propagated
       setTimeout(() => {
         try {
           console.log('Dispatching heartverse:entered event');
           window.dispatchEvent(new CustomEvent('heartverse:entered'));
-
-          // Dispatch planet:warp event to show HeartverseWelcomeModal (relic display)
-          // Now that onboarding is complete, we can show the relic claim modal
-          console.log('Dispatching planet:warp to show relic display');
-          window.dispatchEvent(new CustomEvent('planet:warp', {
-            detail: { element: 'center', isCenterPlanet: true, isOnboarding: false }
-          }));
+          // NOTE: Do NOT dispatch planet:warp here - the user already warped when they clicked START
+          // Showing another warp after element selection would be confusing
+          // The HeartverseWelcomeModal (relic display) can be accessed by clicking WARP on center planet
         } catch {}
       }, 300);
     } catch (e: any) {

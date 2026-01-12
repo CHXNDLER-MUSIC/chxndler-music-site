@@ -115,12 +115,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     }
     
     // Check if we should show the name prompt (from auth callback)
+    // NOTE: Do NOT auto-open the name prompt here - let the user click START first
+    // The handleStartClick will show the name prompt AFTER the warp animation completes
+    // This ensures the flow: magic link → START button → warp → name prompt
     const shouldShowNamePrompt = searchParams.get('showNamePrompt');
     if (shouldShowNamePrompt === '1') {
-      // Open name prompt modal from auth callback
-      openNamePromptFromAuth();
-      
-      // Clean up URL parameter
+      // Just clean up URL parameter - don't open modal yet
       const newParams = new URLSearchParams(searchParams.toString());
       newParams.delete('showNamePrompt');
       const newUrl = newParams.toString() ? `/?${newParams.toString()}` : '/';
@@ -1438,23 +1438,59 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     const profileIncomplete = !profile?.id || !hasName || !hasElement;
     console.log("🚀 Profile incomplete?", profileIncomplete, { hasName, hasElement, name: profile?.name, email: profile?.email });
     if (profileIncomplete) {
-      console.log("🚀 Dispatching planet:warp to Heartverse (center planet)");
-      window.dispatchEvent(new CustomEvent('planet:warp', {
-        detail: { element: 'center', isCenterPlanet: true, isOnboarding: true }
-      }));
+      // Delay the planet:warp dispatch to ensure Pure3DPlanets has mounted
+      // (it's dynamically imported and may not be ready immediately)
+      setTimeout(() => {
+        console.log("🚀 Dispatching planet:warp to Heartverse (center planet)");
+        window.dispatchEvent(new CustomEvent('planet:warp', {
+          detail: { element: 'center', isCenterPlanet: true, isOnboarding: true }
+        }));
+      }, 500);
     }
     
     // SkyboxVideo component handles warp sound to prevent double triggering
     
     // BACKUP TIMER: Ensure warp completes even if audio callback fails (Chrome compatibility)
+    // This is a HARD fallback that forces UI transition regardless of onWarpSfxEnd
     setTimeout(() => {
-      if (!warpFullyComplete) {
-        if (process.env.NODE_ENV === "development") {
-          console.log("🔧 BACKUP: Setting warpFullyComplete to true (audio callback may have failed)");
-        }
-        setWarpFullyComplete(true);
+      if (process.env.NODE_ENV === "development") {
+        console.log("🔧 BACKUP TIMER: Checking if UI transition completed...", {
+          buttonRevealTriggered: buttonRevealTriggeredRef.current,
+          warpFullyComplete
+        });
       }
-    }, WARP_DURATION_MS + 500); // Add 500ms buffer beyond the expected warp duration
+
+      // Force complete the warp if not already done
+      setWarpFullyComplete(true);
+
+      // CRITICAL: Force UI to landed state if button reveal hasn't been triggered yet
+      // This handles cases where onWarpSfxEnd callback never fires
+      // Use ref to avoid stale closure issues with state
+      if (!buttonRevealTriggeredRef.current) {
+        if (process.env.NODE_ENV === "development") {
+          console.log("🔧 BACKUP: Forcing UI to landed state (onWarpSfxEnd may have failed)");
+        }
+        buttonRevealTriggeredRef.current = true; // Mark as triggered to prevent duplicate
+        setUiRevealLocked(false);
+        setUiPhase("landed");
+        setBeamEnabled(true);
+        setBeamColor('blue');
+        setWarpActive(false);
+        setShowHUD(true);
+
+        // Play button sound
+        try { sfx.play('button', 0.9); } catch {}
+
+        // Re-dispatch planet:warp to center for onboarding users
+        // This ensures camera focuses on Heartverse even if first dispatch was missed
+        if (profileIncomplete) {
+          console.log("🔧 BACKUP: Re-dispatching planet:warp to center");
+          window.dispatchEvent(new CustomEvent('planet:warp', {
+            detail: { element: 'center', isCenterPlanet: true, isOnboarding: false }
+          }));
+        }
+      }
+    }, WARP_DURATION_MS + 1500); // Add 1500ms buffer for robust fallback
     
     // Stop any existing audio using the unified audio system
     try {

@@ -43,17 +43,19 @@ export default function WhatShouldWeCallYouModal() {
   const [mounted, setMounted] = useState(false);
 
   // Phase state: 'warp' shows animation, 'name' shows name input
-  const [phase, setPhase] = useState<'warp' | 'name'>('warp');
+  // Default to 'name' since the main warp animation already happens when user clicks START
+  const [phase, setPhase] = useState<'warp' | 'name'>('name');
 
   // Prevent hydration mismatch
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Reset phase when modal opens
+  // Reset phase when modal opens - go directly to name input
+  // The main warp animation already happens when user clicks START, so no need for modal warp phase
   useEffect(() => {
     if (showNamePrompt) {
-      setPhase('warp');
+      setPhase('name');
     }
   }, [showNamePrompt]);
 
