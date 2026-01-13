@@ -13,14 +13,14 @@ BEGIN
     -- Check if profile already exists
     IF NOT EXISTS (SELECT 1 FROM public.profiles WHERE id = NEW.id) THEN
       INSERT INTO public.profiles (
-        id, 
-        email, 
-        display_name, 
-        heartcoin_balance, 
-        heartcoin_total,
+        id,
+        email,
+        name,
+        heart_coins_current,
+        heart_coins_total,
         profile_complete,
         metadata,
-        created_at, 
+        created_at,
         updated_at
       )
       VALUES (

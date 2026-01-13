@@ -258,6 +258,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const startInFlightRef = React.useRef(false);
   // Track if we're in onboarding mode (profile_complete is false)
   const onboardingModeRef = React.useRef(false);
+  // Track which welcome audio to play after warp: 'heartverse' | 'back' | 'home' | null
+  const welcomeAudioTypeRef = React.useRef(null);
   const [nextSky, setNextSky] = useState(null);
   const [beamOnly, setBeamOnly] = useState(true);
   const [beamEnabled, setBeamEnabled] = useState(false);
@@ -1413,6 +1415,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         console.log("🚀 User not logged in - will show WelcomeHomeModal after warp");
         needsWelcomeHome = true;
         needsOnboarding = false;
+        // Set welcome audio type: logged out → welcome-to-the-heartverse
+        welcomeAudioTypeRef.current = 'heartverse';
       } else {
         // Step 2: Fetch profile_complete directly from Supabase
         console.log("🚀 Fetching profile_complete from Supabase for user:", session.user.id);
@@ -1428,13 +1432,19 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         if (profileError) {
           console.error("🚀 Error fetching profile:", profileError);
           console.log("🚀 Profile fetch failed - will show name prompt after warp");
+          // Profile fetch error → treat as new user, play welcome-to-the-heartverse
+          welcomeAudioTypeRef.current = 'heartverse';
         } else if (profileData?.profile_complete !== true) {
           console.log("🚀 profile_complete is not true - will show name prompt after warp");
+          // Has profile but profile_complete is false → you-are-home
+          welcomeAudioTypeRef.current = 'home';
         } else {
           console.log("🚀 profile_complete is true - proceeding with normal warp");
+          // Logged in with complete profile → Welcome-Back
+          welcomeAudioTypeRef.current = 'back';
         }
 
-        console.log("🚀 Profile data:", profileData, "needsOnboarding:", needsOnboarding);
+        console.log("🚀 Profile data:", profileData, "needsOnboarding:", needsOnboarding, "welcomeAudioType:", welcomeAudioTypeRef.current);
       }
 
       // Store flags for after warp completes
@@ -1523,6 +1533,28 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
         // Play button sound
         try { sfx.play('button', 0.9); } catch {}
+
+        // Play welcome audio based on auth/profile state (backup for onWarpSfxEnd)
+        try {
+          audioManager?.playTrack('space-music');
+          const welcomeType = welcomeAudioTypeRef.current;
+          let welcomeAudioPath = null;
+
+          if (welcomeType === 'heartverse') {
+            welcomeAudioPath = '/tracks/welcome-to-the-heartverse.mp3';
+          } else if (welcomeType === 'back') {
+            welcomeAudioPath = '/tracks/Welcome-Back.mp3';
+          } else if (welcomeType === 'home') {
+            welcomeAudioPath = '/tracks/you-are-home.mp3';
+          }
+
+          if (welcomeAudioPath) {
+            const welcomeAudio = new Audio(welcomeAudioPath);
+            welcomeAudio.volume = 0.9;
+            welcomeAudio.play().catch(() => {});
+          }
+          welcomeAudioTypeRef.current = null;
+        } catch {}
 
         // Check what to show after warp
         if (typeof window !== 'undefined' && (window).__SHOW_WELCOME_HOME_AFTER_WARP) {
@@ -2319,28 +2351,43 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           try { audioManager?.markWarpCompleted(); } catch {}
 
           // If landing on home (no song pending), start music via main player
-          // and play welcome track as independent one-shot audio
-          // Note: Users with incomplete profiles are routed to /onboarding and never reach here
+          // and play welcome track as independent one-shot audio based on auth/profile state
           try {
             if (!pendingTrackPlay && !userSelected && !spaceMusicTriggered) {
               spaceMusicTriggered = true;
               // Clear the audio block flag so music can play
               if (typeof window !== 'undefined') { window.__BLOCK_MAIN_AUDIO = false; }
 
-              if (profile?.id) {
-                // User is logged in with profile complete - autoplay space-music + welcome-back
-                console.log('🎵 Playing space-music through AudioProvider');
-                audioManager?.playTrack('space-music');
-                console.log('🎵 Playing welcome-back as independent one-shot audio');
-                const welcomeAudio = new Audio('/tracks/welcome-back.opus');
+              // Start space-music for all users
+              console.log('🎵 Playing space-music through AudioProvider');
+              audioManager?.playTrack('space-music');
+
+              // Play appropriate welcome audio based on auth/profile state
+              const welcomeType = welcomeAudioTypeRef.current;
+              let welcomeAudioPath = null;
+
+              if (welcomeType === 'heartverse') {
+                // Logged out user → welcome-to-the-heartverse
+                console.log('🎵 Playing welcome-to-the-heartverse (logged out user)');
+                welcomeAudioPath = '/tracks/welcome-to-the-heartverse.mp3';
+              } else if (welcomeType === 'back') {
+                // Logged in with complete profile → Welcome-Back
+                console.log('🎵 Playing Welcome-Back (logged in, profile complete)');
+                welcomeAudioPath = '/tracks/Welcome-Back.mp3';
+              } else if (welcomeType === 'home') {
+                // Logged in but profile_complete is false → you-are-home
+                console.log('🎵 Playing you-are-home (profile incomplete)');
+                welcomeAudioPath = '/tracks/you-are-home.mp3';
+              }
+
+              if (welcomeAudioPath) {
+                const welcomeAudio = new Audio(welcomeAudioPath);
                 welcomeAudio.volume = 0.9;
                 welcomeAudio.play().catch((e) => console.warn('Welcome audio failed:', e));
-              } else {
-                // Not logged in - won't reach here since START routes to /login
-                // Keeping this branch for completeness
-                console.log('🎵 Playing space-music through AudioProvider');
-                audioManager?.playTrack('space-music');
               }
+
+              // Reset the welcome audio type ref
+              welcomeAudioTypeRef.current = null;
             }
           } catch {}
 

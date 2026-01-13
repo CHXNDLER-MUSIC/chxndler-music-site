@@ -311,9 +311,10 @@ export default function SoulStareModal({ isOpen, onClose, onComplete, onOpenBlue
       </div>
       
       {/* Unified Soul Star Journal */}
-      <SoulStarJournal 
-        isOpen={isJournalOpen} 
+      <SoulStarJournal
+        isOpen={isJournalOpen}
         onClose={() => setIsJournalOpen(false)}
+        openWelcomeHome={() => window.dispatchEvent(new CustomEvent('openWelcomeHomeModal'))}
       />
     </div>
   );

@@ -67,10 +67,11 @@ export default function HoloStarsButton({
       </SharedButton>
 
       {/* Unified Soul Star Journal */}
-      <SoulStarJournal 
-        isOpen={isJournalOpen} 
+      <SoulStarJournal
+        isOpen={isJournalOpen}
         onClose={handleCloseJournal}
         prompt={prompt}
+        openWelcomeHome={() => window.dispatchEvent(new CustomEvent('openWelcomeHomeModal'))}
       />
 
       <audio ref={sfxRef} src="/audio/star.mp3" preload="auto" playsInline />

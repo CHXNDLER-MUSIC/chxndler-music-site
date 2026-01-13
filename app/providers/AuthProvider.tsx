@@ -54,7 +54,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const getInitialSession = async () => {
       try {
+        // Debug: Log all cookies visible to JavaScript
+        console.log('[AuthProvider] Checking cookies:', document.cookie.split(';').map(c => c.trim().split('=')[0]).filter(Boolean));
+
         const { data: { session }, error } = await supabaseBrowser.auth.getSession();
+
+        console.log('[AuthProvider] getSession result:', {
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          userId: session?.user?.id,
+          email: session?.user?.email,
+          error: error?.message
+        });
 
         if (error) {
           console.error('AuthProvider: Error getting session:', error.message);
@@ -98,6 +109,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Subscribe to auth state changes (only once)
     const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('[AuthProvider] onAuthStateChange fired:', {
+          event,
+          hasSession: !!session,
+          userId: session?.user?.id,
+          email: session?.user?.email
+        });
+
         const fingerprint = sessionFingerprint(session);
 
         // Skip if this is INITIAL_SESSION and fingerprint matches (we already handled it)

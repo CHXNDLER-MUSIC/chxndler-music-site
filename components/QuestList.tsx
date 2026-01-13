@@ -1585,6 +1585,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         isOpen={showJournal}
         onClose={() => setShowJournal(false)}
         onJournalCompleted={handleJournalComplete}
+        openWelcomeHome={() => window.dispatchEvent(new CustomEvent('openWelcomeHomeModal'))}
       />
       
       {/* Login Modal */}

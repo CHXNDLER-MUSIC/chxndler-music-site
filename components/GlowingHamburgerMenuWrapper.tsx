@@ -248,6 +248,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
           setJournalOpen(false);
           try { onBeamColorChange?.('off'); } catch {}
         }}
+        openWelcomeHome={() => setWelcomeHomeOpen(true)}
       />
       {/* Binder popout */}
       {binderOpen && (

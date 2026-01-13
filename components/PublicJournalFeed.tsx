@@ -296,64 +296,39 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
       {/* Full-screen Enlarged Card Overlay */}
       {enlargedCard && (
         <div
-          className="absolute inset-0 z-50 flex flex-col items-center justify-center p-4"
+          className="absolute inset-0 z-50 flex items-center justify-center"
           style={{
             background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.98) 100%)',
             backdropFilter: 'blur(8px)',
           }}
+          onClick={() => {
+            try { sfx.play('click', 0.4); } catch {}
+            setEnlargedCard(null);
+          }}
         >
-          {/* Close button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              try { sfx.play('click', 0.4); } catch {}
-              setEnlargedCard(null);
-            }}
-            onMouseEnter={() => {
-              try { sfx.play('hover', 0.6); } catch {}
-            }}
-            className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 z-10"
-            style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-            }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-
-          {/* Rarity label */}
-          <div
-            className="text-xs font-bold uppercase tracking-wider mb-4 px-4 py-1.5 rounded-full"
-            style={{
-              color: RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4',
-              background: RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.bg || 'rgba(255, 105, 180, 0.2)',
-              border: `1px solid ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4'}60`,
-              textShadow: `0 0 10px ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4'}`,
-              boxShadow: `0 0 20px ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.glow || '#FF69B440'}`
-            }}
-          >
-            {enlargedCard.card.rarity?.toUpperCase() || 'COMMON'}
-          </div>
-
-          {/* Interactive Card with TiltSpinCard */}
+          {/* Interactive Card with TiltSpinCard - fills the container */}
           <TiltSpinCard
             enableSpin={true}
             spinSensitivity={0.8}
             maxRotateX={15}
             maxRotateY={25}
             onRotationChange={(rotation) => setSpinRotation(rotation)}
-            onClick={handleCardSpin}
-            className="cursor-grab active:cursor-grabbing"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCardSpin();
+            }}
+            className="cursor-grab active:cursor-grabbing h-full flex items-center justify-center"
             style={{
-              animation: 'cardPulse 3s ease-in-out infinite',
+              width: '100%',
+              height: '100%',
+              padding: '8px',
             }}
           >
             <div
               className="relative rounded-2xl overflow-hidden"
               style={{
-                width: 'min(70vw, 280px)',
+                height: '100%',
+                maxHeight: '100%',
                 aspectRatio: '3/4',
                 boxShadow: `
                   0 0 60px ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.glow || '#FF69B440'},
@@ -420,56 +395,6 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
               </div>
             </div>
           </TiltSpinCard>
-
-          {/* Card name */}
-          <h3
-            className="text-2xl font-bold text-center mt-6 mb-2"
-            style={{
-              color: RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4',
-              textShadow: `0 0 20px ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4'}80`
-            }}
-          >
-            {enlargedCard.card.card_name}
-          </h3>
-
-          {/* Element badge */}
-          <div
-            className="text-sm font-medium uppercase tracking-wider px-4 py-1.5 rounded-full mb-6"
-            style={{
-              color: ELEMENT_COLORS[enlargedCard.card.element?.toLowerCase()]?.color || '#FFFFFF',
-              background: 'rgba(0, 0, 0, 0.5)',
-              border: `1px solid ${ELEMENT_COLORS[enlargedCard.card.element?.toLowerCase()]?.color || '#FFFFFF'}40`,
-              textShadow: `0 0 8px ${ELEMENT_COLORS[enlargedCard.card.element?.toLowerCase()]?.glow || '#FFFFFF'}`
-            }}
-          >
-            {enlargedCard.card.element?.toUpperCase() || 'UNKNOWN'}
-          </div>
-
-          {/* Hint text */}
-          <div className="text-white/40 text-xs text-center">
-            Drag to spin • Tap to flip
-          </div>
-
-          {/* Back to Collection button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              try { sfx.play('click', 0.4); } catch {}
-              setEnlargedCard(null);
-            }}
-            onMouseEnter={() => {
-              try { sfx.play('hover', 0.6); } catch {}
-            }}
-            className="mt-4 px-6 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105"
-            style={{
-              background: 'rgba(255, 105, 180, 0.2)',
-              border: '1px solid #FF69B460',
-              color: '#FF69B4',
-              textShadow: '0 0 8px #FF69B4'
-            }}
-          >
-            Back to Collection
-          </button>
         </div>
       )}
 
@@ -561,10 +486,19 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
                         className={`flex items-center gap-1 transition-all duration-200 px-1 py-1 ${
                           isOwnEntry ? 'cursor-default' : starringEntryId === entry.entry_id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-110'
                         }`}
-                        disabled={isOwnEntry || starringEntryId === entry.entry_id || !currentUserId}
+                        disabled={isOwnEntry || starringEntryId === entry.entry_id}
                         onClick={(e) => {
                           e.stopPropagation();
                           if (!isOwnEntry) {
+                            // If not logged in, play song-select sound and return
+                            if (!currentUserId) {
+                              try {
+                                const audio = new Audio('/audio/song-select.mp3');
+                                audio.volume = 0.6;
+                                audio.play().catch(() => {});
+                              } catch {}
+                              return;
+                            }
                             try { sfx.play('card-ding', 0.45); } catch {}
                             handleToggleStar(entry.entry_id, entry.user_id);
                           }
