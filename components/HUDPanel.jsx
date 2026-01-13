@@ -2131,28 +2131,50 @@ const HUDPanel = React.memo(function HUDPanel({
   useEffect(() => {
     let animationId;
     let frameCount = 0;
-    
+
     const animate = () => {
       setAnimationTime(Date.now());
-      
-      // Update progress more frequently when playing for smoother cursor movement
-      // Use the connected audio element directly (set in findAndConnectAudio)
-      const a = liveAudioRef.current;
-      
-      if (a && !a.paused) {
+
+      // Find audio element - try liveAudioRef first, then search DOM
+      let a = liveAudioRef.current;
+      if (!a) {
+        const allAudio = document.querySelectorAll('audio');
+        for (const el of allAudio) {
+          if (!el.paused || el.currentTime > 0) {
+            a = el;
+            break;
+          }
+        }
+        if (!a && allAudio.length > 0) {
+          a = allAudio[0];
+        }
+      }
+
+      if (a) {
         const newTime = a.currentTime;
-        
-        // Only update if time has actually changed to avoid unnecessary re-renders
+        const newDur = a.duration;
+
+        // Update duration if it's valid (helps with initial load and track changes)
+        if (isFinite(newDur) && newDur > 0) {
+          setDuration(prevDur => {
+            if (Math.abs(newDur - prevDur) > 0.1) { // Update if difference > 100ms
+              return newDur;
+            }
+            return prevDur;
+          });
+        }
+
+        // Update progress (both playing and paused states for seek support)
         setProgress(prevTime => {
-          if (Math.abs(newTime - prevTime) > 0.005) { // Update if difference > 5ms
+          if (Math.abs(newTime - prevTime) > 0.01) { // Update if difference > 10ms
             return newTime;
           }
           return prevTime;
         });
-        
+
         // Debug logging every 60 frames (1 second at 60fps) when playing
         frameCount++;
-        if (frameCount % 60 === 0 && DEBUG_MEDIA) {
+        if (frameCount % 60 === 0 && DEBUG_MEDIA && !a.paused) {
           dlog('HUDPanel Animation Loop (Playing):', {
             audioType: !currentId ? 'ambient' : 'main',
             currentTime: newTime.toFixed(2),
@@ -2163,11 +2185,11 @@ const HUDPanel = React.memo(function HUDPanel({
           });
         }
       }
-      
+
       // Continue animation loop
       animationId = requestAnimationFrame(animate);
     };
-    
+
     animationId = requestAnimationFrame(animate);
     return () => {
       if (animationId) {
@@ -2867,11 +2889,38 @@ const HUDPanel = React.memo(function HUDPanel({
                       {(() => {
                         try {
                           const a = liveAudioRef?.current;
-                          // Priority: audioManager (unified) > live audio element > state fallbacks
+                          // Try to find any audio element if liveAudioRef isn't set
+                          let audioEl = a;
+                          if (!audioEl) {
+                            // Find first audio element that's playing or has progress
+                            const allAudio = document.querySelectorAll('audio');
+                            for (const el of allAudio) {
+                              if (!el.paused || el.currentTime > 0) {
+                                audioEl = el;
+                                break;
+                              }
+                            }
+                            // Fallback to any audio element
+                            if (!audioEl && allAudio.length > 0) {
+                              audioEl = allAudio[0];
+                            }
+                          }
+
+                          // Get values from multiple sources
                           const amDur = audioManager?.duration;
                           const amTime = audioManager?.currentTime;
-                          const liveDur = (isFinite(amDur) && amDur > 0) ? amDur : (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (isFinite(duration) && duration > 0 ? duration : 0);
-                          const liveTime = (isFinite(amTime) && amTime >= 0) ? amTime : (a && isFinite(a.currentTime) && a.currentTime >= 0) ? a.currentTime : (isFinite(progress) && progress >= 0 ? progress : 0);
+                          const elDur = audioEl?.duration;
+                          const elTime = audioEl?.currentTime;
+
+                          // Use whichever source has valid values
+                          const liveDur = (isFinite(elDur) && elDur > 0) ? elDur
+                            : (isFinite(amDur) && amDur > 0) ? amDur
+                            : (isFinite(duration) && duration > 0) ? duration
+                            : 0;
+                          const liveTime = (isFinite(elTime) && elTime >= 0) ? elTime
+                            : (isFinite(amTime) && amTime >= 0) ? amTime
+                            : (isFinite(progress) && progress >= 0) ? progress
+                            : 0;
                           const pct = liveDur > 0 ? Math.max(0, Math.min(100, (liveTime / liveDur) * 100)) : 0;
 
                           // Get element-based color for enhanced glow
@@ -2887,17 +2936,17 @@ const HUDPanel = React.memo(function HUDPanel({
 
                           return (
                             <>
-                            {/* Large ambient glow behind the track bar */}
+                            {/* Subtle ambient glow behind the track bar */}
                             <div
                               style={{
                                 position: 'absolute',
-                                left: -20,
-                                right: -124,
-                                bottom: -85,
-                                height: 30,
+                                left: 0,
+                                right: 0,
+                                bottom: -80,
+                                height: 20,
                                 borderRadius: 9999,
-                                background: 'radial-gradient(ellipse 100% 100%, rgba(25,227,255,0.4) 0%, rgba(25,227,255,0.2) 40%, transparent 70%)',
-                                filter: 'blur(12px)',
+                                background: 'radial-gradient(ellipse 100% 100%, rgba(25,227,255,0.25) 0%, rgba(25,227,255,0.1) 50%, transparent 80%)',
+                                filter: 'blur(8px)',
                                 pointerEvents: 'none',
                                 zIndex: 99
                               }}
@@ -2906,21 +2955,19 @@ const HUDPanel = React.memo(function HUDPanel({
                               className="hud-enhanced-track"
                               style={{
                                 position: 'absolute',
-                                left: 4,
-                                right: -104,
+                                left: 8,
+                                right: 8,
                                 bottom: -75,
-                                height: 10,
+                                height: 8,
                                 borderRadius: 9999,
-                                background: 'rgba(80,80,90,0.8)',
-                                border: '2px solid rgba(25,227,255,0.8)',
+                                background: 'rgba(20,20,25,0.9)',
+                                border: '1px solid rgba(25,227,255,0.6)',
                                 boxShadow: `
-                                  0 0 12px rgba(25,227,255,0.9),
-                                  0 0 24px rgba(25,227,255,0.7),
-                                  0 0 36px rgba(25,227,255,0.5),
-                                  0 0 48px rgba(25,227,255,0.3),
-                                  inset 0 0 8px rgba(25,227,255,0.4)
+                                  0 0 8px rgba(25,227,255,0.6),
+                                  0 0 16px rgba(25,227,255,0.4),
+                                  inset 0 0 4px rgba(25,227,255,0.3)
                                 `,
-                                overflow: 'visible',
+                                overflow: 'hidden',
                                 cursor: 'pointer',
                                 pointerEvents: 'auto',
                                 zIndex: 100
@@ -2972,30 +3019,7 @@ const HUDPanel = React.memo(function HUDPanel({
                               }}
                               title={`Click to seek`}
                             >
-                              {/* Background glow */}
-                              <div
-                                style={{
-                                  position: 'absolute',
-                                  inset: 0,
-                                  background: `linear-gradient(90deg, transparent, ${elementColor}25, transparent)`,
-                                  borderRadius: 9999,
-                                  pointerEvents: 'none'
-                                }}
-                              />
-
-                              {/* Additional ambient glow layer */}
-                              <div
-                                style={{
-                                  position: 'absolute',
-                                  inset: -2,
-                                  background: `radial-gradient(ellipse, ${elementColor}20 0%, transparent 70%)`,
-                                  borderRadius: 9999,
-                                  filter: 'blur(4px)',
-                                  pointerEvents: 'none'
-                                }}
-                              />
-
-                              {/* Progress fill with enhanced bright glow */}
+                              {/* Progress fill - glowing light that fills as song progresses */}
                               <div
                                 style={{
                                   position: 'absolute',
@@ -3003,25 +3027,21 @@ const HUDPanel = React.memo(function HUDPanel({
                                   top: 0,
                                   width: `${pct}%`,
                                   height: '100%',
-                                  background: `linear-gradient(90deg, ${elementColor}dd, ${elementColor}, ${elementColor})`,
+                                  background: `linear-gradient(90deg, ${elementColor}aa, ${elementColor}dd, ${elementColor}aa)`,
                                   borderRadius: 9999,
                                   boxShadow: `
-                                    0 0 10px ${elementColor},
-                                    0 0 20px ${elementColor},
-                                    0 0 30px ${elementColor}cc,
-                                    0 0 40px ${elementColor}88,
-                                    inset 0 0 8px rgba(255,255,255,0.6),
-                                    inset 0 -2px 6px ${elementColor}aa
+                                    0 0 6px ${elementColor}88,
+                                    0 0 12px ${elementColor}55,
+                                    inset 0 0 4px rgba(255,255,255,0.4)
                                   `,
-                                  transition: 'width 200ms ease-out',
-                                  filter: 'brightness(1.3) saturate(1.3)',
+                                  transition: 'width 150ms linear',
                                   pointerEvents: 'none',
-                                  minWidth: pct > 0 ? '6px' : '0',
+                                  minWidth: pct > 0 ? '3px' : '0',
                                   zIndex: 10
                                 }}
                               />
-                              
-                              {/* Progress handle with bright glow */}
+
+                              {/* Progress handle/cursor - shows current position */}
                               {pct > 0 && (
                                 <div
                                   style={{
@@ -3032,17 +3052,14 @@ const HUDPanel = React.memo(function HUDPanel({
                                     width: 10,
                                     height: 10,
                                     borderRadius: '50%',
-                                    background: `radial-gradient(circle, white, ${elementColor})`,
+                                    background: `radial-gradient(circle, white 40%, ${elementColor})`,
                                     boxShadow: `
-                                      0 0 10px ${elementColor}ff,
-                                      0 0 20px ${elementColor}dd,
-                                      0 0 30px ${elementColor}bb,
-                                      0 0 40px ${elementColor}88,
-                                      0 1px 4px rgba(0,0,0,0.5)
+                                      0 0 6px ${elementColor},
+                                      0 0 12px ${elementColor}aa,
+                                      0 1px 3px rgba(0,0,0,0.4)
                                     `,
-                                    transition: 'left 200ms ease-out',
+                                    transition: 'left 150ms linear',
                                     pointerEvents: 'none',
-                                    filter: 'brightness(1.4) saturate(1.3)',
                                     zIndex: 15
                                   }}
                                 />

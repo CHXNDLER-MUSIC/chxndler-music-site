@@ -170,9 +170,11 @@ export default function WhatElementAreYouModal() {
         try {
           console.log('Dispatching heartverse:entered event');
           window.dispatchEvent(new CustomEvent('heartverse:entered'));
-          // NOTE: Do NOT dispatch planet:warp here - the user already warped when they clicked START
-          // Showing another warp after element selection would be confusing
-          // The HeartverseWelcomeModal (relic display) can be accessed by clicking WARP on center planet
+
+          // Show HeartverseWelcomeModal (Welcome home display with relics)
+          // Use direct event to avoid triggering another warp animation
+          console.log('Dispatching heartverse:showWelcome to show Welcome home modal');
+          window.dispatchEvent(new CustomEvent('heartverse:showWelcome'));
         } catch {}
       }, 300);
     } catch (e: any) {

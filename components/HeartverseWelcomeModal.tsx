@@ -202,6 +202,21 @@ export default function HeartverseWelcomeModal() {
     };
   }, [fetchUserData, playWelcomeSound]);
 
+  // Listen for direct open event (used after onboarding completes to show welcome without warp)
+  useEffect(() => {
+    const handleShowWelcome = async () => {
+      console.log('[HeartverseWelcome] Received heartverse:showWelcome event');
+      await fetchUserData();
+      setIsOpen(true);
+      playWelcomeSound();
+    };
+
+    window.addEventListener('heartverse:showWelcome', handleShowWelcome);
+    return () => {
+      window.removeEventListener('heartverse:showWelcome', handleShowWelcome);
+    };
+  }, [fetchUserData, playWelcomeSound]);
+
   const handleClose = useCallback(() => {
     setIsOpen(false);
   }, []);

@@ -1462,23 +1462,32 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       }
       return true;
     };
-    const hasName = isRealName(profile?.name, profile?.email);
-    const hasElement = profile?.element && profile.element.trim() !== '';
-    const profileIncomplete = !profile?.id || !hasName || !hasElement;
-    console.log("🚀 Profile incomplete?", profileIncomplete, { hasName, hasElement, name: profile?.name, email: profile?.email });
-    // Only warp to Heartverse (center planet) if user came from magic link
-    // Otherwise, they go to Homepage view with all planets visible
-    if (cameFromMagicLinkRef.current && profileIncomplete) {
+    // Use profileRef.current to get latest profile (avoids stale closure)
+    const currentProfileForWarp = profileRef.current;
+    const hasName = isRealName(currentProfileForWarp?.name, currentProfileForWarp?.email);
+    const hasElement = currentProfileForWarp?.element && currentProfileForWarp.element.trim() !== '';
+    const profileIncomplete = !currentProfileForWarp?.id || !hasName || !hasElement;
+    console.log("🚀 Profile incomplete?", profileIncomplete, {
+      hasName,
+      hasElement,
+      name: currentProfileForWarp?.name,
+      email: currentProfileForWarp?.email,
+      id: currentProfileForWarp?.id,
+      cameFromMagicLink: cameFromMagicLinkRef.current
+    });
+    // Warp to Heartverse (center planet) if user is logged in but profile is incomplete
+    // This ensures users complete onboarding (name + element) before exploring
+    if (currentProfileForWarp?.id && profileIncomplete) {
       // Delay the planet:warp dispatch to ensure Pure3DPlanets has mounted and scene is ready
       // (it's dynamically imported and scene setup takes time)
       setTimeout(() => {
-        console.log("🚀 Dispatching planet:warp to Heartverse (center planet) - magic link flow");
+        console.log("🚀 Dispatching planet:warp to Heartverse (center planet) - profile incomplete, needs onboarding");
         window.dispatchEvent(new CustomEvent('planet:warp', {
           detail: { element: 'center', isCenterPlanet: true, isOnboarding: true }
         }));
       }, 1500); // 1.5 seconds - enough time for dynamic import and scene setup
     } else {
-      console.log("🏠 Going to Homepage view (not from magic link or profile complete)");
+      console.log("🏠 Going to Homepage view (profile complete or not logged in)");
     }
     
     // SkyboxVideo component handles warp sound to prevent double triggering
@@ -1514,10 +1523,15 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         // Play button sound
         try { sfx.play('button', 0.9); } catch {}
 
-        // Re-dispatch planet:warp to center for magic link users
+        // Re-dispatch planet:warp to center for users with incomplete profiles
         // This ensures camera focuses on Heartverse even if first dispatch was missed
-        if (cameFromMagicLinkRef.current && profileIncomplete) {
-          console.log("🔧 BACKUP: Re-dispatching planet:warp to center (magic link flow)");
+        // Recompute profileIncomplete using ref to get latest profile
+        const backupProfile = profileRef.current;
+        const backupHasName = isRealName(backupProfile?.name, backupProfile?.email);
+        const backupHasElement = backupProfile?.element && backupProfile.element.trim() !== '';
+        const backupProfileIncomplete = !backupHasName || !backupHasElement;
+        if (backupProfile?.id && backupProfileIncomplete) {
+          console.log("🔧 BACKUP: Re-dispatching planet:warp to center (profile incomplete)");
           window.dispatchEvent(new CustomEvent('planet:warp', {
             detail: { element: 'center', isCenterPlanet: true, isOnboarding: false }
           }));
@@ -1589,16 +1603,13 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           hasElement
         });
 
-        // Only show onboarding modals for magic link users
-        if (cameFromMagicLinkRef.current) {
-          if (!currentProfile?.id) {
-            // Step 0: User not logged in - show Welcome Home modal for login/signup
-            console.log("🛬 Showing WelcomeHomeModal (not logged in)");
-            setShowWelcomeHomeModal(true);
-          } else if (!hasName) {
+        // Show onboarding modals if user is logged in but profile is incomplete
+        if (currentProfile?.id) {
+          if (!hasName) {
             // Step 1: User logged in but needs to set their name first
-            console.log("🛬 Showing name prompt (no name)");
+            console.log("🛬 CALLING openNamePrompt() NOW - user has no name");
             openNamePrompt();
+            console.log("🛬 openNamePrompt() was called");
           } else if (!hasElement) {
             // Step 2: User has name but needs to select element
             console.log("🛬 Showing element selection (has name, no element)");
@@ -1607,7 +1618,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             console.log("🛬 Profile complete - no modal needed");
           }
         } else {
-          console.log("🛬 Not from magic link - showing Homepage view");
+          // User not logged in - show Welcome Home modal for login/signup
+          console.log("🛬 Showing WelcomeHomeModal (not logged in)");
+          setShowWelcomeHomeModal(true);
         }
       }, 500);
 
@@ -1781,11 +1794,31 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         console.log('🌍 planet:warp event received:', { element, isDailyElement, isCenterPlanet, audioPath, isOnboarding });
       }
 
-      // Skip processing during onboarding flow - the START button handler manages the warp
-      // This prevents double warp effects and conflicting state changes
+      // During onboarding, still play the Heartverse music but skip warp visual effects
+      // (the START button already handles the warp animation)
       if (isOnboarding) {
-        console.log('🌍 Skipping planet:warp handling - onboarding flow is managed by START button');
-        return;
+        console.log('🌍 Onboarding flow - playing Heartverse music');
+        // Play Heartverse/center element audio
+        if (element) {
+          const elementId = String(element).toLowerCase();
+          console.log('🎵 Playing element audio for onboarding:', elementId);
+          try {
+            audioManager.selectTrack(elementId);
+          } catch (err) {
+            console.warn('[WARP] Element audio playback failed:', err);
+          }
+        }
+        // Set curTrack to show element in dropdown
+        if (element) {
+          const elementName = String(element).toUpperCase();
+          setCurTrack({
+            slug: String(element).toLowerCase(),
+            title: elementName === 'CENTER' ? 'HEARTVERSE' : elementName,
+            icon: String(element).toLowerCase(),
+            isElement: true
+          });
+        }
+        return; // Skip visual warp effects - START button handles those
       }
 
       // Set YouTube sky for element planets (WATER, CENTER, HEART, DARKNESS, LIGHTNING)

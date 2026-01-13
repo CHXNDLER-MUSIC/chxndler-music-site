@@ -7,7 +7,7 @@ import { useProfile as useNewProfile } from "@/hooks/useProfile";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useTour } from "@/contexts/TourContext";
 
-const DEBUG_MODAL = false; // Set to true for detailed logs
+const DEBUG_MODAL = true; // Set to true for detailed logs
 const debugModal = (message: string, data?: any) => {
   if (DEBUG_MODAL) console.log(message, data);
 };
@@ -56,6 +56,16 @@ export default function WhatShouldWeCallYouModal() {
   useEffect(() => {
     if (showNamePrompt) {
       setPhase('name');
+
+      // Play "you-are-home.mp3" for new users during onboarding
+      // This plays instead of "Welcome-Back.mp3" which is for returning users
+      try {
+        const audio = new Audio('/tracks/you-are-home.mp3');
+        audio.volume = 0.8;
+        audio.play().catch(e => console.log('You are home audio play failed:', e));
+      } catch (e) {
+        console.log('Failed to create you-are-home audio:', e);
+      }
     }
   }, [showNamePrompt]);
 
@@ -413,13 +423,27 @@ export default function WhatShouldWeCallYouModal() {
         ) : (
           /* NAME PHASE - Input Form */
           <div className="name-form-enter flex flex-col flex-1">
-            {/* Header */}
+            {/* Welcome Header */}
             <div
-              className="text-center mb-2"
+              className="text-center mb-1"
+              style={{
+                color: '#FF69B4',
+                textShadow: '0 0 12px rgba(255,105,180,0.8), 0 0 20px rgba(255,105,180,0.4)',
+                fontSize: '22px',
+                fontWeight: 'bold',
+                letterSpacing: '2px'
+              }}
+            >
+              Welcome to Heartverse
+            </div>
+
+            {/* Subheader */}
+            <div
+              className="text-center mb-3"
               style={{
                 color: '#00FFFF',
                 textShadow: '0 0 8px rgba(0,255,255,0.6)',
-                fontSize: '18px',
+                fontSize: '16px',
                 fontWeight: 'bold'
               }}
             >

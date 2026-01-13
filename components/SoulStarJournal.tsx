@@ -473,8 +473,16 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         console.error('Error message:', error.message);
         console.error('Error stack:', error.stack);
         
-        if (error.message.includes('Authentication error') || error.message.includes('No user session')) {
+        if (error.message.includes('Authentication error') || error.message.includes('No user session') || error.message.includes('must be logged in')) {
           errorMessage = "Please log in again to save your entry.";
+        } else if (error.message.includes('foreign key') || error.message.includes('fkey')) {
+          // Foreign key constraint - profile row may be missing
+          errorMessage = "Profile sync issue. Please refresh the page and try again.";
+          console.error('[SoulStarJournal] Foreign key constraint error - profile may not exist:', error.message);
+        } else if (error.message.includes('permission denied') || error.message.includes('403')) {
+          // RLS policy violation or permission issue
+          errorMessage = "Permission denied. Please log out and log back in.";
+          console.error('[SoulStarJournal] Permission denied error:', error.message);
         } else if (error.message.includes('permission') || error.message.includes('auth')) {
           errorMessage = "Authentication error. Please refresh the page and try again.";
         } else if (error.message.includes('network') || error.message.includes('fetch')) {

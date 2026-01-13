@@ -1163,7 +1163,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                   >
                     BOOST
                   </span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     {/* Listening Boost Icon */}
                     {(() => {
                       const listeningBoost = activeBoosts.find(b =>

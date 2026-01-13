@@ -212,6 +212,24 @@ export function useDailySongProgress({
     isProcessingRef.current = true;
 
     try {
+      // Auth guard: Verify user is authenticated before attempting upsert
+      // This prevents 403 errors from RLS policies when logged out
+      const { data: { session } } = await supabaseBrowser.auth.getSession();
+      if (!session?.user?.id) {
+        // Logged out - skip silently (logged-out listens should not count)
+        isProcessingRef.current = false;
+        return;
+      }
+
+      // Double-check userId matches authenticated user (safety check)
+      if (userId !== session.user.id) {
+        console.warn('🎵 Daily progress: userId mismatch, using auth user.id instead', {
+          passedUserId: userId,
+          authUserId: session.user.id
+        });
+        userId = session.user.id;
+      }
+
       // Validate inputs - skip if any values are invalid
       if (!isFinite(listenedSeconds) || !isFinite(durationSeconds) || !isFinite(completionPercent)) {
         console.log('🎵 Daily progress: Skipping upsert - invalid values detected', {
@@ -545,10 +563,20 @@ export function useDailySongProgress({
     const trackProgress = async () => {
       if (!mounted) return;
 
-      // Get current user
+      // Get current user - skip silently if not authenticated
       const { data: { session } } = await supabaseBrowser.auth.getSession();
-      if (!session?.user?.id) return;
+      if (!session?.user?.id) {
+        // Not logged in - skip tracking (logged-out listens don't count)
+        return;
+      }
       const userId = session.user.id;
+
+      // Debug log once per track session
+      console.log('🎵 Daily progress: Starting track progress', {
+        userId,
+        trackSlug,
+        isPlaying
+      });
 
       // Get song UUID from slug
       const songId = await getSongId(trackSlug);

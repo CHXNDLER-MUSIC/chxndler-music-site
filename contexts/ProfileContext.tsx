@@ -356,9 +356,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Fetch user cards and badges in parallel
+      // Fetch user cards, badges, and computed heartcoin balance in parallel
       // Cards query: joined with cards table, ordered by slot_index then acquired_at
-      const [{ data: cardRows, error: cardError }, { data: badgeRows, error: badgeError }] =
+      const [{ data: cardRows, error: cardError }, { data: badgeRows, error: badgeError }, { data: balanceData, error: balanceError }] =
         await Promise.all([
           supabaseBrowser
             .from("user_cards")
@@ -404,6 +404,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
               )
             `)
             .eq("user_id", user.id),
+          // Fetch computed heartcoin balance from canonical view
+          supabaseBrowser
+            .from("heartcoin_balance")
+            .select("balance")
+            .single(),
         ]);
 
       if (cardError) {
@@ -413,6 +418,13 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       if (badgeError) {
         console.error("Error loading user_badges", badgeError);
       }
+
+      if (balanceError) {
+        console.error("Error loading heartcoin_balance from view", balanceError);
+      }
+
+      // Use computed balance from view, fallback to profiles.heartcoin_balance if view fails
+      const computedBalance = balanceData?.balance ?? data.heartcoin_balance ?? 0;
 
       // Filter out card rows where the join failed (defensive null handling)
       const validCardRows = (cardRows || []).filter((row: OwnedCardRow) => {
@@ -431,7 +443,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         name: data.name,
         element: data.element,
         journey: data.journey,
-        heartcoin_balance: (data.heartcoin_balance ?? 0),
+        heartcoin_balance: computedBalance,
         heartcoin_total: (data.heartcoin_total ?? 0),
         profile_complete: data.profile_complete ?? !!(data.name && data.element),
         created_at: data.created_at,
@@ -544,7 +556,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
 
       if (data) {
-        // Map the updated data back to Profile interface, preserving existing cards and badges
+        // Map the updated data back to Profile interface, preserving existing cards, badges, and heartcoin_balance
+        // Keep existing heartcoin_balance from state (already from computed view) since profile updates don't change it
         const mappedProfile: Profile = {
           id: data.id,
           email: data.email,
@@ -552,7 +565,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           name: data.name,
           element: data.element,
           journey: data.journey,
-          heartcoin_balance: (data.heartcoin_balance ?? 0),
+          heartcoin_balance: profile?.heartcoin_balance ?? 0,
           heartcoin_total: (data.heartcoin_total ?? 0),
           profile_complete: data.profile_complete ?? !!(data.name && data.element),
           created_at: data.created_at,
@@ -788,6 +801,33 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Helper: Ensure profile row exists for the given user ID
+  // This is idempotent - will not overwrite existing data
+  const ensureProfileExists = useCallback(async (userId: string, email?: string | null): Promise<boolean> => {
+    try {
+      const { error } = await supabaseBrowser
+        .from("profiles")
+        .upsert(
+          {
+            id: userId,
+            email: email || null,
+          },
+          { onConflict: 'id', ignoreDuplicates: true }
+        );
+
+      if (error) {
+        console.error("[ProfileContext] ensureProfileExists upsert failed:", error.message, error);
+        return false;
+      }
+
+      debug("[ProfileContext] ensureProfileExists: profile row ensured for user", { userId });
+      return true;
+    } catch (err) {
+      console.error("[ProfileContext] ensureProfileExists exception:", err);
+      return false;
+    }
+  }, []);
+
   // Journal helper functions
   const loadJournalEntries = useCallback(async (userId: string) => {
     try {
@@ -821,7 +861,22 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
       if (!user) {
         console.error('No user session found');
-        throw new Error('No user session found. Please log in again.');
+        throw new Error('You must be logged in to save a journal entry. Please sign in and try again.');
+      }
+
+      // Debug log (once per save) for troubleshooting
+      debug("[saveJournalEntry] Auth and profile state", {
+        authUserId: user.id,
+        profileId: profile?.id,
+        profileExists: !!profile,
+        userIdForInsert: user.id,
+      });
+
+      // Always ensure profile exists before saving journal entry (foreign key constraint)
+      // This handles the case where the profile row doesn't exist yet
+      const profileOk = await ensureProfileExists(user.id, user.email);
+      if (!profileOk) {
+        throw new Error("Unable to verify your profile. Please refresh and try again.");
       }
 
       // Build entry data with only the columns that exist in the schema
@@ -956,7 +1011,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       console.error('Error in saveJournalEntry:', error);
       throw error; // Re-throw so the UI can show the specific error
     }
-  }, [profile]);
+  }, [profile, ensureProfileExists]);
 
   const updateJournalEntry = useCallback(async (entryId: string, updates: Partial<Pick<JournalEntry, 'intention' | 'is_public' | 'entry_text'>>) => {
     try {

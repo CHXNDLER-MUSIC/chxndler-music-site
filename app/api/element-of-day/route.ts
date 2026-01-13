@@ -71,10 +71,24 @@ export async function GET() {
       }
     }
 
-    // Get song of the day - find a released song matching today's element
+    // Get song of the day - use the canonical song_id from element_of_day table
+    // This ensures we return the EXACT song configured for today, not just any song with matching element
     let songOfDayTitle: string | null = null;
     let songOfDaySlug: string | null = null;
-    if (data?.element) {
+    if (data?.song_id) {
+      // Fetch the canonical Song of the Day by its ID
+      const { data: songData, error: songError } = await supabase
+        .from('songs')
+        .select('title, slug')
+        .eq('id', data.song_id)
+        .maybeSingle();
+
+      if (!songError && songData) {
+        songOfDayTitle = songData.title;
+        songOfDaySlug = songData.slug;
+      }
+    } else if (data?.element) {
+      // Fallback: if no song_id is set, find a released song matching today's element
       const { data: songData, error: songError } = await supabase
         .from('songs')
         .select('title, slug')
