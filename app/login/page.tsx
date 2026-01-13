@@ -39,7 +39,7 @@ export default function LoginPage() {
     try {
       const { error } = await supabaseClient.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: getRedirectUrl("/auth/callback?next=/dashboard&profileSetup=1") },
+        options: { emailRedirectTo: getRedirectUrl("/auth/callback?next=/") },
       });
       if (error) throw error;
       setMessage("Check your email for a magic link.");

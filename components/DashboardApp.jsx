@@ -156,7 +156,11 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   React.useEffect(() => {
     profileRef.current = profile;
   }, [profile]);
-  
+
+  // Tracks if user arrived via magic link (kept for backwards compatibility but no longer auto-opens modals)
+  // After magic link login, user stays on opening page and START button routes to /onboarding if profile incomplete
+  const cameFromMagicLinkRef = React.useRef(false);
+
   // Global UI state for profile bar visibility
   const { hasEnteredHeartverse, setHasEnteredHeartverse, enterHeartverse, setWarpFullyComplete, warpFullyComplete, userClickedStart, setUserClickedStart } = useUIState();
   
@@ -252,6 +256,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   // Legacy state variables will be defined after UI phase variables below
   // Guard to prevent rapid double-trigger of Start flow before state updates
   const startInFlightRef = React.useRef(false);
+  // Track if we're in onboarding mode (profile_complete is false)
+  const onboardingModeRef = React.useRef(false);
   const [nextSky, setNextSky] = useState(null);
   const [beamOnly, setBeamOnly] = useState(true);
   const [beamEnabled, setBeamEnabled] = useState(false);
@@ -284,7 +290,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const [welcomeHasPlayed, setWelcomeHasPlayed] = useState(false); // tracks if welcome has been played (resets on page refresh)
   const welcomeOnStartRef = React.useRef(false); // signals that welcome VO should play now
   const startButtonWarpRef = React.useRef(false); // prevents double warp when start button is clicked
-  const cameFromMagicLinkRef = React.useRef(false); // tracks if user arrived via magic link (for Heartverse warp)
+  // NOTE: cameFromMagicLinkRef is defined earlier in the file (before the auto-open useEffect that uses it)
   const [shouldShowWelcomeModal, setShouldShowWelcomeModal] = useState(false); // tracks if welcome modal should show after warp
   // Ensure song MP3 starts only after join-alien SFX finishes (played at warp end)
   const buttonSfxWaitRef = React.useRef(null);
@@ -1386,108 +1392,103 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
 
   // START BUTTON HANDLER - TRIGGERS WARP SEQUENCE
-  // CLEAN START BUTTON HANDLER - UI Phase State Machine
+  // Routes based on auth state and profile_complete
   const WARP_DURATION_MS = 3000; // Match the minDurationMs from SkyboxVideo
-  
-  const handleStartClick = React.useCallback(() => {
+
+  const handleStartClick = React.useCallback(async () => {
     console.log("🚀 START CLICKED");
-    console.log("🚀 cameFromMagicLinkRef.current:", cameFromMagicLinkRef.current);
-    console.log("🚀 Profile state:", {
-      id: profile?.id,
-      name: profile?.name,
-      element: profile?.element,
-      profileComplete: profile?.profile_complete
-    });
-    console.log("🚀 profileRef.current:", profileRef.current);
 
     if (startInFlightRef.current) return;
     startInFlightRef.current = true;
 
-    // Mark that user actually clicked START
-    setUserClickedStart(true);
-
-    // NOTE: WelcomeHomeModal for non-logged-in users is now shown AFTER warp completes
-    // This ensures the warp to Heartverse (center planet) happens first
-
-    // Set flag to identify this as a start button warp
-    startButtonWarpRef.current = true;
-    // Reset button reveal guard for this new warp
-    buttonRevealTriggeredRef.current = false;
-
-    // Enable SFX immediately so warp sound can play
-    try { sfx.setEnabled(true); } catch {}
-
-    // Play warp.mp3 IMMEDIATELY on Start button click (don't wait for SkyboxVideo)
     try {
-      sfx.play('warp', 0.7);
-      // Set global flag so SkyboxVideo doesn't play warp again
+      // Step 1: Check if user is logged in
+      const { data: { session } } = await supabaseClient.auth.getSession();
+
+      let needsOnboarding = false;
+      let needsWelcomeHome = false;
+
+      if (!session?.user) {
+        // User is logged out - will show WelcomeHomeModal after warp (not redirect to /login)
+        console.log("🚀 User not logged in - will show WelcomeHomeModal after warp");
+        needsWelcomeHome = true;
+        needsOnboarding = false;
+      } else {
+        // Step 2: Fetch profile_complete directly from Supabase
+        console.log("🚀 Fetching profile_complete from Supabase for user:", session.user.id);
+        const { data: profileData, error: profileError } = await supabaseClient
+          .from('profiles')
+          .select('profile_complete')
+          .eq('id', session.user.id)
+          .single();
+
+        // Determine if we need onboarding (profile missing or incomplete)
+        needsOnboarding = profileError || profileData?.profile_complete !== true;
+
+        if (profileError) {
+          console.error("🚀 Error fetching profile:", profileError);
+          console.log("🚀 Profile fetch failed - will show name prompt after warp");
+        } else if (profileData?.profile_complete !== true) {
+          console.log("🚀 profile_complete is not true - will show name prompt after warp");
+        } else {
+          console.log("🚀 profile_complete is true - proceeding with normal warp");
+        }
+
+        console.log("🚀 Profile data:", profileData, "needsOnboarding:", needsOnboarding);
+      }
+
+      // Store flags for after warp completes
+      onboardingModeRef.current = needsOnboarding;
       if (typeof window !== 'undefined') {
-        (window).__WARP_SOUND_PLAYED = true;
+        (window).__SHOW_WELCOME_HOME_AFTER_WARP = needsWelcomeHome;
       }
-    } catch {}
 
-    // Enter warp phase immediately
-    setUiPhase("warping");
-    // Prevent any UI reveals until button.mp3 completes
-    setUiRevealLocked(true);
-    
-    // Hide HUD immediately when warp starts so power button turns off
-    setShowHUD(false);
-    setBeamEnabled(false);
-    setBeamColor('off');
-    // Mark warp overlay as active immediately (onFlyStart will also set this)
-    setWarpActive(true);
+      // Step 4: Proceed with Heartverse warp (both onboarding and normal)
 
-    // Trigger existing warp visual/audio systems
-    setAllowWarp(true);
-    setSky(SPACE_SKY);
-    setFlySignal(n => n + 1);
-    setHomeMode(true);
-    setUserSelected(false);
-    setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
+      // Mark that user actually clicked START
+      setUserClickedStart(true);
 
-    // If user profile is not complete (not logged in, no name, OR no element), warp to Heartverse (center planet) for onboarding
-    // This ensures all users who haven't finished setup land on the center planet
-    // Helper: Check if name is a "real" user-entered name (not auto-generated from email/defaults)
-    const isRealName = (name, email) => {
-      if (!name || name.trim() === '') return false;
-      const trimmedName = name.trim().toLowerCase();
-      // Check against known auto-generated defaults
-      const autoGeneratedDefaults = ['alien', 'heartverse wanderer', 'wanderer'];
-      if (autoGeneratedDefaults.includes(trimmedName)) return false;
-      // Check if name is just the email prefix (before @)
-      if (email) {
-        const emailPrefix = email.split('@')[0]?.toLowerCase();
-        if (trimmedName === emailPrefix) return false;
-      }
-      return true;
-    };
-    // Use profileRef.current to get latest profile (avoids stale closure)
-    const currentProfileForWarp = profileRef.current;
-    const hasName = isRealName(currentProfileForWarp?.name, currentProfileForWarp?.email);
-    const hasElement = currentProfileForWarp?.element && currentProfileForWarp.element.trim() !== '';
-    const profileIncomplete = !currentProfileForWarp?.id || !hasName || !hasElement;
-    console.log("🚀 Profile incomplete?", profileIncomplete, {
-      hasName,
-      hasElement,
-      name: currentProfileForWarp?.name,
-      email: currentProfileForWarp?.email,
-      id: currentProfileForWarp?.id,
-      cameFromMagicLink: cameFromMagicLinkRef.current
-    });
-    // Warp to Heartverse (center planet) if user is logged in but profile is incomplete
-    // This ensures users complete onboarding (name + element) before exploring
-    if (currentProfileForWarp?.id && profileIncomplete) {
-      // Delay the planet:warp dispatch to ensure Pure3DPlanets has mounted and scene is ready
-      // (it's dynamically imported and scene setup takes time)
-      setTimeout(() => {
-        console.log("🚀 Dispatching planet:warp to Heartverse (center planet) - profile incomplete, needs onboarding");
-        window.dispatchEvent(new CustomEvent('planet:warp', {
-          detail: { element: 'center', isCenterPlanet: true, isOnboarding: true }
-        }));
-      }, 1500); // 1.5 seconds - enough time for dynamic import and scene setup
-    } else {
-      console.log("🏠 Going to Homepage view (profile complete or not logged in)");
+      // Set flag to identify this as a start button warp
+      startButtonWarpRef.current = true;
+      // Reset button reveal guard for this new warp
+      buttonRevealTriggeredRef.current = false;
+
+      // Enable SFX immediately so warp sound can play
+      try { sfx.setEnabled(true); } catch {}
+
+      // Play warp.mp3 IMMEDIATELY on Start button click (don't wait for SkyboxVideo)
+      try {
+        sfx.play('warp', 0.7);
+        // Set global flag so SkyboxVideo doesn't play warp again
+        if (typeof window !== 'undefined') {
+          (window).__WARP_SOUND_PLAYED = true;
+        }
+      } catch {}
+
+      // Enter warp phase immediately
+      setUiPhase("warping");
+      // Prevent any UI reveals until button.mp3 completes
+      setUiRevealLocked(true);
+
+      // Hide HUD immediately when warp starts so power button turns off
+      setShowHUD(false);
+      setBeamEnabled(false);
+      setBeamColor('off');
+      // Mark warp overlay as active immediately (onFlyStart will also set this)
+      setWarpActive(true);
+
+      // Trigger existing warp visual/audio systems
+      setAllowWarp(true);
+      setSky(SPACE_SKY);
+      setFlySignal(n => n + 1);
+      setHomeMode(true);
+      setUserSelected(false);
+      setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
+
+      console.log("🏠 Going to Heartverse - onboarding mode:", onboardingModeRef.current);
+    } catch (error) {
+      console.error("🚀 Error in handleStartClick:", error);
+      startInFlightRef.current = false;
     }
     
     // SkyboxVideo component handles warp sound to prevent double triggering
@@ -1523,18 +1524,21 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         // Play button sound
         try { sfx.play('button', 0.9); } catch {}
 
-        // Re-dispatch planet:warp to center for users with incomplete profiles
-        // This ensures camera focuses on Heartverse even if first dispatch was missed
-        // Recompute profileIncomplete using ref to get latest profile
-        const backupProfile = profileRef.current;
-        const backupHasName = isRealName(backupProfile?.name, backupProfile?.email);
-        const backupHasElement = backupProfile?.element && backupProfile.element.trim() !== '';
-        const backupProfileIncomplete = !backupHasName || !backupHasElement;
-        if (backupProfile?.id && backupProfileIncomplete) {
-          console.log("🔧 BACKUP: Re-dispatching planet:warp to center (profile incomplete)");
-          window.dispatchEvent(new CustomEvent('planet:warp', {
-            detail: { element: 'center', isCenterPlanet: true, isOnboarding: false }
-          }));
+        // Check what to show after warp
+        if (typeof window !== 'undefined' && (window).__SHOW_WELCOME_HOME_AFTER_WARP) {
+          // User not logged in - show WelcomeHomeModal
+          console.log("🎯 WARP COMPLETE: User not logged in, showing WelcomeHomeModal");
+          (window).__SHOW_WELCOME_HOME_AFTER_WARP = false;
+          setTimeout(() => {
+            setShowWelcomeHomeModal(true);
+          }, 500);
+        } else if (onboardingModeRef.current) {
+          // User logged in but profile incomplete - show name prompt
+          console.log("🎯 ONBOARDING: Warp complete, opening name prompt");
+          onboardingModeRef.current = false; // Reset flag
+          setTimeout(() => {
+            openNamePromptFromAuth();
+          }, 500); // Brief delay after button sound
         }
       }
     }, WARP_DURATION_MS + 1500); // Add 1500ms buffer for robust fallback
@@ -1584,49 +1588,19 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       setPowerBusy(false);
       setLandingRevealReady(true);
 
-      // Profile setup flow - only for magic link users warping to Heartverse
-      // Regular users just see the Homepage with all planets
+      // Post-warp check - users with incomplete profiles are now routed to /onboarding by START button
+      // This code path only runs for users with profile_complete = true
       setTimeout(() => {
-        // Use profileRef.current to get latest profile (avoids stale closure from when START was clicked)
         const currentProfile = profileRef.current;
-        // Use same isRealName check as initial profile detection to filter out auto-generated names
-        const hasName = isRealName(currentProfile?.name, currentProfile?.email);
-        const hasElement = currentProfile?.element && currentProfile.element.trim() !== '';
-
-        console.log("🛬 Post-warp profile check:", {
-          cameFromMagicLink: cameFromMagicLinkRef.current,
+        console.log("🛬 Post-warp - user has complete profile, no modal needed", {
           id: currentProfile?.id,
-          name: currentProfile?.name,
-          email: currentProfile?.email,
-          element: currentProfile?.element,
-          hasName,
-          hasElement
+          profile_complete: currentProfile?.profile_complete
         });
-
-        // Show onboarding modals if user is logged in but profile is incomplete
-        if (currentProfile?.id) {
-          if (!hasName) {
-            // Step 1: User logged in but needs to set their name first
-            console.log("🛬 CALLING openNamePrompt() NOW - user has no name");
-            openNamePrompt();
-            console.log("🛬 openNamePrompt() was called");
-          } else if (!hasElement) {
-            // Step 2: User has name but needs to select element
-            console.log("🛬 Showing element selection (has name, no element)");
-            openElementSelection();
-          } else {
-            console.log("🛬 Profile complete - no modal needed");
-          }
-        } else {
-          // User not logged in - show Welcome Home modal for login/signup
-          console.log("🛬 Showing WelcomeHomeModal (not logged in)");
-          setShowWelcomeHomeModal(true);
-        }
       }, 500);
 
     }, WARP_DURATION_MS);
 
-  }, [audioManager, profile, openElementSelection, openNamePrompt, setShowWelcomeHomeModal]);
+  }, [audioManager, profile, openElementSelection, openNamePrompt, setShowWelcomeHomeModal, router]);
 
   // Handle opening journal: opens journal view in Soul Sky popover
   const handleOpenJournal = React.useCallback(() => {
@@ -2344,30 +2318,28 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           // Ensure unified audio system can auto-play now if a pending track exists
           try { audioManager?.markWarpCompleted(); } catch {}
 
-          // If landing on home (no song pending), start space-music via main player
+          // If landing on home (no song pending), start music via main player
           // and play welcome track as independent one-shot audio
-          // This runs ONCE for all code paths
+          // Note: Users with incomplete profiles are routed to /onboarding and never reach here
           try {
             if (!pendingTrackPlay && !userSelected && !spaceMusicTriggered) {
               spaceMusicTriggered = true;
-              // Clear the audio block flag so space-music can play
+              // Clear the audio block flag so music can play
               if (typeof window !== 'undefined') { window.__BLOCK_MAIN_AUDIO = false; }
-              // Play space-music through AudioProvider - connected to play/pause button
-              console.log('🎵 Playing space-music through AudioProvider');
-              audioManager?.playTrack('space-music');
 
-              // Play welcome track as independent one-shot audio
-              // This does NOT connect to play/pause button
               if (profile?.id) {
+                // User is logged in with profile complete - autoplay space-music + welcome-back
+                console.log('🎵 Playing space-music through AudioProvider');
+                audioManager?.playTrack('space-music');
                 console.log('🎵 Playing welcome-back as independent one-shot audio');
                 const welcomeAudio = new Audio('/tracks/welcome-back.opus');
                 welcomeAudio.volume = 0.9;
                 welcomeAudio.play().catch((e) => console.warn('Welcome audio failed:', e));
               } else {
-                console.log('🎵 Playing welcome-to-the-heartverse as independent one-shot audio');
-                const welcomeAudio = new Audio('/tracks/welcome-to-the-heartverse.opus');
-                welcomeAudio.volume = 0.9;
-                welcomeAudio.play().catch((e) => console.warn('Welcome audio failed:', e));
+                // Not logged in - won't reach here since START routes to /login
+                // Keeping this branch for completeness
+                console.log('🎵 Playing space-music through AudioProvider');
+                audioManager?.playTrack('space-music');
               }
             }
           } catch {}
@@ -2398,8 +2370,23 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 setUiPhase("landed");
                 console.log("✅ UI revealed: beam -> HUD");
 
-                // If a track is pending, trigger play after HUD opens
-                if (pendingTrackPlay) {
+                // Check what to show after warp
+                if (typeof window !== 'undefined' && (window).__SHOW_WELCOME_HOME_AFTER_WARP) {
+                  // User not logged in - show WelcomeHomeModal
+                  console.log("🎯 WARP COMPLETE: User not logged in, showing WelcomeHomeModal");
+                  (window).__SHOW_WELCOME_HOME_AFTER_WARP = false;
+                  setTimeout(() => {
+                    setShowWelcomeHomeModal(true);
+                  }, 300);
+                } else if (onboardingModeRef.current) {
+                  // User logged in but profile incomplete - show name prompt
+                  console.log("🎯 ONBOARDING: UI revealed, opening name prompt");
+                  onboardingModeRef.current = false; // Reset flag
+                  setTimeout(() => {
+                    openNamePromptFromAuth();
+                  }, 300); // Brief delay after UI reveal
+                } else if (pendingTrackPlay) {
+                  // If a track is pending, trigger play after HUD opens
                   const trackIndex = pendingTrackIndexRef.current;
                   if (trackIndex !== null && trackIndex >= 0) {
                     setChannelIdxWithLog(trackIndex);

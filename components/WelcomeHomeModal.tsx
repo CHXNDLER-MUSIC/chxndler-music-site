@@ -105,7 +105,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
       const { error } = await supabaseClient.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: getRedirectUrl("/auth/callback"),
+          emailRedirectTo: getRedirectUrl("/auth/callback?next=/"),
           shouldCreateUser: true
         },
       });

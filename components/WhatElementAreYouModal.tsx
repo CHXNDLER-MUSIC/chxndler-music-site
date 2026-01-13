@@ -6,9 +6,11 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { useUIStore } from "@/store/useUIStore";
 import { useProfile as useNewProfile } from "@/hooks/useProfile";
 import { useProfile } from "@/contexts/ProfileContext";
+import { useAudio } from "@/app/providers/AudioProvider";
 import type { Element } from "@/lib/planets";
 import { ELEMENT_COLORS } from "@/lib/planets";
 import { logHeartcoinTransaction } from "@/utils/heartcoins";
+import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
 
 // Element sound mappings
 const ELEMENT_SOUNDS: Record<Element, string> = {
@@ -29,6 +31,7 @@ export default function WhatElementAreYouModal() {
   const { showElementSelection, closeElementSelection, triggerProfileRefresh, openNamePrompt } = useUIStore();
   const { updateProfileNameAndElement, profile } = useProfile();
   const { completeOnboarding, refreshProfile } = useNewProfile();
+  const audio = useAudio();
   const [selectedElement, setSelectedElement] = useState<Element | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -128,55 +131,73 @@ export default function WhatElementAreYouModal() {
     }
 
     try {
-      // Play alien-wave.mp3 sound when entering Heartverse
-      const audio = new Audio('/audio/alien-wave.mp3');
-      audio.volume = 0.8;
-      audio.play().catch(e => console.log('Audio play failed:', e));
+      // Play alien-wave.mp3 sound when aligning
+      const alienWaveAudio = new Audio('/audio/alien-wave.mp3');
+      alienWaveAudio.volume = 0.8;
+      alienWaveAudio.play().catch(e => console.log('Audio play failed:', e));
 
-      // Use the new updateProfileNameAndElement method with pretty label
-      await updateProfileNameAndElement(currentName, selectedElementData.label);
+      // Call RPC to align element and award first HeartCoin (server-side)
+      console.log('🎯 Calling RPC align_element_and_award_first_coin');
+      const { data: rpcResult, error: rpcError } = await supabaseClient.rpc('align_element_and_award_first_coin', {
+        p_name: currentName,
+        p_element: selectedElementData.label
+      });
 
-      // Complete onboarding now that both name and element are set
-      await completeOnboarding(currentName);
+      if (rpcError) {
+        console.error('RPC error:', rpcError);
+        throw rpcError;
+      }
 
-      // Refresh profile to ensure UI updates
+      console.log('🎯 RPC result:', rpcResult);
+
+      // Refresh profile to get updated data
       await refreshProfile();
 
       console.log('Profile completed! Element selected:', selectedElementData.label);
 
+      // Close element selection modal
       closeElementSelection();
-      // Trigger profile refresh to update the UI with new element
+
+      // Trigger profile refresh to update the UI
       triggerProfileRefresh();
 
-      // Award 1 HeartCoin for completing profile setup
-      // This also triggers the HeartCoin celebration animation
-      try {
-        await logHeartcoinTransaction(supabaseClient, {
-          user_id: currentUser.id,
-          amount: 1,
-          reason: 'profile_completion',
-          description: 'Welcome to the Heartverse! Profile setup complete.',
-          transaction_type: 'bonus',
-          metadata: { element: selectedElementData.label }
-        });
-        console.log('🪙 Awarded 1 HeartCoin for profile completion');
-      } catch (heartcoinError) {
-        console.error('Failed to award HeartCoin for profile completion:', heartcoinError);
-        // Don't fail the profile completion if HeartCoin award fails
+      // Check if HeartCoin was awarded and trigger celebration
+      if (rpcResult?.awarded === true) {
+        console.log('🪙 HeartCoin awarded! Triggering celebration');
+        triggerHeartCoinCelebration(1);
       }
 
-      // Add a small delay to ensure profile context has propagated
+      // Trigger warp to Heartverse center planet and play heart.mp3
+      console.log('🚀 Triggering warp to Heartverse');
+
+      // Dispatch warp event to center planet
+      window.dispatchEvent(new CustomEvent('planet:warp', {
+        detail: { element: 'center', isCenterPlanet: true, isOnboarding: true }
+      }));
+
+      // Play heart.mp3 track through audio manager
+      setTimeout(() => {
+        try {
+          if (audio?.playTrack) {
+            console.log('🎵 Playing heart.mp3');
+            audio.playTrack('heart');
+          }
+        } catch (e) {
+          console.log('Failed to play heart.mp3:', e);
+        }
+      }, 500);
+
+      // Show welcome modal after warp completes
       setTimeout(() => {
         try {
           console.log('Dispatching heartverse:entered event');
           window.dispatchEvent(new CustomEvent('heartverse:entered'));
 
           // Show HeartverseWelcomeModal (Welcome home display with relics)
-          // Use direct event to avoid triggering another warp animation
           console.log('Dispatching heartverse:showWelcome to show Welcome home modal');
           window.dispatchEvent(new CustomEvent('heartverse:showWelcome'));
         } catch {}
-      }, 300);
+      }, 2500); // Wait for warp to complete
     } catch (e: any) {
       setError(e?.message || "Failed to save element selection");
     } finally {

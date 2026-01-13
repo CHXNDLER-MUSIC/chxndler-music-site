@@ -92,47 +92,61 @@ export async function GET(request: NextRequest) {
       if (!existingProfile) {
         console.log('[auth/callback] No profile found, creating one for user:', user.id);
 
-        // Use upsert with minimal columns to handle edge cases:
-        // - Email unique constraint conflicts
-        // - Schema variations across deployments
-        // The onboarding modal will set name/element through ProfileContext
-        const { error: upsertError } = await supabaseAdmin
-          .from('profiles')
-          .upsert(
-            {
-              id: user.id,
-              email: user.email,
-            },
-            {
-              onConflict: 'id',
-              ignoreDuplicates: false
-            }
-          );
+        const displayName = user.user_metadata?.full_name ||
+                           user.user_metadata?.name ||
+                           user.email?.split('@')[0] ||
+                           'Heartverse Wanderer';
 
-        if (upsertError) {
-          // Log detailed error for debugging
-          console.error('[auth/callback] Failed to create/update profile:', {
-            message: upsertError.message,
-            code: upsertError.code,
-            details: upsertError.details,
-            hint: upsertError.hint,
+        // Try minimal insert first with only guaranteed columns
+        const { error: insertError } = await supabaseAdmin
+          .from('profiles')
+          .insert({
+            id: user.id,
+            email: user.email,
+            display_name: displayName,
+            heartcoin_balance: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+
+        if (insertError) {
+          console.error('[auth/callback] Initial insert failed:', {
+            message: insertError.message,
+            code: insertError.code,
+            details: insertError.details,
+            hint: insertError.hint,
             userId: user.id,
             email: user.email
           });
 
-          // Try a second approach - simple insert without email (in case email has unique constraint issues)
-          console.log('[auth/callback] Trying fallback insert without email...');
-          const { error: fallbackError } = await supabaseAdmin
-            .from('profiles')
-            .insert({ id: user.id });
-
-          if (fallbackError) {
-            console.error('[auth/callback] Fallback insert also failed:', fallbackError.message);
+          // If it's a duplicate key error, the profile might already exist (race condition)
+          if (insertError.code === '23505') {
+            console.log('[auth/callback] Profile already exists (race condition), continuing...');
           } else {
-            console.log('[auth/callback] Fallback insert succeeded for:', user.id);
+            // Try even more minimal insert - just id
+            console.log('[auth/callback] Trying minimal insert with just id...');
+            const { error: minimalError } = await supabaseAdmin
+              .from('profiles')
+              .insert({ id: user.id });
+
+            if (minimalError) {
+              console.error('[auth/callback] Minimal insert also failed:', minimalError.message);
+            } else {
+              console.log('[auth/callback] Minimal insert succeeded, updating with details...');
+              // Now update with additional fields
+              await supabaseAdmin
+                .from('profiles')
+                .update({
+                  email: user.email,
+                  display_name: displayName,
+                  heartcoin_balance: 0,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', user.id);
+            }
           }
         } else {
-          console.log('[auth/callback] Profile created/updated successfully for:', user.email);
+          console.log('[auth/callback] Profile created successfully for:', user.email);
         }
       } else {
         console.log('[auth/callback] Profile already exists for user:', user.id);

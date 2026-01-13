@@ -294,6 +294,7 @@ type AudioControls = {
   setVolume: (v: number) => void;
   selectTrack: (trackId: string) => Promise<void>;
   playTrack: (trackId: string) => Promise<void>;
+  preloadTrack: (trackId: string) => void; // Load track without playing
   playStartSequence: (isLoggedIn: boolean) => Promise<void>;
   bestSourceFor: (t: { mp3?: string; opus?: string }) => string;
   getCurrentAudio: () => HTMLAudioElement | null;
@@ -1197,6 +1198,60 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Playback will be triggered by the warpCompleted effect when markWarpCompleted() is called
+    },
+
+    // Load a track without playing - useful for setup mode where user should click play
+    preloadTrack: (trackId: string) => {
+      const normId = normalizeSlug(trackId);
+      let trackInfo = TRACK_INFO[normId] || TRACK_INFO[trackId];
+
+      // If track not found in static list, create dynamic track info
+      if (!trackInfo) {
+        console.log(`🎵 preloadTrack: Track not in TRACK_INFO, creating dynamic info for: ${trackId}`);
+        trackInfo = {
+          id: normId || trackId,
+          title: (trackId || '').toUpperCase().replace(/-/g, ' '),
+          artist: 'CHXNDLER',
+          oneLiner: 'Listen now'
+        };
+      }
+
+      // Find the track source using the shared mapper
+      let trackSource = "";
+      const key = trackKeyFromSlug(normId) as TrackKey | null;
+      if (key && TRACKS[key]) {
+        trackSource = bestSourceFor(TRACKS[key]);
+        console.log(`🎵 preloadTrack: Found track source via TRACKS mapping: ${key} -> ${trackSource}`);
+      } else {
+        // Fallback to direct file path
+        trackSource = `/tracks/${normId}.mp3`;
+        console.log(`🎵 preloadTrack: Using fallback track source: ${trackSource}`);
+      }
+
+      if (!trackSource) {
+        console.warn(`🎵 preloadTrack: No source found for track: ${trackId}`);
+        return;
+      }
+
+      console.log(`🎵 preloadTrack: Loading ${trackId} without autoplay`);
+
+      // Load the track source
+      const a = audioRef.current;
+      if (a) {
+        a.src = trackSource;
+        try { a.load(); } catch {}
+      }
+
+      // Update current track info and source (but don't set playing to true)
+      setState(s => ({ ...s, currentTrack: trackInfo, src: trackSource, trackingSlug: trackId, isLoading: false }));
+
+      // Update playerStore.mainId to keep play/pause button in sync
+      import('@/store/usePlayerStore').then(({ playerStore }) => {
+        playerStore.setState({ mainId: normId, prevMainId: playerStore.getState().mainId });
+        console.log('🎵 preloadTrack: Updated playerStore.mainId to:', normId);
+      }).catch(err => {
+        console.warn('preloadTrack: Failed to update playerStore:', err);
+      });
     },
 
     playTrack: async (trackId: string) => {
