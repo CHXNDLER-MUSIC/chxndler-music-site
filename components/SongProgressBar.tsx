@@ -72,20 +72,36 @@ const SongProgressBar: React.FC<SongProgressBarProps> = ({
         onClick={handleClick}
       >
         {/* Visual track bar - thinner but with larger click area above */}
-        <div className="relative w-full h-2 bg-white/10 rounded-full overflow-visible">
+        <div
+          className="relative w-full h-2 rounded-full overflow-visible"
+          style={{
+            background: 'rgba(0, 0, 0, 0.4)',
+            border: '1px solid rgba(0, 255, 255, 0.5)',
+            boxShadow: `
+              0 0 8px rgba(0, 255, 255, 0.3),
+              inset 0 0 4px rgba(0, 255, 255, 0.1)
+            `,
+          }}
+        >
         {/* Background track */}
-        <div className="absolute inset-0 bg-gray-600/30 rounded-full" />
+        <div className="absolute inset-0 bg-gray-800/50 rounded-full" />
         
         {/* Filled progress portion with element-based glow */}
-        <div 
-          className="h-full rounded-full transition-all duration-200"
-          style={{ 
+        <div
+          className="absolute inset-0 rounded-full transition-all duration-200"
+          style={{
             width: `${progressPercentage}%`,
-            background: currentElementColor,
+            background: `linear-gradient(90deg,
+              ${currentElementColor}CC 0%,
+              ${currentElementColor} 50%,
+              ${currentElementColor}EE 100%
+            )`,
             boxShadow: `
               0 0 12px ${currentElementColor},
-              0 0 24px ${currentElementColor}40,
-              0 0 36px ${currentElementColor}20
+              0 0 24px ${currentElementColor}80,
+              0 0 36px ${currentElementColor}40,
+              inset 0 0 8px rgba(255, 255, 255, 0.3),
+              inset 0 1px 2px rgba(255, 255, 255, 0.4)
             `,
           }}
         />

@@ -8,7 +8,20 @@ const AUTH_BYPASS_ROUTES = [
 ];
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, searchParams } = request.nextUrl;
+
+  // CRITICAL: Catch bad redirects where magic link lands on root with ?code=
+  // This happens when Supabase dashboard redirect URL strips the path
+  // Redirect to /auth/callback preserving all query params
+  if (pathname === '/' && searchParams.has('code')) {
+    const callbackUrl = new URL('/auth/callback', request.url);
+    // Preserve all query params (code, next, profileSetup, etc.)
+    searchParams.forEach((value, key) => {
+      callbackUrl.searchParams.set(key, value);
+    });
+    console.log('[MIDDLEWARE] Caught bad redirect, forwarding to /auth/callback');
+    return NextResponse.redirect(callbackUrl);
+  }
 
   // Allow auth callback routes to pass through without any auth checks
   // This is critical - the callback page needs to receive the ?code= parameter

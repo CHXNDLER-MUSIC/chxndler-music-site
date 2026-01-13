@@ -3428,7 +3428,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   </div>
                                   {quest.title}
                                 </>
-                              ) : quest.quest_key === 'INVITE_ALIEN' ? (
+                              ) : quest.quest_key === 'INVITE_ALIEN' || quest.title?.toLowerCase().includes('invite') ? (
                                 <>
                                   <div className="relative">
                                     <div
