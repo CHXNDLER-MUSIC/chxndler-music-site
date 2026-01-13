@@ -436,7 +436,7 @@ function OnboardingContent() {
               fontWeight: 'bold'
             }}
           >
-            Choose your Element affinity
+            Choose your Elemental affinity
           </div>
 
           <div

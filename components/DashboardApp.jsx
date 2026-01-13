@@ -1536,8 +1536,16 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
         // Play welcome audio based on auth/profile state (backup for onWarpSfxEnd)
         try {
-          audioManager?.playTrack('space-music');
           const welcomeType = welcomeAudioTypeRef.current;
+          welcomeAudioTypeRef.current = null; // Clear immediately to prevent duplicate plays
+
+          // Play heart.MP3 for onboarding users (profile_complete = false), space-music for others
+          if (welcomeType === 'home') {
+            audioManager?.playTrack('heart');
+          } else {
+            audioManager?.playTrack('space-music');
+          }
+
           let welcomeAudioPath = null;
 
           if (welcomeType === 'heartverse') {
@@ -1553,7 +1561,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             welcomeAudio.volume = 0.9;
             welcomeAudio.play().catch(() => {});
           }
-          welcomeAudioTypeRef.current = null;
         } catch {}
 
         // Check what to show after warp
@@ -2358,12 +2365,19 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               // Clear the audio block flag so music can play
               if (typeof window !== 'undefined') { window.__BLOCK_MAIN_AUDIO = false; }
 
-              // Start space-music for all users
-              console.log('🎵 Playing space-music through AudioProvider');
-              audioManager?.playTrack('space-music');
-
               // Play appropriate welcome audio based on auth/profile state
               const welcomeType = welcomeAudioTypeRef.current;
+              welcomeAudioTypeRef.current = null; // Clear immediately to prevent duplicate plays
+
+              // Play heart.MP3 for onboarding users (profile_complete = false), space-music for others
+              if (welcomeType === 'home') {
+                console.log('🎵 Playing heart.MP3 through AudioProvider (onboarding user)');
+                audioManager?.playTrack('heart');
+              } else {
+                console.log('🎵 Playing space-music through AudioProvider');
+                audioManager?.playTrack('space-music');
+              }
+
               let welcomeAudioPath = null;
 
               if (welcomeType === 'heartverse') {
@@ -2385,9 +2399,6 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                 welcomeAudio.volume = 0.9;
                 welcomeAudio.play().catch((e) => console.warn('Welcome audio failed:', e));
               }
-
-              // Reset the welcome audio type ref
-              welcomeAudioTypeRef.current = null;
             }
           } catch {}
 

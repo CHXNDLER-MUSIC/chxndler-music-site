@@ -53,19 +53,10 @@ export default function WhatShouldWeCallYouModal() {
 
   // Reset phase when modal opens - go directly to name input
   // The main warp animation already happens when user clicks START, so no need for modal warp phase
+  // Note: "you-are-home.mp3" is played by DashboardApp after warp completes, not here
   useEffect(() => {
     if (showNamePrompt) {
       setPhase('name');
-
-      // Play "you-are-home.mp3" for new users during onboarding
-      // This plays instead of "Welcome-Back.mp3" which is for returning users
-      try {
-        const audio = new Audio('/tracks/you-are-home.mp3');
-        audio.volume = 0.8;
-        audio.play().catch(e => console.log('You are home audio play failed:', e));
-      } catch (e) {
-        console.log('Failed to create you-are-home audio:', e);
-      }
     }
   }, [showNamePrompt]);
 
@@ -294,23 +285,7 @@ export default function WhatShouldWeCallYouModal() {
             flexDirection: 'column'
           }}
         >
-        
-        {/* Close button - blue X in circle */}
-        <button
-          onClick={closeNamePrompt}
-          className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
-          style={{
-            background: 'rgba(0,255,255,0.2)',
-            border: '1px solid rgba(0,255,255,0.6)',
-            color: '#00FFFF',
-            boxShadow: '0 0 10px rgba(0,255,255,0.3)',
-            fontSize: '14px',
-            fontWeight: 'bold'
-          }}
-        >
-          ×
-        </button>
-        
+
         {/* Soft bottom glow pseudo element */}
         <div 
           className="absolute"
@@ -488,7 +463,7 @@ export default function WhatShouldWeCallYouModal() {
               <button
                 type="submit"
                 disabled={loading || !name.trim()}
-                className="w-full inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-medium transition disabled:opacity-50"
+                className="w-full inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
                 style={{
                   background: 'rgba(0,255,255,0.15)',
                   border: '1px solid rgba(0,255,255,0.5)',
@@ -499,7 +474,7 @@ export default function WhatShouldWeCallYouModal() {
                     : '0 0 15px rgba(0,255,255,0.4), 0 0 25px rgba(0,255,255,0.2)'
                 }}
               >
-                {loading ? "SAVING..." : "CONFIRM"}
+                {loading ? "ALIGNING..." : "ALIGN"}
               </button>
             </form>
           </div>

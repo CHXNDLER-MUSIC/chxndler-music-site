@@ -136,24 +136,14 @@ export default function WhatElementAreYouModal() {
       alienWaveAudio.volume = 0.8;
       alienWaveAudio.play().catch(e => console.log('Audio play failed:', e));
 
-      // Call RPC to align element and award first HeartCoin (server-side)
-      console.log('🎯 Calling RPC align_element_and_award_first_coin');
-      const { data: rpcResult, error: rpcError } = await supabaseClient.rpc('align_element_and_award_first_coin', {
-        p_name: currentName,
-        p_element: selectedElementData.label
-      });
-
-      if (rpcError) {
-        console.error('RPC error:', rpcError);
-        throw rpcError;
-      }
-
-      console.log('🎯 RPC result:', rpcResult);
+      // Save name and element to profiles table using ProfileContext
+      console.log('🎯 Saving name and element to profiles table');
+      await updateProfileNameAndElement(currentName, selectedElementData.label);
 
       // Refresh profile to get updated data
       await refreshProfile();
 
-      console.log('Profile completed! Element selected:', selectedElementData.label);
+      console.log('Profile completed! Name:', currentName, 'Element:', selectedElementData.label);
 
       // Close element selection modal
       closeElementSelection();
@@ -161,11 +151,9 @@ export default function WhatElementAreYouModal() {
       // Trigger profile refresh to update the UI
       triggerProfileRefresh();
 
-      // Check if HeartCoin was awarded and trigger celebration
-      if (rpcResult?.awarded === true) {
-        console.log('🪙 HeartCoin awarded! Triggering celebration');
-        triggerHeartCoinCelebration(1);
-      }
+      // Award first HeartCoin for profile completion
+      console.log('🪙 Awarding first HeartCoin for profile completion');
+      triggerHeartCoinCelebration(1);
 
       // Trigger warp to Heartverse center planet and play heart.mp3
       console.log('🚀 Triggering warp to Heartverse');
@@ -281,10 +269,15 @@ export default function WhatElementAreYouModal() {
 
       {/* Hologram base glow */}
       <div
-        className="fixed inset-0 flex items-center justify-center"
+        className="fixed flex justify-center"
         style={{
-          zIndex: 2147483648,
+          zIndex: 2147483647,
           pointerEvents: 'none',
+          left: 0,
+          right: 0,
+          top: 'var(--profile-bar-boundary, 64px)',
+          bottom: 'calc(var(--light-beam-boundary, 120px) + var(--beam-height, 0px))',
+          alignItems: 'flex-start',
           paddingTop: '200px'
         }}
       >
@@ -300,17 +293,21 @@ export default function WhatElementAreYouModal() {
 
       {/* Element Selection Modal */}
       <div
-        className="fixed inset-0 flex items-center justify-center"
+        className="fixed flex justify-center"
         style={{
           zIndex: 2147483648,
-          marginTop: '-220px'
+          left: 0,
+          right: 0,
+          top: 'var(--profile-bar-boundary, 64px)',
+          bottom: 'calc(var(--light-beam-boundary, 120px) + var(--beam-height, 0px))',
+          alignItems: 'flex-start'
         }}
       >
         <div
           className="onboarding-hologram-container"
           style={{
             width: 'min(92vw, 600px)',
-            minHeight: '15vh',
+            height: '100%',
             padding: '12px 16px 8px 16px',
             borderRadius: 18,
             background: 'rgba(0,0,0,0.6)',
@@ -318,7 +315,9 @@ export default function WhatElementAreYouModal() {
             boxShadow: '0 -8px 25px rgba(0,255,255,0.4), 0 -4px 15px rgba(0,255,255,0.25), 0 12px 30px rgba(0,0,0,0.4), 0 0 24px rgba(0,255,255,0.45)',
             backdropFilter: 'blur(12px) saturate(140%)',
             color: '#00FFFF',
-            position: 'relative'
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column'
           }}
         >
 
@@ -364,7 +363,7 @@ export default function WhatElementAreYouModal() {
             fontWeight: 'bold'
           }}
         >
-          Choose your Element affinity
+          Choose your Elemental affinity
         </div>
 
         {/* Thin cyan neon line */}
@@ -401,9 +400,9 @@ export default function WhatElementAreYouModal() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-2">
+        <form onSubmit={handleSubmit} className="space-y-2 flex-1 flex flex-col">
           {/* Element Grid */}
-          <div className="grid grid-cols-2 gap-2 mb-1">
+          <div className="grid grid-cols-2 gap-2 mb-1 flex-1" style={{ gridAutoRows: '1fr' }}>
             {ELEMENTS.map((element) => {
               const isFlipped = flippedCards.has(element.key);
               const isHovered = hoveredCard === element.key;
@@ -414,7 +413,7 @@ export default function WhatElementAreYouModal() {
                 <div
                   key={element.key}
                   className="element-card-container"
-                  style={{ height: '90px', width: '100%', position: 'relative' }}
+                  style={{ minHeight: '90px', width: '100%', position: 'relative', flex: 1 }}
                 >
                   <button
                     type="button"
@@ -504,7 +503,7 @@ export default function WhatElementAreYouModal() {
           <button
             type="submit"
             disabled={loading || !selectedElement}
-            className="w-full inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition disabled:opacity-50"
+            className="w-full inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
             style={(() => {
               const buttonColor = selectedElement ? getElementColor(selectedElement) : '#00FFFF';
               return {

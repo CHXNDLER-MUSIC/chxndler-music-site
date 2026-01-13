@@ -1146,7 +1146,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
 
                 {/* Right side - BOOST Section */}
                 <div
-                  className="flex flex-col items-center px-3 py-2 rounded-lg relative"
+                  className="hidden flex flex-col items-center px-3 py-2 rounded-lg relative"
                   style={{
                     background: 'rgba(0,255,255,0.08)',
                     border: '1px solid rgba(0,255,255,0.4)',
