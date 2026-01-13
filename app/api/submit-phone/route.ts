@@ -3,6 +3,61 @@ import { cookies } from 'next/headers';
 import { createSupabaseServerClientWithJwt } from '@/lib/supabaseServer';
 import { getSupabaseAdmin } from '@/lib/supabaseServer';
 
+// Helper function to award a relic to a user
+async function awardRelicToUser(admin: ReturnType<typeof getSupabaseAdmin>, userId: string, relicCode: string) {
+  try {
+    // Find the relic by code
+    const { data: relic, error: relicError } = await admin
+      .from('relics')
+      .select('id, code, label')
+      .eq('code', relicCode)
+      .maybeSingle();
+
+    if (relicError || !relic) {
+      console.log(`[submit-phone] Relic '${relicCode}' not found, skipping award`);
+      return { awarded: false, alreadyOwned: false };
+    }
+
+    // Check if user already owns this relic
+    const { data: existingRelic } = await admin
+      .from('user_relics')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('relic_id', relic.id)
+      .maybeSingle();
+
+    if (existingRelic) {
+      console.log(`[submit-phone] User ${userId} already owns relic '${relicCode}'`);
+      return { awarded: false, alreadyOwned: true, relicLabel: relic.label };
+    }
+
+    // Award the relic
+    const { error: insertError } = await admin
+      .from('user_relics')
+      .insert({
+        user_id: userId,
+        relic_id: relic.id,
+      });
+
+    if (insertError) {
+      console.error(`[submit-phone] Error awarding relic '${relicCode}':`, insertError);
+      return { awarded: false, alreadyOwned: false };
+    }
+
+    // Update relics_unlocked_count in profiles
+    await admin.rpc('increment_relics_count', { p_user_id: userId }).catch(() => {
+      // If RPC doesn't exist, just log it
+      console.log('[submit-phone] Could not increment relics count via RPC');
+    });
+
+    console.log(`[submit-phone] Awarded relic '${relicCode}' to user ${userId}`);
+    return { awarded: true, alreadyOwned: false, relicLabel: relic.label };
+  } catch (err) {
+    console.error(`[submit-phone] Unexpected error awarding relic:`, err);
+    return { awarded: false, alreadyOwned: false };
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { phone } = await req.json();

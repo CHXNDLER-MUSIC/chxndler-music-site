@@ -59,6 +59,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
   const { start: startTour } = useTour();
   
   const [allRelics, setAllRelics] = useState<Relic[]>([]);
+  const [allBadges, setAllBadges] = useState<Badge[]>([]);
   const [allMerch, setAllMerch] = useState<MerchItem[]>([]);
   const [userMerchDates, setUserMerchDates] = useState<Record<string, string>>({});
 
@@ -467,6 +468,26 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
     }
   };
 
+  // Fetch all badges from database
+  const fetchAllBadges = async () => {
+    try {
+      const { data: badgesData, error: badgesError } = await supabaseBrowser
+        .from('badges')
+        .select('id, badge_name, icon_url, description')
+        .order('badge_name', { ascending: true });
+
+      if (badgesError) {
+        console.error('Error fetching badges:', badgesError);
+        setAllBadges([]);
+      } else {
+        setAllBadges(badgesData || []);
+      }
+    } catch (error) {
+      console.log('Badges table not found, skipping');
+      setAllBadges([]);
+    }
+  };
+
   // Fetch all merch items from database
   const fetchAllMerch = async () => {
     try {
@@ -604,6 +625,9 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
       // Fetch all relics for the grid display
       await fetchAllRelics();
 
+      // Fetch all badges for the grid display
+      await fetchAllBadges();
+
       // Fetch all merch items for the grid display
       await fetchAllMerch();
 
@@ -617,6 +641,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
       setUserRelics([]);
       setUserBadges([]);
       setAllRelics([]);
+      setAllBadges([]);
       setAllMerch([]);
     } finally {
       setLoading(false);
@@ -1644,7 +1669,88 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                   })}
                 </div>
               </div>
-              
+
+              {/* Badges Section */}
+              <div className="mb-1">
+                <div
+                  className="text-center mb-1 text-sm"
+                  style={{
+                    color: '#FFD700',
+                    fontSize: '12px',
+                    textShadow: '0 0 4px rgba(255,215,0,0.8)'
+                  }}
+                >
+                  BADGES
+                </div>
+                <div className="grid grid-cols-4 gap-2 justify-center max-w-xs mx-auto">
+                  {(allBadges.length > 0 ? allBadges.slice(0, 16) : Array.from({ length: 16 }, (_, i) => ({
+                    id: `placeholder-badge-${i}`,
+                    badge_name: `Badge ${i + 1}`,
+                    icon_url: null,
+                    description: null
+                  }))).map((badge, i) => {
+                    const unlockedBadgeIds = new Set(userBadges.map(b => b.badge_id));
+                    const isUnlocked = badge && badge.id ? unlockedBadgeIds.has(badge.id) : false;
+                    const hasImage = Boolean(badge.icon_url);
+                    return (
+                      <button
+                        key={`badge-${badge.id}`}
+                        onClick={() => {
+                          if (!user || !isUnlocked || !badge.icon_url) return;
+
+                          // Update local state only - save will happen when clicking green check
+                          setSelectedImageUrl(badge.icon_url);
+                          setShowElementMenu(false);
+                          try { sfx.play('flip', 0.6); } catch {}
+                        }}
+                        onMouseEnter={() => {
+                          try { sfx.play('hover', 0.3); } catch {}
+                        }}
+                        disabled={!isUnlocked}
+                        className={`relative w-14 h-14 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:scale-110 disabled:opacity-60 disabled:cursor-not-allowed ${
+                            selectedImageUrl === badge.icon_url
+                              ? 'border-yellow-400 shadow-[0_0_15px_rgba(255,215,0,0.6)]'
+                              : isUnlocked
+                                ? 'border-yellow-400'
+                                : 'border-white/30 hover:border-yellow-400/60'
+                          }`}
+                        style={isUnlocked && selectedImageUrl !== badge.icon_url ? { boxShadow: '0 0 8px rgba(255,215,0,0.6), 0 0 16px rgba(255,215,0,0.3)' } : {}}
+                        title={isUnlocked ? (badge.badge_name || `Badge ${i + 1}`) : 'Locked'}
+                      >
+                        {hasImage ? (
+                          <img
+                            src={badge.icon_url!}
+                            alt={badge.badge_name || `Badge ${i + 1}`}
+                            className={`w-full h-full object-cover ${isUnlocked ? '' : 'grayscale'}`}
+                            style={{ opacity: isUnlocked ? 1 : 0.5 }}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement as HTMLElement | null;
+                              if (parent) {
+                                parent.innerHTML = '🏆';
+                                parent.style.color = '#666';
+                                parent.style.fontSize = '8px';
+                                parent.style.display = 'flex';
+                                parent.style.alignItems = 'center';
+                                parent.style.justifyContent = 'center';
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">🏆</div>
+                        )}
+                        {!isUnlocked && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-[10px] text-white font-semibold">
+                            Locked
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
             </div>
           )}
 

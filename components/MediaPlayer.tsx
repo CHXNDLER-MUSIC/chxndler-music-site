@@ -1667,28 +1667,38 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                     )}
                     
                     {/* Progress indicator - glowing cosmic pulse */}
-                    <circle
-                      cx={progress * 800}
-                      cy={waveformData[playedPoints]?.y || 50}
-                      r="6"
-                      fill={currentStyle.primary}
-                      opacity="1"
-                      style={{
-                        transform: `translateY(${breathingOffset}px)`,
-                        filter: `drop-shadow(0 0 12px ${currentStyle.glow}) drop-shadow(0 0 24px ${currentStyle.glow}) drop-shadow(0 0 36px ${currentStyle.glow})`
-                      }}
-                    />
-                    {/* White core of indicator */}
-                    <circle
-                      cx={progress * 800}
-                      cy={waveformData[playedPoints]?.y || 50}
-                      r="3"
-                      fill="white"
-                      opacity="1"
-                      style={{
-                        transform: `translateY(${breathingOffset}px)`
-                      }}
-                    />
+                    {(() => {
+                      // Position dot at exact end of played path for perfect sync
+                      const dotIndex = Math.max(0, playedPoints - 1);
+                      const dotX = waveformData[dotIndex]?.x ?? (progress * 800);
+                      const dotY = waveformData[dotIndex]?.y ?? 50;
+                      return (
+                        <>
+                          <circle
+                            cx={dotX}
+                            cy={dotY}
+                            r="6"
+                            fill={currentStyle.primary}
+                            opacity="1"
+                            style={{
+                              transform: `translateY(${breathingOffset}px)`,
+                              filter: `drop-shadow(0 0 12px ${currentStyle.glow}) drop-shadow(0 0 24px ${currentStyle.glow}) drop-shadow(0 0 36px ${currentStyle.glow})`
+                            }}
+                          />
+                          {/* White core of indicator */}
+                          <circle
+                            cx={dotX}
+                            cy={dotY}
+                            r="3"
+                            fill="white"
+                            opacity="1"
+                            style={{
+                              transform: `translateY(${breathingOffset}px)`
+                            }}
+                          />
+                        </>
+                      );
+                    })()}
                   </>
                 );
               })()}
