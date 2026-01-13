@@ -121,24 +121,41 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     const welcome = searchParams.get('welcome');
     const shouldShowNamePrompt = searchParams.get('showNamePrompt');
 
+    console.log("🔍 DashboardApp checking URL params:", {
+      profileSetup,
+      completeProfile,
+      welcome,
+      shouldShowNamePrompt,
+      fullUrl: typeof window !== 'undefined' ? window.location.href : 'SSR',
+      searchParamsString: searchParams.toString()
+    });
+
     // Mark that user came from magic link - this will make START button warp to Heartverse
     if (profileSetup === '1' || completeProfile === '1' || welcome === '1' || shouldShowNamePrompt === '1') {
       cameFromMagicLinkRef.current = true;
-      console.log("🔗 User arrived via magic link - will warp to Heartverse on START");
+      console.log("🔗 User arrived via magic link - setting cameFromMagicLinkRef to TRUE");
 
-      // Clean up URL parameters
+      // Clean up URL parameters while preserving current pathname
       const newParams = new URLSearchParams(searchParams.toString());
       newParams.delete('profileSetup');
       newParams.delete('completeProfile');
       newParams.delete('welcome');
       newParams.delete('showNamePrompt');
-      const newUrl = newParams.toString() ? `/?${newParams.toString()}` : '/';
+      // Use current pathname instead of always redirecting to '/'
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
+      const newUrl = newParams.toString() ? `${currentPath}?${newParams.toString()}` : currentPath;
       router.replace(newUrl);
     }
   }, [searchParams, router, openNamePrompt]);
   
   // Profile context for user and profile data
   const { profile } = useProfile();
+
+  // Ref to track latest profile for use in setTimeout closures (avoids stale closure issues)
+  const profileRef = React.useRef(profile);
+  React.useEffect(() => {
+    profileRef.current = profile;
+  }, [profile]);
   
   // Global UI state for profile bar visibility
   const { hasEnteredHeartverse, setHasEnteredHeartverse, enterHeartverse, setWarpFullyComplete, warpFullyComplete, userClickedStart, setUserClickedStart } = useUIState();
@@ -1374,12 +1391,14 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   
   const handleStartClick = React.useCallback(() => {
     console.log("🚀 START CLICKED");
+    console.log("🚀 cameFromMagicLinkRef.current:", cameFromMagicLinkRef.current);
     console.log("🚀 Profile state:", {
       id: profile?.id,
       name: profile?.name,
       element: profile?.element,
       profileComplete: profile?.profile_complete
     });
+    console.log("🚀 profileRef.current:", profileRef.current);
 
     if (startInFlightRef.current) return;
     startInFlightRef.current = true;
@@ -1554,23 +1573,25 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       // Profile setup flow - only for magic link users warping to Heartverse
       // Regular users just see the Homepage with all planets
       setTimeout(() => {
+        // Use profileRef.current to get latest profile (avoids stale closure from when START was clicked)
+        const currentProfile = profileRef.current;
         // Use same isRealName check as initial profile detection to filter out auto-generated names
-        const hasName = isRealName(profile?.name, profile?.email);
-        const hasElement = profile?.element && profile.element.trim() !== '';
+        const hasName = isRealName(currentProfile?.name, currentProfile?.email);
+        const hasElement = currentProfile?.element && currentProfile.element.trim() !== '';
 
         console.log("🛬 Post-warp profile check:", {
           cameFromMagicLink: cameFromMagicLinkRef.current,
-          id: profile?.id,
-          name: profile?.name,
-          email: profile?.email,
-          element: profile?.element,
+          id: currentProfile?.id,
+          name: currentProfile?.name,
+          email: currentProfile?.email,
+          element: currentProfile?.element,
           hasName,
           hasElement
         });
 
         // Only show onboarding modals for magic link users
         if (cameFromMagicLinkRef.current) {
-          if (!profile?.id) {
+          if (!currentProfile?.id) {
             // Step 0: User not logged in - show Welcome Home modal for login/signup
             console.log("🛬 Showing WelcomeHomeModal (not logged in)");
             setShowWelcomeHomeModal(true);

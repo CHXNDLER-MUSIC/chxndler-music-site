@@ -80,7 +80,9 @@ export function toAutoplayingYouTubeEmbed(url: string): string | null {
   if (!embed) return null;
   const id = parseYouTubeId(url) || embed.split('/embed/')[1]?.split(/[?&]/)[0] || '';
 
-  // Minimal parameters - only what's strictly needed for background video
+  // Get origin for embed validation - critical for production
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+
   const params = new URLSearchParams({
     autoplay: '1',
     mute: '1',
@@ -88,7 +90,16 @@ export function toAutoplayingYouTubeEmbed(url: string): string | null {
     playlist: id,  // Required for loop to work
     controls: '0',
     playsinline: '1',
+    // These help YouTube trust the embed
+    rel: '0',
+    modestbranding: '1',
+    enablejsapi: '1',
   });
+
+  // Origin tells YouTube where the embed is hosted - helps with bot detection
+  if (origin) {
+    params.set('origin', origin);
+  }
 
   return `${embed}?${params.toString()}`;
 }

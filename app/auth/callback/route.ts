@@ -1,5 +1,4 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseServer';
 
@@ -8,6 +7,15 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get('code');
   const next = requestUrl.searchParams.get('next') ?? '/';
   const origin = requestUrl.origin;
+  const profileSetup = requestUrl.searchParams.get('profileSetup');
+
+  console.log('[auth/callback] Received request:', {
+    url: requestUrl.toString(),
+    code: code ? `${code.substring(0, 10)}...` : 'MISSING',
+    next,
+    profileSetup,
+    origin
+  });
 
   // If no code, redirect with error
   if (!code) {
@@ -15,22 +23,30 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/?error=missing_code`);
   }
 
-  // Create Supabase client with cookie handling for route handlers
-  const cookieStore = await cookies();
+  // Build redirect URL early so we can set cookies directly on it
+  let redirectUrl = `${origin}${next}`;
+  if (profileSetup === '1') {
+    const separator = redirectUrl.includes('?') ? '&' : '?';
+    redirectUrl = `${redirectUrl}${separator}profileSetup=1`;
+  }
+  console.log('[auth/callback] Will redirect to:', redirectUrl);
 
+  // Create the response object first - cookies will be set directly on this
+  const response = NextResponse.redirect(redirectUrl);
+
+  // Create Supabase client that sets cookies on the redirect response
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
+        getAll() {
+          return request.cookies.getAll();
         },
-        set(name: string, value: string, options: CookieOptions) {
-          cookieStore.set({ name, value, ...options });
-        },
-        remove(name: string, options: CookieOptions) {
-          cookieStore.set({ name, value: '', ...options });
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
         },
       },
     }
@@ -127,17 +143,6 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Build redirect URL with profileSetup parameter for new users
-  // This triggers the onboarding modal flow (name prompt → element selection)
-  const profileSetup = requestUrl.searchParams.get('profileSetup');
-  let redirectUrl = `${origin}${next}`;
-
-  // Pass profileSetup parameter through to trigger onboarding modal
-  if (profileSetup === '1') {
-    const separator = redirectUrl.includes('?') ? '&' : '?';
-    redirectUrl = `${redirectUrl}${separator}profileSetup=1`;
-  }
-
   console.log('[auth/callback] Success! Redirecting to:', redirectUrl);
-  return NextResponse.redirect(redirectUrl);
+  return response;
 }
