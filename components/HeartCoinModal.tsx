@@ -2531,7 +2531,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   <img
                     src="/elements/lightning.webp"
                     alt="Lightning"
-                    className="w-12 h-12 object-contain"
+                    className="w-16 h-16 object-contain"
                     draggable={false}
                   />
                 </div>
@@ -2549,7 +2549,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 }}
               >
                 <div className="w-24 h-24 mx-auto bg-gradient-to-br from-purple-900/30 to-black/40 rounded-full border-2 border-purple-600/40 flex items-center justify-center transition-all duration-300 hover:border-white hover:shadow-[0_0_20px_rgba(255,255,255,0.6)] hover:scale-105">
-                  <div className="w-12 h-12 rounded-full border-2 border-purple-600 bg-gradient-to-br from-transparent to-purple-900/40" />
+                  <div className="w-16 h-16 rounded-full border-2 border-purple-600 bg-gradient-to-br from-transparent to-purple-900/40" />
                 </div>
                 <div className="text-center mt-2">
                   <span className="text-purple-400 font-bold text-sm">{getElementCardCount('DARKNESS')}</span>
@@ -2568,7 +2568,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   <img
                     src="/elements/water.webp"
                     alt="Water"
-                    className="w-12 h-12 object-contain"
+                    className="w-16 h-16 object-contain"
                     draggable={false}
                   />
                 </div>
@@ -2589,7 +2589,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   <img
                     src="/elements/heart.webp"
                     alt="Heart"
-                    className="w-12 h-12 object-contain"
+                    className="w-16 h-16 object-contain"
                     draggable={false}
                   />
                 </div>

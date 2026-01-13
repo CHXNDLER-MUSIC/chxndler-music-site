@@ -5166,6 +5166,25 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               Complete Element of the Day to unlock binder slot
                             </div>
                           </>
+                        ) : showCardConfirm === 'physical' && heartCoins < (enlargedCard?.physicalCost || 20) ? (
+                          /* Physical card - Logged in but insufficient coins */
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                try { sfx.play('error', 0.6); } catch {}
+                              }}
+                              onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                              disabled
+                              className="px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg border-red-500/60 bg-red-500/20 cursor-not-allowed opacity-50"
+                              style={{ textShadow: '0 0 8px rgba(239,68,68,0.5)', boxShadow: '0 0 15px rgba(239,68,68,0.2)' }}
+                            >
+                              CONFIRM
+                            </button>
+                            <div className="text-red-400 text-xs mt-2" style={{ textShadow: '0 0 6px rgba(239,68,68,0.6)' }}>
+                              Not enough HeartCoins
+                            </div>
+                          </>
                         ) : (
                           /* Logged in + sufficient coins + has binder slot - normal flow */
                           <button

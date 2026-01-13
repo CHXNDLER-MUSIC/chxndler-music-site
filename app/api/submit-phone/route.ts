@@ -107,6 +107,9 @@ export async function POST(req: NextRequest) {
       }
 
       if (existingProfile) {
+        // Check if phone was previously null (first time providing phone)
+        const isFirstTimePhone = existingProfile.phone === null;
+
         // Update existing profile with phone number (do NOT send updated_at)
         const { error: updateError } = await admin
           .from('profiles')
@@ -120,10 +123,23 @@ export async function POST(req: NextRequest) {
           throw updateError;
         }
 
+        // Award Heartverse relic if this is the first time providing phone
+        let relicAwarded = false;
+        let relicLabel = '';
+        if (isFirstTimePhone) {
+          const relicResult = await awardRelicToUser(admin, userId, 'heartverse');
+          relicAwarded = relicResult.awarded;
+          relicLabel = relicResult.relicLabel || 'Heartverse';
+        }
+
         return NextResponse.json({
           success: true,
-          message: 'Phone number updated in your profile!',
-          type: 'profile_updated'
+          message: relicAwarded
+            ? `Phone number saved! You've unlocked the ${relicLabel} relic!`
+            : 'Phone number updated in your profile!',
+          type: 'profile_updated',
+          relicAwarded,
+          relicLabel: relicAwarded ? relicLabel : undefined
         });
       } else {
         // Create new profile for authenticated user
@@ -140,10 +156,19 @@ export async function POST(req: NextRequest) {
           throw insertError;
         }
 
-        return NextResponse.json({ 
-          success: true, 
-          message: 'Profile created with your phone number!',
-          type: 'profile_created'
+        // Award Heartverse relic for new profile with phone
+        const relicResult = await awardRelicToUser(admin, userId, 'heartverse');
+        const relicAwarded = relicResult.awarded;
+        const relicLabel = relicResult.relicLabel || 'Heartverse';
+
+        return NextResponse.json({
+          success: true,
+          message: relicAwarded
+            ? `Profile created! You've unlocked the ${relicLabel} relic!`
+            : 'Profile created with your phone number!',
+          type: 'profile_created',
+          relicAwarded,
+          relicLabel: relicAwarded ? relicLabel : undefined
         });
       }
     } else {
