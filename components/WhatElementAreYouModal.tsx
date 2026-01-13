@@ -7,6 +7,7 @@ import { useUIStore } from "@/store/useUIStore";
 import { useProfile as useNewProfile } from "@/hooks/useProfile";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useAudio } from "@/app/providers/AudioProvider";
+import { sfx } from "@/lib/sfx";
 import type { Element } from "@/lib/planets";
 import { ELEMENT_COLORS } from "@/lib/planets";
 import { logHeartcoinTransaction } from "@/utils/heartcoins";
@@ -131,10 +132,13 @@ export default function WhatElementAreYouModal() {
     }
 
     try {
-      // Play alien-wave.mp3 sound when aligning
-      const alienWaveAudio = new Audio('/audio/alien-wave.mp3');
-      alienWaveAudio.volume = 0.8;
-      alienWaveAudio.play().catch(e => console.log('Audio play failed:', e));
+      // Play element-specific sound when aligning
+      const elementSound = ELEMENT_SOUNDS[selectedElement];
+      if (elementSound) {
+        const alignAudio = new Audio(elementSound);
+        alignAudio.volume = 0.8;
+        alignAudio.play().catch(e => console.log('Element sound play failed:', e));
+      }
 
       // Save name and element to profiles table using ProfileContext
       console.log('🎯 Saving name and element to profiles table');
@@ -175,17 +179,14 @@ export default function WhatElementAreYouModal() {
         }
       }, 500);
 
-      // Show welcome modal after warp completes
+      // Show tour welcome modal after warp and celebrations complete
+      // Delay accounts for: warp (~3.5s) + HeartCoin celebration (~1.5s) + Badge celebration (~3s)
       setTimeout(() => {
         try {
-          console.log('Dispatching heartverse:entered event');
+          console.log('Dispatching heartverse:entered event to show tour prompt');
           window.dispatchEvent(new CustomEvent('heartverse:entered'));
-
-          // Show HeartverseWelcomeModal (Welcome home display with relics)
-          console.log('Dispatching heartverse:showWelcome to show Welcome home modal');
-          window.dispatchEvent(new CustomEvent('heartverse:showWelcome'));
         } catch {}
-      }, 2500); // Wait for warp to complete
+      }, 6000); // Wait for warp and celebrations to complete
     } catch (e: any) {
       setError(e?.message || "Failed to save element selection");
     } finally {
@@ -358,8 +359,8 @@ export default function WhatElementAreYouModal() {
           className="text-center mb-2"
           style={{
             color: '#00FFFF',
-            textShadow: '0 0 8px rgba(0,255,255,0.6)',
-            fontSize: '16px',
+            textShadow: '0 0 10px rgba(0,255,255,0.8), 0 0 20px rgba(0,255,255,0.4)',
+            fontSize: '22px',
             fontWeight: 'bold'
           }}
         >
@@ -374,10 +375,6 @@ export default function WhatElementAreYouModal() {
             boxShadow: '0 0 4px rgba(0,255,255,0.6)'
           }}
         />
-
-        <p className="relative text-xs mb-2 text-center" style={{ color: '#FFFFFF', textShadow: '0 0 4px rgba(255,255,255,0.6)' }}>
-          You can change this later
-        </p>
 
         {error && (
           <div className="relative mb-4 rounded-md bg-red-50/10 border border-red-200/40 p-3 text-sm text-red-200">
@@ -455,11 +452,11 @@ export default function WhatElementAreYouModal() {
                       <img
                         src={element.icon}
                         alt={element.name}
-                        className="w-14 h-14"
+                        className="w-24 h-24"
                         style={{
                           filter: isHovered || isSelected
-                            ? `drop-shadow(0 0 8px ${elementColor}) drop-shadow(0 0 16px ${elementColor}80)`
-                            : 'drop-shadow(0 0 2px #00FFFF)',
+                            ? `drop-shadow(0 0 12px ${elementColor}) drop-shadow(0 0 24px ${elementColor}80)`
+                            : 'drop-shadow(0 0 4px #00FFFF)',
                           transition: 'filter 0.3s ease'
                         }}
                       />
@@ -475,7 +472,7 @@ export default function WhatElementAreYouModal() {
                       }}
                     >
                       <div
-                        className="font-bold text-lg mb-1"
+                        className="font-bold text-2xl mb-1"
                         style={{
                           color: elementColor,
                           textShadow: `0 0 10px ${elementColor}, 0 0 20px ${elementColor}80`
@@ -484,7 +481,7 @@ export default function WhatElementAreYouModal() {
                         {element.name}
                       </div>
                       <div
-                        className="text-xs text-center px-2"
+                        className="text-sm text-center px-2"
                         style={{
                           color: elementColor,
                           textShadow: `0 0 4px ${elementColor}60`,
@@ -503,17 +500,20 @@ export default function WhatElementAreYouModal() {
           <button
             type="submit"
             disabled={loading || !selectedElement}
-            className="w-full inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+            onMouseEnter={() => {
+              try { sfx.play('hover', 0.3); } catch {}
+            }}
+            className="w-full inline-flex items-center justify-center rounded-lg px-6 py-3 text-2xl font-bold tracking-wider transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
             style={(() => {
               const buttonColor = selectedElement ? getElementColor(selectedElement) : '#00FFFF';
               return {
-                background: `${buttonColor}15`,
-                border: `1px solid ${buttonColor}80`,
+                background: `${buttonColor}25`,
+                border: `2px solid ${buttonColor}`,
                 color: buttonColor,
-                textShadow: `0 0 8px ${buttonColor}, 0 0 16px ${buttonColor}99, 0 0 24px ${buttonColor}66`,
+                textShadow: `0 0 10px ${buttonColor}, 0 0 20px ${buttonColor}, 0 0 40px ${buttonColor}, 0 0 60px ${buttonColor}80`,
                 boxShadow: loading || !selectedElement
                   ? 'none'
-                  : `0 0 15px ${buttonColor}66, 0 0 25px ${buttonColor}33, 0 0 35px ${buttonColor}22`,
+                  : `0 0 20px ${buttonColor}80, 0 0 40px ${buttonColor}60, 0 0 60px ${buttonColor}40, inset 0 0 20px ${buttonColor}20`,
                 transition: 'all 0.3s ease'
               };
             })()}

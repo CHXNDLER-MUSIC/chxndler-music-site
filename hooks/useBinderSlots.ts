@@ -125,14 +125,10 @@ export function useBinderSlots(userId?: string | null): UseBinderSlotsResult {
     [slots]
   );
 
-  // Display-adjusted unlocked slots: handle edge case where cards > unlocked slots due to past bugs
+  // All slots are now unlocked - return TOTAL_SLOTS
   const displayUnlockedSlots = useMemo(() => {
-    const count = Math.max(unlockedSlotsCount, cardsInSlots);
-    if (cardsInSlots > unlockedSlotsCount) {
-      console.warn(`[useBinderSlots] Mismatch: cardsInSlots (${cardsInSlots}) > unlockedSlotsCount (${unlockedSlotsCount}). Using max value.`);
-    }
-    return count;
-  }, [unlockedSlotsCount, cardsInSlots]);
+    return TOTAL_SLOTS;
+  }, []);
 
   // Find first empty slot (unlocked but no card)
   const firstEmptySlotIndex = useMemo(() => {

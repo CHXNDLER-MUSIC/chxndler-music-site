@@ -192,7 +192,20 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       // Check if we have data for this slot from the view
       const existingSlot = binderSlots.find(s => s.slot_index === i);
 
-      if (existingSlot) {
+      // First slot: Always show CHXNDLER card by default if no card is assigned
+      if (i === 0 && (!existingSlot || !existingSlot.card_id)) {
+        slots.push({
+          user_id: profile?.id || '',
+          slot_index: 0,
+          is_unlocked: true,
+          card_id: 'chxndler-default',
+          card_name: 'CHXNDLER',
+          artwork_url: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
+          element: 'ALL',
+          rarity: 'Common',
+          is_starter: true
+        });
+      } else if (existingSlot) {
         slots.push(existingSlot);
       } else {
         // Generate a slot based on display logic
@@ -215,8 +228,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
   }, [pageIndex, binderSlots, displayUnlockedSlots, profile?.id]);
 
   // Preview slots for logged-out state (guest mode)
-  // Page 1: CHXNDLER in slot 0, empty slots in 1-2, locked in 3-5
-  // Page 2+: All slots locked
+  // All slots are now unlocked
   const previewSlots: BinderSlot[] = useMemo(() => {
     const PAGE_SIZE = 6;
     const startIndex = pageIndex * PAGE_SIZE;
@@ -224,29 +236,19 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     return Array.from({ length: PAGE_SIZE }, (_, i) => {
       const slotIndex = startIndex + i;
 
-      // Only page 1 (pageIndex 0) has unlocked slots
-      if (pageIndex === 0) {
-        if (slotIndex === 0) {
-          // First slot: CHXNDLER preview card
-          return {
-            user_id: '', slot_index: slotIndex, is_unlocked: true,
-            card_id: 'chxndler-preview', card_name: 'CHXNDLER',
-            artwork_url: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
-            element: 'ALL', rarity: 'Common', is_starter: true
-          };
-        } else if (slotIndex < 3) {
-          // Slots 1-2: Empty unlocked
-          return {
-            user_id: '', slot_index: slotIndex, is_unlocked: true,
-            card_id: null, card_name: null, artwork_url: null,
-            element: null, rarity: null, is_starter: null
-          };
-        }
+      // First slot on page 1: CHXNDLER preview card
+      if (pageIndex === 0 && slotIndex === 0) {
+        return {
+          user_id: '', slot_index: slotIndex, is_unlocked: true,
+          card_id: 'chxndler-preview', card_name: 'CHXNDLER',
+          artwork_url: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
+          element: 'ALL', rarity: 'Common', is_starter: true
+        };
       }
 
-      // All other slots (page 2+ or slots 3-5 on page 1): Locked
+      // All other slots: Empty and unlocked
       return {
-        user_id: '', slot_index: slotIndex, is_unlocked: false,
+        user_id: '', slot_index: slotIndex, is_unlocked: true,
         card_id: null, card_name: null, artwork_url: null,
         element: null, rarity: null, is_starter: null
       };
@@ -1000,7 +1002,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       
       <PopoutShell
         title="DIGITAL CARD BINDER"
-        subtitle={`CARDS COLLECTED: ${profile?.id ? cardsInSlots : 1}`}
+        subtitle={`CARDS COLLECTED: ${profile?.id ? Math.max(1, cardsInSlots) : 1}`}
         minWidth={'min(96vw, 440px)'}
         maxHeight={'calc(100vh - 8vh - var(--display-touch-top))'}
         onClose={() => {
@@ -1219,11 +1221,11 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                         }}
                         style={{
                           boxShadow: hasCard
-                            ? '0 0 12px rgba(255,105,180,0.6), 0 0 20px rgba(255,105,180,0.4)'
+                            ? '0 0 15px rgba(255,105,180,0.8), 0 0 30px rgba(255,105,180,0.6), 0 0 45px rgba(255,105,180,0.4)'
                             : isEmpty
                             ? '0 0 8px rgba(255,105,180,0.3), 0 0 14px rgba(255,105,180,0.15)'
                             : '0 0 3px rgba(255,105,180,0.1)',
-                          border: isEmpty ? '2px dotted rgba(255,105,180,0.5)' : undefined,
+                          border: hasCard ? '2px solid rgba(255,105,180,0.6)' : isEmpty ? '2px dotted rgba(255,105,180,0.5)' : undefined,
                           animation: isNewlyUnlocked
                             ? 'slotUnlock 1.2s ease-out forwards'
                             : (isEmpty && !profile?.id)

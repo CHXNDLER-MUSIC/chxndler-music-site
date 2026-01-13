@@ -2984,7 +2984,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               ) : dailyQuestItems.length === 0 ? (
                 <div className="text-center text-white/60 py-4">No daily quests available</div>
               ) : (
-                dailyQuestItems.map((quest, index) => (
+                dailyQuestItems.filter(quest => quest.quest_key !== 'TAP_ELEMENT_OF_DAY').map((quest, index) => (
                   <div key={quest.id} className="flex flex-col px-2 pt-0.5 pb-1 rounded border border-white/30 bg-white/10 flex-1 relative overflow-visible">
                     <div className="absolute top-1 right-1 flex items-center" style={{
                       color: isQuestCompleted(quest) ? '#666' : '#90EE90',

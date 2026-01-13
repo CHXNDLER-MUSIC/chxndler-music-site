@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { useProfile } from "@/contexts/ProfileContext";
 import { useMenuState } from "@/contexts/MenuStateContext";
 import OnboardingTour from "@/components/OnboardingTour";
+import { sfx } from "@/lib/sfx";
 
 type TourContextValue = {
   active: boolean;
@@ -160,10 +161,16 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
             >
               {`Welcome ${profile?.name ? profile.name : 'Alien'}`}
             </h2>
-            <p className="text-white/90 mb-6">Let me show you around?</p>
+            <p className="text-white/90 mb-6">Show you around?</p>
 
             <button
-              onClick={() => start()}
+              onClick={() => {
+                try { sfx.play('click', 0.5); } catch {}
+                start();
+              }}
+              onMouseEnter={() => {
+                try { sfx.play('hover', 0.3); } catch {}
+              }}
               className="w-full px-6 py-3 rounded-lg font-semibold text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] mb-3"
               style={{
                 background: 'linear-gradient(135deg, rgba(252,84,175,0.85), rgba(252,84,175,0.65))',
@@ -171,19 +178,23 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
                 boxShadow: '0 6px 14px rgba(0,0,0,0.35), 0 0 20px rgba(252,84,175,0.45)'
               }}
             >
-              Show me around
+              Start Tour
             </button>
 
             <button
-              onClick={() => { 
-                console.log('Skip for now clicked');
-                setWelcomeVisible(false); 
+              onClick={() => {
+                try { sfx.play('click', 0.5); } catch {}
+                console.log('Skip tour clicked');
+                setWelcomeVisible(false);
                 // Small delay to ensure modal closes before triggering warp
                 setTimeout(() => skip(), 100);
               }}
+              onMouseEnter={() => {
+                try { sfx.play('hover', 0.3); } catch {}
+              }}
               className="w-full text-white/80 hover:text-white text-sm underline"
             >
-              Skip for now
+              Skip Tour
             </button>
           </div>
         </div>

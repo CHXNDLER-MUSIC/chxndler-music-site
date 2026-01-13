@@ -839,8 +839,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
           className="profile-hologram-container overflow-y-auto overflow-x-hidden flex flex-col"
           style={{
             width: 'min(92vw, 500px)',
-            height: 'fit-content',
-            maxHeight: '100%',
+            height: '100%',
             padding: '16px 24px 0px 24px',
             borderRadius: 18,
             background: 'rgba(0,0,0,0.6)',

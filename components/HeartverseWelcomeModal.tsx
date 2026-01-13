@@ -25,6 +25,9 @@ const STORY_RELIC_LABELS: Record<string, string> = {
 };
 
 export default function HeartverseWelcomeModal() {
+  // TEMPORARILY HIDDEN - return null to disable this modal
+  return null;
+
   const [isOpen, setIsOpen] = useState(false);
   const [username, setUsername] = useState<string>("Wanderer");
   const [claimed, setClaimed] = useState(false);

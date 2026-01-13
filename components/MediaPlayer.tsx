@@ -1322,6 +1322,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
 
             <div className="volume-button-wrap">
               <button
+                type="button"
                 ref={waveVolBtnRef}
                 className="waveform-volume-btn"
                 onClick={() => {
@@ -1331,7 +1332,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                     const next = !v;
                     if (next && waveVolBtnRef.current) {
                       const r = waveVolBtnRef.current.getBoundingClientRect();
-                      setWavePopoverPos({ left: r.left + r.width / 2, top: r.bottom + 8 });
+                      setWavePopoverPos({ left: r.left + r.width / 2, top: r.top - 8 });
                     }
                     return next;
                   });
@@ -1776,6 +1777,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             {/* Mute/Unmute button */}
             <div className="volume-button-wrap">
             <button
+              type="button"
               ref={mainVolBtnRef}
               className="track-btn volume-btn"
               onClick={() => {
@@ -1787,7 +1789,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                   const next = !v;
                   if (next && mainVolBtnRef.current) {
                     const r = mainVolBtnRef.current.getBoundingClientRect();
-                    setMainPopoverPos({ left: r.left + r.width / 2, top: r.bottom + 8 });
+                    setMainPopoverPos({ left: r.left + r.width / 2, top: r.top - 8 });
                   }
                   return next;
                 });
@@ -2147,7 +2149,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       <audio ref={detentRef}   src="/audio/warp.mp3" preload="auto" />
 
       {typeof document !== 'undefined' && showWaveformVolumePopover && wavePopoverPos ? createPortal(
-        <div className="volume-popover" role="dialog" aria-label="Adjust volume" style={{ position:'fixed', left: wavePopoverPos.left, top: wavePopoverPos.top, transform:'translateX(-50%)', zIndex: 2147483647 }}>
+        <div className="volume-popover" role="dialog" aria-label="Adjust volume" style={{ position:'fixed', left: wavePopoverPos.left, top: wavePopoverPos.top, transform:'translate(-50%, -100%)', zIndex: 2147483647 }}>
           <div
             className="volume-slider-vertical"
             role="slider"
@@ -2195,7 +2197,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       ) : null}
 
       {typeof document !== 'undefined' && showMainVolumePopover && mainPopoverPos ? createPortal(
-        <div className="volume-popover" role="dialog" aria-label="Adjust volume" style={{ position:'fixed', left: mainPopoverPos.left, top: mainPopoverPos.top, transform:'translateX(-50%)', zIndex: 2147483647 }}>
+        <div className="volume-popover" role="dialog" aria-label="Adjust volume" style={{ position:'fixed', left: mainPopoverPos.left, top: mainPopoverPos.top, transform:'translate(-50%, -100%)', zIndex: 2147483647 }}>
           <div
             className="volume-slider-vertical"
             role="slider"

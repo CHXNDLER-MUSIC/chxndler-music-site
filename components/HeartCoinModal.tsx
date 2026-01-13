@@ -1682,7 +1682,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     <p className="text-white/60 text-sm">Loading daily quests...</p>
                   </div>
                 ) : dbDailyQuests.length > 0 ? (
-                  dbDailyQuests.map((quest, index) => (
+                  dbDailyQuests.filter(quest => quest.quest_key !== 'TAP_ELEMENT_OF_DAY').map((quest, index) => (
                     <div key={quest.id} className="flex flex-col p-3 rounded-lg border border-white/30 bg-white/10">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 flex-1 min-w-0">

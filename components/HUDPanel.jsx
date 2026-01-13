@@ -3781,7 +3781,7 @@ const HUDPanel = React.memo(function HUDPanel({
                               <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(0deg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                                 {/* Wanderer icon (PNG) */}
                                 <img
-                                  src="/elements/the-wanderer.png"
+                                  src="/elements/wanderer.webp"
                                   alt="The Wanderer"
                                   width={56}
                                   height={56}
@@ -3842,7 +3842,7 @@ const HUDPanel = React.memo(function HUDPanel({
                               {/* Front */}
                               <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(0deg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                                 <img
-                                  src="/elements/the-dreamer.png"
+                                  src="/elements/dreamer.webp"
                                   alt="The Dreamer"
                                   width={56}
                                   height={56}
@@ -3903,7 +3903,7 @@ const HUDPanel = React.memo(function HUDPanel({
                               {/* Front */}
                               <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(0deg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                                 <img
-                                  src="/elements/the-lover.png"
+                                  src="/elements/lover.webp"
                                   alt="The Lover"
                                   width={56}
                                   height={56}
