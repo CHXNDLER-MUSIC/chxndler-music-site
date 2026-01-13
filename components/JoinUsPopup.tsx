@@ -81,9 +81,8 @@ export default function JoinUsPopup({ isOpen, onClose, onOpenChat }: Props) {
     }
   }
 
-  function getRedirectUrl(path: string) {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-    return `${baseUrl}${path}`;
+  function getRedirectUrl() {
+    return `${window.location.origin}/auth/callback`;
   }
 
   async function createProfileWithEmail(e: React.FormEvent) {
@@ -94,7 +93,7 @@ export default function JoinUsPopup({ isOpen, onClose, onOpenChat }: Props) {
     setIsSigningUp(true);
 
     try {
-      const redirectUrl = getRedirectUrl('/auth/callback?profileSetup=1');
+      const redirectUrl = getRedirectUrl();
       console.log('🚀 Starting email signup for:', email);
       console.log('🚀 Redirect URL will be:', redirectUrl);
 

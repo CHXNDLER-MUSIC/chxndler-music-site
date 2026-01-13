@@ -9,9 +9,8 @@ export default function SignInPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  function getRedirectUrl(path: string) {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-    return `${baseUrl}${path}`;
+  function getRedirectUrl() {
+    return `${window.location.origin}/auth/callback`;
   }
 
   async function signInWithGoogle() {
@@ -21,7 +20,7 @@ export default function SignInPage() {
     try {
       const { error } = await supabaseClient.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: getRedirectUrl("/auth/callback") },
+        options: { redirectTo: getRedirectUrl() },
       });
       if (error) throw error;
     } catch (e: any) {
@@ -39,7 +38,7 @@ export default function SignInPage() {
     try {
       const { error } = await supabaseClient.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: getRedirectUrl("/auth/callback?profileSetup=1") },
+        options: { emailRedirectTo: getRedirectUrl() },
       });
       if (error) throw error;
       setMessage("Check your email for a magic link.");
