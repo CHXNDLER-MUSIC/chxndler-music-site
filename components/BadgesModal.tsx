@@ -342,12 +342,17 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             {selectedBadge.badge_name}
           </h2>
 
-          {/* Status */}
-          <div className={`text-xs ${
-            selectedBadge.unlocked ? 'text-green-400' : 'text-white/40'
-          }`}>
-            {selectedBadge.unlocked ? '✅ UNLOCKED' : '🔒 LOCKED'}
-          </div>
+          {/* Status - only show unlocked if current >= target */}
+          {(() => {
+            const current = Number(selectedBadge.progress?.current) || 0;
+            const target = Number(selectedBadge.progress?.target) || 1;
+            const isEarned = current >= target && target > 0;
+            return (
+              <div className={`text-xs ${isEarned ? 'text-green-400' : 'text-white/40'}`}>
+                {isEarned ? '✅ UNLOCKED' : '🔒 LOCKED'}
+              </div>
+            );
+          })()}
 
           {/* Badge description - inline */}
           {selectedBadge.description && (
@@ -522,16 +527,29 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                   )}
                 </button>
                 
-                {/* Progress indicator for unlocked badges or progress ring */}
-                {badge.unlocked ? (
-                  <div className="absolute -bottom-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    ✓
-                  </div>
-                ) : badge.progress && badge.progress.percentage > 0 && (
-                  <div className="absolute -bottom-1 -right-1 bg-cyan-500/80 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold">
-                    {badge.progress.percentage}%
-                  </div>
-                )}
+                {/* Progress indicator - checkmark ONLY if current >= target, otherwise show percentage */}
+                {(() => {
+                  if (!badge.progress) return null;
+                  const current = Number(badge.progress.current) || 0;
+                  const target = Number(badge.progress.target) || 1;
+                  const pct = Number(badge.progress.percentage) || 0;
+                  const isEarned = current >= target && target > 0;
+
+                  if (isEarned) {
+                    return (
+                      <div className="absolute -bottom-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        ✓
+                      </div>
+                    );
+                  } else if (pct > 0) {
+                    return (
+                      <div className="absolute -bottom-1 -right-1 bg-cyan-500/80 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold">
+                        {pct}%
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
               
               {/* Badge name */}
@@ -619,8 +637,19 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     );
   }
 
-  // Get user's unlocked badges for display
-  const userUnlockedBadges = badgesWithUnlocked.filter(badge => badge.unlocked);
+  // Get user's truly earned badges - ONLY badges where current progress meets or exceeds target
+  // A badge is "claimed" only when: progress.current >= progress.target
+  const userUnlockedBadges = badgesWithUnlocked.filter(badge => {
+    if (!badge.progress) return false;
+    const current = Number(badge.progress.current) || 0;
+    const target = Number(badge.progress.target) || 1;
+    const isEarned = current >= target && target > 0;
+    // Debug: log which badges are considered earned
+    if (isEarned) {
+      console.log(`✅ Badge EARNED: ${badge.badge_name} (${current}/${target})`);
+    }
+    return isEarned;
+  });
   
   // Main badges view - horizontal row of user badges like chat profile
   const badgesContent = (
@@ -796,7 +825,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
               <div className="text-center mb-8">
                 <div className="mb-3">
                   <span className="text-cyan-300 text-lg font-bold uppercase tracking-wider">
-                    BADGES CLAIMED: {profile?.badges_unlocked || userUnlockedBadges.length}
+                    BADGES CLAIMED: {userUnlockedBadges.length}
                   </span>
                 </div>
                 <h4 className="text-white/90 text-base font-bold uppercase tracking-wider">

@@ -605,18 +605,34 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                                 transition: 'filter 300ms ease, opacity 300ms ease'
                               }}
                             >
-                              {selectedBadge.icon_url ? (
-                                <img
-                                  src={selectedBadge.icon_url}
-                                  alt={selectedBadge.badge_name}
-                                  className="w-40 h-40 object-cover rounded-full"
-                                  draggable={false}
-                                />
-                              ) : (
-                                <div className="text-3xl">
-                                  {getBadgeDisplayIcon(selectedBadge, selectedCategory || '')}
-                                </div>
-                              )}
+                              {(() => {
+                                const icon = selectedBadge.icon_url || getBadgeDisplayIcon(selectedBadge, selectedCategory || '');
+                                // Check if it's an image path (starts with / or http) or just an emoji
+                                if (typeof icon === 'string' && (icon.startsWith('/') || icon.startsWith('http'))) {
+                                  return (
+                                    <img
+                                      src={icon}
+                                      alt={selectedBadge.badge_name}
+                                      className="w-40 h-40 object-cover rounded-full"
+                                      draggable={false}
+                                      onError={(e) => {
+                                        // Fallback to emoji if image fails to load
+                                        const target = e.target as HTMLImageElement;
+                                        const container = target.parentElement;
+                                        if (container) {
+                                          container.innerHTML = '<div class="w-full h-full flex items-center justify-center text-5xl">🏅</div>';
+                                        }
+                                      }}
+                                    />
+                                  );
+                                } else {
+                                  return (
+                                    <div className="w-40 h-40 flex items-center justify-center text-5xl">
+                                      {icon}
+                                    </div>
+                                  );
+                                }
+                              })()}
                             </div>
                             {/* Locked overlay with text */}
                             {!isUnlocked(selectedBadge) && (
@@ -671,18 +687,33 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
                                     transition: 'filter 300ms ease, opacity 300ms ease'
                                   }}
                                 >
-                                  {selectedBadge.icon_url ? (
-                                    <img
-                                      src={selectedBadge.icon_url}
-                                      alt={selectedBadge.badge_name}
-                                      className="w-40 h-40 object-cover rounded-full"
-                                      draggable={false}
-                                    />
-                                  ) : (
-                                    <div className="text-3xl">
-                                      {getBadgeDisplayIcon(selectedBadge, selectedCategory || '')}
-                                    </div>
-                                  )}
+                                  {(() => {
+                                    const icon = selectedBadge.icon_url || getBadgeDisplayIcon(selectedBadge, selectedCategory || '');
+                                    // Check if it's an image path (starts with / or http) or just an emoji
+                                    if (typeof icon === 'string' && (icon.startsWith('/') || icon.startsWith('http'))) {
+                                      return (
+                                        <img
+                                          src={icon}
+                                          alt={selectedBadge.badge_name}
+                                          className="w-40 h-40 object-cover rounded-full"
+                                          draggable={false}
+                                          onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            const container = target.parentElement;
+                                            if (container) {
+                                              container.innerHTML = '<div class="w-full h-full flex items-center justify-center text-5xl">🏅</div>';
+                                            }
+                                          }}
+                                        />
+                                      );
+                                    } else {
+                                      return (
+                                        <div className="w-40 h-40 flex items-center justify-center text-5xl">
+                                          {icon}
+                                        </div>
+                                      );
+                                    }
+                                  })()}
                                 </div>
                                 <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center">
                                   <div className="text-white/90 text-sm font-bold flex items-center gap-1" style={{ textShadow: '0 0 10px rgba(0,0,0,0.8)' }}>
