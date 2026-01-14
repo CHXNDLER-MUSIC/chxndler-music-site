@@ -140,9 +140,19 @@ export default function WhatElementAreYouModal() {
         alignAudio.play().catch(e => console.log('Element sound play failed:', e));
       }
 
-      // Save name and element to profiles table using ProfileContext
-      console.log('🎯 Saving name and element to profiles table');
-      await updateProfileNameAndElement(currentName, selectedElementData.label);
+      // Call RPC to align element and potentially award first HeartCoin
+      console.log('🎯 Calling align_element_and_award_first_heartcoin RPC');
+      const { data: alignResult, error: alignError } = await supabaseClient.rpc(
+        'align_element_and_award_first_heartcoin',
+        { p_element: selectedElementData.label }
+      );
+
+      if (alignError) {
+        console.error('Error aligning element:', alignError);
+        throw new Error(alignError.message || 'Failed to align element');
+      }
+
+      console.log('🎯 Align result:', alignResult);
 
       // Refresh profile to get updated data
       await refreshProfile();
@@ -155,9 +165,13 @@ export default function WhatElementAreYouModal() {
       // Trigger profile refresh to update the UI
       triggerProfileRefresh();
 
-      // Award first HeartCoin for profile completion
-      console.log('🪙 Awarding first HeartCoin for profile completion');
-      triggerHeartCoinCelebration(1);
+      // Award first HeartCoin celebration only if RPC returned awarded: true
+      if (alignResult?.awarded) {
+        console.log('🪙 First HeartCoin awarded! Showing celebration');
+        triggerHeartCoinCelebration(1);
+      } else {
+        console.log('🪙 HeartCoin already awarded previously, skipping celebration');
+      }
 
       // Trigger warp to Heartverse center planet and play heart.mp3
       console.log('🚀 Triggering warp to Heartverse');

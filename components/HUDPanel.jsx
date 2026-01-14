@@ -1157,9 +1157,9 @@ const HUDPanel = React.memo(function HUDPanel({
         leftEdge = Math.max(8, leftEdge - HORIZONTAL_EXPAND);
         rightEdge = Math.min((typeof window !== 'undefined' ? window.innerWidth : rightEdge), rightEdge + HORIZONTAL_EXPAND) - 8 + 8;
         const width = Math.max(0, rightEdge - leftEdge);
-        // Bring the top down more while keeping the bottom aligned to blue display bottom; this also shortens the popover
-        const TOP_INSET = 60; // bring top down slightly more
-        let top = rect.top + TOP_INSET;
+        // Position top to align with bottom of profile bar (64px)
+        const TOP_INSET = 0; // extend up to profile bar bottom
+        let top = Math.max(64, rect.top + TOP_INSET); // ensure it doesn't go above profile bar
         top = Math.max(8, top);
         const height = Math.max(100, rect.height - TOP_INSET);
         setLyricsPopoverPos({ left: leftEdge, top, width, height });
@@ -1362,9 +1362,8 @@ const HUDPanel = React.memo(function HUDPanel({
           leftEdge = Math.max(8, leftEdge - HORIZONTAL_EXPAND);
           rightEdge = Math.min((typeof window !== 'undefined' ? window.innerWidth : rightEdge), rightEdge + HORIZONTAL_EXPAND) - 8 + 8;
           const width = Math.max(0, rightEdge - leftEdge);
-          const TOP_INSET = 40; // keep resize calc consistent
-          let top = rect.top + TOP_INSET;
-          top = Math.max(8, top);
+          const TOP_INSET = 0; // keep resize calc consistent with profile bar bottom
+          let top = Math.max(64, rect.top + TOP_INSET); // ensure it doesn't go above profile bar
           const height = Math.max(100, rect.height - TOP_INSET);
           setLyricsPopoverPos({ left: leftEdge, top, width, height });
         }
@@ -3128,11 +3127,12 @@ const HUDPanel = React.memo(function HUDPanel({
                       tabIndex={0}
                       onKeyDown={(e) => {
                         const playVol = () => { const now = (typeof performance !== 'undefined' ? performance.now() : Date.now()); const last = hudVolumeSfxLastRef.current || 0; if (now - last > 150) { hudVolumeSfxLastRef.current = now; try { sfx.play('volume', 0.32); } catch {} } };
-                        if (e.key === 'ArrowUp') { e.preventDefault(); const a = liveAudioRef.current; if (!a) return; a.volume = Math.max(0, Math.min(1, volume + 0.05)); playVol(); }
-                        else if (e.key === 'ArrowDown') { e.preventDefault(); const a = liveAudioRef.current; if (!a) return; a.volume = Math.max(0, Math.min(1, volume - 0.05)); playVol(); }
+                        const applyVol = (newVol) => { setVolume(newVol); if (newVol > 0) lastNonZeroVolumeRef.current = newVol; try { localStorage.setItem(VOLUME_STORAGE_KEY, String(newVol)); } catch {}; const a = liveAudioRef.current; if (a) a.volume = newVol; playVol(); };
+                        if (e.key === 'ArrowUp') { e.preventDefault(); applyVol(Math.max(0, Math.min(1, volume + 0.05))); }
+                        else if (e.key === 'ArrowDown') { e.preventDefault(); applyVol(Math.max(0, Math.min(1, volume - 0.05))); }
                       }}
                       onPointerDown={(e) => {
-                        const a = liveAudioRef.current; if (!a) return;
+                        const a = liveAudioRef.current;
                         const el = e.currentTarget;
                         const playVol = () => { const now = (typeof performance !== 'undefined' ? performance.now() : Date.now()); const last = hudVolumeSfxLastRef.current || 0; if (now - last > 120) { hudVolumeSfxLastRef.current = now; try { sfx.play('volume', 0.28); } catch {} } };
                         const applyFromClientY = (clientY) => {
@@ -3140,8 +3140,12 @@ const HUDPanel = React.memo(function HUDPanel({
                           const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
                           const pct = rect.height > 0 ? (1 - (y / rect.height)) : 0;
                           const newVol = Math.max(0, Math.min(1, pct));
-                          a.volume = newVol; setVolume(newVol);
+                          // Update state and localStorage even if no audio element
+                          setVolume(newVol);
                           if (newVol > 0) lastNonZeroVolumeRef.current = newVol;
+                          try { localStorage.setItem(VOLUME_STORAGE_KEY, String(newVol)); } catch {}
+                          // Apply to audio if available
+                          if (a) a.volume = newVol;
                           playVol();
                         };
                         try { el.setPointerCapture?.(e.pointerId); } catch {}
@@ -5906,7 +5910,7 @@ const HUDPanel = React.memo(function HUDPanel({
                       style={{
                         position: 'fixed',
                         left: (lyricsPopoverPos && lyricsPopoverPos.left) || 0,
-                        top: ((lyricsPopoverPos && lyricsPopoverPos.top) || 0) - 40,
+                        top: (lyricsPopoverPos && lyricsPopoverPos.top) || 64,
                         transform: (lyricsPopoverPos && lyricsPopoverPos.width) ? 'none' : 'translateX(-50%)',
                         // Tighten vertical padding so the bottom sits higher
                         padding: '10px 14px 14px 14px', borderRadius: 14,

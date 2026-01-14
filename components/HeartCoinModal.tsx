@@ -1550,14 +1550,14 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 sfx.play('hover', 0.3); 
               } catch {}
             }}
-            className={`px-4 py-3 font-bold text-sm transition-all duration-200 ${
+            className={`px-4 py-3 font-bold text-base transition-all duration-200 ${
               activeTab === 'earn'
                 ? 'text-[#4ECDC4] border-b-2 border-[#4ECDC4]'
                 : 'text-white hover:text-white'
             }`}
             style={{
-              textShadow: activeTab === 'earn' 
-                ? '0 0 8px rgba(78,205,196,0.8), 0 0 15px rgba(78,205,196,0.6), 0 2px 4px rgba(0,0,0,0.8)' 
+              textShadow: activeTab === 'earn'
+                ? '0 0 8px rgba(78,205,196,0.8), 0 0 15px rgba(78,205,196,0.6), 0 2px 4px rgba(0,0,0,0.8)'
                 : '0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
               backgroundColor: activeTab === 'earn' ? 'rgba(78,205,196,0.1)' : 'rgba(0,0,0,0.3)',
               borderRadius: '8px 8px 0 0'
@@ -1573,14 +1573,14 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 sfx.play('hover', 0.3); 
               } catch {}
             }}
-            className={`px-4 py-3 font-bold text-sm transition-all duration-200 ${
+            className={`px-4 py-3 font-bold text-base transition-all duration-200 ${
               isUseMode
                 ? 'text-[#4ECDC4] border-b-2 border-[#4ECDC4]'
                 : 'text-white hover:text-white'
             }`}
             style={{
               textShadow: isUseMode
-                ? '0 0 8px rgba(78,205,196,0.8), 0 0 15px rgba(78,205,196,0.6), 0 2px 4px rgba(0,0,0,0.8)' 
+                ? '0 0 8px rgba(78,205,196,0.8), 0 0 15px rgba(78,205,196,0.6), 0 2px 4px rgba(0,0,0,0.8)'
                 : '0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
               backgroundColor: isUseMode ? 'rgba(78,205,196,0.1)' : 'rgba(0,0,0,0.3)',
               borderRadius: '8px 8px 0 0'
@@ -1632,7 +1632,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   sfx.play('hover', 0.3); 
                 } catch {}
               }}
-              className={`px-4 py-2 font-bold text-xs rounded-t transition-all duration-200 ${
+              className={`px-4 py-2 font-bold text-sm rounded-t transition-all duration-200 ${
                 activeTab === 'merch'
                   ? 'text-[#FC54AF] border-b-2 border-[#FC54AF] bg-[#FC54AF]/10'
                   : 'text-white/60 hover:text-white/80 bg-black/20'
@@ -1648,7 +1648,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   sfx.play('hover', 0.3); 
                 } catch {}
               }}
-              className={`px-4 py-2 font-bold text-xs rounded-t transition-all duration-200 ${
+              className={`px-4 py-2 font-bold text-sm rounded-t transition-all duration-200 ${
                 activeTab === 'cards'
                   ? 'text-[#4ECDC4] border-b-2 border-[#4ECDC4] bg-[#4ECDC4]/10'
                   : 'text-white/60 hover:text-white/80 bg-black/20'
@@ -1682,7 +1682,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     <p className="text-white/60 text-sm">Loading daily quests...</p>
                   </div>
                 ) : dbDailyQuests.length > 0 ? (
-                  dbDailyQuests.filter(quest => quest.quest_key !== 'TAP_ELEMENT_OF_DAY').map((quest, index) => (
+                  dbDailyQuests.map((quest, index) => (
                     <div key={quest.id} className="flex flex-col p-3 rounded-lg border border-white/30 bg-white/10">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -2059,12 +2059,18 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                       if (!item) return null;
                       return (
                         <>
-                          {/* Item Image */}
-                          <div className="relative h-48 w-full flex items-center justify-center mb-4">
+                          {/* Item Image - Swipeable */}
+                          <div
+                            className="relative h-64 w-full flex items-center justify-center mb-4 touch-pan-y"
+                            onTouchStart={onTouchStart}
+                            onTouchMove={onTouchMove}
+                            onTouchEnd={onTouchEnd}
+                          >
                             <img
                               src={item.image_url || '/store/default.webp'}
                               alt={item.name}
-                              className="max-h-full max-w-full object-contain rounded-lg cursor-pointer hover:scale-105 transition-transform duration-300"
+                              className="max-h-full max-w-full object-contain rounded-lg cursor-pointer hover:scale-105 transition-transform duration-300 select-none"
+                              draggable={false}
                               onClick={() => {
                                 const storeItem = {
                                   name: item.name,
@@ -2518,7 +2524,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
             </div>
 
             {/* Four Element Containers */}
-            <div className="grid grid-cols-2 gap-6 max-w-md mx-auto">
+            <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto">
               {/* Lightning Element */}
               <div
                 className="relative group cursor-pointer"
@@ -2527,11 +2533,11 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   try { sfx.play('change-channel', 0.5); } catch {}
                 }}
               >
-                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 rounded-full border-2 border-yellow-500/40 flex items-center justify-center transition-all duration-300 hover:border-yellow-400 hover:shadow-[0_0_20px_rgba(255,215,0,0.6)] hover:scale-105">
+                <div className="w-36 h-36 mx-auto bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 rounded-full border-2 border-yellow-500/40 flex items-center justify-center transition-all duration-300 hover:border-yellow-400 hover:shadow-[0_0_20px_rgba(255,215,0,0.6)] hover:scale-105">
                   <img
                     src="/elements/lightning.webp"
                     alt="Lightning"
-                    className="w-16 h-16 object-contain"
+                    className="w-24 h-24 object-contain"
                     draggable={false}
                   />
                 </div>
@@ -2548,8 +2554,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   try { sfx.play('change-channel', 0.5); } catch {}
                 }}
               >
-                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-purple-900/30 to-black/40 rounded-full border-2 border-purple-600/40 flex items-center justify-center transition-all duration-300 hover:border-white hover:shadow-[0_0_20px_rgba(255,255,255,0.6)] hover:scale-105">
-                  <div className="w-16 h-16 rounded-full border-2 border-purple-600 bg-gradient-to-br from-transparent to-purple-900/40" />
+                <div className="w-36 h-36 mx-auto bg-gradient-to-br from-purple-900/30 to-black/40 rounded-full border-2 border-purple-600/40 flex items-center justify-center transition-all duration-300 hover:border-white hover:shadow-[0_0_20px_rgba(255,255,255,0.6)] hover:scale-105">
+                  <div className="w-24 h-24 rounded-full border-2 border-purple-600 bg-gradient-to-br from-transparent to-purple-900/40" />
                 </div>
                 <div className="text-center mt-2">
                   <span className="text-purple-400 font-bold text-sm">{getElementCardCount('DARKNESS')}</span>
@@ -2564,11 +2570,11 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   try { sfx.play('change-channel', 0.5); } catch {}
                 }}
               >
-                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-blue-400/20 to-blue-600/20 rounded-full border-2 border-blue-400/40 flex items-center justify-center transition-all duration-300 hover:border-blue-300 hover:shadow-[0_0_20px_rgba(0,191,255,0.6)] hover:scale-105">
+                <div className="w-36 h-36 mx-auto bg-gradient-to-br from-blue-400/20 to-blue-600/20 rounded-full border-2 border-blue-400/40 flex items-center justify-center transition-all duration-300 hover:border-blue-300 hover:shadow-[0_0_20px_rgba(0,191,255,0.6)] hover:scale-105">
                   <img
                     src="/elements/water.webp"
                     alt="Water"
-                    className="w-16 h-16 object-contain"
+                    className="w-24 h-24 object-contain"
                     draggable={false}
                   />
                 </div>
@@ -2585,11 +2591,11 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   try { sfx.play('change-channel', 0.5); } catch {}
                 }}
               >
-                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-pink-500/20 to-pink-600/20 rounded-full border-2 border-pink-500/40 flex items-center justify-center transition-all duration-300 hover:border-pink-400 hover:shadow-[0_0_20px_rgba(255,105,180,0.6)] hover:scale-105">
+                <div className="w-36 h-36 mx-auto bg-gradient-to-br from-pink-500/20 to-pink-600/20 rounded-full border-2 border-pink-500/40 flex items-center justify-center transition-all duration-300 hover:border-pink-400 hover:shadow-[0_0_20px_rgba(255,105,180,0.6)] hover:scale-105">
                   <img
                     src="/elements/heart.webp"
                     alt="Heart"
-                    className="w-16 h-16 object-contain"
+                    className="w-24 h-24 object-contain"
                     draggable={false}
                   />
                 </div>
