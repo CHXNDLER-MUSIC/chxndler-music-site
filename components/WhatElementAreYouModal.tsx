@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useUIStore } from "@/store/useUIStore";
 import { useProfile as useNewProfile } from "@/hooks/useProfile";
 import { useProfile } from "@/contexts/ProfileContext";
@@ -10,7 +10,6 @@ import { useAudio } from "@/app/providers/AudioProvider";
 import { sfx } from "@/lib/sfx";
 import type { Element } from "@/lib/planets";
 import { ELEMENT_COLORS } from "@/lib/planets";
-import { logHeartcoinTransaction } from "@/utils/heartcoins";
 import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
 
 // Element sound mappings
@@ -48,7 +47,7 @@ export default function WhatElementAreYouModal() {
   useEffect(() => {
     const checkAuth = async () => {
       // Use getSession() first - does NOT throw when logged out
-      const { data: { session } } = await supabaseClient.auth.getSession();
+      const { data: { session } } = await supabaseBrowser.auth.getSession();
       // If no session, user is null - this is expected for logged-out users
       setCurrentUser(session?.user || null);
     };
@@ -124,8 +123,8 @@ export default function WhatElementAreYouModal() {
     }
 
     // Case c: Profile exists but no name
-    const currentName = profile?.name;
-    if (!currentName) {
+    const alienName = profile?.name;
+    if (!alienName) {
       setError("Choose your ALIEN name before selecting an Element.");
       setLoading(false);
       return;
@@ -140,16 +139,30 @@ export default function WhatElementAreYouModal() {
         alignAudio.play().catch(e => console.log('Element sound play failed:', e));
       }
 
-      // Call RPC to align element and potentially award first HeartCoin
-      console.log('🎯 Calling align_element_and_award_first_heartcoin RPC');
-      const { data: alignResult, error: alignError } = await supabaseClient.rpc(
-        'align_element_and_award_first_heartcoin',
-        { p_element: selectedElementData.label }
+      // Map element key to Title Case for the RPC
+      const elementToTitleCase: Record<Element, string> = {
+        heart: 'Heart',
+        water: 'Water',
+        darkness: 'Darkness',
+        lightning: 'Lightning',
+      };
+      const mappedElement = elementToTitleCase[selectedElement];
+
+      // Call RPC to align element and award first HeartCoin
+      console.log('🎯 Calling align_element_and_award_first_coin RPC with element:', mappedElement);
+      const { data: alignResult, error: alignError } = await supabaseBrowser.rpc(
+        'align_element_and_award_first_coin',
+        {
+          p_element: mappedElement,
+          p_display_name: alienName
+        }
       );
 
       if (alignError) {
         console.error('Error aligning element:', alignError);
-        throw new Error(alignError.message || 'Failed to align element');
+        setError(alignError.message || 'Failed to align element');
+        setLoading(false);
+        return;
       }
 
       console.log('🎯 Align result:', alignResult);
@@ -157,7 +170,7 @@ export default function WhatElementAreYouModal() {
       // Refresh profile to get updated data
       await refreshProfile();
 
-      console.log('Profile completed! Name:', currentName, 'Element:', selectedElementData.label);
+      console.log('Profile completed! Name:', alienName, 'Element:', selectedElement);
 
       // Close element selection modal
       closeElementSelection();
@@ -165,13 +178,9 @@ export default function WhatElementAreYouModal() {
       // Trigger profile refresh to update the UI
       triggerProfileRefresh();
 
-      // Award first HeartCoin celebration only if RPC returned awarded: true
-      if (alignResult?.awarded) {
-        console.log('🪙 First HeartCoin awarded! Showing celebration');
-        triggerHeartCoinCelebration(1);
-      } else {
-        console.log('🪙 HeartCoin already awarded previously, skipping celebration');
-      }
+      // Trigger HeartCoin celebration on successful alignment
+      console.log('🪙 Alignment successful! Showing HeartCoin celebration');
+      triggerHeartCoinCelebration(1);
 
       // Trigger warp to Heartverse center planet and play heart.mp3
       console.log('🚀 Triggering warp to Heartverse');
@@ -203,7 +212,6 @@ export default function WhatElementAreYouModal() {
       }, 6000); // Wait for warp and celebrations to complete
     } catch (e: any) {
       setError(e?.message || "Failed to save element selection");
-    } finally {
       setLoading(false);
     }
   }

@@ -405,10 +405,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             `)
             .eq("user_id", user.id),
           // Fetch computed heartcoin balance from canonical view
+          // Uses maybeSingle() since row may not exist yet during session transitions
           supabaseBrowser
             .from("heartcoin_balance")
             .select("balance")
-            .single(),
+            .maybeSingle(),
         ]);
 
       if (cardError) {
@@ -419,9 +420,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         console.error("Error loading user_badges", badgeError);
       }
 
-      if (balanceError) {
-        console.error("Error loading heartcoin_balance from view", balanceError);
-      }
+      // Note: balanceError is not logged because null results are expected
+      // during session transitions when the user has no transactions yet
 
       // Use computed balance from view, fallback to profiles.heartcoin_balance if view fails
       const computedBalance = balanceData?.balance ?? data.heartcoin_balance ?? 0;

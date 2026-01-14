@@ -1,5 +1,6 @@
 -- FIX: align_element_and_award_first_heartcoin function
 -- Fixes the column name from "element_affinity" to "element"
+-- Uses bypass flag to allow heartcoin_transactions trigger to update balance
 -- Run this in Supabase SQL Editor
 
 -- Drop the old function if it exists (handles any signature)
@@ -59,14 +60,10 @@ BEGIN
   -- Only award HeartCoin if profile was not already complete
   -- This makes the function idempotent - can be called multiple times safely
   IF v_profile_complete IS DISTINCT FROM true THEN
-    -- Award 1 HeartCoin for first-time profile completion
-    UPDATE profiles
-    SET
-      heartcoin_balance = COALESCE(heartcoin_balance, 0) + 1,
-      heartcoin_total = COALESCE(heartcoin_total, 0) + 1
-    WHERE id = v_user_id;
+    -- Enable bypass for the heartcoin_balance update trigger
+    PERFORM set_config('app.allow_balance_update', '1', true);
 
-    -- Log the transaction
+    -- Insert into heartcoin_transactions - a trigger will update the balance
     INSERT INTO heartcoin_transactions (
       user_id,
       amount,
@@ -99,4 +96,4 @@ GRANT EXECUTE ON FUNCTION public.align_element_and_award_first_heartcoin(TEXT) T
 
 -- Add comment
 COMMENT ON FUNCTION public.align_element_and_award_first_heartcoin IS
-'Aligns user element and awards first HeartCoin on profile completion. Uses element column (not element_affinity). Idempotent - only awards coin once.';
+'Aligns user element and awards first HeartCoin on profile completion. Uses element column (not element_affinity). Does not directly update heartcoin_balance. Idempotent - only awards coin once.';
