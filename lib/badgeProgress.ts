@@ -21,17 +21,21 @@ export function getBadgeProgressForUser(
   attendanceCounts?: OptionalAttendanceCounts
 ): BadgeProgress {
 
+  // Use requirement_count directly - only fallback to 1 if it's null/undefined, not if it's 0
+  const target = badge.requirement_count != null && badge.requirement_count > 0
+    ? badge.requirement_count
+    : 1;
+
   if (!profile) {
     return {
       current: 0,
-      target: badge.requirement_count || 1,
+      target,
       percentage: 0,
       isUnlocked: false,
     };
   }
 
   let current = 0;
-  const target = badge.requirement_count || 1;
   
 
   // Switch on badge requirement type and map to profile counter

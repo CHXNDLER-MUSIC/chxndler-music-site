@@ -342,10 +342,11 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             {selectedBadge.badge_name}
           </h2>
 
-          {/* Status - only show unlocked if current >= target */}
+          {/* Status - only show unlocked if current >= requirement_count */}
           {(() => {
             const current = Number(selectedBadge.progress?.current) || 0;
-            const target = Number(selectedBadge.progress?.target) || 1;
+            // Use requirement_count directly from badge for accurate completion check
+            const target = selectedBadge.requirement_count > 0 ? selectedBadge.requirement_count : 1;
             const isEarned = current >= target && target > 0;
             return (
               <div className={`text-xs ${isEarned ? 'text-green-400' : 'text-white/40'}`}>
@@ -390,7 +391,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
               <div className="flex justify-between items-center mb-1">
                 <span className="text-white/60 text-xs">Progress</span>
                 <span className="text-white/80 text-xs font-medium">
-                  {selectedBadge.progress.current} / {selectedBadge.progress.target || selectedBadge.requirement_count}
+                  {selectedBadge.progress.current} / {selectedBadge.requirement_count}
                 </span>
               </div>
               <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
@@ -527,11 +528,12 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
                   )}
                 </button>
                 
-                {/* Progress indicator - checkmark ONLY if current >= target, otherwise show percentage */}
+                {/* Progress indicator - checkmark ONLY if current >= requirement_count, otherwise show percentage */}
                 {(() => {
                   if (!badge.progress) return null;
                   const current = Number(badge.progress.current) || 0;
-                  const target = Number(badge.progress.target) || 1;
+                  // Use requirement_count directly from badge for accurate completion check
+                  const target = badge.requirement_count > 0 ? badge.requirement_count : 1;
                   const pct = Number(badge.progress.percentage) || 0;
                   const isEarned = current >= target && target > 0;
 
@@ -638,18 +640,20 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   }
 
   // Get user's truly earned badges - ONLY badges where current progress meets or exceeds target
-  // A badge is "claimed" only when: progress.current >= progress.target
+  // A badge is "claimed" only when: progress.current >= requirement_count from database
   const userUnlockedBadges = badgesWithUnlocked.filter(badge => {
     if (!badge.progress) return false;
     const current = Number(badge.progress.current) || 0;
-    const target = Number(badge.progress.target) || 1;
+    // Use requirement_count directly from badge, not progress.target with fallback
+    const target = badge.requirement_count > 0 ? badge.requirement_count : 1;
     const isEarned = current >= target && target > 0;
-    // Debug: log which badges are considered earned
-    if (isEarned) {
-      console.log(`✅ Badge EARNED: ${badge.badge_name} (${current}/${target})`);
-    }
+    // Debug: log ALL badges with their status
+    console.log(`Badge "${badge.badge_name}": current=${current}, target=${target} (requirement_count=${badge.requirement_count}), isEarned=${isEarned}`);
     return isEarned;
   });
+
+  // Log summary of earned badges
+  console.log(`📊 BADGES CLAIMED: ${userUnlockedBadges.length} badges earned:`, userUnlockedBadges.map(b => b.badge_name));
   
   // Main badges view - horizontal row of user badges like chat profile
   const badgesContent = (
