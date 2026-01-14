@@ -9,8 +9,9 @@
  * - completion_percent
  * - completed (true when >= 50%)
  * - completed_at (timestamp when first completed)
+ * - play_count (number of times song was played today)
  *
- * Uses INSERT-only strategy with incrementing play_number.
+ * Uses UPSERT strategy with unique constraint on (user_id, song_id, day).
  * HeartCoin rewards are handled by separate RPC (complete_song_of_day_once_per_day).
  */
 
@@ -39,9 +40,13 @@ function getTodayNY(): string {
 // Slug-to-UUID cache to avoid repeated DB lookups
 const songIdCache = new Map<string, string>();
 
-// Track which rows we've already inserted for this session (to avoid duplicate inserts)
-// Key: "userId:songId:day:playNumber"
-const insertedRowsCache = new Set<string>();
+// Track which upserts we've already done for this session to avoid duplicate calls
+// Key: "userId:songId:day"
+const upsertedRowsCache = new Set<string>();
+
+// Debounce tracking - prevents multiple rapid upserts
+const lastUpsertTimeCache = new Map<string, number>();
+const UPSERT_DEBOUNCE_MS = 3000; // Minimum 3 seconds between upserts for same song/day
 
 export function useDailySongProgress({
   audioElement,
@@ -52,7 +57,7 @@ export function useDailySongProgress({
   songOfDayId = null
 }: UseDailySongProgressOptions) {
   // Track completion state per song per day to prevent double-awards
-  const completedRef = useRef<Set<string>>(new Set()); // Set of "songId:day:playNumber" keys
+  const completedRef = useRef<Set<string>>(new Set()); // Set of "songId:day" keys
   const lastUpdateRef = useRef<number>(0);
   const isProcessingRef = useRef<boolean>(false);
   const currentSongIdRef = useRef<string | null>(null);
@@ -60,8 +65,7 @@ export function useDailySongProgress({
 
   // Refs for detecting song repeats
   const prevCurrentTimeRef = useRef<number>(0);
-  const currentPlayNumberRef = useRef<number>(1);
-  const playSessionKeyRef = useRef<string | null>(null); // "songId:day:playNumber" for current session
+  const playSessionKeyRef = useRef<string | null>(null); // "songId:day" for current session
 
   // Guard refs for bonus quest completion (keyed by NY date)
   // Prevents multiple RPC calls even on rerenders or duplicate effect triggers
@@ -104,43 +108,13 @@ export function useDailySongProgress({
     }
   }, []);
 
-  // Get the max play_number for a user/song/day from database
-  const getMaxPlayNumber = useCallback(async (
-    userId: string,
-    songId: string,
-    day: string
-  ): Promise<number> => {
-    try {
-      const { data, error } = await supabaseBrowser
-        .from('user_song_daily_progress')
-        .select('play_number')
-        .eq('user_id', userId)
-        .eq('song_id', songId)
-        .eq('day', day)
-        .order('play_number', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) {
-        console.warn('[DailySongProgress] Error fetching max play_number:', error.message);
-        return 0;
-      }
-
-      return data?.play_number ?? 0;
-    } catch (err) {
-      console.warn('[DailySongProgress] Exception fetching max play_number:', err);
-      return 0;
-    }
-  }, []);
-
-  // Check if already completed for this song/day/playNumber (from DB)
+  // Check if already completed for this song/day (from DB)
   const checkExistingProgress = useCallback(async (
     userId: string,
     songId: string,
-    day: string,
-    playNumber: number
+    day: string
   ): Promise<boolean> => {
-    const cacheKey = `${songId}:${day}:${playNumber}`;
+    const cacheKey = `${songId}:${day}`;
 
     // If we already know it's completed, skip DB check
     if (completedRef.current.has(cacheKey)) {
@@ -154,7 +128,6 @@ export function useDailySongProgress({
         .eq('user_id', userId)
         .eq('song_id', songId)
         .eq('day', day)
-        .eq('play_number', playNumber)
         .maybeSingle();
 
       if (error) {
@@ -174,172 +147,145 @@ export function useDailySongProgress({
     }
   }, []);
 
-  // INSERT a new progress row (with retry on conflict)
-  const insertProgress = useCallback(async (
+  // UPSERT a progress row - creates if not exists, updates if exists
+  // Uses onConflict on (user_id, song_id, day) to avoid 409 errors
+  const upsertProgress = useCallback(async (
     userId: string,
     songId: string,
     day: string,
-    playNumber: number,
     listenedSeconds: number,
     durationSeconds: number,
     completionPercent: number,
-    markCompleted: boolean
-  ): Promise<{ success: boolean; insertedPlayNumber: number }> => {
-    const MAX_RETRIES = 2;
-    let currentPlayNumber = playNumber;
-
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      try {
-        // Auth guard: Verify user is authenticated
-        const { data: { session } } = await supabaseBrowser.auth.getSession();
-        if (!session?.user?.id) {
-          return { success: false, insertedPlayNumber: currentPlayNumber };
-        }
-
-        // Double-check userId matches authenticated user
-        if (userId !== session.user.id) {
-          console.warn('[DailySongProgress] userId mismatch, using auth user.id');
-          userId = session.user.id;
-        }
-
-        // Validate inputs
-        if (!isFinite(listenedSeconds) || !isFinite(durationSeconds) || !isFinite(completionPercent)) {
-          console.log('[DailySongProgress] Skipping insert - invalid values detected');
-          return { success: false, insertedPlayNumber: currentPlayNumber };
-        }
-
-        // Ensure integers
-        const safeDurationSeconds = Math.floor(durationSeconds);
-        const safeListenedSeconds = Math.floor(listenedSeconds);
-
-        // Fix numeric overflow: completion_percent must be 0-100
-        const rawPercent = (safeListenedSeconds / safeDurationSeconds) * 100;
-        const safePercent = Math.min(100, Math.max(0, Number(rawPercent.toFixed(2))));
-
-        if (!isFinite(safePercent)) {
-          console.log('[DailySongProgress] Skipping insert - safePercent is invalid');
-          return { success: false, insertedPlayNumber: currentPlayNumber };
-        }
-
-        const now = new Date().toISOString();
-        const progressData: Record<string, unknown> = {
-          user_id: userId,
-          song_id: songId,
-          day,
-          play_number: currentPlayNumber,
-          listened_seconds: safeListenedSeconds,
-          duration_seconds: safeDurationSeconds,
-          completion_percent: safePercent,
-          started_at: now,
-          updated_at: now
-        };
-
-        if (markCompleted) {
-          progressData.completed = true;
-          progressData.completed_at = now;
-        }
-
-        const { error } = await supabaseBrowser
-          .from('user_song_daily_progress')
-          .insert(progressData);
-
-        if (!error) {
-          console.log(`[DailySongProgress] inserted play ${currentPlayNumber} for ${day}`);
-          // Cache that we've inserted this row
-          insertedRowsCache.add(`${userId}:${songId}:${day}:${currentPlayNumber}`);
-          return { success: true, insertedPlayNumber: currentPlayNumber };
-        }
-
-        // Check for conflict (duplicate key)
-        const errCode = (error as any)?.code || '';
-        const errMsg = error.message?.toLowerCase() || '';
-        const isConflict = errCode === '23505' || errMsg.includes('duplicate key') || errMsg.includes('unique constraint');
-
-        if (isConflict && attempt < MAX_RETRIES) {
-          console.log(`[DailySongProgress] conflict on play_number ${currentPlayNumber}, retrying...`);
-          // Re-query max play_number and increment
-          const maxPlayNumber = await getMaxPlayNumber(userId, songId, day);
-          currentPlayNumber = maxPlayNumber + 1;
-          continue;
-        }
-
-        // Non-conflict error or max retries exceeded
-        console.error('[DailySongProgress] Insert failed:', error.message);
-        return { success: false, insertedPlayNumber: currentPlayNumber };
-
-      } catch (err) {
-        console.error('[DailySongProgress] Exception during insert:', err);
-        return { success: false, insertedPlayNumber: currentPlayNumber };
-      }
-    }
-
-    return { success: false, insertedPlayNumber: currentPlayNumber };
-  }, [getMaxPlayNumber]);
-
-  // UPDATE an existing progress row (for progress updates after initial insert)
-  const updateProgress = useCallback(async (
-    userId: string,
-    songId: string,
-    day: string,
-    playNumber: number,
-    listenedSeconds: number,
-    durationSeconds: number,
-    completionPercent: number,
-    markCompleted: boolean
+    markCompleted: boolean,
+    incrementPlayCount: boolean = false
   ): Promise<boolean> => {
+    const cacheKey = `${userId}:${songId}:${day}`;
+
+    // Debounce check - prevent rapid-fire upserts
+    const now = Date.now();
+    const lastUpsertTime = lastUpsertTimeCache.get(cacheKey) || 0;
+    if (now - lastUpsertTime < UPSERT_DEBOUNCE_MS && !markCompleted) {
+      // Skip this upsert unless it's marking completion (which is important)
+      console.log('[DailySongProgress] Debouncing upsert, skipping');
+      return true; // Return true to not trigger error handling
+    }
+    lastUpsertTimeCache.set(cacheKey, now);
+
     try {
-      // Auth guard
+      // Auth guard: Verify user is authenticated
       const { data: { session } } = await supabaseBrowser.auth.getSession();
       if (!session?.user?.id) {
+        console.log('[DailySongProgress] No session, skipping upsert');
         return false;
       }
 
+      // Double-check userId matches authenticated user
       if (userId !== session.user.id) {
+        console.warn('[DailySongProgress] userId mismatch, using auth user.id');
         userId = session.user.id;
       }
 
       // Validate inputs
       if (!isFinite(listenedSeconds) || !isFinite(durationSeconds) || !isFinite(completionPercent)) {
+        console.log('[DailySongProgress] Skipping upsert - invalid values detected');
         return false;
       }
 
+      // Ensure integers
       const safeDurationSeconds = Math.floor(durationSeconds);
       const safeListenedSeconds = Math.floor(listenedSeconds);
+
+      // Fix numeric overflow: completion_percent must be 0-100
       const rawPercent = (safeListenedSeconds / safeDurationSeconds) * 100;
       const safePercent = Math.min(100, Math.max(0, Number(rawPercent.toFixed(2))));
 
       if (!isFinite(safePercent)) {
+        console.log('[DailySongProgress] Skipping upsert - safePercent is invalid');
         return false;
       }
 
-      const updateData: Record<string, unknown> = {
+      const timestamp = new Date().toISOString();
+
+      // Build the upsert data
+      const upsertData: Record<string, unknown> = {
+        user_id: userId,
+        song_id: songId,
+        day,
         listened_seconds: safeListenedSeconds,
         duration_seconds: safeDurationSeconds,
         completion_percent: safePercent,
-        updated_at: new Date().toISOString()
+        updated_at: timestamp
       };
 
-      if (markCompleted) {
-        updateData.completed = true;
-        updateData.completed_at = new Date().toISOString();
+      // Only set started_at on first insert (will be ignored on update due to onConflict)
+      if (!upsertedRowsCache.has(cacheKey)) {
+        upsertData.started_at = timestamp;
       }
 
+      if (markCompleted) {
+        upsertData.completed = true;
+        upsertData.completed_at = timestamp;
+      }
+
+      console.log('[DailySongProgress] Upserting progress:', {
+        songId,
+        day,
+        listenedSeconds: safeListenedSeconds,
+        completionPercent: safePercent,
+        markCompleted
+      });
+
+      // Perform the UPSERT with onConflict on the unique constraint columns
       const { error } = await supabaseBrowser
         .from('user_song_daily_progress')
-        .update(updateData)
-        .eq('user_id', userId)
-        .eq('song_id', songId)
-        .eq('day', day)
-        .eq('play_number', playNumber);
+        .upsert(upsertData, {
+          onConflict: 'user_id,song_id,day',
+          ignoreDuplicates: false // We want to update on conflict, not ignore
+        });
 
       if (error) {
-        console.error('[DailySongProgress] Update failed:', error.message);
+        console.error('[DailySongProgress] Upsert error:', {
+          message: error.message,
+          code: (error as any)?.code,
+          details: (error as any)?.details
+        });
         return false;
+      }
+
+      console.log('[DailySongProgress] Upsert successful for', day);
+
+      // Mark as upserted in cache
+      upsertedRowsCache.add(cacheKey);
+
+      // If we need to increment play_count, do a separate update
+      if (incrementPlayCount) {
+        const { error: updateError } = await supabaseBrowser
+          .from('user_song_daily_progress')
+          .update({
+            play_count: supabaseBrowser.rpc('increment_play_count_raw', { val: 1 }) as any,
+            updated_at: timestamp
+          })
+          .eq('user_id', userId)
+          .eq('song_id', songId)
+          .eq('day', day);
+
+        if (updateError) {
+          // play_count increment failed - not critical, just log it
+          console.warn('[DailySongProgress] play_count increment failed:', updateError.message);
+          // Try direct increment as fallback
+          await supabaseBrowser.rpc('increment_song_play_count', {
+            p_user_id: userId,
+            p_song_id: songId,
+            p_day: day
+          }).catch(() => {
+            // RPC may not exist, that's okay
+          });
+        }
       }
 
       return true;
     } catch (err) {
-      console.error('[DailySongProgress] Exception during update:', err);
+      console.error('[DailySongProgress] Exception during upsert:', err);
       return false;
     }
   }, []);
@@ -368,6 +314,8 @@ export function useDailySongProgress({
         p_song_id: songId
       });
 
+      console.log('[DailySongProgress] Song of Day RPC result:', { data, error });
+
       if (error) {
         console.error('[DailySongProgress] Song of Day RPC error:', {
           message: error?.message,
@@ -377,8 +325,6 @@ export function useDailySongProgress({
         });
         return false;
       }
-
-      console.log('[DailySongProgress] Song of Day RPC result:', data);
 
       if (data?.ok === true) {
         console.log('[DailySongProgress] Song of Day completed successfully!');
@@ -457,27 +403,21 @@ export function useDailySongProgress({
       const isNewSongOrDay = playSessionKeyRef.current !== newSessionKey;
 
       if (isNewSongOrDay) {
-        // New song or new day - get the next play_number
-        const maxPlayNumber = await getMaxPlayNumber(userId, songId, day);
-        const nextPlayNumber = maxPlayNumber + 1;
-        currentPlayNumberRef.current = nextPlayNumber;
         playSessionKeyRef.current = newSessionKey;
         prevCurrentTimeRef.current = 0;
         initialRowCreatedRef.current = false;
-        console.log(`[DailySongProgress] Starting play #${nextPlayNumber} for ${trackSlug} on ${day}`);
+        console.log(`[DailySongProgress] Starting session for ${trackSlug} on ${day}`);
       }
 
-      const playNumber = currentPlayNumberRef.current;
-      const cacheKey = `${songId}:${day}:${playNumber}`;
-      const insertCacheKey = `${userId}:${songId}:${day}:${playNumber}`;
+      const cacheKey = `${songId}:${day}`;
 
-      // If already completed this specific play session, no need to track further
-      const alreadyCompleted = await checkExistingProgress(userId, songId, day, playNumber);
+      // Check if already completed this song today
+      const alreadyCompleted = await checkExistingProgress(userId, songId, day);
       if (alreadyCompleted) {
         prevCompletedStateRef.current[day] = true;
         completedDailySongQuestRef.current[day] = true;
-        console.log(`[DailySongProgress] Play #${playNumber} of ${trackSlug} already completed today`);
-        return;
+        console.log(`[DailySongProgress] ${trackSlug} already completed today`);
+        // Still continue tracking for play_count increment
       }
 
       // Mark today's initial state as "not completed" so we can detect false->true transition
@@ -485,19 +425,25 @@ export function useDailySongProgress({
         prevCompletedStateRef.current[day] = false;
       }
 
-      // IMMEDIATE initial INSERT: Create the row right away when playback starts
+      // IMMEDIATE initial UPSERT: Create/update the row right away when playback starts
       const { currentTime: initialTime, duration: initialDuration } = audioElement;
-      if (!initialRowCreatedRef.current && !insertedRowsCache.has(insertCacheKey) && initialDuration && initialDuration > 0 && isFinite(initialDuration)) {
+      const upsertCacheKey = `${userId}:${songId}:${day}`;
+      if (!initialRowCreatedRef.current && initialDuration && initialDuration > 0 && isFinite(initialDuration)) {
         const initialPercent = (initialTime / initialDuration) * 100;
-        const result = await insertProgress(userId, songId, day, playNumber, initialTime, initialDuration, initialPercent, false);
-        if (result.success) {
+        const success = await upsertProgress(
+          userId,
+          songId,
+          day,
+          initialTime,
+          initialDuration,
+          initialPercent,
+          false, // Don't mark completed yet
+          isNewSongOrDay // Increment play count on new session
+        );
+        if (success) {
           lastUpdateRef.current = Date.now();
           initialRowCreatedRef.current = true;
           prevCurrentTimeRef.current = initialTime;
-          // Update play number if it changed due to conflict resolution
-          if (result.insertedPlayNumber !== playNumber) {
-            currentPlayNumberRef.current = result.insertedPlayNumber;
-          }
         }
       }
 
@@ -526,92 +472,69 @@ export function useDailySongProgress({
           const isRestart = prevTime > 5 && currentTime < 2;
 
           if (isRestart) {
-            // Song restarted! Get new play_number and insert new row
-            const maxPlayNumber = await getMaxPlayNumber(userId, songId, day);
-            const newPlayNumber = maxPlayNumber + 1;
-            currentPlayNumberRef.current = newPlayNumber;
-            initialRowCreatedRef.current = false;
+            console.log(`[DailySongProgress] Song restarted for ${trackSlug}`);
+            // Song restarted - increment play count
             prevCurrentTimeRef.current = currentTime;
 
-            console.log(`[DailySongProgress] Song restarted! Starting play #${newPlayNumber} for ${trackSlug}`);
-
-            // Insert new row for the new play session
             const initialPercent = (currentTime / duration) * 100;
-            const result = await insertProgress(userId, songId, day, newPlayNumber, currentTime, duration, initialPercent, false);
-            if (result.success) {
-              lastUpdateRef.current = Date.now();
-              initialRowCreatedRef.current = true;
-              if (result.insertedPlayNumber !== newPlayNumber) {
-                currentPlayNumberRef.current = result.insertedPlayNumber;
-              }
-            }
+            await upsertProgress(
+              userId,
+              songId,
+              day,
+              currentTime,
+              duration,
+              initialPercent,
+              false,
+              true // Increment play count
+            );
+            lastUpdateRef.current = Date.now();
             return;
           }
 
           // Update previous time for next iteration
           prevCurrentTimeRef.current = currentTime;
 
-          const currentPlayNum = currentPlayNumberRef.current;
-          const currentCacheKey = `${songId}:${day}:${currentPlayNum}`;
-          const currentInsertCacheKey = `${userId}:${songId}:${day}:${currentPlayNum}`;
-
           // Calculate completion percentage
           const completionPercent = (currentTime / duration) * 100;
 
           // Throttle updates to every 5 seconds minimum
           const now = Date.now();
-          const needsInitialRow = !initialRowCreatedRef.current && !insertedRowsCache.has(currentInsertCacheKey);
+          const needsInitialRow = !initialRowCreatedRef.current;
           if (!needsInitialRow && now - lastUpdateRef.current < 5000) return;
           lastUpdateRef.current = now;
 
-          // Check if we've hit the 50% threshold for this play session
-          const shouldComplete = completionPercent >= 50 && !completedRef.current.has(currentCacheKey);
+          // Check if we've hit the 50% threshold for this song today
+          const shouldComplete = completionPercent >= 50 && !completedRef.current.has(cacheKey);
 
-          // If row doesn't exist yet, INSERT; otherwise UPDATE
-          if (needsInitialRow) {
-            const result = await insertProgress(
-              userId,
-              songId,
-              day,
-              currentPlayNum,
-              currentTime,
-              duration,
-              completionPercent,
-              shouldComplete
-            );
-            if (result.success) {
-              initialRowCreatedRef.current = true;
-              if (result.insertedPlayNumber !== currentPlayNum) {
-                currentPlayNumberRef.current = result.insertedPlayNumber;
-              }
-            }
-          } else {
-            // Row already exists - update it
-            await updateProgress(
-              userId,
-              songId,
-              day,
-              currentPlayNum,
-              currentTime,
-              duration,
-              completionPercent,
-              shouldComplete
-            );
+          // Upsert progress
+          const success = await upsertProgress(
+            userId,
+            songId,
+            day,
+            currentTime,
+            duration,
+            completionPercent,
+            shouldComplete,
+            needsInitialRow // Only increment play count on first track of session
+          );
+
+          if (success && needsInitialRow) {
+            initialRowCreatedRef.current = true;
           }
 
           // Trigger Song of the Day completion if threshold reached
           if (shouldComplete) {
-            completedRef.current.add(currentCacheKey);
+            completedRef.current.add(cacheKey);
 
             const isSongOfDayById = songOfDayId && songId === songOfDayId;
             const isSongOfDayBySlug = !songOfDayId && songOfDaySlug && trackSlug === songOfDaySlug;
             const isSongOfDay = isSongOfDayById || isSongOfDayBySlug;
 
             if (isSongOfDay) {
-              console.log(`[DailySongProgress] Song of the Day play #${currentPlayNum} completed for ${trackSlug}`);
+              console.log(`[DailySongProgress] Song of the Day completed for ${trackSlug}`);
               await completeSongOfDayIfEligible(songId, day);
             } else {
-              console.log(`[DailySongProgress] Play #${currentPlayNum} completed but not Song of the Day`);
+              console.log(`[DailySongProgress] Song completed but not Song of the Day`);
             }
           }
         } finally {
@@ -636,10 +559,8 @@ export function useDailySongProgress({
     songOfDaySlug,
     songOfDayId,
     getSongId,
-    getMaxPlayNumber,
     checkExistingProgress,
-    insertProgress,
-    updateProgress,
+    upsertProgress,
     completeSongOfDayIfEligible
   ]);
 

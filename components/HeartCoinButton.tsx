@@ -406,6 +406,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     setDailyQuests(prev => ({ ...prev, journalEntry: journalCompleted }));
   }, [journalCompleted]);
 
+  // Initialize checkedIn state from localStorage on mount
+  useEffect(() => {
+    const today = new Date().toDateString();
+    const isCheckedIn = localStorage.getItem(`quest_liveshow_${today}`) === 'true';
+    if (isCheckedIn) {
+      setDailyQuests(prev => ({ ...prev, checkedIn: true }));
+    }
+  }, []);
+
   // Listen for journalCompleted event to immediately update local state
   useEffect(() => {
     const handleJournalCompleted = () => {
@@ -1042,6 +1051,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     // For daily quests, check completed_today or local state
     if (quest.quest_key === 'JOURNAL_ENTRY_OF_DAY') {
       return dailyQuests.journalEntry || quest.completed_today > 0 || completedQuests.has(quest.id);
+    }
+    // For ATTEND_LIVESTREAM quest, check local state and localStorage to persist until next calendar day
+    if (quest.quest_key === 'ATTEND_LIVESTREAM') {
+      const today = new Date().toDateString();
+      const localStorageCheckedIn = typeof window !== 'undefined' && localStorage.getItem(`quest_liveshow_${today}`) === 'true';
+      return dailyQuests.checkedIn || localStorageCheckedIn || quest.completed_today > 0 || completedQuests.has(quest.id);
     }
     // For other daily quests, check completed_today
     if (quest.completed_today !== undefined) {
@@ -3526,6 +3541,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       if (code === 'P0003' || status === 409 || code === '23505') {
                                         setPhraseStatus('already');
                                         setPhraseValidationResult('already');
+                                        // Persist check-in status to localStorage and state so it stays until next calendar day
+                                        const today = new Date().toDateString();
+                                        localStorage.setItem(`quest_liveshow_${today}`, 'true');
+                                        setDailyQuests(prev => ({ ...prev, checkedIn: true }));
                                         try { sfx.play('click', 0.7); } catch {}
                                         setCheckInMessage('Already checked in!');
                                         try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Already checked in!', type: 'success' } })); } catch {}
@@ -3560,6 +3579,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     const reward = row?.granted_amount || row?.reward || 0;
                                     setPhraseStatus('success');
                                     setPhraseValidationResult('correct');
+                                    // Persist check-in status to localStorage and state so it stays until next calendar day
+                                    const today = new Date().toDateString();
+                                    localStorage.setItem(`quest_liveshow_${today}`, 'true');
+                                    setDailyQuests(prev => ({ ...prev, checkedIn: true }));
                                     setAutoTextValue('');
                                     try { sfx.play('click', 0.7); } catch {}
                                     // Trigger HeartCoin celebration with the reward amount

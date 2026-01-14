@@ -112,14 +112,15 @@ function useQuestStatus() {
             const inviteConfirmDone = localStorage.getItem(`quest_invite_confirm_${clientToday}`) === 'true';
             const liveshowDone = localStorage.getItem(`quest_liveshow_${clientToday}`) === 'true';
 
-            setQuestStatus({
-              elementOfDay: elementDone,
-              journalEntry: journalDone,
-              inviteFriend: inviteDone,
-              inviteFriendConfirm: inviteConfirmDone,
-              liveShow: liveshowDone,
-              songOfDay: songOfDayDone
-            });
+            // Use functional update to preserve any existing true state (prevents race conditions)
+            setQuestStatus(prev => ({
+              elementOfDay: elementDone || prev.elementOfDay,
+              journalEntry: journalDone || prev.journalEntry,
+              inviteFriend: inviteDone || prev.inviteFriend,
+              inviteFriendConfirm: inviteConfirmDone || prev.inviteFriendConfirm,
+              liveShow: liveshowDone || prev.liveShow,
+              songOfDay: songOfDayDone || prev.songOfDay
+            }));
             return;
           }
         } catch (dbErr) {
@@ -132,14 +133,15 @@ function useQuestStatus() {
         const inviteConfirmDone = localStorage.getItem(`quest_invite_confirm_${clientToday}`) === 'true';
         const liveshowDone = localStorage.getItem(`quest_liveshow_${clientToday}`) === 'true';
 
-        setQuestStatus({
-          elementOfDay: elementDone,
-          journalEntry: journalDone,
-          inviteFriend: inviteDone,
-          inviteFriendConfirm: inviteConfirmDone,
-          liveShow: liveshowDone,
-          songOfDay: false
-        });
+        // Use functional update to preserve any existing true state (prevents race conditions)
+        setQuestStatus(prev => ({
+          elementOfDay: elementDone || prev.elementOfDay,
+          journalEntry: journalDone || prev.journalEntry,
+          inviteFriend: inviteDone || prev.inviteFriend,
+          inviteFriendConfirm: inviteConfirmDone || prev.inviteFriendConfirm,
+          liveShow: liveshowDone || prev.liveShow,
+          songOfDay: prev.songOfDay
+        }));
 
         // Set today's element from server response
         if (data.element) {
@@ -164,14 +166,15 @@ function useQuestStatus() {
         const inviteConfirmDone = localStorage.getItem(`quest_invite_confirm_${clientToday}`) === 'true';
         const liveshowDone = localStorage.getItem(`quest_liveshow_${clientToday}`) === 'true';
 
-        setQuestStatus({
-          elementOfDay: elementDone,
-          journalEntry: journalDone,
-          inviteFriend: inviteDone,
-          inviteFriendConfirm: inviteConfirmDone,
-          liveShow: liveshowDone,
-          songOfDay: false
-        });
+        // Use functional update to preserve any existing true state (prevents race conditions)
+        setQuestStatus(prev => ({
+          elementOfDay: elementDone || prev.elementOfDay,
+          journalEntry: journalDone || prev.journalEntry,
+          inviteFriend: inviteDone || prev.inviteFriend,
+          inviteFriendConfirm: inviteConfirmDone || prev.inviteFriendConfirm,
+          liveShow: liveshowDone || prev.liveShow,
+          songOfDay: prev.songOfDay
+        }));
 
         // Fallback element rotation based on day of year
         const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
@@ -276,15 +279,21 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
 
       // Sync Live Show quest status
       // Check both server state AND localStorage (secret phrases are tracked separately)
+      // IMPORTANT: Always preserve liveShow if already true in state, OR if localStorage/server says true
       const liveShowQuest = bonus.find(q => q.quest_key === 'ATTEND_LIVESTREAM');
       const today = new Date().toDateString();
       const localLiveShowDone = localStorage.getItem(`quest_liveshow_${today}`) === 'true';
       const serverLiveShowDone = liveShowQuest?.completed_today > 0;
+      const liveShowIsComplete = serverLiveShowDone || localLiveShowDone;
 
-      if (serverLiveShowDone || localLiveShowDone) {
+      if (liveShowIsComplete) {
         localStorage.setItem(`quest_liveshow_${today}`, 'true');
-        setQuestStatus(prev => ({ ...prev, liveShow: true }));
       }
+      // Always set the state to preserve checked-in status until next calendar day
+      setQuestStatus(prev => ({
+        ...prev,
+        liveShow: liveShowIsComplete || prev.liveShow
+      }));
     } catch (error) {
       console.error('Failed to load quests:', error);
     } finally {
@@ -1414,7 +1423,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                   }}
                 >
                   {questStatus.liveShow
-                    ? 'CHECKED IN'
+                    ? 'CHECKED IN TODAY'
                     : !isAuthenticated
                       ? 'LOG IN TO COMPLETE'
                       : showCheckIn
@@ -1447,7 +1456,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                   }
                 >
                   {questStatus.liveShow
-                    ? '✓ CHECKED IN'
+                    ? '✓ Complete'
                     : !isAuthenticated
                       ? 'Log in to complete'
                       : '+5'

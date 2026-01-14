@@ -419,11 +419,10 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
       {/* Full-screen Enlarged Badge Overlay */}
       {enlargedBadge && (
         <div
-          className="absolute inset-0 z-50 flex items-center justify-center"
+          className="absolute inset-0 z-50 flex flex-col items-center justify-start pt-4"
           style={{
-            background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.98) 100%)',
+            background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.98) 0%, rgba(0,0,0,1) 100%)',
             backdropFilter: 'blur(8px)',
-            padding: '16px',
             overflow: 'hidden',
           }}
           onClick={() => {
@@ -431,76 +430,72 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
             setEnlargedBadge(null);
           }}
         >
-          {/* Badge Display Container */}
+          {/* Badge Image - Large and fills most of the space */}
           <div
-            className="flex flex-col items-center justify-center w-full h-full"
-            style={{ maxHeight: '100%', overflow: 'hidden' }}
+            className="relative rounded-full overflow-hidden flex items-center justify-center flex-shrink-0"
+            style={{
+              width: '60%',
+              maxWidth: '280px',
+              aspectRatio: '1/1',
+              boxShadow: `
+                0 0 60px rgba(255, 105, 180, 0.4),
+                0 0 100px rgba(255, 105, 180, 0.2),
+                0 20px 40px rgba(0,0,0,0.5)
+              `,
+              border: '4px solid rgba(255, 105, 180, 0.6)',
+              background: 'linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(40,40,40,0.9) 100%)',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Badge Image */}
-            <div
-              className="relative rounded-full overflow-hidden flex items-center justify-center flex-shrink-0"
-              style={{
-                width: '50%',
-                maxWidth: '200px',
-                aspectRatio: '1/1',
-                maxHeight: '60%',
-                boxShadow: `
-                  0 0 60px rgba(255, 105, 180, 0.4),
-                  0 0 100px rgba(255, 105, 180, 0.2),
-                  0 20px 40px rgba(0,0,0,0.5)
-                `,
-                border: '4px solid rgba(255, 105, 180, 0.6)',
-                background: 'linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(40,40,40,0.9) 100%)',
-              }}
-            >
-              {enlargedBadge.badge.icon_url ? (
-                <img
-                  src={enlargedBadge.badge.icon_url}
-                  alt={enlargedBadge.badge.badge_name}
-                  className="w-full h-full object-cover"
-                  draggable={false}
-                />
-              ) : (
-                <div className="text-8xl">🏅</div>
-              )}
-            </div>
-
-            {/* Badge Name */}
-            <div
-              className="mt-6 text-2xl font-bold text-center uppercase tracking-wider"
-              style={{
-                color: '#FF69B4',
-                textShadow: '0 0 20px rgba(255, 105, 180, 0.8), 0 0 40px rgba(255, 105, 180, 0.4)',
-              }}
-            >
-              {enlargedBadge.badge.badge_name}
-            </div>
-
-            {/* Badge Description */}
-            {enlargedBadge.badge.description && (
-              <div
-                className="mt-3 text-sm text-center max-w-xs px-4"
-                style={{
-                  color: 'rgba(255, 255, 255, 0.8)',
-                }}
-              >
-                {enlargedBadge.badge.description}
-              </div>
-            )}
-
-            {/* Badge Category */}
-            {enlargedBadge.badge.category && (
-              <div
-                className="mt-2 text-xs uppercase tracking-widest"
-                style={{
-                  color: 'rgba(255, 105, 180, 0.6)',
-                }}
-              >
-                {enlargedBadge.badge.category}
-              </div>
+            {enlargedBadge.badge.icon_url ? (
+              <img
+                src={enlargedBadge.badge.icon_url}
+                alt={enlargedBadge.badge.badge_name}
+                className="w-full h-full object-cover"
+                draggable={false}
+              />
+            ) : (
+              <div className="text-8xl">🏅</div>
             )}
           </div>
+
+          {/* Badge Name */}
+          <div
+            className="mt-4 text-xl font-bold text-center uppercase tracking-wider px-4"
+            style={{
+              color: '#FF69B4',
+              textShadow: '0 0 20px rgba(255, 105, 180, 0.8), 0 0 40px rgba(255, 105, 180, 0.4)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {enlargedBadge.badge.badge_name}
+          </div>
+
+          {/* Badge Description */}
+          {enlargedBadge.badge.description && (
+            <div
+              className="mt-2 text-sm text-center max-w-xs px-4"
+              style={{
+                color: 'rgba(255, 255, 255, 0.8)',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {enlargedBadge.badge.description}
+            </div>
+          )}
+
+          {/* Badge Category */}
+          {enlargedBadge.badge.category && (
+            <div
+              className="mt-2 text-xs uppercase tracking-widest"
+              style={{
+                color: 'rgba(255, 105, 180, 0.6)',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {enlargedBadge.badge.category}
+            </div>
+          )}
         </div>
       )}
 
@@ -767,6 +762,7 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
                             src="/elements/heart-coin.webp"
                             alt="Send Heart Coin"
                             className="w-12 h-12"
+                            style={{ opacity: 0.5 }}
                           />
                         </button>
                       </div>

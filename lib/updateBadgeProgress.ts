@@ -3,6 +3,10 @@ import { getBadgeProgressForUser } from '@/lib/badgeProgress';
 import { log, warn } from '@/lib/logger';
 import { queueBadgeCelebration } from '@/utils/celebrationQueue';
 
+// Session-level cache to track badges that have already been celebrated
+// Prevents duplicate celebrations if checkAndAwardEligibleBadges is called multiple times
+const celebratedBadgesThisSession = new Set<string>();
+
 /**
  * Update badge progress counters for a specific user
  * This should be called whenever the user completes activities that count toward badges
@@ -164,8 +168,14 @@ export async function checkAndAwardEligibleBadges(userId: string) {
 
     // Check each badge for eligibility
     for (const badge of allBadges) {
-      // Skip if already earned
+      // Skip if already earned (from database)
       if (earnedBadgeIds.has(badge.id)) {
+        continue;
+      }
+
+      // Skip if already celebrated this session (prevents race condition duplicates)
+      const celebrationKey = `${userId}:${badge.id}`;
+      if (celebratedBadgesThisSession.has(celebrationKey)) {
         continue;
       }
 
@@ -199,8 +209,11 @@ export async function checkAndAwardEligibleBadges(userId: string) {
           newlyAwardedBadges.push(badge);
           log(`✅ Successfully awarded badge: ${badge.badge_name}`);
 
-          // Queue badge celebration - it will wait for any active HeartCoin celebration to finish
-          if (badge.icon_url && badge.badge_name) {
+          // Queue badge celebration only if not already celebrated this session
+          // This prevents duplicate celebrations if checkAndAwardEligibleBadges is called multiple times
+          const celebrationKey = `${userId}:${badge.id}`;
+          if (badge.icon_url && badge.badge_name && !celebratedBadgesThisSession.has(celebrationKey)) {
+            celebratedBadgesThisSession.add(celebrationKey);
             queueBadgeCelebration(badge.icon_url, badge.badge_name);
           }
         }
