@@ -11,7 +11,7 @@ export default function BadgeCelebration() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Reuse existing sound for now
+      // Use badge unlock sound
       audioRef.current = new Audio('/audio/heart-coin.mp3');
     }
 
@@ -28,7 +28,7 @@ export default function BadgeCelebration() {
       }
 
       setIsVisible(true);
-      setTimeout(() => setIsVisible(false), 3000);
+      setTimeout(() => setIsVisible(false), 3500);
     };
 
     window.addEventListener(BADGE_CELEBRATION_EVENT, handleCelebration as EventListener);
@@ -40,33 +40,77 @@ export default function BadgeCelebration() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-[100000] flex items-center justify-center pointer-events-none" style={{ padding: '4vh 2rem' }}>
+    <div className="fixed inset-0 z-[100000] flex items-center justify-center pointer-events-none">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/20 backdrop-blur-sm heartcoin-backdrop-fade" />
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        style={{ animation: 'badgeFadeIn 0.3s ease-out' }}
+      />
 
-      {/* Celebration content */}
-      <div className="relative flex flex-col items-center heartcoin-pop w-full max-w-sm justify-center" style={{ minHeight: 'fit-content', maxHeight: '92vh' }}>
-        {/* Glowing background circle */}
-        <div className="absolute w-40 h-40 bg-blue-500/30 rounded-full blur-xl" />
+      {/* Badge celebration content */}
+      <div
+        className="relative flex flex-col items-center px-8 py-10 rounded-2xl"
+        style={{
+          background: 'rgba(10, 10, 30, 0.85)',
+          boxShadow: '0 0 40px rgba(79, 172, 254, 0.3), 0 0 80px rgba(79, 172, 254, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+          border: '1px solid rgba(79, 172, 254, 0.3)',
+          animation: 'badgePopIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+        }}
+      >
+        {/* Neon glow circle behind badge */}
+        <div
+          className="absolute w-36 h-36 rounded-full blur-2xl opacity-50"
+          style={{ background: 'radial-gradient(circle, rgba(79, 172, 254, 0.5) 0%, transparent 70%)' }}
+        />
 
         {/* Badge image */}
         <img
           src={badgeImage}
           alt={badgeTitle}
-          className="w-40 h-40 relative z-10 rounded-full object-cover"
+          className="w-28 h-28 relative z-10 rounded-full object-cover"
           style={{
-            animation: 'cardPulse 2s ease-in-out infinite',
-            maxHeight: '60vh',
-            height: 'auto',
-            aspectRatio: '1 / 1'
+            boxShadow: '0 0 20px rgba(79, 172, 254, 0.5)',
+            animation: 'badgePulse 1.5s ease-in-out infinite',
           }}
         />
 
-        {/* Text */}
-        <p className="text-white font-bold text-lg mt-3 relative z-10 text-center">
+        {/* Text: Badge Unlocked */}
+        <p
+          className="text-cyan-400 text-sm font-semibold tracking-widest uppercase mt-5 relative z-10"
+          style={{ textShadow: '0 0 10px rgba(79, 172, 254, 0.8)' }}
+        >
+          Badge Unlocked
+        </p>
+
+        {/* Badge name */}
+        <p
+          className="text-white text-xl font-bold mt-2 relative z-10 text-center"
+          style={{ textShadow: '0 0 15px rgba(255, 255, 255, 0.3)' }}
+        >
           {badgeTitle}
         </p>
       </div>
+
+      <style jsx>{`
+        @keyframes badgeFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes badgePopIn {
+          from {
+            opacity: 0;
+            transform: scale(0.8);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        @keyframes badgePulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+        }
+      `}</style>
     </div>
   );
 }

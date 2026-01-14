@@ -1,6 +1,7 @@
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { getBadgeProgressForUser } from '@/lib/badgeProgress';
 import { log, warn } from '@/lib/logger';
+import { triggerBadgeCelebration } from '@/utils/badgeCelebration';
 
 /**
  * Update badge progress counters for a specific user
@@ -197,7 +198,15 @@ export async function checkAndAwardEligibleBadges(userId: string) {
         } else {
           newlyAwardedBadges.push(badge);
           log(`✅ Successfully awarded badge: ${badge.badge_name}`);
-    }
+
+          // Trigger badge celebration with badge image after 2 second delay
+          // This allows HeartCoin celebration to finish first
+          if (badge.icon_url && badge.badge_name) {
+            setTimeout(() => {
+              triggerBadgeCelebration(badge.icon_url, badge.badge_name);
+            }, 2000);
+          }
+        }
       }
     }
 

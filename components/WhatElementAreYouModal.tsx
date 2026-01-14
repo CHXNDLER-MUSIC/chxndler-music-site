@@ -167,6 +167,16 @@ export default function WhatElementAreYouModal() {
 
       console.log('🎯 Align result:', alignResult);
 
+      // Set profile image URL to the selected element's icon
+      const selectedElementIcon = ELEMENTS.find(el => el.key === selectedElement)?.icon;
+      if (selectedElementIcon && currentUser?.id) {
+        console.log('🖼️ Setting profile image URL to:', selectedElementIcon);
+        await supabaseBrowser
+          .from('profiles')
+          .update({ profile_image_url: selectedElementIcon })
+          .eq('id', currentUser.id);
+      }
+
       // Refresh profile to get updated data
       await refreshProfile();
 
@@ -203,13 +213,13 @@ export default function WhatElementAreYouModal() {
       }, 500);
 
       // Show tour welcome modal after warp and celebrations complete
-      // Delay accounts for: warp (~3.5s) + HeartCoin celebration (~1.5s) + Badge celebration (~3s)
+      // Delay accounts for: HeartCoin celebration (~2.5s) + Badge celebration delay (2s) + Badge duration (~3.5s)
       setTimeout(() => {
         try {
           console.log('Dispatching heartverse:entered event to show tour prompt');
           window.dispatchEvent(new CustomEvent('heartverse:entered'));
         } catch {}
-      }, 6000); // Wait for warp and celebrations to complete
+      }, 8000); // Wait for HeartCoin + Badge celebrations to complete
     } catch (e: any) {
       setError(e?.message || "Failed to save element selection");
       setLoading(false);

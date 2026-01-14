@@ -161,7 +161,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
             >
               {`Welcome ${profile?.name ? profile.name : 'Alien'}`}
             </h2>
-            <p className="text-white/90 mb-6">Show you around?</p>
+            <p className="text-white/90 mb-6">Let me show you around</p>
 
             <button
               onClick={() => {
@@ -194,7 +194,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
               }}
               className="w-full text-white/80 hover:text-white text-sm underline"
             >
-              Skip Tour
+              Skip for now
             </button>
           </div>
         </div>

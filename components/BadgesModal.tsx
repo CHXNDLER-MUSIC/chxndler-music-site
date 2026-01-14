@@ -825,9 +825,9 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
             </div>
             
             {/* Category Selection Grid */}
-            <div className="mt-1 p-4 bg-black/20 rounded-xl border border-white/10">
+            <div className="mt-4 p-4 bg-black/20 rounded-xl border border-white/10">
               <div className="text-center mb-8">
-                <div className="mb-3">
+                <div className="mb-3 pt-1">
                   <span className="text-cyan-300 text-lg font-bold uppercase tracking-wider">
                     BADGES CLAIMED: {userUnlockedBadges.length}
                   </span>
@@ -1205,8 +1205,8 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           />
 
           {/* Content container - scrollable */}
-          <div className="flex-1 relative z-10 overflow-y-auto overflow-x-hidden" style={{ padding: '0px 12px 20px 12px' }}>
-            <div className="relative badges-modal-container pt-1">
+          <div className="flex-1 relative z-10 overflow-y-auto overflow-x-hidden" style={{ padding: '16px 12px 20px 12px' }}>
+            <div className="relative badges-modal-container pt-2">
               <div data-badges-modal>
                 {badgesContent}
               </div>
