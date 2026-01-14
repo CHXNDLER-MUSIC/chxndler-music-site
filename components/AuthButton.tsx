@@ -73,6 +73,16 @@ export default function AuthButton() {
     return () => window.removeEventListener('openProfilePopover', handleOpenProfile);
   }, [user, profile?.profile_complete]);
 
+  // Listen for closeProfilePopover event (triggered when hamburger menu opens)
+  useEffect(() => {
+    const handleCloseProfile = () => {
+      setShowProfilePopover(false);
+    };
+
+    window.addEventListener('closeProfilePopover', handleCloseProfile);
+    return () => window.removeEventListener('closeProfilePopover', handleCloseProfile);
+  }, []);
+
   // Get button display info
   const getButtonDisplayInfo = () => {
     // Loading state - but only show briefly

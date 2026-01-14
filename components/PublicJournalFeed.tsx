@@ -29,6 +29,15 @@ type CardData = {
   artwork_url?: string;
 };
 
+// Type for badge data from UserBadges
+type BadgeData = {
+  id: string;
+  badge_name: string;
+  description: string | null;
+  icon_url: string | null;
+  category: string | null;
+};
+
 // Rarity colors for card display
 const RARITY_COLORS: Record<string, { bg: string; border: string; glow: string }> = {
   common: { bg: 'rgba(156, 163, 175, 0.2)', border: '#9CA3AF', glow: '#9CA3AF40' },
@@ -54,6 +63,7 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
   const [showBadgesModal, setShowBadgesModal] = useState<{[key: string]: boolean}>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [enlargedCard, setEnlargedCard] = useState<{ entryId: string; card: CardData } | null>(null);
+  const [enlargedBadge, setEnlargedBadge] = useState<{ entryId: string; badge: BadgeData } | null>(null);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [spinRotation, setSpinRotation] = useState(0);
   const spinAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -292,7 +302,13 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
   }
 
   return (
-    <div className="space-y-4 relative">
+    <div
+      className="space-y-4 relative"
+      style={{
+        overflow: (enlargedCard || enlargedBadge) ? 'hidden' : undefined,
+        height: (enlargedCard || enlargedBadge) ? '100%' : undefined,
+      }}
+    >
       {/* Full-screen Enlarged Card Overlay */}
       {enlargedCard && (
         <div
@@ -300,13 +316,15 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
           style={{
             background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.98) 100%)',
             backdropFilter: 'blur(8px)',
+            padding: '16px',
+            overflow: 'hidden',
           }}
           onClick={() => {
             try { sfx.play('click', 0.4); } catch {}
             setEnlargedCard(null);
           }}
         >
-          {/* Interactive Card with TiltSpinCard - fills the container */}
+          {/* Interactive Card with TiltSpinCard */}
           <TiltSpinCard
             enableSpin={true}
             spinSensitivity={0.8}
@@ -317,11 +335,11 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
               e.stopPropagation();
               handleCardSpin();
             }}
-            className="cursor-grab active:cursor-grabbing h-full flex items-center justify-center"
+            className="cursor-grab active:cursor-grabbing flex items-center justify-center"
             style={{
-              width: '100%',
+              width: 'auto',
               height: '100%',
-              padding: '8px',
+              maxHeight: '100%',
             }}
           >
             <div
@@ -395,6 +413,94 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
               </div>
             </div>
           </TiltSpinCard>
+        </div>
+      )}
+
+      {/* Full-screen Enlarged Badge Overlay */}
+      {enlargedBadge && (
+        <div
+          className="absolute inset-0 z-50 flex items-center justify-center"
+          style={{
+            background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.98) 100%)',
+            backdropFilter: 'blur(8px)',
+            padding: '16px',
+            overflow: 'hidden',
+          }}
+          onClick={() => {
+            try { sfx.play('click', 0.4); } catch {}
+            setEnlargedBadge(null);
+          }}
+        >
+          {/* Badge Display Container */}
+          <div
+            className="flex flex-col items-center justify-center w-full h-full"
+            style={{ maxHeight: '100%', overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Badge Image */}
+            <div
+              className="relative rounded-full overflow-hidden flex items-center justify-center flex-shrink-0"
+              style={{
+                width: '50%',
+                maxWidth: '200px',
+                aspectRatio: '1/1',
+                maxHeight: '60%',
+                boxShadow: `
+                  0 0 60px rgba(255, 105, 180, 0.4),
+                  0 0 100px rgba(255, 105, 180, 0.2),
+                  0 20px 40px rgba(0,0,0,0.5)
+                `,
+                border: '4px solid rgba(255, 105, 180, 0.6)',
+                background: 'linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(40,40,40,0.9) 100%)',
+              }}
+            >
+              {enlargedBadge.badge.icon_url ? (
+                <img
+                  src={enlargedBadge.badge.icon_url}
+                  alt={enlargedBadge.badge.badge_name}
+                  className="w-full h-full object-cover"
+                  draggable={false}
+                />
+              ) : (
+                <div className="text-8xl">🏅</div>
+              )}
+            </div>
+
+            {/* Badge Name */}
+            <div
+              className="mt-6 text-2xl font-bold text-center uppercase tracking-wider"
+              style={{
+                color: '#FF69B4',
+                textShadow: '0 0 20px rgba(255, 105, 180, 0.8), 0 0 40px rgba(255, 105, 180, 0.4)',
+              }}
+            >
+              {enlargedBadge.badge.badge_name}
+            </div>
+
+            {/* Badge Description */}
+            {enlargedBadge.badge.description && (
+              <div
+                className="mt-3 text-sm text-center max-w-xs px-4"
+                style={{
+                  color: 'rgba(255, 255, 255, 0.8)',
+                }}
+              >
+                {enlargedBadge.badge.description}
+              </div>
+            )}
+
+            {/* Badge Category */}
+            {enlargedBadge.badge.category && (
+              <div
+                className="mt-2 text-xs uppercase tracking-widest"
+                style={{
+                  color: 'rgba(255, 105, 180, 0.6)',
+                }}
+              >
+                {enlargedBadge.badge.category}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -708,6 +814,10 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
                           userId={entry.user_id}
                           embedded={true}
                           maxBadges={4}
+                          onBadgeClick={(badge) => {
+                            try { sfx.play('card-ding', 0.5); } catch {}
+                            setEnlargedBadge({ entryId: entry.entry_id, badge });
+                          }}
                         />
                       </div>
                     )}

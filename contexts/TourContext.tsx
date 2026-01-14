@@ -128,6 +128,28 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("heartverse:entered", onEntered);
   }, [clearDisabled]);
 
+  // Listen for Wanderer badge completion to show tour prompt
+  useEffect(() => {
+    const onBadgeCelebrationComplete = (event: CustomEvent<{ badgeTitle: string; badgeImage: string }>) => {
+      const { badgeTitle } = event.detail;
+      // Check if this is the Wanderer badge (case-insensitive match)
+      if (badgeTitle?.toLowerCase().includes('wanderer')) {
+        // Only show if user hasn't completed the tour yet
+        const completed = profile?.has_seen_tour || isCompleted();
+        if (!completed && !isDisabled()) {
+          // Small delay to let badge celebration fully clear
+          setTimeout(() => {
+            clearDisabled();
+            setWelcomeVisible(true);
+          }, 500);
+        }
+      }
+    };
+
+    window.addEventListener('badge:celebration-complete', onBadgeCelebrationComplete as EventListener);
+    return () => window.removeEventListener('badge:celebration-complete', onBadgeCelebrationComplete as EventListener);
+  }, [profile, isCompleted, isDisabled, clearDisabled]);
+
   const value = useMemo(() => ({ active, start, skip, restart, disable, enable }), [active, start, skip, restart, disable, enable]);
 
   return (
@@ -156,12 +178,11 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
             }}
           >
             <h2
-              className="text-2xl font-bold text-white mb-2"
+              className="text-2xl font-bold text-white mb-4"
               style={{ textShadow: '0 0 18px rgba(56,182,255,0.7)' }}
             >
-              {`Welcome ${profile?.name ? profile.name : 'Alien'}`}
+              Want me to show you around?
             </h2>
-            <p className="text-white/90 mb-6">Let me show you around</p>
 
             <button
               onClick={() => {
@@ -178,7 +199,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
                 boxShadow: '0 6px 14px rgba(0,0,0,0.35), 0 0 20px rgba(252,84,175,0.45)'
               }}
             >
-              Start Tour
+              Yes, show me!
             </button>
 
             <button

@@ -74,9 +74,10 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
 
   const toggleMenu = () => {
     sfx.play('click', 0.7);
-    // Close any open modals when hamburger is clicked
+    // Close any open modals/popovers when hamburger is clicked
     window.dispatchEvent(new CustomEvent('closeWelcomeHomeModal'));
     window.dispatchEvent(new CustomEvent('closeHeartCoinModal'));
+    window.dispatchEvent(new CustomEvent('closeProfilePopover'));
     if (externalIsOpen !== undefined) {
       onMenuToggle?.(!isOpen);
     } else {

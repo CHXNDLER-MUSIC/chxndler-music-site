@@ -3,6 +3,8 @@
  * Triggers custom browser events when HeartCoins are earned
  */
 
+import { markHeartcoinCelebrationStarted } from './celebrationQueue';
+
 export interface HeartCoinCelebrationDetail {
   amount: number;
 }
@@ -56,6 +58,9 @@ export function triggerHeartCoinCelebration(amount: number): void {
     suppressCelebration = false; // Reset the flag
     return;
   }
+
+  // Mark that a HeartCoin celebration is starting (for queue coordination)
+  markHeartcoinCelebrationStarted();
 
   const detail: HeartCoinCelebrationDetail = { amount };
   const event = new CustomEvent(HEARTCOIN_CELEBRATION_EVENT, { detail });

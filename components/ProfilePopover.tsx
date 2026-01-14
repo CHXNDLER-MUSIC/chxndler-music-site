@@ -16,6 +16,7 @@ interface Badge {
   badge_name: string;
   icon_url: string | null;
   description: string | null;
+  category?: string | null;
 }
 
 interface UserBadge {
@@ -73,6 +74,8 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
   const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
   const [userRelics, setUserRelics] = useState<UserRelic[]>([]);
   const [showElementMenu, setShowElementMenu] = useState(false);
+  const [profileImageTab, setProfileImageTab] = useState<'elements' | 'relics' | 'badges'>('elements');
+  const [badgeCategoryFilter, setBadgeCategoryFilter] = useState<string | null>(null);
   const [showRelicsModal, setShowRelicsModal] = useState(false);
   const [showRelicsInline, setShowRelicsInline] = useState(false);
   const [selectedRelicInline, setSelectedRelicInline] = useState<string | null>(null);
@@ -473,7 +476,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
     try {
       const { data: badgesData, error: badgesError } = await supabaseBrowser
         .from('badges')
-        .select('id, badge_name, icon_url, description')
+        .select('id, badge_name, icon_url, description, category')
         .order('badge_name', { ascending: true });
 
       if (badgesError) {
@@ -1531,19 +1534,40 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
               >
                 ×
               </button>
-              
+
+              {/* Tab Navigation */}
+              <div className="flex justify-center gap-4 mb-3">
+                {(['elements', 'relics', 'badges'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => {
+                      setProfileImageTab(tab);
+                      try { sfx.play('click', 0.4); } catch {}
+                    }}
+                    onMouseEnter={() => {
+                      try { sfx.play('hover', 0.3); } catch {}
+                    }}
+                    className="px-3 py-1 text-xs font-bold tracking-wider transition-all duration-200"
+                    style={{
+                      color: profileImageTab === tab
+                        ? (tab === 'badges' ? '#FFD700' : '#00FFFF')
+                        : 'rgba(255,255,255,0.5)',
+                      textShadow: profileImageTab === tab
+                        ? (tab === 'badges' ? '0 0 8px rgba(255,215,0,0.8)' : '0 0 8px rgba(0,255,255,0.8)')
+                        : 'none',
+                      borderBottom: profileImageTab === tab
+                        ? (tab === 'badges' ? '2px solid #FFD700' : '2px solid #00FFFF')
+                        : '2px solid transparent'
+                    }}
+                  >
+                    {tab.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+
               {/* Elements Section */}
+              {profileImageTab === 'elements' && (
               <div className="mb-2">
-                <div 
-                  className="text-center mb-1 text-sm"
-                  style={{ 
-                    color: '#00FFFF', 
-                    fontSize: '12px',
-                    textShadow: '0 0 4px rgba(0,255,255,0.8)'
-                  }}
-                >
-                  ELEMENTS
-                </div>
                 <div className="grid grid-cols-4 gap-2 justify-center max-w-xs mx-auto">
                   {getAllElements().map((element) => (
                     <button
@@ -1588,19 +1612,11 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                   ))}
                 </div>
               </div>
-              
+              )}
+
               {/* Relics Section */}
+              {profileImageTab === 'relics' && (
               <div className="mb-1">
-                <div 
-                  className="text-center mb-1 text-sm"
-                  style={{ 
-                    color: '#00FFFF', 
-                    fontSize: '12px',
-                    textShadow: '0 0 4px rgba(0,255,255,0.8)'
-                  }}
-                >
-                  RELICS
-                </div>
                 <div className="grid grid-cols-4 gap-2 justify-center max-w-xs mx-auto">
                   {(allRelics.length > 0 ? allRelics.slice(0, 16) : Array.from({ length: 16 }, (_, i) => ({
                     id: `placeholder-${i}`,
@@ -1669,26 +1685,67 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                   })}
                 </div>
               </div>
+              )}
 
               {/* Badges Section */}
+              {profileImageTab === 'badges' && (
               <div className="mb-1">
-                <div
-                  className="text-center mb-1 text-sm"
-                  style={{
-                    color: '#FFD700',
-                    fontSize: '12px',
-                    textShadow: '0 0 4px rgba(255,215,0,0.8)'
-                  }}
-                >
-                  BADGES
+                {/* Badge Category Filters */}
+                <div className="flex flex-wrap justify-center gap-1 mb-3 max-w-xs mx-auto">
+                  {[
+                    { id: null, label: 'ALL' },
+                    { id: 'soul', label: 'SOUL' },
+                    { id: 'collector', label: 'COLLECTOR' },
+                    { id: 'elemental-streak', label: 'ELEMENTAL' },
+                    { id: 'listening', label: 'LISTENING' },
+                    { id: 'currency', label: 'CURRENCY' },
+                    { id: 'community', label: 'COMMUNITY' }
+                  ].map((cat) => (
+                    <button
+                      key={cat.id || 'all'}
+                      onClick={() => {
+                        setBadgeCategoryFilter(cat.id);
+                        try { sfx.play('click', 0.4); } catch {}
+                      }}
+                      onMouseEnter={() => {
+                        try { sfx.play('hover', 0.3); } catch {}
+                      }}
+                      className="px-2 py-0.5 text-[10px] font-bold tracking-wider rounded transition-all duration-200"
+                      style={{
+                        background: badgeCategoryFilter === cat.id
+                          ? 'rgba(255,215,0,0.3)'
+                          : 'rgba(255,255,255,0.1)',
+                        border: badgeCategoryFilter === cat.id
+                          ? '1px solid #FFD700'
+                          : '1px solid rgba(255,255,255,0.2)',
+                        color: badgeCategoryFilter === cat.id
+                          ? '#FFD700'
+                          : 'rgba(255,255,255,0.6)',
+                        textShadow: badgeCategoryFilter === cat.id
+                          ? '0 0 6px rgba(255,215,0,0.6)'
+                          : 'none'
+                      }}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
                 </div>
                 <div className="grid grid-cols-4 gap-2 justify-center max-w-xs mx-auto">
-                  {(allBadges.length > 0 ? allBadges.slice(0, 16) : Array.from({ length: 16 }, (_, i) => ({
-                    id: `placeholder-badge-${i}`,
-                    badge_name: `Badge ${i + 1}`,
-                    icon_url: null,
-                    description: null
-                  }))).map((badge, i) => {
+                  {(() => {
+                    const filteredBadges = allBadges.length > 0
+                      ? allBadges.filter(b => !badgeCategoryFilter || b.category === badgeCategoryFilter)
+                      : [];
+                    const displayBadges = filteredBadges.length > 0
+                      ? filteredBadges.slice(0, 16)
+                      : Array.from({ length: 8 }, (_, i) => ({
+                          id: `placeholder-badge-${i}`,
+                          badge_name: `Badge ${i + 1}`,
+                          icon_url: null,
+                          description: null,
+                          category: null
+                        }));
+                    return displayBadges;
+                  })().map((badge, i) => {
                     const unlockedBadgeIds = new Set(userBadges.map(b => b.badge_id));
                     const isUnlocked = badge && badge.id ? unlockedBadgeIds.has(badge.id) : false;
                     const hasImage = Boolean(badge.icon_url);
@@ -1750,6 +1807,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                   })}
                 </div>
               </div>
+              )}
 
             </div>
           )}
