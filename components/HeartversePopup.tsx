@@ -34,7 +34,7 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
       aria-modal="true"
       role="dialog"
       aria-label={title}
-      style={{ touchAction: 'none', overscrollBehaviorX: 'none' }}
+      style={{ overscrollBehaviorX: 'none' }}
     >
       <div
         className="absolute inset-0 backdrop-blur-md"
@@ -50,9 +50,7 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
             right: 0,
             alignItems: 'flex-start'
           }),
-          touchAction: 'none',
-          overscrollBehaviorX: 'none',
-          userSelect: 'none'
+          overscrollBehaviorX: 'none'
         }}
       >
         <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-[#FC54AF]/60 bg-white/5 shadow-[0_0_26px_rgba(56,182,255,0.35)] max-h-full max-w-lg w-full mx-4 overflow-hidden flex flex-col">

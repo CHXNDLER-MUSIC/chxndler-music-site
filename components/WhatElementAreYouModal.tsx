@@ -213,13 +213,13 @@ export default function WhatElementAreYouModal() {
       }, 500);
 
       // Show tour welcome modal after warp and celebrations complete
-      // Delay accounts for: HeartCoin celebration (~2.5s) + Badge celebration delay (2s) + Badge duration (~3.5s)
+      // Delay accounts for: HeartCoin celebration (3s) + Badge celebration delay (4s) + Badge duration (~3.5s)
       setTimeout(() => {
         try {
           console.log('Dispatching heartverse:entered event to show tour prompt');
           window.dispatchEvent(new CustomEvent('heartverse:entered'));
         } catch {}
-      }, 8000); // Wait for HeartCoin + Badge celebrations to complete
+      }, 10000); // Wait for HeartCoin + Badge celebrations to complete
     } catch (e: any) {
       setError(e?.message || "Failed to save element selection");
       setLoading(false);

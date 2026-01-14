@@ -199,12 +199,12 @@ export async function checkAndAwardEligibleBadges(userId: string) {
           newlyAwardedBadges.push(badge);
           log(`✅ Successfully awarded badge: ${badge.badge_name}`);
 
-          // Trigger badge celebration with badge image after 2 second delay
-          // This allows HeartCoin celebration to finish first
+          // Trigger badge celebration with badge image after 4 second delay
+          // HeartCoin celebration lasts 3 seconds, so wait for it to finish first
           if (badge.icon_url && badge.badge_name) {
             setTimeout(() => {
               triggerBadgeCelebration(badge.icon_url, badge.badge_name);
-            }, 2000);
+            }, 4000);
           }
         }
       }

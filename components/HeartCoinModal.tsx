@@ -1550,12 +1550,13 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 sfx.play('hover', 0.3); 
               } catch {}
             }}
-            className={`px-4 py-3 font-bold text-base transition-all duration-200 ${
+            className={`px-6 py-4 font-bold text-3xl transition-all duration-200 ${
               activeTab === 'earn'
                 ? 'text-[#4ECDC4] border-b-2 border-[#4ECDC4]'
                 : 'text-white hover:text-white'
             }`}
             style={{
+              fontSize: '2rem',
               textShadow: activeTab === 'earn'
                 ? '0 0 8px rgba(78,205,196,0.8), 0 0 15px rgba(78,205,196,0.6), 0 2px 4px rgba(0,0,0,0.8)'
                 : '0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
@@ -1573,12 +1574,13 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 sfx.play('hover', 0.3); 
               } catch {}
             }}
-            className={`px-4 py-3 font-bold text-base transition-all duration-200 ${
+            className={`px-6 py-4 font-bold text-3xl transition-all duration-200 ${
               isUseMode
                 ? 'text-[#4ECDC4] border-b-2 border-[#4ECDC4]'
                 : 'text-white hover:text-white'
             }`}
             style={{
+              fontSize: '2rem',
               textShadow: isUseMode
                 ? '0 0 8px rgba(78,205,196,0.8), 0 0 15px rgba(78,205,196,0.6), 0 2px 4px rgba(0,0,0,0.8)'
                 : '0 2px 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',

@@ -145,10 +145,10 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
 
       {/* Welcome modal before starting the tour */}
       {welcomeVisible && (
-        <div className="fixed inset-0 z-[320] flex items-center justify-center transition-opacity duration-300">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center transition-opacity duration-300">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={(e) => e.stopPropagation()} />
           <div
-            className="relative z-[321] w-full max-w-md mx-4 rounded-2xl p-8 text-center"
+            className="relative z-[1000000] w-full max-w-md mx-4 rounded-2xl p-8 text-center pointer-events-auto"
             style={{
               background: 'linear-gradient(180deg, rgba(56,182,255,0.18), rgba(56,182,255,0.12))',
               border: '1px solid rgba(56,182,255,0.35)',
