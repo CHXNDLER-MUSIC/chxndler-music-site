@@ -355,16 +355,34 @@ export default function UserBadges({
               >
                 {/* Badge content */}
                 <div className="relative z-10">
-                  {badge.icon_url ? (
-                    <img
-                      src={badge.icon_url}
-                      alt={badge.badge_name}
-                      className="w-full h-full object-cover rounded-full"
-                      draggable={false}
-                    />
-                  ) : (
-                    <div className="text-lg">🏅</div>
-                  )}
+                  {(() => {
+                    // Correct icon URLs for badges (overrides database if set)
+                    const badgeIconOverrides: Record<string, string> = {
+                      'wanderer': '/badges/wanderer.webp',
+                      'first steps': '/badges/wanderer.webp',
+                    };
+                    const badgeNameLower = badge.badge_name?.toLowerCase() || '';
+                    // Use override first, then database URL
+                    const iconUrl = badgeIconOverrides[badgeNameLower] || badge.icon_url;
+                    const fallbackUrl = badgeIconOverrides[badgeNameLower];
+
+                    return iconUrl ? (
+                      <img
+                        src={iconUrl}
+                        alt={badge.badge_name}
+                        className="w-full h-full object-cover rounded-full"
+                        draggable={false}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          if (fallbackUrl && target.src !== fallbackUrl) {
+                            target.src = fallbackUrl;
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="text-lg">🏅</div>
+                    );
+                  })()}
                 </div>
               </div>
             ))}

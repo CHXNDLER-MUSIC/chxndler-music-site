@@ -5,6 +5,7 @@ import { useProfile } from "@/contexts/ProfileContext";
 import { useMenuState } from "@/contexts/MenuStateContext";
 import OnboardingTour from "@/components/OnboardingTour";
 import { sfx } from "@/lib/sfx";
+import { suppressBadgeCelebrations } from "@/utils/celebrationQueue";
 
 type TourContextValue = {
   active: boolean;
@@ -48,6 +49,8 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const start = useCallback(() => {
+    // Suppress badge celebrations during tour to prevent interruptions
+    suppressBadgeCelebrations(60000); // Suppress for 60 seconds (tour duration)
     try { localStorage.removeItem(LS_KEYS.disabled); } catch {}
     setEndModalVisible(false);
     setWelcomeVisible(false);

@@ -36,7 +36,7 @@ export default function UserCards({
   const { cards: userCards, loading, error } = useUserCards(userId);
   const [currentPage, setCurrentPage] = useState(0);
 
-  // Fetch user profile and cards
+  // Fetch user profile for card_slots info (optional - cards still show if profile not found)
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -51,13 +51,14 @@ export default function UserCards({
 
         if (profileResponse.error) {
           console.error('[UserCards] Profile fetch error:', profileResponse.error);
-          setUserProfile(null);
+          // Still set a default profile so cards can be displayed
+          setUserProfile({ id: userId, name: null, card_slots: 9 });
           return;
         }
 
-        // Handle case where profile doesn't exist in public_profiles_table
+        // If profile doesn't exist in public_profiles_table, use defaults
         if (!profileResponse.data) {
-          setUserProfile(null);
+          setUserProfile({ id: userId, name: null, card_slots: 9 });
           return;
         }
 
@@ -67,11 +68,9 @@ export default function UserCards({
           card_slots: profileResponse.data.card_slots,
         });
       } catch (err) {
-        // On any error, show empty state rather than error message
+        // On any error, still allow cards to display with defaults
         console.error('[UserCards] Unexpected error:', err);
-        setUserProfile(null);
-      } finally {
-        // Nothing else
+        setUserProfile({ id: userId, name: null, card_slots: 9 });
       }
     };
 
@@ -119,15 +118,6 @@ export default function UserCards({
         >
           Refresh page
         </button>
-      </div>
-    );
-  }
-
-  // Handle case where profile doesn't exist
-  if (!userProfile) {
-    return (
-      <div className={`text-center text-white/60 text-sm ${className}`}>
-        No public cards yet.
       </div>
     );
   }

@@ -33,6 +33,7 @@ import { slugify } from "@/lib/slug";
 import { audioCoordinator } from "@/lib/audio-coordinator";
 import { debugLog } from "@/lib/debug";
 import { audioHeartverse } from "@/lib/audio-heartverse";
+import { suppressBadgeCelebrations } from "@/utils/celebrationQueue";
 import WelcomeHomeModal from "@/components/WelcomeHomeModal";
 import { useAudio } from "@/app/providers/AudioProvider";
 import ProfileBarWrapper from "@/components/ProfileBarWrapper";
@@ -1399,6 +1400,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
   const handleStartClick = React.useCallback(async () => {
     console.log("🚀 START CLICKED");
+
+    // Suppress badge celebrations during warp sequence (15 seconds)
+    suppressBadgeCelebrations(15000);
 
     if (startInFlightRef.current) return;
     startInFlightRef.current = true;

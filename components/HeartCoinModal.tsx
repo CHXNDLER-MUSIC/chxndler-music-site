@@ -2063,7 +2063,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         <>
                           {/* Item Image - Swipeable */}
                           <div
-                            className="relative h-64 w-full flex items-center justify-center mb-4 touch-pan-y"
+                            className="relative h-80 w-full flex items-center justify-center mb-4 touch-pan-y"
                             onTouchStart={onTouchStart}
                             onTouchMove={onTouchMove}
                             onTouchEnd={onTouchEnd}
@@ -2139,7 +2139,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   return (
                     <div className="mt-4 space-y-4 bg-black/20 rounded-lg p-4">
                       {/* Description */}
-                      <p className="text-white/80 text-sm text-center italic">
+                      <p className="text-white text-lg text-center italic leading-relaxed">
                         {item.description}
                       </p>
 

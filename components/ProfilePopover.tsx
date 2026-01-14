@@ -75,7 +75,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
   const [userRelics, setUserRelics] = useState<UserRelic[]>([]);
   const [showElementMenu, setShowElementMenu] = useState(false);
   const [profileImageTab, setProfileImageTab] = useState<'elements' | 'relics' | 'badges'>('elements');
-  const [badgeCategoryFilter, setBadgeCategoryFilter] = useState<string | null>(null);
+  const [badgeCategoryFilter, setBadgeCategoryFilter] = useState<string>('soul');
   const [showRelicsModal, setShowRelicsModal] = useState(false);
   const [showRelicsInline, setShowRelicsInline] = useState(false);
   const [selectedRelicInline, setSelectedRelicInline] = useState<string | null>(null);
@@ -1691,49 +1691,84 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
               {profileImageTab === 'badges' && (
               <div className="mb-1">
                 {/* Badge Category Filters */}
-                <div className="flex flex-wrap justify-center gap-1 mb-3 max-w-xs mx-auto">
-                  {[
-                    { id: null, label: 'ALL' },
-                    { id: 'soul', label: 'SOUL' },
-                    { id: 'collector', label: 'COLLECTOR' },
-                    { id: 'elemental-streak', label: 'ELEMENTAL' },
-                    { id: 'listening', label: 'LISTENING' },
-                    { id: 'currency', label: 'CURRENCY' },
-                    { id: 'community', label: 'COMMUNITY' }
-                  ].map((cat) => (
-                    <button
-                      key={cat.id || 'all'}
-                      onClick={() => {
-                        setBadgeCategoryFilter(cat.id);
-                        try { sfx.play('click', 0.4); } catch {}
-                      }}
-                      onMouseEnter={() => {
-                        try { sfx.play('hover', 0.3); } catch {}
-                      }}
-                      className="px-2 py-0.5 text-[10px] font-bold tracking-wider rounded transition-all duration-200"
-                      style={{
-                        background: badgeCategoryFilter === cat.id
-                          ? 'rgba(255,215,0,0.3)'
-                          : 'rgba(255,255,255,0.1)',
-                        border: badgeCategoryFilter === cat.id
-                          ? '1px solid #FFD700'
-                          : '1px solid rgba(255,255,255,0.2)',
-                        color: badgeCategoryFilter === cat.id
-                          ? '#FFD700'
-                          : 'rgba(255,255,255,0.6)',
-                        textShadow: badgeCategoryFilter === cat.id
-                          ? '0 0 6px rgba(255,215,0,0.6)'
-                          : 'none'
-                      }}
-                    >
-                      {cat.label}
-                    </button>
-                  ))}
+                <div className="flex flex-col items-center gap-1 mb-3 max-w-xs mx-auto">
+                  {/* Row 1 */}
+                  <div className="flex justify-center gap-1">
+                    {[
+                      { id: 'soul', label: 'SOUL' },
+                      { id: 'collector', label: 'COLLECTOR' },
+                      { id: 'elemental-streak', label: 'ELEMENTAL' }
+                    ].map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => {
+                          setBadgeCategoryFilter(cat.id);
+                          try { sfx.play('click', 0.4); } catch {}
+                        }}
+                        onMouseEnter={() => {
+                          try { sfx.play('hover', 0.3); } catch {}
+                        }}
+                        className="px-2 py-0.5 text-[10px] font-bold tracking-wider rounded transition-all duration-200"
+                        style={{
+                          background: badgeCategoryFilter === cat.id
+                            ? 'rgba(255,215,0,0.3)'
+                            : 'rgba(255,255,255,0.1)',
+                          border: badgeCategoryFilter === cat.id
+                            ? '1px solid #FFD700'
+                            : '1px solid rgba(255,255,255,0.2)',
+                          color: badgeCategoryFilter === cat.id
+                            ? '#FFD700'
+                            : 'rgba(255,255,255,0.6)',
+                          textShadow: badgeCategoryFilter === cat.id
+                            ? '0 0 6px rgba(255,215,0,0.6)'
+                            : 'none'
+                        }}
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Row 2 */}
+                  <div className="flex justify-center gap-1">
+                    {[
+                      { id: 'listening', label: 'LISTENING' },
+                      { id: 'currency', label: 'CURRENCY' },
+                      { id: 'community', label: 'COMMUNITY' }
+                    ].map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => {
+                          setBadgeCategoryFilter(cat.id);
+                          try { sfx.play('click', 0.4); } catch {}
+                        }}
+                        onMouseEnter={() => {
+                          try { sfx.play('hover', 0.3); } catch {}
+                        }}
+                        className="px-2 py-0.5 text-[10px] font-bold tracking-wider rounded transition-all duration-200"
+                        style={{
+                          background: badgeCategoryFilter === cat.id
+                            ? 'rgba(255,215,0,0.3)'
+                            : 'rgba(255,255,255,0.1)',
+                          border: badgeCategoryFilter === cat.id
+                            ? '1px solid #FFD700'
+                            : '1px solid rgba(255,255,255,0.2)',
+                          color: badgeCategoryFilter === cat.id
+                            ? '#FFD700'
+                            : 'rgba(255,255,255,0.6)',
+                          textShadow: badgeCategoryFilter === cat.id
+                            ? '0 0 6px rgba(255,215,0,0.6)'
+                            : 'none'
+                        }}
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div className="grid grid-cols-4 gap-2 justify-center max-w-xs mx-auto">
                   {(() => {
                     const filteredBadges = allBadges.length > 0
-                      ? allBadges.filter(b => !badgeCategoryFilter || b.category === badgeCategoryFilter)
+                      ? allBadges.filter(b => b.category === badgeCategoryFilter)
                       : [];
                     const displayBadges = filteredBadges.length > 0
                       ? filteredBadges.slice(0, 16)

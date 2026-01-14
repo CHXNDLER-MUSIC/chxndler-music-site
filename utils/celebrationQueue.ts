@@ -17,8 +17,15 @@ interface PendingBadgeCelebration {
 }
 const badgeCelebrationQueue: PendingBadgeCelebration[] = [];
 
+// Track badges that have been celebrated this session to prevent duplicates
+const celebratedBadgeTitles = new Set<string>();
+
 // Flag to prevent multiple queue processors
 let isProcessingQueue = false;
+
+// Flag to temporarily suppress all badge celebrations (e.g., during tour)
+let suppressCelebrations = false;
+let suppressionTimeout: NodeJS.Timeout | null = null;
 
 /**
  * Marks that a HeartCoin celebration has started.
@@ -47,11 +54,33 @@ export function isHeartcoinCelebrationActive(): boolean {
 /**
  * Queues a badge celebration to play after any active HeartCoin celebration.
  * If no HeartCoin celebration is active, plays immediately.
+ * Prevents duplicate celebrations for the same badge in this session.
  */
 export function queueBadgeCelebration(badgeImage: string, badgeTitle: string): void {
   if (typeof window === 'undefined') return;
 
-  // Add to queue
+  // Check if celebrations are suppressed (e.g., during tour)
+  if (suppressCelebrations) {
+    console.log(`🏅 Badge "${badgeTitle}" celebration suppressed, marking as celebrated but skipping display`);
+    celebratedBadgeTitles.add(badgeTitle); // Still mark as celebrated to prevent future attempts
+    return;
+  }
+
+  // Prevent duplicate celebrations for the same badge
+  if (celebratedBadgeTitles.has(badgeTitle)) {
+    console.log(`🏅 Badge "${badgeTitle}" already celebrated this session, skipping`);
+    return;
+  }
+
+  // Also check if already in queue
+  const alreadyInQueue = badgeCelebrationQueue.some(item => item.badgeTitle === badgeTitle);
+  if (alreadyInQueue) {
+    console.log(`🏅 Badge "${badgeTitle}" already in celebration queue, skipping`);
+    return;
+  }
+
+  // Mark as celebrated and add to queue
+  celebratedBadgeTitles.add(badgeTitle);
   badgeCelebrationQueue.push({ badgeImage, badgeTitle });
 
   // Start processing if not already
@@ -114,4 +143,37 @@ function processQueue(): void {
  */
 export function clearBadgeCelebrationQueue(): void {
   badgeCelebrationQueue.length = 0;
+}
+
+/**
+ * Temporarily suppress all badge celebrations.
+ * Use when starting the tour or other flows where celebrations would be disruptive.
+ * Auto-clears after the specified duration (default 10 seconds).
+ */
+export function suppressBadgeCelebrations(durationMs: number = 10000): void {
+  suppressCelebrations = true;
+
+  // Clear any existing timeout
+  if (suppressionTimeout) {
+    clearTimeout(suppressionTimeout);
+  }
+
+  // Auto-clear suppression after duration
+  suppressionTimeout = setTimeout(() => {
+    suppressCelebrations = false;
+    suppressionTimeout = null;
+  }, durationMs);
+
+  console.log(`🏅 Badge celebrations suppressed for ${durationMs}ms`);
+}
+
+/**
+ * Immediately re-enable badge celebrations.
+ */
+export function enableBadgeCelebrations(): void {
+  suppressCelebrations = false;
+  if (suppressionTimeout) {
+    clearTimeout(suppressionTimeout);
+    suppressionTimeout = null;
+  }
 }

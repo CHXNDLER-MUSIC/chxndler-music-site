@@ -4142,7 +4142,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   </div>
                                   <div className="relative flex items-center justify-center">
                                     <div
-                                      className="w-36 h-36 -mt-1 flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-200"
+                                      className="w-52 h-52 -mt-1 flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-200"
                                       onMouseEnter={() => {
                                         try { sfx.play('hover', 0.3); } catch {}
                                       }}
@@ -4195,7 +4195,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     </button>
                                   </div>
                                   {/* Page Indicator Dots */}
-                                  <div className="mt-2 flex justify-center items-center gap-1.5">
+                                  <div className="mt-2 flex justify-center items-center gap-2">
                                     {PHYSICAL_ITEMS.map((_, index) => (
                                       <button
                                         key={index}
@@ -4207,9 +4207,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                           }
                                         }}
                                         disabled={isPurchasing}
-                                        className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                                        className={`w-3 h-3 rounded-full transition-all duration-300 ${
                                           index === currentMerchIndex
-                                            ? 'bg-white shadow-[0_0_6px_rgba(255,255,255,0.8)]'
+                                            ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]'
                                             : 'bg-white/30 hover:bg-white/50'
                                         } ${isPurchasing ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                                       />
@@ -4232,8 +4232,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
                   {/* Bottom description (removed PAY WITH button) - Only show when NOT in heart coin purchase mode */}
                   {activeUseTab === 'MERCH' && PHYSICAL_ITEMS[currentMerchIndex] && !purchaseDraft && (
-                    <div className="absolute left-6 right-6 bottom-0" style={{ lineHeight: '1.3' }}>
-                      <div className="text-xs text-white/90" style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}>
+                    <div className="absolute left-6 right-6 bottom-0" style={{ lineHeight: '1.4' }}>
+                      <div className="text-base text-white" style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}>
                         {PHYSICAL_ITEMS[currentMerchIndex].description}
                       </div>
                     </div>
@@ -4319,7 +4319,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 return (
                                   <div
                                     key={element}
-                                    className="text-center cursor-pointer group w-20"
+                                    className="text-center cursor-pointer group w-28"
                                     onMouseEnter={() => {
                                       try { sfx.play('change-channel', 0.5); } catch {}
                                     }}
@@ -4334,7 +4334,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     }}
                                   >
                                     <div
-                                      className={`w-full h-20 rounded-lg relative overflow-hidden transition-all duration-300 group-hover:scale-105`}
+                                      className={`w-full h-28 rounded-lg relative overflow-hidden transition-all duration-300 group-hover:scale-105`}
                                     >
                                       <img
                                         src={`/elements/${element}.webp`}

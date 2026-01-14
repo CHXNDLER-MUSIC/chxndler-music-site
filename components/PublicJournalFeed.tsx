@@ -447,16 +447,45 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {enlargedBadge.badge.icon_url ? (
-              <img
-                src={enlargedBadge.badge.icon_url}
-                alt={enlargedBadge.badge.badge_name}
-                className="w-full h-full object-cover"
-                draggable={false}
-              />
-            ) : (
-              <div className="text-8xl">🏅</div>
-            )}
+            {(() => {
+              // Correct icon URLs for badges (overrides database if set)
+              const badgeIconOverrides: Record<string, string> = {
+                'wanderer': '/badges/wanderer.webp',
+                'first steps': '/badges/wanderer.webp',
+              };
+              const badgeNameLower = enlargedBadge.badge.badge_name?.toLowerCase() || '';
+              // Use override first, then database URL
+              const iconUrl = badgeIconOverrides[badgeNameLower] || enlargedBadge.badge.icon_url;
+              const fallbackUrl = badgeIconOverrides[badgeNameLower];
+
+              return iconUrl ? (
+                <img
+                  src={iconUrl}
+                  alt={enlargedBadge.badge.badge_name}
+                  className="w-full h-full object-cover"
+                  draggable={false}
+                  onError={(e) => {
+                    // If image fails to load and we have a fallback, try it
+                    const target = e.target as HTMLImageElement;
+                    if (fallbackUrl && target.src !== fallbackUrl) {
+                      target.src = fallbackUrl;
+                    } else {
+                      // Final fallback: hide image and show emoji
+                      target.style.display = 'none';
+                      const parent = target.parentElement;
+                      if (parent) {
+                        const emoji = document.createElement('div');
+                        emoji.className = 'text-8xl';
+                        emoji.textContent = '🏅';
+                        parent.appendChild(emoji);
+                      }
+                    }
+                  }}
+                />
+              ) : (
+                <div className="text-8xl">🏅</div>
+              );
+            })()}
           </div>
 
           {/* Badge Name */}

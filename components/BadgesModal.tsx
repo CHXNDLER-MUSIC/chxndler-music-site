@@ -102,7 +102,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         badge_name: badge.badge_name,
         icon_url: badge.icon_url,
         description: badge.description,
-        requirement_text: null,
+        requirement_text: badge.requirement_text || null,
         category: badge.category as any,
         created_at: badge.created_at
       }, profile, attendanceCounts);
@@ -131,7 +131,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       description: badge.description,
       icon_url: badge.icon_url,
       category: badge.category,
-      requirement: null, // This field doesn't exist in BadgeDefinition
+      requirement: badge.requirement_text || null, // Use requirement_text from database
       requirement_type: badge.requirement_type,
       requirement_count: badge.requirement_count,
       unlocked: isUnlocked,
@@ -363,12 +363,12 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           )}
         </div>
         
-        {/* Requirement text */}
-        {selectedBadge.requirement_type && selectedBadge.requirement_count && (
+        {/* Requirement text - use database value first, fallback to generated text */}
+        {(selectedBadge.requirement || (selectedBadge.requirement_type && selectedBadge.requirement_count)) && (
           <div className="text-center space-y-1">
             <div className="text-cyan-400/80 text-xs uppercase tracking-wider font-bold">REQUIREMENT</div>
             <div className="text-white text-sm font-medium">
-              {formatRequirementText({
+              {selectedBadge.requirement || formatRequirementText({
                 requirement_type: selectedBadge.requirement_type,
                 requirement_count: selectedBadge.requirement_count,
                 requirement_text: null,
