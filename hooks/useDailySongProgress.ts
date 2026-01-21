@@ -14,6 +14,8 @@ export interface UseDailySongProgressOptions {
   trackSlug: string | null;
   isPlaying: boolean;
   enabled?: boolean;
+  songOfDaySlug?: string | null;
+  songOfDayId?: string | null;
 }
 
 // No-op hook for compatibility (progress is handled elsewhere)
@@ -27,11 +29,23 @@ export async function recordSongEndedPlay(songId: string): Promise<boolean> {
   try {
     const { data: { session } } = await supabaseBrowser.auth.getSession();
     const userId = session?.user?.id;
-    if (!userId) return false;
+    if (!userId) {
+      console.log('[DailyProgress] skipped: no session');
+      return false;
+    }
 
     const { error } = await supabaseBrowser.rpc('increment_daily_song_play', { p_song_id: songId });
     if (error) {
-      console.error('[DailySongProgress] increment_daily_song_play RPC error:', error);
+      console.error('[DailySongProgress] increment_daily_song_play RPC error:', {
+        error,
+        errorMessage: (error as any)?.message,
+        errorCode: (error as any)?.code,
+        errorDetails: (error as any)?.details,
+        errorHint: (error as any)?.hint,
+        payload: { p_song_id: songId },
+        hasSession: true,
+        userId,
+      });
       return false;
     }
 
@@ -62,10 +76,17 @@ export async function recordSongEndedPlay(songId: string): Promise<boolean> {
 
     return true;
   } catch (err) {
-    console.error('[DailySongProgress] recordSongEndedPlay exception:', err);
+    console.error('[DailySongProgress] recordSongEndedPlay exception:', {
+      error: err,
+      errorMessage: (err as any)?.message,
+      errorCode: (err as any)?.code,
+      errorDetails: (err as any)?.details,
+      errorHint: (err as any)?.hint,
+      errorStack: (err as any)?.stack,
+      payload: { songId },
+    });
     return false;
   }
 }
 
 export default useDailySongProgress;
-

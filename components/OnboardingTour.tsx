@@ -35,7 +35,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "intro",
     selector: "",
     title: "Welcome aboard",
-    body: "This is your Heartverse spaceship. I will show you the key controls so you can explore, reflect, and collect."
+    body: "Welcome to your Heartverse spaceship. I'll show you the key controls so you can explore, reflect, collect, and connect."
   },
   
   // Step 1: Hamburger (opens menu for subsequent steps)
@@ -70,7 +70,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "menu-binder",
     selector: "[data-tour-id='menu-binder']",
     title: "Binder",
-    body: "Your collected song cards and discoveries live here.",
+    body: "Your collected song cards live here.",
     requiresMenuOpen: true
   },
   
@@ -88,7 +88,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "menu-journal",
     selector: "[data-tour-id='menu-journal']",
     title: "Journal",
-    body: "Your daily reflections and intentions live here.",
+    body: "Your daily reflection lives here.",
     requiresMenuOpen: true
   },
   
@@ -106,7 +106,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "music-dropdown",
     selector: "[data-tour-id='music-power-button']",
     title: "Music",
-    body: "Choose the track you want to listen to here.",
+    body: "Choose a track to listen to here.",
     requiresMenuClosed: true
   },
   
@@ -115,7 +115,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "signal",
     selector: "[data-tour-id='signal-button']",
     title: "Signal",
-    body: "Your transmissions. Updates, reflections, and events come through here.",
+    body: "This is where the Heartverse comes together. Join live moments, chat with other Aliens, and feel the pulse of the community.",
     requiresMenuClosed: true
   },
   
@@ -444,8 +444,8 @@ export default function OnboardingTour({
         });
         
         // Add GLOWING HIGHLIGHT to current element (reusing same styles)
-        // Use non-spinning highlight for signal step
-        if (step.id === 'signal') {
+        // Use non-spinning highlight for signal and music steps
+        if (step.id === 'signal' || step.id === 'music-dropdown') {
           element.classList.add('tour-highlight-no-spin');
         } else {
           element.classList.add('tour-highlight');

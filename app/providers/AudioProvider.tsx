@@ -61,7 +61,7 @@ export type TrackInfo = {
   oneLiner?: string;
 };
 
-// Audio source files  
+// Audio source files
 export const TRACKS = {
   BABY: { mp3: "/tracks/baby.mp3", opus: "/tracks/baby.opus" },
   BE_MY_BEE: { mp3: "/tracks/be-my-bee.mp3", opus: "/tracks/be-my-bee.opus" },
@@ -102,7 +102,7 @@ export const TRACK_INFO: Record<string, TrackInfo> = {
     oneLiner: 'Enter the cosmic music experience'
   },
   'welcome-back': {
-    id: 'welcome-back', 
+    id: 'welcome-back',
     title: 'Welcome Back',
     artist: 'CHXNDLER',
     oneLiner: 'Welcome back to the Heartverse'
@@ -181,7 +181,7 @@ export const TRACK_INFO: Record<string, TrackInfo> = {
     id: 'house-party',
     title: 'ALIEN (House Party)',
     artist: 'CHXNDLER',
-    coverUrl: '/covers/HOUSE PARTY.webp', 
+    coverUrl: '/covers/HOUSE PARTY.webp',
     skyTexture: '/sky/house-party-sky.webp',
     oneLiner: 'A crush, a crowd, all aliens in disguise.'
   },
@@ -369,13 +369,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       // Update last play timestamp
       lastPlayTrackRef.current = { songId: songUuid, timestamp: now };
 
-      // Check authentication
-      const { data: { session } } = await supabaseBrowser.auth.getSession();
-      if (!session?.user) {
-        console.log('[TRACK] play (not authenticated, skipping RPC)', {
-          songId: songUuid,
-          songName: state.currentTrack?.title || trackSlug
-        });
+      // Check authentication and log session state
+      const { data: sessionData } = await supabaseBrowser.auth.getSession();
+      console.log('[TRACK] session', {
+        hasSession: !!sessionData.session,
+        userId: sessionData.session?.user?.id
+      });
+
+      if (!sessionData?.session?.user) {
+        // Not authenticated - skip RPC call silently
         return;
       }
 
@@ -385,18 +387,39 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         songName: state.currentTrack?.title || trackSlug
       });
 
-      // Call RPC to record the play
-      const { data, error } = await supabaseBrowser.rpc('record_song_play', {
+      // Call RPC to record the play (updated to v2)
+      const { data, error } = await supabaseBrowser.rpc('record_song_play_v2', {
         p_song_id: songUuid
       });
 
       if (error) {
-        console.error('[TRACK] record_song_play error', error);
+        // Log detailed error information for debugging
+        console.error('[TRACK] record_song_play_v2 error - DETAILED', {
+          songId: songUuid,
+          error: error, // Raw error object
+          errorMessage: error.message,
+          errorCode: error.code,
+          errorDetails: error.details,
+          errorHint: error.hint,
+          hasSession: !!sessionData.session,
+          userId: sessionData.session?.user?.id
+        });
       } else {
-        console.log('[TRACK] recorded', { data });
+        console.log('[TRACK] recorded play', {
+          songId: songUuid,
+          data
+        });
       }
     } catch (err) {
-      console.error('[TRACK] record_song_play error', err);
+      // Also enhance exception logging
+      console.error('[TRACK] record_song_play_v2 exception - DETAILED', {
+        error: err,
+        errorMessage: (err as any)?.message,
+        errorCode: (err as any)?.code,
+        errorDetails: (err as any)?.details,
+        errorHint: (err as any)?.hint,
+        errorStack: (err as any)?.stack
+      });
     }
   };
 
@@ -439,6 +462,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
       // Handle logged-out users - track anonymously
       if (!authSession) {
+        // Guard log once
+        if (!(flushSession as any)._skippedLogged) {
+          (flushSession as any)._skippedLogged = true;
+          console.log('[DailyProgress] skipped: no session');
+        }
         // Look up the song UUID for the anonymous_song_listen_sessions table
         const songUuid = await getSongUuidBySlug(session.trackId);
         if (!songUuid) {
@@ -472,10 +500,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           .insert(anonPayload);
 
         if (anonInsertError) {
-          console.error('🎧 Anonymous insert failed:');
-          console.error('  code:', anonInsertError.code);
-          console.error('  message:', anonInsertError.message);
-          console.error('  details:', anonInsertError.details);
+          console.error('🎧 Anonymous insert failed:', {
+            error: anonInsertError,
+            errorCode: anonInsertError?.code,
+            errorMessage: anonInsertError?.message,
+            errorDetails: (anonInsertError as any)?.details,
+            errorHint: (anonInsertError as any)?.hint,
+            payload: anonPayload,
+            hasSession: false,
+          });
           flushInFlightRef.current = false;
           return false;
         }
@@ -521,12 +554,16 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         .insert(payload);
 
       if (insertError) {
-        console.error('🎧 Insert failed:');
-        console.error('  code:', insertError.code);
-        console.error('  message:', insertError.message);
-        console.error('  details:', insertError.details);
-        console.error('  hint:', insertError.hint);
-        console.error('  payload:', JSON.stringify(payload, null, 2));
+        console.error('🎧 Insert failed:', {
+          error: insertError,
+          errorCode: insertError?.code,
+          errorMessage: insertError?.message,
+          errorDetails: (insertError as any)?.details,
+          errorHint: (insertError as any)?.hint,
+          payload,
+          hasSession: true,
+          userId: user.id,
+        });
         flushInFlightRef.current = false;
         return false;
       }
@@ -538,27 +575,70 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         const songUuid = await getSongUuidBySlug(session.trackId);
         if (songUuid) {
           const nyDay = getNYDateString();
+
+          // Read existing to preserve MAX semantics
+          let existingMax = 0;
+          let existingCompleted = false;
+          let existingCompletedAt: string | null = null;
+          try {
+            const { data: existing } = await supabaseBrowser
+              .from('user_song_daily_progress')
+              .select('listened_seconds, completed, completed_at')
+              .eq('user_id', user.id)
+              .eq('song_id', songUuid)
+              .eq('day', nyDay)
+              .maybeSingle();
+            if (existing) existingMax = Math.max(0, Number(existing.listened_seconds ?? 0));
+            if (existing) {
+              existingCompleted = Boolean((existing as any).completed === true);
+              existingCompletedAt = (existing as any).completed_at || null;
+            }
+          } catch {}
+
+          const newMax = Math.max(existingMax, listenedSeconds);
+          const percent = durationSeconds && durationSeconds > 0
+            ? Math.min(1, newMax / durationSeconds)
+            : null;
+          const completedNow = durationSeconds && durationSeconds > 0
+            ? newMax >= Math.ceil(durationSeconds * 0.5)
+            : false;
+          const finalCompleted = existingCompleted || completedNow;
+          const completedAt = finalCompleted
+            ? (existingCompletedAt || (completedNow ? new Date().toISOString() : null))
+            : null;
+
           const dailyProgressPayload = {
             user_id: user.id,
             song_id: songUuid,
             day: nyDay,
-            listened_seconds: listenedSeconds,
-            duration_seconds: durationSeconds
+            listened_seconds: newMax,
+            duration_seconds: durationSeconds,
+            completion_percent: percent,
+            completed: finalCompleted,
+            completed_at: completedAt,
           };
 
           // Use upsert to update existing progress or create new
+          const onConflict = 'user_id,song_id,day';
           const { error: dailyProgressError } = await supabaseBrowser
             .from('user_song_daily_progress')
-            .upsert(dailyProgressPayload, {
-              onConflict: 'user_id,song_id,day',
-              ignoreDuplicates: false
-            });
+            .upsert(dailyProgressPayload, { onConflict, ignoreDuplicates: false });
 
           if (dailyProgressError) {
-            console.error('🎧 Daily progress upsert failed:', dailyProgressError);
+            console.error('🎧 Daily progress upsert failed (flushSession)', {
+              error: dailyProgressError,
+              errorMessage: dailyProgressError?.message,
+              errorCode: dailyProgressError?.code,
+              errorDetails: (dailyProgressError as any)?.details,
+              errorHint: (dailyProgressError as any)?.hint,
+              payload: dailyProgressPayload,
+              onConflict,
+              hasSession: true,
+              userId: user.id,
+            });
             // Don't fail the whole flush if daily progress fails
           } else {
-            console.log(`🎧 Updated daily progress: ${session.trackId}, ${listenedSeconds}s on ${nyDay}`);
+            console.log(`🎧 Updated daily progress: ${session.trackId}, ${newMax}s on ${nyDay}`);
           }
         }
       } catch (dailyProgressErr) {
@@ -631,7 +711,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     document.body.appendChild(a);
     audioRef.current = a;
 
-    const onTime = () => {
+    const onTime = async () => {
       const currentTime = a.currentTime;
       const lastTime = lastCurrentTimeRef.current;
       const duration = a.duration || 0;
@@ -660,6 +740,140 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
       // Update state
       setState(s => ({ ...s, currentTime }));
+
+      // Upsert per-day song progress for logged-in users
+      try {
+        const user = authUserRef.current;
+        if (!user) {
+          // Guard log once per page load to avoid console spam
+          (onTime as any)._skippedLogged = (onTime as any)._skippedLogged || false;
+          if (!(onTime as any)._skippedLogged) {
+            (onTime as any)._skippedLogged = true;
+            console.log('[DailyProgress] skipped: no session');
+          }
+          return; // Do not attempt to write if logged out
+        }
+
+        const slug = currentTrackRef.current;
+        if (!slug) return;
+
+        // Throttle DB writes to reduce load
+        const now = Date.now();
+        (onTime as any)._lastUpsertAt = (onTime as any)._lastUpsertAt || 0;
+        if (now - (onTime as any)._lastUpsertAt < 2000) return; // 2s throttle
+        (onTime as any)._lastUpsertAt = now;
+
+        // Resolve song UUID (cached inside helper)
+        const songUuid = await getSongUuidBySlug(slug);
+        if (!songUuid) return;
+
+        const nyDay = getNYDateString();
+
+        // Track max listened so far per session to avoid decreasing
+        (onTime as any)._progress = (onTime as any)._progress || { lastSaved: 0, maxSoFar: 0, day: '', songUuid: '', everCompleted: false, completedAt: null };
+        const prog = (onTime as any)._progress as { lastSaved: number; maxSoFar: number; day: string; songUuid: string; everCompleted: boolean; completedAt: string | null };
+
+        // Reset cache if day or song changed
+        if (prog.day !== nyDay || prog.songUuid !== songUuid) {
+          prog.lastSaved = 0;
+          prog.maxSoFar = 0;
+          prog.day = nyDay;
+          prog.songUuid = songUuid;
+          prog.everCompleted = false;
+          prog.completedAt = null;
+        }
+
+        // Use sessionRef to get listened seconds; fallback to currentTime
+        const listenedSeconds = Math.max(0, Math.floor(sessionRef.current?.listenedSeconds ?? currentTime));
+        const durationSeconds = a.duration && !isNaN(a.duration) ? Math.floor(a.duration) : null;
+
+        // First time for this song/day: prime maxSoFar from existing row to preserve MAX semantics
+        if (prog.maxSoFar === 0) {
+          try {
+            const { data: existing } = await supabaseBrowser
+              .from('user_song_daily_progress')
+              .select('listened_seconds, duration_seconds, completed, completed_at')
+              .eq('user_id', user.id)
+              .eq('song_id', songUuid)
+              .eq('day', nyDay)
+              .maybeSingle();
+            if (existing) {
+              prog.maxSoFar = Math.max(0, Number(existing.listened_seconds ?? 0));
+              prog.everCompleted = Boolean((existing as any).completed === true);
+              prog.completedAt = (existing as any).completed_at || null;
+            }
+          } catch {}
+        }
+
+        const newMax = Math.max(prog.maxSoFar, listenedSeconds);
+
+        // Only write if there's meaningful progress since last save (>=3s) or duration known/changed
+        if (newMax - prog.lastSaved < 3 && (!durationSeconds || durationSeconds === 0)) return;
+
+        // Compute completion metrics based on available duration
+        const percent = durationSeconds && durationSeconds > 0
+          ? Math.min(1, newMax / durationSeconds)
+          : null;
+        const completedNow = durationSeconds && durationSeconds > 0
+          ? newMax >= Math.ceil(durationSeconds * 0.5)
+          : false;
+        const finalCompleted = prog.everCompleted || completedNow;
+        const completedAt = finalCompleted
+          ? (prog.completedAt || (completedNow ? new Date().toISOString() : null))
+          : null;
+
+        const dailyProgressPayload: any = {
+          user_id: user.id,
+          song_id: songUuid,
+          day: nyDay,
+          listened_seconds: newMax,
+          duration_seconds: durationSeconds,
+          completion_percent: percent,
+          completed: finalCompleted,
+          completed_at: completedAt,
+        };
+
+        const onConflict = 'user_id,song_id,day';
+        const { error: dailyProgressError } = await supabaseBrowser
+          .from('user_song_daily_progress')
+          .upsert(dailyProgressPayload, { onConflict, ignoreDuplicates: false });
+
+        if (dailyProgressError) {
+          console.error('[DailyProgress Upsert] failed', {
+            error: dailyProgressError,
+            errorMessage: dailyProgressError?.message,
+            errorCode: dailyProgressError?.code,
+            errorDetails: (dailyProgressError as any)?.details,
+            errorHint: (dailyProgressError as any)?.hint,
+            payload: dailyProgressPayload,
+            onConflict,
+            hasSession: true,
+            userId: user.id,
+          });
+        } else {
+          prog.lastSaved = newMax;
+          prog.maxSoFar = newMax;
+          // After completion flips true, re-fetch SOTD claim so UI can flip
+          if (finalCompleted && !prog.everCompleted) {
+            try {
+              const { count } = await supabaseBrowser
+                .from('user_song_of_day_claims')
+                .select('*', { head: true, count: 'exact' })
+                .eq('user_id', user.id)
+                .eq('day', nyDay);
+              window.dispatchEvent(new CustomEvent('songOfDay:refresh'));
+              if ((count ?? 0) > 0) {
+                window.dispatchEvent(new CustomEvent('dailySongQuestCompleted', { detail: { day: nyDay } }));
+              }
+            } catch {}
+          }
+          // Persist completion cache
+          prog.everCompleted = finalCompleted;
+          prog.completedAt = completedAt;
+        }
+      } catch (progressErr) {
+        // Be quiet on errors here to avoid console spam; detailed errors are logged above
+      }
     };
     const onDur = () => setState(s => ({ ...s, duration: a.duration || 0 }));
     const onPlay = () => {
@@ -697,7 +911,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const onVol = () => setState(s => ({ ...s, volume: a.volume }));
     const onLoadStart = () => setState(s => ({ ...s, isLoading: true }));
     const onLoadEnd = () => setState(s => ({ ...s, isLoading: false }));
-    
+
     const onEnded = () => {
       console.log('🎵 AudioProvider: Song ended');
       // Flush the listen session before restarting (min 0 seconds for track end)
@@ -729,7 +943,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         });
       }
     };
-    
+
     a.addEventListener("timeupdate", onTime);
     a.addEventListener("durationchange", onDur);
     a.addEventListener("loadedmetadata", onDur);
@@ -739,14 +953,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     a.addEventListener("loadstart", onLoadStart);
     a.addEventListener("canplaythrough", onLoadEnd);
     a.addEventListener("ended", onEnded);
-    
+
     // Debug: Track unexpected pauses
     const onPauseDebug = () => {
       console.log('🎵 Audio paused at time:', a.currentTime, 'src:', a.src);
       if (a.currentTime > 0 && a.currentTime < 10) {
         console.log('🎵 ⚠️  Audio paused early! This might be the 4-second stop issue');
         console.log('🎵 Checking if pause was user-initiated or system-caused...');
-        
+
         // Check if this was an unexpected pause (not user-initiated)
         // If audio was stopped very early, it might be a race condition
         if (a.currentTime < 5 && !a.ended) {
@@ -770,7 +984,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       }
     };
     a.addEventListener("pause", onPauseDebug);
-    
+
     // Debug: Track when audio ends unexpectedly
     const onEndedDebug = () => {
       console.log('🎵 Audio ended at time:', a.currentTime, 'duration:', a.duration);
@@ -779,7 +993,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       }
     };
     a.addEventListener("ended", onEndedDebug);
-    
+
     // Disable browser media session to prevent title overlays
     if ('mediaSession' in navigator) {
       navigator.mediaSession.metadata = null;
@@ -788,7 +1002,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       navigator.mediaSession.setActionHandler('previoustrack', null);
       navigator.mediaSession.setActionHandler('nexttrack', null);
     }
-    
+
     return () => {
       a.removeEventListener("timeupdate", onTime);
       a.removeEventListener("durationchange", onDur);
@@ -809,29 +1023,29 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   // Mark that the unified AudioProvider is active; used to disable legacy bridges
   useEffect(() => {
-    try { 
-      (window as any).__UNIFIED_AUDIO_ACTIVE = true; 
+    try {
+      (window as any).__UNIFIED_AUDIO_ACTIVE = true;
       // Also set the audio manager flag to disable other audio systems
       (window as any).__AUDIO_MANAGER_ACTIVE = true;
-      
+
       // Aggressively stop any existing audio to prevent conflicts
       const existingAudio = document.querySelectorAll('audio');
       existingAudio.forEach(audio => {
         if (!audio.getAttribute('data-global-audio')) {
-          try { 
-            audio.pause(); 
-            audio.currentTime = 0; 
+          try {
+            audio.pause();
+            audio.currentTime = 0;
             console.log('🎵 Stopped existing conflicting audio element');
-          } catch {} 
+          } catch {}
         }
       });
     } catch {}
-    
-    return () => { 
-      try { 
-        delete (window as any).__UNIFIED_AUDIO_ACTIVE; 
-        delete (window as any).__AUDIO_MANAGER_ACTIVE; 
-      } catch {} 
+
+    return () => {
+      try {
+        delete (window as any).__UNIFIED_AUDIO_ACTIVE;
+        delete (window as any).__AUDIO_MANAGER_ACTIVE;
+      } catch {}
     };
   }, []);
 
@@ -1104,38 +1318,38 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       try { a.load(); } catch {}
       setState(s => ({ ...s, src, currentTime: 0, duration: 0 }));
     },
-    
-    play: () => { 
-      const a = audioRef.current; 
+
+    play: () => {
+      const a = audioRef.current;
       if (!a) return;
-      
+
       // Check if audio has a valid source before trying to play
       if (!a.src || a.src === 'null' || a.src === '') {
         console.warn('No audio source loaded. Cannot play.');
         return;
       }
-      
+
       void a.play().catch((err) => {
         console.error('Failed to play audio:', err);
-      }); 
+      });
     },
-    
-    pause: () => { 
-      const a = audioRef.current; 
-      if (!a) return; 
-      try { a.pause(); } catch {} 
+
+    pause: () => {
+      const a = audioRef.current;
+      if (!a) return;
+      try { a.pause(); } catch {}
     },
-    
+
     togglePlayPause: () => {
       const a = audioRef.current;
       if (!a) return;
-      
+
       console.log('🎵 togglePlayPause called - current playing state:', state.playing);
       console.log('🎵 Audio element src:', a.src);
       console.log('🎵 State src:', state.src);
       console.log('🎵 Current track:', state.currentTrack?.id);
       console.log('🎵 Audio readyState:', a.readyState);
-      
+
       if (state.playing) {
         console.log('🎵 Pausing audio');
         // Update state immediately to provide instant UI feedback
@@ -1172,16 +1386,16 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             const spaceMusicSource = bestSourceFor(TRACKS.SPACE_MUSIC);
             a.src = spaceMusicSource;
             try { a.load(); } catch {}
-            setState(s => ({ 
-              ...s, 
-              src: spaceMusicSource, 
-              currentTrack: TRACK_INFO['space-music'] || null 
+            setState(s => ({
+              ...s,
+              src: spaceMusicSource,
+              currentTrack: TRACK_INFO['space-music'] || null
             }));
           }
         }
-        
+
         console.log('🎵 Starting audio playback with src:', a.src);
-        
+
         // Check if audio is ready to play
         if (a.readyState >= 3) {
           // Audio is ready, play immediately
@@ -1195,7 +1409,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           // Audio not ready, wait for it to load
           console.log('🎵 Audio not ready (readyState:', a.readyState, '), waiting for load...');
           setState(s => ({ ...s, playing: true, isLoading: true }));
-          
+
           const handleCanPlay = () => {
             console.log('🎵 Audio can play, starting playback');
             setState(s => ({ ...s, isLoading: false }));
@@ -1206,22 +1420,22 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             a.removeEventListener('canplay', handleCanPlay);
             a.removeEventListener('error', handleError);
           };
-          
+
           const handleError = (e: Event) => {
             console.error('🎵 Audio load error during toggle play:', e);
             setState(s => ({ ...s, playing: false, isLoading: false }));
             a.removeEventListener('canplay', handleCanPlay);
             a.removeEventListener('error', handleError);
           };
-          
+
           a.addEventListener('canplay', handleCanPlay, { once: true });
           a.addEventListener('error', handleError, { once: true });
-          
+
           // Trigger load if needed
           if (a.readyState === 0) {
             try { a.load(); } catch {}
           }
-          
+
           // Timeout fallback
           setTimeout(() => {
             if (a.readyState < 3) {
@@ -1237,17 +1451,17 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         }
       }
     },
-    
-    seek: (t: number) => { 
-      const a = audioRef.current; 
-      if (!a) return; 
-      try { a.currentTime = Math.max(0, Math.min(a.duration || Infinity, t)); } catch {} 
+
+    seek: (t: number) => {
+      const a = audioRef.current;
+      if (!a) return;
+      try { a.currentTime = Math.max(0, Math.min(a.duration || Infinity, t)); } catch {}
     },
-    
-    setVolume: (v: number) => { 
-      const a = audioRef.current; 
-      if (!a) return; 
-      a.volume = Math.max(0, Math.min(1, v)); 
+
+    setVolume: (v: number) => {
+      const a = audioRef.current;
+      if (!a) return;
+      a.volume = Math.max(0, Math.min(1, v));
     },
 
     selectTrack: async (trackId: string) => {
@@ -1452,16 +1666,16 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       // which could be stale, causing valid playback to be aborted
 
       a.src = trackSource;
-      try { 
+      try {
         a.load();
-        
+
         // Wait for audio to be ready before playing
         await new Promise<void>((resolve, reject) => {
           const timeout = setTimeout(() => {
             cleanup();
             reject(new Error('Audio load timeout'));
           }, 10000); // 10 second timeout
-          
+
           const onCanPlay = () => {
             cleanup();
             resolve();
@@ -1476,7 +1690,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             a.removeEventListener('canplay', onCanPlay);
             a.removeEventListener('error', onError);
           };
-          
+
           if (a.readyState >= 3) { // Already loaded
             clearTimeout(timeout);
             resolve();
@@ -1490,7 +1704,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         setState(s => ({ ...s, isLoading: false }));
         return;
       }
-      
+
       setState(s => ({ ...s, src: trackSource, currentTime: 0, duration: 0 }));
 
       try {
@@ -1506,17 +1720,17 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     playStartSequence: async (isLoggedIn: boolean) => {
       stopAllAudioInternal();
-      
+
       try {
         // Play warp effect
         await playAudioOnce(SFX.WARP);
-        
+
         // Play join-alien effect (this was missing - it plays after warp in HoloAudioBridge)
         await playAudioOnce("/audio/join-alien.mp3");
-        
-        // Play button beam effect  
+
+        // Play button beam effect
         await playAudioOnce(SFX.BUTTON_BEAM);
-        
+
         // Play appropriate welcome message
         if (isLoggedIn) {
           // Play welcome back message
@@ -1525,48 +1739,48 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           // Play welcome to heartverse message
           await playAudioOnce(bestSourceFor(TRACKS.WELCOME_TO_HEARTVERSE));
         }
-        
+
         // After all SFX complete, load space music but don't auto-play
         console.log('🎵 Start sequence complete, loading space music...');
-        
+
         // Load space music track into the global player for user to play manually
         const spaceMusicSource = bestSourceFor(TRACKS.SPACE_MUSIC);
         api.loadTrack(spaceMusicSource);
-        
+
         // Set space music as current track
         const spaceMusicInfo = TRACK_INFO['space-music'];
         if (spaceMusicInfo) {
           setState(s => ({ ...s, currentTrack: spaceMusicInfo }));
         }
-        
+
       } catch (err) {
         console.error('Failed to play start sequence:', err);
       }
     },
 
     bestSourceFor,
-    
+
     getCurrentAudio: () => audioRef.current,
-    
+
     stopAllAudio: stopAllAudioInternal,
-    
+
     setPendingTrack: (trackId: string | null) => {
       // When setting a new pending track, reset warpCompleted to false
       // This ensures the playerStore subscription defers playback until warp finishes
       setState(s => ({ ...s, pendingTrack: trackId, warpCompleted: trackId ? false : s.warpCompleted }));
     },
-    
+
     markWarpCompleted: () => {
-      setState(s => ({ 
-        ...s, 
+      setState(s => ({
+        ...s,
         warpCompleted: true
         // Keep existing pendingTrack - don't override with space-music
       }));
     },
-    
+
     // Expose currentTrack for compatibility
     currentTrack: state.currentTrack,
-    
+
   }), [state.src, state.currentTrack, state.playing]);
 
   // Keep refs in sync with state (for use in subscription callbacks to avoid stale closures)
@@ -1584,16 +1798,16 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     if (!state.pendingTrack) return; // Only auto-play if a track was specifically selected
 
     const trackToPlay = state.pendingTrack;
-    
+
     console.log('🎵 Auto-playing after warp completion:', trackToPlay);
-    
-    // Clear pending track 
+
+    // Clear pending track
     setState(s => ({ ...s, pendingTrack: null }));
-    
+
     // Use the API to play the track (playTrack already handles starting playback)
     const playTrack = api.playTrack;
     playTrack(trackToPlay).catch(console.error);
-    
+
   }, [state.warpCompleted, state.pendingTrack, api.playTrack]);
 
   // Listen for player store changes to sync with holo panel selections

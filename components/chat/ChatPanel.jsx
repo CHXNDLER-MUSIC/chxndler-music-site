@@ -504,7 +504,24 @@ export default function ChatPanel({ isOpen, onClose }) {
               profile_image_url: null
             }
           }));
-          setMessages(transformedMessages);
+          // Merge loaded messages with any in-flight optimistic ones to avoid flicker
+          setMessages((prev) => {
+            // If nothing in state yet, just set the fetched list
+            if (!prev || prev.length === 0) return transformedMessages;
+
+            // Preserve local optimistic messages (temp-/guest- ids)
+            const optimistic = prev.filter(
+              (m) => typeof m.id === 'string' && (m.id.startsWith('temp-') || m.id.startsWith('guest-'))
+            );
+
+            // Avoid duplicating any real messages that may already exist
+            const existingRealIds = new Set(
+              prev.filter((m) => typeof m.id !== 'string').map((m) => m.id)
+            );
+            const mergedBase = transformedMessages.filter((m) => !existingRealIds.has(m.id));
+
+            return [...mergedBase, ...optimistic];
+          });
 
           // Load reaction counts from messages into messageReactions state
           const loadedReactions = {};
@@ -526,7 +543,8 @@ export default function ChatPanel({ isOpen, onClose }) {
         }
       } catch (error) {
         console.error('Error loading heart signal messages:', error);
-        setMessages([]);
+        // Preserve any existing messages (e.g., optimistic) on load failure
+        setMessages((prev) => (prev && prev.length > 0 ? prev : []));
       }
 
       // Load current chat users from database
