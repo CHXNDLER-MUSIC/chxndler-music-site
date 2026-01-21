@@ -2941,8 +2941,8 @@ const HUDPanel = React.memo(function HUDPanel({
                                 position: 'absolute',
                                 left: 0,
                                 right: 0,
-                                // Lower ambient glow to align with overall blue display bottom
-                                bottom: -122,
+                                // Keep ambient glow near bottom but inside the blue display
+                                bottom: -84,
                                 height: 20,
                                 borderRadius: 9999,
                                 background: 'radial-gradient(ellipse 100% 100%, rgba(25,227,255,0.25) 0%, rgba(25,227,255,0.1) 50%, transparent 80%)',
@@ -2958,8 +2958,8 @@ const HUDPanel = React.memo(function HUDPanel({
                                 left: 8,
                                 // Nudge a bit more past the right edge
                                 right: -96,
-                                // Lower the track bar to sit just above the blue display bottom
-                                bottom: -110,
+                                // Keep the track bar just above the blue display bottom
+                                bottom: -76,
                                 height: 10,
                                 borderRadius: 9999,
                                 background: 'rgba(20,20,25,0.9)',
@@ -2974,7 +2974,17 @@ const HUDPanel = React.memo(function HUDPanel({
                                 pointerEvents: 'auto',
                                 zIndex: 100
                               }}
+                              onMouseDown={(e) => { e.stopPropagation(); }}
+                              onPointerDown={(e) => { e.stopPropagation(); }}
                               onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                try {
+                                  const ne = e.nativeEvent;
+                                  if (ne && typeof ne.stopImmediatePropagation === 'function') {
+                                    ne.stopImmediatePropagation();
+                                  }
+                                } catch {}
                                 console.log('CLICKED AT', e.clientX);
 
                                 // Try multiple ways to get the audio element

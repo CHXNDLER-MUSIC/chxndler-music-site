@@ -684,10 +684,16 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                       try {
                         // Always use the title prop (displayed card), not currentTrack (playing song)
                         const cardTitle = title;
+                        // Prefer provided slug prop for precise mapping; fallback to title-derived slug
+                        const eventSlug = (slug || cardTitle || '')
+                          .toLowerCase()
+                          .trim()
+                          .replace(/\s+/g, '-')
+                          .replace(/[^a-z0-9-]/g, '');
                         const heartCoinEvent = new CustomEvent('openHeartCoinCards', {
                           detail: {
                             cardTitle: cardTitle,
-                            songSlug: cardTitle?.toLowerCase().replace(/\s+/g, '-'),
+                            songSlug: eventSlug,
                             cardSrc: src
                           }
                         });

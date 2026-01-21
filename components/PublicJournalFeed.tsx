@@ -68,7 +68,7 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
   const [spinRotation, setSpinRotation] = useState(0);
   const spinAudioRef = useRef<HTMLAudioElement | null>(null);
   // Public profile fallbacks when denormalized fields are missing
-  const [authorOverrides, setAuthorOverrides] = useState<Record<string, { name: string | null; avatar: string | null }>>({});
+  const [authorOverrides, setAuthorOverrides] = useState<Record<string, { name: string | null; avatar: string | null; journey: string | null }>>({});
 
   // Helper: Resolve avatar URL with correct priority order
   // 1. Current user's fresh profile (for own entries) - always use latest
@@ -110,6 +110,34 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
     }
     // Fallback: default name
     return 'Alien';
+  };
+
+  // Helper: Resolve author journey with correct priority
+  // 1. Current user's fresh profile (for own entries)
+  // 2. Fresh data from public_profiles_table (authorOverrides)
+  // 3. Fallback: 'wanderer'
+  const resolveAuthorJourney = (entry: { user_id: string }) => {
+    const isOwnEntry = user?.id && entry.user_id?.toLowerCase() === user.id?.toLowerCase();
+    if (isOwnEntry && profile?.journey) {
+      return profile.journey;
+    }
+    if (authorOverrides[entry.user_id]?.journey) {
+      return authorOverrides[entry.user_id].journey;
+    }
+    return 'wanderer';
+  };
+
+  // Helper: Map journey to display label/color
+  const getJourneyDisplay = (journey: string | null | undefined) => {
+    const j = (journey || 'wanderer').toString().toLowerCase();
+    switch (j) {
+      case 'lover':
+        return { label: 'LOVER', color: '#FF6B9D' };
+      case 'dreamer':
+        return { label: 'DREAMER', color: '#FFD700' };
+      default:
+        return { label: 'WANDERER', color: '#00FFFF' };
+    }
   };
 
   // Check auth state only for starring functionality (not for viewing)
@@ -162,7 +190,7 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
         // Query public_profiles_table (view with anon RLS) for fresh profile_image_url
         const { data: profilesData, error: profilesError } = await supabaseBrowser
           .from('public_profiles_table')
-          .select('id, name, profile_image_url')
+          .select('id, name, profile_image_url, journey')
           .in('id', allUserIds);
 
         if (profilesError) {
@@ -170,12 +198,13 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
           return;
         }
 
-        const next: Record<string, { name: string | null; avatar: string | null }> = {};
+        const next: Record<string, { name: string | null; avatar: string | null; journey: string | null }> = {};
         (profilesData || []).forEach((profileData: any) => {
           if (profileData?.id) {
             next[profileData.id] = {
               name: profileData.name || null,
-              avatar: profileData.profile_image_url || null
+              avatar: profileData.profile_image_url || null,
+              journey: profileData.journey || null
             };
           }
         });
@@ -703,6 +732,19 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
                             <div className="text-2xl font-bold text-white">
                               {resolveAuthorName(entry)}
                             </div>
+
+                            {/* Journey label */}
+                            {(() => {
+                              const { label, color } = getJourneyDisplay(resolveAuthorJourney(entry));
+                              return (
+                                <div
+                                  className="text-sm font-semibold tracking-wider mt-1"
+                                  style={{ color, textShadow: `0 0 6px ${color}80` }}
+                                >
+                                  {label}
+                                </div>
+                              );
+                            })()}
 
                             {/* Element label */}
                             <div

@@ -2137,9 +2137,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   const item = merchItems[currentPage];
                   if (!item) return null;
                   return (
-                    <div className="mt-4 space-y-4 bg-black/20 rounded-lg p-4">
+                    <div className="mt-4 space-y-2 bg-black/20 rounded-lg p-4">
                       {/* Description */}
-                      <p className="text-white text-lg text-center italic leading-relaxed">
+                      <p className="text-white text-lg text-center italic leading-snug">
                         {item.description}
                       </p>
 

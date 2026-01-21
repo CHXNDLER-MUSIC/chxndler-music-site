@@ -2,7 +2,8 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
 import { supabaseBrowser } from "@/lib/supabase-browser";
-import { useDailySongProgress } from "@/hooks/useDailySongProgress";
+import { useDailySongProgress, recordSongEndedPlay } from "@/hooks/useDailySongProgress";
+import { getNYDateString } from "@/lib/time";
 import { usePlanetRewardsContext } from "@/components/PlanetRewardsProvider";
 
 // Anonymous ID management for tracking logged-out user listens
@@ -599,7 +600,19 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       console.log('🎵 AudioProvider: Song ended');
       // Flush the listen session before restarting (min 0 seconds for track end)
       if (sessionRef.current && !sessionRef.current.flushed) {
-        flushSession(0).then(() => {
+        flushSession(0).then(async () => {
+          // Increment daily song play only on full end
+          try {
+            const slug = currentTrackRef.current || state.currentTrack?.id || null;
+            if (slug) {
+              const songUuid = await getSongUuidBySlug(slug);
+              if (songUuid) {
+                await recordSongEndedPlay(songUuid);
+              }
+            }
+          } catch (err) {
+            console.warn('Failed SOTD end-of-track increment/refresh:', err);
+          }
           // Start a new session for the repeated playback
           if (currentTrackRef.current) {
             startListenSession(currentTrackRef.current);
@@ -1027,22 +1040,25 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       } else {
         // Check if there's a current track that should be playing
         if (state.currentTrack) {
-          console.log('🎵 Current track exists, checking if it matches audio source:', state.currentTrack.id);
-          
+          console.log('🎵 Current track exists, validating audio source for resume:', state.currentTrack.id);
+
           // Determine expected source using shared mapper with normalized slug
           const norm = normalizeSlug(state.currentTrack.id);
           const key = trackKeyFromSlug(norm) as TrackKey | null;
           const expectedSource = key ? bestSourceFor(TRACKS[key]) : `/tracks/${norm}.opus`;
-          
-          // Check if the audio element has the correct source loaded
-          if (!a.src || a.src === 'null' || a.src === '' || !a.src.includes(norm)) {
-            console.log('🎵 Audio source mismatch, loading current track:', norm);
+
+          // Only set src when there's no source at all. Do NOT reload when resuming.
+          // Some filenames contain URL-encoded characters (e.g., we%27re-just-friends),
+          // which makes naive substring checks unreliable and could cause unwanted reloads
+          // that reset currentTime to 0 on resume.
+          if (!a.src || a.src === 'null' || a.src === '') {
+            console.log('🎵 No audio source loaded, setting expected source:', expectedSource);
             a.src = expectedSource;
             try { a.load(); } catch {}
-            setState(s => ({ 
-              ...s, 
-              src: expectedSource
-            }));
+            setState(s => ({ ...s, src: expectedSource }));
+          } else {
+            // Keep existing src to preserve currentTime on resume
+            console.log('🎵 Source already present; skipping reload to preserve position');
           }
         } else {
           // If no track loaded, load space music as default for now

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { sfx } from "@/lib/sfx";
 import SoulStareModal from "./SoulStareModal";
 import SoulStarJournal from "./SoulStarJournal";
@@ -11,6 +11,7 @@ import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useProfile } from "@/contexts/ProfileContext";
 import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
 import { getAllQuestsForUser } from "@/lib/bonusQuests";
+import { getNYDateString } from "@/lib/time";
 import LoginModal from "@/components/LoginModal";
 
 type Props = {
@@ -46,6 +47,7 @@ function useQuestStatus() {
   const [serverDateKey, setServerDateKey] = useState<string | null>(null);
   const [songOfDayId, setSongOfDayId] = useState<string | null>(null);
   const [songOfDayTitle, setSongOfDayTitle] = useState<string | null>(null);
+  const [songOfDaySlug, setSongOfDaySlug] = useState<string | null>(null);
 
   useEffect(() => {
     const clientToday = new Date().toDateString();
@@ -84,26 +86,22 @@ function useQuestStatus() {
             // Store Song of the Day info
             const songId = data.songOfDayId;
             const songTitle = data.songOfDayTitle;
+            const songSlug = data.songOfDaySlug;
             setSongOfDayId(songId ?? null);
             setSongOfDayTitle(songTitle ?? null);
+            setSongOfDaySlug(songSlug ?? null);
 
-            // Check Song of Day completion from user_song_daily_progress
-            // Completed when completed_at is not null for today's song_id
+            // Check Song of Day completion from claims table
+            // Completed when a claim exists for (user_id, day)
             let songOfDayDone = false;
-            if (songId) {
-              const { data: progressRow, error: progressErr } = await supabaseBrowser
-                .from('user_song_daily_progress')
-                .select('completed_at')
-                .eq('user_id', sessionData.session.user.id)
-                .eq('song_id', songId)
-                .eq('day', elementDateKey)
-                .not('completed_at', 'is', null)
-                .limit(1)
-                .maybeSingle();
+            const { count: claimCount, error: claimErr } = await supabaseBrowser
+              .from('user_song_of_day_claims')
+              .select('*', { head: true, count: 'exact' })
+              .eq('user_id', sessionData.session.user.id)
+              .eq('day', elementDateKey);
 
-              if (!progressErr && progressRow?.completed_at) {
-                songOfDayDone = true;
-              }
+            if (!claimErr && (claimCount ?? 0) > 0) {
+              songOfDayDone = true;
             }
 
             // Other quests use client date (they don't have server-time dependencies)
@@ -198,21 +196,81 @@ function useQuestStatus() {
       }
     };
 
-    // Listen for dailySongQuestCompleted event (when user completes Song of the Day)
+    // Listen for dailySongQuestCompleted event (when backend claims insert succeeds)
     const handleSongQuestCompleted = (e: CustomEvent) => {
       console.log('[QuestList] Song of Day quest completed:', e.detail);
       setQuestStatus(prev => ({ ...prev, songOfDay: true }));
     };
 
+    // Listen for generic refresh requests (progress threshold or ended RPC)
+    const handleSongOfDayRefresh = async () => {
+      await refreshSongOfDayState();
+    };
+
     window.addEventListener('element-of-day-changed', handleElementChanged as EventListener);
     window.addEventListener('dailySongQuestCompleted', handleSongQuestCompleted as EventListener);
+    window.addEventListener('songOfDay:refresh', handleSongOfDayRefresh as EventListener);
     return () => {
       window.removeEventListener('element-of-day-changed', handleElementChanged as EventListener);
       window.removeEventListener('dailySongQuestCompleted', handleSongQuestCompleted as EventListener);
+      window.removeEventListener('songOfDay:refresh', handleSongOfDayRefresh as EventListener);
     };
   }, []);
 
-  return { questStatus, setQuestStatus, todaysElement, todaysQuestion, serverDateKey, songOfDayId, songOfDayTitle };
+  // Refresh SOTD from view + claims, then update state
+  const refreshSongOfDayState = useCallback(async () => {
+    try {
+      // Determine NY day
+      const nyDay = getNYDateString();
+      setServerDateKey(nyDay);
+
+      // Fetch v_element_of_day today (fallback to API if needed)
+      let todaySongId: string | null = null;
+      let todaySongTitle: string | null = null;
+      let todaySongSlug: string | null = null;
+      try {
+        const { data, error } = await supabaseBrowser
+          .from('v_element_of_day')
+          .select('day, song_id, song_name')
+          .eq('day', nyDay)
+          .maybeSingle();
+        if (!error && data) {
+          todaySongId = data.song_id || null;
+          todaySongTitle = data.song_name || null;
+        }
+      } catch {}
+
+      if (!todaySongId) {
+        // API fallback (also provides slug)
+        const res = await fetch('/api/element-of-day');
+        if (res.ok) {
+          const j = await res.json();
+          todaySongId = j?.songOfDayId ?? null;
+          todaySongTitle = j?.songOfDayTitle ?? null;
+          todaySongSlug = j?.songOfDaySlug ?? null;
+        }
+      }
+
+      setSongOfDayId(todaySongId);
+      setSongOfDayTitle(todaySongTitle);
+      if (todaySongSlug) setSongOfDaySlug(todaySongSlug);
+
+      // If logged in, re-check claim
+      const { data: { session } } = await supabaseBrowser.auth.getSession();
+      if (session?.user?.id) {
+        const { count } = await supabaseBrowser
+          .from('user_song_of_day_claims')
+          .select('*', { head: true, count: 'exact' })
+          .eq('user_id', session.user.id)
+          .eq('day', nyDay);
+        setQuestStatus(prev => ({ ...prev, songOfDay: (count ?? 0) > 0 }));
+      }
+    } catch (err) {
+      console.warn('[QuestList] refreshSongOfDayState failed:', err);
+    }
+  }, []);
+
+  return { questStatus, setQuestStatus, todaysElement, todaysQuestion, serverDateKey, songOfDayId, songOfDayTitle, songOfDaySlug, refreshSongOfDayState };
 }
 
 export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCloseHeartCoinPopup }: Props) {
@@ -231,7 +289,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   const [bonusQuests, setBonusQuests] = useState<any[]>([]);
   const [questsLoading, setQuestsLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const { questStatus, setQuestStatus, todaysElement, todaysQuestion, serverDateKey, songOfDayId, songOfDayTitle } = useQuestStatus();
+  const { questStatus, setQuestStatus, todaysElement, todaysQuestion, serverDateKey, songOfDayId, songOfDayTitle, songOfDaySlug, refreshSongOfDayState } = useQuestStatus();
   const { refreshProfile } = useProfile();
 
   // Load all quests from server (both DAILY and BONUS categories)
@@ -984,12 +1042,14 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                     onCloseHeartCoinPopup?.();
                     // Trigger song playback
                     if (typeof (window as any).__playTrackDirect === 'function') {
-                      (window as any).__playTrackDirect(todaysElement.name.toLowerCase(), 'song-of-day-quest');
+                      const playSlug = (songOfDaySlug || todaysElement.name || '').toLowerCase();
+                      (window as any).__playTrackDirect(playSlug, 'song-of-day-quest');
                     } else {
-                      window.dispatchEvent(new CustomEvent('song:play-now', {
-                        detail: { slug: todaysElement.name.toLowerCase(), source: 'song-of-day-quest' }
-                      }));
+                      const playSlug = (songOfDaySlug || todaysElement.name || '').toLowerCase();
+                      window.dispatchEvent(new CustomEvent('song:play-now', { detail: { slug: playSlug, source: 'song-of-day-quest' } }));
                     }
+                    // After starting playback, do a soft refresh soon to catch quick completions
+                    setTimeout(() => { try { refreshSongOfDayState(); } catch {} }, 1500);
                   }}
                   disabled={questStatus.songOfDay || loading}
                   className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 ${
@@ -1017,7 +1077,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                   }}
                 >
                   {questStatus.songOfDay
-                    ? 'COMPLETED'
+                    ? 'LISTENED'
                     : !isAuthenticated
                       ? 'LOG IN'
                       : 'LISTEN'

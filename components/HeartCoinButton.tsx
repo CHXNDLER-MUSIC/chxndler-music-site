@@ -322,6 +322,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [activeEarnTab, setActiveEarnTab] = useState<'DAILY QUESTS' | 'BONUS QUESTS'>('DAILY QUESTS');
   const [selectedCardElement, setSelectedCardElement] = useState<string | null>(null);
   const [selectedSong, setSelectedSong] = useState<string>('');
+  // Slug version from event (for robust matching when card_name differs)
+  const [selectedSongSlug, setSelectedSongSlug] = useState<string>('');
   const [currentCardIndex, setCurrentCardIndex] = useState<number>(0);
   // Target card ID for navigation - set when opening from COLLECT CARD button
   // This ensures we navigate to the correct card AFTER filteredCards is updated
@@ -555,9 +557,17 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         setActiveTab('USE');
         setActiveUseTab('CARDS');
         
-        // Set the selected song filter if provided
+        // Set the selected song (name) and slug if provided
         if (e.detail?.cardTitle) {
           setSelectedSong(e.detail.cardTitle);
+        }
+        if (e.detail?.songSlug) {
+          try {
+            const slug = String(e.detail.songSlug || '').toLowerCase();
+            setSelectedSongSlug(slug);
+          } catch {
+            setSelectedSongSlug('');
+          }
         }
         
         // Mark as opened from collect card and open the modal
@@ -840,14 +850,29 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
   // Auto-navigate to selected card when opened from COLLECT CARD button
   useEffect(() => {
-    // Only run when opened from collect card button with a selected song
-    if (!isFromCollectCard || !selectedSong || cards.length === 0) return;
+    // Only run when opened from collect card button with a selected song or slug and cards loaded
+    if (!isFromCollectCard || (!selectedSong && !selectedSongSlug) || cards.length === 0) return;
 
-    // Find the card by matching name (case-insensitive)
-    const normalizedSelectedSong = selectedSong.toLowerCase().replace(/[^a-z0-9]/g, '');
+    // Helper: normalize to a comparable alphanumeric string
+    const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+    // Helper: slugify similar to event source
+    const slugify = (s: string) => s
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '');
+
+    const normalizedSelectedSong = selectedSong ? normalize(selectedSong) : '';
+    const normalizedSelectedSlug = selectedSongSlug ? selectedSongSlug.toLowerCase() : '';
+
     const matchedCard = cards.find(card => {
-      const cardName = (card.card_name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-      return cardName === normalizedSelectedSong;
+      const cardNameNorm = normalize(card.card_name || '');
+      if (normalizedSelectedSong && cardNameNorm === normalizedSelectedSong) return true;
+      if (normalizedSelectedSlug) {
+        const cardSlug = slugify(card.card_name || '');
+        if (cardSlug === normalizedSelectedSlug) return true;
+      }
+      return false;
     });
 
     if (matchedCard && matchedCard.element && matchedCard.id) {
@@ -870,11 +895,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         isAutoNavigatingRef.current = false;
       }, 100);
 
-      // Only clear selectedSong to prevent re-running, but keep isFromCollectCard
+      // Only clear selectedSong and slug to prevent re-running, but keep isFromCollectCard
       // so the modal doesn't auto-close (see isActive useEffect)
       setSelectedSong('');
+      setSelectedSongSlug('');
     }
-  }, [isFromCollectCard, selectedSong, cards, selectedCardElement]);
+  }, [isFromCollectCard, selectedSong, selectedSongSlug, cards, selectedCardElement]);
 
   // Pre-load cards when the modal opens (not just when CARDS tab is active)
   // This ensures cards are ready when user navigates to CARDS tab
