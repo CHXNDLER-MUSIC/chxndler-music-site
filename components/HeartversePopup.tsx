@@ -25,6 +25,20 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
     return () => window.removeEventListener("keydown", onKey);
   }, [isOpen, onClose]);
 
+  // Prevent background/page scroll while popup is open
+  useEffect(() => {
+    if (!isOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    const prevOverscrollBehavior = (document.body.style as any).overscrollBehavior;
+    document.body.style.overflow = 'hidden';
+    (document.body.style as any).overscrollBehavior = 'contain';
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      (document.body.style as any).overscrollBehavior = prevOverscrollBehavior || '';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
 
@@ -35,6 +49,8 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
       role="dialog"
       aria-label={title}
       style={{ overscrollBehaviorX: 'none' }}
+      onWheel={(e) => { e.preventDefault(); }}
+      onTouchMove={(e) => { e.preventDefault(); }}
     >
       <div
         className="absolute inset-0 backdrop-blur-md"

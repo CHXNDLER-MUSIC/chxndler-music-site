@@ -196,6 +196,27 @@ const HUDPanel = React.memo(function HUDPanel({
   // Audio progress tracking
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  // Lightweight animation tick to force re-render while audio is playing
+  // Ensures the HUD progress bar advances even if underlying events are throttled
+  const [animTick, setAnimTick] = useState(0);
+  useEffect(() => {
+    let rafId = null;
+    let active = true;
+    const loop = () => {
+      if (!active) return;
+      // Nudge a re-render; calculation reads currentTime/duration directly each render
+      setAnimTick((t) => (t + 1) % 1000000);
+      rafId = requestAnimationFrame(loop);
+    };
+    // Only tick when audio is actively playing to avoid unnecessary renders
+    if (audioManager?.playing) {
+      rafId = requestAnimationFrame(loop);
+    }
+    return () => {
+      active = false;
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [audioManager?.playing]);
   const [volume, setVolume] = useState(1.0);
   const lastNonZeroVolumeRef = useRef(1.0);
   const hudVolumeSfxLastRef = useRef(0);
@@ -3046,7 +3067,8 @@ const HUDPanel = React.memo(function HUDPanel({
                                     0 0 12px ${elementColor}55,
                                     inset 0 0 4px rgba(255,255,255,0.4)
                                   `,
-                                  transition: 'width 150ms linear',
+                                  // Avoid lag: update instantly; RAF drives smoothness
+                                  transition: 'none',
                                   pointerEvents: 'none',
                                   minWidth: pct > 0 ? '3px' : '0',
                                   zIndex: 10
@@ -3070,7 +3092,8 @@ const HUDPanel = React.memo(function HUDPanel({
                                       0 0 12px ${elementColor}aa,
                                       0 1px 3px rgba(0,0,0,0.4)
                                     `,
-                                    transition: 'left 150ms linear',
+                                    // Avoid lag: update instantly; RAF drives smoothness
+                                    transition: 'none',
                                     pointerEvents: 'none',
                                     zIndex: 15
                                   }}

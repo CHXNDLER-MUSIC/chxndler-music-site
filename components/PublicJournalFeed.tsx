@@ -190,7 +190,7 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
         // Query public_profiles_table (view with anon RLS) for fresh profile_image_url
         const { data: profilesData, error: profilesError } = await supabaseBrowser
           .from('public_profiles_table')
-          .select('id, name, profile_image_url, journey')
+          .select('id, name, profile_image_url')
           .in('id', allUserIds);
 
         if (profilesError) {
@@ -204,7 +204,7 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
             next[profileData.id] = {
               name: profileData.name || null,
               avatar: profileData.profile_image_url || null,
-              journey: profileData.journey || null
+              journey: null
             };
           }
         });

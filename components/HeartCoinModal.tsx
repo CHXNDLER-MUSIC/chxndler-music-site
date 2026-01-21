@@ -671,13 +671,40 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         break;
 
       case 'LISTEN_FEATURED_SONG':
-      case 'LISTEN_ELEMENT_SONG':
-        // Navigate to music player
+      case 'LISTEN_ELEMENT_SONG': {
+        // Play the featured/element song immediately on user gesture, then warp UI
+        // Prefer the canonical Song of the Day slug if available; otherwise fall back to today's element track
+        const fallbackSlug = (elementOfDay || 'heart').toLowerCase();
+        const playSlug = (songOfDaySlug || fallbackSlug).toLowerCase();
+
+        try {
+          // Start playback immediately to satisfy autoplay policies
+          if (typeof (window as any).__playTrackDirect === 'function') {
+            (window as any).__playTrackDirect(playSlug, 'daily-quest-listen');
+          } else {
+            window.dispatchEvent(new CustomEvent('song:play-now', {
+              detail: { slug: playSlug, source: 'daily-quest-listen' }
+            }));
+          }
+        } catch (err) {
+          console.warn('[HeartCoinModal] Failed to trigger immediate playback:', err);
+        }
+
         onClose();
         setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('featured-song:play'));
+          try {
+            // Update player state and trigger warp to the song planet
+            playerStore.getState().setMain(playSlug);
+            window.dispatchEvent(new CustomEvent('planet:warp-to-song', {
+              detail: { id: playSlug, source: 'daily-quest' }
+            }));
+          } catch (e) {
+            console.error('[WARP] Failed to set main song for featured/element listen:', e);
+          }
         }, 200);
+
         break;
+      }
 
       default:
         // Unknown quest_key - log warning and do nothing
@@ -1539,7 +1566,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       title="HeartCoins"
       onTitleClick={() => setShowHeartCoinDescription(!showHeartCoinDescription)}
     >
-      <div className="relative flex flex-col flex-1 h-full">
+      <div className="relative flex flex-col flex-1 h-full overflow-hidden">
         {/* Top Level Tabs */}
         <div className="flex border-b border-white/20 mb-6">
           <button
@@ -2002,15 +2029,15 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
             )}
 
             {/* USE: Description toggle (exactly matches EARN copy) */}
-            <div className="text-center mb-4">
+            <div className="text-center mb-2">
               {showHeartCoinDescription ? (
-                <div className="text-white/80 text-sm leading-relaxed space-y-2">
+                <div className="text-white/80 text-xs leading-snug space-y-1.5">
                   <p>HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting, and showing up.</p>
                   <p>Complete quests. Attend community events. Engage with the Heartverse.</p>
                   <p>Use your HeartCoins to unlock collectibles and cards, and deepen your place in the community.</p>
                 </div>
               ) : (
-                <p className="text-white/80 text-sm">HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting, and showing up.</p>
+                <p className="text-white/80 text-xs">HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting, and showing up.</p>
               )}
             </div>
             
@@ -2023,7 +2050,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
             ) : merchItems.length > 0 ? (
               <>
                 {/* Item Title */}
-                <h3 className="text-lg font-bold text-white tracking-wider text-center mb-4">
+                <h3 className="text-base font-bold text-white tracking-wider text-center mb-2">
                   {merchItems[currentPage]?.name.toUpperCase()}
                 </h3>
 
@@ -2056,6 +2083,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
                   {/* Item Content - Centered */}
                   <div className="flex-1 text-center px-4">
+                    <div className="inline-block" style={{ transform: 'scale(0.9)', transformOrigin: 'center center' }}>
                     {(() => {
                       const item = merchItems[currentPage];
                       if (!item) return null;
@@ -2063,7 +2091,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         <>
                           {/* Item Image - Swipeable */}
                           <div
-                            className="relative h-80 w-full flex items-center justify-center mb-4 touch-pan-y"
+                            className="relative w-full flex items-center justify-center mb-2 touch-pan-y"
+                            style={{ height: '10rem' }}
                             onTouchStart={onTouchStart}
                             onTouchMove={onTouchMove}
                             onTouchEnd={onTouchEnd}
@@ -2071,7 +2100,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             <img
                               src={item.image_url || '/store/default.webp'}
                               alt={item.name}
-                              className="max-h-full max-w-full object-contain rounded-lg cursor-pointer hover:scale-105 transition-transform duration-300 select-none"
+                              className="w-auto max-w-full object-contain rounded-lg cursor-pointer hover:scale-105 transition-transform duration-300 select-none"
+                              style={{ height: '100%', maxHeight: '9rem', transform: 'scale(0.92)' }}
                               draggable={false}
                               onClick={() => {
                                 const storeItem = {
@@ -2092,7 +2122,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
                           {/* Page Indicator Dots */}
                           {merchItems.length > 1 && (
-                            <div className="flex justify-center items-center gap-2 mb-4">
+                            <div className="flex justify-center items-center gap-2 mb-2">
                               {merchItems.map((_, index) => (
                                 <button
                                   key={index}
@@ -2109,6 +2139,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         </>
                       );
                     })()}
+                    </div>
                   </div>
 
                   {/* RIGHT ARROW - Aligned to right edge */}
@@ -2137,9 +2168,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   const item = merchItems[currentPage];
                   if (!item) return null;
                   return (
-                    <div className="mt-4 space-y-2 bg-black/20 rounded-lg p-4">
+                    <div className="mt-4 bg-black/20 rounded-lg p-4">
                       {/* Description */}
-                      <p className="text-white text-lg text-center italic leading-snug">
+                      <p className="text-white text-lg text-center italic leading-tight mb-1">
                         {item.description}
                       </p>
 
@@ -2180,7 +2211,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
                       {/* Purchase Button */}
                       {item.stripe_url && (
-                        <div className="flex justify-center">
+                        <div className="flex justify-center mt-2">
                           <button
                             onClick={() => handlePurchase(item.stripe_url)}
                             onMouseEnter={() => {
@@ -2214,7 +2245,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                           }
                         }}
                         disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < (item.price_heartcoins || 0)}
-                        className={`w-full py-2 px-4 rounded-lg font-bold text-xs transition-all duration-200 ${
+                        className={`w-full py-2 px-4 rounded-lg font-bold text-xs transition-all duration-200 mt-2 ${
                           modalLoading || !profile || (profile.heartcoin_balance || 0) < (item.price_heartcoins || 0)
                             ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
                             : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,239,29,0.6)]'
@@ -3044,7 +3075,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
           }}
         >
           <div
-            className="absolute inset-0 flex items-center justify-center p-4 overflow-y-auto"
+            className="absolute inset-0 flex items-center justify-center p-4 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { ELEMENT_COLORS, type Element } from '@/lib/planets';
 import { useAudio } from "@/app/providers/AudioProvider";
 
@@ -102,7 +102,7 @@ const DashboardProgressBar: React.FC<DashboardProgressBarProps> = ({ className =
         
         {/* Filled progress portion with element-based glow */}
         <div 
-          className="h-full rounded-full transition-all duration-150"
+          className="h-full rounded-full"
           style={{ 
             width: `${progressPercentage}%`,
             background: `linear-gradient(90deg, ${elementColor}, ${elementColor}dd)`,
@@ -116,7 +116,7 @@ const DashboardProgressBar: React.FC<DashboardProgressBarProps> = ({ className =
         
         {/* Progress handle */}
         <div
-          className="absolute top-1/2 w-3 h-3 rounded-full border border-white/60 transition-all duration-150"
+          className="absolute top-1/2 w-3 h-3 rounded-full border border-white/60"
           style={{
             left: `${progressPercentage}%`,
             transform: 'translateX(-50%) translateY(-50%)',

@@ -556,7 +556,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         // Set the modal to open with USE tab and CARDS sub-tab
         setActiveTab('USE');
         setActiveUseTab('CARDS');
-        
+
         // Set the selected song (name) and slug if provided
         if (e.detail?.cardTitle) {
           setSelectedSong(e.detail.cardTitle);
@@ -569,10 +569,25 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             setSelectedSongSlug('');
           }
         }
+
+        // Pre-select element if provided to immediately show relevant category
+        if (e.detail?.element) {
+          try {
+            const el = String(e.detail.element).toUpperCase();
+            setSelectedCardElement(el);
+          } catch {}
+        }
         
         // Mark as opened from collect card and open the modal
         setIsFromCollectCard(true);
         setOpen(true);
+
+        // Ensure cards are fetched immediately when opening from collect
+        try {
+          if (cards.length === 0) {
+            fetchCards();
+          }
+        } catch {}
         
         // Track the event
         try {

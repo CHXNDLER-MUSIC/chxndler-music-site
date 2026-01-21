@@ -694,7 +694,8 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                           detail: {
                             cardTitle: cardTitle,
                             songSlug: eventSlug,
-                            cardSrc: src
+                            cardSrc: src,
+                            element: trackElement
                           }
                         });
                         window.dispatchEvent(heartCoinEvent);

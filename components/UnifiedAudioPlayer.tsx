@@ -62,6 +62,22 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
   // Use current time and duration from the audio provider
   const currentTime = audioManager.currentTime;
   const duration = audioManager.duration;
+
+  // Ensure smooth UI updates while playing even if event frequency is low
+  const [animTick, setAnimTick] = useState(0);
+  useEffect(() => {
+    let raf: number | null = null;
+    let active = true;
+    const loop = () => {
+      if (!active) return;
+      setAnimTick(t => (t + 1) % 1000000);
+      raf = requestAnimationFrame(loop);
+    };
+    if (audioManager.playing) {
+      raf = requestAnimationFrame(loop);
+    }
+    return () => { active = false; if (raf) cancelAnimationFrame(raf); };
+  }, [audioManager.playing]);
   
   // Track the audio element for additional event handling if needed
   const [currentAudioElement, setCurrentAudioElement] = useState<HTMLAudioElement | null>(null);
@@ -96,7 +112,11 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
   );
   
   // Calculate progress (0-1)
-  const progress = duration > 0 ? currentTime / duration : 0;
+  // Use live element timing while playing to avoid lag from throttled events
+  const liveAudio = audioManager.getCurrentAudio?.();
+  const liveDuration = (liveAudio && isFinite(liveAudio.duration) && liveAudio.duration > 0) ? liveAudio.duration : duration;
+  const liveTime = (isPlaying && liveAudio && isFinite(liveAudio.currentTime)) ? liveAudio.currentTime : currentTime;
+  const progress = liveDuration > 0 ? Math.max(0, Math.min(1, liveTime / liveDuration)) : 0;
 
   // Handle track change from dropdown
   const handleTrackChange = useCallback(async (newTrackId: string) => {
@@ -256,14 +276,14 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
                 ref={progressBarRef}
                 onClick={handleProgressClick}
                 onPointerDown={handleProgressPointerDown}
-                className="relative w-full h-2 bg-white/20 rounded-full cursor-pointer overflow-visible hover:h-2.5 transition-all duration-200 group"
+                className="relative w-full h-2 bg-white/20 rounded-full cursor-pointer overflow-visible hover:h-2.5 group"
                 title="Click or drag to seek"
               >
                 {/* Progress Fill with Gradient */}
                 <div
-                  className="absolute top-0 left-0 h-full rounded-full transition-all duration-100 ease-out"
+                  className="absolute top-0 left-0 h-full rounded-full"
                   style={{
-                    width: `${progress * 100}%`,
+                    width: `${Math.max(0, Math.min(100, progress * 100))}%`,
                     background: `linear-gradient(90deg, ${BRAND_COLORS.pink} 0%, ${BRAND_COLORS.blue} 50%, ${BRAND_COLORS.yellow} 100%)`,
                     boxShadow: `
                       0 0 8px ${BRAND_COLORS.pink}60,
@@ -274,9 +294,9 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
 
                 {/* Circular Handle - Only visible on hover or when dragging */}
                 <div
-                  className="absolute top-1/2 w-4 h-4 rounded-full border-2 border-white transition-all duration-100 ease-out shadow-lg opacity-0 group-hover:opacity-100"
+                  className="absolute top-1/2 w-4 h-4 rounded-full border-2 border-white shadow-lg opacity-0 group-hover:opacity-100"
                   style={{
-                    left: `${progress * 100}%`,
+                    left: `${Math.max(0, Math.min(100, progress * 100))}%`,
                     transform: 'translateX(-50%) translateY(-50%)',
                     background: `radial-gradient(circle, ${BRAND_COLORS.pink}, ${BRAND_COLORS.blue})`,
                     boxShadow: `

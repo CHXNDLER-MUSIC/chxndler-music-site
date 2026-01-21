@@ -40,6 +40,9 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
   const [journalOpen, setJournalOpen] = useState(false);
   const [welcomeHomeOpen, setWelcomeHomeOpen] = useState(false);
   const [lastClickedItem, setLastClickedItem] = useState<string | null>(null);
+  // Short-lived shield to swallow pointerup/clicks after selecting a menu item
+  // Prevents click-through from triggering underlying UI (e.g., Live Stream button)
+  const [clickShieldActive, setClickShieldActive] = useState(false);
   
   const { hasEnteredHeartverse } = useUIState();
   const tour = useTour();
@@ -117,6 +120,11 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
   }, [onBeamColorChange, elementOfDay]);
 
   const handleItemClick = (label: string) => {
+    // Enable a brief click shield to prevent pointerup/click from re-targeting
+    setClickShieldActive(true);
+    // Auto-disable shield shortly after to restore interactions
+    window.setTimeout(() => setClickShieldActive(false), 500);
+
     setLastClickedItem(label);
     // Do not close the hamburger menu immediately here.
     // GlowingHamburgerMenu already closes itself after a short delay
@@ -241,6 +249,16 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
           onMenuToggle={setMenuOpen}
         />
       </div>
+      {/* Click shield: prevents pointer up/click from hitting underlying UI during menu close */}
+      {clickShieldActive && (
+        <div
+          className="fixed inset-0"
+          style={{ zIndex: 2147483646, cursor: 'default' }}
+          onPointerDown={(e) => { try { e.preventDefault(); e.stopPropagation(); } catch {} }}
+          onPointerUp={(e) => { try { e.preventDefault(); e.stopPropagation(); } catch {} }}
+          onClick={(e) => { try { e.preventDefault(); e.stopPropagation(); } catch {} }}
+        />
+      )}
       {/* Journal popout */}
       <SoulStarJournal
         isOpen={journalOpen}
