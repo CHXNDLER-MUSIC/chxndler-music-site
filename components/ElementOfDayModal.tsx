@@ -476,107 +476,38 @@ export default function ElementOfDayModal() {
             }}
           />
 
-          {/* Element Image with glow and pulse - clickable, OR "Log in to claim Relic" if not logged in */}
+          {/* Element Image - static display, not clickable */}
           <div className="flex justify-center mb-4" style={{ overflow: "visible" }}>
-            {isLoggedIn === false ? (
-              /* Show "Log in to claim Relic" text when not logged in */
-              <button
-                onClick={handleLoginClick}
-                onMouseEnter={handleElementHover}
-                className="relative transition-transform hover:scale-105"
+            <div
+              className="relative"
+              style={{
+                width: 140,
+                height: 140,
+                background: "none",
+                backgroundColor: "transparent",
+                padding: 0,
+                overflow: "visible",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {/* The element image - no animations, full brightness */}
+              <img
+                src={config?.icon}
+                alt={config?.name}
                 style={{
-                  width: 140,
-                  height: 140,
-                  background: "none",
-                  backgroundColor: "transparent",
-                  border: "none",
-                  padding: 0,
-                  overflow: "visible",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  position: "relative",
+                  zIndex: 10,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "contain",
+                  animation: "none",
+                  opacity: 1,
+                  filter: "none",
                 }}
-                aria-label="Log in to claim Relic"
-              >
-                {/* Pulsing glow behind the text */}
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: -20,
-                    borderRadius: "50%",
-                    background: `radial-gradient(circle, ${elementColor}60 0%, ${elementColor}30 40%, transparent 70%)`,
-                    animation: "glowPulse 2s ease-in-out infinite",
-                    pointerEvents: "none",
-                  }}
-                />
-                {/* The login text with pulse animation */}
-                <span
-                  style={{
-                    position: "relative",
-                    zIndex: 10,
-                    color: elementColor,
-                    fontSize: "16px",
-                    fontWeight: "bold",
-                    textAlign: "center",
-                    lineHeight: 1.3,
-                    textShadow: `0 0 12px ${elementColor}, 0 0 24px ${elementColor}80`,
-                    animation: "elementPulse 2s ease-in-out infinite",
-                  }}
-                >
-                  Log in to<br />claim Relic
-                </span>
-              </button>
-            ) : (
-              /* Show element image when logged in */
-              <button
-                onClick={handleImageClick}
-                onMouseEnter={handleElementHover}
-                disabled={claimed || elementQuestCompleted || isCompletingElementQuest}
-                className="relative transition-transform hover:scale-105"
-                style={{
-                  width: 140,
-                  height: 140,
-                  background: "none",
-                  backgroundColor: "transparent",
-                  border: "none",
-                  padding: 0,
-                  overflow: "visible",
-                  cursor: (claimed || elementQuestCompleted || isCompletingElementQuest) ? "default" : "pointer",
-                }}
-                aria-label={elementQuestCompleted ? "Already completed" : "Claim reward"}
-              >
-                {/* Pulsing glow behind the image - only when not claimed/completed/claiming */}
-                {!claimed && !elementQuestCompleted && !isCompletingElementQuest && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: -20,
-                      borderRadius: "50%",
-                      background: `radial-gradient(circle, ${elementColor}60 0%, ${elementColor}30 40%, transparent 70%)`,
-                      animation: "glowPulse 2s ease-in-out infinite",
-                      pointerEvents: "none",
-                    }}
-                  />
-                )}
-                {/* The element image with pulse animation - stops when claimed/completed/claiming */}
-                <img
-                  src={config?.icon}
-                  alt={config?.name}
-                  style={{
-                    position: "relative",
-                    zIndex: 10,
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "contain",
-                    animation: (claimed || elementQuestCompleted || isCompletingElementQuest) ? "none" : "elementPulse 2s ease-in-out infinite",
-                    opacity: (claimed || elementQuestCompleted || isCompletingElementQuest) ? 0.5 : 1,
-                    filter: (claimed || elementQuestCompleted || isCompletingElementQuest) ? "grayscale(0.6) brightness(0.5)" : "none",
-                    transition: "opacity 0.3s ease, filter 0.3s ease",
-                  }}
-                />
-              </button>
-            )}
+              />
+            </div>
           </div>
 
           {/* Element Name */}

@@ -6,19 +6,19 @@ import { useDailySongProgress, recordSongEndedPlay } from "@/hooks/useDailySongP
 import { getNYDateString } from "@/lib/time";
 import { usePlanetRewardsContext } from "@/components/PlanetRewardsProvider";
 
-// Anonymous ID management for tracking logged-out user listens
-const ANON_ID_KEY = 'chxndler_anon_id';
+// Anonymous session ID management for tracking logged-out user listens
+const ANON_SESSION_ID_KEY = 'anon_session_id';
 
-function getOrCreateAnonId(): string {
+function getAnonSessionId(): string {
   if (typeof window === 'undefined') return '';
 
-  let anonId = localStorage.getItem(ANON_ID_KEY);
-  if (!anonId) {
-    // Generate a unique anonymous ID using crypto API
-    anonId = crypto.randomUUID();
-    localStorage.setItem(ANON_ID_KEY, anonId);
+  let anonSessionId = localStorage.getItem(ANON_SESSION_ID_KEY);
+  if (!anonSessionId) {
+    // Generate a unique anonymous session ID using crypto API
+    anonSessionId = crypto.randomUUID();
+    localStorage.setItem(ANON_SESSION_ID_KEY, anonSessionId);
   }
-  return anonId;
+  return anonSessionId;
 }
 
 // Cache for song slug -> UUID lookups
@@ -336,9 +336,69 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const flushInFlightRef = useRef<boolean>(false); // Guard against concurrent flushSession calls
   const authUserRef = useRef<{ id: string } | null>(null); // Cached auth user from subscription
 
+  // Play tracking - debounce duplicate play events per song
+  const lastPlayTrackRef = useRef<{ songId: string; timestamp: number } | null>(null);
+  const PLAY_DEBOUNCE_MS = 1500;
+
   // Refs to track warp state for playerStore subscription (avoids stale closure issues)
   const warpCompletedRef = useRef<boolean>(state.warpCompleted);
   const pendingTrackRef = useRef<string | null>(state.pendingTrack);
+
+  // Record play event - called when audio "play" event fires
+  const recordPlayEvent = async (trackSlug: string): Promise<void> => {
+    try {
+      // Get song UUID for the RPC call
+      const songUuid = await getSongUuidBySlug(trackSlug);
+      if (!songUuid) {
+        console.warn('[TRACK] Cannot record play - song UUID not found for:', trackSlug);
+        return;
+      }
+
+      // Check if this play should be debounced
+      const now = Date.now();
+      const lastPlay = lastPlayTrackRef.current;
+
+      if (lastPlay && lastPlay.songId === songUuid && (now - lastPlay.timestamp) < PLAY_DEBOUNCE_MS) {
+        console.log('[TRACK] Debounced duplicate play event', {
+          songId: songUuid,
+          timeSinceLastPlay: now - lastPlay.timestamp
+        });
+        return;
+      }
+
+      // Update last play timestamp
+      lastPlayTrackRef.current = { songId: songUuid, timestamp: now };
+
+      // Check authentication
+      const { data: { session } } = await supabaseBrowser.auth.getSession();
+      if (!session?.user) {
+        console.log('[TRACK] play (not authenticated, skipping RPC)', {
+          songId: songUuid,
+          songName: state.currentTrack?.title || trackSlug
+        });
+        return;
+      }
+
+      // Log play event
+      console.log('[TRACK] play', {
+        songId: songUuid,
+        songName: state.currentTrack?.title || trackSlug
+      });
+
+      // Call RPC to record the play
+      const { data, error } = await supabaseBrowser.rpc('record_song_play', {
+        p_song_id: songUuid
+      });
+
+      if (error) {
+        console.error('[TRACK] record_song_play error', error);
+      } else {
+        console.log('[TRACK] recorded', { data });
+      }
+    } catch (err) {
+      console.error('[TRACK] record_song_play error', err);
+    }
+  };
 
   // Flush session to DB - call this before switching tracks, on pause, on ended, on visibility hidden, on beforeunload
   // minSeconds: minimum listened_seconds required to record (2 for pause, 0 for track end/switch)
@@ -379,7 +439,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
       // Handle logged-out users - track anonymously
       if (!authSession) {
-        // Look up the song UUID for the anonymous_song_listens table
+        // Look up the song UUID for the anonymous_song_listen_sessions table
         const songUuid = await getSongUuidBySlug(session.trackId);
         if (!songUuid) {
           console.warn('🎧 Cannot track anonymous listen - song UUID not found for:', session.trackId);
@@ -387,18 +447,20 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           return false;
         }
 
-        const anonId = getOrCreateAnonId();
-        if (!anonId) {
-          console.warn('🎧 Cannot track anonymous listen - no anon ID');
+        const anonSessionId = getAnonSessionId();
+        if (!anonSessionId) {
+          console.warn('🎧 Cannot track anonymous listen - no anon session ID');
           flushInFlightRef.current = false;
           return false;
         }
 
-        // Build anonymous tracking payload
+        // Build anonymous tracking payload - similar to logged-in sessions
         const anonPayload = {
-          anon_id: anonId,
-          song_id: songUuid,
-          day: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+          anon_session_id: anonSessionId,
+          song_uuid: songUuid,
+          started_at: session.startedAt.toISOString(),
+          ended_at: new Date().toISOString(),
+          source: 'web',
           listened_seconds: listenedSeconds,
           duration_seconds: durationSeconds
         };
@@ -406,7 +468,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         console.log('🎧 Flushing anonymous session:', JSON.stringify(anonPayload, null, 2));
 
         const { error: anonInsertError } = await supabaseBrowser
-          .from('anonymous_song_listens')
+          .from('anonymous_song_listen_sessions')
           .insert(anonPayload);
 
         if (anonInsertError) {
@@ -470,6 +532,40 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       }
 
       console.log(`🎧 Recorded: ${session.trackId}, ${listenedSeconds}s`);
+
+      // Also upsert to user_song_daily_progress for logged-in users
+      try {
+        const songUuid = await getSongUuidBySlug(session.trackId);
+        if (songUuid) {
+          const nyDay = getNYDateString();
+          const dailyProgressPayload = {
+            user_id: user.id,
+            song_id: songUuid,
+            day: nyDay,
+            listened_seconds: listenedSeconds,
+            duration_seconds: durationSeconds
+          };
+
+          // Use upsert to update existing progress or create new
+          const { error: dailyProgressError } = await supabaseBrowser
+            .from('user_song_daily_progress')
+            .upsert(dailyProgressPayload, {
+              onConflict: 'user_id,song_id,day',
+              ignoreDuplicates: false
+            });
+
+          if (dailyProgressError) {
+            console.error('🎧 Daily progress upsert failed:', dailyProgressError);
+            // Don't fail the whole flush if daily progress fails
+          } else {
+            console.log(`🎧 Updated daily progress: ${session.trackId}, ${listenedSeconds}s on ${nyDay}`);
+          }
+        }
+      } catch (dailyProgressErr) {
+        console.error('🎧 Daily progress update exception:', dailyProgressErr);
+        // Don't fail the whole flush if daily progress fails
+      }
+
       flushInFlightRef.current = false;
       return true;
     } catch (err) {
@@ -569,6 +665,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const onPlay = () => {
       console.log('🎵 AudioProvider: onPlay event fired');
       setState(s => ({ ...s, playing: true, isLoading: false }));
+
+      // Record play event for analytics
+      if (currentTrackRef.current) {
+        recordPlayEvent(currentTrackRef.current);
+      }
+
       // Start listen session tracking (or resume if paused)
       if (currentTrackRef.current) {
         if (!sessionRef.current || sessionRef.current.flushed || sessionRef.current.trackId !== currentTrackRef.current) {
@@ -832,21 +934,23 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
                   console.log('🎧 Sent session via keepalive fetch');
                 }
               } else {
-                // Anonymous user - send to anonymous_song_listens
+                // Anonymous user - send to anonymous_song_listen_sessions
                 // Use cached song UUID (song lookups happen during flushSession, so cache should be warm)
                 const songUuid = songIdCache.get(session.trackId);
-                const anonId = localStorage.getItem(ANON_ID_KEY);
+                const anonSessionId = localStorage.getItem(ANON_SESSION_ID_KEY);
 
-                if (songUuid && anonId) {
+                if (songUuid && anonSessionId) {
                   const anonPayload = {
-                    anon_id: anonId,
-                    song_id: songUuid,
-                    day: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+                    anon_session_id: anonSessionId,
+                    song_uuid: songUuid,
+                    started_at: session.startedAt.toISOString(),
+                    ended_at: new Date().toISOString(),
+                    source: 'web',
                     listened_seconds: listenedSeconds,
                     duration_seconds: durationSeconds
                   };
 
-                  fetch(`${supabaseUrl}/rest/v1/anonymous_song_listens`, {
+                  fetch(`${supabaseUrl}/rest/v1/anonymous_song_listen_sessions`, {
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json',

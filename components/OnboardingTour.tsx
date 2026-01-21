@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
+import { sfx } from "@/lib/sfx";
 
 export interface TourStep {
   id: string;
@@ -270,41 +271,38 @@ export default function OnboardingTour({
 
     const rect = element.getBoundingClientRect();
     
-    // Special positioning for hamburger step - places tooltip to the RIGHT of menu
+    // Special positioning for hamburger step - places tooltip near the X button
     if (step.id === 'hamburger') {
-      // Look for the menu dropdown panel
-      const menuDropdown = document.querySelector('[data-tour-id="nav-panel"]') as HTMLElement;
+      // Position the bubble close to the X button (hamburger element)
+      // Place it to the right and slightly below the X button
+      const marginRight = 20; // Space from the X button
+      const marginDown = 10; // Slight downward offset
 
-      if (menuDropdown) {
-        const dropdownRect = menuDropdown.getBoundingClientRect();
+      let left = rect.right + marginRight;
+      let top = rect.top + marginDown;
 
-        // Position to the right of the menu with spacing to avoid overlap
-        const marginFromMenu = viewportWidth <= 768 ? 16 : 28;
-        let left = dropdownRect.right + marginFromMenu;
-
-        // Ensure tooltip doesn't go off-screen on the right
-        const maxLeft = viewportWidth - bubbleWidth - 16;
-        if (left > maxLeft) {
-          left = maxLeft;
-        }
-
-        // Vertically align near the top of the menu
-        const top = Math.max(20, dropdownRect.top + 20);
-
-        setBubblePosition({ top, left });
-
-        // Update spotlight for hamburger button
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-        const r = Math.max(60, Math.ceil(Math.hypot(rect.width, rect.height) * 0.8));
-        spotlightRef.current = { cx, cy, r };
-
-        if (overlayRef.current) {
-          const gradient = `radial-gradient(${r}px ${r}px at ${cx}px ${cy}px, rgba(0,0,0,0) 0%, rgba(0,0,0,0.2) 65%, rgba(0,0,0,0.6) 100%)`;
-          overlayRef.current.style.background = gradient;
-        }
-        return;
+      // Ensure tooltip doesn't go off-screen on the right
+      const maxLeft = viewportWidth - bubbleWidth - 16;
+      if (left > maxLeft) {
+        left = maxLeft;
       }
+
+      // Ensure tooltip doesn't go off-screen at the top
+      top = Math.max(20, top);
+
+      setBubblePosition({ top, left });
+
+      // Update spotlight for hamburger button (the X)
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const r = Math.max(60, Math.ceil(Math.hypot(rect.width, rect.height) * 0.8));
+      spotlightRef.current = { cx, cy, r };
+
+      if (overlayRef.current) {
+        const gradient = `radial-gradient(${r}px ${r}px at ${cx}px ${cy}px, rgba(0,0,0,0) 0%, rgba(0,0,0,0.2) 65%, rgba(0,0,0,0.6) 100%)`;
+        overlayRef.current.style.background = gradient;
+      }
+      return;
     }
 
     // Special positioning for menu items - places tooltip to the RIGHT of menu
@@ -419,9 +417,11 @@ export default function OnboardingTour({
     // Handle intro/outro steps (no target)
     if (!step.selector) {
       setTargetElement(null);
+      const bubbleWidth = 150;
+      const bubbleHeight = 180;
       setBubblePosition({
-        top: window.innerHeight / 2 - 100,
-        left: window.innerWidth / 2 - 160
+        top: window.innerHeight / 2 - bubbleHeight / 2,
+        left: window.innerWidth / 2 - bubbleWidth / 2
       });
       if (overlayRef.current) {
         overlayRef.current.style.background = 'radial-gradient(120% 120% at 50% 50%, rgba(0,0,0,0.25), rgba(0,0,0,0.45))';
@@ -506,6 +506,9 @@ export default function OnboardingTour({
 
   // Handle next step
   const handleNext = () => {
+    // Play click sound when Next button is clicked
+    sfx.play('click', 0.6);
+
     if (currentStepIndex < TOUR_STEPS.length - 1) {
       cleanupCurrentStep();
       setCurrentStepIndex(prev => prev + 1);

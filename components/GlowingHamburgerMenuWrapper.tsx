@@ -77,10 +77,8 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
     };
 
     const handleOpenJournalModal = () => {
-      // Set beam color based on element of day
-      if (elementOfDay && ELEMENT_TO_BEAM_COLOR[elementOfDay]) {
-        try { onBeamColorChange?.(ELEMENT_TO_BEAM_COLOR[elementOfDay]); } catch {}
-      }
+      // IMPORTANT: Do NOT change beam color here because 'pink' triggers live stream
+      // The journal modal will handle its own beam color internally
       setJournalOpen(true);
     };
 
@@ -120,10 +118,46 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
   }, [onBeamColorChange, elementOfDay]);
 
   const handleItemClick = (label: string) => {
+    // CRITICAL: If opening JOURNAL, immediately close any live stream display first
+    // This must happen BEFORE any other logic to prevent the Signal button from being triggered
+    if (label === 'JOURNAL' || label === 'COMPLETED') {
+      console.log('🚫 BLOCKING LIVE STREAM - Opening Journal instead');
+      // Close live stream immediately by dispatching closeAllModals event
+      try { window.dispatchEvent(new CustomEvent('closeAllModals')); } catch {}
+      // Turn off beam immediately
+      try { onBeamColorChange?.('off'); } catch {}
+    }
+
     // Enable a brief click shield to prevent pointerup/click from re-targeting
     setClickShieldActive(true);
-    // Auto-disable shield shortly after to restore interactions
-    window.setTimeout(() => setClickShieldActive(false), 500);
+
+    // Add global event capture to block ALL pointer events during shield period
+    const blockEvent = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    };
+
+    // Capture all pointer/click/mouse events globally
+    window.addEventListener('pointerup', blockEvent, true);
+    window.addEventListener('pointerdown', blockEvent, true);
+    window.addEventListener('click', blockEvent, true);
+    window.addEventListener('mousedown', blockEvent, true);
+    window.addEventListener('mouseup', blockEvent, true);
+    window.addEventListener('touchend', blockEvent, true);
+    window.addEventListener('touchstart', blockEvent, true);
+
+    // Auto-disable shield and remove global blockers shortly after
+    window.setTimeout(() => {
+      setClickShieldActive(false);
+      window.removeEventListener('pointerup', blockEvent, true);
+      window.removeEventListener('pointerdown', blockEvent, true);
+      window.removeEventListener('click', blockEvent, true);
+      window.removeEventListener('mousedown', blockEvent, true);
+      window.removeEventListener('mouseup', blockEvent, true);
+      window.removeEventListener('touchend', blockEvent, true);
+      window.removeEventListener('touchstart', blockEvent, true);
+    }, 500);
 
     setLastClickedItem(label);
     // Do not close the hamburger menu immediately here.
@@ -160,10 +194,10 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
           break;
         case "JOURNAL":
         case "COMPLETED": {
-          // Set beam color based on element of day when opening journal
-          const journalBeamColor = elementOfDay && ELEMENT_TO_BEAM_COLOR[elementOfDay] ? ELEMENT_TO_BEAM_COLOR[elementOfDay] : 'pink';
-          try { onBeamColorChange?.(journalBeamColor); } catch {}
-          // Simply open the journal - the click shield will prevent any click-through
+          // IMPORTANT: Do NOT change beam color when opening journal from hamburger menu
+          // because 'pink' beam color triggers the live stream display to open in DashboardApp
+          // The journal modal will handle its own beam color internally
+          // Just open the journal directly without any beam color changes
           setJournalOpen(true);
           break;
         }
