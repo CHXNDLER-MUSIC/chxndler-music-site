@@ -44,57 +44,83 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
   useEffect(() => {
     if (!userId) return;
 
-    // Subscribe to realtime INSERT events on user_badges
-    const channel = supabaseBrowser
-      .channel('user-badges-realtime')
-      .on<UserBadgeInsert>(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'user_badges',
-          filter: `user_id=eq.${userId}`,
-        },
-        async (payload: RealtimePostgresInsertPayload<UserBadgeInsert>) => {
-          const newRow = payload.new;
+    let channel: ReturnType<typeof supabaseBrowser.channel>;
 
-          // Skip if we've already seen this badge (reconnect-safe deduplication)
-          if (seenIdsRef.current.has(newRow.id)) {
-            return;
-          }
-          seenIdsRef.current.add(newRow.id);
+    // Initialize seenIdsRef with all existing badges to prevent celebrations on page load
+    const initializeSeenBadges = async () => {
+      try {
+        const { data: existingBadges, error } = await supabaseBrowser
+          .from('user_badges')
+          .select('id')
+          .eq('user_id', userId);
 
-          // Fetch badge details from public.badges
-          const { data: badge, error } = await supabaseBrowser
-            .from('badges')
-            .select('id, badge_name, icon_url, heart_coins')
-            .eq('id', newRow.badge_id)
-            .single();
-
-          if (error || !badge) {
-            console.error('Failed to fetch badge details:', error);
-            return;
-          }
-
-          const celebrationItem: BadgeCelebrationItem = {
-            id: newRow.id,
-            badgeId: badge.id,
-            badgeName: badge.badge_name,
-            iconUrl: badge.icon_url || '/elements/badge-default.webp',
-            heartCoins: badge.heart_coins ?? 0,
-          };
-
-          // Add to queue
-          setQueue((prev) => [...prev, celebrationItem]);
+        if (!error && existingBadges) {
+          // Mark all existing badges as seen
+          existingBadges.forEach(badge => {
+            seenIdsRef.current.add(badge.id);
+          });
+          debug(`Initialized seenIdsRef with ${existingBadges.length} existing badges`);
         }
-      )
-      .subscribe((status) => {
-        debug('Badge celebrations subscription status:', status);
-      });
+      } catch (err) {
+        console.error('Error initializing seen badges:', err);
+      }
+
+      // Subscribe to realtime INSERT events on user_badges AFTER initializing
+      channel = supabaseBrowser
+        .channel('user-badges-realtime')
+        .on<UserBadgeInsert>(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'user_badges',
+            filter: `user_id=eq.${userId}`,
+          },
+          async (payload: RealtimePostgresInsertPayload<UserBadgeInsert>) => {
+            const newRow = payload.new;
+
+            // Skip if we've already seen this badge (reconnect-safe deduplication)
+            if (seenIdsRef.current.has(newRow.id)) {
+              return;
+            }
+            seenIdsRef.current.add(newRow.id);
+
+            // Fetch badge details from public.badges
+            const { data: badge, error } = await supabaseBrowser
+              .from('badges')
+              .select('id, badge_name, icon_url, heart_coins')
+              .eq('id', newRow.badge_id)
+              .single();
+
+            if (error || !badge) {
+              console.error('Failed to fetch badge details:', error);
+              return;
+            }
+
+            const celebrationItem: BadgeCelebrationItem = {
+              id: newRow.id,
+              badgeId: badge.id,
+              badgeName: badge.badge_name,
+              iconUrl: badge.icon_url || '/elements/badge-default.webp',
+              heartCoins: badge.heart_coins ?? 0,
+            };
+
+            // Add to queue
+            setQueue((prev) => [...prev, celebrationItem]);
+          }
+        )
+        .subscribe((status) => {
+          debug('Badge celebrations subscription status:', status);
+        });
+    };
+
+    initializeSeenBadges();
 
     // Cleanup on unmount or userId change
     return () => {
-      supabaseBrowser.removeChannel(channel);
+      if (channel) {
+        supabaseBrowser.removeChannel(channel);
+      }
     };
   }, [userId]);
 

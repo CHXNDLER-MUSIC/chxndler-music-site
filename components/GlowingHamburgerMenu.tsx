@@ -93,7 +93,18 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
     sfx.play('change', 0.5);
   };
 
+  // Track if the item was already handled on pointerdown (to avoid double-triggering)
+  const itemHandledRef = useRef(false);
+
   const handleItemClick = (e: React.MouseEvent, label: string) => {
+    // If already handled on pointerdown, just close the menu and return
+    if (itemHandledRef.current) {
+      itemHandledRef.current = false;
+      try { e.preventDefault(); } catch {}
+      try { e.stopPropagation(); } catch {}
+      return;
+    }
+
     // Prevent this click from bubbling or re-targeting underlying UI when the menu closes
     try { e.preventDefault(); } catch {}
     try { e.stopPropagation(); } catch {}
@@ -225,7 +236,28 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
             {menuItems.map((item, index) => (
               <React.Fragment key={item.label}>
                 <button
+                  onPointerDown={(e) => {
+                    // Activate shield and handle the item immediately on pointer down to prevent any clicks from reaching underlying UI
+                    try { e.preventDefault(); e.stopPropagation(); } catch {}
+
+                    // Play sound
+                    sfx.play('click', 0.7);
+
+                    // Mark as handled so onClick doesn't re-trigger
+                    itemHandledRef.current = true;
+
+                    // Notify parent immediately to activate click shield and open the modal
+                    try { onItemClick?.(item.label); } catch {}
+
+                    // Close the menu immediately
+                    if (externalIsOpen !== undefined) {
+                      onMenuToggle?.(false);
+                    } else {
+                      setInternalIsOpen(false);
+                    }
+                  }}
                   onClick={(e) => {
+                    // Click handler still needed for keyboard accessibility
                     handleItemClick(e, item.label);
                   }}
                   onMouseEnter={handleMenuItemHover}

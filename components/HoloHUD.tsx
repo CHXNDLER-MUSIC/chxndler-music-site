@@ -42,7 +42,7 @@ export default function HoloHUD({
       {!hidePlayButton && (
         <button
           type="button"
-          data-tour-id="music-dropdown"
+          data-tour-id="music-power-button"
           className={`play-btn ${audioManager.playing ? "on" : ""}`}
           onClick={() => {
             // Play flip sound when starting playback, pause sound when pausing

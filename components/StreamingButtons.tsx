@@ -368,10 +368,12 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
       )}
       
       <style jsx>{`
-        .wrap{ position:absolute; z-index:40; pointer-events:auto; transform-origin:center; overflow:visible; }
+        .wrap{ position:absolute; z-index:40; pointer-events:none; transform-origin:center; overflow:visible; }
         .wrap:hover{ z-index:60; }
         /* Remove recessed inlay/socket behind streaming buttons per request */
         .wrap .socket{ display:none; }
+        /* Re-enable pointer events only on actual button elements */
+        .wrap :global(.ck-icon-btn), .wrap :global(.ck-icon-btn-disabled){ pointer-events:auto; }
         /* Performance hints for smoother hover animations */
         .ck-icon-btn{ will-change: transform, filter; transform: translateZ(0); backface-visibility: hidden; contain: paint; }
         /* Button hover: brighter + slightly larger (same intensity as SocialIcons) */

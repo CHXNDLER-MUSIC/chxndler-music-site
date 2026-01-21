@@ -40,7 +40,7 @@ export const TOUR_STEPS: TourStep[] = [
   // Step 1: Hamburger (opens menu for subsequent steps)
   {
     id: "hamburger",
-    selector: "[data-tour-id='nav-toggle']",
+    selector: "[data-tour-id='hamburger']",
     title: "Main control panel",
     body: "Tap here to open your main control panel.",
     requiresMenuOpen: true
@@ -100,10 +100,10 @@ export const TOUR_STEPS: TourStep[] = [
     requiresMenuClosed: true
   },
   
-  // Step 8: NEW - Music Dropdown (menu stays closed)
+  // Step 8: NEW - Music Power Button (menu stays closed)
   {
     id: "music-dropdown",
-    selector: "[data-tour-id='music-dropdown']",
+    selector: "[data-tour-id='music-power-button']",
     title: "Music",
     body: "Choose the track you want to listen to here.",
     requiresMenuClosed: true
@@ -205,7 +205,7 @@ export default function OnboardingTour({
     }
     
     // Try DOM manipulation as fallback
-    const hamburgerButton = getTarget('[data-tour-id="nav-toggle"]');
+    const hamburgerButton = getTarget('[data-tour-id="hamburger"]');
     if (hamburgerButton) {
       try {
         (hamburgerButton as HTMLButtonElement).click();
