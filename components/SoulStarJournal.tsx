@@ -1567,14 +1567,14 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'scale(1)';
                   e.currentTarget.style.boxShadow = '';
-                  e.currentTarget.style.textShadow = journalState.isPrivate ? '0 0 4px #FF69B4' : '0 0 8px #00FF00, 0 0 15px #00FF00';
+                  e.currentTarget.style.textShadow = journalState.isPrivate ? '0 0 8px #FF69B4, 0 0 15px #FF69B4' : '0 0 8px #00FF00, 0 0 15px #00FF00';
                 }}
                 className="absolute top-0 right-0 px-3 py-1 rounded text-sm font-semibold transition-all duration-200 z-10"
                 style={{
                   background: journalState.isPrivate ? '#FF69B420' : '#00FF0020',
                   border: `2px solid ${journalState.isPrivate ? '#FF69B4' : '#00FF00'}`,
                   color: journalState.isPrivate ? '#FF69B4' : '#00FF00',
-                  textShadow: journalState.isPrivate ? '0 0 4px #FF69B4' : '0 0 8px #00FF00, 0 0 15px #00FF00',
+                  textShadow: journalState.isPrivate ? '0 0 8px #FF69B4, 0 0 15px #FF69B4' : '0 0 8px #00FF00, 0 0 15px #00FF00',
                   cursor: 'pointer',
                   pointerEvents: 'auto',
                   zIndex: 10

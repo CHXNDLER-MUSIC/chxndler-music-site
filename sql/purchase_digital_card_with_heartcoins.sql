@@ -105,9 +105,9 @@ BEGIN
     WHERE id = current_user_id;
     PERFORM set_config('app.allow_balance_update', '0', true);
     
-    -- 4. Grant ownership: insert into user_cards with conflict handling
-    INSERT INTO public.user_cards (user_id, card_id, source)
-    VALUES (current_user_id, p_card_id, 'purchase')
+    -- 4. Grant ownership: insert into user_cards with conflict handling (public by default)
+    INSERT INTO public.user_cards (user_id, card_id, source, is_public)
+    VALUES (current_user_id, p_card_id, 'purchase', true)
     ON CONFLICT (user_id, card_id) DO NOTHING;
     
     RETURN purchase_id;

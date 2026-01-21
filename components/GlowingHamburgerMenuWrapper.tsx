@@ -142,7 +142,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
     setCodeOpen(false);
     setWelcomeHomeOpen(false);
     
-    // Use setTimeout to ensure state is cleared before opening new modal
+    // Use setTimeout to ensure state is cleared and click shield is active before opening new modal
     setTimeout(() => {
       switch (label) {
         case "ABOUT":
@@ -160,26 +160,11 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
           break;
         case "JOURNAL":
         case "COMPLETED": {
-          // Logging handled by modal state debug hook
           // Set beam color based on element of day when opening journal
           const journalBeamColor = elementOfDay && ELEMENT_TO_BEAM_COLOR[elementOfDay] ? ELEMENT_TO_BEAM_COLOR[elementOfDay] : 'pink';
           try { onBeamColorChange?.(journalBeamColor); } catch {}
-          // Open the journal on pointerup to avoid any chance of click-through
-          let opened = false;
-          const openJournal = (ev: Event) => {
-            if (opened) return; opened = true;
-            try { ev.stopPropagation(); } catch {}
-            try { ev.preventDefault?.(); } catch {}
-            try { window.removeEventListener('pointerup', openJournal, true); } catch {}
-            try { window.removeEventListener('mouseup', openJournal, true); } catch {}
-            setJournalOpen(true);
-          };
-          try {
-            window.addEventListener('pointerup', openJournal, true);
-            window.addEventListener('mouseup', openJournal, true);
-          } catch {}
-          // Fallback open if no pointerup fires quickly
-          setTimeout(() => { if (!opened) { try { window.removeEventListener('pointerup', openJournal, true); } catch {}; try { window.removeEventListener('mouseup', openJournal, true); } catch {}; setJournalOpen(true); } }, 300);
+          // Simply open the journal - the click shield will prevent any click-through
+          setJournalOpen(true);
           break;
         }
         case "BADGES":
@@ -215,7 +200,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
         default:
           // No handler for this menu item
       }
-    }, 10);
+    }, 50);
   };
 
   // Debug logging for wrapper environment when values change
@@ -250,15 +235,21 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
         />
       </div>
       {/* Click shield: prevents pointer up/click from hitting underlying UI during menu close */}
-      {clickShieldActive && (
-        <div
-          className="fixed inset-0"
-          style={{ zIndex: 2147483646, cursor: 'default' }}
-          onPointerDown={(e) => { try { e.preventDefault(); e.stopPropagation(); } catch {} }}
-          onPointerUp={(e) => { try { e.preventDefault(); e.stopPropagation(); } catch {} }}
-          onClick={(e) => { try { e.preventDefault(); e.stopPropagation(); } catch {} }}
-        />
-      )}
+      <div
+        className="fixed inset-0"
+        style={{
+          zIndex: 2147483646,
+          cursor: 'default',
+          pointerEvents: clickShieldActive ? 'auto' : 'none',
+          opacity: clickShieldActive ? 1 : 0,
+          transition: 'opacity 0.1s ease'
+        }}
+        onPointerDown={(e) => { try { e.preventDefault(); e.stopPropagation(); } catch {} }}
+        onPointerUp={(e) => { try { e.preventDefault(); e.stopPropagation(); } catch {} }}
+        onClick={(e) => { try { e.preventDefault(); e.stopPropagation(); } catch {} }}
+        onMouseDown={(e) => { try { e.preventDefault(); e.stopPropagation(); } catch {} }}
+        onMouseUp={(e) => { try { e.preventDefault(); e.stopPropagation(); } catch {} }}
+      />
       {/* Journal popout */}
       <SoulStarJournal
         isOpen={journalOpen}

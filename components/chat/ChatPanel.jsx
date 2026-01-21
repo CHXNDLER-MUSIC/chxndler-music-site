@@ -1758,30 +1758,11 @@ export default function ChatPanel({ isOpen, onClose }) {
                                         />
                                       </button>
 
-                                      {/* Heart Coin Button */}
+                                      {/* Heart Coin Button - Disabled */}
                                       <button
-                                        onClick={() => {
-                                          try { sfx.play('click', 0.8); } catch {}
-                                          // Trigger heart coin modal
-                                          window.dispatchEvent(new CustomEvent('openHeartCoinModal'));
-                                        }}
-                                        onMouseEnter={(e) => {
-                                          try { sfx.play('hover', 0.3); } catch {}
-                                          e.currentTarget.style.transform = 'scale(1.1)';
-                                          const img = e.currentTarget.querySelector('img');
-                                          if (img) {
-                                            img.style.filter = 'drop-shadow(0 0 8px rgba(255, 105, 180, 0.8)) drop-shadow(0 0 16px rgba(255, 105, 180, 0.4)) drop-shadow(0 0 20px rgba(255, 105, 180, 0.8))';
-                                          }
-                                        }}
-                                        onMouseLeave={(e) => {
-                                          e.currentTarget.style.transform = 'scale(1)';
-                                          const img = e.currentTarget.querySelector('img');
-                                          if (img) {
-                                            img.style.filter = 'drop-shadow(0 0 4px rgba(255, 105, 180, 0.6))';
-                                          }
-                                        }}
-                                        className="w-12 h-12 sm:w-14 sm:h-14 rounded transition-all duration-200 flex-shrink-0"
-                                        title="Open Heart Coins"
+                                        disabled
+                                        className="w-12 h-12 sm:w-14 sm:h-14 rounded transition-all duration-200 flex-shrink-0 opacity-40 cursor-not-allowed"
+                                        title="Heart Coins (Disabled)"
                                       >
                                         <img
                                           src="/elements/heart-coin.webp"
@@ -1789,7 +1770,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                                           className="w-full h-full object-cover rounded"
                                           draggable={false}
                                           style={{
-                                            filter: 'drop-shadow(0 0 4px rgba(255, 105, 180, 0.6))'
+                                            filter: 'drop-shadow(0 0 2px rgba(255, 105, 180, 0.3))'
                                           }}
                                           draggable={false}
                                         />

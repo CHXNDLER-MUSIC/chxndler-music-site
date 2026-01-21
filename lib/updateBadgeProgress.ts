@@ -190,7 +190,10 @@ export async function checkAndAwardEligibleBadges(userId: string) {
       // Award badge if requirement is met
       if (badgeProgress.isUnlocked) {
         log(`🎉 Awarding badge: ${badge.badge_name}`);
-        
+
+        // Mark as celebrated BEFORE attempting insert to prevent race condition duplicates
+        celebratedBadgesThisSession.add(celebrationKey);
+
         const { error: awardError } = await supabaseBrowser
           .from('user_badges')
           .insert({
@@ -204,6 +207,8 @@ export async function checkAndAwardEligibleBadges(userId: string) {
           if (awardError.code !== '23505') {
             console.error('Error awarding badge:', badge.badge_name, awardError);
           }
+          // Note: We keep the badge in celebratedBadgesThisSession even on error
+          // to prevent repeated attempts in the same session
         } else {
           newlyAwardedBadges.push(badge);
           log(`✅ Successfully awarded badge: ${badge.badge_name}`);

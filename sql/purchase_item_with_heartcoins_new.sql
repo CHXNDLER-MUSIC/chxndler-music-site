@@ -62,7 +62,7 @@ BEGIN
         NOW()
     );
     
-    -- Add card to user's collection
+    -- Add card to user's collection (public by default)
     INSERT INTO user_cards (
         id,
         user_id,
@@ -71,7 +71,8 @@ BEGIN
         acquisition_method,
         acquired_at,
         created_at,
-        updated_at
+        updated_at,
+        is_public
     ) VALUES (
         gen_random_uuid(),
         p_user_id,
@@ -80,7 +81,8 @@ BEGIN
         'heartcoin_purchase',
         NOW(),
         NOW(),
-        NOW()
+        NOW(),
+        true
     );
     
     -- Prepare result
