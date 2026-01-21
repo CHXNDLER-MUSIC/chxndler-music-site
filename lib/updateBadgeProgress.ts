@@ -1,10 +1,9 @@
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { getBadgeProgressForUser } from '@/lib/badgeProgress';
 import { log, warn } from '@/lib/logger';
-import { queueBadgeCelebration } from '@/utils/celebrationQueue';
 
-// Session-level cache to track badges that have already been celebrated
-// Prevents duplicate celebrations if checkAndAwardEligibleBadges is called multiple times
+// Session-level cache tracking now only prevents duplicate DB inserts
+// Celebration UI is handled by the realtime controller listening to user_badges inserts
 const celebratedBadgesThisSession = new Set<string>();
 
 /**
@@ -209,13 +208,7 @@ export async function checkAndAwardEligibleBadges(userId: string) {
           newlyAwardedBadges.push(badge);
           log(`✅ Successfully awarded badge: ${badge.badge_name}`);
 
-          // Queue badge celebration only if not already celebrated this session
-          // This prevents duplicate celebrations if checkAndAwardEligibleBadges is called multiple times
-          const celebrationKey = `${userId}:${badge.id}`;
-          if (badge.icon_url && badge.badge_name && !celebratedBadgesThisSession.has(celebrationKey)) {
-            celebratedBadgesThisSession.add(celebrationKey);
-            queueBadgeCelebration(badge.icon_url, badge.badge_name);
-          }
+          // Celebration is triggered by BadgeCelebrationController via realtime INSERT on user_badges
         }
       }
     }

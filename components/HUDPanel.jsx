@@ -2941,7 +2941,8 @@ const HUDPanel = React.memo(function HUDPanel({
                                 position: 'absolute',
                                 left: 0,
                                 right: 0,
-                                bottom: -80,
+                                // Lower ambient glow to align with overall blue display bottom
+                                bottom: -122,
                                 height: 20,
                                 borderRadius: 9999,
                                 background: 'radial-gradient(ellipse 100% 100%, rgba(25,227,255,0.25) 0%, rgba(25,227,255,0.1) 50%, transparent 80%)',
@@ -2955,9 +2956,11 @@ const HUDPanel = React.memo(function HUDPanel({
                               style={{
                                 position: 'absolute',
                                 left: 8,
-                                right: 8,
-                                bottom: -75,
-                                height: 8,
+                                // Nudge a bit more past the right edge
+                                right: -96,
+                                // Lower the track bar to sit just above the blue display bottom
+                                bottom: -110,
+                                height: 10,
                                 borderRadius: 9999,
                                 background: 'rgba(20,20,25,0.9)',
                                 border: '1px solid rgba(25,227,255,0.6)',

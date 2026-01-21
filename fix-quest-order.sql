@@ -16,7 +16,7 @@ UPDATE bonus_quests
 SET 
     quest_key = 'ATTEND_LIVESTREAM',
     title = 'Attend a Livestream or Live Show',
-    description = 'Check in at a CHXNDLER show to receive bonus HEART coins.',
+    description = 'Check in at a CHXNDLER show to receive bonus HeartCoins.',
     category = 'COMMUNITY',
     sort_order = 51,
     is_core = true,

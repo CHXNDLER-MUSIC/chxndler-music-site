@@ -1324,7 +1324,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
           <div className="space-y-3">
             <div>
               <h4 className="text-white font-bold mb-1 text-base">3. Attend a Livestream or Live Show</h4>
-              <p className="text-white/80 text-sm mb-2">Check in at a CHXNDLER show or stream to receive bonus HEART coins.</p>
+              <p className="text-white/80 text-sm mb-2">Check in at a CHXNDLER show or stream to receive bonus HeartCoins.</p>
               <div className="flex items-center gap-2 mb-3">
                 <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-8 h-8" style={{ filter: 'drop-shadow(0 0 4px rgba(255,105,180,0.6))' }} />
                 <span className="text-pink-300 font-bold text-lg" style={{ textShadow: '0 0 6px rgba(255,105,180,0.6)' }}>+1-5</span>

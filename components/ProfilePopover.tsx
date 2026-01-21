@@ -860,7 +860,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
           left: 0,
           right: 0,
           bottom: 'calc(var(--light-beam-boundary) + var(--beam-height))',
-          paddingTop: '16px'
+          paddingTop: '8px'
         }}
       >
         <div
@@ -1435,7 +1435,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
           </div>
 
           {/* Relics & Merch Buttons Row */}
-          <div className="flex items-center justify-between px-2 py-1 mb-0.5 rounded-lg gap-2" style={{ background: 'rgba(0,0,0,0.3)' }}>
+          <div className="flex items-center justify-between px-2 py-1 mb-0 rounded-lg gap-2" style={{ background: 'rgba(0,0,0,0.3)' }}>
             {/* Relics Button - Left */}
             <button
               onClick={() => { setShowRelicsInline(true); setShowMerchInline(false); try { sfx.play('click', 0.6); } catch {} }}
@@ -2395,7 +2395,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
 
           {/* Buttons Container */}
           <div
-            className="mt-1"
+            className="mt-0.5"
             style={{
               visibility: (showRelicsInline || showMerchInline || showElementMenu || showElementInfo) ? 'hidden' : 'visible'
             }}
@@ -2406,7 +2406,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                 onMouseEnter={() => {
                   try { sfx.play('hover', 0.3); } catch {}
                 }}
-                className="w-full px-4 py-2.5 rounded-lg font-semibold transition-all duration-200 hover:scale-105 active:scale-95 mb-2"
+                className="w-full px-4 py-2 rounded-lg font-semibold transition-all duration-200 hover:scale-105 active:scale-95 mb-1"
                 style={{
                   background: 'linear-gradient(135deg, rgba(0,255,255,0.25), rgba(0,255,255,0.15))',
                   border: '1px solid rgba(0,255,255,0.5)',

@@ -21,7 +21,6 @@ import { MenuStateProvider } from "@/contexts/MenuStateContext";
 import HeartCoinCelebration from "@/components/HeartCoinCelebration";
 import ElementCardCelebration from "@/components/ElementCardCelebration";
 import MerchCelebration from "@/components/MerchCelebration";
-import BadgeCelebration from "@/components/BadgeCelebration";
 import CardCelebration from "@/components/CardCelebration";
 import BadgeCelebrationController from "@/components/BadgeCelebrationController";
 import GlobalKeyboardHandler from "@/components/GlobalKeyboardHandler";
@@ -159,7 +158,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <HeartCoinCelebration />
             <ElementCardCelebration />
             <MerchCelebration />
-            <BadgeCelebration />
             <BadgeCelebrationController />
                   </PlanetRewardsProvider>
                 </TourProvider>

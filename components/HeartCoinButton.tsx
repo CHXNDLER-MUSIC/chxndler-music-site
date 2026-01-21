@@ -3961,8 +3961,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           >
                             {/* Image and Title with Navigation */}
                             <div className="flex items-start gap-1 mb-3">
-                              {/* Left spacer (kept for layout balance) */}
-                              <div className="flex-1" />
                               
                               {/* Item Title + Image OR User/Cost Display OR Shipping Form */}
                               {/* Use purchaseDraft as source of truth for showing purchase mode */}
@@ -4133,7 +4131,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 </div>
                               ) : (
                                 /* Normal Item Display */
-                                <div className="flex flex-col items-center">
+                                <div className="flex flex-col items-center w-full">
                                   <div 
                                     className="text-center text-white font-bold text-lg mb-1"
                                     style={{ textShadow: '0 0 6px rgba(255,255,255,0.6)' }}
@@ -4215,13 +4213,19 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       />
                                     ))}
                                   </div>
+
+                                  {/* Item description directly below dots */}
+                                  <div className="mt-3 w-full -mx-2 text-center">
+                                    <div className="text-base text-white" style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)', lineHeight: '1.4' }}>
+                                      {PHYSICAL_ITEMS[currentMerchIndex].description}
+                                    </div>
+                                  </div>
                                   
                                   {/* PAY WITH $ button moved to bottom action bar */}
                                 </div>
                               )}
                               
-                              {/* Right spacer (kept for layout balance) */}
-                              <div className="flex-1" />
+                              
                             </div>
                           </div>
                           )}
@@ -4230,14 +4234,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     </div>
                   )}
 
-                  {/* Bottom description (removed PAY WITH button) - Only show when NOT in heart coin purchase mode */}
-                  {activeUseTab === 'MERCH' && PHYSICAL_ITEMS[currentMerchIndex] && !purchaseDraft && (
-                    <div className="absolute left-6 right-6 bottom-0" style={{ lineHeight: '1.4' }}>
-                      <div className="text-base text-white" style={{ textShadow: '0 0 2px rgba(255,255,255,0.4)' }}>
-                        {PHYSICAL_ITEMS[currentMerchIndex].description}
-                      </div>
-                    </div>
-                  )}
+                  {/* Bottom description removed; now sits directly below dots in MERCH view */}
 
                   {/* CONFIRM button for heart coin purchase - only show when NOT in shipping step (shipping form has its own button) */}
                   {activeUseTab === 'MERCH' && purchaseDraft && showHeartCoinPurchase && step !== 'shipping' && (
@@ -5537,7 +5534,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               display: 'none'
             }}
           >
-            Trade your HEART coins for collectibles that reflect your journey.
+            Trade your HeartCoins for collectibles that reflect your journey.
           </div>
 
           {/* Merch Items Display */}

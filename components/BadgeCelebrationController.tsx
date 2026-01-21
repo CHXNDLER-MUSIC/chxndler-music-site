@@ -71,15 +71,23 @@ export default function BadgeCelebrationController() {
 
     if (phase === 'badge') {
       timeoutId = setTimeout(() => {
-        // If heartcoins > 0, go to pause then heartcoin
+        // Notify listeners that badge celebration finished (for tour, etc.)
+        try {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('badge:celebration-complete', {
+              detail: { badgeTitle: currentItem.badgeName, badgeImage: currentItem.iconUrl }
+            }));
+          }
+        } catch {}
+
+        // If heartcoins > 0, go to pause then heartcoin; otherwise finish
         if (currentItem.heartCoins > 0) {
           setPhase('pause');
         } else {
-          // No heartcoins, finish and pop
           setPhase('idle');
           setCurrentItem(null);
           processingRef.current = false;
-          release(); // Release the celebration lock
+          release();
           pop();
         }
       }, BADGE_DURATION);

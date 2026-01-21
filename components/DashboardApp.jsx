@@ -34,6 +34,7 @@ import { audioCoordinator } from "@/lib/audio-coordinator";
 import { debugLog } from "@/lib/debug";
 import { audioHeartverse } from "@/lib/audio-heartverse";
 import { suppressBadgeCelebrations } from "@/utils/celebrationQueue";
+import { acquireCelebrationLock, releaseCelebrationLock } from "@/lib/celebrationQueue";
 import WelcomeHomeModal from "@/components/WelcomeHomeModal";
 import { useAudio } from "@/app/providers/AudioProvider";
 import ProfileBarWrapper from "@/components/ProfileBarWrapper";
@@ -1403,6 +1404,14 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
     // Suppress badge celebrations during warp sequence (15 seconds)
     suppressBadgeCelebrations(15000);
+    // Also acquire the new celebration lock used by the realtime BadgeCelebrationController
+    // so badge overlays don't appear during/just after START warp
+    try {
+      acquireCelebrationLock('badge');
+      setTimeout(() => {
+        try { releaseCelebrationLock('badge'); } catch {}
+      }, 15000);
+    } catch {}
 
     if (startInFlightRef.current) return;
     startInFlightRef.current = true;

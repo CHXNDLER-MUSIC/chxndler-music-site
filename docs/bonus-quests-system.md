@@ -28,7 +28,7 @@ CREATE TABLE bonus_quests (
   max_total_completions int2, -- NULL = unlimited, 1 = one-time only
   reward_heartcoins int2 DEFAULT 0,
   reward_element_card boolean DEFAULT false,
-  reward_notes text, -- e.g. "(1 max per day)" or "+1–5 HEART coins"
+  reward_notes text, -- e.g. "(1 max per day)" or "+1–5 HeartCoins"
   created_at timestamptz DEFAULT now()
 );
 ```

@@ -490,7 +490,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                       </div>
                       <div>
                         <h3 className="text-white font-semibold text-sm">2. Journal Entry of the Day</h3>
-                        <p className="text-white/60 text-xs">Answer today's journal prompt to earn one HEART coin.</p>
+                        <p className="text-white/60 text-xs">Answer today's journal prompt to earn one HeartCoin.</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">

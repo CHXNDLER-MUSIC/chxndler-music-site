@@ -216,10 +216,10 @@ export function formatRequirementText(badge: Badge): string {
       return `${requirement_count} donation${requirement_count === 1 ? '' : 's'} made`;
       
     case 'heart_coins':
-      return `${requirement_count} HEART coin${requirement_count === 1 ? '' : 's'}`;
+      return `Earn ${requirement_count} HeartCoin${requirement_count === 1 ? '' : 's'}`;
       
     case 'heart_transfers':
-      return `${requirement_count} HEART coin transfer${requirement_count === 1 ? '' : 's'}`;
+      return `${requirement_count} HeartCoin transfer${requirement_count === 1 ? '' : 's'}`;
       
     case 'listen':
       return `Listen to ${requirement_count} unique ${requirement_count === 1 ? 'song' : 'songs'}`;
