@@ -340,14 +340,23 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const lastPlayTrackRef = useRef<{ songId: string; timestamp: number } | null>(null);
   const PLAY_DEBOUNCE_MS = 1500;
 
+  // Song of Day claim tracking - prevent duplicate HeartCoin awards per song per day
+  // Format: { songId: UUID, day: 'YYYY-MM-DD' }
+  const lastSotdClaimRef = useRef<{ songId: string; day: string } | null>(null);
+
+  // Ref to track Song of the Day ID (avoids stale closure in callbacks)
+  const songOfDayIdRef = useRef<string | null>(null);
+
   // Refs to track warp state for playerStore subscription (avoids stale closure issues)
   const warpCompletedRef = useRef<boolean>(state.warpCompleted);
   const pendingTrackRef = useRef<string | null>(state.pendingTrack);
 
   // Record play event - called when audio "play" event fires
+  // This only tracks play starts for analytics, NOT Song of Day awards
+  // HeartCoin awards happen on completion via claimSongOfDayIfEligible
   const recordPlayEvent = async (trackSlug: string): Promise<void> => {
     try {
-      // Get song UUID for the RPC call
+      // Get song UUID for tracking
       const songUuid = await getSongUuidBySlug(trackSlug);
       if (!songUuid) {
         console.warn('[TRACK] Cannot record play - song UUID not found for:', trackSlug);
@@ -369,31 +378,90 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       // Update last play timestamp
       lastPlayTrackRef.current = { songId: songUuid, timestamp: now };
 
-      // Check authentication and log session state
+      // Check authentication
       const { data: sessionData } = await supabaseBrowser.auth.getSession();
-      console.log('[TRACK] session', {
-        hasSession: !!sessionData.session,
-        userId: sessionData.session?.user?.id
-      });
-
       if (!sessionData?.session?.user) {
-        // Not authenticated - skip RPC call silently
+        // Not authenticated - skip tracking silently
         return;
       }
 
-      // Log play event
-      console.log('[TRACK] play', {
+      // Log play start event (analytics only, no HeartCoin award)
+      console.log('[TRACK] play started', {
         songId: songUuid,
         songName: state.currentTrack?.title || trackSlug
       });
 
-      // Call new RPC to record progress and claim SOTD
+      // Note: Song of Day HeartCoin award happens on completion, not play start
+      // See claimSongOfDayIfEligible() called from onTime and onEnded handlers
+    } catch (err) {
+      console.error('[TRACK] recordPlayEvent error', {
+        error: err,
+        message: (err as any)?.message,
+      });
+    }
+  };
+
+  // Claim Song of Day HeartCoin award - called ONLY on song completion
+  // This is idempotent - safe to call multiple times, backend enforces once per day
+  const claimSongOfDayIfEligible = async (trackSlug: string): Promise<void> => {
+    try {
+      // Get song UUID
+      const songUuid = await getSongUuidBySlug(trackSlug);
+      if (!songUuid) {
+        console.warn('[SOTD] Cannot claim - song UUID not found for:', trackSlug);
+        return;
+      }
+
+      // Check if user is authenticated
+      const user = authUserRef.current;
+      if (!user) {
+        console.log('[SOTD] skipped: no authenticated user');
+        return;
+      }
+
+      // Get today's date in NY timezone
+      const nyDay = getNYDateString();
+
+      // Check if this is the Song of the Day
+      // Use ref to avoid stale closure in callbacks
+      const currentSongOfDayId = songOfDayIdRef.current;
+      if (!currentSongOfDayId) {
+        console.log('[SOTD] skipped: no Song of the Day configured');
+        return;
+      }
+
+      if (songUuid !== currentSongOfDayId) {
+        console.log('[SOTD] skipped: track is not Song of the Day', {
+          trackSongId: songUuid,
+          songOfDayId: currentSongOfDayId
+        });
+        return;
+      }
+
+      // Check guard ref to prevent duplicate calls in the same session
+      const lastClaim = lastSotdClaimRef.current;
+      if (lastClaim && lastClaim.songId === songUuid && lastClaim.day === nyDay) {
+        console.log('[SOTD] skipped: already claimed in this session', {
+          songId: songUuid,
+          day: nyDay
+        });
+        return;
+      }
+
+      console.log('[SOTD] Claiming Song of the Day award', {
+        songId: songUuid,
+        songName: state.currentTrack?.title || trackSlug,
+        day: nyDay
+      });
+
+      // Call the unified RPC that records progress, creates claim, and awards HeartCoin
+      // This RPC is idempotent - backend unique constraints enforce once per user per day
       const { data, error } = await supabaseBrowser.rpc('record_song_play_and_claim_sod_v1', {
         p_song_id: songUuid
       });
 
       if (error) {
-        console.error('[TRACK] record_song_play_and_claim_sod_v1 error', {
+        console.error('[SOTD] record_song_play_and_claim_sod_v1 error', {
           songId: songUuid,
           error,
           code: (error as any)?.code,
@@ -401,20 +469,29 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           details: (error as any)?.details,
           hint: (error as any)?.hint,
         });
-      } else {
-        console.log('[TRACK] recorded+claimed', {
-          songId: songUuid,
-          data
-        });
+        // Don't update guard ref on error so we can retry
+        return;
       }
+
+      // Update guard ref to prevent duplicate calls
+      lastSotdClaimRef.current = { songId: songUuid, day: nyDay };
+
+      console.log('[SOTD] Award claimed successfully', {
+        songId: songUuid,
+        day: nyDay,
+        data
+      });
+
+      // Dispatch events to update UI
+      try {
+        window.dispatchEvent(new CustomEvent('songOfDay:refresh'));
+        window.dispatchEvent(new CustomEvent('dailySongQuestCompleted', { detail: { day: nyDay } }));
+      } catch {}
+
     } catch (err) {
-      // Also enhance exception logging
-      console.error('[TRACK] record_song_play_and_claim_sod_v1 error', {
+      console.error('[SOTD] claimSongOfDayIfEligible error', {
         error: err,
-        code: (err as any)?.code,
         message: (err as any)?.message,
-        details: (err as any)?.details,
-        hint: (err as any)?.hint,
       });
     }
   };
@@ -723,6 +800,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         sessionRef.current.listenedSeconds >= 2 // Had meaningful listen time
       ) {
         console.log(`🎧 Repeat detected: ${lastTime.toFixed(1)}s -> ${currentTime.toFixed(1)}s (duration: ${duration.toFixed(1)}s)`);
+        // Claim Song of Day HeartCoin award on repeat (complete playthrough)
+        if (currentTrackRef.current) {
+          claimSongOfDayIfEligible(currentTrackRef.current);
+        }
         // Flush the completed playthrough and start a new session
         flushSession(0).then(() => {
           if (currentTrackRef.current && !a.paused) {
@@ -849,19 +930,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         } else {
           prog.lastSaved = newMax;
           prog.maxSoFar = newMax;
-          // After completion flips true, re-fetch SOTD claim so UI can flip
+          // After completion flips true (50% threshold), claim Song of Day HeartCoin award
           if (finalCompleted && !prog.everCompleted) {
-            try {
-              const { count } = await supabaseBrowser
-                .from('user_song_of_day_claims')
-                .select('*', { head: true, count: 'exact' })
-                .eq('user_id', user.id)
-                .eq('day', nyDay);
-              window.dispatchEvent(new CustomEvent('songOfDay:refresh'));
-              if ((count ?? 0) > 0) {
-                window.dispatchEvent(new CustomEvent('dailySongQuestCompleted', { detail: { day: nyDay } }));
-              }
-            } catch {}
+            // Claim Song of Day award - this is the primary completion trigger
+            // The function checks if the track is actually the SOTD and handles idempotency
+            if (slug) {
+              claimSongOfDayIfEligible(slug);
+            }
           }
           // Persist completion cache
           prog.everCompleted = finalCompleted;
@@ -921,9 +996,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
               if (songUuid) {
                 await recordSongEndedPlay(songUuid);
               }
+
+              // Also claim Song of Day HeartCoin award on song end (backup trigger)
+              // This ensures award even if the 50% threshold completion wasn't triggered
+              claimSongOfDayIfEligible(slug);
             }
           } catch (err) {
-            console.warn('Failed SOTD end-of-track increment/refresh:', err);
+            console.warn('Failed SOTD end-of-track processing:', err);
           }
           // Start a new session for the repeated playback
           if (currentTrackRef.current) {
@@ -1260,6 +1339,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     songOfDaySlug, // Fallback slug comparison for Song of the Day
     songOfDayId // Canonical song_id from element_of_day table
   });
+
+  // Keep songOfDayIdRef in sync with context value (for use in callbacks)
+  useEffect(() => {
+    songOfDayIdRef.current = songOfDayId ?? null;
+  }, [songOfDayId]);
 
   // Normalize incoming slugs so dropdown selections (e.g. `we're-just-friends`) map to TRACK_INFO ids (e.g. `were-just-friends`)
   const normalizeSlug = (slug?: string): string => {
