@@ -1,12 +1,53 @@
 "use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ElementIcon } from '@/lib/elementIcons';
 import { getElementColor, formatChatTimestamp, sanitizeMessage } from '@/lib/supabase/chat';
 import ReactionTray from './ReactionTray';
 import MessageReactions from './MessageReactions';
 // import { ReactionType } from '@/lib/reactions'; // Types not needed in JSX
+
+// Debug flag
+const DEBUG = process.env.NODE_ENV === 'development';
+
+// Fallback counter for messages without any valid key
+let fallbackKeyCounter = 0;
+
+/**
+ * Get a guaranteed unique, stable key for a message
+ * Priority: client_id > clientKey > id > generated fallback
+ * GUARANTEE: Always returns a non-empty string
+ */
+const getMessageKey = (message, index) => {
+  // Prefer client_id (normalized stable key) - must be non-empty string
+  if (message.client_id && typeof message.client_id === 'string' && message.client_id.length > 0) {
+    return message.client_id;
+  }
+  // Fallback to clientKey (animation key) - must be non-empty string
+  if (message.clientKey && typeof message.clientKey === 'string' && message.clientKey.length > 0) {
+    return message.clientKey;
+  }
+  // Fallback to DB id if it looks like a valid UUID - must be non-empty string
+  if (message.id && typeof message.id === 'string' && message.id.length > 0 &&
+      !message.id.startsWith('temp-') && !message.id.startsWith('guest-')) {
+    return `db_${message.id}`;
+  }
+  // Use optimistic id if present and non-empty
+  if (message.id && typeof message.id === 'string' && message.id.length > 0) {
+    return message.id;
+  }
+  // Last resort: generate a unique fallback (log warning in dev)
+  fallbackKeyCounter++;
+  const fallbackKey = `fallback_${index}_${fallbackKeyCounter}_${Date.now()}`;
+  if (DEBUG) {
+    console.warn('⚠️ Message missing all keys, using fallback:', {
+      fallbackKey,
+      message: { id: message.id, client_id: message.client_id, message: message.message?.slice(0, 30) }
+    });
+  }
+  return fallbackKey;
+};
 
 /**
  * MessageList Component
@@ -68,6 +109,21 @@ export default function MessageList({ messages, onUserClick, loading, messageRea
     );
   }
 
+  // Debug logging for key issues in development
+  if (DEBUG && messages.length > 0) {
+    const keys = messages.map((m, i) => getMessageKey(m, i));
+    const keySet = new Set(keys);
+    const emptyKeys = keys.filter(k => !k).length;
+    const duplicateCount = keys.length - keySet.size;
+    if (emptyKeys > 0 || duplicateCount > 0) {
+      console.warn(`⚠️ MessageList key issues: ${emptyKeys} empty keys, ${duplicateCount} duplicates`, {
+        totalMessages: messages.length,
+        uniqueKeys: keySet.size,
+        sampleKeys: keys.slice(0, 5)
+      });
+    }
+  }
+
   return (
     <div
       ref={scrollContainerRef}
@@ -80,38 +136,41 @@ export default function MessageList({ messages, onUserClick, loading, messageRea
       onScroll={checkIfNearBottom}
     >
       <AnimatePresence initial={false}>
-        {messages.map((message, index) => (
-          <motion.div
-            key={message.clientKey || message.id || `msg-${index}`}
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            transition={{
-              type: 'spring',
-              stiffness: 500,
-              damping: 30,
-              mass: 0.8
-            }}
-          >
-            <ChatMessage 
-              message={message}
-              onUserClick={onUserClick}
-              reactions={messageReactions?.[message.id] || {}}
-              onReact={onReact}
-              currentUserId={currentUserId}
-              currentUserElement={currentUserElement}
-              currentUserProfileImageUrl={currentUserProfileImageUrl}
-              userProfilesById={userProfilesById}
-              isConsecutive={
-                index > 0 && 
-                messages[index - 1].user_id === message.user_id &&
-                messages[index - 1].message_type === 'message' &&
-                message.message_type === 'message' &&
-                (new Date(message.created_at) - new Date(messages[index - 1].created_at)) < 60000 // Within 1 minute
-              }
-            />
-          </motion.div>
-        ))}
+        {messages.map((message, index) => {
+          const messageKey = getMessageKey(message, index);
+          return (
+            <motion.div
+              key={messageKey}
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              transition={{
+                type: 'spring',
+                stiffness: 500,
+                damping: 30,
+                mass: 0.8
+              }}
+            >
+              <ChatMessage
+                message={message}
+                onUserClick={onUserClick}
+                reactions={messageReactions?.[message.id] || {}}
+                onReact={onReact}
+                currentUserId={currentUserId}
+                currentUserElement={currentUserElement}
+                currentUserProfileImageUrl={currentUserProfileImageUrl}
+                userProfilesById={userProfilesById}
+                isConsecutive={
+                  index > 0 &&
+                  messages[index - 1].user_id === message.user_id &&
+                  messages[index - 1].message_type === 'message' &&
+                  message.message_type === 'message' &&
+                  (new Date(message.created_at) - new Date(messages[index - 1].created_at)) < 60000 // Within 1 minute
+                }
+              />
+            </motion.div>
+          );
+        })}
       </AnimatePresence>
 
       {/* Empty state */}

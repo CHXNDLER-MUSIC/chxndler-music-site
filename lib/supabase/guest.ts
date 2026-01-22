@@ -10,6 +10,72 @@ export interface GuestIdentity {
 }
 
 /**
+ * Generate a random guest ID (UUID format)
+ */
+function generateGuestId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return `guest_${crypto.randomUUID()}`;
+  }
+  // Fallback for environments without crypto.randomUUID
+  return `guest_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+}
+
+/**
+ * Generate a random guest name (ALIEN + 7 digits)
+ */
+function generateGuestName(): string {
+  const alienNumber = Math.floor(Math.random() * 9999999) + 1;
+  return `ALIEN${alienNumber.toString().padStart(7, '0')}`;
+}
+
+/**
+ * SYNCHRONOUS: Get or create guest ID from localStorage.
+ * Safe to call during useState initialization.
+ * Returns a placeholder on server, real value on client.
+ */
+export function getOrCreateGuestIdSync(): string {
+  if (typeof window === 'undefined') {
+    return 'guest_ssr_placeholder';
+  }
+
+  let guestId = localStorage.getItem(GUEST_ID_KEY);
+  if (!guestId) {
+    guestId = generateGuestId();
+    localStorage.setItem(GUEST_ID_KEY, guestId);
+  }
+  return guestId;
+}
+
+/**
+ * SYNCHRONOUS: Get or create guest name from localStorage.
+ * Safe to call during useState initialization.
+ * Returns a placeholder on server, real value on client.
+ */
+export function getOrCreateGuestNameSync(): string {
+  if (typeof window === 'undefined') {
+    return 'ALIEN0000000';
+  }
+
+  let guestName = localStorage.getItem(GUEST_USERNAME_KEY);
+  if (!guestName) {
+    guestName = generateGuestName();
+    localStorage.setItem(GUEST_USERNAME_KEY, guestName);
+  }
+  return guestName;
+}
+
+/**
+ * SYNCHRONOUS: Get stable guest identity for immediate use.
+ * Creates identity if it doesn't exist.
+ */
+export function getOrCreateGuestIdentitySync(): GuestIdentity {
+  return {
+    guest_id: getOrCreateGuestIdSync(),
+    username: getOrCreateGuestNameSync(),
+  };
+}
+
+/**
  * Get or create a stable guest identity for logged-out users.
  * - Checks localStorage for existing guest_id
  * - If missing, calls supabase.rpc("create_guest_profile") to create one

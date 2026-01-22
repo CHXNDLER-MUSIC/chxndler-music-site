@@ -58,15 +58,18 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
   // Load full profile data when modal opens
   useEffect(() => {
     if (isOpen && user) {
-      // Only load profile data for real users, not anonymous aliens
-      if (user.id !== 'anonymous') {
+      // Check if this is a guest/anonymous user
+      const isGuestUser = user.id === 'anonymous' || (typeof user.id === 'string' && user.id.startsWith('guest_'));
+
+      // Only load profile data for real users, not guest/anonymous aliens
+      if (!isGuestUser) {
         loadProfileData();
       } else {
-        // For anonymous aliens, create a mock profile
+        // For guest aliens, create a mock profile
         setProfileData({
-          id: 'anonymous',
+          id: user.id,
           name: user.name,
-          element: null,
+          element: 'alien',
           avatar_badge_id: null,
           heartcoin_total: 0
         });

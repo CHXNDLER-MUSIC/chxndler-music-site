@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { chatService } from '@/lib/supabase/chat';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { useProfile } from '@/contexts/ProfileContext';
 import { sfx } from '@/lib/sfx';
-import { getOrCreateGuestIdentity, getGuestIdentity } from '@/lib/supabase/guest';
+import { getOrCreateGuestIdentity, getGuestIdentity, getOrCreateGuestIdentitySync } from '@/lib/supabase/guest';
 // import { useLiveStatus } from '@/hooks/useLiveStatus'; // Removed since chat is always available
 import UserList from './UserList';
 import MessageList from './MessageList';
@@ -25,20 +25,166 @@ const DEBUG = process.env.NODE_ENV === 'development' && true;
 // Global guest identity cache - persists across component remounts
 let cachedGuestIdentity = null;
 
+/**
+ * Generate a unique client_id for messages that don't have a DB id yet
+ */
+const generateClientId = (prefix = 'msg') => {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 10);
+  return `${prefix}_${timestamp}_${random}`;
+};
+
+// Counter for guaranteed unique IDs within a session
+let messageIdCounter = 0;
+
+/**
+ * Normalize a message to ensure it has a client_id for stable React keys
+ * GUARANTEE: returned message will always have a non-empty client_id
+ */
+const normalizeMessage = (msg) => {
+  if (!msg) return null;
+
+  // If message already has a valid non-empty client_id, return as-is
+  if (msg.client_id && typeof msg.client_id === 'string' && msg.client_id.length > 0) {
+    return msg;
+  }
+
+  // If message has a valid DB id (UUID string), use that as the basis for client_id
+  const msgId = msg.id;
+  if (msgId && typeof msgId === 'string' && msgId.length > 0 &&
+      !msgId.startsWith('temp-') && !msgId.startsWith('guest-')) {
+    return { ...msg, client_id: `db_${msgId}` };
+  }
+
+  // For temp/guest/optimistic messages, or messages without valid id
+  // Generate a guaranteed unique client_id
+  messageIdCounter++;
+  const uniqueId = generateClientId(`${msgId || 'msg'}_${messageIdCounter}`);
+  return { ...msg, client_id: uniqueId };
+};
+
+/**
+ * Dedupe and merge messages using Map keyed by (id ?? client_id)
+ * Preserves order by created_at, handles optimistic replacement
+ * GUARANTEE: All returned messages will have a valid non-empty client_id
+ */
+const upsertMessages = (prev, incoming, options = {}) => {
+  const { replaceOptimistic = true } = options;
+  const messageMap = new Map();
+
+  // Add all previous messages to map
+  (prev || []).forEach(msg => {
+    const normalized = normalizeMessage(msg);
+    if (!normalized) return;
+    // Use client_id as primary key since normalizeMessage guarantees it's set
+    const key = normalized.client_id || normalized.id;
+    if (key && key.length > 0) {
+      messageMap.set(key, normalized);
+    } else if (DEBUG) {
+      console.warn('⚠️ upsertMessages: Skipping message with no key:', msg);
+    }
+  });
+
+  // Process incoming messages
+  const incomingArray = Array.isArray(incoming) ? incoming : [incoming];
+  incomingArray.forEach(msg => {
+    const normalized = normalizeMessage(msg);
+    if (!normalized) return;
+    const key = normalized.client_id || normalized.id;
+    if (!key || key.length === 0) {
+      if (DEBUG) console.warn('⚠️ upsertMessages: Incoming message has no key:', msg);
+      return;
+    }
+
+    // Check if this replaces an optimistic message
+    if (replaceOptimistic && normalized.id && typeof normalized.id === 'string' && normalized.id.length > 0) {
+      // Look for matching optimistic message by content + sender
+      const senderId = normalized.user_id || normalized.guest_id;
+      for (const [existingKey, existingMsg] of messageMap.entries()) {
+        // Check if this is an optimistic/temp message key
+        const isOptimistic = existingKey.startsWith('temp-') || existingKey.startsWith('guest-') ||
+                            existingKey.startsWith('msg_') || existingKey.includes('_temp-') ||
+                            existingKey.includes('_guest-');
+        if (isOptimistic) {
+          const existingSenderId = existingMsg.user_id || existingMsg.guest_id;
+          if (existingSenderId === senderId && existingMsg.message === normalized.message) {
+            // Replace optimistic with real, preserving clientKey for animations
+            messageMap.delete(existingKey);
+            messageMap.set(key, { ...normalized, clientKey: existingMsg.clientKey || existingMsg.client_id });
+            return;
+          }
+        }
+      }
+    }
+
+    // Also check for duplicates by DB id if the incoming message has one
+    if (normalized.id && typeof normalized.id === 'string') {
+      const dbKey = `db_${normalized.id}`;
+      if (messageMap.has(dbKey) && key !== dbKey) {
+        // Already have this message by its DB id, update it
+        messageMap.delete(dbKey);
+      }
+    }
+
+    messageMap.set(key, normalized);
+  });
+
+  // Convert back to array and sort by created_at
+  const result = Array.from(messageMap.values()).sort((a, b) => {
+    const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return dateA - dateB;
+  });
+
+  // Debug logging for key issues in development
+  if (DEBUG) {
+    const keys = result.map(m => m.client_id || m.id || '');
+    const keySet = new Set(keys);
+    const emptyKeys = keys.filter(k => !k || k.length === 0).length;
+    const duplicateCount = keys.length - keySet.size;
+    if (emptyKeys > 0 || duplicateCount > 0) {
+      console.warn(`⚠️ upsertMessages result: ${emptyKeys} empty keys, ${duplicateCount} duplicates out of ${keys.length} messages`);
+      // Log which keys are problematic
+      const keyCounts = {};
+      keys.forEach(k => { keyCounts[k] = (keyCounts[k] || 0) + 1; });
+      const duplicates = Object.entries(keyCounts).filter(([_, count]) => count > 1);
+      if (duplicates.length > 0) {
+        console.warn('⚠️ Duplicate keys:', duplicates);
+      }
+    }
+  }
+
+  return result;
+};
+
+/**
+ * Normalize a chat user to ensure stable keys
+ */
+const normalizeUser = (user) => {
+  if (!user) return null;
+  if (user.client_id) return user;
+
+  const stableId = user.id || user.guest_id || user.user_id;
+  if (stableId) {
+    return { ...user, client_id: `user_${stableId}` };
+  }
+
+  // Fallback: generate client_id from name or random
+  return { ...user, client_id: `user_${user.name || generateClientId('anon')}` };
+};
+
 // Function to get cached guest identity or load from localStorage
 const getCachedGuestIdentity = () => {
   if (cachedGuestIdentity) {
     return cachedGuestIdentity;
   }
 
-  // Check localStorage for existing guest identity
+  // Use synchronous getter which creates if needed
   if (typeof window !== 'undefined') {
-    const identity = getGuestIdentity();
-    if (identity) {
-      cachedGuestIdentity = identity;
-      DEBUG && console.log('🔥 Loaded guest identity from localStorage:', identity.username);
-      return identity;
-    }
+    const identity = getOrCreateGuestIdentitySync();
+    cachedGuestIdentity = identity;
+    DEBUG && console.log('🔥 Got guest identity (sync):', identity.username);
+    return identity;
   }
 
   return null;
@@ -51,18 +197,12 @@ const getGlobalAlienName = () => {
     return identity.username;
   }
 
-  // Fallback to sessionStorage for backwards compatibility
+  // This should rarely happen now since getCachedGuestIdentity creates if needed
   if (typeof window !== 'undefined') {
-    const stored = sessionStorage.getItem('alienName');
-    if (stored) {
-      return stored;
-    }
+    return getOrCreateGuestIdentitySync().username;
   }
 
-  // Generate temporary name (will be replaced when getOrCreateGuestIdentity is called)
-  const alienNumber = Math.floor(Math.random() * 99999999) + 1;
-  const paddedNumber = alienNumber.toString().padStart(8, '0');
-  return `ALIEN${paddedNumber}`;
+  return 'ALIEN0000000';
 };
 
 /**
@@ -339,17 +479,18 @@ export default function ChatPanel({ isOpen, onClose }) {
         setChatUsers([authenticatedUser]);
         DEBUG && console.log('🚀 Set initial chat users with authenticated user:', [authenticatedUser]);
       } else {
-        // For unauthenticated users, use alien name
-        DEBUG && console.log('🚀 IMMEDIATE: Using stored alien name:', alienName);
-        const anonymousUser = {
-          id: 'anonymous',
-          name: alienName,
+        // For unauthenticated users, use stable guest identity
+        const guestIdentity = getOrCreateGuestIdentitySync();
+        DEBUG && console.log('🚀 IMMEDIATE: Using guest identity:', guestIdentity.username);
+        const guestUser = normalizeUser({
+          id: guestIdentity.guest_id,
+          name: guestIdentity.username,
           element: 'alien',
           avatar_badge_id: null,
           last_seen: new Date().toISOString()
-        };
-        setChatUsers([anonymousUser]);
-        DEBUG && console.log('🚀 Set initial chat users with anonymous user:', [anonymousUser]);
+        });
+        setChatUsers([guestUser]);
+        DEBUG && console.log('🚀 Set initial chat users with guest user:', [guestUser]);
       }
     }
   }, [user, profile?.name, profile?.id, isOpen, alienName]);
@@ -392,20 +533,21 @@ export default function ChatPanel({ isOpen, onClose }) {
           DEBUG && console.log('🔥 Setting authenticated user:', authenticatedUser);
           return [authenticatedUser, ...otherUsers];
         });
-      } else if (alienName) {
-        // For unauthenticated users, ensure anonymous user exists
-        DEBUG && console.log('🔥 Chat opened - ensuring anonymous user exists with name:', alienName);
+      } else {
+        // For unauthenticated users, ensure guest user exists with stable identity
+        const guestIdentity = getOrCreateGuestIdentitySync();
+        DEBUG && console.log('🔥 Chat opened - ensuring guest user exists:', guestIdentity.username);
         setChatUsers(prev => {
-          const otherUsers = prev.filter(u => u.id !== 'anonymous');
-          const anonymousUser = {
-            id: 'anonymous',
-            name: alienName,
+          const otherUsers = prev.filter(u => u.id !== 'anonymous' && u.id !== guestIdentity.guest_id);
+          const guestUser = normalizeUser({
+            id: guestIdentity.guest_id,
+            name: guestIdentity.username,
             element: 'alien',
             avatar_badge_id: null,
             last_seen: new Date().toISOString()
-          };
-          DEBUG && console.log('🔥 Setting anonymous user with consistent name:', anonymousUser);
-          return [anonymousUser, ...otherUsers];
+          });
+          DEBUG && console.log('🔥 Setting guest user with stable identity:', guestUser);
+          return [guestUser, ...otherUsers];
         });
       }
     }
@@ -489,8 +631,8 @@ export default function ChatPanel({ isOpen, onClose }) {
         const response = await fetch('/api/heart-signal-messages?limit=50');
         const result = await response.json();
         if (result.success && result.messages) {
-          // Transform messages to match expected format
-          const transformedMessages = result.messages.map(msg => ({
+          // Transform messages to match expected format and normalize with client_id
+          const transformedMessages = result.messages.map(msg => normalizeMessage({
             id: msg.id,
             user_id: msg.user_id,
             guest_id: msg.guest_id,
@@ -504,24 +646,8 @@ export default function ChatPanel({ isOpen, onClose }) {
               profile_image_url: null
             }
           }));
-          // Merge loaded messages with any in-flight optimistic ones to avoid flicker
-          setMessages((prev) => {
-            // If nothing in state yet, just set the fetched list
-            if (!prev || prev.length === 0) return transformedMessages;
-
-            // Preserve local optimistic messages (temp-/guest- ids)
-            const optimistic = prev.filter(
-              (m) => typeof m.id === 'string' && (m.id.startsWith('temp-') || m.id.startsWith('guest-'))
-            );
-
-            // Avoid duplicating any real messages that may already exist
-            const existingRealIds = new Set(
-              prev.filter((m) => typeof m.id !== 'string').map((m) => m.id)
-            );
-            const mergedBase = transformedMessages.filter((m) => !existingRealIds.has(m.id));
-
-            return [...mergedBase, ...optimistic];
-          });
+          // Use upsertMessages to properly dedupe and merge with any optimistic messages
+          setMessages((prev) => upsertMessages(prev, transformedMessages));
 
           // Load reaction counts from messages into messageReactions state
           const loadedReactions = {};
@@ -579,16 +705,17 @@ export default function ChatPanel({ isOpen, onClose }) {
           DEBUG && console.log('🔥 Creating guest user:', guestUser);
           setChatUsers([guestUser, ...databaseUsers.filter(u => u.id !== guestIdentity.guest_id)]);
         } catch (e) {
-          // Fallback to temporary alien name if guest identity creation fails
-          DEBUG && console.log('🔥 InitializeChat: Fallback to alien name:', alienName);
-          const anonymousUser = {
-            id: 'anonymous',
-            name: alienName,
+          // Fallback to synchronous guest identity if async creation fails
+          const fallbackIdentity = getOrCreateGuestIdentitySync();
+          DEBUG && console.log('🔥 InitializeChat: Fallback to sync guest identity:', fallbackIdentity.username);
+          const fallbackUser = normalizeUser({
+            id: fallbackIdentity.guest_id,
+            name: fallbackIdentity.username,
             element: 'alien',
             avatar_badge_id: null,
             last_seen: new Date().toISOString()
-          };
-          setChatUsers([anonymousUser, ...databaseUsers]);
+          });
+          setChatUsers([fallbackUser, ...databaseUsers]);
         }
       } else {
         setChatUsers(databaseUsers);
@@ -608,7 +735,7 @@ export default function ChatPanel({ isOpen, onClose }) {
             const isGuestMessage = !!msg.guest_id && !msg.user_id;
             const senderId = msg.user_id || msg.guest_id;
 
-            const newMessage = {
+            const newMessage = normalizeMessage({
               id: msg.id,
               user_id: msg.user_id,
               guest_id: msg.guest_id,
@@ -621,35 +748,10 @@ export default function ChatPanel({ isOpen, onClose }) {
                 avatar_badge_id: null,
                 profile_image_url: null
               }
-            };
-
-            // Replace any optimistic temp/guest message that matches this one
-            // Preserve the clientKey to avoid animation flicker
-            setMessages(prev => {
-              // If already present (by id), ignore
-              if (prev.some(m => m.id === newMessage.id)) return prev;
-
-              // Find the matching optimistic message to replace in-place
-              const optimisticIndex = prev.findIndex(m => {
-                const isTemp = typeof m.id === 'string' && (m.id.startsWith('temp-') || m.id.startsWith('guest-'));
-                if (!isTemp) return false;
-                const msgSenderId = m.user_id || m.guest_id;
-                return msgSenderId === senderId && m.message === newMessage.message;
-              });
-
-              // If found, replace in-place preserving the clientKey
-              if (optimisticIndex !== -1) {
-                const updated = [...prev];
-                updated[optimisticIndex] = {
-                  ...newMessage,
-                  clientKey: prev[optimisticIndex].clientKey
-                };
-                return updated;
-              }
-
-              // Otherwise just append (new message from another user)
-              return [...prev, newMessage];
             });
+
+            // Use upsertMessages for proper deduplication and optimistic replacement
+            setMessages(prev => upsertMessages(prev, newMessage));
 
             // Play notification sound for new messages (not system messages)
             if (!msg.is_system) {
@@ -735,8 +837,12 @@ export default function ChatPanel({ isOpen, onClose }) {
           }
         });
 
-      // Send sync message if not already joined
-      if (!hasJoined) {
+      // Send sync message if not already joined this session
+      // Use sessionStorage to prevent duplicate "connected" messages across panel open/close cycles
+      const sessionJoinKey = user ? `heartverse_joined_${user.id}` : `heartverse_joined_guest_${getCachedGuestIdentity()?.guest_id || 'unknown'}`;
+      const hasJoinedThisSession = typeof window !== 'undefined' && sessionStorage.getItem(sessionJoinKey) === 'true';
+
+      if (!hasJoined && !hasJoinedThisSession) {
         const displayName = getDisplayName();
         DEBUG && console.log('🔥 Joining chat with name:', displayName);
 
@@ -757,6 +863,11 @@ export default function ChatPanel({ isOpen, onClose }) {
           });
           const result = await response.json();
           DEBUG && console.log('🔥 Sync message result:', result);
+
+          // Mark as joined for this session
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem(sessionJoinKey, 'true');
+          }
         } catch (error) {
           DEBUG && console.log('🔥 Sync message failed:', error);
         }
@@ -781,6 +892,9 @@ export default function ChatPanel({ isOpen, onClose }) {
           }
         }
 
+        setHasJoined(true);
+      } else if (hasJoinedThisSession && !hasJoined) {
+        // Already joined this session but state was reset, just update the state
         setHasJoined(true);
       }
 
@@ -838,11 +952,12 @@ export default function ChatPanel({ isOpen, onClose }) {
     if (user && profile?.name) {
       try {
         // Optimistic UI: show the message immediately
-        // Use a stable clientKey that will be preserved when the real message arrives
-        const clientKey = `client-${user.id}-${Date.now()}`;
-        const optimistic = {
+        // Use a stable client_id that will be preserved when the real message arrives
+        const client_id = generateClientId(`temp-${user.id}`);
+        const optimistic = normalizeMessage({
           id: `temp-${user.id}-${Date.now()}`,
-          clientKey: clientKey,
+          client_id: client_id,
+          clientKey: client_id, // For animation stability
           user_id: user.id,
           message: messageText.trim(),
           message_type: 'message',
@@ -853,8 +968,8 @@ export default function ChatPanel({ isOpen, onClose }) {
             avatar_badge_id: profile.avatar_badge_id || null,
             profile_image_url: profile.profile_image_url || null,
           },
-        };
-        setMessages(prev => [...prev, optimistic]);
+        });
+        setMessages(prev => upsertMessages(prev, optimistic, { replaceOptimistic: false }));
 
         const response = await fetch('/api/heart-signal-messages', {
           method: 'POST',
@@ -871,14 +986,14 @@ export default function ChatPanel({ isOpen, onClose }) {
 
         if (!response.ok) {
           console.error('Failed to send heart signal message:', result?.error || 'Unknown error');
-          // On failure, remove the optimistic message
-          setMessages(prev => prev.filter(m => m.id !== optimistic.id));
+          // On failure, remove the optimistic message by client_id
+          setMessages(prev => prev.filter(m => m.client_id !== optimistic.client_id));
         }
-        // On success, realtime INSERT will replace the optimistic one
+        // On success, realtime INSERT will replace the optimistic one via upsertMessages
       } catch (error) {
         console.error('Error sending heart signal message:', error);
-        // Remove optimistic on error
-        setMessages(prev => prev.filter(m => !(typeof m.id === 'string' && m.id.startsWith('temp-') && m.message === messageText.trim() && m.user_id === (user?.id || ''))));
+        // Remove optimistic on error by client_id
+        setMessages(prev => prev.filter(m => m.client_id !== client_id));
       }
       return; // Exit early for authenticated users
     }
@@ -889,11 +1004,12 @@ export default function ChatPanel({ isOpen, onClose }) {
       const guestIdentity = await getOrCreateGuestIdentity();
       cachedGuestIdentity = guestIdentity; // Update cache
 
-      // Use a stable clientKey that will be preserved when the real message arrives
-      const clientKey = `client-${guestIdentity.guest_id}-${Date.now()}`;
-      const guestMessage = {
+      // Use a stable client_id that will be preserved when the real message arrives
+      const client_id = generateClientId(`guest-${guestIdentity.guest_id}`);
+      const guestMessage = normalizeMessage({
         id: `guest-${Date.now()}`,
-        clientKey: clientKey,
+        client_id: client_id,
+        clientKey: client_id, // For animation stability
         user_id: null,
         guest_id: guestIdentity.guest_id,
         message: messageText.trim(),
@@ -904,14 +1020,10 @@ export default function ChatPanel({ isOpen, onClose }) {
           element: 'alien',
           avatar_badge_id: null
         }
-      };
+      });
 
       DEBUG && console.log('🔥 Adding guest message locally:', guestMessage);
-      setMessages(prev => {
-        const newMessages = [...prev, guestMessage];
-        DEBUG && console.log('🔥 Updated messages:', newMessages);
-        return newMessages;
-      });
+      setMessages(prev => upsertMessages(prev, guestMessage, { replaceOptimistic: false }));
 
       // Ensure guest user is in the users list
       setChatUsers(prev => {
@@ -953,13 +1065,15 @@ export default function ChatPanel({ isOpen, onClose }) {
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Failed to send guest message:', errorData?.error || 'Unknown error');
-        // Remove optimistic message on failure
-        setMessages(prev => prev.filter(m => m.id !== guestMessage.id));
+        // Remove optimistic message on failure by client_id
+        setMessages(prev => prev.filter(m => m.client_id !== guestMessage.client_id));
       } else {
         DEBUG && console.log('🔥 Guest message persisted successfully');
       }
     } catch (error) {
       console.error('🔥 Guest message failed:', error);
+      // Remove optimistic on error by client_id
+      setMessages(prev => prev.filter(m => m.client_id !== client_id));
     }
   };
 
@@ -1008,16 +1122,17 @@ export default function ChatPanel({ isOpen, onClose }) {
     DEBUG && console.log('🔥 Found user in chatUsers:', user);
     DEBUG && console.log('🔥 Current chatUsers:', chatUsers);
     
-    // For anonymous users, always use the global alien name
-    if (userId === 'anonymous') {
-      user = {
-        id: 'anonymous',
-        name: getGlobalAlienName(), // Always use the global alien name function
+    // For anonymous/guest users, use stable guest identity
+    if (userId === 'anonymous' || (typeof userId === 'string' && userId.startsWith('guest_'))) {
+      const guestIdentity = getOrCreateGuestIdentitySync();
+      user = normalizeUser({
+        id: guestIdentity.guest_id,
+        name: guestIdentity.username,
         element: 'alien',
         avatar_badge_id: null,
         last_seen: new Date().toISOString()
-      };
-      DEBUG && console.log('🔥 Using global alien user:', user);
+      });
+      DEBUG && console.log('🔥 Using guest user:', user);
     }
     
     if (user) {
@@ -1290,7 +1405,7 @@ export default function ChatPanel({ isOpen, onClose }) {
             >
               {/* Header */}
               <div className="p-4 border-b border-yellow-400/30 flex items-center">
-                <div className="flex items-center space-x-3 flex-1 mr-4 ml-20">
+                <div className="flex items-center space-x-3 flex-1 mr-1 ml-20">
                   <div 
                     className="w-3 h-3 rounded-full animate-pulse flex-shrink-0"
                     style={{
@@ -1334,9 +1449,10 @@ export default function ChatPanel({ isOpen, onClose }) {
                     color: '#F2EF1D',
                     textShadow: '0 0 12px rgba(242, 239, 29, 0.8)',
                     boxShadow: '0 0 16px rgba(242, 239, 29, 0.4)',
-                    fontSize: '18px',
-                    minWidth: '40px',
-                    minHeight: '40px',
+                    fontSize: '16px',
+                    minWidth: '32px',
+                    minHeight: '36px',
+                    padding: '4px 8px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center'
@@ -1453,15 +1569,16 @@ export default function ChatPanel({ isOpen, onClose }) {
                             last_seen: new Date().toISOString()
                           }];
                         }
-                        // If no users and not authenticated, show alien user
+                        // If no users and not authenticated, show guest user with stable identity
                         else if (chatUsers.length === 0 && (!user || !profile?.name)) {
-                          usersToShow = [{
-                            id: 'anonymous',
-                            name: alienName,
-                            element: 'alien', 
+                          const guestIdentity = getOrCreateGuestIdentitySync();
+                          usersToShow = [normalizeUser({
+                            id: guestIdentity.guest_id,
+                            name: guestIdentity.username,
+                            element: 'alien',
                             avatar_badge_id: null,
                             last_seen: new Date().toISOString()
-                          }];
+                          })];
                         }
                         
                         DEBUG && console.log('🔥 Rendering UserList:', { usersToShow, user: !!user, profileName: profile?.name });
@@ -1522,13 +1639,13 @@ export default function ChatPanel({ isOpen, onClose }) {
                         </p>
                         
                         {/* Arrow on the right */}
-                        <div 
+                        <div
                           className="transition-transform duration-200"
                           style={{
-                            transform: isVotingPanelCollapsed ? 'rotate(0deg)' : 'rotate(90deg)'
+                            transform: isVotingPanelCollapsed ? 'rotate(0deg)' : 'rotate(180deg)'
                           }}
                         >
-                          ◀
+                          ▲
                         </div>
                       </button>
                       

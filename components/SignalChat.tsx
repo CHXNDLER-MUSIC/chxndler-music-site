@@ -236,6 +236,7 @@ export default function SignalChat({
   }, [messages]);
 
   return (
+    <>
     <div className={`relative ${className}`}>
       {/* Toggle Button */}
       <button
@@ -391,5 +392,6 @@ export default function SignalChat({
       onClose={() => setShowProfileModal(false)}
       isOwnProfile={!!(user?.id && selectedUser?.id && user.id === selectedUser.id)}
     />
+    </>
   );
 }

@@ -3,39 +3,57 @@
 import { ElementIcon } from '@/lib/elementIcons';
 import { getElementColor } from '@/lib/supabase/chat';
 import { sfx } from '@/lib/sfx';
-import { getGuestIdentity } from '@/lib/supabase/guest';
+import { getOrCreateGuestIdentitySync } from '@/lib/supabase/guest';
 
-// Get guest username from localStorage (stable identity across sessions)
+// Debug flag
+const DEBUG = process.env.NODE_ENV === 'development';
+
+// Get guest username from localStorage (stable identity across sessions) - SYNCHRONOUS
 const getGlobalAlienName = () => {
-  // Check localStorage for persistent guest identity
   if (typeof window !== 'undefined') {
-    const identity = getGuestIdentity();
-    if (identity?.username) {
-      return identity.username;
-    }
-
-    // Fallback to sessionStorage for backwards compatibility
-    const stored = sessionStorage.getItem('alienName');
-    if (stored) {
-      return stored;
-    }
+    return getOrCreateGuestIdentitySync().username;
   }
-
-  // Generate temporary alien name (will be replaced when guest identity is created)
-  const alienNumber = Math.floor(Math.random() * 99999999) + 1;
-  const paddedNumber = alienNumber.toString().padStart(8, '0');
-  return `ALIEN${paddedNumber}`;
+  return 'ALIEN0000000';
 };
 
-// Get guest ID from localStorage
+// Get guest ID from localStorage - SYNCHRONOUS
 const getGuestId = () => {
   if (typeof window !== 'undefined') {
-    const identity = getGuestIdentity();
-    if (identity?.guest_id) {
-      return identity.guest_id;
-    }
+    return getOrCreateGuestIdentitySync().guest_id;
   }
-  return 'anonymous';
+  return 'guest_ssr_placeholder';
+};
+
+/**
+ * Generate a stable key for a user object
+ * Ensures no empty or duplicate keys
+ */
+const getUserKey = (user) => {
+  // Priority: id > guest_id > user_id > client_id > name-based fallback
+  if (user.id && user.id !== 'anonymous') return `user_${user.id}`;
+  if (user.guest_id) return `guest_${user.guest_id}`;
+  if (user.user_id) return `user_${user.user_id}`;
+  if (user.client_id) return user.client_id;
+  // Fallback: generate from name + random to ensure uniqueness
+  return `user_${user.name || 'anon'}_${Math.random().toString(36).substring(2, 8)}`;
+};
+
+/**
+ * Normalize users array to ensure all have stable keys
+ */
+const normalizeUsers = (users) => {
+  if (!users || users.length === 0) return [];
+
+  const seen = new Set();
+  return users.map(user => {
+    let key = getUserKey(user);
+    // Handle duplicate keys by appending suffix
+    while (seen.has(key)) {
+      key = `${key}_${Math.random().toString(36).substring(2, 6)}`;
+    }
+    seen.add(key);
+    return { ...user, _stableKey: key };
+  });
 };
 
 /**
@@ -43,10 +61,10 @@ const getGuestId = () => {
  * Shows active users in the chat with element-themed styling
  */
 export default function UserList({ users, onUserClick, loading, currentUserProfile }) {
-  console.log('🔥 UserList received:', { users, userCount: users?.length, loading });
+  DEBUG && console.log('🔥 UserList received:', { users, userCount: users?.length, loading });
 
   // Force add a guest user if no users exist - use persistent guest identity
-  const displayUsers = users?.length > 0 ? users : [{
+  const rawUsers = users?.length > 0 ? users : [{
     id: getGuestId(), // Use guest_id from localStorage for stable identity
     name: getGlobalAlienName(), // Use the global alien name function for consistency
     element: 'alien',
@@ -54,12 +72,26 @@ export default function UserList({ users, onUserClick, loading, currentUserProfi
     last_seen: new Date().toISOString()
   }];
 
-  console.log('🔥 DisplayUsers final:', displayUsers);
-  
+  // Normalize users to ensure stable keys
+  const displayUsers = normalizeUsers(rawUsers);
+
+  // Debug logging for key issues
+  if (DEBUG) {
+    const keys = displayUsers.map(u => u._stableKey);
+    const keySet = new Set(keys);
+    const emptyKeys = keys.filter(k => !k).length;
+    const duplicateCount = keys.length - keySet.size;
+    if (emptyKeys > 0 || duplicateCount > 0) {
+      console.warn(`⚠️ UserList key issues: ${emptyKeys} empty keys, ${duplicateCount} duplicates`);
+    }
+  }
+
+  DEBUG && console.log('🔥 DisplayUsers final:', displayUsers);
+
   if (loading) {
     return (
       <div className="h-full flex flex-col items-center justify-center p-2">
-        <div 
+        <div
           className="w-8 h-8 border-2 border-cyan-400/30 border-t-cyan-400 rounded-full animate-spin"
         />
         <p className="text-xs text-white/60 mt-2 text-center">Loading users...</p>
@@ -73,17 +105,17 @@ export default function UserList({ users, onUserClick, loading, currentUserProfi
     <div className="h-full overflow-y-auto px-0.5 py-2 space-y-2">
 
       {/* User List */}
-      {displayUsers?.length > 0 ? displayUsers.map((user, index) => (
+      {displayUsers?.length > 0 ? displayUsers.map((user) => (
         <UserListItem
-          key={user.id || `user-${index}`}
+          key={user._stableKey}
           user={user}
-          onClick={() => onUserClick(user.id)}
+          onClick={() => onUserClick(user.id || user.guest_id)}
           currentUserProfile={currentUserProfile}
         />
       )) : (
         /* Emergency fallback - always show at least one guest user */
         <UserListItem
-          key="emergency-alien"
+          key={`emergency-${getGuestId()}`}
           user={{
             id: getGuestId(), // Use guest_id from localStorage for stable identity
             name: getGlobalAlienName(), // Use the global alien name function for consistency

@@ -12,6 +12,25 @@ type Props = {
   onClose: () => void;
 };
 
+/**
+ * Sanitizes email input by removing hidden characters, trimming whitespace,
+ * and normalizing the string to prevent Supabase 400 errors.
+ */
+const sanitizeEmail = (raw: string): string =>
+  (raw ?? "")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "") // Remove zero-width characters
+    .replace(/\u00A0/g, " ") // Replace NBSP with normal space
+    .trim()
+    .replace(/^["']+|["']+$/g, "") // Remove surrounding quotes
+    .trim()
+    .toLowerCase();
+
+/**
+ * Validates email format using a simple regex pattern.
+ */
+const isValidEmail = (email: string): boolean =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
 const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }: Props) {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -102,42 +121,78 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
     setError(null);
     setMessage(null);
     setLoading(true);
+
+    // Sanitize and validate email before sending to Supabase
+    const cleanEmail = sanitizeEmail(email);
+
+    // Client-side validation
+    if (!isValidEmail(cleanEmail)) {
+      console.error("OTP validation error", {
+        message: "Invalid email format",
+        rawEmail: email,
+        rawEmailJson: JSON.stringify(email),
+        cleanEmail,
+        cleanEmailJson: JSON.stringify(cleanEmail),
+        lengths: { raw: email?.length, clean: cleanEmail?.length },
+      });
+      setError(`Email address "${cleanEmail}" is invalid. Please check and try again.`);
+      setLoading(false);
+      return;
+    }
+
     try {
       const { error } = await supabaseClient.auth.signInWithOtp({
-        email,
+        email: cleanEmail,
         options: {
           emailRedirectTo: getRedirectUrl(),
           shouldCreateUser: true
         },
       });
-      if (error) throw error;
-      
-      
+
+      if (error) {
+        // Log detailed debug info for troubleshooting
+        console.error("OTP error", {
+          message: error?.message,
+          rawEmail: email,
+          rawEmailJson: JSON.stringify(email),
+          cleanEmail,
+          cleanEmailJson: JSON.stringify(cleanEmail),
+          lengths: { raw: email?.length, clean: cleanEmail?.length },
+        });
+        throw error;
+      }
+
       // Track the heart signal in our database
       try {
         await fetch('/api/track-heart-signal', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            email, 
-            source: 'welcome_home_modal' 
+          body: JSON.stringify({
+            email: cleanEmail,
+            source: 'welcome_home_modal'
           })
         });
       } catch (trackingError) {
         console.log('Heart signal tracking failed:', trackingError);
         // Don't fail the flow if tracking fails
       }
-      
+
       // Play join aliens audio
       try {
         await sfx.play('join-alien', 0.7);
       } catch (audioError) {
         console.log('Audio playback failed:', audioError);
       }
-      
+
       setMessage("Heart signal sent to the Heartverse! Check your email to step inside.");
     } catch (e: any) {
-      setError(e?.message || "Failed to send heart signal");
+      // Show sanitized email in error message so users don't see invisible characters
+      const errorMsg = e?.message || "Failed to send heart signal";
+      if (errorMsg.toLowerCase().includes("invalid") || errorMsg.toLowerCase().includes("email")) {
+        setError(`Email address "${cleanEmail}" is invalid. Please check and try again.`);
+      } else {
+        setError(errorMsg);
+      }
     } finally {
       setLoading(false);
     }
