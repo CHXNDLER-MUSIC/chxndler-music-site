@@ -879,18 +879,16 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
             {/* TiltSpinCard wrapper for drag-to-spin interaction */}
             <div
-              className="relative"
+              className="relative flex items-center justify-center"
               style={{
-                width: 'auto',
-                height: '80%',
-                maxHeight: '80%',
-                maxWidth: '90%',
-                aspectRatio: '2/3',
-                animation: 'cardPulse 3s ease-in-out infinite'
+                width: '100%',
+                height: '100%',
+                animation: 'cardPulse 3s ease-in-out infinite',
               }}
             >
               <TiltSpinCard
-                className="relative w-full h-full"
+                className="relative flex items-center justify-center"
+                style={{ width: '100%', height: '100%', borderRadius: '24px' }}
                 maxRotateX={10}
                 sensitivity={0.3}
                 returnDuration={400}
@@ -903,36 +901,43 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   setCardRotation(prev => prev + 180);
                   setTimeout(() => setIsAnimatingFlip(false), 500);
                 }}
-                style={{ borderRadius: '24px' }}
               >
                 {/* Front of card - rotates with cardRotation */}
                 <img
                   src={selectedCard?.image || "https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910"}
                   alt={selectedCard?.name || "Card"}
-                  className="absolute inset-0 w-full h-full rounded-3xl object-cover pointer-events-none"
+                  className="rounded-2xl pointer-events-none"
                   style={{
+                    maxHeight: '95%',
+                    maxWidth: '85%',
+                    objectFit: 'contain',
                     backfaceVisibility: 'hidden',
                     WebkitBackfaceVisibility: 'hidden',
                     transform: `rotateY(${cardRotation}deg)`,
                     transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
                     boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                    border: '2px solid rgba(255,255,255,0.1)'
+                    border: '2px solid rgba(255,255,255,0.1)',
                   }}
                   draggable={false}
                 />
 
                 {/* Back of card - offset by 180° */}
                 <img
-                  src="https://ik.imagekit.io/CHXNDLER/card/back.png?updatedAt=1762388351170"
+                  src="/cards/BACK.webp"
                   alt="Card Back"
-                  className="absolute inset-0 w-full h-full rounded-3xl object-cover pointer-events-none"
+                  className="absolute rounded-2xl pointer-events-none"
                   style={{
+                    maxHeight: '95%',
+                    maxWidth: '85%',
+                    objectFit: 'contain',
+                    top: '50%',
+                    left: '50%',
+                    transform: `translate(-50%, -50%) rotateY(${cardRotation + 180}deg)`,
                     backfaceVisibility: 'hidden',
                     WebkitBackfaceVisibility: 'hidden',
-                    transform: `rotateY(${cardRotation + 180}deg)`,
                     transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
                     boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                    border: '2px solid rgba(255,255,255,0.1)'
+                    border: '2px solid rgba(255,255,255,0.1)',
                   }}
                   draggable={false}
                 />
