@@ -82,7 +82,7 @@ export default function MessageList({ messages, onUserClick, loading, messageRea
       <AnimatePresence initial={false}>
         {messages.map((message, index) => (
           <motion.div
-            key={message.id || `msg-${index}`}
+            key={message.clientKey || message.id || `msg-${index}`}
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}

@@ -624,18 +624,31 @@ export default function ChatPanel({ isOpen, onClose }) {
             };
 
             // Replace any optimistic temp/guest message that matches this one
+            // Preserve the clientKey to avoid animation flicker
             setMessages(prev => {
               // If already present (by id), ignore
               if (prev.some(m => m.id === newMessage.id)) return prev;
 
-              const withoutTempDupes = prev.filter(m => {
+              // Find the matching optimistic message to replace in-place
+              const optimisticIndex = prev.findIndex(m => {
                 const isTemp = typeof m.id === 'string' && (m.id.startsWith('temp-') || m.id.startsWith('guest-'));
-                if (!isTemp) return true;
-                // Match by sender and message content
+                if (!isTemp) return false;
                 const msgSenderId = m.user_id || m.guest_id;
-                return !(msgSenderId === senderId && m.message === newMessage.message);
+                return msgSenderId === senderId && m.message === newMessage.message;
               });
-              return [...withoutTempDupes, newMessage];
+
+              // If found, replace in-place preserving the clientKey
+              if (optimisticIndex !== -1) {
+                const updated = [...prev];
+                updated[optimisticIndex] = {
+                  ...newMessage,
+                  clientKey: prev[optimisticIndex].clientKey
+                };
+                return updated;
+              }
+
+              // Otherwise just append (new message from another user)
+              return [...prev, newMessage];
             });
 
             // Play notification sound for new messages (not system messages)
@@ -825,8 +838,11 @@ export default function ChatPanel({ isOpen, onClose }) {
     if (user && profile?.name) {
       try {
         // Optimistic UI: show the message immediately
+        // Use a stable clientKey that will be preserved when the real message arrives
+        const clientKey = `client-${user.id}-${Date.now()}`;
         const optimistic = {
           id: `temp-${user.id}-${Date.now()}`,
+          clientKey: clientKey,
           user_id: user.id,
           message: messageText.trim(),
           message_type: 'message',
@@ -873,8 +889,11 @@ export default function ChatPanel({ isOpen, onClose }) {
       const guestIdentity = await getOrCreateGuestIdentity();
       cachedGuestIdentity = guestIdentity; // Update cache
 
+      // Use a stable clientKey that will be preserved when the real message arrives
+      const clientKey = `client-${guestIdentity.guest_id}-${Date.now()}`;
       const guestMessage = {
         id: `guest-${Date.now()}`,
+        clientKey: clientKey,
         user_id: null,
         guest_id: guestIdentity.guest_id,
         message: messageText.trim(),

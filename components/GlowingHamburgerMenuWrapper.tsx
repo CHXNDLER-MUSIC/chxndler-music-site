@@ -197,7 +197,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
     setTimeout(() => {
       switch (label) {
         case "ABOUT":
-          try { onBeamColorChange?.('pink'); } catch {}
+          try { onBeamColorChange?.('pink-modal'); } catch {}
           setChxndlerOpen(true);
           break;
         // Handle dynamic journey titles:
