@@ -214,8 +214,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   // Guard ref to prevent duplicate profile fetches from INITIAL_SESSION + SIGNED_IN race
   const isFetchingProfileRef = React.useRef(false);
-  // One-time suppression of badge celebrations during initial profile load
-  const initialBadgeSuppressionRef = React.useRef(false);
+  // One-time suppression window for celebrations during initial profile load
+  const initialCelebrationSuppressedUntilRef = React.useRef<number | null>(null);
 
   // Wrapper for setProfile that detects heartcoin balance increases
   // Function to fetch all badges from the database
@@ -284,8 +284,13 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const balanceIncrease = currentBalance - previousHeartcoinBalance;
       
       if (balanceIncrease > 0) {
-        // Trigger celebration for balance increase
-        triggerHeartCoinCelebration(balanceIncrease);
+        // If within initial suppression window, skip triggering celebration
+        const now = Date.now();
+        const suppressUntil = initialCelebrationSuppressedUntilRef.current;
+        if (!suppressUntil || now >= suppressUntil) {
+          // Trigger celebration for balance increase
+          triggerHeartCoinCelebration(balanceIncrease);
+        }
       }
     }
     
@@ -498,9 +503,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       // Update badge progress counters when profile loads
       // Then refresh user badges to show any newly unlocked badges
       // Suppress celebrations during the very first automatic progress check on cold load
-      if (!initialBadgeSuppressionRef.current) {
+      if (!initialCelebrationSuppressedUntilRef.current) {
         try { suppressBadgeCelebrations(8000); } catch {}
-        initialBadgeSuppressionRef.current = true;
+        initialCelebrationSuppressedUntilRef.current = Date.now() + 8000;
       }
 
       updateBadgeProgressCounters(user.id)

@@ -387,38 +387,34 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         songName: state.currentTrack?.title || trackSlug
       });
 
-      // Call RPC to record the play (updated to v2)
-      const { data, error } = await supabaseBrowser.rpc('record_song_play_v2', {
+      // Call new RPC to record progress and claim SOTD
+      const { data, error } = await supabaseBrowser.rpc('record_song_play_and_claim_sod_v1', {
         p_song_id: songUuid
       });
 
       if (error) {
-        // Log detailed error information for debugging
-        console.error('[TRACK] record_song_play_v2 error - DETAILED', {
+        console.error('[TRACK] record_song_play_and_claim_sod_v1 error', {
           songId: songUuid,
-          error: error, // Raw error object
-          errorMessage: error.message,
-          errorCode: error.code,
-          errorDetails: error.details,
-          errorHint: error.hint,
-          hasSession: !!sessionData.session,
-          userId: sessionData.session?.user?.id
+          error,
+          code: (error as any)?.code,
+          message: (error as any)?.message,
+          details: (error as any)?.details,
+          hint: (error as any)?.hint,
         });
       } else {
-        console.log('[TRACK] recorded play', {
+        console.log('[TRACK] recorded+claimed', {
           songId: songUuid,
           data
         });
       }
     } catch (err) {
       // Also enhance exception logging
-      console.error('[TRACK] record_song_play_v2 exception - DETAILED', {
+      console.error('[TRACK] record_song_play_and_claim_sod_v1 error', {
         error: err,
-        errorMessage: (err as any)?.message,
-        errorCode: (err as any)?.code,
-        errorDetails: (err as any)?.details,
-        errorHint: (err as any)?.hint,
-        errorStack: (err as any)?.stack
+        code: (err as any)?.code,
+        message: (err as any)?.message,
+        details: (err as any)?.details,
+        hint: (err as any)?.hint,
       });
     }
   };
