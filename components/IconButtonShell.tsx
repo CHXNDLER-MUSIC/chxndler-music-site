@@ -55,6 +55,11 @@ export default function IconButtonShell({
           -webkit-backdrop-filter:blur(8px);
           transition: box-shadow .2s ease, background .2s ease, transform .12s ease, filter .18s ease;
           cursor:pointer;
+          /* Constrain hit area to the visible rounded button to avoid
+             oversized click targets when parent is 3D-transformed */
+          overflow: hidden;
+          clip-path: inset(0 round 16px);
+          -webkit-clip-path: inset(0 round 16px);
         }
         .ck-icon-btn:hover{
           /* Slightly larger and brighter glow (Instagram match) */

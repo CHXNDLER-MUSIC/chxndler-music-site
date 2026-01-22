@@ -557,6 +557,33 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         setActiveTab('USE');
         setActiveUseTab('CARDS');
 
+        // Special case: CHXNDLER cover on homepage should NOT auto-navigate
+        // Detect via title 'CHXNDLER' or slugs like 'chxndler' / 'chxndler_home'
+        try {
+          const rawTitle = String(e.detail?.cardTitle || '').trim().toLowerCase();
+          const rawSlug = String(e.detail?.songSlug || '').trim().toLowerCase();
+          const isChxndlerCard = rawTitle === 'chxndler' || rawSlug === 'chxndler' || rawSlug === 'chxndler_home';
+          if (isChxndlerCard) {
+            // Ensure we land on the CARDS tab with no element selected
+            setSelectedSong('');
+            setSelectedSongSlug('');
+            setSelectedCardElement(null);
+            // Mark as from collect and open modal
+            setIsFromCollectCard(true);
+            setOpen(true);
+            // Fetch cards if needed so counts render
+            try { if (cards.length === 0) { fetchCards(); } } catch {}
+            // Track and exit early (skip auto-navigation logic)
+            try {
+              track('heartcoin_opened_from_collect', {
+                song_slug: rawSlug || 'chxndler',
+                payload: { song_title: 'CHXNDLER', source: 'collect_card_button_home' }
+              });
+            } catch {}
+            return;
+          }
+        } catch {}
+
         // Set the selected song (name) and slug if provided
         if (e.detail?.cardTitle) {
           setSelectedSong(e.detail.cardTitle);
