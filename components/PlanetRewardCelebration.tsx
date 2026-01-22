@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { useCelebrationLock } from '@/lib/celebrationQueue';
 import { PlanetReward, BOOST_DESCRIPTIONS } from '@/lib/usePlanetRewards';
 import { useProfile } from '@/contexts/ProfileContext';
@@ -26,7 +26,6 @@ const ELEMENT_COLORS: Record<string, { primary: string; glow: string }> = {
 
 export default function PlanetRewardCelebration({ reward, intentionOfDay, onComplete }: PlanetRewardCelebrationProps) {
   const { hasLock, acquire, release, canAcquire } = useCelebrationLock('planet_reward');
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasStartedRef = useRef(false);
   const { user } = useProfile();
@@ -35,19 +34,7 @@ export default function PlanetRewardCelebration({ reward, intentionOfDay, onComp
   // Use intentionOfDay prop as priority if provided
   const displayIntention = intentionOfDay || intentionText;
 
-  // Initialize audio on client
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      audioRef.current = new Audio('/audio/heart-coin.mp3');
-    }
-  }, []);
-
-  const playSound = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
-    }
-  }, []);
+  // No separate audio; HeartCoin or badge sounds play elsewhere if applicable
 
   // Try to acquire lock and show celebration when reward is set
   useEffect(() => {
@@ -73,7 +60,6 @@ export default function PlanetRewardCelebration({ reward, intentionOfDay, onComp
 
     if (acquire()) {
       hasStartedRef.current = true;
-      playSound();
 
       // Auto-close after duration
       timeoutRef.current = setTimeout(() => {
@@ -87,7 +73,7 @@ export default function PlanetRewardCelebration({ reward, intentionOfDay, onComp
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [reward, canAcquire, acquire, release, onComplete, playSound]);
+  }, [reward, canAcquire, acquire, release, onComplete]);
 
   // Load intention text for today's entry for this element
   useEffect(() => {

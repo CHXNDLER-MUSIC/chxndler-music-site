@@ -31,16 +31,10 @@ export default function ElementCardCelebration() {
   const [isVisible, setIsVisible] = useState(false);
   const [element, setElement] = useState('heart');
   const [userName, setUserName] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const isShowingRef = useRef(false); // Prevent double-triggering
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Create audio instance once
-    if (typeof window !== 'undefined') {
-      audioRef.current = new Audio('/audio/heart-coin.mp3');
-    }
-
     const handleCelebration = (event: CustomEvent<ElementCardCelebrationDetail>) => {
       // Prevent double-triggering
       if (isShowingRef.current) return;
@@ -56,12 +50,6 @@ export default function ElementCardCelebration() {
       // Set the element and user name to display
       setElement(celebrationElement?.toLowerCase() || 'heart');
       setUserName(celebrationUserName || null);
-
-      // Play sound
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play().catch(console.error);
-      }
 
       // Show celebration
       setIsVisible(true);

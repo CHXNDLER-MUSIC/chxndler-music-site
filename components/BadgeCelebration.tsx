@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { BADGE_CELEBRATION_EVENT, type BadgeCelebrationDetail } from '@/utils/badgeCelebration';
+import { isCelebrationAudioMuted } from '@/utils/celebrationAudio';
 
 export default function BadgeCelebration() {
   const [isVisible, setIsVisible] = useState(false);
@@ -11,8 +12,8 @@ export default function BadgeCelebration() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Use badge unlock sound
-      audioRef.current = new Audio('/audio/heart-coin.mp3');
+      // Use distinct, softer badge sound
+      audioRef.current = new Audio('/audio/card-ding.mp3');
     }
 
     const handleCelebration = (event: CustomEvent<BadgeCelebrationDetail>) => {
@@ -22,7 +23,7 @@ export default function BadgeCelebration() {
       setBadgeImage(img);
       setBadgeTitle(title);
 
-      if (audioRef.current) {
+      if (audioRef.current && !isCelebrationAudioMuted()) {
         audioRef.current.currentTime = 0;
         audioRef.current.play().catch(() => {});
       }
@@ -114,4 +115,3 @@ export default function BadgeCelebration() {
     </div>
   );
 }
-

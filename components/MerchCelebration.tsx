@@ -1,20 +1,14 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { MERCH_CELEBRATION_EVENT, type MerchCelebrationDetail } from '@/utils/merchCelebration';
 
 export default function MerchCelebration() {
   const [isVisible, setIsVisible] = useState(false);
   const [itemName, setItemName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // Create audio instance once (reuse heart-coin sound for now)
-    if (typeof window !== 'undefined') {
-      audioRef.current = new Audio('/audio/heart-coin.mp3');
-    }
-
     const handleCelebration = (event: CustomEvent<MerchCelebrationDetail>) => {
       const { itemName: name, imageUrl: image } = event.detail;
 
@@ -23,12 +17,6 @@ export default function MerchCelebration() {
       // Set the item details to display
       setItemName(name);
       setImageUrl(image);
-
-      // Play sound
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play().catch(console.error);
-      }
 
       // Show celebration
       setIsVisible(true);

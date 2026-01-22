@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useBadgeCelebrations, type BadgeCelebrationItem } from '@/lib/useBadgeCelebrations';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useCelebrationLock } from '@/lib/celebrationQueue';
+import { isCelebrationAudioMuted } from '@/utils/celebrationAudio';
 
 type CelebrationPhase = 'idle' | 'badge';
 
@@ -28,7 +29,7 @@ export default function BadgeCelebrationController() {
   }, []);
 
   const playBadgeSound = useCallback(() => {
-    if (badgeAudioRef.current) {
+    if (badgeAudioRef.current && !isCelebrationAudioMuted()) {
       badgeAudioRef.current.currentTime = 0;
       badgeAudioRef.current.play().catch(() => {});
     }

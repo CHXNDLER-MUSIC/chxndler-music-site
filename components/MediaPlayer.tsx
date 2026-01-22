@@ -80,6 +80,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
   const waveVolBtnRef = useRef<HTMLButtonElement|null>(null);
   const [mainPopoverPos, setMainPopoverPos] = useState<{left:number; top:number} | null>(null);
   const [wavePopoverPos, setWavePopoverPos] = useState<{left:number; top:number} | null>(null);
+  // WebAudio pipeline for reliable volume control (iOS Safari ignores element volume)
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const mediaSrcRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const gainRef = useRef<GainNode | null>(null);
   // YouTube popout state
   const [showYouTubePopover, setShowYouTubePopover] = useState(false);
   const [showSpotifyPopover, setShowSpotifyPopover] = useState(false);
@@ -128,6 +132,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           setVolume(v);
           if (v > 0) lastNonZeroVolumeRef.current = v;
           const a = audioRef.current; if (a) a.volume = v;
+          // Sync WebAudio gain if already initialized
+          try { if (gainRef.current) gainRef.current.gain.value = v; } catch {}
         }
       }
     } catch {}
@@ -668,6 +674,34 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     if (now - last > 130) { volumeSfxLastRef.current = now; try { sfx.play('volume', 0.3); } catch {} }
   }
 
+  // Ensure WebAudio graph is set up so volume changes work on iOS Safari
+  function ensureAudioGraph() {
+    const a = audioRef.current; if (!a) return;
+    try {
+      const Ctx: any = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!Ctx) return; // WebAudio not available
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new Ctx();
+      }
+      const ctx = audioCtxRef.current;
+      // Avoid creating multiple nodes for the same element
+      if (!mediaSrcRef.current) {
+        mediaSrcRef.current = ctx.createMediaElementSource(a);
+      }
+      if (!gainRef.current) {
+        gainRef.current = ctx.createGain();
+        // Initialize gain to current UI volume
+        gainRef.current.gain.value = Math.max(0, Math.min(1, volume));
+        // Connect: media -> gain -> destination
+        try { mediaSrcRef.current.connect(gainRef.current).connect(ctx.destination); } catch {}
+      }
+      // Best-effort: resume context within user gesture paths
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+    } catch {}
+  }
+
   function adjustVolume(delta: number) {
     const a = audioRef.current; if (!a) return;
     const newVolume = Math.max(0, Math.min(1, volume + delta));
@@ -675,6 +709,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     // Ensure volume is valid before setting on audio element
     if (isFinite(newVolume) && newVolume >= 0 && newVolume <= 1) {
       a.volume = newVolume;
+      // Also route via WebAudio for platforms that ignore element volume (iOS)
+      try { ensureAudioGraph(); if (gainRef.current) gainRef.current.gain.value = newVolume; } catch {}
     }
     playVolumeSfx();
   }
@@ -812,6 +848,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     } catch {}
     
     const onPlay = () => {
+      // Ensure WebAudio graph exists so volume is respected on all platforms
+      try { ensureAudioGraph(); } catch {}
       // Ignore unlock/priming plays that are muted or effectively silent
       const mutedOrSilent = (() => {
         try { return a.muted || a.volume <= 0.0001; } catch { return false; }
@@ -880,6 +918,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       const vol = Math.max(0, Math.min(1, a.volume)); 
       setVolume(vol);
       if (vol > 0) lastNonZeroVolumeRef.current = vol;
+      // Keep WebAudio gain in sync with any external volume changes
+      try { if (gainRef.current) gainRef.current.gain.value = vol; } catch {}
     };
     const onTimeUpdate = () => { 
       // Ignore native timeupdate events while the user is actively seeking
@@ -1142,6 +1182,12 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     if (dx < 0) next(); else prev();
   }
 
+  // Cleanup WebAudio graph on unmount
+  useEffect(() => () => {
+    try { gainRef.current && gainRef.current.disconnect(); } catch {}
+    try { mediaSrcRef.current && mediaSrcRef.current.disconnect(); } catch {}
+  }, []);
+  
   
 
   return (
@@ -2182,6 +2228,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 const pct = rect.height > 0 ? (1 - (y / rect.height)) : 0;
                 const newVol = Math.max(0, Math.min(1, pct));
                 a.volume = newVol; setVolume(newVol);
+                try { ensureAudioGraph(); if (gainRef.current) gainRef.current.gain.value = newVol; } catch {}
                 if (newVol > 0) lastNonZeroVolumeRef.current = newVol;
                 playVolumeSfx();
               };
@@ -2230,6 +2277,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 const pct = rect.height > 0 ? (1 - (y / rect.height)) : 0;
                 const newVol = Math.max(0, Math.min(1, pct));
                 a.volume = newVol; setVolume(newVol);
+                try { ensureAudioGraph(); if (gainRef.current) gainRef.current.gain.value = newVol; } catch {}
                 if (newVol > 0) lastNonZeroVolumeRef.current = newVol;
                 playVolumeSfx();
               };

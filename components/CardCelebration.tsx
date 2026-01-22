@@ -1,20 +1,14 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { CARD_CELEBRATION_EVENT, type CardCelebrationDetail } from '@/utils/cardCelebration';
 
 export default function CardCelebration() {
   const [isVisible, setIsVisible] = useState(false);
   const [cardImage, setCardImage] = useState('');
   const [cardName, setCardName] = useState('');
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // Create audio instance once
-    if (typeof window !== 'undefined') {
-      audioRef.current = new Audio('/audio/heart-coin.mp3'); // Using the same sound for now
-    }
-
     const handleCelebration = (event: CustomEvent<CardCelebrationDetail>) => {
       const { cardImage: celebrationCardImage, cardName: celebrationCardName } = event.detail;
       
@@ -24,12 +18,6 @@ export default function CardCelebration() {
       // Set the card data to display
       setCardImage(celebrationCardImage);
       setCardName(celebrationCardName);
-
-      // Play sound
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play().catch(console.error);
-      }
 
       // Show celebration
       setIsVisible(true);

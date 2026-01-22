@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { isCelebrationAudioMuted } from '@/utils/celebrationAudio';
 import type { ElementType } from '@/lib/planetConfig';
 
 export const RELIC_CELEBRATION_EVENT = 'relic:celebration';
@@ -27,9 +28,9 @@ export default function RelicCelebration() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // Create audio instance once
+    // Create audio instance once (use softer chime for relics)
     if (typeof window !== 'undefined') {
-      audioRef.current = new Audio('/audio/heart-coin.mp3');
+      audioRef.current = new Audio('/audio/card-ding.mp3');
     }
 
     const handleCelebration = (event: CustomEvent<RelicCelebrationDetail>) => {
@@ -40,8 +41,8 @@ export default function RelicCelebration() {
 
       setData(detail);
 
-      // Play sound
-      if (audioRef.current) {
+      // Play sound unless muted globally
+      if (audioRef.current && !isCelebrationAudioMuted()) {
         audioRef.current.currentTime = 0;
         audioRef.current.play().catch(console.error);
       }

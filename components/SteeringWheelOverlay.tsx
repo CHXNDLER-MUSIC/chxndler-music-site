@@ -12,6 +12,7 @@ import { sfx } from "@/lib/sfx";
 import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
 import { triggerCardCelebration } from "@/utils/cardCelebration";
 import { triggerBadgeCelebration } from "@/utils/badgeCelebration";
+import { muteCelebrationAudio } from "@/utils/celebrationAudio";
 
 // Helper to detect Safari browser
 const isSafariUA =
@@ -139,6 +140,8 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
   }, [closeAllSignal]);
 
   function handleLaunch() {
+    // Briefly mute celebration audio to avoid overlapping chimes at START
+    try { muteCelebrationAudio(7000); } catch {}
     // Track Start button with structured event
     trackNavEvent({ event_type: 'start_click', action: 'start' });
 

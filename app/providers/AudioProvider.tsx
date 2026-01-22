@@ -463,18 +463,19 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      console.log('[SOTD] Claiming Song of the Day award', {
-        songId: songUuid,
-        songName: state.currentTrack?.title || trackSlug,
-        day: nyDay,
-        completionRatio
-      });
+      const audioEl = audioRef.current;
+      const currentTime = audioEl?.currentTime ?? null;
+      const duration = audioEl?.duration ?? null;
+      const ratio = completionRatio;
+      console.log('[SOD RPC FIRE]', { songId: songUuid, currentTime, duration, ratio });
 
       // Use RPC to claim SOTD and award HeartCoin; frontend should NOT touch user_heartcoin_awards
       const { data, error } = await supabaseBrowser.rpc('claim_song_of_day_and_award', {
         p_song_id: songUuid,
         p_completion_ratio: completionRatio,
       });
+
+      console.log('[SOD RPC RESULT]', { data, error });
 
       if (error) {
         console.error('[SOTD] claim_song_of_day_and_award error', {
