@@ -104,7 +104,7 @@ export const TOUR_STEPS: TourStep[] = [
   // Step 8: NEW - Music Power Button (menu stays closed)
   {
     id: "music-dropdown",
-    selector: "[data-tour-id='music-power-button']",
+    selector: ".hud-play-btn-enhanced[data-tour-id='music-power-button']",
     title: "Music",
     body: "Choose a track to listen to here.",
     requiresMenuClosed: true

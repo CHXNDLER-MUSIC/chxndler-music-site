@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { BADGE_CELEBRATION_EVENT, type BadgeCelebrationDetail } from '@/utils/badgeCelebration';
-import { isCelebrationAudioMuted } from '@/utils/celebrationAudio';
+import { isCelebrationAudioAllowed } from '@/utils/celebrationAudio';
 
 export default function BadgeCelebration() {
   const [isVisible, setIsVisible] = useState(false);
@@ -23,7 +23,7 @@ export default function BadgeCelebration() {
       setBadgeImage(img);
       setBadgeTitle(title);
 
-      if (audioRef.current && !isCelebrationAudioMuted()) {
+      if (audioRef.current && isCelebrationAudioAllowed()) {
         audioRef.current.currentTime = 0;
         audioRef.current.play().catch(() => {});
       }

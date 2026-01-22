@@ -469,13 +469,19 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const ratio = completionRatio;
       console.log('[SOD RPC FIRE]', { songId: songUuid, currentTime, duration, ratio });
 
-      // Use RPC to claim SOTD and award HeartCoin; frontend should NOT touch user_heartcoin_awards
+      // Build NY day string for RPC
+      const dayNY = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+      const dayStr = dayNY.toISOString().slice(0,10);
+
+      // Use RPC to claim SOTD and award HeartCoin; frontend should NOT touch awards table directly
+      console.log('[SOTD RPC args]', { songId: songUuid, dayStr, completionRatio });
       const { data, error } = await supabaseBrowser.rpc('claim_song_of_day_and_award', {
         p_song_id: songUuid,
+        p_day: dayStr,
         p_completion_ratio: completionRatio,
       });
 
-      console.log('[SOD RPC RESULT]', { data, error });
+      console.log('[SOTD RPC result]', { data, error });
 
       if (error) {
         console.error('[SOTD] claim_song_of_day_and_award error', {
@@ -672,71 +678,28 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       try {
         const songUuid = await getSongUuidBySlug(session.trackId);
         if (songUuid) {
+          // Build minimal payload: only valid columns per schema
           const nyDay = getNYDateString();
+          // Guard: ensure both IDs exist
+          if (!user?.id || !songUuid) {
+            return;
+          }
 
-          // Read existing to preserve MAX semantics
-          let existingMax = 0;
-          let existingCompleted = false;
-          let existingCompletedAt: string | null = null;
-          try {
-            const { data: existing } = await supabaseBrowser
-              .from('user_song_daily_progress')
-              .select('listened_seconds, completed, completed_at')
-              .eq('user_id', user.id)
-              .eq('song_id', songUuid)
-              .eq('day', nyDay)
-              .maybeSingle();
-            if (existing) existingMax = Math.max(0, Number(existing.listened_seconds ?? 0));
-            if (existing) {
-              existingCompleted = Boolean((existing as any).completed === true);
-              existingCompletedAt = (existing as any).completed_at || null;
-            }
-          } catch {}
-
-          const newMax = Math.max(existingMax, listenedSeconds);
-          const percent = durationSeconds && durationSeconds > 0
-            ? Math.min(1, newMax / durationSeconds)
-            : null;
-          const completedNow = durationSeconds && durationSeconds > 0
-            ? isSongComplete(durationSeconds, newMax)
-            : false;
-          const finalCompleted = existingCompleted || completedNow;
-          const completedAt = finalCompleted
-            ? (existingCompletedAt || (completedNow ? new Date().toISOString() : null))
-            : null;
-
-          const dailyProgressPayload = {
+          const dailyProgressPayload: any = {
             user_id: user.id,
             song_id: songUuid,
-            day: nyDay,
-            listened_seconds: newMax,
-            duration_seconds: durationSeconds,
-            completion_percent: percent,
-            completed: finalCompleted,
-            completed_at: completedAt,
+            day: nyDay, // explicit NY date; DB has default but we pass for clarity
           };
 
-          // Use upsert to update existing progress or create new
-          const onConflict = 'user_id,song_id,day';
+          console.log('[DailyProgress Payload]', dailyProgressPayload);
           const { error: dailyProgressError } = await supabaseBrowser
             .from('user_song_daily_progress')
-            .upsert(dailyProgressPayload, { onConflict, ignoreDuplicates: false });
+            .upsert(dailyProgressPayload, { onConflict: 'user_id,song_id,day', ignoreDuplicates: false });
 
           if (dailyProgressError) {
-            console.error('🎧 Daily progress upsert failed (flushSession)', {
-              error: dailyProgressError,
-              errorMessage: dailyProgressError?.message,
-              errorCode: dailyProgressError?.code,
-              errorDetails: (dailyProgressError as any)?.details,
-              errorHint: (dailyProgressError as any)?.hint,
-              payload: dailyProgressPayload,
-              onConflict,
-              hasSession: true,
-              userId: user.id,
-            });
-            // Don't fail the whole flush if daily progress fails
+            console.log('[DailyProgress Upsert Error]', dailyProgressError);
           } else {
-            console.log(`🎧 Updated daily progress: ${session.trackId}, ${newMax}s on ${nyDay}`);
+            console.log(`🎧 Upserted daily progress row for ${session.trackId} on ${nyDay}`);
           }
         }
       } catch (dailyProgressErr) {
@@ -873,94 +836,22 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         if (!songUuid) return;
 
         const nyDay = getNYDateString();
-
-        // Track max listened so far per session to avoid decreasing
-        (onTime as any)._progress = (onTime as any)._progress || { lastSaved: 0, maxSoFar: 0, day: '', songUuid: '', everCompleted: false, completedAt: null };
-        const prog = (onTime as any)._progress as { lastSaved: number; maxSoFar: number; day: string; songUuid: string; everCompleted: boolean; completedAt: string | null };
-
-        // Reset cache if day or song changed
-        if (prog.day !== nyDay || prog.songUuid !== songUuid) {
-          prog.lastSaved = 0;
-          prog.maxSoFar = 0;
-          prog.day = nyDay;
-          prog.songUuid = songUuid;
-          prog.everCompleted = false;
-          prog.completedAt = null;
-        }
-
-        // Use sessionRef to get listened seconds; fallback to currentTime
-        const listenedSeconds = Math.max(0, Math.floor(sessionRef.current?.listenedSeconds ?? currentTime));
-        const durationSeconds = a.duration && !isNaN(a.duration) ? Math.floor(a.duration) : null;
-
-        // First time for this song/day: prime maxSoFar from existing row to preserve MAX semantics
-        if (prog.maxSoFar === 0) {
-          try {
-            const { data: existing } = await supabaseBrowser
-              .from('user_song_daily_progress')
-              .select('listened_seconds, duration_seconds, completed, completed_at')
-              .eq('user_id', user.id)
-              .eq('song_id', songUuid)
-              .eq('day', nyDay)
-              .maybeSingle();
-            if (existing) {
-              prog.maxSoFar = Math.max(0, Number(existing.listened_seconds ?? 0));
-              prog.everCompleted = Boolean((existing as any).completed === true);
-              prog.completedAt = (existing as any).completed_at || null;
-            }
-          } catch {}
-        }
-
-        const newMax = Math.max(prog.maxSoFar, listenedSeconds);
-
-        // Only write if there's meaningful progress since last save (>=3s) or duration known/changed
-        if (newMax - prog.lastSaved < 3 && (!durationSeconds || durationSeconds === 0)) return;
-
-        // Compute completion metrics based on available duration
-        const percent = durationSeconds && durationSeconds > 0
-          ? Math.min(1, newMax / durationSeconds)
-          : null;
-        const completedNow = durationSeconds && durationSeconds > 0
-          ? isSongComplete(durationSeconds, newMax)
-          : false;
-        const finalCompleted = prog.everCompleted || completedNow;
-        const completedAt = finalCompleted
-          ? (prog.completedAt || (completedNow ? new Date().toISOString() : null))
-          : null;
-
+        // Guard: ensure both IDs exist
+        if (!user?.id || !songUuid) return;
+        // Minimal payload only; table requires user_id and song_id, day has default
         const dailyProgressPayload: any = {
           user_id: user.id,
           song_id: songUuid,
           day: nyDay,
-          listened_seconds: newMax,
-          duration_seconds: durationSeconds,
-          completion_percent: percent,
-          completed: finalCompleted,
-          completed_at: completedAt,
         };
 
-        const onConflict = 'user_id,song_id,day';
+        console.log('[DailyProgress Payload]', dailyProgressPayload);
         const { error: dailyProgressError } = await supabaseBrowser
           .from('user_song_daily_progress')
-          .upsert(dailyProgressPayload, { onConflict, ignoreDuplicates: false });
+          .upsert(dailyProgressPayload, { onConflict: 'user_id,song_id,day', ignoreDuplicates: false });
 
         if (dailyProgressError) {
-          console.error('[DailyProgress Upsert] failed', {
-            error: dailyProgressError,
-            errorMessage: dailyProgressError?.message,
-            errorCode: dailyProgressError?.code,
-            errorDetails: (dailyProgressError as any)?.details,
-            errorHint: (dailyProgressError as any)?.hint,
-            payload: dailyProgressPayload,
-            onConflict,
-            hasSession: true,
-            userId: user.id,
-          });
-        } else {
-          prog.lastSaved = newMax;
-          prog.maxSoFar = newMax;
-          // Persist completion cache
-          prog.everCompleted = finalCompleted;
-          prog.completedAt = completedAt;
+          console.log('[DailyProgress Upsert Error]', dailyProgressError);
         }
       } catch (progressErr) {
         // Be quiet on errors here to avoid console spam; detailed errors are logged above

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { isCelebrationAudioMuted } from '@/utils/celebrationAudio';
+import { isCelebrationAudioAllowed } from '@/utils/celebrationAudio';
 import type { ElementType } from '@/lib/planetConfig';
 
 export const RELIC_CELEBRATION_EVENT = 'relic:celebration';
@@ -41,8 +41,8 @@ export default function RelicCelebration() {
 
       setData(detail);
 
-      // Play sound unless muted globally
-      if (audioRef.current && !isCelebrationAudioMuted()) {
+      // Play sound only when enabled and not muted
+      if (audioRef.current && isCelebrationAudioAllowed()) {
         audioRef.current.currentTime = 0;
         audioRef.current.play().catch(console.error);
       }

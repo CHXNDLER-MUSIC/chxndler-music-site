@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { HEARTCOIN_CELEBRATION_EVENT, type HeartCoinCelebrationDetail } from '@/utils/heartcoinCelebration';
-import { isCelebrationAudioMuted } from '@/utils/celebrationAudio';
+import { isCelebrationAudioAllowed } from '@/utils/celebrationAudio';
 
 export default function HeartCoinCelebration() {
   const [isVisible, setIsVisible] = useState(false);
@@ -24,8 +24,8 @@ export default function HeartCoinCelebration() {
       // Set the amount to display
       setAmount(celebrationAmount);
 
-      // Play sound unless globally muted (e.g., during START/warp)
-      if (audioRef.current && !isCelebrationAudioMuted()) {
+      // Play sound only when enabled and not muted
+      if (audioRef.current && isCelebrationAudioAllowed()) {
         audioRef.current.currentTime = 0;
         audioRef.current.play().catch(console.error);
       }
