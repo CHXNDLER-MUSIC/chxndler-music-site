@@ -18,6 +18,7 @@ interface BadgeDisplay {
   requirement_type: string;
   requirement_count: number;
   unlocked: boolean;
+  earned_at?: string | null;
   progress?: {
     current: number;
     target: number;
