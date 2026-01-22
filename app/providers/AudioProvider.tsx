@@ -434,8 +434,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Get today's date in NY timezone
-      const nyDay = getNYDateString();
+      // Get today's date in NY timezone (YYYY-MM-DD)
+      const nyDayStrToday = getNYDateString();
 
       // Check if this is the Song of the Day
       // Use ref to avoid stale closure in callbacks
@@ -455,10 +455,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
       // Check guard ref to prevent duplicate calls in the same session
       const lastClaim = lastSotdClaimRef.current;
-      if (lastClaim && lastClaim.songId === songUuid && lastClaim.day === nyDay) {
+      if (lastClaim && lastClaim.songId === songUuid && lastClaim.day === nyDayStrToday) {
         console.log('[SOTD] skipped: already claimed in this session', {
           songId: songUuid,
-          day: nyDay
+          day: nyDayStrToday
         });
         return;
       }
@@ -467,21 +467,23 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const currentTime = audioEl?.currentTime ?? null;
       const duration = audioEl?.duration ?? null;
       const ratio = completionRatio;
-      console.log('[SOD RPC FIRE]', { songId: songUuid, currentTime, duration, ratio });
 
-      // Build NY day string for RPC
-      const dayNY = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
-      const dayStr = dayNY.toISOString().slice(0,10);
+      // Build NY day string for RPC per requirement
+      const nyDay = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+      const nyDayStr = nyDay.toISOString().slice(0,10);
+
+      // Log that the RPC is firing with the required payload
+      console.log('SOTD RPC fired', { songId: songUuid, completionRatio: ratio, nyDayStr });
 
       // Use RPC to claim SOTD and award HeartCoin; frontend should NOT touch awards table directly
-      console.log('[SOTD RPC args]', { songId: songUuid, dayStr, completionRatio });
       const { data, error } = await supabaseBrowser.rpc('claim_song_of_day_and_award', {
         p_song_id: songUuid,
-        p_day: dayStr,
+        p_day: nyDayStr,
         p_completion_ratio: completionRatio,
       });
 
-      console.log('[SOTD RPC result]', { data, error });
+      // Log raw RPC response
+      console.log('SOTD RPC response', { data, error });
 
       if (error) {
         console.error('[SOTD] claim_song_of_day_and_award error', {
@@ -497,7 +499,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Update guard ref to prevent duplicate calls
-      lastSotdClaimRef.current = { songId: songUuid, day: nyDay };
+      lastSotdClaimRef.current = { songId: songUuid, day: nyDayStrToday };
 
       const resp: any = data || {};
       const ok = !!resp.ok;
@@ -510,7 +512,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           try { triggerHeartCoinCelebration(1); } catch {}
           try {
             window.dispatchEvent(new CustomEvent('songOfDay:refresh'));
-            window.dispatchEvent(new CustomEvent('dailySongQuestCompleted', { detail: { day: nyDay } }));
+            window.dispatchEvent(new CustomEvent('dailySongQuestCompleted', { detail: { day: nyDayStrToday } }));
           } catch {}
         }
       } else if (reason === 'not_completed') {

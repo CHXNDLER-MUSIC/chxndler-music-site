@@ -44,18 +44,34 @@ export async function POST(req: NextRequest) {
     // Generate the heart link with invitation token
     const heartLink = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://chxndler.world'}/join?invitation=${invitationToken}&from=${encodeURIComponent(inviterName)}`;
     
-    // Store the invitation in database for tracking
-    await admin
-      .from('invitations')
-      .insert({
-        id: invitationToken,
-        inviter_id: user.id,
-        recipient_email: recipientEmail,
-        personal_message: personalMessage,
-        heart_link: heartLink,
-        created_at: new Date().toISOString(),
-        status: 'sent'
-      });
+    // Track this event in sessions table (invitations table removed)
+    try {
+      // Probe sessions schema to map columns if needed
+      let emailCol = 'email';
+      let sourceCol = 'source';
+      try {
+        const { data: sampleRows } = await admin.from('sessions').select('*').limit(1);
+        const sample = sampleRows?.[0] || {};
+        const cols = new Set(Object.keys(sample));
+        const emailCandidates = ['email', 'recipient_email', 'user_email', 'email_address'];
+        const sourceCandidates = ['source', 'origin', 'referrer', 'ref_source'];
+        const detectedEmail = emailCandidates.find((c) => cols.has(c));
+        const detectedSource = sourceCandidates.find((c) => cols.has(c));
+        if (detectedEmail) emailCol = detectedEmail;
+        if (detectedSource) sourceCol = detectedSource;
+      } catch (probeErr) {
+        console.error('sessions schema probe failed:', probeErr);
+      }
+      const insertData: Record<string, any> = {};
+      if (recipientEmail) insertData[emailCol] = recipientEmail;
+      insertData[sourceCol] = 'send-heart-invitation';
+      const { error: sessionInsertError } = await admin.from('sessions').insert(insertData);
+      if (sessionInsertError) {
+        console.error('Failed to record invitation session:', sessionInsertError);
+      }
+    } catch (e) {
+      console.error('Unexpected error tracking invitation session:', e);
+    }
 
     // Create email content
     const emailSubject = `${inviterName} sent you a heart from the Heartverse 💖`;
@@ -134,11 +150,7 @@ export async function POST(req: NextRequest) {
       });
     } catch (emailError) {
       console.error('Failed to send invitation email:', emailError);
-      // Update invitation status to failed
-      await admin
-        .from('invitations')
-        .update({ status: 'failed', error: String(emailError) })
-        .eq('id', invitationToken);
+      // No invitations table to update; failure is logged only
       
       return NextResponse.json({ 
         error: 'Failed to send invitation email' 

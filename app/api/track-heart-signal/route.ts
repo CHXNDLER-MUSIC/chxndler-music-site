@@ -3,47 +3,53 @@ import { getSupabaseAdmin } from '@/lib/supabaseServer';
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, source = 'welcome_home_modal' } = await req.json();
-    
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
-    }
+    const body = await req.json().catch(() => ({}));
+    const email = body?.email as string | undefined;
+    const source = (body?.source as string | undefined) ?? 'welcome_home_modal';
 
     const admin = getSupabaseAdmin();
-    
-    // Track the heart signal in our invitations table
-    // This is an anonymous heart signal, so inviter_id is null
-    const { data: invitation, error: invitationError } = await admin
-      .from('invitations')
-      .insert({
-        inviter_id: null, // Anonymous invitation from welcome modal
-        recipient_email: email,
-        status: 'sent',
-        heart_link: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://chxndler.world'}/auth/callback`,
-        personal_message: `Welcome to the Heartverse! You've received a heart signal.`,
-        created_at: new Date().toISOString()
-      })
-      .select()
-      .single();
 
-    if (invitationError) {
-      console.error('Failed to track heart signal:', invitationError);
-      // Don't fail the request if tracking fails
+    // If nothing to record, still return ok to keep UX smooth
+    if (!email && !source) {
+      console.warn('track-heart-signal called with no email or source');
+      return NextResponse.json({ ok: true }, { status: 200 });
     }
 
-    console.log('Heart signal tracked for email:', email, 'Source:', source);
-    
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Heart signal tracked successfully',
-      invitation_id: invitation?.id
-    });
+    // Try to detect column names if sessions schema differs
+    let emailCol = 'email';
+    let sourceCol = 'source';
+    try {
+      const { data: sampleRows } = await admin
+        .from('sessions')
+        .select('*')
+        .limit(1);
+      const sample = sampleRows?.[0] || {};
+      const cols = new Set(Object.keys(sample));
+      const emailCandidates = ['email', 'recipient_email', 'user_email', 'email_address'];
+      const sourceCandidates = ['source', 'origin', 'referrer', 'ref_source'];
+      const detectedEmail = emailCandidates.find((c) => cols.has(c));
+      const detectedSource = sourceCandidates.find((c) => cols.has(c));
+      if (detectedEmail) emailCol = detectedEmail;
+      if (detectedSource) sourceCol = detectedSource;
+    } catch (schemaProbeError) {
+      console.error('Failed to probe sessions schema:', schemaProbeError);
+    }
 
+    const insertData: Record<string, any> = {};
+    if (email) insertData[emailCol] = email;
+    if (source) insertData[sourceCol] = source;
+
+    if (Object.keys(insertData).length > 0) {
+      const { error } = await admin.from('sessions').insert(insertData);
+      if (error) {
+        console.error('Failed to track heart signal in sessions:', error);
+      }
+    }
+
+    return NextResponse.json({ ok: true }, { status: 200 });
   } catch (error: any) {
-    console.error('Track heart signal error:', error);
-    return NextResponse.json(
-      { error: 'Failed to track heart signal' }, 
-      { status: 500 }
-    );
+    // Always return ok, but log the real error
+    console.error('track-heart-signal unexpected error:', error);
+    return NextResponse.json({ ok: true }, { status: 200 });
   }
 }
