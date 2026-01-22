@@ -1,7 +1,7 @@
 /**
  * useDailySongProgress – simplified for new backend flow.
  *
- * Backend handles progress + completion (>=50%) and awards SOTD automatically.
+ * Backend awards SOTD via RPC only when song is complete (~100%).
  * Frontend should ONLY increment play_count when the track fully ends (loop).
  * This hook is kept for API compatibility and exports a helper to call on 'ended'.
  */

@@ -190,7 +190,9 @@ export default function SignalChat({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: `${profile.name} connected to the signal`,
-          is_system: true
+          is_system: true,
+          client_id: crypto.randomUUID(),
+          created_at: new Date().toISOString(),
         }),
       });
 

@@ -5,11 +5,9 @@ import { useBadgeCelebrations, type BadgeCelebrationItem } from '@/lib/useBadgeC
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useCelebrationLock } from '@/lib/celebrationQueue';
 
-type CelebrationPhase = 'idle' | 'badge' | 'pause' | 'heartcoin';
+type CelebrationPhase = 'idle' | 'badge';
 
 const BADGE_DURATION = 1600;
-const PAUSE_DURATION = 250;
-const HEARTCOIN_DURATION = 1200;
 
 export default function BadgeCelebrationController() {
   const { user } = useAuth();
@@ -19,20 +17,20 @@ export default function BadgeCelebrationController() {
 
   const [phase, setPhase] = useState<CelebrationPhase>('idle');
   const [currentItem, setCurrentItem] = useState<BadgeCelebrationItem | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const badgeAudioRef = useRef<HTMLAudioElement | null>(null);
   const processingRef = useRef(false);
 
-  // Initialize audio on client
+  // Initialize audio on client (use distinct sound for badge, not heart-coin)
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      audioRef.current = new Audio('/audio/heart-coin.mp3');
+      badgeAudioRef.current = new Audio('/audio/card-ding.mp3');
     }
   }, []);
 
-  const playSound = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
+  const playBadgeSound = useCallback(() => {
+    if (badgeAudioRef.current) {
+      badgeAudioRef.current.currentTime = 0;
+      badgeAudioRef.current.play().catch(() => {});
     }
   }, []);
 
@@ -49,7 +47,7 @@ export default function BadgeCelebrationController() {
           processingRef.current = true;
           setCurrentItem(next);
           setPhase('badge');
-          playSound();
+          playBadgeSound();
         }
       }, 100);
       return () => clearInterval(checkInterval);
@@ -59,9 +57,9 @@ export default function BadgeCelebrationController() {
       processingRef.current = true;
       setCurrentItem(next);
       setPhase('badge');
-      playSound();
+      playBadgeSound();
     }
-  }, [next, phase, playSound, canAcquire, acquire]);
+  }, [next, phase, playBadgeSound, canAcquire, acquire]);
 
   // Handle phase transitions
   useEffect(() => {
@@ -80,39 +78,23 @@ export default function BadgeCelebrationController() {
           }
         } catch {}
 
-        // If heartcoins > 0, go to pause then heartcoin; otherwise finish
-        if (currentItem.heartCoins > 0) {
-          setPhase('pause');
-        } else {
-          setPhase('idle');
-          setCurrentItem(null);
-          processingRef.current = false;
-          release();
-          pop();
-        }
-      }, BADGE_DURATION);
-    } else if (phase === 'pause') {
-      timeoutId = setTimeout(() => {
-        setPhase('heartcoin');
-        playSound(); // Play sound again for heartcoin celebration
-      }, PAUSE_DURATION);
-    } else if (phase === 'heartcoin') {
-      timeoutId = setTimeout(() => {
+        // Finish here regardless of heartCoins. The global HeartCoin celebration
+        // will be triggered by the transaction logging path to avoid duplicates.
         setPhase('idle');
         setCurrentItem(null);
         processingRef.current = false;
-        release(); // Release the celebration lock
+        release();
         pop();
-      }, HEARTCOIN_DURATION);
+      }, BADGE_DURATION);
     }
 
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [phase, currentItem, pop, playSound, release]);
+  }, [phase, currentItem, pop, release]);
 
   // Don't render anything if not showing a celebration
-  if (phase === 'idle' || phase === 'pause' || !currentItem) return null;
+  if (phase === 'idle' || !currentItem) return null;
 
   // Badge celebration overlay
   if (phase === 'badge') {

@@ -2602,6 +2602,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   };
 
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
+    // Ensure the profile popover closes before opening HeartCoin display
+    try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('closeProfilePopover')); } catch {}
     try { onClick?.(e); } catch {}
     if (!e.defaultPrevented) {
       e.preventDefault();

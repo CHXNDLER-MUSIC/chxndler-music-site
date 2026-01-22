@@ -36,6 +36,7 @@ type BadgeData = {
   description: string | null;
   icon_url: string | null;
   category: string | null;
+  earned_at?: string | null;
 };
 
 // Rarity colors for card display
@@ -66,6 +67,8 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
   const [enlargedBadge, setEnlargedBadge] = useState<{ entryId: string; badge: BadgeData } | null>(null);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [spinRotation, setSpinRotation] = useState(0);
+  const [badgeRotation, setBadgeRotation] = useState(0);
+  const [isBadgeAnimatingFlip, setIsBadgeAnimatingFlip] = useState(false);
   const spinAudioRef = useRef<HTMLAudioElement | null>(null);
   // Public profile fallbacks when denormalized fields are missing
   const [authorOverrides, setAuthorOverrides] = useState<Record<string, { name: string | null; avatar: string | null; journey: string | null }>>({});
@@ -230,6 +233,14 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
     }
   }, [enlargedCard]);
 
+  // Reset badge state when enlarged badge changes
+  useEffect(() => {
+    if (enlargedBadge) {
+      setBadgeRotation(0);
+      setIsBadgeAnimatingFlip(false);
+    }
+  }, [enlargedBadge]);
+
   // Handle card click - spin 180 degrees
   const handleCardSpin = () => {
     // Play spin sound
@@ -338,12 +349,12 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
         height: (enlargedCard || enlargedBadge) ? '100%' : undefined,
       }}
     >
-      {/* Full-screen Enlarged Card Overlay - matches Binder popout visuals */}
+      {/* Full-screen Enlarged Card Overlay - covers entire journal panel */}
       {enlargedCard && (
         <div
-          className="absolute inset-0 z-50 flex items-center justify-center"
+          className="fixed inset-0 z-[9999] flex items-center justify-center"
           style={{
-            background: 'rgba(0, 0, 0, 0.9)',
+            background: 'rgba(0, 0, 0, 0.95)',
             backdropFilter: 'blur(12px)',
             overflow: 'hidden',
           }}
@@ -379,186 +390,297 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
             </svg>
           </button>
 
-          {/* TiltSpinCard wrapper for drag-to-spin interaction */}
+          {/* Content container - fills entire area like badge overlay */}
           <div
-            className="relative flex items-center justify-center"
-            style={{
-              width: '100%',
-              height: '100%',
-              animation: 'cardPulse 3s ease-in-out infinite',
-            }}
+            className="relative w-full h-full max-h-[90%] rounded-lg p-4 flex flex-col items-center justify-center"
             onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'rgba(0,0,0,0.7)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              boxShadow: '0 0 30px rgba(255, 105, 180, 0.25)'
+            }}
           >
-            <TiltSpinCard
-              className="relative flex items-center justify-center"
-              style={{ width: '100%', height: '100%', borderRadius: '24px' }}
-              maxRotateX={10}
-              sensitivity={0.3}
-              returnDuration={400}
-              enableSpin={true}
-              spinSensitivity={0.8}
-              onRotationChange={setSpinRotation}
-              onClick={() => {
-                try { sfx.play('flip', 0.45); } catch {}
-                setIsCardFlipped(prev => !prev);
+            {/* TiltSpinCard wrapper for drag-to-spin interaction */}
+            <div
+              className="flex-1 flex items-center justify-center w-full"
+              style={{
+                animation: 'cardPulse 3s ease-in-out infinite',
               }}
             >
-              {/* Front of card - rotates with spinRotation */}
-              <img
-                src={enlargedCard.card.artwork_url || '/cards/default-card.webp'}
-                alt={enlargedCard.card.card_name}
-                className="rounded-2xl pointer-events-none"
-                style={{
-                  maxHeight: '95%',
-                  maxWidth: '85%',
-                  objectFit: 'contain',
-                  backfaceVisibility: 'hidden',
-                  WebkitBackfaceVisibility: 'hidden',
-                  transform: `rotateY(${spinRotation + (isCardFlipped ? 180 : 0)}deg)`,
-                  transition: 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                  border: '2px solid rgba(255,255,255,0.1)',
+              <TiltSpinCard
+                className="relative flex items-center justify-center"
+                style={{ width: '100%', height: '100%', borderRadius: '24px' }}
+                maxRotateX={10}
+                sensitivity={0.3}
+                returnDuration={400}
+                enableSpin={true}
+                spinSensitivity={0.8}
+                onRotationChange={setSpinRotation}
+                onClick={() => {
+                  try { sfx.play('flip', 0.45); } catch {}
+                  setIsCardFlipped(prev => !prev);
                 }}
-                draggable={false}
-                onError={(e) => {
-                  e.currentTarget.src = '/cards/default-card.webp';
-                }}
-              />
+              >
+                {/* Front of card - rotates with spinRotation */}
+                <img
+                  src={enlargedCard.card.artwork_url || '/cards/default-card.webp'}
+                  alt={enlargedCard.card.card_name}
+                  className="rounded-2xl pointer-events-none"
+                  style={{
+                    maxHeight: '90%',
+                    maxWidth: '80%',
+                    objectFit: 'contain',
+                    backfaceVisibility: 'hidden',
+                    WebkitBackfaceVisibility: 'hidden',
+                    transform: `rotateY(${spinRotation + (isCardFlipped ? 180 : 0)}deg)`,
+                    transition: 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                    border: '2px solid rgba(255,255,255,0.1)',
+                  }}
+                  draggable={false}
+                  onError={(e) => {
+                    e.currentTarget.src = '/cards/default-card.webp';
+                  }}
+                />
 
-              {/* Back of card - offset by 180° */}
-              <img
-                src="/cards/BACK.webp"
-                alt="Card Back"
-                className="absolute rounded-2xl pointer-events-none"
-                style={{
-                  maxHeight: '95%',
-                  maxWidth: '85%',
-                  objectFit: 'contain',
-                  top: '50%',
-                  left: '50%',
-                  transform: `translate(-50%, -50%) rotateY(${spinRotation + (isCardFlipped ? 180 : 0) + 180}deg)`,
-                  backfaceVisibility: 'hidden',
-                  WebkitBackfaceVisibility: 'hidden',
-                  transition: 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                  border: '2px solid rgba(255,255,255,0.1)',
-                }}
-                draggable={false}
-              />
-            </TiltSpinCard>
+                {/* Back of card - offset by 180° */}
+                <img
+                  src="/cards/BACK.webp"
+                  alt="Card Back"
+                  className="absolute rounded-2xl pointer-events-none"
+                  style={{
+                    maxHeight: '90%',
+                    maxWidth: '80%',
+                    objectFit: 'contain',
+                    top: '50%',
+                    left: '50%',
+                    transform: `translate(-50%, -50%) rotateY(${spinRotation + (isCardFlipped ? 180 : 0) + 180}deg)`,
+                    backfaceVisibility: 'hidden',
+                    WebkitBackfaceVisibility: 'hidden',
+                    transition: 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                    border: '2px solid rgba(255,255,255,0.1)',
+                  }}
+                  draggable={false}
+                />
+              </TiltSpinCard>
+            </div>
+
+            {/* Card name at bottom */}
+            <div className="text-center mt-4">
+              <div className="text-2xl font-bold text-white">
+                {enlargedCard.card.card_name}
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Full-screen Enlarged Badge Overlay */}
+      {/* Full-screen Enlarged Badge Overlay - covers entire journal panel */}
       {enlargedBadge && (
         <div
-          className="absolute inset-0 z-50 flex flex-col items-center justify-start pt-4"
+          className="fixed inset-0 z-[9999] flex items-center justify-center"
           style={{
-            background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.98) 0%, rgba(0,0,0,1) 100%)',
-            backdropFilter: 'blur(8px)',
+            background: 'rgba(0, 0, 0, 0.95)',
+            backdropFilter: 'blur(12px)',
             overflow: 'hidden',
           }}
           onClick={() => {
-            try { sfx.play('click', 0.4); } catch {}
+            try { sfx.play('close', 0.8); } catch {}
             setEnlargedBadge(null);
+            setBadgeRotation(0);
+            setIsBadgeAnimatingFlip(false);
           }}
         >
-          {/* Badge Image - Large and fills most of the space */}
-          <div
-            className="relative rounded-full overflow-hidden flex items-center justify-center flex-shrink-0"
-            style={{
-              width: '60%',
-              maxWidth: '280px',
-              aspectRatio: '1/1',
-              boxShadow: `
-                0 0 60px rgba(255, 105, 180, 0.4),
-                0 0 100px rgba(255, 105, 180, 0.2),
-                0 20px 40px rgba(0,0,0,0.5)
-              `,
-              border: '4px solid rgba(255, 105, 180, 0.6)',
-              background: 'linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(40,40,40,0.9) 100%)',
+          {/* Back arrow button - top left */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              try { sfx.play('close', 0.8); } catch {}
+              setEnlargedBadge(null);
+              setBadgeRotation(0);
+              setIsBadgeAnimatingFlip(false);
             }}
+            onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+            className="absolute top-4 left-4 w-10 h-10 rounded-full flex items-center justify-center text-pink-400 hover:text-pink-200 transition-all duration-200 z-20"
+            style={{
+              background: 'rgba(255,105,180,0.1)',
+              border: '2px solid #FF69B4',
+              boxShadow: '0 0 20px rgba(255,105,180,0.8), 0 0 30px rgba(255,105,180,0.6), 0 0 40px rgba(255,105,180,0.4)',
+              textShadow: '0 0 10px rgba(255,105,180,0.8)',
+              backdropFilter: 'blur(10px)'
+            }}
+            aria-label="Close badge"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+
+          {/* Content container */}
+          <div
+            className="relative w-full h-full max-h-[90%] rounded-lg p-4 flex flex-col items-center justify-center"
             onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'rgba(0,0,0,0.7)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              boxShadow: '0 0 30px rgba(255, 105, 180, 0.25)'
+            }}
           >
             {(() => {
-              // Correct icon URLs for badges (overrides database if set)
+              // Category colors for badge styling
+              const getCategoryColors = (category: string | null) => {
+                switch(category) {
+                  case 'soul': return { bg: '#FFD700', border: '#FFA500' };
+                  case 'collector': return { bg: '#38B6FF', border: '#0EA5E9' };
+                  case 'community': return { bg: '#10B981', border: '#059669' };
+                  case 'elemental-streak': return { bg: '#FC54AF', border: '#EC4899' };
+                  case 'currency': return { bg: '#FFD700', border: '#FFA500' };
+                  case 'listening': return { bg: '#9333EA', border: '#7C3AED' };
+                  default: return { bg: '#FFD700', border: '#FFA500' };
+                }
+              };
+              const colors = getCategoryColors(enlargedBadge.badge.category);
+
+              // Fallback emoji based on category
+              const fallbackEmoji = (() => {
+                switch(enlargedBadge.badge.category) {
+                  case 'soul': return '⭐';
+                  case 'collector': return '🏆';
+                  case 'community': return '🌐';
+                  case 'elemental-streak': return '💠';
+                  case 'currency': return '💰';
+                  case 'listening': return '🎵';
+                  default: return '🏆';
+                }
+              })();
+
+              // Format claimed date
+              const formatClaimedDate = (dateString: string | null | undefined) => {
+                if (!dateString) return '';
+                const d = new Date(dateString);
+                const mm = d.getMonth() + 1;
+                const dd = d.getDate();
+                const yyyy = d.getFullYear();
+                return `${mm}/${dd}/${yyyy}`;
+              };
+              const claimedDateStr = formatClaimedDate(enlargedBadge.badge.earned_at);
+
+              // Badge icon overrides
               const badgeIconOverrides: Record<string, string> = {
                 'wanderer': '/badges/wanderer.webp',
                 'first steps': '/badges/wanderer.webp',
               };
               const badgeNameLower = enlargedBadge.badge.badge_name?.toLowerCase() || '';
-              // Use override first, then database URL
               const iconUrl = badgeIconOverrides[badgeNameLower] || enlargedBadge.badge.icon_url;
-              const fallbackUrl = badgeIconOverrides[badgeNameLower];
 
-              return iconUrl ? (
-                <img
-                  src={iconUrl}
-                  alt={enlargedBadge.badge.badge_name}
-                  className="w-full h-full object-cover"
-                  draggable={false}
-                  onError={(e) => {
-                    // If image fails to load and we have a fallback, try it
-                    const target = e.target as HTMLImageElement;
-                    if (fallbackUrl && target.src !== fallbackUrl) {
-                      target.src = fallbackUrl;
-                    } else {
-                      // Final fallback: hide image and show emoji
-                      target.style.display = 'none';
-                      const parent = target.parentElement;
-                      if (parent) {
-                        const emoji = document.createElement('div');
-                        emoji.className = 'text-8xl';
-                        emoji.textContent = '🏅';
-                        parent.appendChild(emoji);
-                      }
-                    }
-                  }}
-                />
-              ) : (
-                <div className="text-8xl">🏅</div>
+              return (
+                <>
+                  <div className="flex items-center justify-center mb-6 flex-1">
+                    {/* TiltSpinCard wrapper for drag-to-spin interaction */}
+                    <TiltSpinCard
+                      enableSpin={true}
+                      spinSensitivity={0.8}
+                      onRotationChange={(rotation) => setBadgeRotation(rotation)}
+                      onClick={() => {
+                        try { sfx.play('flip', 0.45); } catch {}
+                        setIsBadgeAnimatingFlip(true);
+                        setBadgeRotation((prev) => prev + 180);
+                        setTimeout(() => setIsBadgeAnimatingFlip(false), 500);
+                      }}
+                      style={{ cursor: 'grab' }}
+                    >
+                      <div
+                        className="relative"
+                        style={{
+                          width: '200px',
+                          height: '200px',
+                          transformStyle: 'preserve-3d',
+                          perspective: '1000px'
+                        }}
+                      >
+                        {/* Front of badge */}
+                        <div
+                          className="absolute inset-0 rounded-full flex items-center justify-center overflow-hidden"
+                          style={{
+                            width: '200px',
+                            height: '200px',
+                            background: 'transparent',
+                            border: `2px solid ${colors.border}`,
+                            boxShadow: `0 0 15px ${colors.border}80, 0 0 30px ${colors.border}40`,
+                            transform: `rotateY(${badgeRotation}deg)`,
+                            backfaceVisibility: 'hidden',
+                            transition: isBadgeAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none'
+                          }}
+                        >
+                          {iconUrl ? (
+                            <img
+                              src={iconUrl}
+                              alt={enlargedBadge.badge.badge_name || 'Badge'}
+                              className="w-full h-full object-cover"
+                              draggable={false}
+                              style={{ filter: 'drop-shadow(0 0 8px rgba(0,0,0,0.8))', animation: 'cardPulse 2s ease-in-out infinite' }}
+                              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                            />
+                          ) : (
+                            <span className="text-7xl" style={{ filter: 'drop-shadow(0 0 8px rgba(0,0,0,0.8))' }}>
+                              {fallbackEmoji}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Back of badge */}
+                        <div
+                          className="absolute inset-0 rounded-full flex items-center justify-center overflow-hidden"
+                          style={{
+                            width: '200px',
+                            height: '200px',
+                            background: `linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)`,
+                            border: `2px solid ${colors.border}`,
+                            boxShadow: `0 0 15px ${colors.border}80, 0 0 30px ${colors.border}40`,
+                            transform: `rotateY(${badgeRotation + 180}deg)`,
+                            backfaceVisibility: 'hidden',
+                            transition: isBadgeAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none'
+                          }}
+                        >
+                          {claimedDateStr ? (
+                            <div className="flex flex-col items-center justify-center text-center px-3">
+                              <div className="text-base font-semibold tracking-wider" style={{ color: '#39FF14', textShadow: '0 0 8px #39FF14, 0 0 14px #39FF14' }}>CLAIMED</div>
+                              <div className="text-white/80 text-sm mt-0.5">
+                                {claimedDateStr}
+                              </div>
+                            </div>
+                          ) : (
+                            <span
+                              className="text-5xl font-bold"
+                              style={{
+                                color: 'rgba(255,255,255,0.2)',
+                                textShadow: '0 0 4px rgba(255,255,255,0.25)'
+                              }}
+                            >
+                              {fallbackEmoji}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </TiltSpinCard>
+                  </div>
+
+                  {/* Badge name and description */}
+                  <div className="text-center mt-4">
+                    <div className="text-2xl font-bold text-white mb-2">
+                      {enlargedBadge.badge.badge_name}
+                    </div>
+                    {enlargedBadge.badge.description && (
+                      <div className="text-base text-white/80">
+                        {enlargedBadge.badge.description}
+                      </div>
+                    )}
+                  </div>
+                </>
               );
             })()}
           </div>
-
-          {/* Badge Name */}
-          <div
-            className="mt-4 text-xl font-bold text-center uppercase tracking-wider px-4"
-            style={{
-              color: '#FF69B4',
-              textShadow: '0 0 20px rgba(255, 105, 180, 0.8), 0 0 40px rgba(255, 105, 180, 0.4)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {enlargedBadge.badge.badge_name}
-          </div>
-
-          {/* Badge Description */}
-          {enlargedBadge.badge.description && (
-            <div
-              className="mt-2 text-sm text-center max-w-xs px-4"
-              style={{
-                color: 'rgba(255, 255, 255, 0.8)',
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {enlargedBadge.badge.description}
-            </div>
-          )}
-
-          {/* Badge Category */}
-          {enlargedBadge.badge.category && (
-            <div
-              className="mt-2 text-xs uppercase tracking-widest"
-              style={{
-                color: 'rgba(255, 105, 180, 0.6)',
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {enlargedBadge.badge.category}
-            </div>
-          )}
         </div>
       )}
 

@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { RoomReaction, REACTION_CONFIG } from '@/lib/reactions';
+import safeKey from '@/utils/safeKey';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 
@@ -236,7 +237,7 @@ export default function FloatingRoomReactions({ reactions, onReactionComplete }:
       <AnimatePresence>
         {activeReactions.map((reaction, index) => (
           <FloatingReaction
-            key={reaction.id}
+            key={safeKey('room-reaction', reaction.id, reaction.user_id, reaction.reaction, index)}
             reaction={reaction}
             index={index}
             onComplete={() => handleReactionComplete(reaction.id)}

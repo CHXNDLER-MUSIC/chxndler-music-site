@@ -3,8 +3,20 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useDailySongProgress, recordSongEndedPlay } from "@/hooks/useDailySongProgress";
+import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
 import { getNYDateString } from "@/lib/time";
 import { usePlanetRewardsContext } from "@/components/PlanetRewardsProvider";
+
+// Song-of-Day completion thresholds
+const SOD_COMPLETE_RATIO = 0.99;
+const SOD_COMPLETE_REMAINING_SECONDS = 1.0;
+
+function isSongComplete(duration: number, currentTime: number) {
+  if (!duration || duration <= 0) return false;
+  const ratio = currentTime / duration;
+  const remaining = duration - currentTime;
+  return ratio >= SOD_COMPLETE_RATIO || remaining <= SOD_COMPLETE_REMAINING_SECONDS;
+}
 
 // Anonymous session ID management for tracking logged-out user listens
 const ANON_SESSION_ID_KEY = 'anon_session_id';
@@ -401,9 +413,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Guard: ensure Song of Day completion RPC triggers once per playback session
+  const sodFiredRef = useRef<boolean>(false);
+
   // Claim Song of Day HeartCoin award - called ONLY on song completion
   // This is idempotent - safe to call multiple times, backend enforces once per day
-  const claimSongOfDayIfEligible = async (trackSlug: string): Promise<void> => {
+  const claimSongOfDayIfEligible = async (trackSlug: string, completionRatio: number = 1.0): Promise<void> => {
     try {
       // Get song UUID
       const songUuid = await getSongUuidBySlug(trackSlug);
@@ -451,17 +466,18 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       console.log('[SOTD] Claiming Song of the Day award', {
         songId: songUuid,
         songName: state.currentTrack?.title || trackSlug,
-        day: nyDay
+        day: nyDay,
+        completionRatio
       });
 
-      // Call the unified RPC that records progress, creates claim, and awards HeartCoin
-      // This RPC is idempotent - backend unique constraints enforce once per user per day
-      const { data, error } = await supabaseBrowser.rpc('record_song_play_and_claim_sod_v1', {
-        p_song_id: songUuid
+      // Use RPC to claim SOTD and award HeartCoin; frontend should NOT touch user_heartcoin_awards
+      const { data, error } = await supabaseBrowser.rpc('claim_song_of_day_and_award', {
+        p_song_id: songUuid,
+        p_completion_ratio: completionRatio,
       });
 
       if (error) {
-        console.error('[SOTD] record_song_play_and_claim_sod_v1 error', {
+        console.error('[SOTD] claim_song_of_day_and_award error', {
           songId: songUuid,
           error,
           code: (error as any)?.code,
@@ -476,17 +492,25 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       // Update guard ref to prevent duplicate calls
       lastSotdClaimRef.current = { songId: songUuid, day: nyDay };
 
-      console.log('[SOTD] Award claimed successfully', {
-        songId: songUuid,
-        day: nyDay,
-        data
-      });
+      const resp: any = data || {};
+      const ok = !!resp.ok;
+      const awardedNow = !!resp.awarded_now;
+      const reason = resp.reason || null;
 
-      // Dispatch events to update UI
-      try {
-        window.dispatchEvent(new CustomEvent('songOfDay:refresh'));
-        window.dispatchEvent(new CustomEvent('dailySongQuestCompleted', { detail: { day: nyDay } }));
-      } catch {}
+      if (ok) {
+        console.log('[SOTD] RPC ok', { awardedNow, resp });
+        if (awardedNow) {
+          try { triggerHeartCoinCelebration(1); } catch {}
+          try {
+            window.dispatchEvent(new CustomEvent('songOfDay:refresh'));
+            window.dispatchEvent(new CustomEvent('dailySongQuestCompleted', { detail: { day: nyDay } }));
+          } catch {}
+        }
+      } else if (reason === 'not_completed') {
+        // ignore silently
+      } else {
+        console.warn('[SOTD] Unexpected RPC response', { resp });
+      }
 
     } catch (err) {
       console.error('[SOTD] claimSongOfDayIfEligible error', {
@@ -673,7 +697,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             ? Math.min(1, newMax / durationSeconds)
             : null;
           const completedNow = durationSeconds && durationSeconds > 0
-            ? newMax >= Math.ceil(durationSeconds * 0.5)
+            ? isSongComplete(durationSeconds, newMax)
             : false;
           const finalCompleted = existingCompleted || completedNow;
           const completedAt = finalCompleted
@@ -761,6 +785,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }, 1000);
 
     console.log(`🎧 Started session: ${trackId}`);
+    // Reset SOTD completion trigger for new playback session
+    sodFiredRef.current = false;
   };
 
   // End the current session (flush if meaningful)
@@ -801,8 +827,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       ) {
         console.log(`🎧 Repeat detected: ${lastTime.toFixed(1)}s -> ${currentTime.toFixed(1)}s (duration: ${duration.toFixed(1)}s)`);
         // Claim Song of Day HeartCoin award on repeat (complete playthrough)
-        if (currentTrackRef.current) {
-          claimSongOfDayIfEligible(currentTrackRef.current);
+        if (currentTrackRef.current && !sodFiredRef.current) {
+          sodFiredRef.current = true;
+          claimSongOfDayIfEligible(currentTrackRef.current, 1.0);
         }
         // Flush the completed playthrough and start a new session
         flushSession(0).then(() => {
@@ -892,7 +919,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           ? Math.min(1, newMax / durationSeconds)
           : null;
         const completedNow = durationSeconds && durationSeconds > 0
-          ? newMax >= Math.ceil(durationSeconds * 0.5)
+          ? isSongComplete(durationSeconds, newMax)
           : false;
         const finalCompleted = prog.everCompleted || completedNow;
         const completedAt = finalCompleted
@@ -930,20 +957,22 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         } else {
           prog.lastSaved = newMax;
           prog.maxSoFar = newMax;
-          // After completion flips true (50% threshold), claim Song of Day HeartCoin award
-          if (finalCompleted && !prog.everCompleted) {
-            // Claim Song of Day award - this is the primary completion trigger
-            // The function checks if the track is actually the SOTD and handles idempotency
-            if (slug) {
-              claimSongOfDayIfEligible(slug);
-            }
-          }
           // Persist completion cache
           prog.everCompleted = finalCompleted;
           prog.completedAt = completedAt;
         }
       } catch (progressErr) {
         // Be quiet on errors here to avoid console spam; detailed errors are logged above
+      }
+
+      // Independent SOTD completion trigger: only when actually complete
+      if (duration > 0 && !sodFiredRef.current && isSongComplete(duration, currentTime)) {
+        const slug = currentTrackRef.current;
+        if (slug) {
+          sodFiredRef.current = true;
+          const ratio = Math.max(0, Math.min(1, currentTime / duration));
+          claimSongOfDayIfEligible(slug, ratio);
+        }
       }
     };
     const onDur = () => setState(s => ({ ...s, duration: a.duration || 0 }));
@@ -985,6 +1014,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     const onEnded = () => {
       console.log('🎵 AudioProvider: Song ended');
+      // Ensure SOTD completion awards trigger on ended as well (once per session)
+      try {
+        const slug = currentTrackRef.current;
+        if (slug && !sodFiredRef.current) {
+          sodFiredRef.current = true;
+          claimSongOfDayIfEligible(slug, 1.0);
+        }
+      } catch {}
       // Flush the listen session before restarting (min 0 seconds for track end)
       if (sessionRef.current && !sessionRef.current.flushed) {
         flushSession(0).then(async () => {
@@ -996,10 +1033,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
               if (songUuid) {
                 await recordSongEndedPlay(songUuid);
               }
-
-              // Also claim Song of Day HeartCoin award on song end (backup trigger)
-              // This ensures award even if the 50% threshold completion wasn't triggered
-              claimSongOfDayIfEligible(slug);
             }
           } catch (err) {
             console.warn('Failed SOTD end-of-track processing:', err);
@@ -1136,6 +1169,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     // Update the ref
     currentTrackRef.current = newTrackId;
+
+    // Reset SOTD fired guard when song changes
+    if (newTrackId !== previousTrackId) {
+      sodFiredRef.current = false;
+    }
 
     // If a new track started and we're playing, start a new session
     if (newTrackId && state.playing && (!sessionRef.current || sessionRef.current.flushed || sessionRef.current.trackId !== newTrackId)) {
@@ -1324,7 +1362,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   // This will be used for auto-playing after warp completion
   const autoPlayAfterWarpRef = useRef<string | null>(null);
 
-  // Daily song progress tracking - awards HeartCoin at 50% completion
+  // Daily song progress tracking (no HeartCoin logic here)
   // Uses audioRef.current as source of truth for currentTime/duration
   // trackingSlug is the original slug (not normalized) for accurate DB lookup
 

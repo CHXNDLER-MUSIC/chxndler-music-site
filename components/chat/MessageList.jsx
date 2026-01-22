@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import safeKey from '@/utils/safeKey';
 import { ElementIcon } from '@/lib/elementIcons';
 import { getElementColor, formatChatTimestamp, sanitizeMessage } from '@/lib/supabase/chat';
 import ReactionTray from './ReactionTray';
@@ -11,43 +12,19 @@ import MessageReactions from './MessageReactions';
 // Debug flag
 const DEBUG = process.env.NODE_ENV === 'development';
 
-// Fallback counter for messages without any valid key
-let fallbackKeyCounter = 0;
-
-/**
- * Get a guaranteed unique, stable key for a message
- * Priority: client_id > clientKey > id > generated fallback
- * GUARANTEE: Always returns a non-empty string
- */
-const getMessageKey = (message, index) => {
-  // Prefer client_id (normalized stable key) - must be non-empty string
-  if (message.client_id && typeof message.client_id === 'string' && message.client_id.length > 0) {
-    return message.client_id;
-  }
-  // Fallback to clientKey (animation key) - must be non-empty string
-  if (message.clientKey && typeof message.clientKey === 'string' && message.clientKey.length > 0) {
-    return message.clientKey;
-  }
-  // Fallback to DB id if it looks like a valid UUID - must be non-empty string
-  if (message.id && typeof message.id === 'string' && message.id.length > 0 &&
-      !message.id.startsWith('temp-') && !message.id.startsWith('guest-')) {
-    return `db_${message.id}`;
-  }
-  // Use optimistic id if present and non-empty
-  if (message.id && typeof message.id === 'string' && message.id.length > 0) {
-    return message.id;
-  }
-  // Last resort: generate a unique fallback (log warning in dev)
-  fallbackKeyCounter++;
-  const fallbackKey = `fallback_${index}_${fallbackKeyCounter}_${Date.now()}`;
-  if (DEBUG) {
-    console.warn('⚠️ Message missing all keys, using fallback:', {
-      fallbackKey,
-      message: { id: message.id, client_id: message.client_id, message: message.message?.slice(0, 30) }
-    });
-  }
-  return fallbackKey;
-};
+// Use a centralized safeKey to guarantee non-empty, stable keys
+// Priority uses many fields plus index to avoid collisions for guests/system messages
+const getMessageKey = (m, i) =>
+  safeKey(
+    'msg',
+    m.id,
+    m.client_id,
+    m.created_at,
+    m.user_id,
+    m.guest_id,
+    m.message || m.body,
+    i
+  );
 
 /**
  * MessageList Component

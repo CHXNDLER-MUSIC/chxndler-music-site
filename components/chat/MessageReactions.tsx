@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageReactionCount, ReactionType, REACTION_CONFIG } from '@/lib/reactions';
+import safeKey from '@/utils/safeKey';
 import Image from 'next/image';
 
 interface MessageReactionsProps {
@@ -35,12 +36,12 @@ export default function MessageReactions({ reactions, messageId, className = "" 
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
     >
       <AnimatePresence>
-        {visibleReactions.map(([reaction, count]) => {
+        {visibleReactions.map(([reaction, count], i) => {
           const config = REACTION_CONFIG[reaction as ReactionType];
           
           return (
             <motion.div
-              key={reaction}
+              key={safeKey('msg-reaction', messageId, reaction, i)}
               className="flex items-center gap-1 px-2 py-1 rounded-full bg-black/60 border border-white/20 backdrop-blur-sm"
               style={{
                 borderColor: `${config.color}30`

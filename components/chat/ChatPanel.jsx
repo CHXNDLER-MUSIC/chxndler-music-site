@@ -858,7 +858,9 @@ export default function ChatPanel({ isOpen, onClose }) {
               message: `${displayName} connected to the signal`,
               username: displayName,
               guest_id: guestId,
-              is_system: true
+              is_system: true,
+              client_id: crypto.randomUUID(),
+              created_at: new Date().toISOString(),
             }),
           });
           const result = await response.json();

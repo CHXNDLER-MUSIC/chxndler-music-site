@@ -204,11 +204,11 @@ export default function UserBadges({
   // Create badge display objects with unlocked status and progress
   const badgesWithUnlocked: BadgeDisplay[] = useMemo(() => {
     if (!allBadges.length || !userProfile) return [];
-    
+
     return allBadges.map(badge => {
-      const userBadgeIds = new Set(userBadges.map(ub => ub.badge_id));
-      const isUnlocked = userBadgeIds.has(badge.id);
-      
+      const userBadgeRecord = userBadges.find(ub => ub.badge_id === badge.id);
+      const isUnlocked = !!userBadgeRecord;
+
       // Calculate progress for this badge
       let progress;
       if (badge.requirement_type && badge.requirement_count && userProfile) {
@@ -224,7 +224,7 @@ export default function UserBadges({
           category: badge.category as any,
           created_at: badge.created_at
         }, userProfile);
-        
+
         progress = {
           current: badgeProgress.current,
           target: badgeProgress.target,
@@ -238,7 +238,7 @@ export default function UserBadges({
           percentage: 0
         };
       }
-      
+
       return {
         id: badge.id,
         badge_name: badge.badge_name,
@@ -249,6 +249,7 @@ export default function UserBadges({
         requirement_type: badge.requirement_type,
         requirement_count: badge.requirement_count,
         unlocked: isUnlocked,
+        earned_at: userBadgeRecord?.earned_at || null,
         progress
       };
     });

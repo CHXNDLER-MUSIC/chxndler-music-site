@@ -2641,6 +2641,7 @@ const HUDPanel = React.memo(function HUDPanel({
                         aria-label={audioManager.playing ? "Pause" : "Play"}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                         style={{ marginTop: 1, width: 36, height: 36 }}
+                        data-tour-id="music-power-button"
                       >
                         {audioManager.playing ? (
                           <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">

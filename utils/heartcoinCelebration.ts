@@ -3,7 +3,7 @@
  * Triggers custom browser events when HeartCoins are earned
  */
 
-import { markHeartcoinCelebrationStarted } from './celebrationQueue';
+import { markHeartcoinCelebrationStarted, isHeartcoinCelebrationActive } from './celebrationQueue';
 
 export interface HeartCoinCelebrationDetail {
   amount: number;
@@ -13,6 +13,10 @@ export const HEARTCOIN_CELEBRATION_EVENT = 'heartcoin-celebration';
 
 // Suppression flag for temporarily disabling heartcoin celebrations
 let suppressCelebration = false;
+// Timestamp of last dispatched celebration to avoid duplicates
+let lastCelebrationAt = 0;
+// Minimum gap between celebrations (ms) to guard against duplicate triggers
+const CELEBRATION_DEDUP_WINDOW_MS = 4000;
 
 /**
  * Suppresses the next heartcoin celebration.
@@ -59,8 +63,15 @@ export function triggerHeartCoinCelebration(amount: number): void {
     return;
   }
 
+  // If a HeartCoin celebration is already active or recently fired, skip
+  const now = Date.now();
+  if (isHeartcoinCelebrationActive() || (now - lastCelebrationAt) < CELEBRATION_DEDUP_WINDOW_MS) {
+    return;
+  }
+
   // Mark that a HeartCoin celebration is starting (for queue coordination)
   markHeartcoinCelebrationStarted();
+  lastCelebrationAt = now;
 
   const detail: HeartCoinCelebrationDetail = { amount };
   const event = new CustomEvent(HEARTCOIN_CELEBRATION_EVENT, { detail });

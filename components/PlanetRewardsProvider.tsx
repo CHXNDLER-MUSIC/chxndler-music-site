@@ -5,7 +5,6 @@ import { ElementType, PlanetReward } from '@/lib/usePlanetRewards';
 import { useAuth } from '@/app/providers/AuthProvider';
 import PlanetRewardCelebration from './PlanetRewardCelebration';
 import { supabaseBrowser } from '@/lib/supabase-browser';
-import { triggerHeartCoinCelebration } from '@/utils/heartcoinCelebration';
 import { logHeartcoinTransaction } from '@/utils/heartcoins';
 
 interface PlanetRewardsContextValue {
@@ -290,8 +289,7 @@ export function PlanetRewardsProvider({
         console.warn('Failed to log HeartCoin transaction:', err);
       }
 
-      // Trigger HeartCoin celebration animation
-      triggerHeartCoinCelebration(1);
+      // Celebration is triggered by logHeartcoinTransaction; avoid double-trigger here
 
       // Update localStorage for quest tracking (syncs with QuestList)
       // Use serverDate to ensure consistency with backend

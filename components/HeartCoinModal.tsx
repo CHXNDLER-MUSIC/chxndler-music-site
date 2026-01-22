@@ -2107,7 +2107,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                                 const storeItem = {
                                   name: item.name,
                                   image: item.image_url || '/store/default.webp',
-                                  image2: (item as any).slug === 'beanie' ? ((item as any).profile_url_2 || (item as any).secondary_image_url) : (item as any).secondary_image_url,
+                                  // Ensure BEANIE back uses the static public/store/beanie-back.webp
+                                  image2: (item as any).slug === 'beanie' ? '/store/beanie-back.webp' : (item as any).secondary_image_url,
                                   stripeUrl: item.stripe_url || '',
                                   description: item.description || '',
                                   cost: item.price_usd || 0,
