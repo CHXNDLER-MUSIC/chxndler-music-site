@@ -1,6 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { track } from "@/lib/analytics";
+import { track, trackNavEvent } from "@/lib/analytics";
 import HoloHubMenu from "@/components/HoloHubMenu";
 import LumaKeyVideo from "@/components/LumaKeyVideo";
 import HoloJoinButton from "@/components/HoloJoinButton";
@@ -139,6 +139,9 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
   }, [closeAllSignal]);
 
   function handleLaunch() {
+    // Track Start button with structured event
+    trackNavEvent({ event_type: 'start_click', action: 'start' });
+
     // Track Start press using new trackEvent function
     try {
       // Import trackEvent dynamically to avoid SSR issues
@@ -150,7 +153,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
         // Track canonical start button click
         trackEvent('start_click', { source: 'wheel' });
       }).catch(() => {});
-      
+
       // Keep old tracking for compatibility during transition
       if (!startTrackedRef.current) {
         track('start_button_opening_page');

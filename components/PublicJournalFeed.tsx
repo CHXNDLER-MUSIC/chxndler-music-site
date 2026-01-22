@@ -338,110 +338,115 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
         height: (enlargedCard || enlargedBadge) ? '100%' : undefined,
       }}
     >
-      {/* Full-screen Enlarged Card Overlay */}
+      {/* Full-screen Enlarged Card Overlay - matches Binder popout visuals */}
       {enlargedCard && (
         <div
           className="absolute inset-0 z-50 flex items-center justify-center"
           style={{
-            background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.98) 100%)',
-            backdropFilter: 'blur(8px)',
-            padding: '16px',
+            background: 'rgba(0, 0, 0, 0.9)',
+            backdropFilter: 'blur(12px)',
             overflow: 'hidden',
           }}
           onClick={() => {
-            try { sfx.play('click', 0.4); } catch {}
+            try { sfx.play('close', 0.8); } catch {}
             setEnlargedCard(null);
+            setIsCardFlipped(false);
+            setSpinRotation(0);
           }}
         >
-          {/* Interactive Card with TiltSpinCard */}
-          <TiltSpinCard
-            enableSpin={true}
-            spinSensitivity={0.8}
-            maxRotateX={15}
-            maxRotateY={25}
-            onRotationChange={(rotation) => setSpinRotation(rotation)}
+          {/* Back arrow button - top left */}
+          <button
             onClick={(e) => {
               e.stopPropagation();
-              handleCardSpin();
+              try { sfx.play('close', 0.8); } catch {}
+              setEnlargedCard(null);
+              setIsCardFlipped(false);
+              setSpinRotation(0);
             }}
-            className="cursor-grab active:cursor-grabbing flex items-center justify-center"
+            onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+            className="absolute top-4 left-4 w-10 h-10 rounded-full flex items-center justify-center text-pink-400 hover:text-pink-200 transition-all duration-200 z-20"
             style={{
-              width: 'auto',
-              height: '100%',
-              maxHeight: '100%',
+              background: 'rgba(255,105,180,0.1)',
+              border: '2px solid #FF69B4',
+              boxShadow: '0 0 20px rgba(255,105,180,0.8), 0 0 30px rgba(255,105,180,0.6), 0 0 40px rgba(255,105,180,0.4)',
+              textShadow: '0 0 10px rgba(255,105,180,0.8)',
+              backdropFilter: 'blur(10px)'
             }}
+            aria-label="Close card"
           >
-            <div
-              className="relative rounded-2xl overflow-hidden"
-              style={{
-                height: '100%',
-                maxHeight: '100%',
-                aspectRatio: '3/4',
-                boxShadow: `
-                  0 0 60px ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.glow || '#FF69B440'},
-                  0 20px 40px rgba(0,0,0,0.5),
-                  inset 0 0 30px rgba(255,255,255,0.1)
-                `,
-                border: `3px solid ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4'}60`,
-                transform: `rotateY(${spinRotation + (isCardFlipped ? 180 : 0)}deg)`,
-                transition: isCardFlipped !== undefined ? 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                transformStyle: 'preserve-3d',
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+
+          {/* TiltSpinCard wrapper for drag-to-spin interaction */}
+          <div
+            className="relative flex items-center justify-center"
+            style={{
+              width: '100%',
+              height: '100%',
+              animation: 'cardPulse 3s ease-in-out infinite',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <TiltSpinCard
+              className="relative flex items-center justify-center"
+              style={{ width: '100%', height: '100%', borderRadius: '24px' }}
+              maxRotateX={10}
+              sensitivity={0.3}
+              returnDuration={400}
+              enableSpin={true}
+              spinSensitivity={0.8}
+              onRotationChange={setSpinRotation}
+              onClick={() => {
+                try { sfx.play('flip', 0.45); } catch {}
+                setIsCardFlipped(prev => !prev);
               }}
             >
-              {/* Card front */}
-              <div
-                className="absolute inset-0"
+              {/* Front of card - rotates with spinRotation */}
+              <img
+                src={enlargedCard.card.artwork_url || '/cards/default-card.webp'}
+                alt={enlargedCard.card.card_name}
+                className="rounded-2xl pointer-events-none"
                 style={{
+                  maxHeight: '95%',
+                  maxWidth: '85%',
+                  objectFit: 'contain',
                   backfaceVisibility: 'hidden',
+                  WebkitBackfaceVisibility: 'hidden',
+                  transform: `rotateY(${spinRotation + (isCardFlipped ? 180 : 0)}deg)`,
+                  transition: 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                  border: '2px solid rgba(255,255,255,0.1)',
                 }}
-              >
-                <img
-                  src={enlargedCard.card.artwork_url || '/cards/default-card.webp'}
-                  alt={enlargedCard.card.card_name}
-                  className="w-full h-full object-cover"
-                  draggable={false}
-                  onError={(e) => {
-                    e.currentTarget.src = '/cards/default-card.webp';
-                  }}
-                />
-                {/* Holographic overlay */}
-                <div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    background: `linear-gradient(
-                      ${135 + (spinRotation % 360)}deg,
-                      transparent 0%,
-                      rgba(255,255,255,0.1) 25%,
-                      transparent 50%,
-                      rgba(255,255,255,0.15) 75%,
-                      transparent 100%
-                    )`,
-                    mixBlendMode: 'overlay',
-                  }}
-                />
-              </div>
+                draggable={false}
+                onError={(e) => {
+                  e.currentTarget.src = '/cards/default-card.webp';
+                }}
+              />
 
-              {/* Card back */}
-              <div
-                className="absolute inset-0 flex items-center justify-center"
+              {/* Back of card - offset by 180° */}
+              <img
+                src="/cards/BACK.webp"
+                alt="Card Back"
+                className="absolute rounded-2xl pointer-events-none"
                 style={{
+                  maxHeight: '95%',
+                  maxWidth: '85%',
+                  objectFit: 'contain',
+                  top: '50%',
+                  left: '50%',
+                  transform: `translate(-50%, -50%) rotateY(${spinRotation + (isCardFlipped ? 180 : 0) + 180}deg)`,
                   backfaceVisibility: 'hidden',
-                  transform: 'rotateY(180deg)',
-                  background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+                  WebkitBackfaceVisibility: 'hidden',
+                  transition: 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                  border: '2px solid rgba(255,255,255,0.1)',
                 }}
-              >
-                <div
-                  className="text-4xl font-bold"
-                  style={{
-                    color: RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4',
-                    textShadow: `0 0 30px ${RARITY_COLORS[enlargedCard.card.rarity?.toLowerCase()]?.border || '#FF69B4'}`,
-                  }}
-                >
-                  ✧
-                </div>
-              </div>
-            </div>
-          </TiltSpinCard>
+                draggable={false}
+              />
+            </TiltSpinCard>
+          </div>
         </div>
       )}
 

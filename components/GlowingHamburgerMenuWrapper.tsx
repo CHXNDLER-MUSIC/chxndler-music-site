@@ -16,6 +16,7 @@ import { useUIState } from "@/lib/use-ui-state";
 import { useTour } from "@/contexts/TourContext";
 import { useMenuState } from "@/contexts/MenuStateContext";
 import { useElementOfDayClaim, ElementOfDay } from "@/hooks/useElementOfDayClaim";
+import { trackNavEvent } from "@/lib/analytics";
 
 // Map element of day to beam color
 const ELEMENT_TO_BEAM_COLOR: Record<NonNullable<ElementOfDay>, string> = {
@@ -118,6 +119,22 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
   }, [onBeamColorChange, elementOfDay]);
 
   const handleItemClick = (label: string) => {
+    // Track nav_click with structured action value
+    const actionMap: Record<string, string> = {
+      'ABOUT': 'about',
+      'JOURNEY': 'journey',
+      'MY JOURNEY': 'journey',
+      'BINDER': 'binder',
+      'BADGES': 'badges',
+      'JOURNAL': 'journal',
+      'COMPLETED': 'journal',
+      'STORE': 'store',
+    };
+    const action = actionMap[label];
+    if (action) {
+      trackNavEvent({ event_type: 'nav_click', action });
+    }
+
     // CRITICAL: If opening JOURNAL, immediately close any live stream display first
     // This must happen BEFORE any other logic to prevent the Signal button from being triggered
     if (label === 'JOURNAL' || label === 'COMPLETED') {

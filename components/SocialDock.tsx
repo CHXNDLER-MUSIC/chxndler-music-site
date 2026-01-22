@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import * as SocialsMod from "../config/socials";
+import { trackNavEvent } from "@/lib/analytics";
 // Removed inline/embed modals for socials; open in new tab instead
 
 type SocialItem = { id: string; href: string };
@@ -115,8 +116,24 @@ export default function SocialDock() {
             }}
             onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.96)")}
             onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1.04)")}
-            // No special handler; let anchor open new tab
-            onClick={undefined}
+            onClick={() => {
+              // Track outbound click with structured event
+              const actionMap: Record<string, string> = {
+                instagram: 'instagram',
+                tiktok: 'tiktok',
+                youtube: 'youtube',
+              };
+              const key = s.id.toLowerCase();
+              const action = key.includes('insta') ? 'instagram'
+                : key.includes('tiktok') ? 'tiktok'
+                : key.includes('tube') ? 'youtube'
+                : s.id.toLowerCase();
+              trackNavEvent({
+                event_type: 'outbound_click',
+                action,
+                extra: { scope: 'global' }
+              });
+            }}
           >
             <IconFor id={s.id} />
           </a>

@@ -158,6 +158,32 @@ export function trackPageView() {
   track('page_view');
 }
 
+// Structured event tracking helper for clearly identifiable analytics
+// Usage: trackNavEvent({ event_type: 'nav_click', action: 'about', extra: {} })
+export function trackNavEvent({
+  event_type,
+  action,
+  extra = {}
+}: {
+  event_type: string;
+  action: string;
+  extra?: Record<string, any>;
+}) {
+  if (isAnalyticsDisabled()) return;
+  if (typeof window === 'undefined') return;
+
+  const session_id = getOrCreateSessionId();
+  const page = window.location.pathname + window.location.search;
+
+  track(event_type, {
+    page,
+    payload: {
+      action,
+      ...extra
+    }
+  });
+}
+
 // Music-specific tracking functions
 export function trackSongSelected(song_slug: string, song_title?: string) {
   track('song_selected', { 
