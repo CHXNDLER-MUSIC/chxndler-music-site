@@ -15,6 +15,7 @@ import { ProfileTier } from "@/types/card";
 import { getLocalDateString } from "@/utils/dateHelpers";
 import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
 import { updateBadgeProgressCounters } from "@/lib/updateBadgeProgress";
+import { suppressBadgeCelebrations } from "@/utils/celebrationQueue";
 
 // Types for user owned cards and badges (joined from user_cards + cards table)
 type OwnedCardRow = {
@@ -213,6 +214,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   // Guard ref to prevent duplicate profile fetches from INITIAL_SESSION + SIGNED_IN race
   const isFetchingProfileRef = React.useRef(false);
+  // One-time suppression of badge celebrations during initial profile load
+  const initialBadgeSuppressionRef = React.useRef(false);
 
   // Wrapper for setProfile that detects heartcoin balance increases
   // Function to fetch all badges from the database
@@ -494,6 +497,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
       // Update badge progress counters when profile loads
       // Then refresh user badges to show any newly unlocked badges
+      // Suppress celebrations during the very first automatic progress check on cold load
+      if (!initialBadgeSuppressionRef.current) {
+        try { suppressBadgeCelebrations(8000); } catch {}
+        initialBadgeSuppressionRef.current = true;
+      }
+
       updateBadgeProgressCounters(user.id)
         .then(() => {
           // Refresh user badges to pick up any newly awarded badges

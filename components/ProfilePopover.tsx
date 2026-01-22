@@ -95,9 +95,20 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   // Helper to render user's JOURNEY label
+  // Prefer live coin totals to infer tier to avoid DB sync issues
   const getJourneyDisplay = () => {
-    const j = (profile?.journey || 'wanderer').toString().toLowerCase();
-    switch (j) {
+    // Derive tier from total coins first; fallback to stored journey
+    const totalCoins =
+      (typeof profile?.heartcoin_total === 'number' ? profile?.heartcoin_total : undefined) ??
+      (typeof profile?.total_heartcoins_earned === 'number' ? profile?.total_heartcoins_earned : undefined) ??
+      (typeof profile?.heartcoin_balance === 'number' ? profile?.heartcoin_balance : 0);
+
+    let tier: 'wanderer' | 'dreamer' | 'lover' | string = 'wanderer';
+    if (totalCoins >= 25) tier = 'lover';
+    else if (totalCoins >= 5) tier = 'dreamer';
+    else tier = (profile?.journey || 'wanderer').toString().toLowerCase();
+
+    switch (tier) {
       case 'lover':
         return { label: 'LOVER', color: '#FF6B9D' };
       case 'dreamer':

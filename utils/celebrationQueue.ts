@@ -177,3 +177,11 @@ export function enableBadgeCelebrations(): void {
     suppressionTimeout = null;
   }
 }
+
+/**
+ * Returns whether badge celebrations are currently suppressed.
+ * Useful for consumers (like realtime controllers) that need to skip enqueuing.
+ */
+export function areBadgeCelebrationsSuppressed(): boolean {
+  return suppressCelebrations;
+}

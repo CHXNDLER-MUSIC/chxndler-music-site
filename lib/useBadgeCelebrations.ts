@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { debug } from '@/lib/logger';
 import type { RealtimePostgresInsertPayload } from '@supabase/supabase-js';
+import { areBadgeCelebrationsSuppressed } from '@/utils/celebrationQueue';
 
 export interface BadgeCelebrationItem {
   id: string;           // user_badges row id for deduplication
@@ -104,6 +105,12 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
               iconUrl: badge.icon_url || '/elements/badge-default.webp',
               heartCoins: badge.heart_coins ?? 0,
             };
+
+            // If celebrations are suppressed (e.g., during initial load), skip enqueuing
+            if (areBadgeCelebrationsSuppressed()) {
+              debug('Badge celebration suppressed, marking as seen without enqueue:', celebrationItem.badgeName);
+              return;
+            }
 
             // Add to queue
             setQueue((prev) => [...prev, celebrationItem]);

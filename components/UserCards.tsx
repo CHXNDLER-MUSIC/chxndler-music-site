@@ -207,20 +207,40 @@ export default function UserCards({
             return (
               <div
                 key={index}
-                className="relative aspect-[3/4] rounded-lg flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-200 hover:scale-105"
-                style={{
-                  background: hasCard 
-                    ? 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)'
-                    : isSlotUnlocked 
-                      ? 'linear-gradient(135deg, #333 0%, #555 100%)'
-                      : 'linear-gradient(135deg, #111 0%, #222 100%)',
-                  border: hasCard 
-                    ? '2px solid #FF69B460'
-                    : isSlotUnlocked
-                      ? '2px dashed #FF69B440'
-                      : '2px solid #333',
-                  boxShadow: hasCard ? '0 0 8px #FF69B430' : 'none'
-                }}
+                className={
+                  embedded
+                    ? "rounded-lg border border-white/10 backdrop-blur-sm transition-all duration-300 cursor-pointer hover:scale-105 hover:shadow-2xl hover:-translate-y-1 flex items-center justify-center overflow-hidden"
+                    : "relative rounded-lg flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-200 hover:scale-105"
+                }
+                style={
+                  embedded
+                    ? {
+                        // Match chat popout binder container visuals
+                        aspectRatio: '2.2 / 3',
+                        boxShadow: hasCard
+                          ? '0 0 8px rgba(255,105,180,0.4), 0 4px 12px rgba(255,105,180,0.2)'
+                          : '0 0 5px rgba(255,105,180,0.1)',
+                        background: 'rgba(0, 0, 0, 0.3)',
+                        transform: 'perspective(1000px)',
+                        backfaceVisibility: 'hidden'
+                      }
+                    : {
+                        // Preserve original binder styling
+                        // Ensure visible height even if Tailwind aspect class isn’t available
+                        aspectRatio: '3 / 4',
+                        background: hasCard
+                          ? 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)'
+                          : isSlotUnlocked
+                            ? 'linear-gradient(135deg, #333 0%, #555 100%)'
+                            : 'linear-gradient(135deg, #111 0%, #222 100%)',
+                        border: hasCard
+                          ? '2px solid #FF69B460'
+                          : isSlotUnlocked
+                            ? '2px dashed #FF69B440'
+                            : '2px solid #333',
+                        boxShadow: hasCard ? '0 0 8px #FF69B430' : 'none'
+                      }
+                }
                 onClick={() => {
                   if (hasCard) {
                     handleCardClick(collectedCard.cards);
@@ -236,23 +256,44 @@ export default function UserCards({
                   <img
                     src={collectedCard.cards.artwork_url || '/cards/default-card.webp'}
                     alt={collectedCard.cards.card_name}
-                    className="w-full h-full object-cover"
+                    className={embedded ? "w-full h-full object-contain" : "w-full h-full object-cover"}
                     draggable={false}
                     onError={(e) => {
                       // Fallback image if card image doesn't exist
                       console.log('Card image failed to load:', e.currentTarget.src);
                       e.currentTarget.src = '/cards/default-card.webp';
                     }}
+                    style={embedded ? { boxShadow: '0 0 10px rgba(255,105,180,0.6)', padding: 2 } : undefined}
                   />
-                ) : isSlotUnlocked ? (
-                  <div className="text-center text-white/40 text-xs">
-                    <div>+</div>
-                    <div>SLOT</div>
-                  </div>
                 ) : (
-                  <div className="text-center text-white/20 text-xs">
-                    <div>🔒</div>
-                  </div>
+                  embedded ? (
+                    // Match empty slot styling from chat popout binder
+                    <div className="w-full h-full rounded-lg bg-gradient-to-br from-pink-500/10 to-purple-500/10 border-2 border-dashed border-pink-400/30 flex items-center justify-center">
+                      <div
+                        className="text-xs font-bold text-center"
+                        style={{
+                          color: '#FFB6C1',
+                          textShadow: '0 0 4px rgba(255,182,193,0.6)',
+                          fontSize: '8px',
+                          opacity: 0.5
+                        }}
+                      >
+                        ○
+                      </div>
+                    </div>
+                  ) : (
+                    // Preserve original binder slot/lock visuals
+                    isSlotUnlocked ? (
+                      <div className="text-center text-white/40 text-xs">
+                        <div>+</div>
+                        <div>SLOT</div>
+                      </div>
+                    ) : (
+                      <div className="text-center text-white/20 text-xs">
+                        <div>🔒</div>
+                      </div>
+                    )
+                  )
                 )}
               </div>
             );
