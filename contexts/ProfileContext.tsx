@@ -13,7 +13,8 @@ import { supabaseBrowser } from "@/lib/supabase-browser";
 import { debug } from "@/lib/logger";
 import { ProfileTier } from "@/types/card";
 import { getLocalDateString } from "@/utils/dateHelpers";
-import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
+// HeartCoin celebrations are now triggered explicitly from logHeartcoinTransaction()
+// instead of detecting balance changes here (removed triggerHeartCoinCelebration import)
 import { updateBadgeProgressCounters } from "@/lib/updateBadgeProgress";
 import { suppressBadgeCelebrations } from "@/utils/celebrationQueue";
 
@@ -279,28 +280,20 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, [allBadges, userBadges]);
 
   const setProfileWithCelebration = useCallback((newProfile: Profile | null) => {
-    if (newProfile && previousHeartcoinBalance !== null && newProfile.heartcoin_balance !== null) {
-      const currentBalance = newProfile.heartcoin_balance;
-      const balanceIncrease = currentBalance - previousHeartcoinBalance;
-      
-      if (balanceIncrease > 0) {
-        // If within initial suppression window, skip triggering celebration
-        const now = Date.now();
-        const suppressUntil = initialCelebrationSuppressedUntilRef.current;
-        if (!suppressUntil || now >= suppressUntil) {
-          // Trigger celebration for balance increase
-          triggerHeartCoinCelebration(balanceIncrease);
-        }
-      }
-    }
-    
-    // Update the previous balance for next comparison
+    // NOTE: Auto-celebration from balance detection has been DISABLED.
+    // HeartCoin celebrations are now triggered explicitly from logHeartcoinTransaction()
+    // to avoid duplicate celebrations and false positives on page load/navigation.
+    // The previous auto-detection caused:
+    // 1. Duplicate celebrations (logHeartcoinTransaction + balance detection)
+    // 2. Random audio on page load when balance differed from cached state
+
+    // Update the previous balance for tracking (keeping this for potential future use)
     if (newProfile?.heartcoin_balance !== null && newProfile?.heartcoin_balance !== undefined) {
       setPreviousHeartcoinBalance(newProfile.heartcoin_balance ?? 0);
     }
-    
+
     setProfile(newProfile);
-  }, [previousHeartcoinBalance]);
+  }, []);
 
   const fetchProfile = async () => {
     // Prevent duplicate concurrent fetch calls

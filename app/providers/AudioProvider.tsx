@@ -347,6 +347,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const lastCurrentTimeRef = useRef<number>(0); // Track previous currentTime for repeat detection
   const flushInFlightRef = useRef<boolean>(false); // Guard against concurrent flushSession calls
   const authUserRef = useRef<{ id: string } | null>(null); // Cached auth user from subscription
+  // Completion guard: ensure we mark completion once per (song_id + day)
+  const completedOnceRef = useRef<Set<string>>(new Set());
 
   // Play tracking - debounce duplicate play events per song
   const lastPlayTrackRef = useRef<{ songId: string; timestamp: number } | null>(null);
@@ -355,6 +357,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   // Song of Day claim tracking - prevent duplicate HeartCoin awards per song per day
   // Format: { songId: UUID, day: 'YYYY-MM-DD' }
   const lastSotdClaimRef = useRef<{ songId: string; day: string } | null>(null);
+
+  // Completion tracking - prevent duplicate completed=true writes per day+songId
+  // Stores keys like "2026-01-23:uuid-of-song"
+  const completedSotdRef = useRef<Set<string>>(new Set());
 
   // Ref to track Song of the Day ID (avoids stale closure in callbacks)
   const songOfDayIdRef = useRef<string | null>(null);
@@ -403,8 +409,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         songName: state.currentTrack?.title || trackSlug
       });
 
-      // Note: Song of Day HeartCoin award happens on completion, not play start
-      // See claimSongOfDayIfEligible() called from onTime and onEnded handlers
+      // Note: Song of Day HeartCoin award happens on completion via claim insert in markDailySongCompleted()
     } catch (err) {
       console.error('[TRACK] recordPlayEvent error', {
         error: err,
@@ -413,118 +418,224 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Guard: ensure Song of Day completion RPC triggers once per playback session
+  // Guard: ensure Song of Day completion triggers once per playback session
   const sodFiredRef = useRef<boolean>(false);
+  
 
-  // Claim Song of Day HeartCoin award - called ONLY on song completion
-  // This is idempotent - safe to call multiple times, backend enforces once per day
-  const claimSongOfDayIfEligible = async (trackSlug: string, completionRatio: number = 1.0): Promise<void> => {
+  // General completion marker for any track (not just Song of the Day)
+  // Ensures we upsert completed=true, completed_at, completion_percent
+  const markSongCompleted = async (songUuid: string, completionPercent: number = 1): Promise<void> => {
     try {
-      // Get song UUID
-      const songUuid = await getSongUuidBySlug(trackSlug);
-      if (!songUuid) {
-        console.warn('[SOTD] Cannot claim - song UUID not found for:', trackSlug);
+      // Ensure authenticated user
+      const { data: userData, error: userErr } = await supabaseBrowser.auth.getUser();
+      const user = userData?.user || null;
+      if (userErr) {
+        console.error('[MARK COMPLETE] getUser error', userErr);
         return;
       }
-
-      // Check if user is authenticated
-      const user = authUserRef.current;
       if (!user) {
-        console.log('[SOTD] skipped: no authenticated user');
+        console.log('[MARK COMPLETE] skipped: no authenticated user');
         return;
       }
 
-      // Get today's date in NY timezone (YYYY-MM-DD)
-      const nyDayStrToday = getNYDateString();
-
-      // Check if this is the Song of the Day
-      // Use ref to avoid stale closure in callbacks
-      const currentSongOfDayId = songOfDayIdRef.current;
-      if (!currentSongOfDayId) {
-        console.log('[SOTD] skipped: no Song of the Day configured');
+      const day = getNYDateString();
+      const key = `${day}:${songUuid}`;
+      if (completedOnceRef.current.has(key)) {
+        console.log('[MARK COMPLETE] skipped: already marked this song/day', { songUuid, day });
         return;
       }
 
-      if (songUuid !== currentSongOfDayId) {
-        console.log('[SOTD] skipped: track is not Song of the Day', {
-          trackSongId: songUuid,
-          songOfDayId: currentSongOfDayId
-        });
-        return;
-      }
+      const now = new Date().toISOString();
+      const payload = {
+        user_id: user.id,
+        song_id: songUuid,
+        day,
+        completed: true,
+        completed_at: now,
+        completion_percent: 1,
+      } as const;
 
-      // Check guard ref to prevent duplicate calls in the same session
-      const lastClaim = lastSotdClaimRef.current;
-      if (lastClaim && lastClaim.songId === songUuid && lastClaim.day === nyDayStrToday) {
-        console.log('[SOTD] skipped: already claimed in this session', {
-          songId: songUuid,
-          day: nyDayStrToday
-        });
-        return;
-      }
-
-      const audioEl = audioRef.current;
-      const currentTime = audioEl?.currentTime ?? null;
-      const duration = audioEl?.duration ?? null;
-      const ratio = completionRatio;
-
-      // Build NY day string for RPC per requirement
-      const nyDay = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
-      const nyDayStr = nyDay.toISOString().slice(0,10);
-
-      // Log that the RPC is firing with the required payload
-      console.log('SOTD RPC fired', { songId: songUuid, completionRatio: ratio, nyDayStr });
-
-      // Use RPC to claim SOTD and award HeartCoin; frontend should NOT touch awards table directly
-      const { data, error } = await supabaseBrowser.rpc('claim_song_of_day_and_award', {
-        p_song_id: songUuid,
-        p_day: nyDayStr,
-        p_completion_ratio: completionRatio,
-      });
-
-      // Log raw RPC response
-      console.log('SOTD RPC response', { data, error });
-
+      console.log('[MARK COMPLETE] Upserting user_song_daily_progress', payload);
+      const { error } = await supabaseBrowser
+        .from('user_song_daily_progress')
+        .upsert(payload, { onConflict: 'user_id,song_id,day', ignoreDuplicates: false });
       if (error) {
-        console.error('[SOTD] claim_song_of_day_and_award error', {
-          songId: songUuid,
+        console.error('[MARK COMPLETE] upsert error', {
           error,
           code: (error as any)?.code,
           message: (error as any)?.message,
           details: (error as any)?.details,
           hint: (error as any)?.hint,
+          payload,
         });
-        // Don't update guard ref on error so we can retry
         return;
       }
 
-      // Update guard ref to prevent duplicate calls
-      lastSotdClaimRef.current = { songId: songUuid, day: nyDayStrToday };
-
-      const resp: any = data || {};
-      const ok = !!resp.ok;
-      const awardedNow = !!resp.awarded_now;
-      const reason = resp.reason || null;
-
-      if (ok) {
-        console.log('[SOTD] RPC ok', { awardedNow, resp });
-        if (awardedNow) {
-          try { triggerHeartCoinCelebration(1); } catch {}
-          try {
-            window.dispatchEvent(new CustomEvent('songOfDay:refresh'));
-            window.dispatchEvent(new CustomEvent('dailySongQuestCompleted', { detail: { day: nyDayStrToday } }));
-          } catch {}
-        }
-      } else if (reason === 'not_completed') {
-        // ignore silently
-      } else {
-        console.warn('[SOTD] Unexpected RPC response', { resp });
-      }
-
+      completedOnceRef.current.add(key);
+      console.log('[MARK COMPLETE] success', { songUuid, day });
+      // Broadcast completion so UI (e.g., badges modal) can refresh progress
+      try {
+        window.dispatchEvent(new CustomEvent('song:completed', { detail: { songUuid, day } }));
+      } catch {}
     } catch (err) {
-      console.error('[SOTD] claimSongOfDayIfEligible error', {
+      console.error('[MARK COMPLETE] exception', {
         error: err,
         message: (err as any)?.message,
+      });
+    }
+  };
+
+  // Mark the Song of the Day as completed and insert claim
+  // Idempotent: only runs once per (day + songId) combination (guarded here and by DB onConflict)
+  const markDailySongCompleted = async (songUuid: string): Promise<void> => {
+    try {
+      // Guard: require authenticated user
+      const user = authUserRef.current;
+      if (!user) {
+        console.log('[SOTD-COMPLETE] skipped: no authenticated user');
+        return;
+      }
+
+      // Guard: require songUuid
+      if (!songUuid) {
+        console.log('[SOTD-COMPLETE] skipped: no songUuid provided');
+        return;
+      }
+
+      // Guard: only complete the Song of the Day
+      const currentSongOfDayId = songOfDayIdRef.current;
+      if (!currentSongOfDayId) {
+        console.log('[SOTD-COMPLETE] skipped: no Song of the Day configured');
+        return;
+      }
+      if (songUuid !== currentSongOfDayId) {
+        console.log('[SOTD-COMPLETE] skipped: not Song of the Day', {
+          songUuid,
+          currentSongOfDayId
+        });
+        return;
+      }
+
+      // Get today's date in NY timezone
+      const nyDayString = getNYDateString();
+      const nowIso = new Date().toISOString();
+
+      // Guard: check if we already completed this song today (in-memory cache)
+      const completionKey = `${nyDayString}:${songUuid}`;
+      if (completedSotdRef.current.has(completionKey)) {
+        console.log('[SOTD-COMPLETE] skipped: already completed today', {
+          songUuid,
+          day: nyDayString
+        });
+        return;
+      }
+
+      // Get audio details for logging
+      const audioEl = audioRef.current;
+      const currentTime = audioEl?.currentTime ?? 0;
+      const duration = audioEl?.duration ?? 0;
+
+      console.log('[SOTD-COMPLETE] Marking daily song completed', {
+        songUuid,
+        day: nyDayString,
+        currentTime: currentTime.toFixed(2),
+        duration: duration.toFixed(2)
+      });
+
+      // 1) Upsert to user_song_daily_progress with completed=true and completed_at
+      const progressPayload = {
+        user_id: user.id,
+        song_id: songUuid,
+        day: nyDayString,
+        completed: true,
+        completion_percent: 1,
+        completed_at: nowIso,
+      } as const;
+
+      console.log('[SOTD-COMPLETE] Upserting user_song_daily_progress payload', progressPayload);
+      const { data: progressData, error: progressError } = await supabaseBrowser
+        .from('user_song_daily_progress')
+        .upsert(progressPayload, { onConflict: 'user_id,song_id,day', ignoreDuplicates: false })
+        .select();
+
+      if (progressError) {
+        console.error('[SOTD-COMPLETE] user_song_daily_progress upsert error', {
+          error: progressError,
+          code: (progressError as any)?.code,
+          message: (progressError as any)?.message,
+          details: (progressError as any)?.details,
+          hint: (progressError as any)?.hint,
+          payload: progressPayload,
+        });
+        // Do not proceed to claim if progress write failed
+        return;
+      }
+
+      // 2) Insert to user_song_of_day_claims to trigger award via DB trigger
+      // Guard: ensure we do not spam claim writes within the same session
+      const lastClaim = lastSotdClaimRef.current;
+      if (lastClaim && lastClaim.songId === songUuid && lastClaim.day === nyDayString) {
+        console.log('[SOTD-COMPLETE] Claim skipped (already attempted this session)', {
+          songUuid,
+          day: nyDayString,
+        });
+      } else {
+        const claimPayload = {
+          user_id: user.id,
+          day: nyDayString,
+          song_id: songUuid,
+          claimed_at: nowIso,
+        } as const;
+
+        console.log('[SOTD-COMPLETE] Inserting user_song_of_day_claims payload', claimPayload);
+        try {
+          const { data: claimData } = await supabaseBrowser
+            .from('user_song_of_day_claims')
+            .insert(claimPayload)
+            .select()
+            .single();
+          // Update session guard for claims
+          lastSotdClaimRef.current = { songId: songUuid, day: nyDayString };
+          console.log('[SOTD-COMPLETE] Claim inserted successfully', {
+            returnedRow: claimData,
+          });
+        } catch (claimErr: any) {
+          // Ignore duplicate key (already claimed today)
+          const code = claimErr?.code || claimErr?.data?.code || claimErr?.status;
+          if (code === '23505') {
+            console.log('[SOTD-COMPLETE] Claim already exists for today');
+            lastSotdClaimRef.current = { songId: songUuid, day: nyDayString };
+          } else {
+            console.error('[SOTD-COMPLETE] user_song_of_day_claims insert error', {
+              error: claimErr,
+              code: claimErr?.code,
+              message: claimErr?.message,
+              details: claimErr?.details,
+              hint: claimErr?.hint,
+              table: 'user_song_of_day_claims',
+              payload: claimPayload,
+            });
+          }
+        }
+        try {
+          window.dispatchEvent(new CustomEvent('songOfDay:refresh'));
+          window.dispatchEvent(new CustomEvent('dailySongQuestCompleted', { detail: { day: nyDayString } }));
+        } catch {}
+      }
+
+      // Mark as completed in our in-memory cache (prevents re-running completion logic)
+      completedSotdRef.current.add(completionKey);
+
+      console.log('[SOTD-COMPLETE] Completed progress+claim flow', {
+        songUuid,
+        day: nyDayString,
+        returnedRow: progressData?.[0] || progressData,
+      });
+
+    } catch (err) {
+      console.error('[SOTD-COMPLETE] exception', {
+        error: err,
+        message: (err as any)?.message
       });
     }
   };
@@ -780,6 +891,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const currentTime = a.currentTime;
       const lastTime = lastCurrentTimeRef.current;
       const duration = a.duration || 0;
+      const listenedSeconds = sessionRef.current ? Math.max(0, Math.floor(sessionRef.current.listenedSeconds)) : 0;
+      const trackLengthSeconds = isFinite(duration) && duration > 0 ? Math.floor(duration) : 0;
 
       // Detect repeat: currentTime jumped backwards significantly (from near end to near start)
       // This catches loop mode and manual repeat without onended firing
@@ -792,10 +905,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         sessionRef.current.listenedSeconds >= 2 // Had meaningful listen time
       ) {
         console.log(`🎧 Repeat detected: ${lastTime.toFixed(1)}s -> ${currentTime.toFixed(1)}s (duration: ${duration.toFixed(1)}s)`);
-        // Claim Song of Day HeartCoin award on repeat (complete playthrough)
+        // On repeat, mark SOTD completion once (progress + claim)
         if (currentTrackRef.current && !sodFiredRef.current) {
           sodFiredRef.current = true;
-          claimSongOfDayIfEligible(currentTrackRef.current, 1.0);
+          getSongUuidBySlug(currentTrackRef.current).then(songUuid => {
+            if (songUuid) {
+              markDailySongCompleted(songUuid);
+            }
+          }).catch(() => {});
         }
         // Flush the completed playthrough and start a new session
         flushSession(0).then(() => {
@@ -859,13 +976,36 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         // Be quiet on errors here to avoid console spam; detailed errors are logged above
       }
 
-      // Independent SOTD completion trigger: only when actually complete
-      if (duration > 0 && !sodFiredRef.current && isSongComplete(duration, currentTime)) {
+      // Completion checks (two signals) and logging
+      const percent = duration > 0 ? currentTime / duration : 0;
+      const meetsTimeRatio = duration > 0 && percent >= 0.99;
+      const meetsListenedThreshold = trackLengthSeconds > 0 && listenedSeconds >= Math.floor(0.99 * trackLengthSeconds);
+
+      if (!sodFiredRef.current && (meetsTimeRatio || meetsListenedThreshold)) {
+        console.log('[COMPLETE CHECK]', {
+          currentTime: Number.isFinite(currentTime) ? Number(currentTime.toFixed(2)) : currentTime,
+          duration: Number.isFinite(duration) ? Number(duration.toFixed(2)) : duration,
+          percent: Number(percent.toFixed(4)),
+          listenedSeconds,
+          trackLengthSeconds,
+          signal: meetsTimeRatio ? 'time_ratio' : 'listened_seconds',
+        });
+
         const slug = currentTrackRef.current;
         if (slug) {
           sodFiredRef.current = true;
-          const ratio = Math.max(0, Math.min(1, currentTime / duration));
-          claimSongOfDayIfEligible(slug, ratio);
+          const comp = Math.max(0.99, Math.min(1, percent || (trackLengthSeconds > 0 ? listenedSeconds / trackLengthSeconds : 1)));
+          // Always mark general completion
+          getSongUuidBySlug(slug).then(songUuid => {
+            if (songUuid) {
+              markSongCompleted(songUuid, comp);
+              // If this is SOTD, also run the SOTD completion/claim flow
+              const sodId = songOfDayIdRef.current;
+              if (sodId && songUuid === sodId) {
+                markDailySongCompleted(songUuid);
+              }
+            }
+          }).catch(() => {});
         }
       }
     };
@@ -908,12 +1048,33 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     const onEnded = () => {
       console.log('🎵 AudioProvider: Song ended');
-      // Ensure SOTD completion awards trigger on ended as well (once per session)
+      // Completion handling on ended (once per session)
       try {
         const slug = currentTrackRef.current;
         if (slug && !sodFiredRef.current) {
           sodFiredRef.current = true;
-          claimSongOfDayIfEligible(slug, 1.0);
+          const aDur = a.duration || 0;
+          const aCT = a.currentTime || aDur;
+          const percent = aDur > 0 ? aCT / aDur : 1;
+          console.log('[COMPLETE CHECK]', {
+            currentTime: Number.isFinite(aCT) ? Number(aCT.toFixed(2)) : aCT,
+            duration: Number.isFinite(aDur) ? Number(aDur.toFixed(2)) : aDur,
+            percent: Number(percent.toFixed(4)),
+            listenedSeconds: sessionRef.current ? Math.max(0, Math.floor(sessionRef.current.listenedSeconds)) : 0,
+            trackLengthSeconds: isFinite(aDur) && aDur > 0 ? Math.floor(aDur) : 0,
+            signal: 'ended',
+          });
+
+          // Completion flow (general progress) and SOTD claim if applicable
+          getSongUuidBySlug(slug).then(async songUuid => {
+            if (songUuid) {
+              await markSongCompleted(songUuid, Math.max(0.99, Math.min(1, percent)));
+              const sodId = songOfDayIdRef.current;
+              if (sodId && songUuid === sodId) {
+                await markDailySongCompleted(songUuid);
+              }
+            }
+          }).catch(() => {});
         }
       } catch {}
       // Flush the listen session before restarting (min 0 seconds for track end)
@@ -925,6 +1086,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             if (slug) {
               const songUuid = await getSongUuidBySlug(slug);
               if (songUuid) {
+                // Mark daily song as completed (triggers DB trigger for claim/award)
+                await markDailySongCompleted(songUuid);
                 await recordSongEndedPlay(songUuid);
               }
             }
@@ -1019,6 +1182,24 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       a.removeEventListener("ended", onEndedDebug);
       try { a.pause(); } catch {}
       try { document.body.removeChild(a); } catch {}
+      audioRef.current = null;
+    };
+    return () => {
+      a.removeEventListener("timeupdate", onTime);
+      a.removeEventListener("durationchange", onDur);
+      a.removeEventListener("loadedmetadata", onDur);
+      a.removeEventListener("play", onPlay);
+      a.removeEventListener("pause", onPause);
+      a.removeEventListener("volumechange", onVol);
+      a.removeEventListener("loadstart", onLoadStart);
+      a.removeEventListener("canplaythrough", onLoadEnd);
+      a.removeEventListener("ended", onEnded);
+      try {
+        a.pause();
+      } catch {}
+      try {
+        if (a.parentElement) a.parentElement.removeChild(a);
+      } catch {}
       audioRef.current = null;
     };
   }, []);

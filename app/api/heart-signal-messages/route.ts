@@ -2,14 +2,23 @@ import { NextResponse, NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { createSupabaseServerClientWithJwt, getSupabaseAdmin } from '@/lib/supabaseServer';
 
+// Generate ALIEN###### username for anonymous guests
+function generateAlienUsername(): string {
+  const randomNum = Math.floor(100000 + Math.random() * 900000);
+  return `ALIEN${randomNum}`;
+}
+
 // POST - Send a new heart signal message
 export async function POST(req: NextRequest) {
   try {
-    const { message, is_system, username: providedUsername, guest_id } = await req.json();
+    const body = await req.json();
+    const { message, is_system, username: providedUsername, client_nonce } = body;
 
+    // Validate message
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      console.error('POST /api/heart-signal-messages: Empty or invalid message');
       return NextResponse.json(
-        { error: 'Message is required' },
+        { ok: false, error: 'Message is required' },
         { status: 400 }
       );
     }
@@ -20,168 +29,122 @@ export async function POST(req: NextRequest) {
     const cookieStore = await cookies();
     const token = cookieStore.get('sb-access-token')?.value || '';
 
+    // Try to get authenticated user
+    let userId: string | null = null;
+    let derivedUsername: string | null = null;
+
+    if (token) {
+      try {
+        const supabase = createSupabaseServerClientWithJwt(token);
+        const { data: userResult, error: userError } = await supabase.auth.getUser();
+
+        if (!userError && userResult?.user) {
+          userId = userResult.user.id;
+
+          // Get username from profile or user_metadata
+          const { data: profile } = await admin
+            .from('profiles')
+            .select('name')
+            .eq('id', userId)
+            .single();
+
+          derivedUsername = profile?.name ||
+            userResult.user.user_metadata?.name ||
+            userResult.user.user_metadata?.full_name ||
+            'CHXNDLER';
+        }
+      } catch (authError) {
+        console.error('POST /api/heart-signal-messages: Auth error:', authError);
+        // Continue as guest if auth fails
+      }
+    }
+
     // For system messages
     if (is_system) {
-      let systemUserId: string | null = null;
-      let systemGuestId: string | null = guest_id || null;
-
-      // Try to get authenticated user for system messages
-      if (token) {
-        const supabase = createSupabaseServerClientWithJwt(token);
-        const { data: userResult } = await supabase.auth.getUser();
-        systemUserId = userResult?.user?.id || null;
-      }
-
-      // If no authenticated user and no guest_id, skip system message
-      if (!systemUserId && !systemGuestId) {
-        console.log('Skipping system message - no authenticated user or guest_id');
+      // System messages require either an authenticated user or a provided username
+      if (!userId && !providedUsername) {
+        console.log('POST /api/heart-signal-messages: Skipping system message - no user or username');
         return NextResponse.json({
-          success: true,
+          ok: true,
           skipped: true,
-          reason: 'No authenticated user or guest_id for system message'
+          reason: 'No authenticated user or username for system message'
         });
       }
 
-      // Build insert data - use user_id if authenticated, otherwise guest_id
-      const insertData: Record<string, any> = {
+      const insertData: Record<string, unknown> = {
         message: message.trim(),
-        is_system: true
+        is_system: true,
+        user_id: userId, // null for guests
+        username: userId ? (derivedUsername || 'SYSTEM') : (providedUsername || 'SYSTEM'),
       };
-
-      if (systemUserId) {
-        insertData.user_id = systemUserId;
-        insertData.username = providedUsername || 'SYSTEM';
-      } else if (systemGuestId) {
-        insertData.guest_id = systemGuestId;
-        // DB trigger will fill username from guest_profiles
-      }
 
       const { data, error } = await admin
         .from('heart_signal_messages')
         .insert(insertData)
-        .select()
+        .select('id, user_id, username, message, created_at, is_system')
         .single();
 
       if (error) {
-        console.error('Error sending system message:', error);
+        console.error('POST /api/heart-signal-messages: System message insert error:', error);
         return NextResponse.json(
-          { error: 'Failed to send system message' },
+          { ok: false, error: 'Failed to send system message' },
           { status: 500 }
         );
       }
 
-      return NextResponse.json({ success: true, data });
+      // Include client_nonce in response for optimistic UI matching (not stored in DB)
+      const responseMessage = client_nonce ? { ...data, client_nonce } : data;
+      return NextResponse.json({ ok: true, message: responseMessage });
     }
 
-    // For regular messages - check if authenticated user or guest
-    let userId: string | null = null;
+    // For regular messages
+    // Determine username: authenticated user's profile name, or provided guest username, or generate ALIEN######
+    let finalUsername: string;
 
-    if (token) {
-      const supabase = createSupabaseServerClientWithJwt(token);
-      const { data: userResult, error: userError } = await supabase.auth.getUser();
-
-      if (!userError && userResult?.user) {
-        userId = userResult.user.id;
-      }
-    }
-
-    // If authenticated user, send with user_id
     if (userId) {
-      // Get username from profile or use provided username
-      let username = providedUsername;
-      if (!username) {
-        const { data: profile } = await admin
-          .from('profiles')
-          .select('name')
-          .eq('id', userId)
-          .single();
-        username = profile?.name || 'Anonymous';
-      }
-
-      // Insert message using admin client to bypass RLS
-      const { data, error } = await admin
-        .from('heart_signal_messages')
-        .insert({
-          user_id: userId,
-          username: username,
-          message: message.trim(),
-          is_system: false
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error sending message:', error);
-        return NextResponse.json(
-          { error: 'Failed to send message' },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json({ success: true, data });
-    }
-
-    // For guest users - must have guest_id
-    if (!guest_id) {
-      return NextResponse.json(
-        { error: 'Guest ID required for unauthenticated users' },
-        { status: 400 }
-      );
-    }
-
-    // First check if guest_id exists in guest_profiles
-    const { data: existingGuest } = await admin
-      .from('guest_profiles')
-      .select('guest_id, username')
-      .eq('guest_id', guest_id)
-      .single();
-
-    let guestUsername = existingGuest?.username;
-
-    // If guest doesn't exist, create a profile for them
-    if (!existingGuest) {
-      const alienNumber = Math.floor(Math.random() * 99999999) + 1;
-      guestUsername = `ALIEN${alienNumber.toString().padStart(8, '0')}`;
-
-      const { error: createError } = await admin
-        .from('guest_profiles')
-        .insert({
-          guest_id: guest_id,
-          username: guestUsername
-        });
-
-      if (createError) {
-        console.error('Error creating guest profile:', createError);
-        // Continue anyway - we'll send the username directly
+      // Authenticated user - use profile name or fallback
+      finalUsername = derivedUsername || providedUsername || 'CHXNDLER';
+    } else {
+      // Guest user - use provided username or generate ALIEN######
+      if (providedUsername && typeof providedUsername === 'string' && providedUsername.trim().length > 0) {
+        finalUsername = providedUsername.trim();
+      } else {
+        // Generate ALIEN###### for anonymous guests
+        finalUsername = generateAlienUsername();
       }
     }
 
-    // Insert message with guest_id and username as fallback
+    // Build insert payload (client_nonce is NOT stored in DB, only returned in response)
+    const insertPayload: Record<string, unknown> = {
+      user_id: userId, // null for guests
+      username: finalUsername,
+      message: message.trim(),
+      is_system: false,
+    };
+
     const { data, error } = await admin
       .from('heart_signal_messages')
-      .insert({
-        guest_id: guest_id,
-        username: guestUsername || providedUsername || 'ALIEN',
-        message: message.trim(),
-        is_system: false
-      })
-      .select()
+      .insert(insertPayload)
+      .select('id, user_id, username, message, created_at, is_system')
       .single();
 
     if (error) {
-      console.error('Error sending guest message:', error);
+      console.error('POST /api/heart-signal-messages: Insert error:', error);
       return NextResponse.json(
-        { error: 'Failed to send guest message' },
+        { ok: false, error: 'Failed to send message' },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ success: true, data });
+    // Include client_nonce in response for optimistic UI matching (not stored in DB)
+    const responseMessage = client_nonce ? { ...data, client_nonce } : data;
 
-  } catch (error: any) {
-    console.error('Heart signal message error:', error);
+    return NextResponse.json({ ok: true, message: responseMessage });
+
+  } catch (error) {
+    console.error('POST /api/heart-signal-messages: Unexpected error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { ok: false, error: 'Internal server error' },
       { status: 500 }
     );
   }
@@ -196,14 +159,14 @@ export async function GET(req: NextRequest) {
 
     const { data, error } = await admin
       .from('heart_signal_messages')
-      .select('id, user_id, guest_id, username, message, created_at, is_system, heart_count, water_count, lightning_count, darkness_count, alien_count')
+      .select('id, user_id, username, message, created_at, is_system, heart_count, water_count, lightning_count, darkness_count, alien_count')
       .order('created_at', { ascending: false })
       .limit(limit);
 
     if (error) {
-      console.error('Error fetching messages:', error);
+      console.error('GET /api/heart-signal-messages: Fetch error:', error);
       return NextResponse.json(
-        { error: 'Failed to fetch messages' },
+        { ok: false, error: 'Failed to fetch messages' },
         { status: 500 }
       );
     }
@@ -211,12 +174,12 @@ export async function GET(req: NextRequest) {
     // Reverse to show oldest first
     const messages = (data || []).reverse();
 
-    return NextResponse.json({ success: true, messages });
+    return NextResponse.json({ ok: true, success: true, messages });
 
-  } catch (error: any) {
-    console.error('Heart signal messages fetch error:', error);
+  } catch (error) {
+    console.error('GET /api/heart-signal-messages: Unexpected error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { ok: false, error: 'Internal server error' },
       { status: 500 }
     );
   }

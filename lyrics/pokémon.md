@@ -7,17 +7,11 @@ Searching far and wide
 Teach Pokémon to understand
 The power that's inside
 
-(Pokémon
-Gotta catch 'em all) It's you and me
-I know it's my destiny (Pokémon)
-Oh, you're my best friend
-In a world we must defend (Pokémon
-Gotta catch 'em all) A heart so true
-Our courage will pull us through
-You teach me and I'll teach you (Ooh, ooh)
-Pokémon! (Gotta catch 'em all)
-Gotta catch 'em all
-Yeah
+Pokémon
+It's you and me
+I know you're my destiny
+You teach me and I'll teach you
+In a world we must defend
 
 Every challenge along the way
 With courage, I will face
@@ -27,3 +21,36 @@ Come with me, the time is right
 There's no better team
 Arm in arm, we'll win the fight
 It's always been our dream
+
+Pokémon
+It's you and me
+I know you're my destiny (Pokémon)
+Oh, you're my best friend
+In a world we must defend (Pokémon)
+A heart so true
+Our courage will pull us through
+You teach me and I'll teach you
+Pokémon
+(Pokémon)
+
+Gotta catch 'em all
+Gotta catch 'em all
+(Pokémon)
+Gotta catch 'em all
+Gotta catch 'em all
+(Pokémon)
+Gotta catch 'em all
+Gotta catch 'em all
+(Pokémon)
+Gotta catch 'em all
+Gotta catch 'em all
+
+Pokémon
+It's you and me
+I know it's my destiny (Pokémon)
+You're my best friend
+In a world we must defend 
+Pokémon a heart so true
+Our courage will pull us through
+You teach me and I'll teach you
+Pokémon!

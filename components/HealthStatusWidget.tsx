@@ -7,7 +7,7 @@ interface HealthCheck {
 }
 
 interface HealthData {
-  status: 'healthy' | 'degraded' | 'unhealthy';
+  status: 'healthy' | 'degraded' | 'unhealthy' | 'unavailable';
   uptime: number;
   memory: {
     used: number;
@@ -62,15 +62,47 @@ export default function HealthStatusWidget({ isOpen, onToggle }: HealthStatusWid
   const fetchHealthData = async () => {
     try {
       const response = await fetch('/api/health');
-      if (!response.ok) {
+
+      if (response.ok || response.status === 503) {
+        let parsed: any;
+        try {
+          parsed = await response.json();
+        } catch (e) {
+          // If we cannot parse the body at all, treat as hard error
+          throw new Error('Invalid health response');
+        }
+
+        const isDegraded = response.status === 503;
+        const safeData: HealthData = {
+          status: (isDegraded ? 'degraded' : (parsed?.status ?? 'healthy')) as HealthData['status'],
+          uptime: typeof parsed?.uptime === 'number' ? parsed.uptime : 0,
+          memory: {
+            used: typeof parsed?.memory?.used === 'number' ? parsed.memory.used : 0,
+            total: typeof parsed?.memory?.total === 'number' ? parsed.memory.total : 0,
+          },
+          performance: {
+            totalResponseTime: typeof parsed?.performance?.totalResponseTime === 'number'
+              ? parsed.performance.totalResponseTime
+              : (typeof parsed?.responseTime === 'number' ? parsed.responseTime : 0),
+            apiLatencies: parsed?.performance?.apiLatencies && typeof parsed?.performance?.apiLatencies === 'object'
+              ? parsed.performance.apiLatencies
+              : {},
+          },
+          checks: parsed?.checks && typeof parsed?.checks === 'object' ? parsed.checks : {},
+          responseTime: typeof parsed?.responseTime === 'number' ? parsed.responseTime : 0,
+        };
+
+        setHealthData(safeData);
+        setError(null);
+      } else {
+        // Non-OK and not 503: treat as hard error
         throw new Error(`HTTP ${response.status}`);
       }
-      const data = await response.json();
-      setHealthData(data);
-      setError(null);
     } catch (err) {
+      // Only hard error on network failure or completely unparseable body
       setError(err instanceof Error ? err.message : 'Health check failed');
     } finally {
+      // Always resolve loading state
       setLoading(false);
     }
   };

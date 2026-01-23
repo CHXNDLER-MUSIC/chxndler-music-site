@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import safeKey from '@/utils/safeKey';
 import { ElementIcon } from '@/lib/elementIcons';
 import { getElementColor, formatChatTimestamp, sanitizeMessage } from '@/lib/supabase/chat';
 import ReactionTray from './ReactionTray';
@@ -12,19 +11,33 @@ import MessageReactions from './MessageReactions';
 // Debug flag
 const DEBUG = process.env.NODE_ENV === 'development';
 
-// Use a centralized safeKey to guarantee non-empty, stable keys
-// Priority uses many fields plus index to avoid collisions for guests/system messages
-const getMessageKey = (m, i) =>
-  safeKey(
-    'msg',
-    m.id,
-    m.client_id,
-    m.created_at,
-    m.user_id,
-    m.guest_id,
-    m.message || m.body,
-    i
-  );
+// Stable key helper for messages. Never returns empty; guarantees uniqueness.
+// Rules:
+// - Use `msg:${id}` when `id` is a non-empty string/number
+// - Else use `tmp:${tempId}` (or `cid:${client_id}`) when non-empty
+// - Else fallback to composite: created_at, user_id/username, slice of message, and idx
+export const stableKey = (m, idx) => {
+  const i = typeof idx === 'number' ? idx : 0;
+  if (!m) return `msg:fallback:${i}:${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 8)}`;
+
+  const id = (typeof m.id === 'number' || typeof m.id === 'string') ? String(m.id) : '';
+  if (id && id.length > 0) return `msg:${id}`;
+
+  const tempId = (typeof m.tempId === 'number' || typeof m.tempId === 'string') ? String(m.tempId) : '';
+  if (tempId && tempId.length > 0) return `tmp:${tempId}`;
+
+  const cid = (typeof m.client_id === 'number' || typeof m.client_id === 'string') ? String(m.client_id) : '';
+  if (cid && cid.length > 0) return `cid:${cid}`;
+
+  const ts = m.created_at ? String(m.created_at) : '';
+  const uid = m.user_id ? String(m.user_id) : '';
+  const uname = m.username ? String(m.username) : '';
+  const msgSlice = m.message ? String(m.message).slice(0, 12) : '';
+  const suffix = `${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 6)}`;
+  return [
+    'msg', ts || '0', uid || uname || 'anon', msgSlice || 'm', String(i), suffix
+  ].join(':');
+};
 
 /**
  * MessageList Component
@@ -88,7 +101,7 @@ export default function MessageList({ messages, onUserClick, loading, messageRea
 
   // Debug logging for key issues in development
   if (DEBUG && messages.length > 0) {
-    const keys = messages.map((m, i) => getMessageKey(m, i));
+    const keys = messages.map((m, i) => stableKey(m, i));
     const keySet = new Set(keys);
     const emptyKeys = keys.filter(k => !k).length;
     const duplicateCount = keys.length - keySet.size;
@@ -114,7 +127,7 @@ export default function MessageList({ messages, onUserClick, loading, messageRea
     >
       <AnimatePresence initial={false}>
         {messages.map((message, index) => {
-          const messageKey = getMessageKey(message, index);
+          const messageKey = stableKey(message, index);
           return (
             <motion.div
               key={messageKey}
@@ -174,11 +187,11 @@ function ChatMessage({ message, onUserClick, onUserClickByName, reactions, onRea
   const containerRef = useRef(null);
   
   const userProfile = message.user_profile;
-  const displayName = userProfile?.name || 'Anonymous';
+  const displayName = userProfile?.name || message.username || 'Anonymous';
   // Resolve element/profile image from message, known users, or current user
-  // Guests always have 'alien' element
-  const isGuestMessage = !!message.guest_id;
-  const senderId = message.guest_id || message.user_id;
+  // Guests have user_id = null and always have 'alien' element
+  const isGuestMessage = message.user_id === null;
+  const senderId = message.user_id || `guest-${displayName}`;
   const resolvedElement = isGuestMessage ? 'alien' : ((userProfile?.element) || (userProfilesById?.[senderId]?.element) || ((senderId === currentUserId) ? currentUserElement : null));
   const elementColor = resolvedElement ? getElementColor(resolvedElement) : undefined;
   const textColor = elementColor;
@@ -332,7 +345,7 @@ function ChatMessage({ message, onUserClick, onUserClickByName, reactions, onRea
         {/* Avatar (only show for non-consecutive messages) */}
         {!isConsecutive && (
           <button
-            onClick={() => onUserClick(message.guest_id || message.user_id)}
+            onClick={() => onUserClick(senderId)}
             className="flex-shrink-0 mt-0.5 hover:scale-110 transition-transform duration-200"
           >
             <div
@@ -343,7 +356,7 @@ function ChatMessage({ message, onUserClick, onUserClickByName, reactions, onRea
                 boxShadow: elementColor ? `0 0 8px ${elementColor}60` : 'none'
               }}
             >
-              {(message.guest_id || message.user_id === 'anonymous') ? (
+              {isGuestMessage ? (
                 // Always show alien.webp for guest users
                 <img
                   src="/elements/alien.webp"
@@ -429,7 +442,7 @@ function ChatMessage({ message, onUserClick, onUserClickByName, reactions, onRea
           {!isConsecutive && (
             <div className="flex items-baseline space-x-2 mb-1">
               <button
-                onClick={() => onUserClick(message.guest_id || message.user_id)}
+                onClick={() => onUserClick(senderId)}
                 className="font-semibold text-sm hover:underline transition-colors duration-200"
                 style={elementColor ? { color: elementColor } : undefined}
                 onMouseEnter={() => {

@@ -7,7 +7,8 @@ import { sfx } from "@/lib/sfx";
 import { useDailyReflectionStatus } from "@/hooks/useDailyReflectionStatus";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { getLocalDateString, getDisplayDateString } from "@/utils/dateHelpers";
-import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
+import { triggerHeartCoinCelebration, suppressNextHeartcoinCelebration } from "@/utils/heartcoinCelebration";
+import { suppressBadgeCelebrations } from "@/utils/celebrationQueue";
 import { consumeActiveBoost } from "@/lib/boosts";
 import { logHeartcoinTransaction } from "@/utils/heartcoins";
 import BinderModal from "./BinderModal";
@@ -383,6 +384,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               ? `Journal Entry (Reflection Boost 2x)`
               : 'Journal Entry';
 
+            // Suppress the auto-celebration from logHeartcoinTransaction - we'll trigger it
+            // manually in handleRitualComplete after the ritual animation completes
+            suppressNextHeartcoinCelebration();
+
             await logHeartcoinTransaction(supabaseBrowser, {
               user_id: userId,
               amount: finalAmount,
@@ -409,6 +414,9 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       } catch (awardErr) {
         console.warn('Error awarding journal heartcoins:', awardErr);
       }
+
+      // Suppress badge celebrations during the ritual animation
+      suppressBadgeCelebrations(10000); // Suppressed for 10 seconds to cover the ritual animation
 
       // Refresh profile data to update journal entries and reflection status
       await refreshProfile();

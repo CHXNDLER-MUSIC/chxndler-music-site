@@ -4,7 +4,7 @@ import { ElementIcon } from '@/lib/elementIcons';
 import { getElementColor } from '@/lib/supabase/chat';
 import { sfx } from '@/lib/sfx';
 import safeKey from '@/utils/safeKey';
-import { getOrCreateGuestIdentitySync } from '@/lib/supabase/guest';
+import { getOrCreateGuestNameSync } from '@/lib/supabase/guest';
 
 // Debug flag
 const DEBUG = process.env.NODE_ENV === 'development';
@@ -12,17 +12,9 @@ const DEBUG = process.env.NODE_ENV === 'development';
 // Get guest username from localStorage (stable identity across sessions) - SYNCHRONOUS
 const getGlobalAlienName = () => {
   if (typeof window !== 'undefined') {
-    return getOrCreateGuestIdentitySync().username;
+    return getOrCreateGuestNameSync();
   }
-  return 'ALIEN0000000';
-};
-
-// Get guest ID from localStorage - SYNCHRONOUS
-const getGuestId = () => {
-  if (typeof window !== 'undefined') {
-    return getOrCreateGuestIdentitySync().guest_id;
-  }
-  return 'guest_ssr_placeholder';
+  return 'ALIEN000000';
 };
 
 // We now generate stable keys per item render using safeKey
@@ -34,10 +26,11 @@ const getGuestId = () => {
 export default function UserList({ users, onUserClick, loading, currentUserProfile }) {
   DEBUG && console.log('🔥 UserList received:', { users, userCount: users?.length, loading });
 
-  // Force add a guest user if no users exist - use persistent guest identity
+  // Force add a guest user if no users exist - use persistent guest username
+  const guestUsername = getGlobalAlienName();
   const rawUsers = users?.length > 0 ? users : [{
-    id: getGuestId(), // Use guest_id from localStorage for stable identity
-    name: getGlobalAlienName(), // Use the global alien name function for consistency
+    id: `guest-${guestUsername}`,
+    name: guestUsername,
     element: 'alien',
     avatar_badge_id: null,
     last_seen: new Date().toISOString()
@@ -48,7 +41,7 @@ export default function UserList({ users, onUserClick, loading, currentUserProfi
 
   // Debug logging for key issues
   if (DEBUG) {
-    const keys = displayUsers.map((u, i) => safeKey('alien', u.user_id, u.guest_id, u.id, u.name, i));
+    const keys = displayUsers.map((u, i) => safeKey('user', u.id, u.name, i));
     const keySet = new Set(keys);
     const emptyKeys = keys.filter(k => !k).length;
     const duplicateCount = keys.length - keySet.size;
@@ -78,23 +71,23 @@ export default function UserList({ users, onUserClick, loading, currentUserProfi
       {/* User List */}
       {displayUsers?.length > 0 ? displayUsers.map((user, i) => (
         <UserListItem
-          key={safeKey('alien', user.user_id, user.guest_id, user.id, user.name, i)}
+          key={safeKey('user', user.id, user.name, i)}
           user={user}
-          onClick={() => onUserClick(user.id || user.guest_id)}
+          onClick={() => onUserClick(user.id)}
           currentUserProfile={currentUserProfile}
         />
       )) : (
         /* Emergency fallback - always show at least one guest user */
         <UserListItem
-          key={safeKey('alien', getGuestId(), getGlobalAlienName(), 0)}
+          key={safeKey('user', `guest-${guestUsername}`, guestUsername, 0)}
           user={{
-            id: getGuestId(), // Use guest_id from localStorage for stable identity
-            name: getGlobalAlienName(), // Use the global alien name function for consistency
+            id: `guest-${guestUsername}`,
+            name: guestUsername,
             element: 'alien',
             avatar_badge_id: null,
             last_seen: new Date().toISOString()
           }}
-          onClick={() => onUserClick(getGuestId())}
+          onClick={() => onUserClick(`guest-${guestUsername}`)}
           currentUserProfile={currentUserProfile}
         />
       )}
@@ -145,12 +138,12 @@ function UserListItem({ user, onClick, currentUserProfile }) {
         {/* Username with icon */}
         <div className="flex items-center space-x-1 w-full justify-center">
           {/* Small user icon */}
-          {user.id === 'anonymous' ? (
+          {user.id === 'anonymous' || (typeof user.id === 'string' && user.id.startsWith('guest-')) ? (
             <img src="/elements/alien.webp" alt="Alien" className="w-5 h-5 flex-shrink-0" />
           ) : user?.profile_image_url ? (
-            <img 
-              src={user.profile_image_url} 
-              alt="Profile" 
+            <img
+              src={user.profile_image_url}
+              alt="Profile"
               className="w-5 h-5 rounded-full flex-shrink-0 object-cover"
               style={{}}
               onError={(e) => {
@@ -167,14 +160,14 @@ function UserListItem({ user, onClick, currentUserProfile }) {
               }}
             />
           ) : (
-            <img 
+            <img
               src={user?.element ? `/elements/${String(user.element).toLowerCase()}.webp` : '/elements/chxndler.webp'}
               alt="Element"
               className="w-5 h-5 flex-shrink-0 object-cover rounded-full"
               style={{}}
             />
           )}
-          
+
           <p
             className="text-base font-bold leading-tight truncate"
             style={{
@@ -195,7 +188,7 @@ function UserListItem({ user, onClick, currentUserProfile }) {
  */
 export function UserCountBadge({ count, className = '' }) {
   return (
-    <div 
+    <div
       className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${className}`}
       style={{
         background: 'rgba(0, 255, 255, 0.2)',

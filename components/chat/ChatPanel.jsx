@@ -6,7 +6,7 @@ import { chatService } from '@/lib/supabase/chat';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { useProfile } from '@/contexts/ProfileContext';
 import { sfx } from '@/lib/sfx';
-import { getOrCreateGuestIdentity, getGuestIdentity, getOrCreateGuestIdentitySync } from '@/lib/supabase/guest';
+import { getOrCreateGuestNameSync } from '@/lib/supabase/guest';
 // import { useLiveStatus } from '@/hooks/useLiveStatus'; // Removed since chat is always available
 import UserList from './UserList';
 import MessageList from './MessageList';
@@ -22,8 +22,8 @@ import { TiltSpinCard } from '@/components/TiltSpinCard';
 // Debug flag to control console logging
 const DEBUG = process.env.NODE_ENV === 'development' && true;
 
-// Global guest identity cache - persists across component remounts
-let cachedGuestIdentity = null;
+// Global guest username cache - persists across component remounts
+let cachedGuestUsername = null;
 
 /**
  * Generate a unique client_id for messages that don't have a DB id yet
@@ -98,16 +98,17 @@ const upsertMessages = (prev, incoming, options = {}) => {
 
     // Check if this replaces an optimistic message
     if (replaceOptimistic && normalized.id && typeof normalized.id === 'string' && normalized.id.length > 0) {
-      // Look for matching optimistic message by content + sender
-      const senderId = normalized.user_id || normalized.guest_id;
+      // Look for matching optimistic message by client_nonce or content + username
       for (const [existingKey, existingMsg] of messageMap.entries()) {
         // Check if this is an optimistic/temp message key
         const isOptimistic = existingKey.startsWith('temp-') || existingKey.startsWith('guest-') ||
                             existingKey.startsWith('msg_') || existingKey.includes('_temp-') ||
-                            existingKey.includes('_guest-');
+                            existingKey.includes('_guest-') || existingMsg.pending;
         if (isOptimistic) {
-          const existingSenderId = existingMsg.user_id || existingMsg.guest_id;
-          if (existingSenderId === senderId && existingMsg.message === normalized.message) {
+          // Match by client_nonce if available, otherwise by content + username
+          const matchByNonce = normalized.client_nonce && existingMsg.client_nonce === normalized.client_nonce;
+          const matchByContent = existingMsg.username === normalized.username && existingMsg.message === normalized.message;
+          if (matchByNonce || matchByContent) {
             // Replace optimistic with real, preserving clientKey for animations
             messageMap.delete(existingKey);
             messageMap.set(key, { ...normalized, clientKey: existingMsg.clientKey || existingMsg.client_id });
@@ -164,45 +165,29 @@ const normalizeUser = (user) => {
   if (!user) return null;
   if (user.client_id) return user;
 
-  const stableId = user.id || user.guest_id || user.user_id;
+  const stableId = user.id || user.user_id || user.name;
   if (stableId) {
     return { ...user, client_id: `user_${stableId}` };
   }
 
-  // Fallback: generate client_id from name or random
-  return { ...user, client_id: `user_${user.name || generateClientId('anon')}` };
-};
-
-// Function to get cached guest identity or load from localStorage
-const getCachedGuestIdentity = () => {
-  if (cachedGuestIdentity) {
-    return cachedGuestIdentity;
-  }
-
-  // Use synchronous getter which creates if needed
-  if (typeof window !== 'undefined') {
-    const identity = getOrCreateGuestIdentitySync();
-    cachedGuestIdentity = identity;
-    DEBUG && console.log('🔥 Got guest identity (sync):', identity.username);
-    return identity;
-  }
-
-  return null;
+  // Fallback: generate client_id from random
+  return { ...user, client_id: `user_${generateClientId('anon')}` };
 };
 
 // Function to get guest username (for display purposes - synchronous)
+// Uses localStorage for persistence across sessions
 const getGlobalAlienName = () => {
-  const identity = getCachedGuestIdentity();
-  if (identity) {
-    return identity.username;
+  if (cachedGuestUsername) {
+    return cachedGuestUsername;
   }
 
-  // This should rarely happen now since getCachedGuestIdentity creates if needed
   if (typeof window !== 'undefined') {
-    return getOrCreateGuestIdentitySync().username;
+    cachedGuestUsername = getOrCreateGuestNameSync();
+    DEBUG && console.log('🔥 Got guest username (sync):', cachedGuestUsername);
+    return cachedGuestUsername;
   }
 
-  return 'ALIEN0000000';
+  return 'ALIEN000000';
 };
 
 /**
@@ -479,12 +464,12 @@ export default function ChatPanel({ isOpen, onClose }) {
         setChatUsers([authenticatedUser]);
         DEBUG && console.log('🚀 Set initial chat users with authenticated user:', [authenticatedUser]);
       } else {
-        // For unauthenticated users, use stable guest identity
-        const guestIdentity = getOrCreateGuestIdentitySync();
-        DEBUG && console.log('🚀 IMMEDIATE: Using guest identity:', guestIdentity.username);
+        // For unauthenticated users, use stable guest username
+        const guestUsername = getGlobalAlienName();
+        DEBUG && console.log('🚀 IMMEDIATE: Using guest username:', guestUsername);
         const guestUser = normalizeUser({
-          id: guestIdentity.guest_id,
-          name: guestIdentity.username,
+          id: `guest-${guestUsername}`,
+          name: guestUsername,
           element: 'alien',
           avatar_badge_id: null,
           last_seen: new Date().toISOString()
@@ -534,19 +519,19 @@ export default function ChatPanel({ isOpen, onClose }) {
           return [authenticatedUser, ...otherUsers];
         });
       } else {
-        // For unauthenticated users, ensure guest user exists with stable identity
-        const guestIdentity = getOrCreateGuestIdentitySync();
-        DEBUG && console.log('🔥 Chat opened - ensuring guest user exists:', guestIdentity.username);
+        // For unauthenticated users, ensure guest user exists with stable username
+        const guestUsername = getGlobalAlienName();
+        DEBUG && console.log('🔥 Chat opened - ensuring guest user exists:', guestUsername);
         setChatUsers(prev => {
-          const otherUsers = prev.filter(u => u.id !== 'anonymous' && u.id !== guestIdentity.guest_id);
+          const otherUsers = prev.filter(u => u.id !== 'anonymous' && u.name !== guestUsername);
           const guestUser = normalizeUser({
-            id: guestIdentity.guest_id,
-            name: guestIdentity.username,
+            id: `guest-${guestUsername}`,
+            name: guestUsername,
             element: 'alien',
             avatar_badge_id: null,
             last_seen: new Date().toISOString()
           });
-          DEBUG && console.log('🔥 Setting guest user with stable identity:', guestUser);
+          DEBUG && console.log('🔥 Setting guest user with stable username:', guestUser);
           return [guestUser, ...otherUsers];
         });
       }
@@ -632,16 +617,17 @@ export default function ChatPanel({ isOpen, onClose }) {
         const result = await response.json();
         if (result.success && result.messages) {
           // Transform messages to match expected format and normalize with client_id
+          // Guests have user_id = null, authenticated users have user_id set
           const transformedMessages = result.messages.map(msg => normalizeMessage({
             id: msg.id,
             user_id: msg.user_id,
-            guest_id: msg.guest_id,
+            username: msg.username,
             message: msg.message,
             message_type: msg.is_system ? 'join' : 'message',
             created_at: msg.created_at,
             user_profile: {
               name: msg.username,
-              element: msg.guest_id ? 'alien' : null, // Guests have alien element
+              element: msg.user_id === null ? 'alien' : null, // Guests (user_id=null) have alien element
               avatar_badge_id: null,
               profile_image_url: null
             }
@@ -690,33 +676,17 @@ export default function ChatPanel({ isOpen, onClose }) {
         };
         setChatUsers([authenticatedUser, ...databaseUsers.filter(u => u.id !== user.id)]);
       } else if (!user || !profile?.name) {
-        // For unauthenticated users, get or create guest identity
-        try {
-          const guestIdentity = await getOrCreateGuestIdentity();
-          cachedGuestIdentity = guestIdentity;
-          DEBUG && console.log('🔥 InitializeChat: Using guest identity:', guestIdentity.username);
-          const guestUser = {
-            id: guestIdentity.guest_id,
-            name: guestIdentity.username,
-            element: 'alien',
-            avatar_badge_id: null,
-            last_seen: new Date().toISOString()
-          };
-          DEBUG && console.log('🔥 Creating guest user:', guestUser);
-          setChatUsers([guestUser, ...databaseUsers.filter(u => u.id !== guestIdentity.guest_id)]);
-        } catch (e) {
-          // Fallback to synchronous guest identity if async creation fails
-          const fallbackIdentity = getOrCreateGuestIdentitySync();
-          DEBUG && console.log('🔥 InitializeChat: Fallback to sync guest identity:', fallbackIdentity.username);
-          const fallbackUser = normalizeUser({
-            id: fallbackIdentity.guest_id,
-            name: fallbackIdentity.username,
-            element: 'alien',
-            avatar_badge_id: null,
-            last_seen: new Date().toISOString()
-          });
-          setChatUsers([fallbackUser, ...databaseUsers]);
-        }
+        // For unauthenticated users, get or create guest identity (username only)
+        const guestUsername = getGlobalAlienName();
+        DEBUG && console.log('🔥 InitializeChat: Using guest username:', guestUsername);
+        const guestUser = {
+          id: `guest-${guestUsername}`,
+          name: guestUsername,
+          element: 'alien',
+          avatar_badge_id: null,
+          last_seen: new Date().toISOString()
+        };
+        setChatUsers([guestUser, ...databaseUsers.filter(u => u.name !== guestUsername)]);
       } else {
         setChatUsers(databaseUsers);
       }
@@ -731,14 +701,13 @@ export default function ChatPanel({ isOpen, onClose }) {
             DEBUG && console.log('🔥 Heart Signal realtime message:', payload);
             const msg = payload.new;
 
-            // Determine if this is a guest or authenticated user message
-            const isGuestMessage = !!msg.guest_id && !msg.user_id;
-            const senderId = msg.user_id || msg.guest_id;
+            // Determine if this is a guest message (user_id = null)
+            const isGuestMessage = msg.user_id === null;
 
             const newMessage = normalizeMessage({
               id: msg.id,
               user_id: msg.user_id,
-              guest_id: msg.guest_id,
+              username: msg.username,
               message: msg.message,
               message_type: msg.is_system ? 'join' : 'message',
               created_at: msg.created_at,
@@ -756,8 +725,9 @@ export default function ChatPanel({ isOpen, onClose }) {
             // Play notification sound for new messages (not system messages)
             if (!msg.is_system) {
               // Check if it's our own message (don't play sound for own messages)
-              const currentGuestId = getCachedGuestIdentity()?.guest_id;
-              const isOwnMessage = (user && msg.user_id === user.id) || (currentGuestId && msg.guest_id === currentGuestId);
+              const currentGuestUsername = getGlobalAlienName();
+              const isOwnMessage = (user && msg.user_id === user.id) ||
+                (!user && msg.username === currentGuestUsername);
 
               if (!isOwnMessage) {
                 try {
@@ -773,27 +743,26 @@ export default function ChatPanel({ isOpen, onClose }) {
             }
 
             // Update user list with new sender
-            if (senderId) {
-              setChatUsers(prev => {
-                const existingUser = prev.find(u => u.id === senderId);
-                if (existingUser) {
-                  return prev.map(u =>
-                    u.id === senderId
-                      ? { ...u, last_seen: msg.created_at }
-                      : u
-                  );
-                } else {
-                  return [...prev, {
-                    id: senderId,
-                    name: msg.username,
-                    element: isGuestMessage ? 'alien' : null,
-                    avatar_badge_id: null,
-                    profile_image_url: null,
-                    last_seen: msg.created_at
-                  }];
-                }
-              });
-            }
+            const senderId = msg.user_id || `guest-${msg.username}`;
+            setChatUsers(prev => {
+              const existingUser = prev.find(u => u.id === senderId || u.name === msg.username);
+              if (existingUser) {
+                return prev.map(u =>
+                  (u.id === senderId || u.name === msg.username)
+                    ? { ...u, last_seen: msg.created_at }
+                    : u
+                );
+              } else {
+                return [...prev, {
+                  id: senderId,
+                  name: msg.username,
+                  element: isGuestMessage ? 'alien' : null,
+                  avatar_badge_id: null,
+                  profile_image_url: null,
+                  last_seen: msg.created_at
+                }];
+              }
+            });
           }
         )
         .on(
@@ -839,7 +808,8 @@ export default function ChatPanel({ isOpen, onClose }) {
 
       // Send sync message if not already joined this session
       // Use sessionStorage to prevent duplicate "connected" messages across panel open/close cycles
-      const sessionJoinKey = user ? `heartverse_joined_${user.id}` : `heartverse_joined_guest_${getCachedGuestIdentity()?.guest_id || 'unknown'}`;
+      const guestUsername = !user ? getGlobalAlienName() : null;
+      const sessionJoinKey = user ? `heartverse_joined_${user.id}` : `heartverse_joined_guest_${guestUsername || 'unknown'}`;
       const hasJoinedThisSession = typeof window !== 'undefined' && sessionStorage.getItem(sessionJoinKey) === 'true';
 
       if (!hasJoined && !hasJoinedThisSession) {
@@ -848,19 +818,14 @@ export default function ChatPanel({ isOpen, onClose }) {
 
         // Send connection message via heart-signal-messages API
         try {
-          // For guests, include guest_id
-          const guestId = !user ? getCachedGuestIdentity()?.guest_id : null;
-
           const response = await fetch('/api/heart-signal-messages', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               message: `${displayName} connected to the signal`,
               username: displayName,
-              guest_id: guestId,
               is_system: true,
-              client_id: crypto.randomUUID(),
-              created_at: new Date().toISOString(),
+              client_nonce: crypto.randomUUID(),
             }),
           });
           const result = await response.json();
@@ -874,24 +839,21 @@ export default function ChatPanel({ isOpen, onClose }) {
           DEBUG && console.log('🔥 Sync message failed:', error);
         }
 
-        // For guest users, ensure they're in the user list with their guest_id
-        if (!user) {
-          const guestIdentity = getCachedGuestIdentity();
-          if (guestIdentity) {
-            setChatUsers(prev => {
-              const existingGuest = prev.find(u => u.id === guestIdentity.guest_id);
-              if (!existingGuest) {
-                return [...prev, {
-                  id: guestIdentity.guest_id,
-                  name: guestIdentity.username,
-                  element: 'alien',
-                  avatar_badge_id: null,
-                  last_seen: new Date().toISOString()
-                }];
-              }
-              return prev;
-            });
-          }
+        // For guest users, ensure they're in the user list
+        if (!user && guestUsername) {
+          setChatUsers(prev => {
+            const existingGuest = prev.find(u => u.name === guestUsername);
+            if (!existingGuest) {
+              return [...prev, {
+                id: `guest-${guestUsername}`,
+                name: guestUsername,
+                element: 'alien',
+                avatar_badge_id: null,
+                last_seen: new Date().toISOString()
+              }];
+            }
+            return prev;
+          });
         }
 
         setHasJoined(true);
@@ -940,142 +902,133 @@ export default function ChatPanel({ isOpen, onClose }) {
    */
   const handleSendMessage = async (messageText) => {
     const displayName = getDisplayName();
-    DEBUG && console.log('🔥 Sending message:', { 
-      messageText, 
-      displayName, 
-      user: !!user, 
-      userObject: user, 
+    DEBUG && console.log('🔥 Sending message:', {
+      messageText,
+      displayName,
+      user: !!user,
       profile: !!profile,
-      profileName: profile?.name,
-      shouldUseProfileName: user && profile?.name
+      profileName: profile?.name
     });
-    
-    // For authenticated users with complete profiles, record via heart-signal API (which writes to heart_signal_messages)
-    if (user && profile?.name) {
-      try {
-        // Optimistic UI: show the message immediately
-        // Use a stable client_id that will be preserved when the real message arrives
-        const client_id = generateClientId(`temp-${user.id}`);
-        const optimistic = normalizeMessage({
-          id: `temp-${user.id}-${Date.now()}`,
-          client_id: client_id,
-          clientKey: client_id, // For animation stability
-          user_id: user.id,
-          message: messageText.trim(),
-          message_type: 'message',
-          created_at: new Date().toISOString(),
-          user_profile: {
-            name: displayName,
-            element: profile.element || null,
-            avatar_badge_id: profile.avatar_badge_id || null,
-            profile_image_url: profile.profile_image_url || null,
-          },
-        });
-        setMessages(prev => upsertMessages(prev, optimistic, { replaceOptimistic: false }));
 
-        const response = await fetch('/api/heart-signal-messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: messageText.trim(),
-            username: displayName,
-            is_system: false,
-          }),
-        });
+    // Generate IDs for optimistic UI
+    const client_nonce = crypto.randomUUID();
+    const tempId = crypto.randomUUID();
 
-        const result = await response.json();
-        DEBUG && console.log('🔥 Authenticated heart-signal POST result:', result);
+    // Determine if authenticated or guest
+    const isAuthenticated = user && profile?.name;
+    const guestUsername = isAuthenticated ? null : getGlobalAlienName();
+    const finalUsername = isAuthenticated ? displayName : guestUsername;
 
-        if (!response.ok) {
-          console.error('Failed to send heart signal message:', result?.error || 'Unknown error');
-          // On failure, remove the optimistic message by client_id
-          setMessages(prev => prev.filter(m => m.client_id !== optimistic.client_id));
-        }
-        // On success, realtime INSERT will replace the optimistic one via upsertMessages
-      } catch (error) {
-        console.error('Error sending heart signal message:', error);
-        // Remove optimistic on error by client_id
-        setMessages(prev => prev.filter(m => m.client_id !== client_id));
-      }
-      return; // Exit early for authenticated users
-    }
-    
-    // For anonymous users (unauthenticated or incomplete profiles), use guest identity
-    try {
-      // Get or create stable guest identity
-      const guestIdentity = await getOrCreateGuestIdentity();
-      cachedGuestIdentity = guestIdentity; // Update cache
+    // Create optimistic message
+    const optimistic = normalizeMessage({
+      id: null, // No DB id yet
+      client_nonce: client_nonce,
+      client_id: client_nonce, // Keep existing dedupe behavior
+      tempId, // For React key and matching
+      clientKey: client_nonce, // For animation stability
+      user_id: isAuthenticated ? user.id : null,
+      username: finalUsername,
+      message: messageText.trim(),
+      message_type: 'message',
+      created_at: new Date().toISOString(),
+      pending: true, // Back-compat flag
+      status: 'sending', // sending | sent | failed
+      errorMessage: null,
+      user_profile: isAuthenticated ? {
+        name: displayName,
+        element: profile.element || null,
+        avatar_badge_id: profile.avatar_badge_id || null,
+        profile_image_url: profile.profile_image_url || null,
+      } : {
+        name: guestUsername,
+        element: 'alien',
+        avatar_badge_id: null,
+        profile_image_url: null,
+      },
+    });
 
-      // Use a stable client_id that will be preserved when the real message arrives
-      const client_id = generateClientId(`guest-${guestIdentity.guest_id}`);
-      const guestMessage = normalizeMessage({
-        id: `guest-${Date.now()}`,
-        client_id: client_id,
-        clientKey: client_id, // For animation stability
-        user_id: null,
-        guest_id: guestIdentity.guest_id,
-        message: messageText.trim(),
-        message_type: 'message',
-        created_at: new Date().toISOString(),
-        user_profile: {
-          name: guestIdentity.username,
-          element: 'alien',
-          avatar_badge_id: null
-        }
-      });
+    // Add optimistic message to state
+    setMessages(prev => upsertMessages(prev, optimistic, { replaceOptimistic: false }));
 
-      DEBUG && console.log('🔥 Adding guest message locally:', guestMessage);
-      setMessages(prev => upsertMessages(prev, guestMessage, { replaceOptimistic: false }));
-
-      // Ensure guest user is in the users list
+    // For guests, ensure they're in the users list
+    if (!isAuthenticated) {
       setChatUsers(prev => {
-        const existingGuest = prev.find(u => u.id === guestIdentity.guest_id || u.id === 'anonymous');
+        const existingGuest = prev.find(u => u.name === guestUsername);
         if (!existingGuest) {
           DEBUG && console.log('🔥 Adding guest user to list');
           return [{
-            id: guestIdentity.guest_id,
-            name: guestIdentity.username,
+            id: `guest-${client_nonce}`,
+            name: guestUsername,
             element: 'alien',
             avatar_badge_id: null,
             last_seen: new Date().toISOString()
           }, ...prev];
-        } else if (existingGuest.id === 'anonymous') {
-          // Upgrade anonymous to proper guest
-          return prev.map(u => u.id === 'anonymous' ? {
-            id: guestIdentity.guest_id,
-            name: guestIdentity.username,
-            element: 'alien',
-            avatar_badge_id: null,
-            last_seen: new Date().toISOString()
-          } : u);
         }
         return prev;
       });
+    }
 
-      // Persist to database via API with guest_id
+    try {
+      // POST to API
       const response = await fetch('/api/heart-signal-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: messageText.trim(),
-          guest_id: guestIdentity.guest_id,
+          username: finalUsername,
           is_system: false,
-          // DO NOT send username - DB trigger will fill it from guest_profiles
+          client_nonce: client_nonce,
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Failed to send guest message:', errorData?.error || 'Unknown error');
-        // Remove optimistic message on failure by client_id
-        setMessages(prev => prev.filter(m => m.client_id !== guestMessage.client_id));
-      } else {
-        DEBUG && console.log('🔥 Guest message persisted successfully');
+      const result = await response.json();
+      DEBUG && console.log('🔥 Heart-signal POST result:', result);
+
+      if (!response.ok || !result.ok) {
+        console.error('Failed to send message:', result?.error || 'Unknown error');
+        // On failure, keep the optimistic message and mark as failed
+        setMessages(prev => prev.map(m => {
+          if (m.tempId === tempId || m.client_nonce === client_nonce) {
+            return { ...m, status: 'failed', pending: false, errorMessage: result?.error || 'Failed to send' };
+          }
+          return m;
+        }));
+        return;
       }
+
+      // On success, replace optimistic message with real one from server
+      // API returns { ok: true, message: row } where row includes id
+      if (result.ok && result.message) {
+        const realMessage = normalizeMessage({
+          ...result.message,
+          client_nonce: client_nonce, // Keep for matching
+          message_type: result.message.is_system ? 'join' : 'message',
+          user_profile: optimistic.user_profile, // Preserve profile info
+        });
+
+        setMessages(prev => {
+          // Replace the optimistic message (matched by tempId/client_nonce) with the real one
+          const next = prev.map(m => {
+            if (m.tempId === tempId || m.client_nonce === client_nonce) {
+              return { ...realMessage, status: 'sent', pending: false, tempId: m.tempId };
+            }
+            return m;
+          });
+          // In case optimistic wasn't found, upsert the real message
+          const hasReplaced = next.some(m => m.id === realMessage.id);
+          return hasReplaced ? next : upsertMessages(next, realMessage, { replaceOptimistic: true });
+        });
+      }
+      // Realtime subscription will also deliver the message, upsertMessages handles dedup
     } catch (error) {
-      console.error('🔥 Guest message failed:', error);
-      // Remove optimistic on error by client_id
-      setMessages(prev => prev.filter(m => m.client_id !== client_id));
+      console.error('Error sending message:', error);
+      // Keep the optimistic message and mark as failed
+      setMessages(prev => prev.map(m => {
+        if (m.tempId === tempId || m.client_nonce === client_nonce) {
+          return { ...m, status: 'failed', pending: false, errorMessage: 'Network error' };
+        }
+        return m;
+      }));
     }
   };
 
@@ -1124,12 +1077,12 @@ export default function ChatPanel({ isOpen, onClose }) {
     DEBUG && console.log('🔥 Found user in chatUsers:', user);
     DEBUG && console.log('🔥 Current chatUsers:', chatUsers);
     
-    // For anonymous/guest users, use stable guest identity
-    if (userId === 'anonymous' || (typeof userId === 'string' && userId.startsWith('guest_'))) {
-      const guestIdentity = getOrCreateGuestIdentitySync();
+    // For anonymous/guest users, use stable guest username
+    if (userId === 'anonymous' || (typeof userId === 'string' && userId.startsWith('guest-'))) {
+      const guestUsername = getGlobalAlienName();
       user = normalizeUser({
-        id: guestIdentity.guest_id,
-        name: guestIdentity.username,
+        id: `guest-${guestUsername}`,
+        name: guestUsername,
         element: 'alien',
         avatar_badge_id: null,
         last_seen: new Date().toISOString()
@@ -1571,12 +1524,12 @@ export default function ChatPanel({ isOpen, onClose }) {
                             last_seen: new Date().toISOString()
                           }];
                         }
-                        // If no users and not authenticated, show guest user with stable identity
+                        // If no users and not authenticated, show guest user with stable username
                         else if (chatUsers.length === 0 && (!user || !profile?.name)) {
-                          const guestIdentity = getOrCreateGuestIdentitySync();
+                          const guestUsername = getGlobalAlienName();
                           usersToShow = [normalizeUser({
-                            id: guestIdentity.guest_id,
-                            name: guestIdentity.username,
+                            id: `guest-${guestUsername}`,
+                            name: guestUsername,
                             element: 'alien',
                             avatar_badge_id: null,
                             last_seen: new Date().toISOString()

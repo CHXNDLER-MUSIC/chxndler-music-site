@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProfile } from "@/contexts/ProfileContext";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 import BadgeCategoryButton from "@/components/BadgeCategoryButton";
 import PopoutShell from "@/components/PopoutShell";
 import { sfx } from "@/lib/sfx";
@@ -78,6 +79,54 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   const [enlargedBadge, setEnlargedBadge] = useState<BadgeDisplay | null>(null);
   const [badgeRotation, setBadgeRotation] = useState(0); // For 3D spin
   const [isBadgeAnimatingFlip, setIsBadgeAnimatingFlip] = useState(false);
+  const [uniqueSongsListened, setUniqueSongsListened] = useState<number>(0);
+
+  // Fetch unique songs listened via canonical view for accurate First Listen progress
+  const fetchUniqueSongsListened = async () => {
+    try {
+      if (!user?.id) {
+        setUniqueSongsListened(0);
+        return;
+      }
+      const { data, error } = await supabaseBrowser
+        .from('v_user_unique_songs_listened')
+        .select('unique_songs_listened')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (error) {
+        console.warn('[BadgesModal] unique songs fetch error', error);
+      }
+      const count = data?.unique_songs_listened ?? 0;
+      setUniqueSongsListened(typeof count === 'number' ? count : 0);
+    } catch (e) {
+      console.warn('[BadgesModal] unique songs fetch exception', e);
+      setUniqueSongsListened(0);
+    }
+  };
+
+  // Refresh the view-based progress when the modal opens and on completion events
+  useEffect(() => {
+    if (open) {
+      fetchUniqueSongsListened();
+    }
+  }, [open, user?.id]);
+
+  useEffect(() => {
+    const handleSongCompleted = () => fetchUniqueSongsListened();
+    const handleSotdRefresh = () => fetchUniqueSongsListened();
+
+    try {
+      window.addEventListener('song:completed', handleSongCompleted);
+      window.addEventListener('songOfDay:refresh', handleSotdRefresh);
+    } catch {}
+
+    return () => {
+      try {
+        window.removeEventListener('song:completed', handleSongCompleted);
+        window.removeEventListener('songOfDay:refresh', handleSotdRefresh);
+      } catch {}
+    };
+  }, [user?.id]);
 
   // Reset badge rotation when selected badge changes
   useEffect(() => {
@@ -93,28 +142,40 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     // Calculate progress for this badge
     let progress;
     if (badge.requirement_type && badge.requirement_count && profile) {
-      // Pass attendance counts for community badges that use attendance-based requirements
-      const badgeProgress = getBadgeProgressForUser({
-        requirement_type: badge.requirement_type,
-        requirement_count: badge.requirement_count,
-        id: badge.id,
-        slug: badge.slug || '',
-        badge_name: badge.badge_name,
-        icon_url: badge.icon_url,
-        description: badge.description,
-        requirement_text: badge.requirement_text || null,
-        category: badge.category as any,
-        created_at: badge.created_at
-      }, profile, attendanceCounts);
-      
-      progress = {
-        current: badgeProgress.current,
-        target: badgeProgress.target,
-        percentage: badgeProgress.percentage
-      };
-      
-      // Debug log for progress calculation
-      console.log(`Badge ${badge.badge_name}: progress=${badgeProgress.current}/${badgeProgress.target} (${badgeProgress.percentage}%)`);
+      // Special case: First Listen must use canonical unique songs listened view
+      const isFirstListen = (badge.slug === 'first-listen' || badge.slug === 'first_listen');
+
+      if (isFirstListen) {
+        const required = 1;
+        const current = Math.min(uniqueSongsListened || 0, 1);
+        const percent = required > 0 ? Math.round((current / required) * 100) : 0;
+        progress = {
+          current,
+          target: required,
+          percentage: percent,
+        };
+        console.log(`Badge ${badge.badge_name} (First Listen): progress=${current}/${required} (${percent}%) via view`);
+      } else {
+        // Pass attendance counts for community badges that use attendance-based requirements
+        const badgeProgress = getBadgeProgressForUser({
+          requirement_type: badge.requirement_type,
+          requirement_count: badge.requirement_count,
+          id: badge.id,
+          slug: badge.slug || '',
+          badge_name: badge.badge_name,
+          icon_url: badge.icon_url,
+          description: badge.description,
+          requirement_text: badge.requirement_text || null,
+          category: badge.category as any,
+          created_at: badge.created_at
+        }, profile, attendanceCounts);
+        progress = {
+          current: badgeProgress.current,
+          target: badgeProgress.target,
+          percentage: badgeProgress.percentage
+        };
+        console.log(`Badge ${badge.badge_name}: progress=${badgeProgress.current}/${badgeProgress.target} (${badgeProgress.percentage}%)`);
+      }
     } else {
       // Fallback for badges without proper requirement data
       progress = {
@@ -125,6 +186,15 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       console.warn(`Badge ${badge.badge_name} missing requirement data: type=${badge.requirement_type}, count=${badge.requirement_count}`);
     }
     
+    // If this is First Listen and progress is complete, treat as unlocked for display
+    const isFirstListen = (badge.slug === 'first-listen' || badge.slug === 'first_listen');
+    const displayUnlocked = (() => {
+      if (!isFirstListen || !progress) return isUnlocked;
+      const current = Number(progress.current) || 0;
+      const required = 1;
+      return current >= required ? true : isUnlocked;
+    })();
+
     return {
       id: badge.id,
       badge_name: badge.badge_name,
@@ -134,7 +204,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       requirement: badge.requirement_text || null, // Use requirement_text from database
       requirement_type: badge.requirement_type,
       requirement_count: badge.requirement_count,
-      unlocked: isUnlocked,
+      unlocked: displayUnlocked,
       earned_at: userBadge?.earned_at || null,
       progress
     };

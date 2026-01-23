@@ -21,11 +21,11 @@ function generateGuestId(): string {
 }
 
 /**
- * Generate a random guest name (ALIEN + 7 digits)
+ * Generate a random guest name (ALIEN + 6 digits)
  */
 function generateGuestName(): string {
-  const alienNumber = Math.floor(Math.random() * 9999999) + 1;
-  return `ALIEN${alienNumber.toString().padStart(7, '0')}`;
+  const alienNumber = Math.floor(Math.random() * 999999) + 1;
+  return `ALIEN${alienNumber.toString().padStart(6, '0')}`;
 }
 
 /**
