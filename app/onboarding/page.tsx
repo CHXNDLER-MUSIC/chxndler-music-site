@@ -25,7 +25,7 @@ const ELEMENT_SOUNDS: Record<Element, string> = {
   darkness: '/audio/shadow-glow.mp3',
 };
 
-type OnboardingStep = 'name' | 'element' | 'celebration' | 'welcome';
+type OnboardingStep = 'name' | 'element' | 'celebration' | 'tourPrompt' | 'welcome';
 
 // Wrapper component for Suspense boundary (required for useSearchParams)
 export default function OnboardingPage() {
@@ -48,7 +48,7 @@ function OnboardingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const audio = useAudio();
-  const { profile, refreshProfile } = useProfile();
+  const { profile, refreshProfile, updateProfile } = useProfile();
 
   // Always start at step 1 (name) - no localStorage restoration
   const [step, setStep] = useState<OnboardingStep>('name');
@@ -249,7 +249,8 @@ function OnboardingContent() {
         setStep('celebration');
         // Auto-advance to welcome after 3 seconds
         setTimeout(() => {
-          setStep('welcome');
+          // After celebration, show tour prompt
+          setStep('tourPrompt');
         }, 3000);
       } else {
         // No coin awarded (already completed before), skip to welcome
@@ -267,6 +268,14 @@ function OnboardingContent() {
     // Dispatch event
     window.dispatchEvent(new CustomEvent('heartverse:entered'));
     // Navigate to main heartverse
+    router.push('/');
+  };
+
+  // Handle skipping tour now (mark as seen to avoid prompt) and enter
+  const handleSkipTourAndEnter = async () => {
+    try {
+      await updateProfile({ has_seen_tour: true });
+    } catch {}
     router.push('/');
   };
 
@@ -336,7 +345,7 @@ function OnboardingContent() {
               letterSpacing: '2px'
             }}
           >
-            Welcome to Heartverse
+            Welcome to the Heartverse
           </div>
 
           <div
@@ -547,7 +556,59 @@ function OnboardingContent() {
         </div>
       )}
 
-      {/* Step 4: Relic Welcome Home */}
+      {/* Step 4: Tour Prompt */}
+      {step === 'tourPrompt' && (
+        <div style={hologramContainerStyle} className="z-10">
+          <div
+            className="text-center mb-3"
+            style={{
+              color: '#00FFFF',
+              textShadow: '0 0 8px rgba(0,255,255,0.6)',
+              fontSize: '18px',
+              fontWeight: 'bold'
+            }}
+          >
+            Let me show you around
+          </div>
+
+          <div
+            className="w-full h-px mb-4"
+            style={{
+              background: 'linear-gradient(90deg, transparent, rgba(0,255,255,0.8) 20%, rgba(0,255,255,1) 50%, rgba(0,255,255,0.8) 80%, transparent)',
+              boxShadow: '0 0 4px rgba(0,255,255,0.6)'
+            }}
+          />
+
+          <p className="text-center text-white/80 text-sm mb-4">
+            I can guide you through the key controls of your ship.
+          </p>
+
+          <div className="space-y-3">
+            <button
+              onClick={handleEnterHeartverse}
+              className="w-full inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-medium transition"
+              style={{
+                background: 'rgba(252,84,175,0.2)',
+                border: '1px solid rgba(252,84,175,0.6)',
+                color: '#FC54AF',
+                textShadow: '0 0 8px rgba(252,84,175,0.8)',
+                boxShadow: '0 0 15px rgba(252,84,175,0.4)'
+              }}
+            >
+              Let me show you around
+            </button>
+
+            <button
+              onClick={handleSkipTourAndEnter}
+              className="w-full text-white/80 hover:text-white text-sm underline"
+            >
+              Skip for now
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 5: Relic Welcome Home */}
       {step === 'welcome' && (
         <div style={hologramContainerStyle} className="z-10">
           <div

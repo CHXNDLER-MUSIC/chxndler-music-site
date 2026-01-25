@@ -25,6 +25,9 @@ export async function POST(request: NextRequest) {
     const { merchItemId, quantity = 1 } = body;
     // Accept both idempotencyKey and clientRequestId (backwards compatibility)
     const idempotencyKey: string | undefined = body?.idempotencyKey ?? body?.clientRequestId;
+    // Extract variant selection (optional)
+    const selectedVariant = body?.selected_variant || null;
+    const selectedColor = body?.selected_color || null;
     // Normalize payment type to allowed values
     let normalizedPaymentType: 'heartcoins' | 'stripe';
     try {
@@ -169,6 +172,38 @@ export async function POST(request: NextRequest) {
     // Extract the orders.id from RPC result
     const ordersId = result?.order_id ? String(result.order_id) : null;
     console.log('[PURCHASE] orders.id', ordersId);
+
+    // Update order with variant selection if provided and order was created
+    if (ordersId && (selectedVariant || selectedColor)) {
+      console.log('[PURCHASE] Updating order with variant info:', {
+        ordersId,
+        selectedVariant,
+        selectedColor
+      });
+
+      const updatePayload: { selected_variant?: object; selected_color?: string | null } = {};
+      if (selectedVariant && Object.keys(selectedVariant).length > 0) {
+        updatePayload.selected_variant = selectedVariant;
+      }
+      if (selectedColor) {
+        updatePayload.selected_color = selectedColor;
+      }
+
+      if (Object.keys(updatePayload).length > 0) {
+        const { error: updateError } = await supabase
+          .from('orders')
+          .update(updatePayload)
+          .eq('id', ordersId)
+          .eq('user_id', user.id); // Security: ensure user owns this order
+
+        if (updateError) {
+          console.error('[PURCHASE] Failed to update variant info (non-fatal):', updateError);
+          // Don't fail the whole purchase for this
+        } else {
+          console.log('[PURCHASE] Variant info updated successfully');
+        }
+      }
+    }
 
     // Treat "Already processed" as success (idempotency)
     if (result?.message === 'Already processed' || result?.idempotent) {

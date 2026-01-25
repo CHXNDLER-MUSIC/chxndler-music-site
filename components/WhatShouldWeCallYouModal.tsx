@@ -409,7 +409,7 @@ export default function WhatShouldWeCallYouModal() {
                 letterSpacing: '2px'
               }}
             >
-              Welcome to Heartverse
+              Welcome to the Heartverse
             </div>
 
             {/* Subheader */}

@@ -11,7 +11,7 @@ import { BonusQuestWithCompletion } from '@/types/bonusQuests';
 import { getAllQuestsForUser } from '@/lib/bonusQuests';
 import { useMerchItems } from '@/hooks/useMerchItems';
 import { useMerchPurchase } from '@/hooks/useMerchPurchase';
-import { MerchItem } from '@/types/merch';
+import { MerchItem, NormalizedVariantOption, VariantOptionsData } from '@/types/merch';
 import TiltSpinCard from '@/components/TiltSpinCard';
 import { usePlanetRewardsContext } from '@/components/PlanetRewardsProvider';
 import { getElementalPlanetImage } from '@/lib/elementalPlanets';
@@ -40,6 +40,11 @@ type StoreItem = {
   cost: number;
   heartCoin: number;
   merch_item_id: string; // UUID from merch_items table
+  // Journey tier gating (optional - only set for DB merch items)
+  min_tier?: string | null;
+  // Variant selection for purchase (optional)
+  selected_variant?: { type: string; value: string; label: string } | null;
+  selected_color?: string | null;
 };
 
 type PendingPurchase = {
@@ -154,6 +159,105 @@ const storeItems: StoreItem[] = [
   }
 ];
 
+// Journey tier ranking for merch gating
+// WANDERER = 0, DREAMER = 1, LOVER = 2
+const JOURNEY_TIER_RANKS: Record<string, number> = {
+  'WANDERER': 0,
+  'DREAMER': 1,
+  'LOVER': 2,
+};
+
+/**
+ * Get the numeric rank for a journey tier string.
+ * Normalizes to uppercase and defaults to WANDERER (0) for unknown/missing values.
+ */
+const getJourneyTierRank = (tier: string | null | undefined): number => {
+  const normalized = (tier || 'WANDERER').toUpperCase();
+  return JOURNEY_TIER_RANKS[normalized] ?? 0;
+};
+
+/**
+ * Check if a merch item is locked for a given user journey tier.
+ * Returns true if the user's tier rank is below the item's required tier rank.
+ */
+const isItemLockedForJourney = (
+  userJourney: string | null | undefined,
+  itemMinTier: string | null | undefined
+): boolean => {
+  const userRank = getJourneyTierRank(userJourney);
+  const itemRank = getJourneyTierRank(itemMinTier);
+  return userRank < itemRank;
+};
+
+/**
+ * Normalize variant_options into a consistent array of options.
+ * Handles both variants[] and colors[] formats from the database.
+ * Returns empty array if no variants/colors.
+ */
+const normalizeVariantOptions = (
+  variantOptions: VariantOptionsData | null | undefined,
+  fallbackImageUrl: string | null
+): NormalizedVariantOption[] => {
+  // Cast to any to handle dynamic JSON from API
+  const opts = variantOptions as any;
+
+  if (!opts || typeof opts !== 'object') return [];
+
+  // Handle variants array (design-based options)
+  if (Array.isArray(opts.variants) && opts.variants.length > 0) {
+    return opts.variants.map((v: any) => ({
+      type: v.type || 'design',
+      value: v.value,
+      label: v.label,
+      imageMain: v.images?.main || fallbackImageUrl,
+    }));
+  }
+
+  // Handle colors array - normalize to same shape
+  if (Array.isArray(opts.colors) && opts.colors.length > 0) {
+    return opts.colors.map((c: any) => ({
+      type: 'color',
+      value: c.value,
+      label: c.label,
+      // Prefer front, then main, then fallback
+      imageMain: c.images?.front || c.images?.main || fallbackImageUrl,
+    }));
+  }
+
+  return [];
+};
+
+/**
+ * Get a shortened label for variant toggle display.
+ * E.g., "Socks (Alien)" -> "Alien", "Patch Inverse" -> "Inverse"
+ */
+const getShortLabel = (label: string, itemName: string): string => {
+  // Remove item name prefix if present (case-insensitive)
+  let short = label;
+  const lowerLabel = label.toLowerCase();
+  const lowerName = itemName.toLowerCase();
+
+  // Handle patterns like "Socks (Alien)" -> "Alien"
+  const parenMatch = label.match(/\(([^)]+)\)/);
+  if (parenMatch) {
+    return parenMatch[1];
+  }
+
+  // Handle patterns like "Patch Inverse" -> "Inverse"
+  if (lowerLabel.startsWith(lowerName + ' ')) {
+    short = label.slice(itemName.length + 1);
+  } else if (lowerLabel.startsWith(lowerName)) {
+    short = label.slice(itemName.length).trim();
+  }
+
+  // For colors, capitalize first letter
+  if (short && short.length > 0) {
+    return short.charAt(0).toUpperCase() + short.slice(1);
+  }
+
+  return label;
+};
+
 export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWelcomeHome, initialTab = 'earn', availableCards = [], currentCardIndex = 0, onCardNavigation }: Props) {
   const { profile, loading: profileLoading, refreshProfile } = useProfile();
   const { cards: ownedCards } = useUserCards(profile?.id);
@@ -252,6 +356,47 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   const [didInitElementIndex, setDidInitElementIndex] = useState(false);
   // Ordered list of cards for the selected element
   const [elementCards, setElementCards] = useState<any[]>([]);
+
+  // Merch variant selection state: keyed by merch_item.id
+  // Stores the selected variant for each item that has variants
+  const [selectedVariants, setSelectedVariants] = useState<Record<string, NormalizedVariantOption>>({});
+
+  // Helper to get or initialize the selected variant for an item
+  const getSelectedVariant = (item: MerchItem): NormalizedVariantOption | null => {
+    const options = normalizeVariantOptions(item.variant_options, item.image_url);
+    if (options.length === 0) return null;
+
+    // If we have a selection for this item, return it
+    if (selectedVariants[item.id]) {
+      return selectedVariants[item.id];
+    }
+
+    // Otherwise initialize with first option
+    const defaultOption = options[0];
+    // Update state (this won't cause re-render issues since it's an initialization)
+    setSelectedVariants(prev => ({
+      ...prev,
+      [item.id]: defaultOption
+    }));
+    return defaultOption;
+  };
+
+  // Helper to set the selected variant for an item
+  const setSelectedVariantForItem = (itemId: string, variant: NormalizedVariantOption) => {
+    setSelectedVariants(prev => ({
+      ...prev,
+      [itemId]: variant
+    }));
+  };
+
+  // Helper to get the display image for a merch item (considering variant selection)
+  const getItemDisplayImage = (item: MerchItem): string => {
+    const selectedVariant = selectedVariants[item.id];
+    if (selectedVariant?.imageMain) {
+      return selectedVariant.imageMain;
+    }
+    return item.image_url || '/store/default.webp';
+  };
 
   const itemsPerPage = 1;
 
@@ -955,7 +1100,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       merchItemId: item.merch_item_id,
       name: item.name,
       cost: item.heartCoin,
-      clientRequestId
+      clientRequestId,
+      selected_variant: item.selected_variant,
+      selected_color: item.selected_color
     });
 
     try {
@@ -963,7 +1110,10 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       const payload = {
         merchItemId: item.merch_item_id,
         quantity: 1,
-        clientRequestId
+        clientRequestId,
+        // Include variant selection
+        selected_variant: item.selected_variant || {},
+        selected_color: item.selected_color || null
       };
 
       const response = await fetch('/api/merch/purchase', {
@@ -2049,10 +2199,85 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               </div>
             ) : merchItems.length > 0 ? (
               <>
-                {/* Item Title */}
-                <h3 className="text-base font-bold text-white tracking-wider text-center mb-2">
-                  {merchItems[currentPage]?.name.toUpperCase()}
-                </h3>
+                {/* Item Title with Variant Toggle */}
+                {(() => {
+                  const currentItem = merchItems[currentPage];
+                  if (!currentItem) return null;
+
+                  const variantOptions = normalizeVariantOptions(currentItem.variant_options, currentItem.image_url);
+                  const hasVariants = variantOptions.length > 0;
+                  const selectedVariant = hasVariants ? getSelectedVariant(currentItem) : null;
+
+                  // Debug: log variant info
+                  console.log('[VARIANT DEBUG]', {
+                    itemName: currentItem.name,
+                    variant_options: currentItem.variant_options,
+                    normalizedOptions: variantOptions,
+                    hasVariants
+                  });
+
+                  return (
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      {/* Variant Toggle - to the LEFT of item name */}
+                      {hasVariants && (
+                        <div className="flex items-center gap-1">
+                          {variantOptions.map((opt, idx) => {
+                            const isSelected = selectedVariant?.value === opt.value;
+                            const shortLabel = getShortLabel(opt.label, currentItem.name);
+
+                            // For color type, show color dots if value looks like a color name
+                            const isColor = opt.type === 'color';
+                            const colorMap: Record<string, string> = {
+                              black: '#1a1a1a',
+                              blue: '#3b82f6',
+                              pink: '#ec4899',
+                              yellow: '#fbbf24',
+                              red: '#ef4444',
+                              green: '#22c55e',
+                              white: '#ffffff',
+                              purple: '#a855f7',
+                            };
+                            const dotColor = isColor ? (colorMap[opt.value.toLowerCase()] || '#888') : null;
+
+                            return (
+                              <button
+                                key={opt.value}
+                                onClick={() => setSelectedVariantForItem(currentItem.id, opt)}
+                                onMouseEnter={() => {
+                                  try { sfx.play('hover', 0.2); } catch {}
+                                }}
+                                aria-label={`Choose ${currentItem.name} version: ${opt.label}`}
+                                title={opt.label}
+                                className={`px-2 py-1 text-xs font-bold rounded-md transition-all duration-200 ${
+                                  isSelected
+                                    ? 'bg-[#F2EF1D] text-black shadow-[0_0_10px_rgba(242,239,29,0.5)]'
+                                    : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
+                                }`}
+                              >
+                                {isColor && dotColor ? (
+                                  <span className="flex items-center gap-1">
+                                    <span
+                                      className="w-3 h-3 rounded-full border border-white/30"
+                                      style={{ backgroundColor: dotColor }}
+                                    />
+                                    <span className="hidden sm:inline">{shortLabel}</span>
+                                  </span>
+                                ) : (
+                                  shortLabel
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Item Name */}
+                      <h3 className="text-base font-bold text-white tracking-wider">
+                        {currentItem.name.toUpperCase()}
+                      </h3>
+                    </div>
+                  );
+                })()}
 
                 {/* Carousel with Arrows - Swipe enabled */}
                 <div
@@ -2087,6 +2312,10 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     {(() => {
                       const item = merchItems[currentPage];
                       if (!item) return null;
+
+                      // Get the display image considering variant selection
+                      const displayImage = getItemDisplayImage(item);
+
                       return (
                         <>
                           {/* Item Image - Swipeable */}
@@ -2098,7 +2327,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             onTouchEnd={onTouchEnd}
                           >
                             <img
-                              src={item.image_url || '/store/default.webp'}
+                              src={displayImage}
                               alt={item.name}
                               className="w-auto max-w-full object-contain rounded-lg cursor-pointer hover:scale-105 transition-transform duration-300 select-none"
                               style={{ height: '100%', maxHeight: '9rem', transform: 'scale(0.92)' }}
@@ -2106,14 +2335,16 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                               onClick={() => {
                                 const storeItem = {
                                   name: item.name,
-                                  image: item.image_url || '/store/default.webp',
+                                  image: displayImage,
                                   // Ensure BEANIE back uses the static public/store/beanie-back.webp
                                   image2: (item as any).slug === 'beanie' ? '/store/beanie-back.webp' : (item as any).secondary_image_url,
                                   stripeUrl: item.stripe_url || '',
                                   description: item.description || '',
                                   cost: item.price_usd || 0,
                                   heartCoin: item.price_heartcoins || 0,
-                                  merch_item_id: item.id
+                                  merch_item_id: item.id,
+                                  // Pass tier info for gating in enlarged view
+                                  min_tier: item.min_journey_tier || item.min_tier || null
                                 };
                                 setEnlargedItem(storeItem);
                                 setEnlargedImageIndex(0);
@@ -2168,6 +2399,12 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 {(() => {
                   const item = merchItems[currentPage];
                   if (!item) return null;
+
+                  // Journey tier gating: check if item is locked for this user
+                  // Prefer min_journey_tier column if present, fall back to min_tier, default to WANDERER
+                  const itemMinTier = (item.min_journey_tier || item.min_tier || 'WANDERER').toUpperCase();
+                  const isLocked = isItemLockedForJourney(profile?.journey, itemMinTier);
+
                   return (
                     <div className="mt-4 bg-black/20 rounded-lg p-4">
                       {/* Description */}
@@ -2210,57 +2447,83 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         </div>
                       </div>
 
-                      {/* Purchase Button */}
-                      {item.stripe_url && (
-                        <div className="flex justify-center mt-2">
-                          <button
-                            onClick={() => handlePurchase(item.stripe_url)}
-                            onMouseEnter={() => {
-                              try { sfx.play('hover', 0.3); } catch {}
-                            }}
-                            className="px-3 py-2 rounded-lg font-bold text-sm text-green-400 hover:bg-green-500/20 hover:scale-105 transition-all duration-200"
-                          >
-                            PAY WITH ${item.price_usd ? (item.price_usd % 1 === 0 ? item.price_usd.toFixed(0) : item.price_usd.toFixed(1)) : '0'}
-                          </button>
+                      {/* Journey Tier Locked State */}
+                      {isLocked ? (
+                        <div className="w-full py-2 px-4 rounded-lg font-bold text-xs text-center mt-2 bg-gray-600/50 text-gray-300 cursor-not-allowed border border-gray-500/50">
+                          <span className="flex items-center justify-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                            Unlock at {itemMinTier}
+                          </span>
                         </div>
-                      )}
+                      ) : (
+                        <>
+                          {/* Purchase Button */}
+                          {item.stripe_url && (
+                            <div className="flex justify-center mt-2">
+                              <button
+                                onClick={() => handlePurchase(item.stripe_url!)}
+                                onMouseEnter={() => {
+                                  try { sfx.play('hover', 0.3); } catch {}
+                                }}
+                                className="px-3 py-2 rounded-lg font-bold text-sm text-green-400 hover:bg-green-500/20 hover:scale-105 transition-all duration-200"
+                              >
+                                PAY WITH ${item.price_usd ? (item.price_usd % 1 === 0 ? item.price_usd.toFixed(0) : item.price_usd.toFixed(1)) : '0'}
+                              </button>
+                            </div>
+                          )}
 
-                      {/* Add to Collection Button */}
-                      <button
-                        onClick={() => {
-                          const storeItem = {
-                            name: item.name,
-                            image: item.image_url || '/store/default.webp',
-                            image2: item.secondary_image_url,
-                            stripeUrl: item.stripe_url || '',
-                            description: item.description || '',
-                            cost: item.price_usd || 0,
-                            heartCoin: item.price_heartcoins || 0,
-                            merch_item_id: item.id
-                          };
-                          handleHeartCoinPurchaseConfirm(storeItem);
-                        }}
-                        onMouseEnter={() => {
-                          if (!modalLoading && profile && (profile.heartcoin_balance || 0) >= (item.price_heartcoins || 0)) {
-                            try { sfx.play('hover', 0.3); } catch {}
-                          }
-                        }}
-                        disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < (item.price_heartcoins || 0)}
-                        className={`w-full py-2 px-4 rounded-lg font-bold text-xs transition-all duration-200 mt-2 ${
-                          modalLoading || !profile || (profile.heartcoin_balance || 0) < (item.price_heartcoins || 0)
-                            ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
-                            : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,239,29,0.6)]'
-                        }`}
-                        style={
-                          modalLoading || !profile || (profile.heartcoin_balance || 0) < (item.price_heartcoins || 0)
-                            ? undefined
-                            : {
-                                boxShadow: '0 0 15px rgba(242,239,29,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
+                          {/* Add to Collection Button */}
+                          <button
+                            onClick={() => {
+                              // Get the selected variant for this item (if any)
+                              const selectedVar = selectedVariants[item.id] || null;
+                              const displayImage = getItemDisplayImage(item);
+
+                              const storeItem: StoreItem = {
+                                name: item.name,
+                                image: displayImage,
+                                image2: item.secondary_image_url || undefined,
+                                stripeUrl: item.stripe_url || '',
+                                description: item.description || '',
+                                cost: item.price_usd || 0,
+                                heartCoin: item.price_heartcoins || 0,
+                                merch_item_id: item.id,
+                                min_tier: item.min_journey_tier || item.min_tier || null,
+                                // Include variant selection for purchase
+                                selected_variant: selectedVar ? {
+                                  type: selectedVar.type,
+                                  value: selectedVar.value,
+                                  label: selectedVar.label
+                                } : null,
+                                selected_color: selectedVar?.type === 'color' ? selectedVar.value : null
+                              };
+                              handleHeartCoinPurchaseConfirm(storeItem);
+                            }}
+                            onMouseEnter={() => {
+                              if (!modalLoading && profile && (profile.heartcoin_balance || 0) >= (item.price_heartcoins || 0)) {
+                                try { sfx.play('hover', 0.3); } catch {}
                               }
-                        }
-                      >
-                        {modalLoading ? 'Purchasing...' : 'Add to Collection'}
-                      </button>
+                            }}
+                            disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < (item.price_heartcoins || 0)}
+                            className={`w-full py-2 px-4 rounded-lg font-bold text-xs transition-all duration-200 mt-2 ${
+                              modalLoading || !profile || (profile.heartcoin_balance || 0) < (item.price_heartcoins || 0)
+                                ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
+                                : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,239,29,0.6)]'
+                            }`}
+                            style={
+                              modalLoading || !profile || (profile.heartcoin_balance || 0) < (item.price_heartcoins || 0)
+                                ? undefined
+                                : {
+                                    boxShadow: '0 0 15px rgba(242,239,29,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
+                                  }
+                            }
+                          >
+                            {modalLoading ? 'Purchasing...' : 'Add to Collection'}
+                          </button>
+                        </>
+                      )}
                     </div>
                   );
                 })()}
@@ -2681,42 +2944,61 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
               {/* PAY WITH Heartcoin Button - Above Image */}
               <div className="mb-4 flex justify-center">
-                <button
-                  onClick={() => {
-                    handleHeartCoinPurchaseConfirm(enlargedItem);
-                    setEnlargedItem(null);
-                    setEnlargedImageIndex(0);
-                  }}
-                  onMouseEnter={() => {
-                    if (!modalLoading && profile && (profile.heartcoin_balance || 0) >= (enlargedItem.heartCoin || 0)) {
-                      try { sfx.play('hover', 0.3); } catch {}
-                    }
-                  }}
-                  disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < (enlargedItem.heartCoin || 0)}
-                  className={`flex items-center gap-2 py-3 px-6 rounded-lg font-bold text-sm transition-all duration-200 ${
-                    modalLoading || !profile || (profile.heartcoin_balance || 0) < (enlargedItem.heartCoin || 0)
-                      ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
-                      : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,239,29,0.6)]'
-                  }`}
-                  style={
-                    modalLoading || !profile || (profile.heartcoin_balance || 0) < (enlargedItem.heartCoin || 0)
-                      ? undefined
-                      : {
-                          boxShadow: '0 0 15px rgba(242,239,29,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
-                        }
+                {(() => {
+                  // Journey tier gating for enlarged item view
+                  const enlargedItemMinTier = (enlargedItem.min_tier || 'WANDERER').toUpperCase();
+                  const isEnlargedItemLocked = isItemLockedForJourney(profile?.journey, enlargedItemMinTier);
+
+                  if (isEnlargedItemLocked) {
+                    return (
+                      <div className="flex items-center gap-2 py-3 px-6 rounded-lg font-bold text-sm bg-gray-600/50 text-gray-300 cursor-not-allowed border border-gray-500/50">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        <span>Unlock at {enlargedItemMinTier}</span>
+                      </div>
+                    );
                   }
-                >
-                  <span>PAY WITH</span>
-                  <img
-                    src="/elements/heart-coin.webp"
-                    alt="Heart Coin"
-                    className="w-5 h-5 object-contain"
-                    style={{
-                      filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
-                    }}
-                  />
-                  <span>{enlargedItem.heartCoin || 0}</span>
-                </button>
+
+                  return (
+                    <button
+                      onClick={() => {
+                        handleHeartCoinPurchaseConfirm(enlargedItem);
+                        setEnlargedItem(null);
+                        setEnlargedImageIndex(0);
+                      }}
+                      onMouseEnter={() => {
+                        if (!modalLoading && profile && (profile.heartcoin_balance || 0) >= (enlargedItem.heartCoin || 0)) {
+                          try { sfx.play('hover', 0.3); } catch {}
+                        }
+                      }}
+                      disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < (enlargedItem.heartCoin || 0)}
+                      className={`flex items-center gap-2 py-3 px-6 rounded-lg font-bold text-sm transition-all duration-200 ${
+                        modalLoading || !profile || (profile.heartcoin_balance || 0) < (enlargedItem.heartCoin || 0)
+                          ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
+                          : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,239,29,0.6)]'
+                      }`}
+                      style={
+                        modalLoading || !profile || (profile.heartcoin_balance || 0) < (enlargedItem.heartCoin || 0)
+                          ? undefined
+                          : {
+                              boxShadow: '0 0 15px rgba(242,239,29,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
+                            }
+                      }
+                    >
+                      <span>PAY WITH</span>
+                      <img
+                        src="/elements/heart-coin.webp"
+                        alt="Heart Coin"
+                        className="w-5 h-5 object-contain"
+                        style={{
+                          filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
+                        }}
+                      />
+                      <span>{enlargedItem.heartCoin || 0}</span>
+                    </button>
+                  );
+                })()}
               </div>
 
               {/* Image Content */}

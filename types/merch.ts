@@ -1,5 +1,41 @@
 // Types for merch items and orders
 
+// Variant option images structure
+export interface VariantImages {
+  main?: string;
+  front?: string;
+  back?: string;
+}
+
+// Single variant option (design-based)
+export interface VariantOption {
+  type: 'design' | string;
+  value: string;
+  label: string;
+  images: VariantImages;
+}
+
+// Single color option
+export interface ColorOption {
+  value: string;
+  label: string;
+  images: VariantImages;
+}
+
+// variant_options JSONB structure from database
+export interface VariantOptionsData {
+  variants?: VariantOption[];
+  colors?: ColorOption[];
+}
+
+// Normalized variant option for UI state
+export interface NormalizedVariantOption {
+  type: 'design' | 'color' | string;
+  value: string;
+  label: string;
+  imageMain: string | null;
+}
+
 export interface MerchItem {
   id: string;
   name: string;
@@ -12,9 +48,17 @@ export interface MerchItem {
   stripe_url: string | null;
   is_active: boolean;
   min_tier: string | null;
+  // Journey tier gating: min_journey_tier column (values: 'WANDERER', 'DREAMER', 'LOVER')
+  // Falls back to min_tier if not present
+  min_journey_tier?: string | null;
   category: 'physical' | 'digital';
   created_at: string;
   updated_at: string;
+  // Additional optional fields from API
+  price_usd?: number | null;
+  secondary_image_url?: string | null;
+  // Variant options from database (JSONB)
+  variant_options?: VariantOptionsData | null;
 }
 
 export interface Order {
@@ -33,6 +77,9 @@ export interface Order {
   shipping_state?: string;
   shipping_zip?: string;
   shipping_country?: string;
+  // Variant selection fields
+  selected_variant?: { type: string; value: string; label: string } | Record<string, never> | null;
+  selected_color?: string | null;
   created_at: string;
   updated_at: string;
 }
