@@ -250,43 +250,48 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
           }
         >
           <span className="socket" aria-hidden />
+          {/* Constrain click target to icon size to avoid off-target opens */}
           {disabled ? (
-            <div
-              className="ck-icon-btn-disabled"
-              title="Spotify (Not available for elemental planets)"
-              aria-disabled="true"
-            >
-              <span className="logo-glow-disabled">{SpotifyIcon}</span>
+            <div style={{ width: iconSize, height: iconSize, margin: '0 auto', pointerEvents: 'auto' }}>
+              <div
+                className="ck-icon-btn-disabled"
+                title="Spotify (Not available for elemental planets)"
+                aria-disabled="true"
+              >
+                <span className="logo-glow-disabled">{SpotifyIcon}</span>
+              </div>
             </div>
           ) : (
-            <IconButtonShell
-              title="Listen on Spotify"
-              href={links.spotify!}
-              color="#1DB954"
-              onClickFX={playClick}
-              onHoverFX={playHover}
-              onClick={() => {
-                // Track outbound click to Spotify
-                trackNavEvent({
-                  event_type: 'outbound_click',
-                  action: 'spotify',
-                  extra: { scope: 'song' }
-                });
-                try {
-                  const embed = toSpotifyEmbed(links.spotify!);
-                  if (embed) {
-                    setSpEmbedUrl(embed);
-                    setShowSpotifyPopover(true);
-                  } else {
-                    window.open(links.spotify!, '_blank', 'noopener,noreferrer');
+            <div style={{ width: iconSize, height: iconSize, margin: '0 auto', pointerEvents: 'auto' }}>
+              <IconButtonShell
+                title="Listen on Spotify"
+                href={links.spotify!}
+                color="#1DB954"
+                onClickFX={playClick}
+                onHoverFX={playHover}
+                onClick={() => {
+                  // Track outbound click to Spotify
+                  trackNavEvent({
+                    event_type: 'outbound_click',
+                    action: 'spotify',
+                    extra: { scope: 'song' }
+                  });
+                  try {
+                    const embed = toSpotifyEmbed(links.spotify!);
+                    if (embed) {
+                      setSpEmbedUrl(embed);
+                      setShowSpotifyPopover(true);
+                    } else {
+                      window.open(links.spotify!, '_blank', 'noopener,noreferrer');
+                    }
+                  } catch {
+                    try { window.open(links.spotify!, '_blank', 'noopener,noreferrer'); } catch {}
                   }
-                } catch {
-                  try { window.open(links.spotify!, '_blank', 'noopener,noreferrer'); } catch {}
-                }
-              }}
-            >
-              {SpotifyIcon}
-            </IconButtonShell>
+                }}
+              >
+                {SpotifyIcon}
+              </IconButtonShell>
+            </div>
           )}
         </div>
       )}
@@ -303,38 +308,42 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
         >
           <span className="socket" aria-hidden />
           {disabled ? (
-            <div
-              className="ck-icon-btn-disabled"
-              title="Apple Music (Not available for elemental planets)"
-              aria-disabled="true"
-            >
-              <span className="logo-glow-disabled">{AppleIcon}</span>
+            <div style={{ width: iconSize, height: iconSize, margin: '0 auto', pointerEvents: 'auto' }}>
+              <div
+                className="ck-icon-btn-disabled"
+                title="Apple Music (Not available for elemental planets)"
+                aria-disabled="true"
+              >
+                <span className="logo-glow-disabled">{AppleIcon}</span>
+              </div>
             </div>
           ) : (
-            <IconButtonShell
-              title="Listen on Apple Music"
-              href={links.apple!}
-              color="#FF3B30"
-              onClickFX={playClick}
-              onHoverFX={playHover}
-              onClick={() => {
-                // Track outbound click to Apple Music
-                trackNavEvent({
-                  event_type: 'outbound_click',
-                  action: 'apple',
-                  extra: { scope: 'song' }
-                });
-                try {
-                  const embed = toAppleEmbed(links.apple!);
-                  if (embed) { setAmEmbedUrl(embed); setShowApplePopover(true); }
-                  else { window.open(links.apple!, '_blank', 'noopener,noreferrer'); }
-                } catch {
-                  try { window.open(links.apple!, '_blank', 'noopener,noreferrer'); } catch {}
-                }
-              }}
-            >
-              {AppleIcon}
-            </IconButtonShell>
+            <div style={{ width: iconSize, height: iconSize, margin: '0 auto', pointerEvents: 'auto' }}>
+              <IconButtonShell
+                title="Listen on Apple Music"
+                href={links.apple!}
+                color="#FF3B30"
+                onClickFX={playClick}
+                onHoverFX={playHover}
+                onClick={() => {
+                  // Track outbound click to Apple Music
+                  trackNavEvent({
+                    event_type: 'outbound_click',
+                    action: 'apple',
+                    extra: { scope: 'song' }
+                  });
+                  try {
+                    const embed = toAppleEmbed(links.apple!);
+                    if (embed) { setAmEmbedUrl(embed); setShowApplePopover(true); }
+                    else { window.open(links.apple!, '_blank', 'noopener,noreferrer'); }
+                  } catch {
+                    try { window.open(links.apple!, '_blank', 'noopener,noreferrer'); } catch {}
+                  }
+                }}
+              >
+                {AppleIcon}
+              </IconButtonShell>
+            </div>
           )}
         </div>
       )}
@@ -352,36 +361,40 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
         >
           <span className="socket" aria-hidden />
           {disabled ? (
-            <div
-              className="ck-icon-btn-disabled"
-              title="YouTube (Not available for elemental planets)"
-              aria-disabled="true"
-            >
-              <span className="logo-glow-disabled">{YoutubeIcon}</span>
+            <div style={{ width: iconSize, height: iconSize, margin: '0 auto', pointerEvents: 'auto' }}>
+              <div
+                className="ck-icon-btn-disabled"
+                title="YouTube (Not available for elemental planets)"
+                aria-disabled="true"
+              >
+                <span className="logo-glow-disabled">{YoutubeIcon}</span>
+              </div>
             </div>
           ) : (
-            <IconButtonShell
-              title="Watch on YouTube"
-              href={links.youtube!}
-              color="#FF0000"
-              onClickFX={playClick}
-              onHoverFX={playHover}
-              onClick={() => {
-                // Track outbound click to YouTube
-                trackNavEvent({
-                  event_type: 'outbound_click',
-                  action: 'youtube',
-                  extra: { scope: 'song' }
-                });
-                try {
-                  window.open(links.youtube!, '_blank', 'noopener,noreferrer');
-                } catch {
-                  // Fallback if window.open fails
-                }
-              }}
-            >
-              {YoutubeIcon}
-            </IconButtonShell>
+            <div style={{ width: iconSize, height: iconSize, margin: '0 auto', pointerEvents: 'auto' }}>
+              <IconButtonShell
+                title="Watch on YouTube"
+                href={links.youtube!}
+                color="#FF0000"
+                onClickFX={playClick}
+                onHoverFX={playHover}
+                onClick={() => {
+                  // Track outbound click to YouTube
+                  trackNavEvent({
+                    event_type: 'outbound_click',
+                    action: 'youtube',
+                    extra: { scope: 'song' }
+                  });
+                  try {
+                    window.open(links.youtube!, '_blank', 'noopener,noreferrer');
+                  } catch {
+                    // Fallback if window.open fails
+                  }
+                }}
+              >
+                {YoutubeIcon}
+              </IconButtonShell>
+            </div>
           )}
         </div>
       )}

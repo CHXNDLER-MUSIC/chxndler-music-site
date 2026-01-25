@@ -141,7 +141,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
 
     // Calculate progress for this badge
     let progress;
-    if (badge.requirement_type && badge.requirement_count && profile) {
+    if (badge.requirement_type && badge.requirement_count) {
       // Special case: First Listen must use canonical unique songs listened view
       const isFirstListen = (badge.slug === 'first-listen' || badge.slug === 'first_listen');
 
@@ -155,7 +155,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           percentage: percent,
         };
         console.log(`Badge ${badge.badge_name} (First Listen): progress=${current}/${required} (${percent}%) via view`);
-      } else {
+      } else if (profile) {
         // Pass attendance counts for community badges that use attendance-based requirements
         const badgeProgress = getBadgeProgressForUser({
           requirement_type: badge.requirement_type,
@@ -175,6 +175,13 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           percentage: badgeProgress.percentage
         };
         console.log(`Badge ${badge.badge_name}: progress=${badgeProgress.current}/${badgeProgress.target} (${badgeProgress.percentage}%)`);
+      } else {
+        // Fallback if profile not yet loaded
+        progress = {
+          current: 0,
+          target: badge.requirement_count || 1,
+          percentage: 0
+        };
       }
     } else {
       // Fallback for badges without proper requirement data

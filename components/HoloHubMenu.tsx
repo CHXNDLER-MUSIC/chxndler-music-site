@@ -651,8 +651,8 @@ export default function HoloHubMenu({
           const isFirst = i === 0;
           const isLast = i === entries.length - 1;
           const size = itemSize;
-          // Spotify button is disabled on LIGHTNING planet only
-          const isDisabled = isLightningPlanet && it.id === 'sp';
+          // Disable Apple Music on the opening screen, and disable Spotify on LIGHTNING planet
+          const isDisabled = (it.id === 'am') || (isLightningPlanet && it.id === 'sp');
           return (
             <button
               key={it.id}
@@ -688,7 +688,7 @@ export default function HoloHubMenu({
               }}
               onMouseDown={(e) => { e.stopPropagation(); }}
               onMouseEnter={() => { if (!isDisabled) { try { sfx.play('hover', 0.35); } catch {} } }}
-              title={isDisabled ? `${it.label} - Not available for element planets` : it.label}
+              title={isDisabled ? (it.id === 'am' ? `${it.label} - Not available here` : `${it.label} - Not available for element planets`) : it.label}
             >
               <span className="icon" aria-hidden>
                 {typeof it.icon === "string" ? (
@@ -734,8 +734,8 @@ export default function HoloHubMenu({
                 const isFirst = i === 0;
                 const isLast = i === entries.length - 1;
                 const size = itemSize;
-                // Spotify button is disabled on LIGHTNING planet only
-                const isDisabled = isLightningPlanet && it.id === 'sp';
+                // Disable Apple Music on the opening screen, and disable Spotify on LIGHTNING planet
+                const isDisabled = (it.id === 'am') || (isLightningPlanet && it.id === 'sp');
                 return (
                   <button
                     key={it.id}
@@ -786,7 +786,7 @@ export default function HoloHubMenu({
                     }}
                     onMouseDown={(e) => { e.stopPropagation(); }}
                     onMouseEnter={() => { if (!isDisabled) { try { sfx.play('hover', 0.35); } catch {} } }}
-                    title={isDisabled ? `${it.label} - Not available for element planets` : it.label}
+                    title={isDisabled ? (it.id === 'am' ? `${it.label} - Not available here` : `${it.label} - Not available for element planets`) : it.label}
                   >
                     <span className="icon" aria-hidden>
                       {typeof it.icon === 'string' ? (
