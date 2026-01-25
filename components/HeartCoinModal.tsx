@@ -195,11 +195,20 @@ const isItemLockedForJourney = (
  * Returns empty array if no variants/colors.
  */
 const normalizeVariantOptions = (
-  variantOptions: VariantOptionsData | null | undefined,
+  variantOptions: VariantOptionsData | null | undefined | string,
   fallbackImageUrl: string | null
 ): NormalizedVariantOption[] => {
-  // Cast to any to handle dynamic JSON from API
-  const opts = variantOptions as any;
+  if (!variantOptions) return [];
+
+  // Handle stringified JSON from Supabase
+  let opts: any = variantOptions;
+  if (typeof opts === 'string') {
+    try {
+      opts = JSON.parse(opts);
+    } catch {
+      return [];
+    }
+  }
 
   if (!opts || typeof opts !== 'object') return [];
 
@@ -2219,8 +2228,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   return (
                     <div className="flex items-center justify-center gap-2 mb-2">
                       {/* Variant Toggle - to the LEFT of item name */}
-                      {hasVariants && (
-                        <div className="flex items-center gap-1">
+                      {hasVariants && variantOptions.length > 0 && (
+                        <div className="flex items-center gap-1 bg-black/30 rounded-full px-1 py-0.5">
                           {variantOptions.map((opt, idx) => {
                             const isSelected = selectedVariant?.value === opt.value;
                             const shortLabel = getShortLabel(opt.label, currentItem.name);
