@@ -62,6 +62,7 @@ export interface Profile {
   community_interactions: number;
   achievements_unlocked: number;
   streams_attended: number;
+  livestreams_attended: number;
   concerts_attended: number;
   cards_owned: number;
   merch_items_owned: number;
@@ -69,6 +70,7 @@ export interface Profile {
   digital_cards_owned: number;
   donations_made: number;
   heartcoins_sent: number;
+  aliens_invited: number;
   unique_songs_count: number;
   created_at: string;
   updated_at: string;

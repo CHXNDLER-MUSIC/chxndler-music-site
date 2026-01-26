@@ -49,7 +49,12 @@ export function getBadgeProgressForUser(
     case 'livestreams_watched':
       current = profile.streams_attended || 0;
       break;
-      
+
+    case 'livestreams_attended':
+      // Livestream badges: Live Witness, Stream Seeker, Signal Streamer, Cosmic Broadcaster
+      current = profile.livestreams_attended || 0;
+      break;
+
     case 'concerts_attended':
       current = profile.concerts_attended || 0;
       break;
@@ -66,6 +71,11 @@ export function getBadgeProgressForUser(
       
     case 'donations_made':
       current = profile.donations_made || 0;
+      break;
+
+    case 'aliens_invited':
+      // Community invite badges: Portal Opener, Community Builder, Heartverse Ambassador
+      current = profile.aliens_invited || 0;
       break;
       
     case 'heart_coins':
@@ -206,7 +216,10 @@ export function formatRequirementText(badge: Badge): string {
       
     case 'livestreams_watched':
       return `${requirement_count} livestream${requirement_count === 1 ? '' : 's'} watched`;
-      
+
+    case 'livestreams_attended':
+      return `Attend ${requirement_count} livestream${requirement_count === 1 ? '' : 's'}`;
+
     case 'concerts_attended':
       return `${requirement_count} concert${requirement_count === 1 ? '' : 's'} attended`;
       
@@ -218,7 +231,10 @@ export function formatRequirementText(badge: Badge): string {
       
     case 'donations_made':
       return `${requirement_count} donation${requirement_count === 1 ? '' : 's'} made`;
-      
+
+    case 'aliens_invited':
+      return `Invite ${requirement_count} friend${requirement_count === 1 ? '' : 's'}`;
+
     case 'heart_coins':
       return `Earn ${requirement_count} HeartCoin${requirement_count === 1 ? '' : 's'}`;
       

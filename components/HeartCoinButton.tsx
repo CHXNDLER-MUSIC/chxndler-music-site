@@ -4281,11 +4281,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       }}
                                     >
                                       <img
-                                        key={`merch-img-${currentMerchIndex}-${selectedVariants[PHYSICAL_ITEMS[currentMerchIndex]?.slug]?.value || 'default'}`}
+                                        key={`merch-img-${currentMerchIndex}-${selectedVariants[currentMerchIndex]?.value || 'default'}`}
                                         src={(() => {
                                           const item = PHYSICAL_ITEMS[currentMerchIndex];
                                           if (!item) return '';
-                                          const selectedVar = selectedVariants[item.slug];
+                                          const selectedVar = selectedVariants[currentMerchIndex];
                                           // Use selected variant image if available
                                           if (selectedVar?.image) return selectedVar.image;
                                           // Otherwise use item's default image
@@ -5606,7 +5606,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       >
                         {/* Merchandise Image - Front */}
                         <img
-                          src={selectedVariants[activeMerchItem.slug]?.image || activeMerchItem.image_url}
+                          src={(() => {
+                            // Find the index of activeMerchItem to look up selected variant
+                            const activeMerchIndex = merchItems.findIndex(item => item.id === activeMerchItem.id);
+                            const selectedVar = activeMerchIndex >= 0 ? selectedVariants[activeMerchIndex] : null;
+                            return selectedVar?.image || activeMerchItem.image_url;
+                          })()}
                           alt={activeMerchItem.name}
                           className="absolute inset-0 w-full h-full object-contain pointer-events-none"
                           style={{

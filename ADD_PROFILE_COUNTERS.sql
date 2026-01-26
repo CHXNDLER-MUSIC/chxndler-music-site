@@ -11,6 +11,7 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS elemental_sessions_count in
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS community_interactions integer NOT NULL DEFAULT 0;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS achievements_unlocked integer NOT NULL DEFAULT 0;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS streams_attended integer NOT NULL DEFAULT 0;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS livestreams_attended integer NOT NULL DEFAULT 0;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS concerts_attended integer NOT NULL DEFAULT 0;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS cards_owned integer NOT NULL DEFAULT 0;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS merch_items_owned integer NOT NULL DEFAULT 0;
@@ -18,6 +19,7 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS unique_merch_items integer 
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS digital_cards_owned integer NOT NULL DEFAULT 0;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS donations_made integer NOT NULL DEFAULT 0;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS heartcoins_sent integer NOT NULL DEFAULT 0;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS aliens_invited integer NOT NULL DEFAULT 0;
 
 -- Add indexes for performance on commonly queried counter columns
 CREATE INDEX IF NOT EXISTS idx_profiles_total_reflections ON public.profiles(total_reflections);
@@ -25,6 +27,9 @@ CREATE INDEX IF NOT EXISTS idx_profiles_total_heartcoins_earned ON public.profil
 CREATE INDEX IF NOT EXISTS idx_profiles_cards_owned ON public.profiles(cards_owned);
 CREATE INDEX IF NOT EXISTS idx_profiles_unique_merch_items ON public.profiles(unique_merch_items);
 CREATE INDEX IF NOT EXISTS idx_profiles_digital_cards_owned ON public.profiles(digital_cards_owned);
+CREATE INDEX IF NOT EXISTS idx_profiles_livestreams_attended ON public.profiles(livestreams_attended);
+CREATE INDEX IF NOT EXISTS idx_profiles_concerts_attended ON public.profiles(concerts_attended);
+CREATE INDEX IF NOT EXISTS idx_profiles_aliens_invited ON public.profiles(aliens_invited);
 
 -- Update existing profiles to have realistic counter values based on existing data
 -- This is a one-time data migration to populate counters
