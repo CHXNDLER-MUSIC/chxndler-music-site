@@ -11,7 +11,6 @@ import HeartCoinButton from '@/components/HeartCoinButton';
 import HoloStarsButton from '@/components/HoloStarsButton';
 import ElementalButton from '@/components/ElementalButton';
 import { sfx } from '@/lib/sfx';
-import { track as trackAnalytics } from '@/lib/analytics';
 import { createPortal } from 'react-dom';
 import QuestList from '@/components/QuestList';
 import { supabaseBrowser } from '@/lib/supabase-browser';
@@ -231,16 +230,6 @@ export default function ProfileBar({
     } else {
       // Different panel clicked, open it
       setActivePanel(panelKey);
-      
-      // Track panel opening with events_v2
-      try {
-        import('@/lib/analytics').then(({ trackEvent }) => {
-          trackEvent(`${panelKey}_click`, { 
-            source: 'profile_bar',
-            userId: profile?.id || null
-          });
-        }).catch(() => {});
-      } catch {}
     }
   };
 

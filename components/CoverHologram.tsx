@@ -4,7 +4,6 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { cockpit } from "@/config/ui";
 import { useState, useEffect, useRef } from "react";
-import { track } from "@/lib/analytics";
 import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
 import { ELEMENT_COLORS, type Element } from "@/lib/planets";
@@ -407,8 +406,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
           a.play().catch(() => {}); 
         }
       } catch {}
-      try { track('elements_quadrant_click', { quadrant: key }); } catch {}
-      
+
       // Save to user profile selected_element field
       try {
         await fetch('/api/profile/element', {
@@ -517,15 +515,6 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
       } 
     } catch {}
     
-    // Track cover art click immediately when the cover is clicked
-    try {
-      const norm = (slug && slug.toLowerCase()) || title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-      track('cover_art_clicked', {
-        song_slug: norm,
-        payload: { song_title: title, cover_src: src },
-      });
-    } catch {}
-
     setShowCard(true);
     // Preserve optional callback for external hooks (no tracking here anymore)
     try { if (onCardOpen) onCardOpen(); } catch {}
@@ -589,7 +578,6 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
       onMouseEnter={() => { setHovered(true); try { sfx.play('hover', 0.35); } catch {} }}
       onMouseLeave={() => setHovered(false)}
       role="button"
-      // Help analytics identify cover art context reliably
       data-song={title}
       data-slug={(slug && slug.toLowerCase()) || title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}
       tabIndex={0}
@@ -699,15 +687,6 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                           }
                         });
                         window.dispatchEvent(heartCoinEvent);
-                      } catch {}
-                      try {
-                        // Always use the title prop (displayed card), not currentTrack (playing song)
-                        const cardTitle = title;
-                        track('collect_card_clicked', {
-                          song_slug: cardTitle?.toLowerCase().replace(/\s+/g, '-'),
-                          card_src: src,
-                          payload: { song_title: cardTitle, card_image: src, action: 'open_heartcoin_with_card' }
-                        });
                       } catch {}
                     }}
                   >

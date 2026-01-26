@@ -1,6 +1,5 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { track, trackNavEvent } from "@/lib/analytics";
 import HoloHubMenu from "@/components/HoloHubMenu";
 import LumaKeyVideo from "@/components/LumaKeyVideo";
 import HoloJoinButton from "@/components/HoloJoinButton";
@@ -142,28 +141,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
   function handleLaunch() {
     // Enable celebration audio then briefly mute to avoid overlapping chimes at START
     try { enableCelebrationAudio(); muteCelebrationAudio(7000); } catch {}
-    // Track Start button with structured event
-    trackNavEvent({ event_type: 'start_click', action: 'start' });
 
-    // Track Start press using new trackEvent function
-    try {
-      // Import trackEvent dynamically to avoid SSR issues
-      import('@/lib/analytics').then(({ trackEvent }) => {
-        if (!startTrackedRef.current) {
-          trackEvent('start_opening', { source: 'wheel' });
-          startTrackedRef.current = true;
-        }
-        // Track canonical start button click
-        trackEvent('start_click', { source: 'wheel' });
-      }).catch(() => {});
-
-      // Keep old tracking for compatibility during transition
-      if (!startTrackedRef.current) {
-        track('start_button_opening_page');
-        startTrackedRef.current = true;
-      }
-      track('start_button_clicked');
-    } catch {}
     // Trigger toggle action first so downstream can open streaming links within a user gesture
     try { onLaunch(); } catch {}
 
@@ -205,16 +183,6 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
       onJoinToggle?.(true);
     }
     
-    // Explicit analytics event for Signal button
-    try { track('signal_click', { payload: { button_type: 'twitch_embed' } }); } catch {}
-    try { track('twitch_embed_clicked', { location: 'signal_button' }); } catch {}
-    
-    // Track with new events_v2 system
-    try {
-      import('@/lib/analytics').then(({ trackEvent }) => {
-        trackEvent('signal_click', { source: 'wheel' });
-      }).catch(() => {});
-    } catch {}
   }, [showUI, isUIUnlocked, joinAlienOpen, activeBeamColor, onJoinToggle, onBeamColorChange]);
 
   // Helper function to get responsive values
@@ -628,7 +596,6 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
                 <button
                   type="button"
                   className={`power-btn ${(blueActive && showUI) ? 'power-btn-active' : ''}`}
-                  data-analytics={`⚡ Power Toggle: ${blueActive ? 'off' : 'on'}`}
                   data-id="power"
                   data-tour-id="music-power-button"
                   onMouseEnter={() => { if (!showUI || !mounted) return; try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {} }}
@@ -637,26 +604,6 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
                     // Play button sound using SFX system
                     try {
                       sfx.play('button', 0.95);
-                    } catch {}
-
-                    // Track explicit power button click so analytics reflect blue button usage
-                    try {
-                      track('click', {
-                        payload: {
-                          element_tag: 'button',
-                          element_class: 'power-btn',
-                          element_text: 'Power',
-                          element_label: '⚡ Power Button',
-                          data_id: 'power',
-                        }
-                      });
-                      // Also expose a dedicated event for possible server aggregation
-                      track('power_button_clicked');
-                      
-                      // Track with new events_v2 system
-                      import('@/lib/analytics').then(({ trackEvent }) => {
-                        trackEvent('power_click', { source: 'wheel' });
-                      }).catch(() => {});
                     } catch {}
 
                     // Toggle behavior: if blue is active, turn OFF; otherwise turn ON blue

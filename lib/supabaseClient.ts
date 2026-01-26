@@ -1,7 +1,7 @@
 // Re-export the single browser client to maintain backward compatibility
 export { supabaseBrowser as supabaseClient } from '@/lib/supabase-browser';
 
-// Export a function that returns the client for consistency with the analytics spec
+// Export a function that returns the client
 export function createClient() {
   return require('@/lib/supabase-browser').supabaseBrowser;
 }

@@ -22,7 +22,6 @@ import { useHeartcoinBalance } from "@/providers/HeartcoinBalanceProvider";
 // are incompatible with React 19 and can crash on evaluation. We lazy-load it
 // only after probing availability, and fall back gracefully.
 import { playerStore } from "@/store/usePlayerStore";
-import { track as trackAnalytics, storeClickData, generateClickId } from "@/lib/analytics";
 
 // We import the 3D system directly and only render on client via this client component
 
@@ -1517,18 +1516,6 @@ const HUDPanel = React.memo(function HUDPanel({
           openStorePopover();
         }
         
-        // Track the event
-        try {
-          const { songSlug, songTitle, cardSrc } = e.detail || {};
-          track('store_cards_opened_from_collect', { 
-            song_slug: songSlug || 'unknown',
-            payload: { 
-              song_title: songTitle || 'Unknown',
-              card_image: cardSrc,
-              source: 'collect_button'
-            } 
-          });
-        } catch {}
       } catch (err) {
         console.warn('Error handling openStoreCards event:', err);
       }
@@ -1551,13 +1538,6 @@ const HUDPanel = React.memo(function HUDPanel({
           openStorePopover();
         }
         
-        // Track the event
-        try {
-          const { source } = e.detail || {};
-          track('store_opened_from_hamburger', { 
-            payload: { source: source || 'unknown' }
-          });
-        } catch {}
       } catch (error) {
         console.error('Error handling openStore event:', error);
       }
@@ -3526,8 +3506,7 @@ const HUDPanel = React.memo(function HUDPanel({
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   try { sfx.play('click', 0.4); } catch {}
-                                  try { trackAnalytics('daily_invite_clicked', { location: 'heartcoins_popup' }); } catch {}
-                                  
+
                                   const message = "I thought of you. I think this world could feel like home for you too.\nhttps://chxndler.world";
                                   
                                   // Try native share first, fallback to SMS
@@ -3745,8 +3724,8 @@ const HUDPanel = React.memo(function HUDPanel({
                             aria-label="The Wanderer (0–4 HEARTS)"
                             onMouseEnter={() => { try { sfx.play('hover', 0.25); } catch {}; setWandererHovered(true); }}
                             onMouseLeave={() => { setWandererHovered(false); }}
-                            onClick={() => { try { sfx.play('flip', 0.45); } catch {}; setWandererFlipped(v => !v); try { trackAnalytics('heart_tier_clicked', { tier: 'wanderer', style: 'flip' }); } catch {} }}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('flip', 0.45); } catch {}; setWandererFlipped(v => !v); try { trackAnalytics('heart_tier_clicked', { tier: 'wanderer', style: 'flip' }); } catch {} } }}
+                            onClick={() => { try { sfx.play('flip', 0.45); } catch {}; setWandererFlipped(v => !v); }}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('flip', 0.45); } catch {}; setWandererFlipped(v => !v); } }}
                             style={{
                               width: 110,
                               height: 160,
@@ -3807,8 +3786,8 @@ const HUDPanel = React.memo(function HUDPanel({
                             aria-label="The Dreamer (5–24 HEARTS)"
                             onMouseEnter={() => { try { sfx.play('hover', 0.25); } catch {}; setDreamerHovered(true); }}
                             onMouseLeave={() => { setDreamerHovered(false); }}
-                            onClick={() => { try { sfx.play('flip', 0.45); } catch {}; setDreamerFlipped(v => !v); try { trackAnalytics('heart_tier_clicked', { tier: 'dreamer', style: 'flip' }); } catch {} }}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('flip', 0.45); } catch {}; setDreamerFlipped(v => !v); try { trackAnalytics('heart_tier_clicked', { tier: 'dreamer', style: 'flip' }); } catch {} } }}
+                            onClick={() => { try { sfx.play('flip', 0.45); } catch {}; setDreamerFlipped(v => !v); }}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('flip', 0.45); } catch {}; setDreamerFlipped(v => !v); } }}
                             style={{
                               width: 110,
                               height: 160,
@@ -3868,8 +3847,8 @@ const HUDPanel = React.memo(function HUDPanel({
                             aria-label="The Lover (25+ HEARTS)"
                             onMouseEnter={() => { try { sfx.play('hover', 0.28); } catch {}; setLoverHovered(true); }}
                             onMouseLeave={() => { setLoverHovered(false); }}
-                            onClick={() => { try { sfx.play('flip', 0.45); } catch {}; setLoverFlipped(v => !v); try { trackAnalytics('heart_tier_clicked', { tier: 'lover', style: 'flip' }); } catch {} }}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('flip', 0.45); } catch {}; setLoverFlipped(v => !v); try { trackAnalytics('heart_tier_clicked', { tier: 'lover', style: 'flip' }); } catch {} } }}
+                            onClick={() => { try { sfx.play('flip', 0.45); } catch {}; setLoverFlipped(v => !v); }}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); try { sfx.play('flip', 0.45); } catch {}; setLoverFlipped(v => !v); } }}
                             style={{
                               width: 110,
                               height: 160,
@@ -5404,7 +5383,6 @@ const HUDPanel = React.memo(function HUDPanel({
                                     onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
                                     onClick={() => {
                                       try { sfx.play('click', 0.35); } catch {};
-                                      try { trackAnalytics('heart_coin_clicked', { song_slug: String(active || currentId || 'store'), payload: { song_title: track?.title || 'Unknown', location: 'store_price_icon' } }); } catch {}
                                       // Replace the item text with inline confirmation instead of separate popup
                                       setStoreConfirmError('');
                                       setStoreConfirming(true);
@@ -5640,7 +5618,6 @@ const HUDPanel = React.memo(function HUDPanel({
                                         cardSrc: item.image
                                       }
                                     }));
-                                    trackAnalytics('store_collection_clicked', { song_slug: String(songSlug || ''), payload: { song_title: songTitle, item_id: item.id, item_title: item.title, location: 'hud_store_collection' } });
                                   } catch {}
                                 }}
                                 style={{

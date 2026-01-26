@@ -2,10 +2,6 @@ import "./globals.css";
 import "../styles/glow.css";
 import type { Metadata, Viewport } from "next";
 import React from "react";
-import ClickTracker from "@/components/ClickTracker";
-import AnalyticsWidget from "@/components/AnalyticsWidget";
-import PageViewTracker from "@/components/PageViewTracker";
-import { isAnalyticsDisabled } from "@/lib/analytics";
 import { Suspense } from "react";
 import { AudioProvider } from "@/app/providers/AudioProvider";
 import { AuthProvider } from "@/app/providers/AuthProvider";
@@ -77,10 +73,6 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const gaId = process.env.NEXT_PUBLIC_GA_ID;
-  const mpId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
-  const analyticsOff = (process.env.NEXT_PUBLIC_DISABLE_ANALYTICS || '').toLowerCase() === '1' || (process.env.NEXT_PUBLIC_DISABLE_ANALYTICS || '').toLowerCase() === 'true';
-
   return (
     <html lang="en">
       <head>
@@ -111,24 +103,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preload" as="image" href="/cockpit/cockpit.webp?v=2" />
         <link rel="preload" as="image" href="/cockpit/lightbeam-base.webp?v=2" />
         {/* Wheel video preload removed - video files may not exist; SteeringWheelOverlay handles graceful fallback */}
-        {gaId && !analyticsOff ? (
-          <>
-            {/* eslint-disable-next-line @next/next/no-sync-scripts */}
-            <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
-            <script dangerouslySetInnerHTML={{ __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', '${gaId}');
-            ` }} />
-          </>
-        ) : null}
-        {mpId && !analyticsOff ? (
-          <script dangerouslySetInnerHTML={{ __html: `
-            !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-            n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-            n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
-            (window, document,'script','https://connect.facebook.net/en_US/fbevents.js'); fbq('init', '${mpId}');
-          ` }} />
-        ) : null}
       </head>
       <body className="font-sans bg-[#020016]">
         <AuthProvider>
@@ -139,13 +113,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <MenuStateProvider>
                 <TourProvider>
                   <PlanetRewardsProvider>
-            {!analyticsOff && (
-              <Suspense fallback={null}>
-                <PageViewTracker />
-              </Suspense>
-            )}
-            {!analyticsOff && <ClickTracker />}
-            {!analyticsOff && <AnalyticsWidget />}
             <LazyLoadEnhancer />
             <OnboardingEntryGate />
             <StoreProvider />
@@ -168,11 +135,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </HeartcoinBalanceProvider>
           </ProfileProvider>
         </AuthProvider>
-        {mpId && !analyticsOff ? (
-          <noscript>
-            <img height="1" width="1" style={{ display: "none" }} src={`https://www.facebook.com/tr?id=${mpId}&noscript=1`} alt="" />
-          </noscript>
-        ) : null}
       </body>
     </html>
   );

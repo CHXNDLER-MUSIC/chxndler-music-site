@@ -6,7 +6,6 @@ import { toSpotifyEmbed, spotifyEmbedHeight } from "@/lib/spotify";
 import { toAppleEmbed, appleEmbedHeight } from "@/lib/apple";
 import { createPortal } from "react-dom";
 import { useAudio } from "@/app/providers/AudioProvider";
-import { trackNavEvent } from "@/lib/analytics";
 
 export default function StreamingButtons({ pos, links, showControls = true, disabled = false }:{ pos: { xVw:number; yVh:number; sizePx:number; gapPx?:number; tilt?:string; vertical?: boolean; mobile?: {sizePx:number; gapPx?:number}; tablet?: {sizePx:number; gapPx?:number} }, links:{ spotify?:string; apple?:string; youtube?:string }, showControls?: boolean, disabled?: boolean }){
   const { playing, play, pause, volume, setVolume } = useAudio();
@@ -270,12 +269,6 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
                 onClickFX={playClick}
                 onHoverFX={playHover}
                 onClick={() => {
-                  // Track outbound click to Spotify
-                  trackNavEvent({
-                    event_type: 'outbound_click',
-                    action: 'spotify',
-                    extra: { scope: 'song' }
-                  });
                   try {
                     const embed = toSpotifyEmbed(links.spotify!);
                     if (embed) {
@@ -326,12 +319,6 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
                 onClickFX={playClick}
                 onHoverFX={playHover}
                 onClick={() => {
-                  // Track outbound click to Apple Music
-                  trackNavEvent({
-                    event_type: 'outbound_click',
-                    action: 'apple',
-                    extra: { scope: 'song' }
-                  });
                   try {
                     const embed = toAppleEmbed(links.apple!);
                     if (embed) { setAmEmbedUrl(embed); setShowApplePopover(true); }
@@ -379,12 +366,6 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
                 onClickFX={playClick}
                 onHoverFX={playHover}
                 onClick={() => {
-                  // Track outbound click to YouTube
-                  trackNavEvent({
-                    event_type: 'outbound_click',
-                    action: 'youtube',
-                    extra: { scope: 'song' }
-                  });
                   try {
                     window.open(links.youtube!, '_blank', 'noopener,noreferrer');
                   } catch {

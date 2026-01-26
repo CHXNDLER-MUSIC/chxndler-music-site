@@ -27,7 +27,6 @@ import { tracks } from "@/lib/songs-consolidated";
 import { buildPlanetSongs } from "@/lib/planets";
 import { playerStore } from "@/store/usePlayerStore";
 import PrewarmThree from "@/components/PrewarmThree";
-import { track } from "@/lib/analytics";
 import PreloadMedia from "@/components/PreloadMedia";
 import { slugify } from "@/lib/slug";
 import { audioCoordinator } from "@/lib/audio-coordinator";

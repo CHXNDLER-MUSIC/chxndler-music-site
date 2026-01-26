@@ -7,8 +7,6 @@ import { useAudio } from "@/app/providers/AudioProvider";
 import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
 import { playerStore } from "@/store/usePlayerStore";
 import { useCycleList } from "@/lib/useCycleList";
-import { track } from "@/lib/analytics";
-import { trackSecure } from "@/lib/secureAnalytics";
 import { ElementIcon as OptimizedElementIcon } from "@/lib/elementIcons";
 
 function ElementIcon({ name }) {
@@ -187,14 +185,8 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
       const nh = (highlight + 1) % displayItems.length;
       setHighlight(nh);
       const id = displayItems[nh]?.id;
-      if (id) { 
-        setActiveId(id); 
-        // Do not trigger selection while navigating; only track hover
-        track("song_hovered", {
-          song_id: id,
-          song_title: displayItems[nh]?.title || 'Unknown',
-          hover_method: 'keyboard_down'
-        });
+      if (id) {
+        setActiveId(id);
       }
       try { setTimeout(() => playerStore.getState().setHover(id || null), 0); } catch {}
       return;
@@ -204,14 +196,8 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
       const nh = (highlight - 1 + displayItems.length) % displayItems.length;
       setHighlight(nh);
       const id = displayItems[nh]?.id;
-      if (id) { 
-        setActiveId(id); 
-        // Do not trigger selection while navigating; only track hover
-        track("song_hovered", {
-          song_id: id,
-          song_title: displayItems[nh]?.title || 'Unknown',
-          hover_method: 'keyboard_up'
-        });
+      if (id) {
+        setActiveId(id);
       }
       try { setTimeout(() => playerStore.getState().setHover(id || null), 0); } catch {}
       return;
@@ -341,7 +327,6 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                 setActiveElement(null);
                 setHighlight(0);
                 try { sfx.play('change', 0.35); } catch {}
-                track('element_filter_selected', { element: 'ALL', active: true });
               }}
               className={`filter-pill w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border text-sm font-semibold tracking-wide transition-all duration-200 ${
                 !activeElement
@@ -401,7 +386,6 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                       setActiveElement(newActiveElement);
                       setHighlight(0);
                       try { sfx.play('change', 0.35); } catch {}
-                      track('element_filter_selected', { element: (el || '').toUpperCase(), active: !active });
                     }}
                     className={`filter-pill inline-flex items-center justify-center p-1 rounded-full text-xs font-semibold tracking-wide transition-all duration-200 ${
                       active 
@@ -433,30 +417,10 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                   setHighlight(i);
                   try { setTimeout(() => playerStore.getState().setHover(s.id), 0); } catch{};
                   try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {};
-                  // Track hover event
-                  track("song_hovered", {
-                    song_id: s.id,
-                    song_title: s.title,
-                    hover_method: 'mouse'
-                  });
                 }}
                 // Keep last hover active to avoid rapid hide/show flicker while moving
                 onMouseLeave={() => { /* intentionally noop; clear on close */ }}
                 onPointerDown={(e) => {
-                  // Track song selection (normalized: include slug + details)
-                  track("song_selected", {
-                    song_slug: (s.slug || s.id || '').toLowerCase?.() || (s.id || ''),
-                    payload: {
-                      song_title: s.title,
-                      song_icon: s.icon || 'none',
-                    }
-                  });
-                  trackSecure("song_selected", {
-                    song_slug: (s.slug || s.id || '').toLowerCase?.() || (s.id || ''),
-                    song_title: s.title,
-                    song_icon: s.icon || 'none'
-                  });
-                  
                   // Set active id for UI state
                   setActiveId(s.id);
                   setOpen(false);

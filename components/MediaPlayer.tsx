@@ -5,7 +5,6 @@ import LoginModal from "@/components/LoginModal";
 import { createPortal } from "react-dom";
 import { tracks as ALL, type Track, type Song } from "@/lib/songs-consolidated";
 import { skyFor, verifyAllTrackSkies } from "@/lib/sky";
-import { track as gaTrack } from "@/lib/analytics";
 import { DEBUG_MEDIA, dlog, dwarn, dumpAudio } from "@/lib/debug";
 import { ELEMENT_COLORS, type Element } from "@/lib/planets";
 import { retryMediaPlay, playWithAutoplayFallback } from "@/lib/media-retry";
@@ -368,7 +367,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       if (cur.sources && cur.sources.length > 0) {
         intentionalPlayRef.current = true; // Mark as intentional play
         try { a.muted = false; setForceMuted(false); } catch {}
-        a.play().then(() => { setPlaying(true); gaTrack("play", { slug: cur.slug }); })
+        a.play().then(() => { setPlaying(true); })
                  .catch(() => setPlaying(false));
       }
     }, 0);
@@ -404,7 +403,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     const s = skyFor(cur.slug);
     if (onSkyChange) onSkyChange(s.webm, s.mp4, s.key);
     if (onTrackChange) onTrackChange(cur);
-    gaTrack("track_change", { title: cur.title, slug: cur.slug, idx });
     // Only play detent SFX if this is not the initial load and user has interacted
     if (startSignal > 0 || playSignal > 0 || toggleSignal > 0) {
       detent(); // detent SFX
@@ -497,10 +495,9 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
       })
         .then(({ muted }) => {
-          
+
           if (DEBUG_MEDIA) dlog('playSignal: play successful', { muted });
           stateMachine.current.send({ type: 'PLAY' });
-          gaTrack("play", { slug: cur.slug });
           // Re-enable volume updates and sync UI with current element volume
           suppressVolumeRef.current = false;
           try { setVolume(Math.max(0, Math.min(1, a.volume))); } catch {}
@@ -528,7 +525,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         try { if (a2.readyState < 2) a2.load(); } catch {}
         try { a2.muted = false; /* preserve volume */ } catch {}
         intentionalPlayRef.current = true; // Mark as intentional play
-        a2.play().then(() => { if (DEBUG_MEDIA) dlog('playSignal: fallback first-with-audio played'); setPlaying(true); if (onPlayingChange) onPlayingChange(true); gaTrack("play", { slug: tracks[withAudio].slug }); }).catch((e)=>{ if (DEBUG_MEDIA) dwarn('playSignal: fallback play rejected', e?.name, e?.message); setPlaying(false); });
+        a2.play().then(() => { if (DEBUG_MEDIA) dlog('playSignal: fallback first-with-audio played'); setPlaying(true); if (onPlayingChange) onPlayingChange(true); }).catch((e)=>{ if (DEBUG_MEDIA) dwarn('playSignal: fallback play rejected', e?.name, e?.message); setPlaying(false); });
       }, 0);
     }
   }, [playSignal]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -624,7 +621,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         try { a.muted = false; setForceMuted(false); /* preserve volume */ } catch {}
         intentionalPlayRef.current = true; // Mark as intentional play
         a.play().then(() => {
-          setPlaying(true); if (onPlayingChange) onPlayingChange(true); gaTrack("play", { slug: cur.slug });
+          setPlaying(true); if (onPlayingChange) onPlayingChange(true);
         }).catch(()=>{});
       } else {
         // Fallback to first with audio
@@ -635,7 +632,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
         }
       }
     } else {
-      a.pause(); setPlaying(false); if (onPlayingChange) onPlayingChange(false); gaTrack("pause", { slug: cur.slug });
+      a.pause(); setPlaying(false); if (onPlayingChange) onPlayingChange(false);
     }
   }, [toggleSignal]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -753,9 +750,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       // Simple play attempt first, fallback to retry logic if needed
       a.play()
         .then(() => {
-          
+
           stateMachine.current.send({ type: 'PLAY' });
-          gaTrack("play", { slug: cur.slug });
           // Play click SFX via WebAudio after successful start (won't steal gesture)
           try { sfx.play('click', 0.5); } catch {}
         })
@@ -772,9 +768,8 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             }
           })
             .then(() => {
-              
+
               stateMachine.current.send({ type: 'PLAY' });
-              gaTrack("play", { slug: cur.slug });
               try { sfx.play('click', 0.5); } catch {}
               suppressVolumeRef.current = false;
               try { setVolume(Math.max(0, Math.min(1, a.volume))); } catch {}
@@ -797,8 +792,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       a.pause();
       setPlaying(false); // Ensure immediate UI update
       stateMachine.current.send({ type: 'PAUSE' });
-      gaTrack("pause", { slug: cur.slug }); 
-      
+
       // Safe to play UI pause sound on pause (no conflict with main play)
       try { sfx.play('pause', 0.6); } catch {}
     }
@@ -1301,13 +1295,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                     try { uiClick(); } catch {}
                     // Pause site audio while video plays
                     try { const a = audioRef.current; if (a) { a.pause(); setPlaying(false); } } catch {}
-                    // Track analytics
-                    try {
-                      gaTrack('youtube_clicked', {
-                        song_slug: cur.slug,
-                        payload: { song_title: cur.title, location: 'waveform_player', href: cur.youtube }
-                      });
-                    } catch {}
                     // Build embeddable URL
                     const toEmbed = (url: string): string | null => {
                       try {
@@ -1472,7 +1459,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               intentionalPlayRef.current = true;
               a.play().catch(() => {});
               setPlaying(true);
-              gaTrack("seek_waveform", { slug: cur.slug, seconds: first.newTime, progress: first.progress });
 
               const onMove = (ev: PointerEvent) => {
                 applySeekFromClientX(ev.clientX);
@@ -1814,7 +1800,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 intentionalPlayRef.current = true; // Mark as intentional play
                 a.play().catch(()=>{});
                 setPlaying(true);
-                gaTrack("jump_chorus", { slug: cur.slug, seconds: next });
               }}
               className="selector-btn"
               aria-label="Jump to chorus"
@@ -1963,7 +1948,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                         a.muted = false;
                         await playWithAutoplayFallback(a, { maxRetries: 2 });
                         stateMachine.current.send({ type: 'PLAY' });
-                        gaTrack("play", { slug: selectedTrack.slug });
                       } catch (retryError) {
                         if (DEBUG_MEDIA) dwarn('Picker: play failed after warp sequence', retryError);
                         try { stateMachine.current.send({ type: 'ERROR', payload: { error: retryError as any } }); } catch {}

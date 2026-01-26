@@ -7,7 +7,6 @@ import { useAudio } from "@/app/providers/AudioProvider";
 import SongHUD from "@/components/SongHUD";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Song } from "@/lib/songs-consolidated";
-import { trackSongSelected } from "@/lib/analytics";
 
 const BGs: Record<string, any> = {
   space: dynamic(() => import("@/components/bg/SpaceBg"), { ssr: false }),
@@ -19,11 +18,9 @@ export default function SongRouteClient({ song, nextSlug }: { song: Song; nextSl
   const { loadTrack, play, pause, playing } = useAudio();
 
   React.useEffect(() => {
-    // Track song selection on route entry for analytics
-    try { trackSongSelected(song.slug, song.title); } catch {}
     if (!song?.audioSrc) return;
     loadTrack(song.audioSrc);
-  }, [song?.audioSrc, song?.slug, song?.title, loadTrack]);
+  }, [song?.audioSrc, loadTrack]);
 
   // Keyboard: Space/MediaPlayPause toggles play/pause (ignore when typing)
   React.useEffect(() => {

@@ -234,7 +234,6 @@ export default function RelicsGallery({ className = '' }: RelicsGalleryProps) {
 
   const handleRelicDownload = (relic: RelicWithStatus) => {
     console.log(`Downloaded relic: ${relic.label}`);
-    // Could add analytics tracking here
   };
 
   if (!user) {

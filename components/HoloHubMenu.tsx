@@ -1,6 +1,5 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { track, storeClickData, generateClickId } from "@/lib/analytics";
 import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
 import { appleEmbedHeight } from "@/lib/apple";
@@ -330,9 +329,6 @@ export default function HoloHubMenu({
 
     const wantOpen = !open;
 
-    // Track yellow hub (comms) button clicks for analytics totals
-    try { track('comms_hub_click', { payload: { open: wantOpen } }); } catch {}
-
     if (wantOpen) {
       // Ensure the hub/beam color activates first, then reveal the yellow panel
       try { onToggle?.(true); } catch {}
@@ -387,56 +383,7 @@ export default function HoloHubMenu({
   }, [inlineUrl]);
 
   const runItem = useCallback((it: HubItem, ev?: MouseEvent) => {
-    // Explicitly track social/music platform clicks with a canonical label
-    try {
-      const labelMap: Record<string, string> = {
-        ig: '📱 Instagram',
-        tt: '📱 TikTok',
-        yt: '📱 YouTube',
-        sp: '🎵 Spotify',
-        am: '🎵 Apple Music',
-      };
-      const element_label = labelMap[(it.id || '').toLowerCase()] || it.label || '📡 Comms Hub';
-      // Send server-facing click with a class marker so backend can filter yellow-hub clicks
-      track('click', {
-        payload: {
-          element_tag: 'button',
-          element_class: 'item holo-hub',
-          element_text: it.label,
-          element_label,
-          data_id: it.id,
-        }
-      });
-
-      // Also store locally so analytics UI can show counts without server
-      try {
-        const id = generateClickId();
-        const ts = Date.now();
-        storeClickData({
-          id,
-          timestamp: ts,
-          element: {
-            tagName: 'button',
-            className: 'item holo-hub',
-            id: '',
-            textContent: it.label,
-            role: 'button',
-            dataId: it.id,
-          },
-          position: {
-            x: (ev as any)?.clientX ?? 0,
-            y: (ev as any)?.clientY ?? 0,
-            screenX: (ev as any)?.screenX ?? 0,
-            screenY: (ev as any)?.screenY ?? 0,
-          },
-          viewport: { width: window.innerWidth, height: window.innerHeight },
-          page: { url: window.location.href, title: document.title },
-          userAgent: navigator.userAgent,
-          enhancedLabel: element_label,
-        });
-      } catch {}
-    } catch {}
-    // Then perform the actual action
+    // Perform the actual action
     try {
       if (typeof it.onClick === "function") {
         it.onClick();

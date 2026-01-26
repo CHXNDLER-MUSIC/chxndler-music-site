@@ -3,7 +3,6 @@ import React, { useRef, useCallback, useEffect, useState } from "react";
 import { sfx } from "@/lib/sfx";
 import IconButtonShell from "@/components/IconButtonShell";
 import { useProfile } from "@/contexts/ProfileContext";
-import { trackNavEvent } from "@/lib/analytics";
 // Removed inline/embed modals for socials; open in new tab instead
 
 const Icon = {
@@ -99,26 +98,6 @@ export default function SocialIcons({ LINKS, POS, trackLinks }) {
   const playClick = useCallback(() => { try { sfx.play('click', 0.6); } catch {} }, []);
   const playHover = useCallback(() => { try { sfx.play('hover', 0.35); } catch {} }, []);
   
-  // Track social media clicks
-  const handleSocialClick = useCallback((socialType) => {
-    // Track with structured outbound_click event
-    trackNavEvent({
-      event_type: 'outbound_click',
-      action: socialType,
-      extra: { scope: 'global' }
-    });
-
-    // Keep existing trackEvent for compatibility
-    try {
-      import('@/lib/analytics').then(({ trackEvent }) => {
-        trackEvent(`${socialType}_click`, {
-          source: 'social_icons',
-          metadata: { platform: socialType },
-          userId: profile?.id || null
-        });
-      }).catch(() => {});
-    } catch {}
-  }, [profile?.id]);
   // per-brand glow color
   const colorFor = (name) => {
     const n = String(name).toLowerCase();
@@ -164,7 +143,6 @@ export default function SocialIcons({ LINKS, POS, trackLinks }) {
               onClickFX={playClick}
               onHoverFX={playHover}
               dataId={it.key === 'instagram' ? 'ig' : it.key === 'tiktok' ? 'tt' : it.key === 'youtube' ? 'yt' : undefined}
-              // Track analytics on click
               onClick={it.onClick}
             >
               {it.icon}

@@ -5,7 +5,6 @@ import { sfx } from "@/lib/sfx";
 import Image from "next/image";
 import { useProfile } from '@/contexts/ProfileContext';
 import { supabaseBrowser } from "@/lib/supabase-browser";
-import { track } from "@/lib/analytics";
 import { useBonusQuests } from '@/hooks/useBonusQuests';
 import { useElementOfDayClaim } from '@/hooks/useElementOfDayClaim';
 import { useUserCards } from "@/hooks/useUserCards";
@@ -722,13 +721,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             setOpen(true);
             // Fetch cards if needed so counts render
             try { if (cards.length === 0) { fetchCards(); } } catch {}
-            // Track and exit early (skip auto-navigation logic)
-            try {
-              track('heartcoin_opened_from_collect', {
-                song_slug: rawSlug || 'chxndler',
-                payload: { song_title: 'CHXNDLER', source: 'collect_card_button_home' }
-              });
-            } catch {}
             return;
           }
         } catch {}
@@ -763,18 +755,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           if (cards.length === 0) {
             fetchCards();
           }
-        } catch {}
-        
-        // Track the event
-        try {
-          track('heartcoin_opened_from_collect', { 
-            song_slug: e.detail?.songSlug || 'unknown',
-            payload: { 
-              song_title: e.detail?.cardTitle || 'Unknown',
-              card_image: e.detail?.cardSrc,
-              source: 'collect_card_button'
-            } 
-          });
         } catch {}
       } catch (err) {
         console.warn('Error handling openHeartCoinCards event:', err);

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
-import { track } from "@/lib/analytics";
 
 export default function TwitchEmbed({ visible = true, channel = "chxndlerthealien" } = {}) {
   const [isLoading, setIsLoading] = useState(true);
@@ -32,13 +31,6 @@ export default function TwitchEmbed({ visible = true, channel = "chxndlerthealie
     return Math.floor(diffMs / 1000);
   };
 
-  useEffect(() => {
-    if (visible) {
-      try {
-        track('twitch_embed_viewed', { payload: { channel } });
-      } catch {}
-    }
-  }, [visible, channel]);
 
   // Check actual stream status - show offline by default for immediate feedback
   const checkStreamStatus = async () => {
@@ -142,23 +134,16 @@ export default function TwitchEmbed({ visible = true, channel = "chxndlerthealie
   const handleIframeLoad = () => {
     setIsLoading(false);
     // Don't automatically set offline to false - let the status check handle it
-    try {
-      track('twitch_embed_loaded', { payload: { channel } });
-    } catch {}
   };
 
   const handleIframeError = () => {
     setIsLoading(false);
     setHasError(true);
-    try {
-      track('twitch_embed_error', { payload: { channel } });
-    } catch {}
   };
 
   const openTwitchInNewTab = () => {
     try {
       window.open(`https://www.twitch.tv/${channel}`, '_blank', 'noopener,noreferrer');
-      track('twitch_embed_external_click', { payload: { channel } });
     } catch {}
   };
 
