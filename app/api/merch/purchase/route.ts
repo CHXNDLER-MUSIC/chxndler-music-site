@@ -43,6 +43,8 @@ export async function POST(request: NextRequest) {
       quantity,
       idempotencyKey,
       paymentType_normalized: normalizedPaymentType,
+      selectedVariant,
+      selectedColor,
     });
 
     // Stripe not supported in this route
@@ -174,6 +176,16 @@ export async function POST(request: NextRequest) {
     console.log('[PURCHASE] orders.id', ordersId);
 
     // Update order with variant selection if provided and order was created
+    console.log('[PURCHASE] Variant update check:', {
+      ordersId,
+      selectedVariant,
+      selectedColor,
+      hasOrderId: !!ordersId,
+      hasVariant: !!selectedVariant,
+      hasColor: !!selectedColor,
+      variantKeys: selectedVariant ? Object.keys(selectedVariant) : [],
+    });
+
     if (ordersId && (selectedVariant || selectedColor)) {
       console.log('[PURCHASE] Updating order with variant info:', {
         ordersId,
@@ -189,6 +201,8 @@ export async function POST(request: NextRequest) {
         updatePayload.selected_color = selectedColor;
       }
 
+      console.log('[PURCHASE] Update payload:', updatePayload, 'payload keys:', Object.keys(updatePayload).length);
+
       if (Object.keys(updatePayload).length > 0) {
         const { error: updateError } = await supabase
           .from('orders')
@@ -200,9 +214,13 @@ export async function POST(request: NextRequest) {
           console.error('[PURCHASE] Failed to update variant info (non-fatal):', updateError);
           // Don't fail the whole purchase for this
         } else {
-          console.log('[PURCHASE] Variant info updated successfully');
+          console.log('[PURCHASE] Variant info updated successfully for order:', ordersId);
         }
+      } else {
+        console.log('[PURCHASE] No variant data to update (payload empty)');
       }
+    } else {
+      console.log('[PURCHASE] Skipping variant update - no ordersId or no variant data');
     }
 
     // Treat "Already processed" as success (idempotency)
@@ -219,21 +237,25 @@ export async function POST(request: NextRequest) {
 
     // Normal success
     if (result?.success) {
-      console.log('[PURCHASE] Success:', result);
+      console.log('[PURCHASE] Success:', result, { selectedVariant, selectedColor });
       return NextResponse.json({
         success: true,
         order_id: ordersId,
         amount_spent: result.amount_spent || result.total_heartcoins || 0,
         payment_type: normalizedPaymentType,
+        variant_saved: selectedVariant,
+        color_saved: selectedColor,
       });
     }
 
     // RPC returned but without success flag - return what we got
-    console.log('[PURCHASE] RPC returned:', result);
+    console.log('[PURCHASE] RPC returned:', result, { selectedVariant, selectedColor });
     return NextResponse.json({
       success: true,
       order_id: ordersId,
       amount_spent: result?.amount_spent || result?.total_heartcoins || 0,
+      variant_saved: selectedVariant,
+      color_saved: selectedColor,
       ...result,
     });
 

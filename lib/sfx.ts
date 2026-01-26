@@ -128,6 +128,10 @@ class SFXBus {
     const ctx = this.ensure();
     if (!ctx) return;
     try {
+      // Resume AudioContext if suspended (required for user gesture on iOS/Safari)
+      if (ctx.state === 'suspended') {
+        await ctx.resume().catch(() => {});
+      }
       const buf = this.buffers[key] || (await this.load(key));
       if (!buf) return;
       const src = ctx.createBufferSource();

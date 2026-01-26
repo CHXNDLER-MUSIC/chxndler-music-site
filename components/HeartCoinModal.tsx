@@ -271,13 +271,14 @@ const getShortLabel = (label: string, itemName: string): string => {
 export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWelcomeHome, initialTab = 'earn', availableCards = [], currentCardIndex = 0, onCardNavigation }: Props) {
   const { profile, loading: profileLoading, refreshProfile } = useProfile();
   // Use centralized balance state for real-time updates
-  const { balance: heartcoinBalance, loading: balanceLoading } = useHeartcoinBalance();
+  const { balance: heartcoinBalance, loading: balanceLoading, songOfDayCompletedToday } = useHeartcoinBalance();
   const { cards: ownedCards } = useUserCards(profile?.id);
 
   // Check if a card is already owned by the user (digital)
   const isCardOwned = (cardId?: string) => {
     if (!cardId || !ownedCards?.length) return false;
-    return ownedCards.some(uc => uc.card_id === cardId);
+    // Only check for digital ownership (is_digital === true)
+    return ownedCards.some(uc => uc.card_id === cardId && uc.is_digital === true);
   };
 
   const { quests: legacyBonusQuests, status: questsStatus, refetchQuests, completeQuest } = useBonusQuests();
@@ -395,10 +396,15 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
   // Helper to set the selected variant for an item
   const setSelectedVariantForItem = (itemId: string, variant: NormalizedVariantOption) => {
-    setSelectedVariants(prev => ({
-      ...prev,
-      [itemId]: variant
-    }));
+    console.log('[VARIANT SELECT] Setting variant for item:', {
+      itemId,
+      variant,
+    });
+    setSelectedVariants(prev => {
+      const next = { ...prev, [itemId]: variant };
+      console.log('[VARIANT SELECT] New selectedVariants state:', next);
+      return next;
+    });
   };
 
   // Helper to get the display image for a merch item (considering variant selection)
@@ -692,6 +698,11 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
   // Helper function to check if quest is completed (for daily quests, check can_complete)
   const isQuestCompleted = (quest: BonusQuestWithCompletion): boolean => {
+    // For Song of Day quest, check the dedicated claim tracking from HeartcoinBalanceProvider
+    // This is more reliable than user_bonus_quest_completions since SOTD uses user_song_of_day_claims
+    if (quest.quest_key === 'LISTEN_SONG_OF_DAY' && songOfDayCompletedToday) {
+      return true;
+    }
     // For one-time quests (max_total_completions === 1), check if already completed
     if (quest.max_total_completions === 1 && quest.times_completed > 0) {
       return true;
@@ -1124,6 +1135,17 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     if (heartcoinBalance < item.heartCoin) {
       setError(`Insufficient HeartCoins! You need ${item.heartCoin} but only have ${heartcoinBalance}`);
       return;
+    }
+
+    // Validate variant selection for multi-variant items
+    const merchItem = merchItems.find(m => m.id === item.merch_item_id);
+    if (merchItem) {
+      const variantOptions = normalizeVariantOptions(merchItem.variant_options, merchItem.image_url);
+      // If item has multiple variants, require explicit selection
+      if (variantOptions.length > 1 && !item.selected_variant) {
+        setError(`Please select a ${variantOptions[0]?.type === 'color' ? 'color' : 'variant'} before purchasing`);
+        return;
+      }
     }
 
     // Prevent double-submit
@@ -2033,7 +2055,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         {!profile?.id
                           ? 'Log in to complete'
                           : isQuestCompleted(quest)
-                          ? 'COMPLETED'
+                          ? (quest.quest_key === 'LISTEN_SONG_OF_DAY' ? 'LISTENED' : 'COMPLETED')
                           : questHasHandler(quest.quest_key)
                             ? (quest.quest_key === 'JOURNAL_ENTRY_OF_DAY' ? 'REFLECT' : quest.quest_key === 'LISTEN_SONG_OF_DAY' ? 'LISTEN' : 'START')
                             : 'INCOMPLETE'}
@@ -2262,6 +2284,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
                   // Beanie color-specific tier requirements
                   const BEANIE_COLOR_TIERS: Record<string, string> = {
+                    'pink': 'DREAMER',
                     'blue': 'DREAMER',
                     'black': 'LOVER',
                   };
@@ -2269,25 +2292,44 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   const itemNameLower = currentItem.name.toLowerCase();
                   const dbTier = (currentItem.min_journey_tier || currentItem.min_tier || '').toUpperCase();
 
-                  // For beanie, use the selected variant color to determine tier
+                  // For beanie, ALWAYS use the selected variant color to determine tier (priority over dbTier)
                   let titleItemMinTier = dbTier || ITEM_TIER_OVERRIDES[itemNameLower] || 'WANDERER';
-                  if (itemNameLower === 'beanie' && selectedVariant) {
-                    const colorValue = selectedVariant.value?.toLowerCase();
-                    if (colorValue && BEANIE_COLOR_TIERS[colorValue]) {
-                      titleItemMinTier = BEANIE_COLOR_TIERS[colorValue];
+                  if (itemNameLower === 'beanie') {
+                    // First try to use color-specific tier if we have a selected variant
+                    if (selectedVariant) {
+                      const colorValue = selectedVariant.value?.toLowerCase();
+                      if (colorValue && BEANIE_COLOR_TIERS[colorValue]) {
+                        titleItemMinTier = BEANIE_COLOR_TIERS[colorValue];
+                      } else {
+                        // Color not in map, use DREAMER as default for beanie
+                        titleItemMinTier = 'DREAMER';
+                      }
+                    } else {
+                      // No selected variant but it's a beanie, use DREAMER as default
+                      titleItemMinTier = 'DREAMER';
                     }
                   }
 
                   const isTitleItemLocked = isItemLockedForJourney(profile?.journey, titleItemMinTier);
 
-                  // Debug: log variant info
+                  // Debug: log variant and tier info
                   console.log('[VARIANT DEBUG]', {
                     itemName: currentItem.name,
+                    itemId: currentItem.id,
                     variant_options: currentItem.variant_options,
                     typeOfVariantOptions: typeof currentItem.variant_options,
                     normalizedOptions: variantOptions,
                     hasVariants,
-                    variantCount: variantOptions.length
+                    variantCount: variantOptions.length,
+                    selectedVariant,
+                    selectedVariantValue: selectedVariant?.value,
+                    colorValueLower: selectedVariant?.value?.toLowerCase(),
+                    beanieColorTierLookup: selectedVariant?.value?.toLowerCase() ? BEANIE_COLOR_TIERS[selectedVariant.value.toLowerCase()] : 'N/A',
+                    dbTier,
+                    titleItemMinTier,
+                    showPill: titleItemMinTier !== 'WANDERER',
+                    userJourney: profile?.journey,
+                    isTitleItemLocked,
                   });
 
                   return (
@@ -2327,7 +2369,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                                   e.stopPropagation();
                                   e.preventDefault();
                                   console.log('[COLOR DOT CLICK]', opt.value);
-                                  try { sfx.play('click', 0.5); } catch (err) { console.error('SFX error:', err); }
+                                  try { sfx.setEnabled(true); sfx.play('click', 0.5); } catch (err) { console.error('SFX error:', err); }
                                   setSelectedVariantForItem(currentItem.id, opt);
                                 }}
                                 onTouchStart={(e) => {
@@ -2337,7 +2379,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                                   e.stopPropagation();
                                   e.preventDefault();
                                   console.log('[COLOR DOT TOUCH]', opt.value);
-                                  try { sfx.play('click', 0.5); } catch (err) { console.error('SFX error:', err); }
+                                  try { sfx.setEnabled(true); sfx.play('click', 0.5); } catch (err) { console.error('SFX error:', err); }
                                   setSelectedVariantForItem(currentItem.id, opt);
                                 }}
                                 onMouseEnter={() => {
@@ -2461,7 +2503,27 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                               style={{ height: '100%', maxHeight: '9rem', transform: 'scale(0.92)' }}
                               draggable={false}
                               onClick={() => {
-                                const storeItem = {
+                                // Get variant selection for enlarged view (same logic as purchase button)
+                                const variantOptions = normalizeVariantOptions(item.variant_options, item.image_url);
+                                let enlargedSelectedVar: NormalizedVariantOption | null = null;
+
+                                if (variantOptions.length === 1) {
+                                  // Single-variant: auto-select
+                                  enlargedSelectedVar = variantOptions[0];
+                                } else if (variantOptions.length > 1) {
+                                  // Multi-variant: use explicit selection
+                                  enlargedSelectedVar = selectedVariants[item.id] || null;
+                                }
+
+                                console.log('[ENLARGED VIEW] Opening with variant:', {
+                                  itemId: item.id,
+                                  itemName: item.name,
+                                  variantOptionsCount: variantOptions.length,
+                                  selectedVariantsState: selectedVariants,
+                                  enlargedSelectedVar,
+                                });
+
+                                const storeItem: StoreItem = {
                                   name: item.name,
                                   image: displayImage,
                                   // Ensure BEANIE back uses the static public/store/beanie-back.webp
@@ -2472,7 +2534,14 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                                   heartCoin: item.price_heartcoins || 0,
                                   merch_item_id: item.id,
                                   // Pass tier info for gating in enlarged view
-                                  min_tier: item.min_journey_tier || item.min_tier || null
+                                  min_tier: item.min_journey_tier || item.min_tier || null,
+                                  // Include variant selection for purchase from enlarged view
+                                  selected_variant: enlargedSelectedVar ? {
+                                    type: enlargedSelectedVar.type,
+                                    value: enlargedSelectedVar.value,
+                                    label: enlargedSelectedVar.label
+                                  } : null,
+                                  selected_color: enlargedSelectedVar?.type === 'color' ? enlargedSelectedVar.value : null
                                 };
                                 setEnlargedItem(storeItem);
                                 setEnlargedImageIndex(0);
@@ -2539,6 +2608,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
                   // Beanie color-specific tier requirements
                   const DETAIL_BEANIE_COLOR_TIERS: Record<string, string> = {
+                    'pink': 'DREAMER',
                     'blue': 'DREAMER',
                     'black': 'LOVER',
                   };
@@ -2549,12 +2619,21 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   // Get selected variant for this item (for beanie color-based tiers)
                   const detailSelectedVariant = selectedVariants[item.id] || null;
 
-                  // For beanie, use the selected variant color to determine tier
+                  // For beanie, ALWAYS use the selected variant color to determine tier (priority over dbTier)
                   let itemMinTier = detailDbTier || DETAIL_ITEM_TIER_OVERRIDES[detailItemNameLower] || 'WANDERER';
-                  if (detailItemNameLower === 'beanie' && detailSelectedVariant) {
-                    const colorValue = detailSelectedVariant.value?.toLowerCase();
-                    if (colorValue && DETAIL_BEANIE_COLOR_TIERS[colorValue]) {
-                      itemMinTier = DETAIL_BEANIE_COLOR_TIERS[colorValue];
+                  if (detailItemNameLower === 'beanie') {
+                    // First try to use color-specific tier if we have a selected variant
+                    if (detailSelectedVariant) {
+                      const colorValue = detailSelectedVariant.value?.toLowerCase();
+                      if (colorValue && DETAIL_BEANIE_COLOR_TIERS[colorValue]) {
+                        itemMinTier = DETAIL_BEANIE_COLOR_TIERS[colorValue];
+                      } else {
+                        // Color not in map, use DREAMER as default for beanie
+                        itemMinTier = 'DREAMER';
+                      }
+                    } else {
+                      // No selected variant but it's a beanie, use DREAMER as default
+                      itemMinTier = 'DREAMER';
                     }
                   }
 
@@ -2654,8 +2733,20 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                           {/* Add to Collection Button */}
                           <button
                             onClick={() => {
-                              // Get the selected variant for this item (if any)
-                              const selectedVar = selectedVariants[item.id] || null;
+                              // Determine variant selection:
+                              // - Single-variant items: auto-select the single variant
+                              // - Multi-variant items: require explicit user selection
+                              const variantOptions = normalizeVariantOptions(item.variant_options, item.image_url);
+                              let selectedVar: NormalizedVariantOption | null = null;
+
+                              if (variantOptions.length === 1) {
+                                // Single-variant: auto-select
+                                selectedVar = variantOptions[0];
+                              } else if (variantOptions.length > 1) {
+                                // Multi-variant: use explicit selection (may be null)
+                                selectedVar = selectedVariants[item.id] || null;
+                              }
+
                               const displayImage = getItemDisplayImage(item);
 
                               const storeItem: StoreItem = {
@@ -3133,6 +3224,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
                   // Beanie color-specific tier requirements
                   const ENLARGED_BEANIE_COLOR_TIERS: Record<string, string> = {
+                    'pink': 'DREAMER',
                     'blue': 'DREAMER',
                     'black': 'LOVER',
                   };
@@ -3140,12 +3232,15 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   const enlargedItemNameLower = enlargedItem.name.toLowerCase();
                   const enlargedDbTier = (enlargedItem.min_tier || '').toUpperCase();
 
-                  // For beanie, use the selected color to determine tier
+                  // For beanie, ALWAYS use the selected color to determine tier (priority over dbTier)
                   let enlargedItemMinTier = enlargedDbTier || ENLARGED_ITEM_TIER_OVERRIDES[enlargedItemNameLower] || 'WANDERER';
                   if (enlargedItemNameLower === 'beanie') {
                     const colorValue = (enlargedItem.selected_color || enlargedItem.selected_variant?.value || '').toLowerCase();
                     if (colorValue && ENLARGED_BEANIE_COLOR_TIERS[colorValue]) {
                       enlargedItemMinTier = ENLARGED_BEANIE_COLOR_TIERS[colorValue];
+                    } else {
+                      // Color not in map or no color selected, use DREAMER as default for beanie
+                      enlargedItemMinTier = 'DREAMER';
                     }
                   }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
@@ -182,19 +182,104 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
   const PAGE_SIZE = 6;
   const totalPages = Math.max(1, Math.ceil(TOTAL_SLOTS / PAGE_SIZE));
 
-  // Generate all slots for the current page, filling in data from binderSlots where available
-  const visibleSlots: BinderSlot[] = useMemo(() => {
-    const startIndex = pageIndex * PAGE_SIZE;
-    const endIndex = Math.min(startIndex + PAGE_SIZE, TOTAL_SLOTS);
-    const slots: BinderSlot[] = [];
+  // Debug: Log card counts to identify discrepancy
+  useEffect(() => {
+    if (open && profile?.id) {
+      const assignedCards = binderSlots.filter(s => s.card_id !== null);
+      const unassignedDigital = (ownedCards || []).filter(
+        c => c.slot_index === null && (c.is_digital === true || c.is_digital === null)
+      );
+      // Get slot indices from binderSlots view
+      const viewSlotIndices = assignedCards.map(s => s.slot_index);
+      // Get slot indices from ownedCards
+      const ownedSlotData = (ownedCards || []).map(c => ({
+        name: c.cards?.card_name,
+        slot_index: c.slot_index,
+        is_digital: c.is_digital
+      }));
+      // Find cards that have slot_index but aren't in the view
+      const missingFromView = (ownedCards || []).filter(
+        c => c.slot_index !== null && !viewSlotIndices.includes(c.slot_index)
+      );
+      console.log('[Binder Debug]', {
+        totalOwnedCards,
+        ownedCardsLength: ownedCards?.length || 0,
+        binderSlotsWithCards: assignedCards.length,
+        viewSlotIndices,
+        ownedSlotData,
+        missingFromView: missingFromView.map(c => ({ name: c.cards?.card_name, slot: c.slot_index, is_digital: c.is_digital }))
+      });
+    }
+  }, [open, profile?.id, ownedCards, binderSlots, totalOwnedCards]);
 
-    for (let i = startIndex; i < endIndex; i++) {
-      // Check if we have data for this slot from the view
-      const existingSlot = binderSlots.find(s => s.slot_index === i);
+  // Build a complete slot map: assigned cards + unassigned digital cards filling empty slots
+  const allSlots: BinderSlot[] = useMemo(() => {
+    // Start with slots that have assigned cards from binderSlots view
+    const slotMap = new Map<number, BinderSlot>();
 
-      // First slot: Always show CHXNDLER card by default if no card is assigned
-      if (i === 0 && (!existingSlot || !existingSlot.card_id)) {
-        slots.push({
+    // Add cards that have slot assignments from the view
+    for (const slot of binderSlots) {
+      if (slot.card_id) {
+        slotMap.set(slot.slot_index, slot);
+      }
+    }
+
+    // Get slot indices that the view returned
+    const viewSlotIndices = new Set(binderSlots.filter(s => s.card_id !== null).map(s => s.slot_index));
+
+    // Add cards from ownedCards that have slot_index but aren't in the view
+    // (This handles cases where the view is limited but cards have valid slot assignments)
+    for (const card of (ownedCards || [])) {
+      if (card.slot_index !== null && !viewSlotIndices.has(card.slot_index) && card.cards) {
+        slotMap.set(card.slot_index, {
+          user_id: card.user_id,
+          slot_index: card.slot_index,
+          is_unlocked: true,
+          card_id: card.card_id,
+          card_name: card.cards.card_name,
+          artwork_url: card.cards.artwork_url || null,
+          element: card.cards.element,
+          rarity: card.cards.rarity,
+          is_starter: card.cards.is_starter || null
+        });
+      }
+    }
+
+    // Find unassigned digital cards from ownedCards (those with slot_index === null)
+    const unassignedCards = (ownedCards || []).filter(
+      c => c.slot_index === null && (c.is_digital === true || c.is_digital === null) && c.cards
+    );
+
+    // Assign unassigned cards to empty slots (starting from slot 1, slot 0 is CHXNDLER default)
+    let nextEmptySlot = 1;
+    for (const card of unassignedCards) {
+      // Find next empty slot
+      while (slotMap.has(nextEmptySlot) && nextEmptySlot < TOTAL_SLOTS) {
+        nextEmptySlot++;
+      }
+      if (nextEmptySlot >= TOTAL_SLOTS) break;
+
+      // Create a BinderSlot from the owned card
+      slotMap.set(nextEmptySlot, {
+        user_id: card.user_id,
+        slot_index: nextEmptySlot,
+        is_unlocked: true,
+        card_id: card.card_id,
+        card_name: card.cards.card_name,
+        artwork_url: card.cards.artwork_url || null,
+        element: card.cards.element,
+        rarity: card.cards.rarity,
+        is_starter: card.cards.is_starter || null
+      });
+      nextEmptySlot++;
+    }
+
+    // Build full slots array for all TOTAL_SLOTS
+    const result: BinderSlot[] = [];
+    for (let i = 0; i < TOTAL_SLOTS; i++) {
+      if (i === 0 && !slotMap.has(0)) {
+        // Slot 0: Default CHXNDLER card
+        result.push({
           user_id: profile?.id || '',
           slot_index: 0,
           is_unlocked: true,
@@ -205,15 +290,14 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
           rarity: 'Common',
           is_starter: true
         });
-      } else if (existingSlot) {
-        slots.push(existingSlot);
+      } else if (slotMap.has(i)) {
+        result.push(slotMap.get(i)!);
       } else {
-        // Generate a slot based on display logic
-        const isUnlocked = i < displayUnlockedSlots;
-        slots.push({
+        // Empty slot
+        result.push({
           user_id: profile?.id || '',
           slot_index: i,
-          is_unlocked: isUnlocked,
+          is_unlocked: true,
           card_id: null,
           card_name: null,
           artwork_url: null,
@@ -224,8 +308,15 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       }
     }
 
-    return slots;
-  }, [pageIndex, binderSlots, displayUnlockedSlots, profile?.id]);
+    return result;
+  }, [binderSlots, ownedCards, profile?.id]);
+
+  // Generate visible slots for the current page from the complete slot map
+  const visibleSlots: BinderSlot[] = useMemo(() => {
+    const startIndex = pageIndex * PAGE_SIZE;
+    const endIndex = Math.min(startIndex + PAGE_SIZE, TOTAL_SLOTS);
+    return allSlots.slice(startIndex, endIndex);
+  }, [pageIndex, allSlots]);
 
   // Preview slots for logged-out state (guest mode)
   // All slots are now unlocked
@@ -558,6 +649,73 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       console.debug('[CardDataDebug] Binder owned names for element', selectedElement, ':', names);
     } catch {}
   }, [ownedCards, selectedElement]);
+
+  // Auto-assign unassigned digital cards to empty binder slots when modal opens
+  const autoAssignInProgress = useRef(false);
+  useEffect(() => {
+    if (!open || !profile?.id || !ownedCards?.length || autoAssignInProgress.current) return;
+
+    const assignUnassignedCards = async () => {
+      // Find digital cards without slot assignments
+      const unassignedCards = ownedCards.filter(
+        c => (c.is_digital === true || c.is_digital === null) && c.slot_index === null
+      );
+
+      if (unassignedCards.length === 0) {
+        console.log('[Binder] No unassigned digital cards to auto-assign');
+        return;
+      }
+
+      console.log('[Binder] Found', unassignedCards.length, 'unassigned digital cards, auto-assigning to slots...');
+
+      // Get occupied slot indices from binderSlots
+      const occupiedSlots = new Set(
+        binderSlots.filter(s => s.card_id !== null).map(s => s.slot_index)
+      );
+
+      // Find empty slots (start from 1, slot 0 is reserved for CHXNDLER default)
+      const emptySlots: number[] = [];
+      for (let i = 1; i < TOTAL_SLOTS && emptySlots.length < unassignedCards.length; i++) {
+        if (!occupiedSlots.has(i)) {
+          emptySlots.push(i);
+        }
+      }
+
+      if (emptySlots.length === 0) {
+        console.log('[Binder] No empty slots available for auto-assignment');
+        return;
+      }
+
+      autoAssignInProgress.current = true;
+
+      // Assign each unassigned card to an empty slot
+      for (let i = 0; i < Math.min(unassignedCards.length, emptySlots.length); i++) {
+        const card = unassignedCards[i];
+        const slotIndex = emptySlots[i];
+
+        try {
+          const { error } = await supabaseBrowser
+            .from('user_cards')
+            .update({ slot_index: slotIndex, is_digital: true })
+            .eq('id', card.id);
+
+          if (error) {
+            console.error('[Binder] Failed to assign card to slot:', error);
+          } else {
+            console.log('[Binder] Assigned card', card.cards?.card_name, 'to slot', slotIndex);
+          }
+        } catch (e) {
+          console.error('[Binder] Error assigning card:', e);
+        }
+      }
+
+      // Refresh binder slots to reflect changes
+      await refreshBinderSlots();
+      autoAssignInProgress.current = false;
+    };
+
+    assignUnassignedCards();
+  }, [open, profile?.id, ownedCards, binderSlots, refreshBinderSlots]);
 
   // Helper functions for purchase flow
   const getCost = (type: 'digital' | 'physical') => {
@@ -1009,7 +1167,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       
       <PopoutShell
         title="DIGITAL CARD BINDER"
-        subtitle={`CARDS COLLECTED: ${profile?.id ? Math.max(1, cardsInSlots) : 1}`}
+        subtitle={`CARDS COLLECTED: ${profile?.id ? Math.max(1, totalOwnedCards) : 1}`}
         minWidth={'min(96vw, 440px)'}
         maxHeight={'calc(100vh - 8vh - var(--display-touch-top))'}
         onClose={() => {

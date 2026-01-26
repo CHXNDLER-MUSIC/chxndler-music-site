@@ -47,6 +47,8 @@ interface HeartcoinBalanceContextType {
   refetchBalance: () => Promise<void>;
   refetchBalanceAfterAward: () => Promise<void>;
   refreshProfileState: () => Promise<void>;
+  // New: Optimistic update function for direct balance manipulation
+  optimisticIncrement: (delta: number, transactionId?: string) => void;
 }
 
 const HeartcoinBalanceContext = createContext<HeartcoinBalanceContextType | undefined>(undefined);
@@ -73,17 +75,92 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
   // Track the last balance we celebrated to prevent duplicate celebrations
   const lastCelebratedBalanceRef = useRef<number | null>(null);
 
+  // Track processed transaction IDs to prevent duplicate celebrations
+  // This is the KEY deduplication mechanism
+  const processedTransactionIdsRef = useRef<Set<string>>(new Set());
+
   // Realtime channel refs for cleanup
-  const balanceChannelRef = useRef<RealtimeChannel | null>(null);
+  const transactionsChannelRef = useRef<RealtimeChannel | null>(null);
   const sotdChannelRef = useRef<RealtimeChannel | null>(null);
 
   // Track if channels are already set up to prevent duplicates
   const channelsSetupRef = useRef<boolean>(false);
 
   // ============================================================================
-  // Balance Update with Celebration Logic
+  // Optimistic Balance Increment (for external callers like AudioProvider)
   // ============================================================================
-  const updateBalanceWithCelebration = useCallback((newBalance: number, source: string) => {
+  const optimisticIncrement = useCallback((delta: number, transactionId?: string) => {
+    // Check if this transaction was already processed
+    if (transactionId && processedTransactionIdsRef.current.has(transactionId)) {
+      debugBalance("optimisticIncrement skipped - already processed", { transactionId, delta });
+      return;
+    }
+
+    // Mark as processed if we have a transaction ID
+    if (transactionId) {
+      processedTransactionIdsRef.current.add(transactionId);
+      // Limit set size to prevent memory leak
+      if (processedTransactionIdsRef.current.size > 100) {
+        const entries = Array.from(processedTransactionIdsRef.current);
+        processedTransactionIdsRef.current = new Set(entries.slice(-50));
+      }
+    }
+
+    const timeSinceInitialLoad = Date.now() - initialLoadCompletedAtRef.current;
+
+    // Skip celebration during initial load period
+    if (isInitialLoadRef.current || timeSinceInitialLoad < INITIAL_LOAD_CELEBRATION_DELAY_MS) {
+      debugBalance("optimisticIncrement skipped celebration - initial load", { delta, timeSinceInitialLoad });
+      // Still update the balance
+      setBalance(prev => {
+        const newBalance = prev + delta;
+        prevBalanceRef.current = newBalance;
+        return newBalance;
+      });
+      return;
+    }
+
+    debugBalance("optimisticIncrement", { delta, transactionId });
+
+    // Update balance immediately
+    setBalance(prev => {
+      const newBalance = prev + delta;
+      prevBalanceRef.current = newBalance;
+
+      // Trigger celebration for positive delta
+      if (delta > 0) {
+        const shouldCelebrate =
+          lastCelebratedBalanceRef.current === null ||
+          newBalance > lastCelebratedBalanceRef.current;
+
+        if (shouldCelebrate) {
+          debugCelebration("COIN_CELEBRATION (optimistic)", { delta, newBalance });
+          lastCelebratedBalanceRef.current = newBalance;
+          try {
+            triggerHeartCoinCelebration(delta);
+          } catch (err) {
+            console.error("[BALANCE] Failed to trigger celebration:", err);
+          }
+        }
+      }
+
+      return newBalance;
+    });
+  }, []);
+
+  // ============================================================================
+  // Balance Update with Celebration Logic (for realtime/refetch updates)
+  // ============================================================================
+  const updateBalanceWithCelebration = useCallback((newBalance: number, source: string, transactionId?: string) => {
+    // Check if this transaction was already processed
+    if (transactionId && processedTransactionIdsRef.current.has(transactionId)) {
+      debugBalance(`${source} skipped - transaction already processed`, { transactionId, newBalance });
+      // Still update balance to keep it consistent, but skip celebration
+      prevBalanceRef.current = newBalance;
+      setBalance(newBalance);
+      return;
+    }
+
     const prevBalance = prevBalanceRef.current;
     const lastCelebratedBalance = lastCelebratedBalanceRef.current;
     const timeSinceInitialLoad = Date.now() - initialLoadCompletedAtRef.current;
@@ -93,8 +170,18 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
       prevBalance,
       lastCelebratedBalance,
       isInitialLoad: isInitialLoadRef.current,
-      timeSinceInitialLoad
+      timeSinceInitialLoad,
+      transactionId
     });
+
+    // Mark transaction as processed if we have an ID
+    if (transactionId) {
+      processedTransactionIdsRef.current.add(transactionId);
+      if (processedTransactionIdsRef.current.size > 100) {
+        const entries = Array.from(processedTransactionIdsRef.current);
+        processedTransactionIdsRef.current = new Set(entries.slice(-50));
+      }
+    }
 
     // Determine if we should celebrate:
     // 1. Not initial load (isInitialLoadRef is false)
@@ -116,7 +203,8 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
         newBalance,
         prevBalance,
         source,
-        timeSinceInitialLoad
+        timeSinceInitialLoad,
+        transactionId
       });
 
       // Mark this balance as celebrated BEFORE triggering (prevents duplicates)
@@ -335,10 +423,10 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
     }
 
     // Clean up existing channels if any
-    if (balanceChannelRef.current) {
-      debugBalance("Cleaning up existing balance channel");
-      supabaseBrowser.removeChannel(balanceChannelRef.current);
-      balanceChannelRef.current = null;
+    if (transactionsChannelRef.current) {
+      debugBalance("Cleaning up existing transactions channel");
+      supabaseBrowser.removeChannel(transactionsChannelRef.current);
+      transactionsChannelRef.current = null;
     }
     if (sotdChannelRef.current) {
       debugBalance("Cleaning up existing SOTD channel");
@@ -348,38 +436,83 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
 
     debugBalance("Setting up realtime subscriptions", { userId: currentUserId });
 
-    // Channel 1: Subscribe to profiles table for balance updates
-    const balanceChannel = supabaseBrowser
-      .channel(`heartcoin-balance-${currentUserId}`)
+    // Channel 1: Subscribe to heartcoin_transactions INSERT for balance updates
+    // This is more reliable than profiles UPDATE because INSERT events fire immediately
+    const transactionsChannel = supabaseBrowser
+      .channel(`heartcoin-transactions-${currentUserId}`)
       .on(
         "postgres_changes",
         {
-          event: "UPDATE",
+          event: "INSERT",
           schema: "public",
-          table: "profiles",
-          filter: `id=eq.${currentUserId}`,
+          table: "heartcoin_transactions",
+          filter: `user_id=eq.${currentUserId}`,
         },
         (payload) => {
-          const prev = prevBalanceRef.current;
-          const newBalance = payload.new?.heartcoin_balance;
-          debugBalance("BALANCE_RT_UPDATE", { prev, next: newBalance });
+          const newRow = payload.new as { id: string; amount: number; reason: string } | undefined;
+          if (!newRow) return;
 
-          if (typeof newBalance === "number") {
-            updateBalanceWithCelebration(newBalance, "realtime update");
+          const transactionId = newRow.id;
+          const amount = newRow.amount;
+          const reason = newRow.reason;
+
+          debugBalance("TRANSACTION_RT_INSERT", { transactionId, amount, reason });
+
+          // Check if already processed (by claim path or previous realtime)
+          if (processedTransactionIdsRef.current.has(transactionId)) {
+            debugBalance("Transaction already processed, skipping", { transactionId });
+            return;
           }
+
+          // Mark as processed
+          processedTransactionIdsRef.current.add(transactionId);
+          if (processedTransactionIdsRef.current.size > 100) {
+            const entries = Array.from(processedTransactionIdsRef.current);
+            processedTransactionIdsRef.current = new Set(entries.slice(-50));
+          }
+
+          // Optimistically update balance with the delta from this transaction
+          setBalance(prev => {
+            const newBalance = prev + amount;
+
+            const timeSinceInitialLoad = Date.now() - initialLoadCompletedAtRef.current;
+            const shouldCelebrate =
+              !isInitialLoadRef.current &&
+              timeSinceInitialLoad >= INITIAL_LOAD_CELEBRATION_DELAY_MS &&
+              amount > 0 &&
+              (lastCelebratedBalanceRef.current === null || newBalance > lastCelebratedBalanceRef.current);
+
+            if (shouldCelebrate) {
+              debugCelebration("COIN_CELEBRATION (realtime)", {
+                delta: amount,
+                newBalance,
+                reason,
+                transactionId
+              });
+              lastCelebratedBalanceRef.current = newBalance;
+              try {
+                triggerHeartCoinCelebration(amount);
+              } catch (err) {
+                console.error("[BALANCE] Failed to trigger celebration:", err);
+              }
+            }
+
+            prevBalanceRef.current = newBalance;
+            return newBalance;
+          });
         }
       )
       .subscribe((status) => {
-        debugBalance("Balance subscription status", { status });
+        debugBalance("Transactions subscription status", { status });
         if (status === "SUBSCRIBED") {
-          debugBalance("Successfully subscribed to balance updates");
+          debugBalance("Successfully subscribed to heartcoin_transactions INSERT");
         } else if (status === "CHANNEL_ERROR") {
-          console.error("[BALANCE] Balance subscription error");
+          console.error("[BALANCE] Transactions subscription error");
           setError("Realtime subscription failed");
         }
       });
 
-    balanceChannelRef.current = balanceChannel;
+    transactionsChannelRef.current = transactionsChannel;
 
     // Channel 2: Subscribe to user_song_of_day_claims for SOTD completion
     const nyDay = getNYDateString();
@@ -393,21 +526,14 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
           table: "user_song_of_day_claims",
           filter: `user_id=eq.${currentUserId}`,
         },
-        async (payload) => {
+        (payload) => {
           debugBalance("SOTD claim INSERT received", payload);
           // Check if this claim is for today
           if (payload.new?.day === nyDay) {
             debugBalance("QUEST_SOD_STATE", { completed: true, source: "realtime" });
             setSongOfDayCompletedToday(true);
-
-            // Also refetch balance to trigger celebration (backend awards heartcoin with claim)
-            debugBalance("Triggering balance refetch after SOTD claim via realtime");
-            // Small delay to ensure backend has updated the balance
-            await new Promise(resolve => setTimeout(resolve, 300));
-            const newBalance = await fetchBalance();
-            if (newBalance !== null) {
-              updateBalanceWithCelebration(newBalance, "realtime SOTD claim");
-            }
+            // Note: HeartCoin award is handled by heartcoin_transactions subscription
+            // No need to refetch balance here - the transaction INSERT will trigger update
           }
         }
       )
@@ -417,16 +543,16 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
 
     sotdChannelRef.current = sotdChannel;
     channelsSetupRef.current = true;
-  }, [updateBalanceWithCelebration, fetchBalance]);
+  }, []);
 
   // ============================================================================
   // Cleanup Realtime Subscriptions
   // ============================================================================
   const cleanupSubscriptions = useCallback(() => {
-    if (balanceChannelRef.current) {
-      debugBalance("Cleaning up balance channel on unmount");
-      supabaseBrowser.removeChannel(balanceChannelRef.current);
-      balanceChannelRef.current = null;
+    if (transactionsChannelRef.current) {
+      debugBalance("Cleaning up transactions channel on unmount");
+      supabaseBrowser.removeChannel(transactionsChannelRef.current);
+      transactionsChannelRef.current = null;
     }
     if (sotdChannelRef.current) {
       debugBalance("Cleaning up SOTD channel on unmount");
@@ -458,6 +584,7 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
             isInitialLoadRef.current = true;
             initialLoadCompletedAtRef.current = 0;
             lastCelebratedBalanceRef.current = null;
+            processedTransactionIdsRef.current = new Set();
             channelsSetupRef.current = false; // Allow re-setup
             await initializeState();
             setupRealtimeSubscriptions(session.user.id);
@@ -469,6 +596,7 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
           setSongOfDayCompletedToday(false);
           prevBalanceRef.current = null;
           lastCelebratedBalanceRef.current = null;
+          processedTransactionIdsRef.current = new Set();
           isInitialLoadRef.current = true;
           initialLoadCompletedAtRef.current = 0;
           cleanupSubscriptions();
@@ -509,22 +637,42 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
     };
   }, [refreshProfileState]);
 
-  // Listen for Song of Day completion event (fallback if realtime is delayed)
+  // Listen for Song of Day completion event with optimistic update
   useEffect(() => {
-    const handleSotdCompleted = async () => {
-      debugBalance("dailySongQuestCompleted event received, refetching state");
+    const handleSotdCompleted = async (event: CustomEvent) => {
+      const detail = event.detail || {};
+      const transactionId = detail.transactionId;
+      const claimId = detail.claimId;
+
+      debugBalance("dailySongQuestCompleted event received", { transactionId, claimId });
+
       // Mark as completed immediately for UI responsiveness
       setSongOfDayCompletedToday(true);
-      // Then refetch to ensure balance is updated
-      await refetchBalanceAfterAward();
+
+      // If we have a transaction ID, use optimistic increment
+      // This will check for duplicates and trigger celebration
+      if (transactionId) {
+        // The claim path will call optimisticIncrement directly
+        // This event handler is a fallback for when realtime is slow
+        if (!processedTransactionIdsRef.current.has(transactionId)) {
+          debugBalance("SOTD event - triggering optimistic increment", { transactionId });
+          optimisticIncrement(1, transactionId);
+        } else {
+          debugBalance("SOTD event - transaction already processed", { transactionId });
+        }
+      } else {
+        // No transaction ID - fall back to refetch (legacy path)
+        debugBalance("SOTD event - no transactionId, falling back to refetch");
+        await refetchBalanceAfterAward();
+      }
     };
 
-    window.addEventListener("dailySongQuestCompleted", handleSotdCompleted);
+    window.addEventListener("dailySongQuestCompleted", handleSotdCompleted as EventListener);
 
     return () => {
-      window.removeEventListener("dailySongQuestCompleted", handleSotdCompleted);
+      window.removeEventListener("dailySongQuestCompleted", handleSotdCompleted as EventListener);
     };
-  }, [refetchBalanceAfterAward]);
+  }, [optimisticIncrement, refetchBalanceAfterAward]);
 
   // Listen for songOfDay:refresh event
   useEffect(() => {
@@ -552,6 +700,7 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
     refetchBalance,
     refetchBalanceAfterAward,
     refreshProfileState,
+    optimisticIncrement,
   };
 
   return (

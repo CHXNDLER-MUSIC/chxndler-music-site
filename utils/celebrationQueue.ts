@@ -71,21 +71,14 @@ export function isHeartcoinCelebrationActive(): boolean {
  * Queues a badge celebration to play after any active HeartCoin celebration.
  * If no HeartCoin celebration is active, plays immediately.
  * Prevents duplicate celebrations for the same badge in this session.
+ *
+ * IMPORTANT: When suppressed, badges are deferred (NOT lost). They will play
+ * when suppression ends via enableBadgeCelebrations() or timeout.
  */
 export function queueBadgeCelebration(badgeImage: string, badgeTitle: string): void {
   if (typeof window === 'undefined') return;
 
-  // Check if celebrations are suppressed (e.g., during tour)
-  if (suppressCelebrations) {
-    debugQueue("BADGE_CELEBRATION_SKIPPED_DUP", {
-      badge_title: badgeTitle,
-      reason: "suppressed"
-    });
-    celebratedBadgeTitles.add(badgeTitle); // Still mark as celebrated to prevent future attempts
-    return;
-  }
-
-  // Prevent duplicate celebrations for the same badge
+  // Prevent duplicate celebrations for the same badge (already celebrated)
   if (celebratedBadgeTitles.has(badgeTitle)) {
     debugQueue("BADGE_CELEBRATION_SKIPPED_DUP", {
       badge_title: badgeTitle,
@@ -94,7 +87,7 @@ export function queueBadgeCelebration(badgeImage: string, badgeTitle: string): v
     return;
   }
 
-  // Also check if already in queue
+  // Also check if already in queue (dedupe by title)
   const alreadyInQueue = badgeCelebrationQueue.some(item => item.badgeTitle === badgeTitle);
   if (alreadyInQueue) {
     debugQueue("BADGE_CELEBRATION_SKIPPED_DUP", {
@@ -104,21 +97,31 @@ export function queueBadgeCelebration(badgeImage: string, badgeTitle: string): v
     return;
   }
 
-  // Mark as celebrated and add to queue
-  celebratedBadgeTitles.add(badgeTitle);
+  // Add to queue (DO NOT mark as celebrated yet - only mark when actually triggered)
   badgeCelebrationQueue.push({ badgeImage, badgeTitle, queuedAt: Date.now() });
 
   debugQueue("BADGE_CELEBRATION_ENQUEUE", {
     badge_title: badgeTitle,
-    queue_length: badgeCelebrationQueue.length
+    queue_length: badgeCelebrationQueue.length,
+    suppressed: suppressCelebrations
   });
 
   // Log queue state
   debugQueue("CELEBRATION_QUEUE_STATE", {
     len: badgeCelebrationQueue.length,
     active: isProcessingQueue ? "processing" : "idle",
-    heartcoin_active: isHeartcoinCelebrationActive()
+    heartcoin_active: isHeartcoinCelebrationActive(),
+    suppressed: suppressCelebrations
   });
+
+  // If suppressed, don't process - the queue will drain when suppression ends
+  if (suppressCelebrations) {
+    debugQueue("BADGE_CELEBRATION_DEFERRED", {
+      badge_title: badgeTitle,
+      reason: "suppressed - will drain when enabled"
+    });
+    return;
+  }
 
   // Start processing if not already
   processQueue();
@@ -141,6 +144,16 @@ function processQueue(): void {
       return;
     }
 
+    // If suppressed, pause processing (don't drop badges) - retry later
+    if (suppressCelebrations) {
+      debugQueue("Pausing queue processing - celebrations suppressed", {
+        queue_length: badgeCelebrationQueue.length
+      });
+      isProcessingQueue = false;
+      // Will resume when enableBadgeCelebrations() or suppression timeout calls processQueue()
+      return;
+    }
+
     const remainingTime = getHeartcoinCelebrationRemainingTime();
 
     if (remainingTime > 0) {
@@ -153,6 +166,9 @@ function processQueue(): void {
       // No active HeartCoin celebration, trigger the badge celebration
       const next = badgeCelebrationQueue.shift();
       if (next) {
+        // Mark as celebrated NOW (right before triggering) - not when queued
+        celebratedBadgeTitles.add(next.badgeTitle);
+
         debugQueue("Processing badge celebration", {
           badge_title: next.badgeTitle,
           wait_time_ms: Date.now() - next.queuedAt
@@ -197,6 +213,9 @@ export function clearBadgeCelebrationQueue(): void {
  * Temporarily suppress all badge celebrations.
  * Use when starting the tour or other flows where celebrations would be disruptive.
  * Auto-clears after the specified duration (default 10 seconds).
+ *
+ * Badges queued during suppression are NOT lost - they will be drained when
+ * suppression ends (either via timeout or enableBadgeCelebrations).
  */
 export function suppressBadgeCelebrations(durationMs: number = 10000): void {
   suppressCelebrations = true;
@@ -206,18 +225,22 @@ export function suppressBadgeCelebrations(durationMs: number = 10000): void {
     clearTimeout(suppressionTimeout);
   }
 
-  // Auto-clear suppression after duration
+  // Auto-clear suppression after duration and drain queued badges
   suppressionTimeout = setTimeout(() => {
     suppressCelebrations = false;
     suppressionTimeout = null;
-    debugQueue("Suppression auto-cleared");
+    debugQueue("Suppression auto-cleared, draining queue", {
+      queue_length: badgeCelebrationQueue.length
+    });
+    // Drain any badges that were queued during suppression
+    processQueue();
   }, durationMs);
 
   debugQueue("Badge celebrations suppressed", { durationMs });
 }
 
 /**
- * Immediately re-enable badge celebrations.
+ * Immediately re-enable badge celebrations and drain any queued badges.
  */
 export function enableBadgeCelebrations(): void {
   suppressCelebrations = false;
@@ -225,7 +248,11 @@ export function enableBadgeCelebrations(): void {
     clearTimeout(suppressionTimeout);
     suppressionTimeout = null;
   }
-  debugQueue("Badge celebrations enabled");
+  debugQueue("Badge celebrations enabled, draining queue", {
+    queue_length: badgeCelebrationQueue.length
+  });
+  // Immediately drain any badges that were queued during suppression
+  processQueue();
 }
 
 /**

@@ -136,7 +136,15 @@ export default function JourneyModal({ open, onClose, onBeamColorChange }: Journ
         style={{
           paddingTop: '70px'
         }}
-        onClick={handleClose}
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          handleClose();
+        }}
+        onPointerDown={(e) => e.stopPropagation()}
+        onPointerUp={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onMouseUp={(e) => e.stopPropagation()}
       >
         <div
           className="journey-container"
@@ -188,7 +196,23 @@ export default function JourneyModal({ open, onClose, onBeamColorChange }: Journ
 
         {/* Close button with tier color */}
         <button
-          onClick={handleClose}
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            handleClose();
+          }}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+          }}
+          onPointerUp={(e) => {
+            e.stopPropagation();
+          }}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+          }}
+          onMouseUp={(e) => {
+            e.stopPropagation();
+          }}
           onMouseEnter={() => {
             try { sfx.play('hover', 0.6); } catch {}
           }}

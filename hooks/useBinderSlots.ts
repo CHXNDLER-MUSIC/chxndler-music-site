@@ -58,7 +58,7 @@ export function useBinderSlots(userId?: string | null): UseBinderSlotsResult {
       setLoading(true);
       setError(null);
 
-      // Fetch slots and total owned cards count in parallel
+      // Fetch slots and total owned DIGITAL cards count in parallel
       const [slotsResult, cardsCountResult] = await Promise.all([
         supabaseBrowser
           .from('v_user_binder_slots')
@@ -69,6 +69,7 @@ export function useBinderSlots(userId?: string | null): UseBinderSlotsResult {
           .from('user_cards')
           .select('id', { count: 'exact', head: true })
           .eq('user_id', userId)
+          .eq('is_digital', true)
       ]);
 
       if (slotsResult.error) {

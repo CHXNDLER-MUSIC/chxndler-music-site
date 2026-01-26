@@ -361,6 +361,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   // Keys format: `${userId}|${songUuid}|${YYYY-MM-DD}` (NY time)
   const completedOnceRef = useRef<Set<string>>(new Set());
 
+  // Song of Day completion tracking - prevent duplicate claims per (day + songId)
+  // Keys format: `${day}:${songId}`
+  const completedSotdRef = useRef<Set<string>>(new Set());
+
   // Ref to track Song of the Day ID (avoids stale closure in callbacks)
   const songOfDayIdRef = useRef<string | null>(null);
 
@@ -588,23 +592,52 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         } as const;
 
         console.log('[SOTD-COMPLETE] Inserting user_song_of_day_claims payload', claimPayload);
+        let claimSuccess = false;
+        let claimId: string | null = null;
+
         try {
-          const { data: claimData } = await supabaseBrowser
+          const { data: claimData, error: claimError } = await supabaseBrowser
             .from('user_song_of_day_claims')
             .insert(claimPayload)
             .select()
             .single();
-          // Update session guard for claims
-          lastSotdClaimRef.current = { songId: songUuid, day: nyDayString };
-          console.log('[SOTD-COMPLETE] Claim inserted successfully', {
-            returnedRow: claimData,
-          });
+
+          if (claimError) {
+            // Check for duplicate key (already claimed today)
+            const code = (claimError as any)?.code;
+            if (code === '23505') {
+              console.log('[SOTD-COMPLETE] Claim already exists for today');
+              lastSotdClaimRef.current = { songId: songUuid, day: nyDayString };
+              // Still mark as success for UI update purposes
+              claimSuccess = true;
+            } else {
+              console.error('[SOTD-COMPLETE] user_song_of_day_claims insert error', {
+                error: claimError,
+                code: (claimError as any)?.code,
+                message: (claimError as any)?.message,
+                details: (claimError as any)?.details,
+                hint: (claimError as any)?.hint,
+                table: 'user_song_of_day_claims',
+                payload: claimPayload,
+              });
+            }
+          } else {
+            // Update session guard for claims
+            lastSotdClaimRef.current = { songId: songUuid, day: nyDayString };
+            claimId = claimData?.id || null;
+            claimSuccess = true;
+            console.log('[SOTD-COMPLETE] Claim inserted successfully', {
+              returnedRow: claimData,
+              claimId,
+            });
+          }
         } catch (claimErr: any) {
           // Ignore duplicate key (already claimed today)
           const code = claimErr?.code || claimErr?.data?.code || claimErr?.status;
           if (code === '23505') {
             console.log('[SOTD-COMPLETE] Claim already exists for today');
             lastSotdClaimRef.current = { songId: songUuid, day: nyDayString };
+            claimSuccess = true;
           } else {
             console.error('[SOTD-COMPLETE] user_song_of_day_claims insert error', {
               error: claimErr,
@@ -617,10 +650,45 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             });
           }
         }
+
+        // Dispatch events with claim details for immediate UI update
+        // Generate a unique transaction ID for deduplication (claim-based)
+        // The backend creates the actual heartcoin_transaction, but we use this
+        // for optimistic update deduplication
+        const optimisticTransactionId = `sotd-claim-${nyDayString}-${songUuid}`;
+
         try {
+          // Refresh SOTD status
           window.dispatchEvent(new CustomEvent('songOfDay:refresh'));
-          window.dispatchEvent(new CustomEvent('dailySongQuestCompleted', { detail: { day: nyDayString } }));
-        } catch {}
+
+          // Dispatch completion event with transaction details
+          // This allows HeartcoinBalanceProvider to:
+          // 1. Update UI immediately without page refresh (songOfDayCompletedToday = true)
+          // 2. Optimistically increment balance (+1)
+          // 3. Trigger celebration once (using transactionId for deduplication)
+          //
+          // NOTE: We do NOT call triggerHeartCoinCelebration here directly.
+          // HeartcoinBalanceProvider handles celebration via the event to ensure
+          // proper deduplication with realtime updates.
+          window.dispatchEvent(new CustomEvent('dailySongQuestCompleted', {
+            detail: {
+              day: nyDayString,
+              claimId,
+              claimSuccess,
+              // Use a deterministic ID for deduplication
+              // This prevents duplicate celebrations from both event and realtime
+              transactionId: optimisticTransactionId,
+            }
+          }));
+
+          console.log('[SOTD-COMPLETE] Dispatched completion events', {
+            transactionId: optimisticTransactionId,
+            claimId,
+            claimSuccess,
+          });
+        } catch (eventErr) {
+          console.warn('[SOTD-COMPLETE] Failed to dispatch events', eventErr);
+        }
       }
 
       // Mark as completed in our in-memory cache (prevents re-running completion logic)

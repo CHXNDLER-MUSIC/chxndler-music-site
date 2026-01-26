@@ -3,12 +3,17 @@
  * Triggers custom browser events when merch items are purchased
  */
 
+import { suppressBadgeCelebrations } from './celebrationQueue';
+
 export interface MerchCelebrationDetail {
   itemName: string;
   imageUrl: string;
 }
 
 export const MERCH_CELEBRATION_EVENT = 'merch-celebration';
+
+// Duration to suppress badge celebrations after merch purchase (5 seconds)
+const BADGE_SUPPRESSION_DURATION_MS = 5000;
 
 /**
  * Triggers a merch celebration event in the browser
@@ -22,6 +27,9 @@ export function triggerMerchCelebration(itemName: string, imageUrl: string): voi
   if (typeof window === 'undefined') {
     return;
   }
+
+  // Suppress badge celebrations during merch celebration to prevent overlap
+  suppressBadgeCelebrations(BADGE_SUPPRESSION_DURATION_MS);
 
   const detail: MerchCelebrationDetail = { itemName, imageUrl };
   const event = new CustomEvent(MERCH_CELEBRATION_EVENT, { detail });

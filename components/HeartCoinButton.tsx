@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { sfx } from "@/lib/sfx";
 import Image from "next/image";
 import { useProfile } from '@/contexts/ProfileContext';
+import { useHeartcoinBalance } from '@/providers/HeartcoinBalanceProvider';
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useBonusQuests } from '@/hooks/useBonusQuests';
 import { useElementOfDayClaim } from '@/hooks/useElementOfDayClaim';
@@ -431,6 +432,8 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export default function HeartCoinButton({ asChild = false, children, onClick, onHoverSound, onCloseBlueDisplay, onOpenBlueDisplay, onOpenJournal, onOpenBinder, heartCoins: externalHeartCoins = 0, onHeartCoinsChange, isActive = false, journalCompleted = false, onJournalCompleted, onClose, onBeamColorChange, ...restProps }: Props) {
   const { profile, refreshProfile, setIsJournalOpen } = useProfile();
+  // Use centralized balance state from HeartcoinBalanceProvider for real-time updates
+  const { balance: providerBalance, songOfDayCompletedToday } = useHeartcoinBalance();
   const { elementOfDay, songOfDayTitle, songOfDaySlug } = usePlanetRewardsContext();
   const { isClaimed: isElementOfDayClaimed } = useElementOfDayClaim();
 
@@ -576,17 +579,19 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     };
   }, []);
 
-  // Update local state when external heartCoins change or profile loads
+  // Update local state when external heartCoins change or provider balance updates
+  // HeartcoinBalanceProvider is the source of truth for real-time balance updates
   useEffect(() => {
     // If no profile (not logged in), always show 0
     if (!profile?.id) {
       setHeartCoins(0);
       return;
     }
-    // Prefer profile balance over external prop
-    const currentBalance = profile?.heartcoin_balance ?? externalHeartCoins;
+    // Use provider balance as canonical source of truth
+    // This ensures real-time updates from realtime subscriptions and optimistic updates
+    const currentBalance = providerBalance ?? profile?.heartcoin_balance ?? externalHeartCoins;
     setHeartCoins(currentBalance);
-  }, [externalHeartCoins, profile?.heartcoin_balance, profile?.id]);
+  }, [externalHeartCoins, providerBalance, profile?.heartcoin_balance, profile?.id]);
 
   // Keyboard navigation for merch items
   useEffect(() => {
@@ -1182,8 +1187,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // Check if a card is already owned by the user (digital)
   const isCardOwned = useCallback((cardId?: string) => {
     if (!cardId || !ownedCards?.length) return false;
-    return ownedCards.some(uc => uc.card_id === cardId);
+    // Only check for digital ownership (is_digital === true)
+    return ownedCards.some(uc => uc.card_id === cardId && uc.is_digital === true);
   }, [ownedCards]);
+
+  // Normalize UUID - strip quotes, whitespace, and ensure valid string
+  const normalizeUuid = (value: unknown): string => {
+    if (typeof value !== "string") return "";
+    return value.trim().replace(/^"+|"+$/g, "");
+  };
 
   // State for secret phrase quest
   const [secretPhraseInputVisible, setSecretPhraseInputVisible] = useState<string | null>(null);
@@ -1244,6 +1256,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     // For Element of Day quest, check the dedicated claim status
     if (quest.quest_key === 'TAP_ELEMENT_OF_DAY') {
       return isElementOfDayClaimed || quest.completed_today > 0 || completedQuests.has(quest.id);
+    }
+    // For Song of Day quest, check the dedicated claim tracking from HeartcoinBalanceProvider
+    // This is more reliable than user_bonus_quest_completions since SOTD uses user_song_of_day_claims
+    if (quest.quest_key === 'LISTEN_SONG_OF_DAY') {
+      return songOfDayCompletedToday || quest.completed_today > 0 || completedQuests.has(quest.id);
     }
     // For daily quests, check completed_today or local state
     if (quest.quest_key === 'JOURNAL_ENTRY_OF_DAY') {
@@ -1770,15 +1787,22 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     const selectedCard = targetCard || enlargedCard;
 
     // Extract UUID from selectedCard - it may be a string or an object with .id
-    // Trim whitespace and ensure it's a clean string
+    // Use normalizeUuid to strip quotes, whitespace, and ensure it's a clean string
     const rawCardId =
       typeof selectedCard === 'string'
         ? selectedCard
         : selectedCard?.id;
-    const cardUuid = typeof rawCardId === 'string' ? rawCardId.trim() : null;
+    const cardUuid = normalizeUuid(rawCardId);
 
     // UUID v4 format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (8-4-4-4-12 hex digits)
     const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+    // Defensive guard: check if card is already owned (digital)
+    if (cardUuid && isCardOwned(cardUuid)) {
+      console.warn('[CARD PURCHASE] Card already collected', cardUuid);
+      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'You already own this card!', type: 'info' } })); } catch {}
+      return;
+    }
 
     // Guards with logs for every early return
     if (isPurchasing) {
@@ -1798,7 +1822,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     }
     // Validate UUID format before RPC - must be non-null, non-empty, and valid UUID format
     if (!cardUuid || !UUID_REGEX.test(cardUuid)) {
-      console.error('[CARD PURCHASE] Invalid card UUID:', cardUuid);
+      console.error('[CARD PURCHASE] Invalid card UUID:', { rawCardId, cardUuid });
       try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Purchase failed: invalid card id', type: 'error' } })); } catch {}
       return;
     }
