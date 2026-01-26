@@ -2119,6 +2119,16 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         }
       `}</style>
 
+      {/* Render ritual overlay when journal is open and animation is active */}
+      {showRitualOverlay && ritualStartPosition && (
+        <CastToStarsOverlay
+          startPosition={ritualStartPosition}
+          targetPosition={getGlowingPlanetPosition(dailyPrompt?.element as ElementType || null)}
+          onComplete={handleRitualComplete}
+          element={dailyPrompt?.element as ElementType || null}
+        />
+      )}
+
     </div>
   );
 }

@@ -374,6 +374,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [showPhysicalConfirm, setShowPhysicalConfirm] = useState(false);
   const [showDigitalForm, setShowDigitalForm] = useState(false);
   const [currentMerchIndex, setCurrentMerchIndex] = useState(0);
+  // Track selected variant per merch item (keyed by index number)
+  const [selectedVariants, setSelectedVariants] = useState<Record<number, {value: string; image?: string}>>({});
   // Enlarged merch modal state - single source of truth for merch selection
   // Use full MerchItem object so confirm payload and UI stay in sync
   const [activeMerchItem, setActiveMerchItem] = useState<MerchItem | null>(null);
@@ -4225,27 +4227,42 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     style={{ textShadow: '0 0 6px rgba(255,255,255,0.6)' }}
                                   >
                                     {/* Variant toggle pills - to the LEFT of title */}
-                                    {hasVariants(PHYSICAL_ITEMS[currentMerchIndex]) && (
-                                      <div className="flex items-center gap-1 bg-black/40 rounded-full px-1.5 py-0.5">
-                                        {getVariantOptions(PHYSICAL_ITEMS[currentMerchIndex]).map((opt) => {
-                                          const isColor = opt.type === 'color';
-                                          const colorMap: Record<string, string> = {
-                                            black: '#1a1a1a', blue: '#3b82f6', pink: '#ec4899',
-                                            yellow: '#fbbf24', red: '#ef4444', white: '#ffffff'
-                                          };
-                                          const dotColor = isColor ? (colorMap[opt.value.toLowerCase()] || '#888') : null;
-                                          return (
-                                            <button
-                                              key={opt.value}
-                                              className="w-4 h-4 rounded-full border border-white/50 hover:scale-110 transition-transform"
-                                              style={{ backgroundColor: dotColor || '#666' }}
-                                              title={opt.label}
-                                              aria-label={`Select ${opt.label}`}
-                                            />
-                                          );
-                                        })}
-                                      </div>
-                                    )}
+                                    {hasVariants(PHYSICAL_ITEMS[currentMerchIndex]) && (() => {
+                                      const item = PHYSICAL_ITEMS[currentMerchIndex];
+                                      const variants = getVariantOptions(item);
+                                      const selected = selectedVariants[currentMerchIndex]?.value || variants[0]?.value;
+                                      return (
+                                        <div className="flex items-center gap-1 bg-black/40 rounded-full px-1.5 py-0.5">
+                                          {variants.map((opt) => {
+                                            const isColor = opt.type === 'color';
+                                            const colorMap: Record<string, string> = {
+                                              black: '#1a1a1a', blue: '#3b82f6', pink: '#ec4899',
+                                              yellow: '#fbbf24', red: '#ef4444', white: '#ffffff'
+                                            };
+                                            const dotColor = isColor ? (colorMap[opt.value.toLowerCase()] || '#888') : null;
+                                            const isSelected = selected === opt.value;
+                                            return (
+                                              <button
+                                                key={opt.value}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setSelectedVariants(prev => ({
+                                                    ...prev,
+                                                    [currentMerchIndex]: { value: opt.value, image: opt.image }
+                                                  }));
+                                                }}
+                                                className={`w-4 h-4 rounded-full border-2 hover:scale-110 transition-all ${
+                                                  isSelected ? 'border-[#F2EF1D] ring-2 ring-[#F2EF1D]/50' : 'border-white/50'
+                                                }`}
+                                                style={{ backgroundColor: dotColor || '#666' }}
+                                                title={opt.label}
+                                                aria-label={`Select ${opt.label}`}
+                                              />
+                                            );
+                                          })}
+                                        </div>
+                                      );
+                                    })()}
                                     {PHYSICAL_ITEMS[currentMerchIndex].title.toUpperCase()}
                                   </div>
                                   <div className="relative flex items-center justify-center">
@@ -4264,8 +4281,17 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       }}
                                     >
                                       <img
-                                        src={PHYSICAL_ITEMS[currentMerchIndex].image}
-                                        alt={PHYSICAL_ITEMS[currentMerchIndex].title}
+                                        key={`merch-img-${currentMerchIndex}-${selectedVariants[PHYSICAL_ITEMS[currentMerchIndex]?.slug]?.value || 'default'}`}
+                                        src={(() => {
+                                          const item = PHYSICAL_ITEMS[currentMerchIndex];
+                                          if (!item) return '';
+                                          const selectedVar = selectedVariants[item.slug];
+                                          // Use selected variant image if available
+                                          if (selectedVar?.image) return selectedVar.image;
+                                          // Otherwise use item's default image
+                                          return item.image;
+                                        })()}
+                                        alt={PHYSICAL_ITEMS[currentMerchIndex]?.title || ''}
                                         className="w-full h-full object-cover rounded"
                                       />
                                     </div>
@@ -5580,7 +5606,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       >
                         {/* Merchandise Image - Front */}
                         <img
-                          src={activeMerchItem.image_url}
+                          src={selectedVariants[activeMerchItem.slug]?.image || activeMerchItem.image_url}
                           alt={activeMerchItem.name}
                           className="absolute inset-0 w-full h-full object-contain pointer-events-none"
                           style={{
