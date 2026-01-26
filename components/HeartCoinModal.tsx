@@ -403,10 +403,41 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
   // Helper to get the display image for a merch item (considering variant selection)
   const getItemDisplayImage = (item: MerchItem): string => {
-    const selectedVariant = selectedVariants[item.id];
+    const itemSlug = (item as any).slug?.toLowerCase() || item.name.toLowerCase();
+
+    // Get selected variant, or determine default variant if none selected
+    let selectedVariant = selectedVariants[item.id];
+    if (!selectedVariant) {
+      const options = normalizeVariantOptions(item.variant_options, item.image_url);
+      if (options.length > 0) {
+        selectedVariant = options[0]; // Default to first option
+      }
+    }
+
+    // If we have a selected variant with a valid image, use it
     if (selectedVariant?.imageMain) {
       return selectedVariant.imageMain;
     }
+
+    // Fallback: construct image path for known items with variants
+    const variantValue = selectedVariant?.value?.toLowerCase() || '';
+
+    // Patch variants
+    if (itemSlug === 'patch' || item.name.toLowerCase() === 'patch') {
+      if (variantValue === 'inverse') {
+        return '/store/patch-inverse.webp';
+      }
+      return '/store/patch.webp';
+    }
+
+    // Socks variants
+    if (itemSlug === 'socks' || item.name.toLowerCase() === 'socks') {
+      if (variantValue === 'alien') {
+        return '/store/socks-alien.webp';
+      }
+      return '/store/socks-logo.webp';
+    }
+
     return item.image_url || '/store/default.webp';
   };
 
@@ -2220,6 +2251,18 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   const hasVariants = variantOptions.length > 0;
                   const selectedVariant = hasVariants ? getSelectedVariant(currentItem) : null;
 
+                  // Frontend fallback for known item tier requirements (if not set in DB)
+                  const ITEM_TIER_OVERRIDES: Record<string, string> = {
+                    'bracelet': 'DREAMER',
+                    'socks': 'DREAMER',
+                    'house party poster': 'DREAMER',
+                    'necklace': 'LOVER',
+                  };
+                  const itemNameLower = currentItem.name.toLowerCase();
+                  const dbTier = (currentItem.min_journey_tier || currentItem.min_tier || '').toUpperCase();
+                  const titleItemMinTier = dbTier || ITEM_TIER_OVERRIDES[itemNameLower] || 'WANDERER';
+                  const isTitleItemLocked = isItemLockedForJourney(profile?.journey, titleItemMinTier);
+
                   // Debug: log variant info
                   console.log('[VARIANT DEBUG]', {
                     itemName: currentItem.name,
@@ -2231,14 +2274,10 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   });
 
                   return (
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      {/* DEBUG: temp badge to confirm code is running */}
-                      <span className="text-[10px] text-yellow-400 bg-black/50 px-1 rounded">
-                        v:{variantOptions.length}
-                      </span>
-
-                      {/* Variant Toggle - to the LEFT of item name */}
-                      {variantOptions.length > 0 && (
+                    <div className="flex flex-col items-center gap-1 mb-2">
+                      <div className="flex items-center justify-center gap-2">
+                        {/* Variant Toggle - to the LEFT of item name */}
+                        {variantOptions.length > 0 && (
                         <div className="flex items-center gap-1 bg-black/40 rounded-full px-2 py-1">
                           {variantOptions.map((opt, idx) => {
                             const isSelected = selectedVariant?.value === opt.value;
@@ -2255,13 +2294,22 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                               green: '#22c55e',
                               white: '#ffffff',
                               purple: '#a855f7',
+                              // Socks variant mappings
+                              logo: '#fbbf24',    // yellow for logo socks
+                              alien: '#3b82f6',   // blue for alien socks
+                              // Patch variant mappings
+                              original: '#fbbf24', // yellow for original patch
+                              inverse: '#ec4899',  // pink for inverse patch
                             };
                             const dotColor = isColor ? (colorMap[opt.value.toLowerCase()] || '#888') : null;
 
                             return (
                               <button
                                 key={opt.value}
-                                onClick={() => setSelectedVariantForItem(currentItem.id, opt)}
+                                onClick={() => {
+                                  try { sfx.play('click', 0.5); } catch {}
+                                  setSelectedVariantForItem(currentItem.id, opt);
+                                }}
                                 onMouseEnter={() => {
                                   try { sfx.play('hover', 0.2); } catch {}
                                 }}
@@ -2294,6 +2342,36 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                       <h3 className="text-base font-bold text-white tracking-wider">
                         {currentItem.name.toUpperCase()}
                       </h3>
+                      </div>
+
+                      {/* Tier unlock pill - shows for non-WANDERER items in both locked and unlocked states */}
+                      {titleItemMinTier !== 'WANDERER' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            try { sfx.play('click', 0.5); } catch {}
+                            onClose();
+                            setTimeout(() => {
+                              window.dispatchEvent(new CustomEvent('openJourneyModal'));
+                            }, 100);
+                          }}
+                          onTouchEnd={(e) => {
+                            e.stopPropagation();
+                            try { sfx.play('click', 0.5); } catch {}
+                            onClose();
+                            setTimeout(() => {
+                              window.dispatchEvent(new CustomEvent('openJourneyModal'));
+                            }, 100);
+                          }}
+                          onMouseEnter={() => {
+                            try { sfx.play('hover', 0.3); } catch {}
+                          }}
+                          className="relative z-20 px-3 py-1 text-xs font-bold text-[#F2EF1D] bg-[#F2EF1D]/10 border border-[#F2EF1D]/30 rounded-full hover:bg-[#F2EF1D]/20 hover:border-[#F2EF1D]/50 transition-all duration-200 cursor-pointer flex items-center gap-1.5"
+                        >
+                          <span>{isTitleItemLocked ? '🔒' : '✨'}</span>
+                          <span>{isTitleItemLocked ? 'Unlock at' : 'Unlocked at'} {titleItemMinTier}</span>
+                        </button>
+                      )}
                     </div>
                   );
                 })()}
@@ -2419,9 +2497,16 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   const item = merchItems[currentPage];
                   if (!item) return null;
 
-                  // Journey tier gating: check if item is locked for this user
-                  // Prefer min_journey_tier column if present, fall back to min_tier, default to WANDERER
-                  const itemMinTier = (item.min_journey_tier || item.min_tier || 'WANDERER').toUpperCase();
+                  // Frontend fallback for known item tier requirements (if not set in DB)
+                  const DETAIL_ITEM_TIER_OVERRIDES: Record<string, string> = {
+                    'bracelet': 'DREAMER',
+                    'socks': 'DREAMER',
+                    'house party poster': 'DREAMER',
+                    'necklace': 'LOVER',
+                  };
+                  const detailItemNameLower = item.name.toLowerCase();
+                  const detailDbTier = (item.min_journey_tier || item.min_tier || '').toUpperCase();
+                  const itemMinTier = detailDbTier || DETAIL_ITEM_TIER_OVERRIDES[detailItemNameLower] || 'WANDERER';
                   const isLocked = isItemLockedForJourney(profile?.journey, itemMinTier);
 
                   return (
@@ -2466,16 +2551,26 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         </div>
                       </div>
 
-                      {/* Journey Tier Locked State */}
+                      {/* Journey Tier Locked State - Clickable to open MY JOURNEY */}
                       {isLocked ? (
-                        <div className="w-full py-2 px-4 rounded-lg font-bold text-xs text-center mt-2 bg-gray-600/50 text-gray-300 cursor-not-allowed border border-gray-500/50">
+                        <button
+                          onClick={() => {
+                            try { sfx.play('click', 0.5); } catch {}
+                            onClose();
+                            window.dispatchEvent(new CustomEvent('openJourneyModal'));
+                          }}
+                          onMouseEnter={() => {
+                            try { sfx.play('hover', 0.3); } catch {}
+                          }}
+                          className="w-full py-2 px-4 rounded-lg font-bold text-xs text-center mt-2 bg-gray-600/50 text-gray-300 border border-gray-500/50 hover:bg-gray-500/50 hover:text-white hover:border-gray-400/50 transition-all duration-200 cursor-pointer"
+                        >
                           <span className="flex items-center justify-center gap-2">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                             </svg>
                             Unlock at {itemMinTier}
                           </span>
-                        </div>
+                        </button>
                       ) : (
                         <>
                           {/* Purchase Button */}
@@ -2964,18 +3059,38 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               {/* PAY WITH Heartcoin Button - Above Image */}
               <div className="mb-4 flex justify-center">
                 {(() => {
-                  // Journey tier gating for enlarged item view
-                  const enlargedItemMinTier = (enlargedItem.min_tier || 'WANDERER').toUpperCase();
+                  // Frontend fallback for known item tier requirements (if not set in DB)
+                  const ENLARGED_ITEM_TIER_OVERRIDES: Record<string, string> = {
+                    'bracelet': 'DREAMER',
+                    'socks': 'DREAMER',
+                    'house party poster': 'DREAMER',
+                    'necklace': 'LOVER',
+                  };
+                  const enlargedItemNameLower = enlargedItem.name.toLowerCase();
+                  const enlargedDbTier = (enlargedItem.min_tier || '').toUpperCase();
+                  const enlargedItemMinTier = enlargedDbTier || ENLARGED_ITEM_TIER_OVERRIDES[enlargedItemNameLower] || 'WANDERER';
                   const isEnlargedItemLocked = isItemLockedForJourney(profile?.journey, enlargedItemMinTier);
 
                   if (isEnlargedItemLocked) {
                     return (
-                      <div className="flex items-center gap-2 py-3 px-6 rounded-lg font-bold text-sm bg-gray-600/50 text-gray-300 cursor-not-allowed border border-gray-500/50">
+                      <button
+                        onClick={() => {
+                          try { sfx.play('click', 0.5); } catch {}
+                          setEnlargedItem(null);
+                          setEnlargedImageIndex(0);
+                          onClose();
+                          window.dispatchEvent(new CustomEvent('openJourneyModal'));
+                        }}
+                        onMouseEnter={() => {
+                          try { sfx.play('hover', 0.3); } catch {}
+                        }}
+                        className="flex items-center gap-2 py-3 px-6 rounded-lg font-bold text-sm bg-gray-600/50 text-gray-300 border border-gray-500/50 hover:bg-gray-500/50 hover:text-white hover:border-gray-400/50 transition-all duration-200 cursor-pointer"
+                      >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
                         <span>Unlock at {enlargedItemMinTier}</span>
-                      </div>
+                      </button>
                     );
                   }
 

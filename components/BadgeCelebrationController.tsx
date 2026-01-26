@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useBadgeCelebrations, type BadgeCelebrationItem } from '@/lib/useBadgeCelebrations';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useCelebrationLock } from '@/lib/celebrationQueue';
@@ -18,8 +19,15 @@ export default function BadgeCelebrationController() {
 
   const [phase, setPhase] = useState<CelebrationPhase>('idle');
   const [currentItem, setCurrentItem] = useState<BadgeCelebrationItem | null>(null);
+  const [mounted, setMounted] = useState(false);
   const badgeAudioRef = useRef<HTMLAudioElement | null>(null);
   const processingRef = useRef(false);
+
+  // Track mount state for portal
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   // Initialize audio on client (use distinct sound for badge, not heart-coin)
   useEffect(() => {
@@ -94,13 +102,16 @@ export default function BadgeCelebrationController() {
     };
   }, [phase, currentItem, pop, release]);
 
-  // Don't render anything if not showing a celebration
-  if (phase === 'idle' || !currentItem) return null;
+  // Don't render anything if not showing a celebration or not mounted
+  if (!mounted || phase === 'idle' || !currentItem) return null;
 
-  // Badge celebration overlay
+  // Badge celebration overlay - render via portal to document.body
   if (phase === 'badge') {
-    return (
-      <div className="fixed inset-0 z-[100000] flex items-center justify-center pointer-events-none">
+    const celebrationContent = (
+      <div
+        className="fixed inset-0 flex items-center justify-center pointer-events-none"
+        style={{ zIndex: 2147483646, isolation: 'isolate' }}
+      >
         {/* Backdrop */}
         <div
           className="absolute inset-0 bg-black/40 backdrop-blur-sm"
@@ -173,6 +184,8 @@ export default function BadgeCelebrationController() {
         `}</style>
       </div>
     );
+
+    return createPortal(celebrationContent, document.body);
   }
 
   // HeartCoin celebration overlay

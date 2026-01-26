@@ -125,25 +125,57 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
   const [queue, setQueue] = useState<BadgeCelebrationItem[]>([]);
   const seenBadgesRef = useRef<Map<string, SeenBadgeEntry>>(new Map());
   const channelRef = useRef<ReturnType<typeof supabaseBrowser.channel> | null>(null);
-  const initializedRef = useRef<boolean>(false);
+  // Track the userId we're subscribed to (not just boolean) to handle user changes
+  const subscribedUserIdRef = useRef<string | null>(null);
+  // Flag to track if initialization is in progress
+  const initializingRef = useRef<boolean>(false);
 
   const pop = useCallback(() => {
     setQueue((prev) => prev.slice(1));
   }, []);
 
   useEffect(() => {
-    if (!userId) return;
-
-    // Prevent re-initialization on re-renders
-    if (initializedRef.current) {
-      debugCelebration("Already initialized, skipping");
+    // If no userId, clean up and return
+    if (!userId) {
+      if (channelRef.current) {
+        debugCelebration("Cleaning up channel (no userId)");
+        supabaseBrowser.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+      subscribedUserIdRef.current = null;
+      initializingRef.current = false;
       return;
     }
+
+    // If already subscribed to THIS user, skip
+    if (subscribedUserIdRef.current === userId) {
+      debugCelebration("Already subscribed to user, skipping", { userId });
+      return;
+    }
+
+    // If initializing is in progress, skip (React Strict Mode protection)
+    if (initializingRef.current) {
+      debugCelebration("Initialization in progress, skipping", { userId });
+      return;
+    }
+
+    // Clean up any existing channel from a different user
+    if (channelRef.current) {
+      debugCelebration("Cleaning up channel (user changed)", {
+        oldUser: subscribedUserIdRef.current,
+        newUser: userId
+      });
+      supabaseBrowser.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
+    initializingRef.current = true;
 
     // Load seen badges from localStorage
     seenBadgesRef.current = getSeenBadgesFromStorage();
     debugCelebration("Loaded seen badges from storage", {
-      count: seenBadgesRef.current.size
+      count: seenBadgesRef.current.size,
+      userId
     });
 
     // Initialize seenBadgesRef with all existing badges to prevent celebrations on page load
@@ -172,8 +204,10 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
       }
 
       // Subscribe to realtime INSERT events on user_badges AFTER initializing
+      // Use a unique channel name that includes a timestamp to avoid conflicts
+      const channelName = `user-badges-${userId}-${Date.now()}`;
       channelRef.current = supabaseBrowser
-        .channel(`user-badges-realtime-${userId}`)
+        .channel(channelName)
         .on<UserBadgeInsert>(
           'postgres_changes',
           {
@@ -259,10 +293,11 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
           }
         )
         .subscribe((status) => {
-          debugCelebration("Subscription status", { status });
+          debugCelebration("Subscription status", { status, channelName });
         });
 
-      initializedRef.current = true;
+      subscribedUserIdRef.current = userId;
+      initializingRef.current = false;
     };
 
     initializeSeenBadges();
@@ -270,11 +305,12 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
     // Cleanup on unmount or userId change
     return () => {
       if (channelRef.current) {
-        debugCelebration("Cleaning up channel");
+        debugCelebration("Cleaning up channel on unmount");
         supabaseBrowser.removeChannel(channelRef.current);
         channelRef.current = null;
       }
-      initializedRef.current = false;
+      subscribedUserIdRef.current = null;
+      initializingRef.current = false;
     };
   }, [userId]);
 

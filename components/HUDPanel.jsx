@@ -1086,7 +1086,7 @@ const HUDPanel = React.memo(function HUDPanel({
     {
       id: 'beanie',
       title: 'BEANIE',
-      image: '/store/beanie-front.png',
+      image: '/store/beanie-front-pink.webp',
       url: 'https://buy.stripe.com/dRm8wQetz14N5x71CD4gg0L',
       price: '$30',
       heartcoins: 20,
@@ -1095,7 +1095,7 @@ const HUDPanel = React.memo(function HUDPanel({
     {
       id: 'hat',
       title: 'HAT',
-      image: '/store/hat.png',
+      image: '/store/hat.webp',
       url: 'https://buy.stripe.com/6oU28s717aFn1gR1CD4gg0I',
       price: '$30',
       heartcoins: 20,
@@ -1104,7 +1104,7 @@ const HUDPanel = React.memo(function HUDPanel({
     {
       id: 'bracelet',
       title: 'BRACELET',
-      image: '/store/bracelet.png',
+      image: '/store/bracelet.webp',
       url: 'https://buy.stripe.com/aFa8wQ2KR8xf6Bbftt4gg0N',
       price: '$24',
       heartcoins: 16,
@@ -5351,7 +5351,7 @@ const HUDPanel = React.memo(function HUDPanel({
                                     {/* Front */}
                                     <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(0deg)' }}>
                                       <img
-                                        src={'/store/beanie-front.png'}
+                                        src={'/store/beanie-front-pink.webp'}
                                         alt={item.title}
                                         style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
                                         onError={(e)=>{ try { e.currentTarget.src = '/elements/logo.webp'; } catch {} }}
@@ -5360,7 +5360,7 @@ const HUDPanel = React.memo(function HUDPanel({
                                     {/* Back */}
                                     <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
                                       <img
-                                        src={'/store/beanie-back.png'}
+                                        src={'/store/beanie-back-pink.webp'}
                                         alt={`${item.title} back`}
                                         style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
                                         onError={(e)=>{ try { e.currentTarget.src = '/elements/logo.webp'; } catch {} }}

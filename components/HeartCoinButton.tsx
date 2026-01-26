@@ -111,6 +111,111 @@ const getVariantOptions = (item: StoreItem): Array<{type: string; value: string;
   return [];
 };
 
+// ============================================================
+// Journey Tier Locking Helpers
+// ============================================================
+const JOURNEY_RANK: Record<string, number> = {
+  WANDERER: 0,
+  DREAMER: 1,
+  LOVER: 2,
+};
+
+// Check if user meets the required journey tier
+const isJourneyLocked = (requiredJourney: string | null | undefined, userJourney: string | null | undefined): boolean => {
+  if (!requiredJourney) return false; // No requirement = unlocked
+  const required = JOURNEY_RANK[requiredJourney.toUpperCase()];
+  const user = JOURNEY_RANK[(userJourney || 'WANDERER').toUpperCase()];
+  // If requiredJourney is not recognized, fail open (unlocked)
+  if (required === undefined) return false;
+  return (user ?? 0) < required;
+};
+
+// Get the full variant data from variant_options by value
+const getFullVariantData = (item: StoreItem, variantValue: string | undefined): any | null => {
+  if (!variantValue || !item.variant_options) return null;
+  let opts = item.variant_options;
+  if (typeof opts === 'string') {
+    try { opts = JSON.parse(opts); } catch { return null; }
+  }
+  if (!opts || typeof opts !== 'object') return null;
+  // Check colors array
+  if (Array.isArray(opts.colors)) {
+    const match = opts.colors.find((c: any) => c.value === variantValue);
+    if (match) return match;
+  }
+  // Check variants array
+  if (Array.isArray(opts.variants)) {
+    const match = opts.variants.find((v: any) => v.value === variantValue);
+    if (match) return match;
+  }
+  return null;
+};
+
+// Get item-level unlock info from variant_options root
+const getItemLevelUnlock = (item: StoreItem): { unlock_journey?: string; unlock_label?: string } | null => {
+  if (!item.variant_options) return null;
+  let opts = item.variant_options;
+  if (typeof opts === 'string') {
+    try { opts = JSON.parse(opts); } catch { return null; }
+  }
+  if (!opts || typeof opts !== 'object') return null;
+  if (opts.unlock_journey || opts.unlock_label) {
+    return { unlock_journey: opts.unlock_journey, unlock_label: opts.unlock_label };
+  }
+  return null;
+};
+
+interface LockLabelParams {
+  item: StoreItem;
+  selectedVariantValue?: string;
+  userJourney: string | null | undefined;
+}
+
+// Get lock label for an item (considering selected variant)
+// Returns null if unlocked, or the label text if locked
+const getLockLabel = ({ item, selectedVariantValue, userJourney }: LockLabelParams): string | null => {
+  const userJourneyNorm = (userJourney || 'WANDERER').toUpperCase();
+
+  // 1. Determine required journey (variant-specific first, then item-level)
+  let requiredJourney: string | null = null;
+  let customLabel: string | null = null;
+
+  // Check selected variant first
+  if (selectedVariantValue) {
+    const variantData = getFullVariantData(item, selectedVariantValue);
+    if (variantData?.unlock_journey) {
+      requiredJourney = variantData.unlock_journey;
+      customLabel = variantData.unlock_label || null;
+    }
+  }
+
+  // Fall back to item.min_tier (from merch_items.min_journey_tier)
+  if (!requiredJourney && item.min_tier && item.min_tier.toUpperCase() !== 'WANDERER') {
+    requiredJourney = item.min_tier.toUpperCase();
+  }
+
+  // Fall back to item-level unlock in variant_options
+  if (!requiredJourney) {
+    const itemUnlock = getItemLevelUnlock(item);
+    if (itemUnlock?.unlock_journey) {
+      requiredJourney = itemUnlock.unlock_journey;
+      customLabel = customLabel || itemUnlock.unlock_label || null;
+    }
+  }
+
+  // No requirement = unlocked
+  if (!requiredJourney) return null;
+
+  // 2. Check if user meets requirement
+  const isLocked = isJourneyLocked(requiredJourney, userJourneyNorm);
+
+  // 3. Return appropriate label
+  if (!isLocked) return null; // User meets requirement
+
+  // Return custom label if available, otherwise default
+  return customLabel || `Unlock at ${requiredJourney}`;
+};
+
 // Card interface for Supabase data
 interface Card {
   id: string;
@@ -1680,8 +1785,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     });
 
     const selectedCard = targetCard || enlargedCard;
-    const selectedCardId = selectedCard?.id;
-    console.log('[CARD PURCHASE] selectedCardId', selectedCardId);
+
+    // Extract UUID from selectedCard - it may be a string or an object with .id
+    const cardUuid =
+      typeof selectedCard === 'string'
+        ? selectedCard
+        : selectedCard?.id;
 
     // Guards with logs for every early return
     if (isPurchasing) {
@@ -1699,10 +1808,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Please log in to buy cards', type: 'error' } })); } catch {}
       return;
     }
-    if (!selectedCardId) {
-      console.warn('[CARD PURCHASE] GUARD: missing selectedCardId');
-      console.warn('[CARD PURCHASE] blocked: missing selectedCardId');
-      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'No card selected', type: 'error' } })); } catch {}
+    // Validate UUID format before RPC
+    if (!cardUuid || !/^[0-9a-fA-F-]{36}$/.test(cardUuid)) {
+      console.error('[CARD PURCHASE] Invalid card UUID:', cardUuid);
+      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Purchase failed: invalid card id', type: 'error' } })); } catch {}
       return;
     }
     if (showCardConfirm !== 'digital' && !targetCard) {
@@ -1725,12 +1834,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     console.log('[CARD PURCHASE] In-flight set TRUE');
 
     try {
-      // Log Supabase URL for debugging
-      console.log('[CARD PURCHASE] supabaseUrl', (supabaseBrowser as any)?.rest?.url ?? process.env.NEXT_PUBLIC_SUPABASE_URL);
+      // Debug log immediately before RPC
+      console.log('[CARD PURCHASE] sending UUID:', cardUuid, typeof cardUuid);
 
-      // Call the purchase_digital_card RPC function
+      // Call RPC with validated UUID
       const { data, error } = await supabaseBrowser.rpc('purchase_digital_card', {
-        p_card_id: selectedCardId
+        p_card_id: cardUuid
       });
 
       if (error) {
@@ -3434,7 +3543,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           {!isLoggedIn
                             ? 'Log in to complete'
                             : isQuestCompleted(quest)
-                              ? (quest.quest_key === 'JOURNAL_ENTRY_OF_DAY' ? 'REFLECTED' : 'COMPLETED')
+                              ? (quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
+                                  ? 'REFLECTED'
+                                  : quest.quest_key === 'LISTEN_SONG_OF_DAY'
+                                    ? 'LISTENED'
+                                    : 'COMPLETED')
                               : quest.quest_key === 'JOURNAL_ENTRY_OF_DAY'
                                 ? 'REFLECT'
                                 : quest.quest_key === 'LISTEN_SONG_OF_DAY'
@@ -4265,13 +4378,61 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     })()}
                                     {PHYSICAL_ITEMS[currentMerchIndex].title.toUpperCase()}
                                   </div>
+                                  {/* Journey tier lock label */}
+                                  {(() => {
+                                    const item = PHYSICAL_ITEMS[currentMerchIndex];
+                                    const variants = getVariantOptions(item);
+                                    const selectedVariantValue = selectedVariants[currentMerchIndex]?.value || variants[0]?.value;
+                                    const lockLabel = getLockLabel({
+                                      item,
+                                      selectedVariantValue,
+                                      userJourney: profile?.journey
+                                    });
+                                    if (!lockLabel) return null;
+                                    return (
+                                      <div
+                                        className="text-xs text-yellow-400 font-medium mb-1 px-2 py-0.5 bg-black/40 rounded-full"
+                                        style={{ textShadow: '0 0 4px rgba(250,204,21,0.6)' }}
+                                      >
+                                        🔒 {lockLabel}
+                                      </div>
+                                    );
+                                  })()}
                                   <div className="relative flex items-center justify-center">
                                     <div
-                                      className="w-52 h-52 -mt-1 flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-200"
+                                      className={(() => {
+                                        const item = PHYSICAL_ITEMS[currentMerchIndex];
+                                        const variants = getVariantOptions(item);
+                                        const selectedVariantValue = selectedVariants[currentMerchIndex]?.value || variants[0]?.value;
+                                        const isLocked = !!getLockLabel({
+                                          item,
+                                          selectedVariantValue,
+                                          userJourney: profile?.journey
+                                        });
+                                        return `w-52 h-52 -mt-1 flex-shrink-0 transition-transform duration-200 ${
+                                          isLocked
+                                            ? 'cursor-not-allowed opacity-60'
+                                            : 'cursor-pointer hover:scale-105'
+                                        }`;
+                                      })()}
                                       onMouseEnter={() => {
                                         try { sfx.play('hover', 0.3); } catch {}
                                       }}
                                       onClick={() => {
+                                        const item = PHYSICAL_ITEMS[currentMerchIndex];
+                                        const variants = getVariantOptions(item);
+                                        const selectedVariantValue = selectedVariants[currentMerchIndex]?.value || variants[0]?.value;
+                                        const lockLabel = getLockLabel({
+                                          item,
+                                          selectedVariantValue,
+                                          userJourney: profile?.journey
+                                        });
+                                        // If locked, show message and don't open modal
+                                        if (lockLabel) {
+                                          try { sfx.play('error', 0.5); } catch {}
+                                          console.log('[MERCH] Item locked:', lockLabel);
+                                          return;
+                                        }
                                         try { sfx.play('click', 0.8); } catch {}
                                         const clicked = merchItems[currentMerchIndex];
                                         if (clicked) {
@@ -5622,7 +5783,33 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         />
                         {/* Merchandise Image - Back */}
                         <img
-                          src={(activeMerchItem.slug === 'beanie' ? ((activeMerchItem as any).profile_url_2 || activeMerchItem.image_url_2) : activeMerchItem.image_url_2) || activeMerchItem.image_url}
+                          src={(() => {
+                            // Find the selected variant's back image
+                            const activeMerchIndex = merchItems.findIndex(item => item.id === activeMerchItem.id);
+                            const selectedVar = activeMerchIndex >= 0 ? selectedVariants[activeMerchIndex] : null;
+                            if (selectedVar?.value && activeMerchItem.variant_options) {
+                              let opts = activeMerchItem.variant_options;
+                              if (typeof opts === 'string') {
+                                try { opts = JSON.parse(opts); } catch { opts = null; }
+                              }
+                              if (opts && typeof opts === 'object') {
+                                // Check colors array
+                                const colors = (opts as any).colors;
+                                if (Array.isArray(colors)) {
+                                  const match = colors.find((c: any) => c.value === selectedVar.value);
+                                  if (match?.images?.back) return match.images.back;
+                                }
+                                // Check variants array
+                                const variants = (opts as any).variants;
+                                if (Array.isArray(variants)) {
+                                  const match = variants.find((v: any) => v.value === selectedVar.value);
+                                  if (match?.images?.back) return match.images.back;
+                                }
+                              }
+                            }
+                            // Fallback to default back image
+                            return activeMerchItem.image_url_2 || activeMerchItem.image_url;
+                          })()}
                           alt={`${activeMerchItem.name} back`}
                           className="absolute inset-0 w-full h-full object-contain pointer-events-none"
                           style={{
