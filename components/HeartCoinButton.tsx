@@ -49,7 +49,8 @@ const merchItemToStoreItem = (merchItem: MerchItem): StoreItem => {
     physicalCost: merchItem.price_heartcoins,
     stripeUrl: merchItem.stripe_url || '',
     is_released: merchItem.is_active,
-    min_tier: merchItem.min_tier || 'wanderer'
+    min_tier: merchItem.min_tier || 'wanderer',
+    variant_options: merchItem.variant_options || null
   };
 };
 
@@ -64,10 +65,51 @@ interface StoreItem {
   priceUsd: number;
   priceHeartCoins: number;
   cost?: number;
+  physicalCost?: number;
   stripeUrl: string;
   is_released?: boolean;
   min_tier?: string;
+  variant_options?: any; // JSONB from database
 }
+
+// Helper to check if item has variants
+const hasVariants = (item: StoreItem): boolean => {
+  if (!item.variant_options) return false;
+  let opts = item.variant_options;
+  if (typeof opts === 'string') {
+    try { opts = JSON.parse(opts); } catch { return false; }
+  }
+  if (!opts || typeof opts !== 'object') return false;
+  return (Array.isArray(opts.variants) && opts.variants.length > 0) ||
+         (Array.isArray(opts.colors) && opts.colors.length > 0);
+};
+
+// Get variant options as normalized array
+const getVariantOptions = (item: StoreItem): Array<{type: string; value: string; label: string; image?: string}> => {
+  if (!item.variant_options) return [];
+  let opts = item.variant_options;
+  if (typeof opts === 'string') {
+    try { opts = JSON.parse(opts); } catch { return []; }
+  }
+  if (!opts || typeof opts !== 'object') return [];
+  if (Array.isArray(opts.variants) && opts.variants.length > 0) {
+    return opts.variants.map((v: any) => ({
+      type: v.type || 'design',
+      value: v.value,
+      label: v.label,
+      image: v.images?.main
+    }));
+  }
+  if (Array.isArray(opts.colors) && opts.colors.length > 0) {
+    return opts.colors.map((c: any) => ({
+      type: 'color',
+      value: c.value,
+      label: c.label,
+      image: c.images?.front || c.images?.main
+    }));
+  }
+  return [];
+};
 
 // Card interface for Supabase data
 interface Card {
@@ -4177,10 +4219,33 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               ) : (
                                 /* Normal Item Display */
                                 <div className="flex flex-col items-center w-full">
-                                  <div 
-                                    className="text-center text-white font-bold text-lg mb-1"
+                                  {/* Title row with variant toggle */}
+                                  <div
+                                    className="flex items-center justify-center gap-2 text-white font-bold text-lg mb-1"
                                     style={{ textShadow: '0 0 6px rgba(255,255,255,0.6)' }}
                                   >
+                                    {/* Variant toggle pills - to the LEFT of title */}
+                                    {hasVariants(PHYSICAL_ITEMS[currentMerchIndex]) && (
+                                      <div className="flex items-center gap-1 bg-black/40 rounded-full px-1.5 py-0.5">
+                                        {getVariantOptions(PHYSICAL_ITEMS[currentMerchIndex]).map((opt) => {
+                                          const isColor = opt.type === 'color';
+                                          const colorMap: Record<string, string> = {
+                                            black: '#1a1a1a', blue: '#3b82f6', pink: '#ec4899',
+                                            yellow: '#fbbf24', red: '#ef4444', white: '#ffffff'
+                                          };
+                                          const dotColor = isColor ? (colorMap[opt.value.toLowerCase()] || '#888') : null;
+                                          return (
+                                            <button
+                                              key={opt.value}
+                                              className="w-4 h-4 rounded-full border border-white/50 hover:scale-110 transition-transform"
+                                              style={{ backgroundColor: dotColor || '#666' }}
+                                              title={opt.label}
+                                              aria-label={`Select ${opt.label}`}
+                                            />
+                                          );
+                                        })}
+                                      </div>
+                                    )}
                                     {PHYSICAL_ITEMS[currentMerchIndex].title.toUpperCase()}
                                   </div>
                                   <div className="relative flex items-center justify-center">

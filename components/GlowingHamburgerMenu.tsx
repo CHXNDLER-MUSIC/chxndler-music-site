@@ -143,7 +143,7 @@ export default function GlowingHamburgerMenu({ onItemClick, externalIsOpen, onMe
   };
 
   return (
-    <div ref={menuRef} className="fixed top-1/2 -translate-y-1/2 left-4 z-[2147483650]" style={{ top: '32px' }}>
+    <div ref={menuRef} className="fixed top-1/2 -translate-y-1/2 left-4 z-[100010]" style={{ top: '32px' }}>
       {/* Hamburger Button */}
       <button
         onClick={toggleMenu}

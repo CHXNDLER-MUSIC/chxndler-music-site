@@ -5,6 +5,17 @@
 
 import { markHeartcoinCelebrationStarted, isHeartcoinCelebrationActive } from './celebrationQueue';
 
+// ============================================================================
+// DEBUG FLAG - Toggle to enable/disable debug logging
+// ============================================================================
+const DEBUG_CELEBRATIONS = true; // Set to false in production
+
+function debugCelebration(message: string, data?: any) {
+  if (DEBUG_CELEBRATIONS) {
+    console.log(`[HEARTCOIN_CELEBRATION] ${message}`, data ?? "");
+  }
+}
+
 export interface HeartCoinCelebrationDetail {
   amount: number;
 }
@@ -24,6 +35,7 @@ const CELEBRATION_DEDUP_WINDOW_MS = 4000;
  */
 export function suppressNextHeartcoinCelebration(): void {
   suppressCelebration = true;
+  debugCelebration("Suppression enabled");
   // Auto-reset after 5 seconds in case something goes wrong
   setTimeout(() => {
     suppressCelebration = false;
@@ -36,6 +48,7 @@ export function suppressNextHeartcoinCelebration(): void {
  */
 export function clearHeartcoinCelebrationSuppression(): void {
   suppressCelebration = false;
+  debugCelebration("Suppression cleared");
 }
 
 /**
@@ -59,19 +72,43 @@ export function triggerHeartCoinCelebration(amount: number): void {
 
   // Check if celebrations are suppressed
   if (suppressCelebration) {
+    debugCelebration("COIN_CELEBRATION_SKIPPED", {
+      amount,
+      reason: "suppressed"
+    });
     suppressCelebration = false; // Reset the flag
     return;
   }
 
   // If a HeartCoin celebration is already active or recently fired, skip
   const now = Date.now();
-  if (isHeartcoinCelebrationActive() || (now - lastCelebrationAt) < CELEBRATION_DEDUP_WINDOW_MS) {
+  const timeSinceLastCelebration = now - lastCelebrationAt;
+
+  if (isHeartcoinCelebrationActive()) {
+    debugCelebration("COIN_CELEBRATION_SKIPPED", {
+      amount,
+      reason: "already_active"
+    });
+    return;
+  }
+
+  if (timeSinceLastCelebration < CELEBRATION_DEDUP_WINDOW_MS) {
+    debugCelebration("COIN_CELEBRATION_SKIPPED", {
+      amount,
+      reason: "dedup_window",
+      timeSinceLastMs: timeSinceLastCelebration
+    });
     return;
   }
 
   // Mark that a HeartCoin celebration is starting (for queue coordination)
   markHeartcoinCelebrationStarted();
   lastCelebrationAt = now;
+
+  debugCelebration("COIN_CELEBRATION", {
+    amount,
+    timestamp: now
+  });
 
   const detail: HeartCoinCelebrationDetail = { amount };
   const event = new CustomEvent(HEARTCOIN_CELEBRATION_EVENT, { detail });

@@ -1842,8 +1842,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
 
       {/* Element Name Display - positioned on right side */}
       {showFullCollection && selectedElement && getFilteredCards().length > 0 && getFilteredCards()[currentCardIndex] && (
-        <div 
-          className="fixed z-[2147483645]"
+        <div
+          className="fixed z-[100004]"
           style={{
             right: '5vw',
             bottom: '35vh',

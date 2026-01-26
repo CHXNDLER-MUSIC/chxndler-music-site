@@ -821,7 +821,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
   return (
     <div
-      className="fixed z-[2147483647] flex items-stretch justify-center pointer-events-none"
+      className="fixed z-[100005] flex items-stretch justify-center pointer-events-none"
       style={{
         top: 0,
         left: 0,

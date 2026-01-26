@@ -1159,14 +1159,14 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     <>
       {/* Backdrop overlay */}
       <div
-        className="fixed inset-0 z-[99999998]"
+        className="fixed inset-0 z-[100003]"
         style={{ cursor: 'pointer' }}
         onClick={onClose}
       />
 
       {/* Main badges container - spans from profile bar to light beam */}
       <div
-        className="fixed z-[99999999] flex justify-center"
+        className="fixed z-[100004] flex justify-center"
         style={{
           top: 'var(--profile-bar-boundary, 64px)',
           bottom: 'var(--display-touch-top, 36%)',

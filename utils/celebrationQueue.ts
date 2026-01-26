@@ -4,6 +4,17 @@
  * HeartCoin celebrations have priority and badge celebrations wait for them to finish.
  */
 
+// ============================================================================
+// DEBUG FLAG - Toggle to enable/disable debug logging
+// ============================================================================
+const DEBUG_CELEBRATIONS = true; // Set to false in production
+
+function debugQueue(message: string, data?: any) {
+  if (DEBUG_CELEBRATIONS) {
+    console.log(`[CELEBRATION_QUEUE] ${message}`, data ?? "");
+  }
+}
+
 // HeartCoin celebration duration in ms
 const HEARTCOIN_CELEBRATION_DURATION = 3000;
 
@@ -14,6 +25,7 @@ let heartcoinCelebrationEndTime: number = 0;
 interface PendingBadgeCelebration {
   badgeImage: string;
   badgeTitle: string;
+  queuedAt: number;
 }
 const badgeCelebrationQueue: PendingBadgeCelebration[] = [];
 
@@ -33,6 +45,10 @@ let suppressionTimeout: NodeJS.Timeout | null = null;
  */
 export function markHeartcoinCelebrationStarted(): void {
   heartcoinCelebrationEndTime = Date.now() + HEARTCOIN_CELEBRATION_DURATION;
+  debugQueue("HeartCoin celebration started", {
+    endTime: heartcoinCelebrationEndTime,
+    duration: HEARTCOIN_CELEBRATION_DURATION
+  });
 }
 
 /**
@@ -61,27 +77,48 @@ export function queueBadgeCelebration(badgeImage: string, badgeTitle: string): v
 
   // Check if celebrations are suppressed (e.g., during tour)
   if (suppressCelebrations) {
-    console.log(`🏅 Badge "${badgeTitle}" celebration suppressed, marking as celebrated but skipping display`);
+    debugQueue("BADGE_CELEBRATION_SKIPPED_DUP", {
+      badge_title: badgeTitle,
+      reason: "suppressed"
+    });
     celebratedBadgeTitles.add(badgeTitle); // Still mark as celebrated to prevent future attempts
     return;
   }
 
   // Prevent duplicate celebrations for the same badge
   if (celebratedBadgeTitles.has(badgeTitle)) {
-    console.log(`🏅 Badge "${badgeTitle}" already celebrated this session, skipping`);
+    debugQueue("BADGE_CELEBRATION_SKIPPED_DUP", {
+      badge_title: badgeTitle,
+      reason: "already_celebrated_this_session"
+    });
     return;
   }
 
   // Also check if already in queue
   const alreadyInQueue = badgeCelebrationQueue.some(item => item.badgeTitle === badgeTitle);
   if (alreadyInQueue) {
-    console.log(`🏅 Badge "${badgeTitle}" already in celebration queue, skipping`);
+    debugQueue("BADGE_CELEBRATION_SKIPPED_DUP", {
+      badge_title: badgeTitle,
+      reason: "already_in_queue"
+    });
     return;
   }
 
   // Mark as celebrated and add to queue
   celebratedBadgeTitles.add(badgeTitle);
-  badgeCelebrationQueue.push({ badgeImage, badgeTitle });
+  badgeCelebrationQueue.push({ badgeImage, badgeTitle, queuedAt: Date.now() });
+
+  debugQueue("BADGE_CELEBRATION_ENQUEUE", {
+    badge_title: badgeTitle,
+    queue_length: badgeCelebrationQueue.length
+  });
+
+  // Log queue state
+  debugQueue("CELEBRATION_QUEUE_STATE", {
+    len: badgeCelebrationQueue.length,
+    active: isProcessingQueue ? "processing" : "idle",
+    heartcoin_active: isHeartcoinCelebrationActive()
+  });
 
   // Start processing if not already
   processQueue();
@@ -95,22 +132,32 @@ function processQueue(): void {
   if (badgeCelebrationQueue.length === 0) return;
 
   isProcessingQueue = true;
+  debugQueue("Starting queue processing");
 
   const processNext = () => {
     if (badgeCelebrationQueue.length === 0) {
       isProcessingQueue = false;
+      debugQueue("Queue empty, stopping processor");
       return;
     }
 
     const remainingTime = getHeartcoinCelebrationRemainingTime();
 
     if (remainingTime > 0) {
+      debugQueue("Waiting for HeartCoin celebration to finish", {
+        remainingMs: remainingTime
+      });
       // Wait for HeartCoin celebration to finish + small buffer
       setTimeout(processNext, remainingTime + 500);
     } else {
       // No active HeartCoin celebration, trigger the badge celebration
       const next = badgeCelebrationQueue.shift();
       if (next) {
+        debugQueue("Processing badge celebration", {
+          badge_title: next.badgeTitle,
+          wait_time_ms: Date.now() - next.queuedAt
+        });
+
         // Import and trigger
         import('@/utils/badgeCelebration').then(({ triggerBadgeCelebration }) => {
           triggerBadgeCelebration(next.badgeImage, next.badgeTitle);
@@ -143,6 +190,7 @@ function processQueue(): void {
  */
 export function clearBadgeCelebrationQueue(): void {
   badgeCelebrationQueue.length = 0;
+  debugQueue("Queue cleared");
 }
 
 /**
@@ -162,9 +210,10 @@ export function suppressBadgeCelebrations(durationMs: number = 10000): void {
   suppressionTimeout = setTimeout(() => {
     suppressCelebrations = false;
     suppressionTimeout = null;
+    debugQueue("Suppression auto-cleared");
   }, durationMs);
 
-  console.log(`🏅 Badge celebrations suppressed for ${durationMs}ms`);
+  debugQueue("Badge celebrations suppressed", { durationMs });
 }
 
 /**
@@ -176,6 +225,7 @@ export function enableBadgeCelebrations(): void {
     clearTimeout(suppressionTimeout);
     suppressionTimeout = null;
   }
+  debugQueue("Badge celebrations enabled");
 }
 
 /**
@@ -184,4 +234,13 @@ export function enableBadgeCelebrations(): void {
  */
 export function areBadgeCelebrationsSuppressed(): boolean {
   return suppressCelebrations;
+}
+
+/**
+ * Clears the set of celebrated badge titles.
+ * Useful for testing or when you want to allow re-celebrations.
+ */
+export function clearCelebratedBadges(): void {
+  celebratedBadgeTitles.clear();
+  debugQueue("Celebrated badges cleared");
 }

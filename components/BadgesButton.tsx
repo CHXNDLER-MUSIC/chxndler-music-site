@@ -207,7 +207,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
         </button>
         
         {isActive && (
-          <div className="fixed inset-0 z-[2147483647] flex items-center justify-center">
+          <div className="fixed inset-0 z-[100005] flex items-center justify-center">
           <div className="text-pink-400 text-xl">Loading badges...</div>
           </div>
         )}
@@ -242,7 +242,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
         </button>
         
         {isActive && (
-          <div className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="fixed inset-0 z-[100005] flex items-center justify-center bg-black bg-opacity-50">
             <div className="bg-gray-800 rounded-lg p-6 max-w-sm mx-4 text-center">
               <div className="text-red-400 text-lg mb-4">⚠️ Connection Error</div>
               <div className="text-gray-300 mb-4">{error}</div>
@@ -379,7 +379,7 @@ export default function BadgesButton({ asChild = false, children, onClick, onHov
       {/* Badges Modal */}
       {isActive && (
         <div
-          className="fixed left-0 right-0 z-[2147483647] flex items-center justify-center"
+          className="fixed left-0 right-0 z-[100005] flex items-center justify-center"
           style={{
             top: 'var(--profile-bar-boundary, 64px)',
             bottom: 'calc(var(--display-touch-top) + 60px)'

@@ -113,10 +113,10 @@ export default function JourneyModal({ open, onClose, onBeamColorChange }: Journ
   return (
     <>
       {/* Hologram base glow with tier color */}
-      <div 
+      <div
         className="fixed inset-0 flex items-center justify-center"
         style={{
-          zIndex: 2147483646,
+          zIndex: 100004,
           pointerEvents: 'none',
           paddingTop: '-300px'
         }}
@@ -131,8 +131,8 @@ export default function JourneyModal({ open, onClose, onBeamColorChange }: Journ
         />
       </div>
       
-      <div 
-        className="fixed inset-0 z-[2147483647] flex justify-center"
+      <div
+        className="fixed inset-0 z-[100005] flex justify-center"
         style={{
           paddingTop: '70px'
         }}

@@ -58,14 +58,14 @@ export default function PopoutShell({ title, onClose, children, overlayContent, 
     <>
       {/* Backdrop overlay - no dimming */}
       <div
-        className="fixed inset-0 z-[99999998]"
+        className="fixed inset-0 z-[100003]"
         style={{ cursor: 'pointer' }}
         onClick={onClose}
       />
 
       {/* Main modal container - exact copy from Binder */}
       <div
-        className="fixed inset-0 z-[99999999] flex items-start justify-center"
+        className="fixed inset-0 z-[100004] flex items-start justify-center"
         style={{
           paddingTop: topPadding
         }}

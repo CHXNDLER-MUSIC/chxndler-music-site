@@ -101,7 +101,7 @@ export const TOUR_STEPS: TourStep[] = [
     requiresMenuClosed: true
   },
   
-  // Step 8: NEW - Music Power Button (menu stays closed)
+  // Step 8: Music Power Button (menu stays closed)
   {
     id: "music-dropdown",
     selector: "[data-tour-id='music-power-button']",
@@ -742,7 +742,7 @@ export default function OnboardingTour({
         .tour-highlight {
           z-index: 2147483647 !important;
           animation: tourGlow 2.2s ease-in-out infinite !important;
-          border-radius: 12px !important;
+          border-radius: inherit !important;
           box-shadow:
             0 0 0 3px rgba(252,84,175,0.7) !important,
             0 0 24px rgba(252,84,175,0.9) !important,
@@ -763,7 +763,7 @@ export default function OnboardingTour({
         .tour-highlight-no-spin {
           z-index: 2147483647 !important;
           animation: tourGlow 2.2s ease-in-out infinite !important;
-          border-radius: 12px !important;
+          border-radius: inherit !important;
           box-shadow:
             0 0 0 3px rgba(252,84,175,0.7) !important,
             0 0 24px rgba(252,84,175,0.9) !important,

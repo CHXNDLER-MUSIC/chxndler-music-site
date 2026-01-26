@@ -13,6 +13,7 @@ import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
 import { getAllQuestsForUser } from "@/lib/bonusQuests";
 import { getNYDateString } from "@/lib/time";
 import LoginModal from "@/components/LoginModal";
+import { useHeartcoinBalance } from "@/providers/HeartcoinBalanceProvider";
 
 type Props = {
   onBack: () => void;
@@ -291,6 +292,13 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { questStatus, setQuestStatus, todaysElement, todaysQuestion, serverDateKey, songOfDayId, songOfDayTitle, songOfDaySlug, refreshSongOfDayState } = useQuestStatus();
   const { refreshProfile } = useProfile();
+
+  // Use centralized balance provider for Song of Day completion state
+  // This provides real-time updates without requiring page refresh
+  const { songOfDayCompletedToday } = useHeartcoinBalance();
+
+  // Merge provider state with local state - provider takes precedence for SOTD
+  const effectiveSongOfDayCompleted = songOfDayCompletedToday || questStatus.songOfDay;
 
   // Load all quests from server (both DAILY and BONUS categories)
   const loadAllQuests = async (userId: string | null) => {
@@ -1036,7 +1044,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
-                    if (questStatus.songOfDay) return;
+                    if (effectiveSongOfDayCompleted) return;
                     try { sfx.play('click', 0.8); } catch {}
                     // Close popup and play the song
                     onCloseHeartCoinPopup?.();
@@ -1051,16 +1059,16 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                     // After starting playback, do a soft refresh soon to catch quick completions
                     setTimeout(() => { try { refreshSongOfDayState(); } catch {} }, 1500);
                   }}
-                  disabled={questStatus.songOfDay || loading}
+                  disabled={effectiveSongOfDayCompleted || loading}
                   className={`px-4 py-2 rounded text-sm font-bold transition-all duration-200 ${
-                    questStatus.songOfDay
+                    effectiveSongOfDayCompleted
                       ? 'border-2 text-green-400 cursor-default'
                       : !isAuthenticated
                         ? 'bg-yellow-600/30 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300 cursor-pointer'
                         : 'bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300 cursor-pointer'
                   }`}
                   style={{
-                    ...(questStatus.songOfDay ? {
+                    ...(effectiveSongOfDayCompleted ? {
                       background: 'rgba(0, 255, 0, 0.2)',
                       borderColor: '#00FF00',
                       color: '#00FF00',
@@ -1076,7 +1084,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                     })
                   }}
                 >
-                  {questStatus.songOfDay
+                  {effectiveSongOfDayCompleted
                     ? 'LISTENED'
                     : !isAuthenticated
                       ? 'LOG IN'
@@ -1085,21 +1093,21 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                 </button>
                 <div
                   className={`font-bold text-sm ${
-                    questStatus.songOfDay
+                    effectiveSongOfDayCompleted
                       ? 'text-green-400'
                       : !isAuthenticated
                         ? 'text-yellow-400'
                         : 'text-pink-400'
                   }`}
                   style={{
-                    textShadow: questStatus.songOfDay
+                    textShadow: effectiveSongOfDayCompleted
                       ? '0 0 4px rgba(0,255,0,0.6)'
                       : !isAuthenticated
                         ? '0 0 4px rgba(255,255,0,0.6)'
                         : '0 0 4px rgba(252,84,175,0.6)'
                   }}
                 >
-                  {questStatus.songOfDay ? '✓ Complete' : '+1 HeartCoin'}
+                  {effectiveSongOfDayCompleted ? '✓ Complete' : '+1 HeartCoin'}
                 </div>
               </div>
             </div>

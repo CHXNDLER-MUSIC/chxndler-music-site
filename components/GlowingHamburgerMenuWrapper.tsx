@@ -289,7 +289,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
       <div
         className="fixed inset-0"
         style={{
-          zIndex: 2147483646,
+          zIndex: 100009,
           cursor: 'default',
           pointerEvents: clickShieldActive ? 'auto' : 'none',
           opacity: clickShieldActive ? 1 : 0,
