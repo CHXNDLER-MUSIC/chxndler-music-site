@@ -50,6 +50,7 @@ export async function recordSongEndedPlay(songId: string): Promise<boolean> {
     }
 
     // After increment, refresh progress row and SOTD claim for today (NY)
+    // Use retry logic because the backend trigger may be async
     const nyDay = getNYDateString();
     try {
       await supabaseBrowser
@@ -61,18 +62,35 @@ export async function recordSongEndedPlay(songId: string): Promise<boolean> {
         .limit(1);
     } catch {}
 
-    try {
-      const { count } = await supabaseBrowser
-        .from('user_song_of_day_claims')
-        .select('*', { head: true, count: 'exact' })
-        .eq('user_id', userId)
-        .eq('day', nyDay);
-      // Notify UI to refresh
-      window.dispatchEvent(new CustomEvent('songOfDay:refresh'));
-      if ((count ?? 0) > 0) {
-        window.dispatchEvent(new CustomEvent('dailySongQuestCompleted', { detail: { day: nyDay } }));
-      }
-    } catch {}
+    // Check for claim with retry logic (backend trigger may need time to complete)
+    let claimFound = false;
+    const maxRetries = 4;
+    const delays = [300, 600, 1000, 1500];
+
+    for (let i = 0; i < maxRetries && !claimFound; i++) {
+      // Wait before checking (gives backend trigger time to complete)
+      await new Promise(resolve => setTimeout(resolve, delays[i]));
+
+      try {
+        const { count } = await supabaseBrowser
+          .from('user_song_of_day_claims')
+          .select('*', { head: true, count: 'exact' })
+          .eq('user_id', userId)
+          .eq('day', nyDay);
+
+        if ((count ?? 0) > 0) {
+          claimFound = true;
+          console.log(`[DailySongProgress] Claim found after ${i + 1} attempt(s)`);
+        }
+      } catch {}
+    }
+
+    // Notify UI to refresh
+    window.dispatchEvent(new CustomEvent('songOfDay:refresh'));
+    if (claimFound) {
+      console.log('[DailySongProgress] Dispatching dailySongQuestCompleted event');
+      window.dispatchEvent(new CustomEvent('dailySongQuestCompleted', { detail: { day: nyDay } }));
+    }
 
     return true;
   } catch (err) {

@@ -393,12 +393,21 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
           table: "user_song_of_day_claims",
           filter: `user_id=eq.${currentUserId}`,
         },
-        (payload) => {
+        async (payload) => {
           debugBalance("SOTD claim INSERT received", payload);
           // Check if this claim is for today
           if (payload.new?.day === nyDay) {
             debugBalance("QUEST_SOD_STATE", { completed: true, source: "realtime" });
             setSongOfDayCompletedToday(true);
+
+            // Also refetch balance to trigger celebration (backend awards heartcoin with claim)
+            debugBalance("Triggering balance refetch after SOTD claim via realtime");
+            // Small delay to ensure backend has updated the balance
+            await new Promise(resolve => setTimeout(resolve, 300));
+            const newBalance = await fetchBalance();
+            if (newBalance !== null) {
+              updateBalanceWithCelebration(newBalance, "realtime SOTD claim");
+            }
           }
         }
       )
@@ -408,7 +417,7 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
 
     sotdChannelRef.current = sotdChannel;
     channelsSetupRef.current = true;
-  }, [updateBalanceWithCelebration]);
+  }, [updateBalanceWithCelebration, fetchBalance]);
 
   // ============================================================================
   // Cleanup Realtime Subscriptions

@@ -1767,10 +1767,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     const selectedCard = targetCard || enlargedCard;
 
     // Extract UUID from selectedCard - it may be a string or an object with .id
-    const cardUuid =
+    // Trim whitespace and ensure it's a clean string
+    const rawCardId =
       typeof selectedCard === 'string'
         ? selectedCard
         : selectedCard?.id;
+    const cardUuid = typeof rawCardId === 'string' ? rawCardId.trim() : null;
+
+    // UUID v4 format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (8-4-4-4-12 hex digits)
+    const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
     // Guards with logs for every early return
     if (isPurchasing) {
@@ -1788,8 +1793,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Please log in to buy cards', type: 'error' } })); } catch {}
       return;
     }
-    // Validate UUID format before RPC
-    if (!cardUuid || !/^[0-9a-fA-F-]{36}$/.test(cardUuid)) {
+    // Validate UUID format before RPC - must be non-null, non-empty, and valid UUID format
+    if (!cardUuid || !UUID_REGEX.test(cardUuid)) {
       console.error('[CARD PURCHASE] Invalid card UUID:', cardUuid);
       try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Purchase failed: invalid card id', type: 'error' } })); } catch {}
       return;

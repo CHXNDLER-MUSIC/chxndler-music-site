@@ -587,25 +587,32 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
 
   const handleConfirmPurchase = async () => {
     if (!selectedPurchaseType || !profile) return;
-    
+
     const cost = getCost(selectedPurchaseType);
     const cards = getFilteredCards();
     const currentCard = cards[currentCardIndex];
-    
+
     if (!currentCard) return;
-    
-    const cardId = currentCard.id || currentCard.card_id;
-    if (!cardId) {
-      console.error('Card ID not found for purchase');
+
+    // Extract and trim the card ID
+    const rawCardId = currentCard.id || currentCard.card_id;
+    const cardId = typeof rawCardId === 'string' ? rawCardId.trim() : null;
+
+    // UUID v4 format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (8-4-4-4-12 hex digits)
+    const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+    if (!cardId || !UUID_REGEX.test(cardId)) {
+      console.error('[BINDER PURCHASE] Invalid card UUID:', cardId);
+      alert('Purchase failed: invalid card id');
       return;
     }
-    
+
     try {
       let response;
-      
+
       if (selectedPurchaseType === 'digital') {
-        // Use new digital card RPC
-        response = await supabaseBrowser.rpc('purchase_digital_card_with_heartcoins', {
+        // Use digital card RPC with validated UUID
+        response = await supabaseBrowser.rpc('purchase_digital_card', {
           p_card_id: cardId,
         });
       } else {

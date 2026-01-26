@@ -23,6 +23,11 @@ const SEEN_BADGES_KEY = 'heartverse_seen_badge_celebrations';
 const SEEN_BADGES_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 // ============================================================================
+// Batch Window - Only celebrate first badge when multiple unlock at once
+// ============================================================================
+const BATCH_WINDOW_MS = 2000; // 2 second window to group rapid unlocks
+
+// ============================================================================
 // Types
 // ============================================================================
 export interface BadgeCelebrationItem {
@@ -129,6 +134,10 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
   const subscribedUserIdRef = useRef<string | null>(null);
   // Flag to track if initialization is in progress
   const initializingRef = useRef<boolean>(false);
+  // Track when the last badge was queued to implement batch window
+  const lastBadgeQueuedTimeRef = useRef<number>(0);
+  // Track badge IDs that were skipped due to batch window (for logging)
+  const skippedInBatchRef = useRef<Set<string>>(new Set());
 
   const pop = useCallback(() => {
     setQueue((prev) => prev.slice(1));
@@ -247,6 +256,21 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
               return;
             }
 
+            // Batch window: only celebrate the first badge when multiple unlock rapidly
+            const now = Date.now();
+            const timeSinceLastBadge = now - lastBadgeQueuedTimeRef.current;
+            if (timeSinceLastBadge < BATCH_WINDOW_MS && lastBadgeQueuedTimeRef.current > 0) {
+              // Another badge was just queued - skip this one to avoid celebration spam
+              skippedInBatchRef.current.add(newRow.badge_id);
+              debugCelebration("BADGE_CELEBRATION_SKIPPED_BATCH", {
+                badgeId: newRow.badge_id,
+                timeSinceLastMs: timeSinceLastBadge,
+                reason: "batch_window",
+                totalSkippedInBatch: skippedInBatchRef.current.size
+              });
+              return;
+            }
+
             // Fetch badge details from public.badges
             const { data: badge, error } = await supabaseBrowser
               .from('badges')
@@ -273,6 +297,11 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
               badge_name: celebrationItem.badgeName,
               earned_at: celebrationItem.earnedAt
             });
+
+            // Update batch window timestamp - this badge will be celebrated
+            lastBadgeQueuedTimeRef.current = Date.now();
+            // Clear skipped badges from any previous batch
+            skippedInBatchRef.current.clear();
 
             // Add to queue
             setQueue((prev) => {

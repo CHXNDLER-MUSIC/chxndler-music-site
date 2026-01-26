@@ -2257,6 +2257,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     'socks': 'DREAMER',
                     'house party poster': 'DREAMER',
                     'necklace': 'LOVER',
+                    'beanie': 'DREAMER',
                   };
                   const itemNameLower = currentItem.name.toLowerCase();
                   const dbTier = (currentItem.min_journey_tier || currentItem.min_tier || '').toUpperCase();
@@ -2306,8 +2307,21 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             return (
                               <button
                                 key={opt.value}
-                                onClick={() => {
-                                  try { sfx.play('click', 0.5); } catch {}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  console.log('[COLOR DOT CLICK]', opt.value);
+                                  try { sfx.play('click', 0.5); } catch (err) { console.error('SFX error:', err); }
+                                  setSelectedVariantForItem(currentItem.id, opt);
+                                }}
+                                onTouchStart={(e) => {
+                                  e.stopPropagation();
+                                }}
+                                onTouchEnd={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  console.log('[COLOR DOT TOUCH]', opt.value);
+                                  try { sfx.play('click', 0.5); } catch (err) { console.error('SFX error:', err); }
                                   setSelectedVariantForItem(currentItem.id, opt);
                                 }}
                                 onMouseEnter={() => {
@@ -2315,7 +2329,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                                 }}
                                 aria-label={`Choose ${currentItem.name} version: ${opt.label}`}
                                 title={opt.label}
-                                className={`px-2 py-1 text-xs font-bold rounded-md transition-all duration-200 ${
+                                style={{ touchAction: 'manipulation' }}
+                                className={`relative z-10 px-2 py-1 text-xs font-bold rounded-md transition-all duration-200 ${
                                   isSelected
                                     ? 'bg-[#F2EF1D] text-black shadow-[0_0_10px_rgba(242,239,29,0.5)]'
                                     : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
@@ -2503,6 +2518,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     'socks': 'DREAMER',
                     'house party poster': 'DREAMER',
                     'necklace': 'LOVER',
+                    'beanie': 'DREAMER',
                   };
                   const detailItemNameLower = item.name.toLowerCase();
                   const detailDbTier = (item.min_journey_tier || item.min_tier || '').toUpperCase();
@@ -3065,6 +3081,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     'socks': 'DREAMER',
                     'house party poster': 'DREAMER',
                     'necklace': 'LOVER',
+                    'beanie': 'DREAMER',
                   };
                   const enlargedItemNameLower = enlargedItem.name.toLowerCase();
                   const enlargedDbTier = (enlargedItem.min_tier || '').toUpperCase();

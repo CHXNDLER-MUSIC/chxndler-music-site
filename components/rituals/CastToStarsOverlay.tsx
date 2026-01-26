@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
 import { ElementType } from "@/components/planetarium/Pure3DPlanets";
 
@@ -57,6 +57,7 @@ export default function CastToStarsOverlay({
   const [phase, setPhase] = useState<"ring" | "star" | "flight" | "done">("ring");
   const [showParticles, setShowParticles] = useState(false);
   const starControls = useAnimation();
+  const isMountedRef = useRef(false);
 
   // Get element colors (fallback to heart)
   const colors = ELEMENT_COLORS[element || "heart"] || ELEMENT_COLORS.heart;
@@ -82,42 +83,103 @@ export default function CastToStarsOverlay({
     return { x: midX, y: midY };
   }, [startPosition, targetPosition]);
 
+  // Track mount state for React 18 Strict Mode compatibility
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   // Animation sequence controller
   useEffect(() => {
-    const runAnimation = async () => {
-      // Phase 1: Sigil ring (~200ms)
-      await new Promise((resolve) => setTimeout(resolve, 200));
+    let cancelled = false;
 
-      // Phase 2: Star birth pause (~120ms)
-      setPhase("star");
-      await new Promise((resolve) => setTimeout(resolve, 120));
-
-      // Phase 3: Flight to planet (~400ms)
-      setPhase("flight");
-      setShowParticles(true);
-
-      // Animate star along curved path using keyframes
-      await starControls.start({
-        x: [startPosition.x, midpoint.x, targetPosition.x],
-        y: [startPosition.y, midpoint.y, targetPosition.y],
-        scale: [1, 1.2, 0.3],
-        opacity: [1, 1, 0],
-        transition: {
-          duration: 0.4,
-          ease: [0.4, 0, 0.2, 1], // cubic-bezier for smooth curve
-          times: [0, 0.5, 1],
-        },
+    // Helper to create cancellable delay
+    const delay = (ms: number): Promise<void> =>
+      new Promise((resolve) => {
+        const id = setTimeout(() => {
+          if (!cancelled && isMountedRef.current) {
+            resolve();
+          }
+        }, ms);
+        // Store timeout id for potential cleanup
+        return id;
       });
 
-      // Small buffer before cleanup
-      await new Promise((resolve) => setTimeout(resolve, 100));
+    // Helper to wait for next frame (ensures DOM is ready)
+    const waitForFrame = (): Promise<void> =>
+      new Promise((resolve) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (!cancelled && isMountedRef.current) {
+              resolve();
+            }
+          });
+        });
+      });
 
-      // Phase 4: Done - trigger completion callback
-      setPhase("done");
-      onComplete();
+    const runAnimation = async () => {
+      try {
+        // Wait for mount + frame before starting any animations
+        await waitForFrame();
+        if (cancelled || !isMountedRef.current) return;
+
+        // Phase 1: Sigil ring (~200ms)
+        await delay(200);
+        if (cancelled || !isMountedRef.current) return;
+
+        // Phase 2: Star birth pause (~120ms)
+        setPhase("star");
+        await delay(120);
+        if (cancelled || !isMountedRef.current) return;
+
+        // Phase 3: Flight to planet (~400ms)
+        setPhase("flight");
+        setShowParticles(true);
+
+        // Guard controls.start() with mount check
+        if (cancelled || !isMountedRef.current) return;
+
+        // Animate star along curved path using keyframes
+        await starControls.start({
+          x: [startPosition.x, midpoint.x, targetPosition.x],
+          y: [startPosition.y, midpoint.y, targetPosition.y],
+          scale: [1, 1.2, 0.3],
+          opacity: [1, 1, 0],
+          transition: {
+            duration: 0.4,
+            ease: [0.4, 0, 0.2, 1], // cubic-bezier for smooth curve
+            times: [0, 0.5, 1],
+          },
+        });
+
+        if (cancelled || !isMountedRef.current) return;
+
+        // Small buffer before cleanup
+        await delay(100);
+        if (cancelled || !isMountedRef.current) return;
+
+        // Phase 4: Done - trigger completion callback
+        setPhase("done");
+        onComplete();
+      } catch (error) {
+        // Silently handle animation interruption (e.g., unmount during animation)
+        // This prevents unhandled promise rejections when controls.start() is cancelled
+        if (!cancelled && isMountedRef.current) {
+          // Only log if it's a genuine error, not a cancellation
+          console.warn("CastToStarsOverlay animation interrupted:", error);
+        }
+      }
     };
 
     runAnimation();
+
+    // Cleanup: mark as cancelled and stop any running animations
+    return () => {
+      cancelled = true;
+      starControls.stop();
+    };
   }, [startPosition, midpoint, targetPosition, starControls, onComplete]);
 
   // Don't render if animation is complete
