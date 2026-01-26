@@ -138,6 +138,8 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
   const lastBadgeQueuedTimeRef = useRef<number>(0);
   // Track badge IDs that were skipped due to batch window (for logging)
   const skippedInBatchRef = useRef<Set<string>>(new Set());
+  // Track when the subscription was established - only celebrate badges earned AFTER this time
+  const subscriptionStartTimeRef = useRef<string | null>(null);
 
   const pop = useCallback(() => {
     setQueue((prev) => prev.slice(1));
@@ -153,6 +155,7 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
       }
       subscribedUserIdRef.current = null;
       initializingRef.current = false;
+      subscriptionStartTimeRef.current = null;
       return;
     }
 
@@ -215,6 +218,12 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
       // Subscribe to realtime INSERT events on user_badges AFTER initializing
       // Use a unique channel name that includes a timestamp to avoid conflicts
       const channelName = `user-badges-${userId}-${Date.now()}`;
+
+      // Record subscription start time - only celebrate badges earned AFTER this moment
+      // This prevents celebrating old badges on page load/refresh
+      subscriptionStartTimeRef.current = new Date().toISOString();
+      debugCelebration("Subscription start time set", { startTime: subscriptionStartTimeRef.current });
+
       channelRef.current = supabaseBrowser
         .channel(channelName)
         .on<UserBadgeInsert>(
@@ -232,8 +241,23 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
             debugCelebration("Received INSERT event", {
               badgeId: newRow.badge_id,
               earnedAt: newRow.earned_at,
-              key
+              key,
+              subscriptionStartTime: subscriptionStartTimeRef.current
             });
+
+            // CRITICAL: Only celebrate badges earned AFTER the subscription started
+            // This prevents celebrating old badges on page load/refresh (the main bug fix)
+            if (subscriptionStartTimeRef.current && newRow.earned_at < subscriptionStartTimeRef.current) {
+              debugCelebration("BADGE_CELEBRATION_SKIPPED", {
+                badgeId: newRow.badge_id,
+                reason: "earned_before_subscription",
+                earnedAt: newRow.earned_at,
+                subscriptionStart: subscriptionStartTimeRef.current
+              });
+              // Mark as seen to prevent future attempts
+              markBadgeAsSeen(newRow.badge_id, newRow.earned_at, seenBadgesRef.current);
+              return;
+            }
 
             // Skip if we've already seen this badge (prevents duplicates on reconnect/refresh)
             if (isBadgeSeen(newRow.badge_id, newRow.earned_at, seenBadgesRef.current)) {
@@ -340,6 +364,7 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
       }
       subscribedUserIdRef.current = null;
       initializingRef.current = false;
+      subscriptionStartTimeRef.current = null;
     };
   }, [userId]);
 

@@ -153,6 +153,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const [showRitualOverlay, setShowRitualOverlay] = useState(false);
   const [ritualStartPosition, setRitualStartPosition] = useState<{ x: number; y: number } | null>(null);
   const [pendingRewardData, setPendingRewardData] = useState<{ awarded: number } | null>(null);
+  // Ref to store pending reward amount - avoids stale closure issues in handleRitualComplete
+  const pendingRewardRef = useRef<number>(0);
 
   const today = getLocalDateString();
   const todayFormatted = getDisplayDateString(today);
@@ -439,7 +441,9 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
       // === RITUAL ANIMATION SEQUENCE ===
       // Store pending reward data for after animation completes
+      // Use both state and ref - ref ensures no stale closure issues
       if (awardedCoins > 0) {
+        pendingRewardRef.current = awardedCoins;
         setPendingRewardData({ awarded: awardedCoins });
       }
 
@@ -545,8 +549,11 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
     setRitualStartPosition(null);
 
     // Trigger reward celebration if there are pending coins
-    if (pendingRewardData && pendingRewardData.awarded > 0) {
-      triggerHeartCoinCelebration(pendingRewardData.awarded);
+    // Use ref to avoid stale closure issues (ref is always current)
+    const rewardAmount = pendingRewardRef.current;
+    if (rewardAmount > 0) {
+      triggerHeartCoinCelebration(rewardAmount);
+      pendingRewardRef.current = 0;
       setPendingRewardData(null);
     }
 
@@ -557,7 +564,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
     try {
       window.dispatchEvent(new CustomEvent('journalCompleted'));
     } catch {}
-  }, [pendingRewardData, onJournalCompleted]);
+  }, [onJournalCompleted]);
 
   const handleEntryClick = (entryId: string) => {
     sfx.play('click', 0.6);

@@ -228,7 +228,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
   // Fixed size for START variant so it does not adjust on small screens
   const startFixedSizePx = 140;
   // Fixed vertical offset for START relative to buttons baseline so it doesn't drift by screen size
-  const startBottomOffsetPx = 130; // place START below the baseline consistently
+  const startBottomOffsetPx = 145; // place START below the baseline consistently
   // Make wheel responsive with better minimum size scaling for small screens
   // Increase scale on narrower viewports so the wheel doesn't shrink as much
   const scaleFactor = (() => {
@@ -374,12 +374,11 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
         alt=""
         aria-hidden="true"
         style={{
-          position: "absolute",
+          position: "fixed",
           bottom: 0,
           left: "50%",
-          transform: "translateX(-50%)",
-          // Slightly smaller than natural size
-          width: "90%",
+          transform: "translateX(-50%) scale(0.78)",
+          transformOrigin: "bottom center",
           maxWidth: "none",
           pointerEvents: "none",
           // Above cockpit (z-20) but below START button (z-9999)

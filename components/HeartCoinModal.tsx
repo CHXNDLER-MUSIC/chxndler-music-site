@@ -2257,11 +2257,27 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     'socks': 'DREAMER',
                     'house party poster': 'DREAMER',
                     'necklace': 'LOVER',
-                    'beanie': 'DREAMER',
+                    'beanie': 'DREAMER', // Default, but beanie uses color-based tiers below
                   };
+
+                  // Beanie color-specific tier requirements
+                  const BEANIE_COLOR_TIERS: Record<string, string> = {
+                    'blue': 'DREAMER',
+                    'black': 'LOVER',
+                  };
+
                   const itemNameLower = currentItem.name.toLowerCase();
                   const dbTier = (currentItem.min_journey_tier || currentItem.min_tier || '').toUpperCase();
-                  const titleItemMinTier = dbTier || ITEM_TIER_OVERRIDES[itemNameLower] || 'WANDERER';
+
+                  // For beanie, use the selected variant color to determine tier
+                  let titleItemMinTier = dbTier || ITEM_TIER_OVERRIDES[itemNameLower] || 'WANDERER';
+                  if (itemNameLower === 'beanie' && selectedVariant) {
+                    const colorValue = selectedVariant.value?.toLowerCase();
+                    if (colorValue && BEANIE_COLOR_TIERS[colorValue]) {
+                      titleItemMinTier = BEANIE_COLOR_TIERS[colorValue];
+                    }
+                  }
+
                   const isTitleItemLocked = isItemLockedForJourney(profile?.journey, titleItemMinTier);
 
                   // Debug: log variant info
@@ -2518,11 +2534,30 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     'socks': 'DREAMER',
                     'house party poster': 'DREAMER',
                     'necklace': 'LOVER',
-                    'beanie': 'DREAMER',
+                    'beanie': 'DREAMER', // Default, but beanie uses color-based tiers below
                   };
+
+                  // Beanie color-specific tier requirements
+                  const DETAIL_BEANIE_COLOR_TIERS: Record<string, string> = {
+                    'blue': 'DREAMER',
+                    'black': 'LOVER',
+                  };
+
                   const detailItemNameLower = item.name.toLowerCase();
                   const detailDbTier = (item.min_journey_tier || item.min_tier || '').toUpperCase();
-                  const itemMinTier = detailDbTier || DETAIL_ITEM_TIER_OVERRIDES[detailItemNameLower] || 'WANDERER';
+
+                  // Get selected variant for this item (for beanie color-based tiers)
+                  const detailSelectedVariant = selectedVariants[item.id] || null;
+
+                  // For beanie, use the selected variant color to determine tier
+                  let itemMinTier = detailDbTier || DETAIL_ITEM_TIER_OVERRIDES[detailItemNameLower] || 'WANDERER';
+                  if (detailItemNameLower === 'beanie' && detailSelectedVariant) {
+                    const colorValue = detailSelectedVariant.value?.toLowerCase();
+                    if (colorValue && DETAIL_BEANIE_COLOR_TIERS[colorValue]) {
+                      itemMinTier = DETAIL_BEANIE_COLOR_TIERS[colorValue];
+                    }
+                  }
+
                   const isLocked = isItemLockedForJourney(profile?.journey, itemMinTier);
 
                   return (
@@ -2567,7 +2602,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         </div>
                       </div>
 
-                      {/* Journey Tier Locked State - Clickable to open MY JOURNEY */}
+                      {/* Journey Tier Status - Locked or Unlocked display */}
                       {isLocked ? (
                         <button
                           onClick={() => {
@@ -2584,11 +2619,23 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                             </svg>
-                            Unlock at {itemMinTier}
+                            Unlock for {itemMinTier}
                           </span>
                         </button>
                       ) : (
                         <>
+                          {/* Show "Unlocked for {TIER}" for tier-restricted items that user has access to */}
+                          {itemMinTier !== 'WANDERER' && (
+                            <div className="w-full py-2 px-4 rounded-lg font-bold text-xs text-center mt-2 bg-green-600/30 text-green-300 border border-green-500/50">
+                              <span className="flex items-center justify-center gap-2">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                                </svg>
+                                Unlocked for {itemMinTier}
+                              </span>
+                            </div>
+                          )}
+
                           {/* Purchase Button */}
                           {item.stripe_url && (
                             <div className="flex justify-center mt-2">
@@ -3081,11 +3128,27 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     'socks': 'DREAMER',
                     'house party poster': 'DREAMER',
                     'necklace': 'LOVER',
-                    'beanie': 'DREAMER',
+                    'beanie': 'DREAMER', // Default, but beanie uses color-based tiers below
                   };
+
+                  // Beanie color-specific tier requirements
+                  const ENLARGED_BEANIE_COLOR_TIERS: Record<string, string> = {
+                    'blue': 'DREAMER',
+                    'black': 'LOVER',
+                  };
+
                   const enlargedItemNameLower = enlargedItem.name.toLowerCase();
                   const enlargedDbTier = (enlargedItem.min_tier || '').toUpperCase();
-                  const enlargedItemMinTier = enlargedDbTier || ENLARGED_ITEM_TIER_OVERRIDES[enlargedItemNameLower] || 'WANDERER';
+
+                  // For beanie, use the selected color to determine tier
+                  let enlargedItemMinTier = enlargedDbTier || ENLARGED_ITEM_TIER_OVERRIDES[enlargedItemNameLower] || 'WANDERER';
+                  if (enlargedItemNameLower === 'beanie') {
+                    const colorValue = (enlargedItem.selected_color || enlargedItem.selected_variant?.value || '').toLowerCase();
+                    if (colorValue && ENLARGED_BEANIE_COLOR_TIERS[colorValue]) {
+                      enlargedItemMinTier = ENLARGED_BEANIE_COLOR_TIERS[colorValue];
+                    }
+                  }
+
                   const isEnlargedItemLocked = isItemLockedForJourney(profile?.journey, enlargedItemMinTier);
 
                   if (isEnlargedItemLocked) {
@@ -3106,48 +3169,61 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
-                        <span>Unlock at {enlargedItemMinTier}</span>
+                        <span>Unlock for {enlargedItemMinTier}</span>
                       </button>
                     );
                   }
 
                   return (
-                    <button
-                      onClick={() => {
-                        handleHeartCoinPurchaseConfirm(enlargedItem);
-                        setEnlargedItem(null);
-                        setEnlargedImageIndex(0);
-                      }}
-                      onMouseEnter={() => {
-                        if (!modalLoading && profile && heartcoinBalance >= (enlargedItem.heartCoin || 0)) {
-                          try { sfx.play('hover', 0.3); } catch {}
-                        }
-                      }}
-                      disabled={modalLoading || !profile || heartcoinBalance < (enlargedItem.heartCoin || 0)}
-                      className={`flex items-center gap-2 py-3 px-6 rounded-lg font-bold text-sm transition-all duration-200 ${
-                        modalLoading || !profile || heartcoinBalance < (enlargedItem.heartCoin || 0)
-                          ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
-                          : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,239,29,0.6)]'
-                      }`}
-                      style={
-                        modalLoading || !profile || heartcoinBalance < (enlargedItem.heartCoin || 0)
-                          ? undefined
-                          : {
-                              boxShadow: '0 0 15px rgba(242,239,29,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
-                            }
-                      }
-                    >
-                      <span>PAY WITH</span>
-                      <img
-                        src="/elements/heart-coin.webp"
-                        alt="Heart Coin"
-                        className="w-5 h-5 object-contain"
-                        style={{
-                          filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
+                    <div className="flex flex-col items-center gap-2">
+                      {/* Show "Unlocked for {TIER}" for tier-restricted items that user has access to */}
+                      {enlargedItemMinTier !== 'WANDERER' && (
+                        <div className="py-2 px-4 rounded-lg font-bold text-xs text-center bg-green-600/30 text-green-300 border border-green-500/50">
+                          <span className="flex items-center justify-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                            </svg>
+                            Unlocked for {enlargedItemMinTier}
+                          </span>
+                        </div>
+                      )}
+                      <button
+                        onClick={() => {
+                          handleHeartCoinPurchaseConfirm(enlargedItem);
+                          setEnlargedItem(null);
+                          setEnlargedImageIndex(0);
                         }}
-                      />
-                      <span>{enlargedItem.heartCoin || 0}</span>
-                    </button>
+                        onMouseEnter={() => {
+                          if (!modalLoading && profile && heartcoinBalance >= (enlargedItem.heartCoin || 0)) {
+                            try { sfx.play('hover', 0.3); } catch {}
+                          }
+                        }}
+                        disabled={modalLoading || !profile || heartcoinBalance < (enlargedItem.heartCoin || 0)}
+                        className={`flex items-center gap-2 py-3 px-6 rounded-lg font-bold text-sm transition-all duration-200 ${
+                          modalLoading || !profile || heartcoinBalance < (enlargedItem.heartCoin || 0)
+                            ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
+                            : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,239,29,0.6)]'
+                        }`}
+                        style={
+                          modalLoading || !profile || heartcoinBalance < (enlargedItem.heartCoin || 0)
+                            ? undefined
+                            : {
+                                boxShadow: '0 0 15px rgba(242,239,29,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
+                              }
+                        }
+                      >
+                        <span>PAY WITH</span>
+                        <img
+                          src="/elements/heart-coin.webp"
+                          alt="Heart Coin"
+                          className="w-5 h-5 object-contain"
+                          style={{
+                            filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
+                          }}
+                        />
+                        <span>{enlargedItem.heartCoin || 0}</span>
+                      </button>
+                    </div>
                   );
                 })()}
               </div>

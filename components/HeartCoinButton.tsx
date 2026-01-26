@@ -1640,6 +1640,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           // NEW completion - hook already refreshed profile when heartcoin_awarded was true
           setCheckInMessage(`Quest completed! +1 Heart Coin earned`);
           setStatusType('success');
+          // Trigger heartcoin celebration for Invite an Alien completion
+          const rewardAmount = quest.reward_heartcoins > 0 ? quest.reward_heartcoins : 1;
+          triggerHeartCoinCelebration(rewardAmount);
         }
 
         setTimeout(() => {
