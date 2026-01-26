@@ -14,6 +14,8 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS streams_attended integer NO
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS concerts_attended integer NOT NULL DEFAULT 0;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS cards_owned integer NOT NULL DEFAULT 0;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS merch_items_owned integer NOT NULL DEFAULT 0;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS unique_merch_items integer NOT NULL DEFAULT 0;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS digital_cards_owned integer NOT NULL DEFAULT 0;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS donations_made integer NOT NULL DEFAULT 0;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS heartcoins_sent integer NOT NULL DEFAULT 0;
 
@@ -21,18 +23,30 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS heartcoins_sent integer NOT
 CREATE INDEX IF NOT EXISTS idx_profiles_total_reflections ON public.profiles(total_reflections);
 CREATE INDEX IF NOT EXISTS idx_profiles_total_heartcoins_earned ON public.profiles(total_heartcoins_earned);
 CREATE INDEX IF NOT EXISTS idx_profiles_cards_owned ON public.profiles(cards_owned);
+CREATE INDEX IF NOT EXISTS idx_profiles_unique_merch_items ON public.profiles(unique_merch_items);
+CREATE INDEX IF NOT EXISTS idx_profiles_digital_cards_owned ON public.profiles(digital_cards_owned);
 
 -- Update existing profiles to have realistic counter values based on existing data
 -- This is a one-time data migration to populate counters
 
 -- Update cards_owned counter from user_cards
-UPDATE public.profiles 
+UPDATE public.profiles
 SET cards_owned = COALESCE((
-  SELECT COUNT(*) 
-  FROM public.user_cards 
+  SELECT COUNT(*)
+  FROM public.user_cards
   WHERE user_cards.user_id = profiles.id
 ), 0)
 WHERE cards_owned = 0;
+
+-- Update digital_cards_owned counter from user_cards where is_digital = true
+UPDATE public.profiles
+SET digital_cards_owned = COALESCE((
+  SELECT COUNT(*)
+  FROM public.user_cards
+  WHERE user_cards.user_id = profiles.id
+    AND user_cards.is_digital = true
+), 0)
+WHERE digital_cards_owned = 0;
 
 -- Update achievements_unlocked from user_badges  
 UPDATE public.profiles

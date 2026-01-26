@@ -19,6 +19,7 @@ import { playerStore } from '@/store/usePlayerStore';
 import { triggerMerchCelebration } from '@/utils/merchCelebration';
 import { triggerHeartCoinCelebration } from '@/utils/heartcoinCelebration';
 import { useUserCards } from '@/hooks/useUserCards';
+import { useHeartcoinBalance } from '@/providers/HeartcoinBalanceProvider';
 
 type Props = {
   open: boolean;
@@ -269,6 +270,8 @@ const getShortLabel = (label: string, itemName: string): string => {
 
 export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWelcomeHome, initialTab = 'earn', availableCards = [], currentCardIndex = 0, onCardNavigation }: Props) {
   const { profile, loading: profileLoading, refreshProfile } = useProfile();
+  // Use centralized balance state for real-time updates
+  const { balance: heartcoinBalance, loading: balanceLoading } = useHeartcoinBalance();
   const { cards: ownedCards } = useUserCards(profile?.id);
 
   // Check if a card is already owned by the user (digital)
@@ -1087,8 +1090,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       return;
     }
 
-    if ((profile.heartcoin_balance || 0) < item.heartCoin) {
-      setError(`Insufficient HeartCoins! You need ${item.heartCoin} but only have ${profile.heartcoin_balance || 0}`);
+    if (heartcoinBalance < item.heartCoin) {
+      setError(`Insufficient HeartCoins! You need ${item.heartCoin} but only have ${heartcoinBalance}`);
       return;
     }
 
@@ -1381,8 +1384,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       return;
     }
 
-    if ((profile.heartcoin_balance || 0) < item.heartCoin) {
-      setError(`Insufficient HeartCoins! You need ${item.heartCoin} but only have ${profile.heartcoin_balance || 0}`);
+    if (heartcoinBalance < item.heartCoin) {
+      setError(`Insufficient HeartCoins! You need ${item.heartCoin} but only have ${heartcoinBalance}`);
       return;
     }
 
@@ -1442,8 +1445,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     const physicalCost = 15; // 15 HeartCoins for physical
     const cost = cardType === 'digital' ? digitalCost : physicalCost;
 
-    if ((profile.heartcoin_balance || 0) < cost) {
-      setError(`Insufficient HeartCoins! You need ${cost} but only have ${profile.heartcoin_balance || 0}`);
+    if (heartcoinBalance < cost) {
+      setError(`Insufficient HeartCoins! You need ${cost} but only have ${heartcoinBalance}`);
       return;
     }
 
@@ -1551,8 +1554,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       return;
     }
 
-    if ((profile.heartcoin_balance || 0) < physicalCardCost) {
-      setError(`Insufficient HeartCoins! You need ${physicalCardCost} but only have ${profile.heartcoin_balance || 0}`);
+    if (heartcoinBalance < physicalCardCost) {
+      setError(`Insufficient HeartCoins! You need ${physicalCardCost} but only have ${heartcoinBalance}`);
       return;
     }
 
@@ -2221,15 +2224,22 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   console.log('[VARIANT DEBUG]', {
                     itemName: currentItem.name,
                     variant_options: currentItem.variant_options,
+                    typeOfVariantOptions: typeof currentItem.variant_options,
                     normalizedOptions: variantOptions,
-                    hasVariants
+                    hasVariants,
+                    variantCount: variantOptions.length
                   });
 
                   return (
                     <div className="flex items-center justify-center gap-2 mb-2">
+                      {/* DEBUG: temp badge to confirm code is running */}
+                      <span className="text-[10px] text-yellow-400 bg-black/50 px-1 rounded">
+                        v:{variantOptions.length}
+                      </span>
+
                       {/* Variant Toggle - to the LEFT of item name */}
-                      {hasVariants && variantOptions.length > 0 && (
-                        <div className="flex items-center gap-1 bg-black/30 rounded-full px-1 py-0.5">
+                      {variantOptions.length > 0 && (
+                        <div className="flex items-center gap-1 bg-black/40 rounded-full px-2 py-1">
                           {variantOptions.map((opt, idx) => {
                             const isSelected = selectedVariant?.value === opt.value;
                             const shortLabel = getShortLabel(opt.label, currentItem.name);
@@ -2435,7 +2445,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                                 filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 2px #FC54AF)'
                               }}
                             />
-                            <span className="text-sm font-bold text-[#F2EF1D]">{profile?.heartcoin_balance || 0}</span>
+                            <span className="text-sm font-bold text-[#F2EF1D]">{heartcoinBalance}</span>
                           </div>
                         </div>
 
@@ -2511,18 +2521,18 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                               handleHeartCoinPurchaseConfirm(storeItem);
                             }}
                             onMouseEnter={() => {
-                              if (!modalLoading && profile && (profile.heartcoin_balance || 0) >= (item.price_heartcoins || 0)) {
+                              if (!modalLoading && profile && heartcoinBalance >= (item.price_heartcoins || 0)) {
                                 try { sfx.play('hover', 0.3); } catch {}
                               }
                             }}
-                            disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < (item.price_heartcoins || 0)}
+                            disabled={modalLoading || !profile || heartcoinBalance < (item.price_heartcoins || 0)}
                             className={`w-full py-2 px-4 rounded-lg font-bold text-xs transition-all duration-200 mt-2 ${
-                              modalLoading || !profile || (profile.heartcoin_balance || 0) < (item.price_heartcoins || 0)
+                              modalLoading || !profile || heartcoinBalance < (item.price_heartcoins || 0)
                                 ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
                                 : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,239,29,0.6)]'
                             }`}
                             style={
-                              modalLoading || !profile || (profile.heartcoin_balance || 0) < (item.price_heartcoins || 0)
+                              modalLoading || !profile || heartcoinBalance < (item.price_heartcoins || 0)
                                 ? undefined
                                 : {
                                     boxShadow: '0 0 15px rgba(242,239,29,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
@@ -2644,7 +2654,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         <div className="text-white/80 text-xs mb-2">Your Balance</div>
                         <div className="flex items-center justify-center gap-2 text-white text-xl font-bold">
                           <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-6 h-6" />
-                          <span>{profile?.heartcoin_balance ?? 0}</span>
+                          <span>{heartcoinBalance}</span>
                         </div>
                       </div>
                       <div className="text-center">
@@ -2678,8 +2688,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             }}
                             className="px-4 py-2 rounded bg-[#4ECDC4] text-black font-bold text-xs hover:opacity-90"
                             disabled={selectedPurchaseType === 'digital'
-                              ? (modalLoading || !profile || (profile.heartcoin_balance || 0) < 5)
-                              : (modalLoading || !profile || (profile.heartcoin_balance || 0) < 15)}
+                              ? (modalLoading || !profile || heartcoinBalance < 5)
+                              : (modalLoading || !profile || heartcoinBalance < 15)}
                           >
                             Confirm
                           </button>
@@ -2747,14 +2757,14 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     onMouseEnter={() => {
                       try { sfx.play('hover', 0.3); } catch {}
                     }}
-                    disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < 5}
+                    disabled={modalLoading || !profile || heartcoinBalance < 5}
                     className={`flex-1 px-8 py-4 rounded-lg font-bold text-sm transition-all duration-200 ${
-                      modalLoading || !profile || (profile.heartcoin_balance || 0) < 5
+                      modalLoading || !profile || heartcoinBalance < 5
                         ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
                         : 'bg-gradient-to-r from-[#4ECDC4] to-[#45b7b8] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(78,205,196,0.6)]'
                     }`}
                     style={
-                      modalLoading || !profile || (profile.heartcoin_balance || 0) < 5
+                      modalLoading || !profile || heartcoinBalance < 5
                         ? undefined
                         : {
                             boxShadow: '0 0 15px rgba(78,205,196,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
@@ -2772,14 +2782,14 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     onMouseEnter={() => {
                       try { sfx.play('hover', 0.3); } catch {}
                     }}
-                    disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < 15}
+                    disabled={modalLoading || !profile || heartcoinBalance < 15}
                     className={`flex-1 px-8 py-4 rounded-lg font-bold text-sm transition-all duration-200 ${
-                      modalLoading || !profile || (profile.heartcoin_balance || 0) < 15
+                      modalLoading || !profile || heartcoinBalance < 15
                         ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
                         : 'bg-gradient-to-r from-[#FC54AF] to-[#e91e63] text-white hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(252,84,175,0.6)]'
                     }`}
                     style={
-                      modalLoading || !profile || (profile.heartcoin_balance || 0) < 15
+                      modalLoading || !profile || heartcoinBalance < 15
                         ? undefined
                         : {
                             boxShadow: '0 0 15px rgba(252,84,175,0.4), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -4px 8px rgba(0,0,0,0.2)'
@@ -2977,18 +2987,18 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         setEnlargedImageIndex(0);
                       }}
                       onMouseEnter={() => {
-                        if (!modalLoading && profile && (profile.heartcoin_balance || 0) >= (enlargedItem.heartCoin || 0)) {
+                        if (!modalLoading && profile && heartcoinBalance >= (enlargedItem.heartCoin || 0)) {
                           try { sfx.play('hover', 0.3); } catch {}
                         }
                       }}
-                      disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < (enlargedItem.heartCoin || 0)}
+                      disabled={modalLoading || !profile || heartcoinBalance < (enlargedItem.heartCoin || 0)}
                       className={`flex items-center gap-2 py-3 px-6 rounded-lg font-bold text-sm transition-all duration-200 ${
-                        modalLoading || !profile || (profile.heartcoin_balance || 0) < (enlargedItem.heartCoin || 0)
+                        modalLoading || !profile || heartcoinBalance < (enlargedItem.heartCoin || 0)
                           ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
                           : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,239,29,0.6)]'
                       }`}
                       style={
-                        modalLoading || !profile || (profile.heartcoin_balance || 0) < (enlargedItem.heartCoin || 0)
+                        modalLoading || !profile || heartcoinBalance < (enlargedItem.heartCoin || 0)
                           ? undefined
                           : {
                               boxShadow: '0 0 15px rgba(242,239,29,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
@@ -3129,14 +3139,14 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     setSelectedPurchaseType('digital');
                     handleCardPurchase('digital');
                   }}
-                  disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < 5}
+                  disabled={modalLoading || !profile || heartcoinBalance < 5}
                   className={`w-full max-w-md mx-auto py-2 px-8 rounded-lg flex items-center justify-center gap-2 text-white font-bold transition-all duration-200 shadow-lg mb-3 flex-shrink-0 ${
-                    modalLoading || !profile || (profile.heartcoin_balance || 0) < 5
+                    modalLoading || !profile || heartcoinBalance < 5
                       ? 'bg-gray-500 cursor-not-allowed opacity-50'
                       : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 hover:shadow-cyan-500/30'
                   }`}
                   style={{
-                    boxShadow: modalLoading || !profile || (profile.heartcoin_balance || 0) < 5 ? undefined : '0 0 15px rgba(6, 182, 212, 0.3)',
+                    boxShadow: modalLoading || !profile || heartcoinBalance < 5 ? undefined : '0 0 15px rgba(6, 182, 212, 0.3)',
                   }}
                 >
                   <img src="/heartcoin.webp" alt="HeartCoin" className="w-5 h-5" />
@@ -3271,14 +3281,14 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                       try { sfx.play('click', 0.4); } catch {}
                       setShowEnlargedCardConfirm(true);
                     }}
-                    disabled={modalLoading || !profile || (profile.heartcoin_balance || 0) < 20}
+                    disabled={modalLoading || !profile || heartcoinBalance < 20}
                     className={`w-full max-w-md mx-auto py-2 px-8 rounded-lg flex items-center justify-center gap-2 text-white font-bold transition-all duration-200 shadow-lg ${
-                      modalLoading || !profile || (profile.heartcoin_balance || 0) < 20
+                      modalLoading || !profile || heartcoinBalance < 20
                         ? 'bg-gray-500 cursor-not-allowed opacity-50'
                         : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 hover:shadow-amber-500/30'
                     }`}
                     style={{
-                      boxShadow: modalLoading || !profile || (profile.heartcoin_balance || 0) < 20 ? undefined : '0 0 15px rgba(245, 158, 11, 0.3)',
+                      boxShadow: modalLoading || !profile || heartcoinBalance < 20 ? undefined : '0 0 15px rgba(245, 158, 11, 0.3)',
                     }}
                   >
                     <img src="/heartcoin.webp" alt="HeartCoin" className="w-5 h-5" />
@@ -3299,7 +3309,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         <div className="text-white/60 text-xs mb-1">Your Balance</div>
                         <div className="flex items-center justify-center gap-2">
                           <img src="/elements/heart-coin.webp" alt="HeartCoin" className="w-5 h-5" />
-                          <span className="text-white font-bold">{profile?.heartcoin_balance ?? 0}</span>
+                          <span className="text-white font-bold">{heartcoinBalance}</span>
                         </div>
                       </div>
                       <div className="text-white/40 text-lg">→</div>

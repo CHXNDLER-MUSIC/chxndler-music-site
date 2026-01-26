@@ -18,6 +18,7 @@ import StoreProvider from "@/components/StoreProvider";
 import { ProfileProvider } from "@/contexts/ProfileContext";
 import { TourProvider } from "@/contexts/TourContext";
 import { MenuStateProvider } from "@/contexts/MenuStateContext";
+import { HeartcoinBalanceProvider } from "@/providers/HeartcoinBalanceProvider";
 import HeartCoinCelebration from "@/components/HeartCoinCelebration";
 import ElementCardCelebration from "@/components/ElementCardCelebration";
 import MerchCelebration from "@/components/MerchCelebration";
@@ -132,6 +133,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-sans bg-[#020016]">
         <AuthProvider>
           <ProfileProvider>
+            <HeartcoinBalanceProvider>
             <AudioProvider>
               <GlobalKeyboardHandler />
               <MenuStateProvider>
@@ -163,6 +165,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </TourProvider>
               </MenuStateProvider>
             </AudioProvider>
+            </HeartcoinBalanceProvider>
           </ProfileProvider>
         </AuthProvider>
         {mpId && !analyticsOff ? (

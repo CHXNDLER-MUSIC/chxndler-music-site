@@ -734,8 +734,8 @@ export default function HoloHubMenu({
                 const isFirst = i === 0;
                 const isLast = i === entries.length - 1;
                 const size = itemSize;
-                // Disable Apple Music on the opening screen, and disable Spotify on LIGHTNING planet
-                const isDisabled = (it.id === 'am') || (isLightningPlanet && it.id === 'sp');
+                // Disable Spotify on LIGHTNING planet only
+                const isDisabled = isLightningPlanet && it.id === 'sp';
                 return (
                   <button
                     key={it.id}

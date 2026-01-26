@@ -1684,73 +1684,48 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       // Log Supabase URL for debugging
       console.log('[CARD PURCHASE] supabaseUrl', (supabaseBrowser as any)?.rest?.url ?? process.env.NEXT_PUBLIC_SUPABASE_URL);
 
-      // Manual purchase flow (RPC function may not exist)
-      const userId = profile.id;
-      const currentBalance = profile.heartcoin_balance ?? heartCoins ?? 0;
+      // Call the purchase_digital_card RPC function
+      const { data, error } = await supabaseBrowser.rpc('purchase_digital_card', {
+        p_card_id: selectedCardId
+      });
 
-      // Double-check balance
-      if (currentBalance < cost) {
-        console.error('[CARD PURCHASE] Balance check failed', { currentBalance, cost });
-        try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Insufficient HeartCoins', type: 'error' } })); } catch {}
-        return;
-      }
-
-      // Step 1: Grant card ownership by inserting into user_cards
-      const { error: userCardError } = await supabaseBrowser
-        .from('user_cards')
-        .insert({
-          user_id: userId,
-          card_id: selectedCardId,
-          source: 'purchase'
+      if (error) {
+        // Log fully expanded error object
+        console.error('[CARD PURCHASE] RPC error:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          // Include HTTP status if available (from Supabase error structure)
+          status: (error as any).status ?? (error as any).statusCode ?? 'N/A'
         });
 
-      if (userCardError) {
-        // Check if it's a duplicate (user already owns card)
-        if (userCardError.code === '23505') {
+        // Check if it's a duplicate (user already owns card) - RPC may return this as an error
+        if (error.code === '23505' || error.message?.includes('already own')) {
           console.log('[CARD PURCHASE] User already owns this card');
           try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'You already own this card!', type: 'info' } })); } catch {}
           return;
         }
-        console.error('[CARD PURCHASE] Failed to grant card ownership:', userCardError);
-        try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Purchase failed - could not grant card', type: 'error' } })); } catch {}
+
+        // Check for insufficient balance error from RPC
+        if (error.message?.includes('Insufficient') || error.message?.includes('balance')) {
+          try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Insufficient HeartCoins', type: 'error' } })); } catch {}
+          return;
+        }
+
+        try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: error.message || 'Purchase failed', type: 'error' } })); } catch {}
         return;
       }
 
-      // Step 2: Deduct HeartCoins from balance
-      const newBalance = currentBalance - cost;
-      const { error: balanceError } = await supabaseBrowser
-        .from('profiles')
-        .update({ heartcoin_balance: newBalance, updated_at: new Date().toISOString() })
-        .eq('id', userId);
+      // Extract new balance from RPC response if available
+      const newBalance = data?.new_balance ?? data?.heartcoin_balance ?? null;
+      console.log('[CARD PURCHASE] RPC success', { data, newBalance });
 
-      if (balanceError) {
-        console.error('[CARD PURCHASE] Failed to deduct balance:', balanceError);
-        // Try to rollback - delete the user_card we just created
-        await supabaseBrowser.from('user_cards').delete().eq('user_id', userId).eq('card_id', selectedCardId);
-        try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Purchase failed - balance update error', type: 'error' } })); } catch {}
-        return;
+      // Update local UI balance if returned by RPC
+      if (newBalance !== null) {
+        setHeartCoins(newBalance);
+        onHeartCoinsChange?.(newBalance);
       }
-
-      // Step 3: Log the transaction
-      await supabaseBrowser
-        .from('heartcoin_transactions')
-        .insert({
-          user_id: userId,
-          amount: -cost,
-          transaction_type: 'purchase',
-          description: `Purchased digital card: ${selectedCard?.card_name || 'Card'}`,
-          metadata: {
-            card_id: selectedCardId,
-            card_name: selectedCard?.card_name,
-            purchase_type: 'digital_card'
-          }
-        });
-
-      console.log('[CARD PURCHASE] Manual purchase success', { newBalance });
-
-      // Update local UI balance
-      setHeartCoins(newBalance);
-      onHeartCoinsChange?.(newBalance);
 
       // Kick off refreshes from single source of truth
       const refreshes: Promise<any>[] = [];

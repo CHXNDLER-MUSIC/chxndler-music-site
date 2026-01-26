@@ -55,11 +55,13 @@ export function getBadgeProgressForUser(
       break;
       
     case 'digital_cards_owned':
-      current = profile.cards_owned || 0;
+      // Digital card badges: Digital Collector, Memory Keeper, Cosmic Archivist, Starbinder, Master Collector
+      current = profile.digital_cards_owned || 0;
       break;
-      
+
     case 'merch_items_owned':
-      current = profile.merch_items_owned || 0;
+      // Merch badges: Merch Supporter, Merch Completionist
+      current = profile.unique_merch_items || 0;
       break;
       
     case 'donations_made':
@@ -117,11 +119,13 @@ export function getBadgeProgressForUser(
       break;
       
     case 'cards_owned':
-      current = profile.cards_owned || 0;
+      // Legacy: use digital_cards_owned for card collector badges
+      current = profile.digital_cards_owned || 0;
       break;
-      
+
     case 'merch_items':
-      current = profile.merch_items_owned || 0;
+      // Legacy: use unique_merch_items for merch badges
+      current = profile.unique_merch_items || 0;
       break;
       
     case 'donations':

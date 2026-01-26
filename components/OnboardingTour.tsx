@@ -104,7 +104,7 @@ export const TOUR_STEPS: TourStep[] = [
   // Step 8: NEW - Music Power Button (menu stays closed)
   {
     id: "music-dropdown",
-    selector: ".hud-play-btn-enhanced[data-tour-id='music-power-button']",
+    selector: "[data-tour-id='music-power-button']",
     title: "Music",
     body: "Choose a track to listen to here.",
     requiresMenuClosed: true
@@ -740,7 +740,6 @@ export default function OnboardingTour({
 
         /* 🔥 GLOWING HIGHLIGHT EFFECT - Applied to all tour targets */
         .tour-highlight {
-          position: relative !important;
           z-index: 2147483647 !important;
           animation: tourGlow 2.2s ease-in-out infinite !important;
           border-radius: 12px !important;
@@ -762,7 +761,6 @@ export default function OnboardingTour({
 
         /* 🔥 NO-SPIN HIGHLIGHT - Same glow but no spinning animation (for Signal step) */
         .tour-highlight-no-spin {
-          position: relative !important;
           z-index: 2147483647 !important;
           animation: tourGlow 2.2s ease-in-out infinite !important;
           border-radius: 12px !important;

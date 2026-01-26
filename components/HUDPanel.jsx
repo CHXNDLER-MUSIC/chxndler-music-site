@@ -14,6 +14,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { logHeartcoinTransaction } from "@/utils/heartcoins";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useAudio } from "@/app/providers/AudioProvider";
+import { useHeartcoinBalance } from "@/providers/HeartcoinBalanceProvider";
 // 2D fallback hologram
 // 2D HUD removed per request; 3D only
 // 3D planet system (requires three/r3f/drei installed)
@@ -365,7 +366,9 @@ const HUDPanel = React.memo(function HUDPanel({
   // HeartCoins functionality state
   const [showHeartCoinsContent, setShowHeartCoinsContent] = useState(false);
   const [showQuestModal, setShowQuestModal] = useState(false);
-  const [heartCoinsCount, setHeartCoinsCount] = useState(0); // Fetched from database
+  // Use centralized balance state for real-time updates
+  const { balance: heartcoinBalanceFromHook, refetchBalance } = useHeartcoinBalance();
+  const heartCoinsCount = heartcoinBalanceFromHook; // Alias for backwards compatibility
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [showWelcomeHomeModal, setShowWelcomeHomeModal] = useState(false);
   const [hasSeenWelcomeModal, setHasSeenWelcomeModal] = useState(false);
@@ -878,58 +881,8 @@ const HUDPanel = React.memo(function HUDPanel({
     }
   }, [filteredCards.length, currentCardIndex]);
 
-  // Fetch heart coins directly from Supabase
-  useEffect(() => {
-    async function fetchHeartCoins() {
-      try {
-        // Get current session - must exist before we query profiles
-        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-
-        if (sessionError) {
-          console.error('Session error:', sessionError.message, sessionError.code, sessionError);
-          return;
-        }
-
-        // Don't fetch profiles if no session - prevents 401 errors
-        if (!session?.user) {
-          return;
-        }
-
-        // Fetch heart coins using Supabase client (includes auth header automatically)
-        // Use maybeSingle() to gracefully handle missing profile rows
-        const { data: profile, error: profileError } = await supabaseClient
-          .from('profiles')
-          .select('heartcoin_balance')
-          .eq('id', session.user.id)
-          .maybeSingle();
-
-        if (profileError) {
-          console.error('Profile error:', profileError.message, profileError.code, profileError.details);
-          return;
-        }
-
-        // If no profile row yet (trigger may still be creating it), default to 0
-        setHeartCoinsCount(profile?.heartcoin_balance || 0);
-
-      } catch (error) {
-        console.error('Error fetching heart coins:', error instanceof Error ? error.message : error);
-      }
-    }
-
-    // Listen for auth state changes to handle magic link sign-ins
-    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        // Delay slightly to allow profile trigger to create row
-        setTimeout(() => fetchHeartCoins(), 500);
-      }
-    });
-
-    fetchHeartCoins();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+  // Heart coins balance is now provided by HeartcoinBalanceProvider via useHeartcoinBalance hook
+  // This enables real-time updates and celebration triggers when balance increases
 
   // Position heart popover similar to lyrics popover
   const HEART_POPOVER_Y_OFFSET = -40;
@@ -5525,15 +5478,8 @@ const HUDPanel = React.memo(function HUDPanel({
                                             }
                                           } else {
                                             try { sfx.play('success', 0.7); } catch {}
-                                            // Refresh heartcoin balance after successful purchase
-                                            const { data: updatedProfile } = await supabaseClient
-                                              .from('profiles')
-                                              .select('heartcoin_balance')
-                                              .eq('id', session.user.id)
-                                              .single();
-                                            if (updatedProfile) {
-                                              setHeartCoinsCount(updatedProfile.heartcoin_balance || 0);
-                                            }
+                                            // Refresh heartcoin balance after successful purchase using centralized provider
+                                            await refetchBalance();
                                             // Brief success flash then close confirmation
                                             setTimeout(() => {
                                               setStoreConfirming(false);

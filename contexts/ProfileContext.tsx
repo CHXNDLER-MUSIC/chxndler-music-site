@@ -102,6 +102,8 @@ interface Profile {
   concerts_attended?: number | null;
   cards_owned?: number | null;
   merch_items_owned?: number | null;
+  unique_merch_items?: number | null;
+  digital_cards_owned?: number | null;
   donations_made?: number | null;
   heartcoins_sent?: number | null;
   // Legacy fields for compatibility
@@ -338,7 +340,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabaseBrowser
         .from("profiles")
         .select(
-          "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour, total_reflections, total_listening_minutes, total_heartcoins_earned, elemental_sessions_count, community_interactions, achievements_unlocked, streams_attended, concerts_attended, cards_owned, merch_items_owned, donations_made, heartcoins_sent, card_slots"
+          "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour, total_reflections, total_listening_minutes, total_heartcoins_earned, elemental_sessions_count, community_interactions, achievements_unlocked, streams_attended, concerts_attended, cards_owned, merch_items_owned, unique_merch_items, digital_cards_owned, donations_made, heartcoins_sent, card_slots"
         )
         .eq("id", user.id)
         .maybeSingle();
@@ -467,6 +469,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         concerts_attended: data.concerts_attended ?? 0,
         cards_owned: data.cards_owned ?? 0,
         merch_items_owned: data.merch_items_owned ?? 0,
+        unique_merch_items: data.unique_merch_items ?? 0,
+        digital_cards_owned: data.digital_cards_owned ?? 0,
         donations_made: data.donations_made ?? 0,
         heartcoins_sent: data.heartcoins_sent ?? 0,
         card_slots: data.card_slots ?? 0,
@@ -554,7 +558,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         .from("profiles")
         .update(dbUpdates)
         .eq("id", user.id)
-        .select("id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour, total_reflections, total_listening_minutes, total_heartcoins_earned, elemental_sessions_count, community_interactions, achievements_unlocked, streams_attended, concerts_attended, cards_owned, merch_items_owned, donations_made, heartcoins_sent, card_slots")
+        .select("id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour, total_reflections, total_listening_minutes, total_heartcoins_earned, elemental_sessions_count, community_interactions, achievements_unlocked, streams_attended, concerts_attended, cards_owned, merch_items_owned, unique_merch_items, digital_cards_owned, donations_made, heartcoins_sent, card_slots")
         .maybeSingle();
 
       if (error) {
@@ -595,6 +599,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           concerts_attended: data.concerts_attended ?? 0,
           cards_owned: data.cards_owned ?? 0,
           merch_items_owned: data.merch_items_owned ?? 0,
+          unique_merch_items: data.unique_merch_items ?? 0,
+          digital_cards_owned: data.digital_cards_owned ?? 0,
           donations_made: data.donations_made ?? 0,
           heartcoins_sent: data.heartcoins_sent ?? 0,
           card_slots: data.card_slots ?? 0,

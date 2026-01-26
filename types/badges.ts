@@ -65,6 +65,8 @@ export interface Profile {
   concerts_attended: number;
   cards_owned: number;
   merch_items_owned: number;
+  unique_merch_items: number;
+  digital_cards_owned: number;
   donations_made: number;
   heartcoins_sent: number;
   unique_songs_count: number;
