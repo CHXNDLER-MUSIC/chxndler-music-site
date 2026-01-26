@@ -27,12 +27,14 @@ const badgeRequirements = {
   'Treasure Keeper': { requirement_type: 'heartcoins', requirement_count: 1000, category: 'currency' },
   'Heart Prosperity': { requirement_type: 'heartcoins', requirement_count: 1000, category: 'currency' },
   
-  // Community badges
-  'Portal Opener': { requirement_type: 'community_interactions', requirement_count: 3, category: 'community' },
+  // Community badges (ordered by requirement_count)
+  'Portal Opener': { requirement_type: 'aliens_invited', requirement_count: 1, category: 'community' },
   'Community Builder': { requirement_type: 'community_interactions', requirement_count: 1, category: 'community' },
-  'Heartverse Ambassador': { requirement_type: 'community_interactions', requirement_count: 10, category: 'community' },
-  'Friend Maker': { requirement_type: 'community_interactions', requirement_count: 5, category: 'community' },
+  'Live Witness': { requirement_type: 'livestreams_attended', requirement_count: 1, category: 'community' },
+  'First Contact': { requirement_type: 'concerts_attended', requirement_count: 1, category: 'community' },
   'Community Leader': { requirement_type: 'community_interactions', requirement_count: 3, category: 'community' },
+  'Friend Maker': { requirement_type: 'community_interactions', requirement_count: 5, category: 'community' },
+  'Heartverse Ambassador': { requirement_type: 'aliens_invited', requirement_count: 25, category: 'community' },
   
   // Elemental badges
   'Lightning Element': { requirement_type: 'elemental_sessions', requirement_count: 1, category: 'elemental-streak' },
