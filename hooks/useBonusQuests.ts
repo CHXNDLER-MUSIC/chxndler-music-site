@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { BonusQuestWithCompletion, QuestCompletionResult } from '@/types/bonusQuests';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useProfile } from '@/contexts/ProfileContext';
-import { triggerHeartCoinCelebration } from '@/utils/heartcoinCelebration';
+import { triggerHeartCoinCelebration, suppressNextHeartcoinCelebration } from '@/utils/heartcoinCelebration';
 
 interface UseBonusQuestsReturn {
   quests: BonusQuestWithCompletion[]; // All quests (both DAILY and BONUS categories)
@@ -244,6 +244,8 @@ export function useBonusQuests(): UseBonusQuestsReturn {
         // Trigger the celebration animation + sound
         const rewardAmount = quest.reward_heartcoins > 0 ? quest.reward_heartcoins : 1;
         triggerHeartCoinCelebration(rewardAmount);
+        // Suppress the duplicate celebration from realtime subscription
+        suppressNextHeartcoinCelebration();
 
         // Refresh profile to update displayed heartcoin_balance
         try {

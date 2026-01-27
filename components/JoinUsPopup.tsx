@@ -94,31 +94,26 @@ export default function JoinUsPopup({ isOpen, onClose, onOpenChat }: Props) {
 
     try {
       const redirectUrl = getRedirectUrl();
-      console.log('🚀 Starting email signup for:', email);
-      console.log('🚀 Redirect URL will be:', redirectUrl);
 
-      // Sign up with email and redirect to auth callback for name prompt
-      const { data, error: signUpError } = await supabaseClient.auth.signUp({
+      // Use magic link OTP for all email auth (works for both new and existing users)
+      const { error: otpError } = await supabaseClient.auth.signInWithOtp({
         email,
-        password: 'temppassword123', // Temporary password
         options: {
           emailRedirectTo: redirectUrl,
-        }
+        },
       });
 
-      console.log('🚀 Signup response:', { data, error: signUpError });
+      if (otpError) throw otpError;
 
-      if (signUpError) throw signUpError;
+      setMessage("Check your email to continue");
 
-      setMessage(`✅ Email sent to ${email}! Check your inbox and click the confirmation link to join the Heartverse. You'll be prompted to set your name after confirming.`);
-      
       // Play success sound
       try {
         sfx.play('success', 0.7);
       } catch {}
 
     } catch (e: any) {
-      setError(e?.message || "Failed to send confirmation email");
+      setError(e?.message || "Failed to send magic link");
       try {
         sfx.play('error', 0.5);
       } catch {}
@@ -447,17 +442,17 @@ export default function JoinUsPopup({ isOpen, onClose, onOpenChat }: Props) {
               className="w-full rounded-lg bg-gradient-to-r from-[#38B6FF] to-[#FC54AF] px-6 py-3 text-lg font-semibold text-black transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-[#38B6FF]/30 disabled:opacity-50 disabled:hover:scale-100"
               style={{
                 boxShadow: loading || !email.trim()
-                  ? 'none' 
+                  ? 'none'
                   : '0 0 30px rgba(56,182,255,0.5), 0 0 60px rgba(252,84,175,0.3)'
               }}
             >
               {loading ? (
                 <div className="flex items-center justify-center space-x-2">
                   <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                  <span>Sending Email...</span>
+                  <span>Sending...</span>
                 </div>
               ) : (
-                "SEND CONFIRMATION EMAIL"
+                "Enter the Heartverse"
               )}
             </button>
           </form>

@@ -184,7 +184,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
         console.log('Audio playback failed:', audioError);
       }
 
-      setMessage("Heart signal sent to the Heartverse! Check your email to step inside.");
+      setMessage("Check your email to continue");
     } catch (e: any) {
       // Show sanitized email in error message so users don't see invisible characters
       const errorMsg = e?.message || "Failed to send heart signal";
@@ -397,7 +397,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
                 : '0 0 15px rgba(0,255,255,0.4), 0 0 25px rgba(0,255,255,0.2)'
             }}
           >
-            {message ? "HEART SIGNAL SENT" : "SEND HEART SIGNAL"}
+            {message ? "Check your email to continue" : "Enter the Heartverse"}
           </button>
           </div>
         </div>

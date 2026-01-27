@@ -9,7 +9,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { logHeartcoinTransaction } from "@/utils/heartcoins";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useProfile } from "@/contexts/ProfileContext";
-import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
+import { triggerHeartCoinCelebration, suppressNextHeartcoinCelebration } from "@/utils/heartcoinCelebration";
 import { getAllQuestsForUser } from "@/lib/bonusQuests";
 import { getNYDateString } from "@/lib/time";
 import LoginModal from "@/components/LoginModal";
@@ -490,6 +490,8 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
       localStorage.setItem(`quest_element_${dateKey}`, 'true');
       showCelebration(`✨ Element touched! Your ${todaysElement.name} energy is awakened! +1 HeartCoin earned.`);
       triggerHeartCoinCelebration(1);
+      // Suppress the duplicate celebration from realtime subscription
+      suppressNextHeartcoinCelebration();
       try { await refreshProfile(); } catch {}
     } catch (error) {
       console.error('Failed to award heart coin:', error);
@@ -559,6 +561,8 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
     showCelebration("🌟 Soul reflection complete! Your inner wisdom has been honored. +1 HeartCoin earned.");
     // Trigger HeartCoin celebration animation
     triggerHeartCoinCelebration(1);
+    // Suppress the duplicate celebration from realtime subscription
+    suppressNextHeartcoinCelebration();
   };
 
   const handleJournalComplete = () => {
@@ -570,6 +574,8 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
     setShowJournal(false);
     // Trigger HeartCoin celebration animation
     triggerHeartCoinCelebration(1);
+    // Suppress the duplicate celebration from realtime subscription
+    suppressNextHeartcoinCelebration();
   };
 
   const handleInviteFriend = async () => {
@@ -645,6 +651,8 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
             showCelebration("💕 Love shared! You've planted a seed of connection. +1 HeartCoin earned.");
             // Trigger HeartCoin celebration animation
             triggerHeartCoinCelebration(1);
+            // Suppress the duplicate celebration from realtime subscription
+            suppressNextHeartcoinCelebration();
           } else {
             // Already completed today - soft success
             showCelebration("✨ Quest already completed today! Check back tomorrow for new opportunities.");
@@ -773,6 +781,8 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         // Update displayed heartcoin balance (optimistically add data.rewardHeartCoins OR refetch profile)
         if (data.rewardHeartCoins && data.rewardHeartCoins > 0) {
           triggerHeartCoinCelebration(data.rewardHeartCoins);
+          // Suppress the duplicate celebration from realtime subscription
+          suppressNextHeartcoinCelebration();
           // Refresh profile to update balance
           await refreshProfile();
         }
@@ -857,6 +867,8 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
           if (data.status === 'completed_today') {
             showCelebration("🎵 Elemental Song Complete! Your musical essence has been awakened. +2 HeartCoins + Element Card earned.");
             triggerHeartCoinCelebration(elementalSongQuest.reward_heartcoins || 2);
+            // Suppress the duplicate celebration from realtime subscription
+            suppressNextHeartcoinCelebration();
           } else {
             showCelebration("✨ Quest already completed today! Check back tomorrow for new opportunities.");
           }

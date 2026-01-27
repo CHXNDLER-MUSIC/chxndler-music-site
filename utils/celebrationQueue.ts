@@ -37,7 +37,12 @@ let isProcessingQueue = false;
 
 // Flag to temporarily suppress all badge celebrations (e.g., during tour)
 let suppressCelebrations = false;
+let suppressionEndTime: number = 0;
 let suppressionTimeout: NodeJS.Timeout | null = null;
+
+// Listeners for suppression end events
+type SuppressionEndListener = () => void;
+const suppressionEndListeners: Set<SuppressionEndListener> = new Set();
 
 /**
  * Marks that a HeartCoin celebration has started.
@@ -216,34 +221,93 @@ export function clearBadgeCelebrationQueue(): void {
  *
  * Badges queued during suppression are NOT lost - they will be drained when
  * suppression ends (either via timeout or enableBadgeCelebrations).
+ *
+ * Multiple calls extend suppression to the maximum end time (resilient to repeated calls).
  */
 export function suppressBadgeCelebrations(durationMs: number = 10000): void {
   suppressCelebrations = true;
 
-  // Clear any existing timeout
-  if (suppressionTimeout) {
-    clearTimeout(suppressionTimeout);
-  }
+  const newEndTime = Date.now() + durationMs;
 
-  // Auto-clear suppression after duration and drain queued badges
-  suppressionTimeout = setTimeout(() => {
-    suppressCelebrations = false;
-    suppressionTimeout = null;
-    debugQueue("Suppression auto-cleared, draining queue", {
-      queue_length: badgeCelebrationQueue.length
+  // Use max end time if multiple calls overlap
+  if (newEndTime > suppressionEndTime) {
+    suppressionEndTime = newEndTime;
+
+    // Clear any existing timeout
+    if (suppressionTimeout) {
+      clearTimeout(suppressionTimeout);
+    }
+
+    // Auto-clear suppression after duration and notify listeners
+    suppressionTimeout = setTimeout(() => {
+      suppressCelebrations = false;
+      suppressionEndTime = 0;
+      suppressionTimeout = null;
+      debugQueue("Suppression auto-cleared, notifying listeners", {
+        queue_length: badgeCelebrationQueue.length,
+        listener_count: suppressionEndListeners.size
+      });
+
+      // Notify all listeners that suppression has ended
+      notifySuppressionEnd();
+
+      // Drain any badges that were queued during suppression
+      processQueue();
+    }, durationMs);
+
+    debugQueue("Badge celebrations suppressed", { durationMs, endTime: suppressionEndTime });
+  } else {
+    debugQueue("Badge celebrations suppression extended (existing end time is later)", {
+      currentEndTime: suppressionEndTime,
+      requestedEndTime: newEndTime
     });
-    // Drain any badges that were queued during suppression
-    processQueue();
-  }, durationMs);
+  }
+}
 
-  debugQueue("Badge celebrations suppressed", { durationMs });
+/**
+ * Notify all suppression end listeners
+ */
+function notifySuppressionEnd(): void {
+  suppressionEndListeners.forEach(listener => {
+    try {
+      listener();
+    } catch (err) {
+      console.error('[CELEBRATION_QUEUE] Error in suppression end listener:', err);
+    }
+  });
+}
+
+/**
+ * Subscribe to suppression end events.
+ * Returns an unsubscribe function.
+ */
+export function onSuppressionEnd(listener: SuppressionEndListener): () => void {
+  suppressionEndListeners.add(listener);
+  debugQueue("Added suppression end listener", { count: suppressionEndListeners.size });
+
+  return () => {
+    suppressionEndListeners.delete(listener);
+    debugQueue("Removed suppression end listener", { count: suppressionEndListeners.size });
+  };
+}
+
+/**
+ * Get remaining suppression time in milliseconds.
+ * Returns 0 if not suppressed.
+ */
+export function getSuppressionRemainingTime(): number {
+  if (!suppressCelebrations) return 0;
+  const remaining = suppressionEndTime - Date.now();
+  return remaining > 0 ? remaining : 0;
 }
 
 /**
  * Immediately re-enable badge celebrations and drain any queued badges.
  */
 export function enableBadgeCelebrations(): void {
+  const wasSuppressed = suppressCelebrations;
   suppressCelebrations = false;
+  suppressionEndTime = 0;
   if (suppressionTimeout) {
     clearTimeout(suppressionTimeout);
     suppressionTimeout = null;
@@ -251,6 +315,12 @@ export function enableBadgeCelebrations(): void {
   debugQueue("Badge celebrations enabled, draining queue", {
     queue_length: badgeCelebrationQueue.length
   });
+
+  // Notify listeners if we were suppressed
+  if (wasSuppressed) {
+    notifySuppressionEnd();
+  }
+
   // Immediately drain any badges that were queued during suppression
   processQueue();
 }

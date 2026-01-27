@@ -41,7 +41,7 @@ export default function SignInPage() {
         options: { emailRedirectTo: getRedirectUrl() },
       });
       if (error) throw error;
-      setMessage("Check your email for a magic link.");
+      setMessage("Check your email to continue");
     } catch (e: any) {
       setError(e?.message || "Failed to send magic link");
     } finally {
@@ -97,7 +97,7 @@ export default function SignInPage() {
             disabled={loading || email.length === 0}
             className="w-full inline-flex items-center justify-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50 disabled:opacity-50"
           >
-            Send magic link
+            Enter the Heartverse
           </button>
         </form>
       </div>

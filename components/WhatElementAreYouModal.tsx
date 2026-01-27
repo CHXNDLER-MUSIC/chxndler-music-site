@@ -10,7 +10,7 @@ import { useAudio } from "@/app/providers/AudioProvider";
 import { sfx } from "@/lib/sfx";
 import type { Element } from "@/lib/planets";
 import { ELEMENT_COLORS } from "@/lib/planets";
-import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
+// HeartCoin celebration is now handled by HeartcoinBalanceProvider via realtime subscription
 
 // Element sound mappings
 const ELEMENT_SOUNDS: Record<Element, string> = {
@@ -177,20 +177,21 @@ export default function WhatElementAreYouModal() {
           .eq('id', currentUser.id);
       }
 
-      // Refresh profile to get updated data
-      await refreshProfile();
-
-      console.log('Profile completed! Name:', alienName, 'Element:', selectedElement);
-
       // Close element selection modal
       closeElementSelection();
 
       // Trigger profile refresh to update the UI
       triggerProfileRefresh();
 
-      // Trigger HeartCoin celebration on successful alignment
-      console.log('🪙 Alignment successful! Showing HeartCoin celebration');
-      triggerHeartCoinCelebration(1);
+      // DO NOT call triggerHeartCoinCelebration here!
+      // The HeartcoinBalanceProvider will detect the transaction via realtime subscription
+      // and trigger the celebration automatically. Calling it here causes duplicates.
+      console.log('🪙 Alignment successful! HeartCoin celebration will be triggered by realtime subscription');
+
+      // Refresh profile to get updated data (profile_complete will be set)
+      await refreshProfile();
+
+      console.log('Profile completed! Name:', alienName, 'Element:', selectedElement);
 
       // Trigger warp to Heartverse center planet and play heart.mp3
       console.log('🚀 Triggering warp to Heartverse');
@@ -212,14 +213,16 @@ export default function WhatElementAreYouModal() {
         }
       }, 500);
 
-      // Show tour welcome modal after warp and celebrations complete
-      // Delay accounts for: HeartCoin celebration (3s) + Badge celebration delay (4s) + Badge duration (~3.5s)
+      // Tour prompt will be shown after badge celebration completes via badge:celebration-complete event
+      // This ensures proper order: HeartCoin celebration → Badge celebration → Tour prompt
+      // Fallback: dispatch heartverse:entered after 12 seconds in case badge celebration doesn't trigger tour
+      // This gives time for: HeartCoin (3s) + wait (0.3s) + Badge (1.6s) + buffer = ~5s, plus extra margin
       setTimeout(() => {
         try {
-          console.log('Dispatching heartverse:entered event to show tour prompt');
+          console.log('Dispatching heartverse:entered fallback event');
           window.dispatchEvent(new CustomEvent('heartverse:entered'));
         } catch {}
-      }, 10000); // Wait for HeartCoin + Badge celebrations to complete
+      }, 12000);
     } catch (e: any) {
       setError(e?.message || "Failed to save element selection");
       setLoading(false);

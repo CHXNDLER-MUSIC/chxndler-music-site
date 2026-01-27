@@ -49,7 +49,7 @@ export default function LoginModal({ open, onClose }: Props) {
         options: { emailRedirectTo: getRedirectUrl() },
       });
       if (error) throw error;
-      setMessage("Check your email for a magic link.");
+      setMessage("Check your email to continue");
     } catch (e: any) {
       setError(e?.message || "Failed to send magic link");
     } finally {
@@ -166,12 +166,12 @@ export default function LoginModal({ open, onClose }: Props) {
                   disabled={loading || email.length === 0}
                   className="w-full inline-flex items-center justify-center rounded-lg bg-[#FC54AF]/20 border-2 border-[#FC54AF]/60 px-4 py-3 text-sm font-medium text-white hover:bg-[#FC54AF]/30 transition disabled:opacity-50"
                   style={{
-                    boxShadow: loading || email.length === 0 
-                      ? 'none' 
+                    boxShadow: loading || email.length === 0
+                      ? 'none'
                       : '0 0 20px rgba(252,84,175,0.6), 0 0 40px rgba(252,84,175,0.4), inset 0 0 10px rgba(252,84,175,0.2)'
                   }}
                 >
-                  CONNECT
+                  Enter the Heartverse
                 </button>
               </form>
             </div>

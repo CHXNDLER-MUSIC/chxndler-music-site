@@ -6,6 +6,7 @@ import { useBadgeCelebrations, type BadgeCelebrationItem } from '@/lib/useBadgeC
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useCelebrationLock } from '@/lib/celebrationQueue';
 import { isCelebrationAudioAllowed } from '@/utils/celebrationAudio';
+import { isHeartcoinCelebrationActive, getHeartcoinCelebrationRemainingTime } from '@/utils/celebrationQueue';
 
 type CelebrationPhase = 'idle' | 'badge';
 
@@ -43,31 +44,59 @@ export default function BadgeCelebrationController() {
     }
   }, []);
 
-  // Process next item in queue when idle and lock is available
+  // Process next item in queue when idle, HeartCoin celebration is done, and lock is available
   useEffect(() => {
     if (phase !== 'idle' || !next || processingRef.current) return;
 
-    // Try to acquire the celebration lock
+    // Function to start the badge celebration
+    const startBadgeCelebration = () => {
+      if (acquire()) {
+        processingRef.current = true;
+        setCurrentItem(next);
+        setPhase('badge');
+        playBadgeSound();
+        return true;
+      }
+      return false;
+    };
+
+    // Check if HeartCoin celebration is active - wait for it to finish
+    if (isHeartcoinCelebrationActive()) {
+      const remainingTime = getHeartcoinCelebrationRemainingTime();
+      console.log('[BadgeCelebration] Waiting for HeartCoin celebration to finish', { remainingTime });
+
+      const waitTimeout = setTimeout(() => {
+        // After waiting, try to acquire lock and start
+        if (!canAcquire) {
+          // Start polling for lock availability
+          const checkInterval = setInterval(() => {
+            if (!isHeartcoinCelebrationActive() && acquire()) {
+              clearInterval(checkInterval);
+              startBadgeCelebration();
+            }
+          }, 100);
+          // Store cleanup
+          return () => clearInterval(checkInterval);
+        }
+        startBadgeCelebration();
+      }, remainingTime + 300); // Add small buffer after HeartCoin celebration
+
+      return () => clearTimeout(waitTimeout);
+    }
+
+    // No HeartCoin celebration active, try to acquire lock
     if (!canAcquire) {
       // Wait for lock - check again via interval
       const checkInterval = setInterval(() => {
-        if (acquire()) {
+        if (!isHeartcoinCelebrationActive() && acquire()) {
           clearInterval(checkInterval);
-          processingRef.current = true;
-          setCurrentItem(next);
-          setPhase('badge');
-          playBadgeSound();
+          startBadgeCelebration();
         }
       }, 100);
       return () => clearInterval(checkInterval);
     }
 
-    if (acquire()) {
-      processingRef.current = true;
-      setCurrentItem(next);
-      setPhase('badge');
-      playBadgeSound();
-    }
+    startBadgeCelebration();
   }, [next, phase, playBadgeSound, canAcquire, acquire]);
 
   // Handle phase transitions

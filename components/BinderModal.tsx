@@ -8,6 +8,7 @@ import { Card, CardTier, ProfileTier, isCardLocked, getCardGateState, getTierDis
 import type { CardGateState } from "@/utils/cardGating";
 import PopoutShell from "@/components/PopoutShell";
 import { triggerCardCelebration } from "@/utils/cardCelebration";
+import { suppressBadgeCelebrations } from "@/utils/celebrationQueue";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import TiltSpinCard from "@/components/TiltSpinCard";
 import { useUserCards } from "@/hooks/useUserCards";
@@ -650,6 +651,9 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     } catch {}
   }, [ownedCards, selectedElement]);
 
+  // In-flight guard for purchases to prevent double submission
+  const purchaseInFlightRef = useRef(false);
+
   // Auto-assign unassigned digital cards to empty binder slots when modal opens
   const autoAssignInProgress = useRef(false);
   useEffect(() => {
@@ -744,6 +748,11 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
   };
 
   const handleConfirmPurchase = async () => {
+    // DEFENSIVE GUARD: Block duplicate requests
+    if (purchaseInFlightRef.current) {
+      console.warn('[BINDER PURCHASE] Blocked: purchase already in-flight');
+      return;
+    }
     if (!selectedPurchaseType || !profile) return;
 
     const cost = getCost(selectedPurchaseType);
@@ -765,20 +774,50 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       return;
     }
 
+    // Set in-flight BEFORE any async work
+    purchaseInFlightRef.current = true;
+    console.log('[BINDER PURCHASE] In-flight set TRUE');
+
     try {
       let response;
 
       if (selectedPurchaseType === 'digital') {
-        // Use digital card RPC with validated UUID
-        response = await supabaseBrowser.rpc('purchase_digital_card', {
-          p_card_id: cardId,
+        // DEFENSIVE GUARD: Validate UUID length
+        if (cardId.length !== 36) {
+          console.error('[BINDER PURCHASE] UUID length mismatch:', { cardId, length: cardId.length });
+          alert('Purchase failed: invalid card id length');
+          return;
+        }
+
+        // DEFENSIVE GUARD: Build args object with ONLY p_card_id key
+        const digitalArgs: { p_card_id: string } = { p_card_id: cardId };
+
+        // DEFENSIVE GUARD: Assert args has exactly one key named "p_card_id"
+        const argKeys = Object.keys(digitalArgs);
+        if (argKeys.length !== 1 || argKeys[0] !== 'p_card_id') {
+          console.error('[BINDER PURCHASE] Unexpected args keys:', { keys: argKeys, args: JSON.stringify(digitalArgs) });
+          alert('Purchase failed: invalid args');
+          return;
+        }
+
+        console.log('[BINDER PURCHASE] sending RPC with validated args:', {
+          cardId,
+          argKeys,
+          argsJson: JSON.stringify(digitalArgs),
         });
+
+        // Use digital card RPC with validated args (no spread, no dynamic keys)
+        response = await supabaseBrowser.rpc('purchase_digital_card', digitalArgs);
       } else {
         // For physical cards, validate shipping first
         if (!validateShippingForm()) {
           return;
         }
-        
+
+        // Suppress badge celebrations during physical card purchase
+        // This prevents unrelated badges from celebrating when profile refreshes
+        suppressBadgeCelebrations(10000);
+
         // Use new physical card RPC
         response = await supabaseBrowser.rpc('purchase_physical_card_with_heartcoins', {
           p_card_id: cardId,
@@ -830,13 +869,17 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     } catch (error) {
       try { sfx.play('error', 0.8); } catch {}
       console.error('Purchase failed:', error);
-      
+
       // Check if it's an insufficient funds error
       if (error instanceof Error && error.message.includes('INSUFFICIENT_FUNDS')) {
         setPurchaseState('insufficient');
       } else {
         resetPurchaseState();
       }
+    } finally {
+      // Always reset in-flight flag
+      purchaseInFlightRef.current = false;
+      console.log('[BINDER PURCHASE] In-flight reset FALSE');
     }
   };
 
@@ -932,9 +975,13 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     const currentCard = cards[currentCardIndex];
     
     if (!currentCard) return;
-    
+
+    // Suppress badge celebrations during physical card purchase
+    // This prevents unrelated badges from celebrating when profile refreshes
+    suppressBadgeCelebrations(10000);
+
     // The RPC will handle balance verification
-    
+
     try {
       // Create physical order
       const orderData: Omit<PhysicalCardOrder, 'id' | 'created_at'> = {

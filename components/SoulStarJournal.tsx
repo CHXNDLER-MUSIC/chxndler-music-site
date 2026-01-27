@@ -460,6 +460,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           // If no button position, skip animation and trigger rewards immediately
           if (awardedCoins > 0) {
             triggerHeartCoinCelebration(awardedCoins);
+            // Suppress the duplicate celebration from realtime subscription
+            suppressNextHeartcoinCelebration();
           }
           onJournalCompleted?.();
           try {
@@ -553,6 +555,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
     const rewardAmount = pendingRewardRef.current;
     if (rewardAmount > 0) {
       triggerHeartCoinCelebration(rewardAmount);
+      // Suppress the duplicate celebration from realtime subscription
+      suppressNextHeartcoinCelebration();
       pendingRewardRef.current = 0;
       setPendingRewardData(null);
     }

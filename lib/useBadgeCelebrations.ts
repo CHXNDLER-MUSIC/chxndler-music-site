@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import type { RealtimePostgresInsertPayload } from '@supabase/supabase-js';
-import { areBadgeCelebrationsSuppressed } from '@/utils/celebrationQueue';
+import { areBadgeCelebrationsSuppressed, onSuppressionEnd } from '@/utils/celebrationQueue';
 
 // ============================================================================
 // DEBUG FLAG - Toggle to enable/disable debug logging
@@ -126,6 +126,13 @@ function isBadgeSeen(badgeId: string, earnedAt: string, seenMap: Map<string, See
 // Main Hook
 // ============================================================================
 
+// Pending badge type for suppression queue
+interface PendingBadge {
+  badgeId: string;
+  earnedAt: string;
+  rowId: string;
+}
+
 export function useBadgeCelebrations(userId: string | null): UseBadgeCelebrationsReturn {
   const [queue, setQueue] = useState<BadgeCelebrationItem[]>([]);
   const seenBadgesRef = useRef<Map<string, SeenBadgeEntry>>(new Map());
@@ -140,6 +147,10 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
   const skippedInBatchRef = useRef<Set<string>>(new Set());
   // Track when the subscription was established - only celebrate badges earned AFTER this time
   const subscriptionStartTimeRef = useRef<string | null>(null);
+  // Pending badges queue for badges that arrive during suppression (keyed by badge_id to dedupe)
+  const pendingBadgesRef = useRef<Map<string, PendingBadge>>(new Map());
+  // Unsubscribe function for suppression end listener
+  const unsubscribeSuppressionRef = useRef<(() => void) | null>(null);
 
   const pop = useCallback(() => {
     setQueue((prev) => prev.slice(1));
@@ -268,86 +279,133 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
               return;
             }
 
-            // Mark as seen immediately to prevent duplicate processing
-            markBadgeAsSeen(newRow.badge_id, newRow.earned_at, seenBadgesRef.current);
-
-            // If celebrations are suppressed (e.g., during initial load), skip enqueuing
+            // CRITICAL FIX: Check suppression BEFORE marking as seen
+            // If suppressed, queue the badge for later (don't mark as seen yet)
             if (areBadgeCelebrationsSuppressed()) {
-              debugCelebration("BADGE_CELEBRATION_SKIPPED_DUP", {
-                badgeId: newRow.badge_id,
-                reason: "suppressed"
-              });
-              return;
-            }
-
-            // Batch window: only celebrate the first badge when multiple unlock rapidly
-            const now = Date.now();
-            const timeSinceLastBadge = now - lastBadgeQueuedTimeRef.current;
-            if (timeSinceLastBadge < BATCH_WINDOW_MS && lastBadgeQueuedTimeRef.current > 0) {
-              // Another badge was just queued - skip this one to avoid celebration spam
-              skippedInBatchRef.current.add(newRow.badge_id);
-              debugCelebration("BADGE_CELEBRATION_SKIPPED_BATCH", {
-                badgeId: newRow.badge_id,
-                timeSinceLastMs: timeSinceLastBadge,
-                reason: "batch_window",
-                totalSkippedInBatch: skippedInBatchRef.current.size
-              });
-              return;
-            }
-
-            // Fetch badge details from public.badges
-            const { data: badge, error } = await supabaseBrowser
-              .from('badges')
-              .select('id, badge_name, icon_url, heart_coins')
-              .eq('id', newRow.badge_id)
-              .single();
-
-            if (error || !badge) {
-              console.error('[BADGE_CELEBRATION] Failed to fetch badge details:', error);
-              return;
-            }
-
-            const celebrationItem: BadgeCelebrationItem = {
-              id: newRow.id,
-              badgeId: badge.id,
-              badgeName: badge.badge_name,
-              iconUrl: badge.icon_url || '/elements/badge-default.webp',
-              heartCoins: badge.heart_coins ?? 0,
-              earnedAt: newRow.earned_at,
-            };
-
-            debugCelebration("BADGE_CELEBRATION_ENQUEUE", {
-              badge_id: celebrationItem.badgeId,
-              badge_name: celebrationItem.badgeName,
-              earned_at: celebrationItem.earnedAt
-            });
-
-            // Update batch window timestamp - this badge will be celebrated
-            lastBadgeQueuedTimeRef.current = Date.now();
-            // Clear skipped badges from any previous batch
-            skippedInBatchRef.current.clear();
-
-            // Add to queue
-            setQueue((prev) => {
-              // Double-check we don't already have this item in queue
-              const alreadyInQueue = prev.some(item =>
-                item.badgeId === celebrationItem.badgeId &&
-                item.earnedAt === celebrationItem.earnedAt
-              );
-              if (alreadyInQueue) {
-                debugCelebration("BADGE_CELEBRATION_SKIPPED_DUP", {
-                  badgeId: celebrationItem.badgeId,
-                  reason: "already_in_queue"
+              // Add to pending queue (keyed by badge_id to prevent duplicates)
+              if (!pendingBadgesRef.current.has(newRow.badge_id)) {
+                pendingBadgesRef.current.set(newRow.badge_id, {
+                  badgeId: newRow.badge_id,
+                  earnedAt: newRow.earned_at,
+                  rowId: newRow.id,
                 });
-                return prev;
+                debugCelebration("BADGE_CELEBRATION_DEFERRED", {
+                  badgeId: newRow.badge_id,
+                  reason: "suppressed - queued for later",
+                  pendingCount: pendingBadgesRef.current.size
+                });
+              } else {
+                debugCelebration("BADGE_CELEBRATION_SKIPPED_DUP", {
+                  badgeId: newRow.badge_id,
+                  reason: "already_in_pending_queue"
+                });
               }
-              return [...prev, celebrationItem];
-            });
+              return;
+            }
+
+            // Not suppressed - process immediately
+            await processBadgeCelebration(newRow.badge_id, newRow.earned_at, newRow.id);
           }
         )
         .subscribe((status) => {
           debugCelebration("Subscription status", { status, channelName });
         });
+
+      // Helper function to process a badge celebration
+      async function processBadgeCelebration(badgeId: string, earnedAt: string, rowId: string) {
+        // Re-check if already seen (in case another tab celebrated it)
+        if (isBadgeSeen(badgeId, earnedAt, seenBadgesRef.current)) {
+          debugCelebration("BADGE_CELEBRATION_SKIPPED_DUP", {
+            badgeId,
+            reason: "already_seen_on_process"
+          });
+          return;
+        }
+
+        // Batch window: only celebrate the first badge when multiple unlock rapidly
+        const now = Date.now();
+        const timeSinceLastBadge = now - lastBadgeQueuedTimeRef.current;
+        if (timeSinceLastBadge < BATCH_WINDOW_MS && lastBadgeQueuedTimeRef.current > 0) {
+          // Another badge was just queued - skip this one to avoid celebration spam
+          // But still mark as seen so it doesn't replay
+          skippedInBatchRef.current.add(badgeId);
+          markBadgeAsSeen(badgeId, earnedAt, seenBadgesRef.current);
+          debugCelebration("BADGE_CELEBRATION_SKIPPED_BATCH", {
+            badgeId,
+            timeSinceLastMs: timeSinceLastBadge,
+            reason: "batch_window",
+            totalSkippedInBatch: skippedInBatchRef.current.size
+          });
+          return;
+        }
+
+        // Fetch badge details from public.badges
+        const { data: badge, error } = await supabaseBrowser
+          .from('badges')
+          .select('id, badge_name, icon_url, heart_coins')
+          .eq('id', badgeId)
+          .single();
+
+        if (error || !badge) {
+          console.error('[BADGE_CELEBRATION] Failed to fetch badge details:', error);
+          return;
+        }
+
+        const celebrationItem: BadgeCelebrationItem = {
+          id: rowId,
+          badgeId: badge.id,
+          badgeName: badge.badge_name,
+          iconUrl: badge.icon_url || '/elements/badge-default.webp',
+          heartCoins: badge.heart_coins ?? 0,
+          earnedAt: earnedAt,
+        };
+
+        debugCelebration("BADGE_CELEBRATION_ENQUEUE", {
+          badge_id: celebrationItem.badgeId,
+          badge_name: celebrationItem.badgeName,
+          earned_at: celebrationItem.earnedAt
+        });
+
+        // Update batch window timestamp - this badge will be celebrated
+        lastBadgeQueuedTimeRef.current = Date.now();
+        // Clear skipped badges from any previous batch
+        skippedInBatchRef.current.clear();
+
+        // Mark as seen NOW (right before adding to celebration queue)
+        markBadgeAsSeen(badgeId, earnedAt, seenBadgesRef.current);
+
+        // Add to queue
+        setQueue((prev) => {
+          // Double-check we don't already have this item in queue
+          const alreadyInQueue = prev.some(item =>
+            item.badgeId === celebrationItem.badgeId &&
+            item.earnedAt === celebrationItem.earnedAt
+          );
+          if (alreadyInQueue) {
+            debugCelebration("BADGE_CELEBRATION_SKIPPED_DUP", {
+              badgeId: celebrationItem.badgeId,
+              reason: "already_in_queue"
+            });
+            return prev;
+          }
+          return [...prev, celebrationItem];
+        });
+      }
+
+      // Subscribe to suppression end event to flush pending badges
+      unsubscribeSuppressionRef.current = onSuppressionEnd(async () => {
+        debugCelebration("Suppression ended, flushing pending badges", {
+          pendingCount: pendingBadgesRef.current.size
+        });
+
+        // Process all pending badges
+        const pendingBadges = Array.from(pendingBadgesRef.current.values());
+        pendingBadgesRef.current.clear();
+
+        for (const pending of pendingBadges) {
+          await processBadgeCelebration(pending.badgeId, pending.earnedAt, pending.rowId);
+        }
+      });
 
       subscribedUserIdRef.current = userId;
       initializingRef.current = false;
@@ -362,6 +420,13 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
         supabaseBrowser.removeChannel(channelRef.current);
         channelRef.current = null;
       }
+      // Unsubscribe from suppression end listener
+      if (unsubscribeSuppressionRef.current) {
+        unsubscribeSuppressionRef.current();
+        unsubscribeSuppressionRef.current = null;
+      }
+      // Clear pending badges
+      pendingBadgesRef.current.clear();
       subscribedUserIdRef.current = null;
       initializingRef.current = false;
       subscriptionStartTimeRef.current = null;

@@ -19,7 +19,7 @@ import { usePlanetRewardsContext } from '@/components/PlanetRewardsProvider';
 import { getElementalPlanetImage } from '@/lib/elementalPlanets';
 import { ELEMENT_COLORS, Element } from '@/lib/planets';
 import { triggerMerchCelebration } from '@/utils/merchCelebration';
-import { triggerHeartCoinCelebration } from '@/utils/heartcoinCelebration';
+import { triggerHeartCoinCelebration, suppressNextHeartcoinCelebration } from '@/utils/heartcoinCelebration';
 import { triggerElementCardCelebration } from '@/utils/elementCardCelebration';
 import { triggerCardCelebration } from '@/utils/cardCelebration';
 
@@ -1191,12 +1191,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     return ownedCards.some(uc => uc.card_id === cardId && uc.is_digital === true);
   }, [ownedCards]);
 
-  // Normalize UUID - strip quotes, whitespace, and ensure valid string
-  const normalizeUuid = (value: unknown): string => {
-    if (typeof value !== "string") return "";
-    return value.trim().replace(/^"+|"+$/g, "");
-  };
-
   // State for secret phrase quest
   const [secretPhraseInputVisible, setSecretPhraseInputVisible] = useState<string | null>(null);
   const [secretPhraseValue, setSecretPhraseValue] = useState("");
@@ -1266,11 +1260,12 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     if (quest.quest_key === 'JOURNAL_ENTRY_OF_DAY') {
       return dailyQuests.journalEntry || quest.completed_today > 0 || completedQuests.has(quest.id);
     }
-    // For ATTEND_LIVESTREAM quest, check local state and localStorage to persist until next calendar day
+    // For ATTEND_LIVESTREAM quest, check local state, localStorage, and phraseStatus (from secret_phrase_redemptions)
+    // Note: Do NOT check quest.completed_today here - ATTEND_LIVESTREAM uses secret_phrase_redemptions table, not user_bonus_quest_completions
     if (quest.quest_key === 'ATTEND_LIVESTREAM') {
       const today = new Date().toDateString();
       const localStorageCheckedIn = typeof window !== 'undefined' && localStorage.getItem(`quest_liveshow_${today}`) === 'true';
-      return dailyQuests.checkedIn || localStorageCheckedIn || quest.completed_today > 0 || completedQuests.has(quest.id);
+      return dailyQuests.checkedIn || localStorageCheckedIn || phraseStatus === 'already' || completedQuests.has(quest.id);
     }
     // For other daily quests, check completed_today
     if (quest.completed_today !== undefined) {
@@ -1660,6 +1655,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           // Trigger heartcoin celebration for Invite an Alien completion
           const rewardAmount = quest.reward_heartcoins > 0 ? quest.reward_heartcoins : 1;
           triggerHeartCoinCelebration(rewardAmount);
+          // Suppress the duplicate celebration from realtime subscription
+          suppressNextHeartcoinCelebration();
         }
 
         setTimeout(() => {
@@ -1786,16 +1783,23 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
     const selectedCard = targetCard || enlargedCard;
 
-    // Extract UUID from selectedCard - it may be a string or an object with .id
-    // Use normalizeUuid to strip quotes, whitespace, and ensure it's a clean string
-    const rawCardId =
-      typeof selectedCard === 'string'
-        ? selectedCard
-        : selectedCard?.id;
-    const cardUuid = normalizeUuid(rawCardId);
+    // SINGLE SOURCE OF TRUTH: Use selectedCard.id directly from Supabase
+    // Do NOT use derived IDs, normalized IDs, or DOM data attributes
+    const cardUuid = selectedCard?.id?.trim?.() ?? '';
 
     // UUID v4 format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (8-4-4-4-12 hex digits)
-    const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    // HARD VALIDATION GUARD: Block invalid UUIDs before any processing
+    if (!UUID_REGEX.test(String(cardUuid))) {
+      console.error('[CARD PURCHASE] Invalid UUID detected - blocking purchase', {
+        cardUuid,
+        cardUuidLength: cardUuid?.length,
+        selectedCard: selectedCard ? { id: selectedCard.id, card_name: selectedCard.card_name } : null,
+      });
+      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Purchase failed: invalid card ID', type: 'error' } })); } catch {}
+      return;
+    }
 
     // Defensive guard: check if card is already owned (digital)
     if (cardUuid && isCardOwned(cardUuid)) {
@@ -1820,12 +1824,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Please log in to buy cards', type: 'error' } })); } catch {}
       return;
     }
-    // Validate UUID format before RPC - must be non-null, non-empty, and valid UUID format
-    if (!cardUuid || !UUID_REGEX.test(cardUuid)) {
-      console.error('[CARD PURCHASE] Invalid card UUID:', { rawCardId, cardUuid });
-      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Purchase failed: invalid card id', type: 'error' } })); } catch {}
-      return;
-    }
+    // UUID already validated above - no duplicate check needed
     if (showCardConfirm !== 'digital' && !targetCard) {
       console.warn('[CARD PURCHASE] GUARD: confirm type is not digital');
       return;
@@ -1846,13 +1845,40 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     console.log('[CARD PURCHASE] In-flight set TRUE');
 
     try {
-      // Debug log immediately before RPC
-      console.log('[CARD PURCHASE] sending UUID:', cardUuid, typeof cardUuid);
+      // DEFENSIVE GUARD 1: Normalize and validate UUID format
+      const uuid = String(cardUuid ?? '').trim();
+      const UUID_REGEX_STRICT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-      // Call RPC with validated UUID
-      const { data, error } = await supabaseBrowser.rpc('purchase_digital_card', {
-        p_card_id: cardUuid
+      if (uuid.length !== 36) {
+        console.error('[CARD PURCHASE] UUID length mismatch:', { uuid, length: uuid.length, expected: 36 });
+        throw new Error(`Invalid UUID length: ${uuid.length} (expected 36)`);
+      }
+
+      if (!UUID_REGEX_STRICT.test(uuid)) {
+        console.error('[CARD PURCHASE] UUID regex failed:', { uuid });
+        throw new Error('Invalid UUID format');
+      }
+
+      // DEFENSIVE GUARD 2: Build args object with ONLY p_card_id key
+      const args: { p_card_id: string } = { p_card_id: uuid };
+
+      // DEFENSIVE GUARD 3: Assert args has exactly one key named "p_card_id"
+      const argKeys = Object.keys(args);
+      if (argKeys.length !== 1 || argKeys[0] !== 'p_card_id') {
+        console.error('[CARD PURCHASE] Unexpected args keys:', { keys: argKeys, args: JSON.stringify(args) });
+        throw new Error(`Invalid args object: keys=${JSON.stringify(argKeys)}, values=${JSON.stringify(args)}`);
+      }
+
+      // Debug log immediately before RPC
+      console.log('[CARD PURCHASE] sending RPC with validated args:', {
+        uuid,
+        uuidLength: uuid.length,
+        argKeys,
+        argsJson: JSON.stringify(args),
       });
+
+      // Call RPC with validated args object (no spread, no dynamic keys)
+      const { data, error } = await supabaseBrowser.rpc('purchase_digital_card', args);
 
       if (error) {
         // Log fully expanded error object
@@ -3802,6 +3828,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     // Trigger HeartCoin celebration with the reward amount
                                     if (reward > 0) {
                                       triggerHeartCoinCelebration(reward);
+                                      // Suppress the duplicate celebration from realtime subscription
+                                      suppressNextHeartcoinCelebration();
                                     }
                                     setCheckInMessage(`Secret phrase accepted! +${reward} HeartCoins`);
                                     setStatusType('success');
@@ -5519,6 +5547,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
+                              // Block if already in-flight
+                              if (isPurchasing || cardPurchaseInFlightRef.current) {
+                                console.warn('[CARD PURCHASE] BUTTON GUARD: blocked duplicate click');
+                                return;
+                              }
                               try { sfx.play('click', 0.6); } catch {}
                               // Digital purchase confirm handler
                               if (showCardConfirm === 'digital') {
@@ -5530,10 +5563,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               }
                             }}
                             onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
-                            className="px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg hover:scale-110 border-green-500/60 bg-green-500/20 hover:bg-green-500/40 hover:border-green-400 hover:shadow-[0_0_30px_rgba(34,197,94,0.8)]"
+                            disabled={isPurchasing}
+                            className={`px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg border-green-500/60 bg-green-500/20 ${isPurchasing ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110 hover:bg-green-500/40 hover:border-green-400 hover:shadow-[0_0_30px_rgba(34,197,94,0.8)]'}`}
                             style={{ textShadow: '0 0 8px rgba(34,197,94,0.8)', boxShadow: '0 0 15px rgba(34,197,94,0.4)' }}
                           >
-                            CONFIRM
+                            {isPurchasing ? 'Processing...' : 'CONFIRM'}
                           </button>
                         )}
                       </>

@@ -5,7 +5,7 @@ import { useProfile } from "@/contexts/ProfileContext";
 import { useMenuState } from "@/contexts/MenuStateContext";
 import OnboardingTour from "@/components/OnboardingTour";
 import { sfx } from "@/lib/sfx";
-import { suppressBadgeCelebrations } from "@/utils/celebrationQueue";
+import { suppressBadgeCelebrations, isHeartcoinCelebrationActive } from "@/utils/celebrationQueue";
 
 type TourContextValue = {
   active: boolean;
@@ -115,6 +115,14 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
 
     if (profile.profile_complete) {
       autostartGuard.current = true;
+
+      // If HeartCoin celebration is active (during onboarding), don't auto-start
+      // The badge celebration will trigger the tour after it completes
+      if (isHeartcoinCelebrationActive()) {
+        console.log('[Tour] HeartCoin celebration active, deferring tour to badge celebration');
+        return;
+      }
+
       // show welcome a tick later so UI settles after the last modal
       setTimeout(() => setWelcomeVisible(true), 250);
     }
@@ -123,29 +131,33 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   // Listen to a global event for explicit start (emitted on ENTER THE HEARTVERSE if needed)
   useEffect(() => {
     const onEntered = () => {
-      // Clear any previous tour state to ensure welcome shows when explicitly entering heartverse
-      clearDisabled();
-      setWelcomeVisible(true);
+      // Only show if user hasn't completed the tour yet
+      const completed = profile?.has_seen_tour || isCompleted();
+      if (!completed && !isDisabled()) {
+        clearDisabled();
+        setWelcomeVisible(true);
+      }
     };
     window.addEventListener("heartverse:entered", onEntered);
     return () => window.removeEventListener("heartverse:entered", onEntered);
-  }, [clearDisabled]);
+  }, [clearDisabled, profile, isCompleted, isDisabled]);
 
-  // Listen for Wanderer badge completion to show tour prompt
+  // Listen for any badge completion during onboarding to show tour prompt
   useEffect(() => {
     const onBadgeCelebrationComplete = (event: CustomEvent<{ badgeTitle: string; badgeImage: string }>) => {
       const { badgeTitle } = event.detail;
-      // Check if this is the Wanderer badge (case-insensitive match)
-      if (badgeTitle?.toLowerCase().includes('wanderer')) {
-        // Only show if user hasn't completed the tour yet
-        const completed = profile?.has_seen_tour || isCompleted();
-        if (!completed && !isDisabled()) {
-          // Small delay to let badge celebration fully clear
-          setTimeout(() => {
-            clearDisabled();
-            setWelcomeVisible(true);
-          }, 500);
-        }
+      console.log('[Tour] Badge celebration complete:', badgeTitle);
+
+      // Show tour for any badge if user hasn't completed the tour yet
+      // This ensures the tour shows after the first badge (Wanderer, First Steps, etc.)
+      const completed = profile?.has_seen_tour || isCompleted();
+      if (!completed && !isDisabled()) {
+        // Small delay to let badge celebration fully clear
+        setTimeout(() => {
+          console.log('[Tour] Showing tour after badge celebration');
+          clearDisabled();
+          setWelcomeVisible(true);
+        }, 500);
       }
     };
 

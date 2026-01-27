@@ -481,6 +481,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       try {
         window.dispatchEvent(new CustomEvent('song:completed', { detail: { songUuid, day } }));
       } catch {}
+
+      // Also trigger Song of the Day claim if this is the SOTD
+      // markDailySongCompleted has its own guards and will no-op if not applicable
+      markDailySongCompleted(songUuid);
     } catch (err) {
       console.error('[MARK COMPLETE] exception', {
         error: err,
