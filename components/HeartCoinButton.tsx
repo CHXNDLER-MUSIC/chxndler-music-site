@@ -465,6 +465,18 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // Loading state derived from hook status
   const dailyQuestsLoading = questsStatus === 'loading';
 
+  // DEBUG: hover event counter (toggle window.__DEBUG_SFX__ = true in console)
+  const _debugHoverCount = useRef(0);
+  const _debugHoverPlay = useCallback((vol = 0.3) => {
+    _debugHoverCount.current++;
+    try {
+      if (typeof window !== 'undefined' && (window as any).__DEBUG_SFX__) {
+        console.debug(`[HeartCoinButton] hover sfx.play('hover') #${_debugHoverCount.current}`);
+      }
+    } catch {}
+    try { sfx.play('hover', vol); } catch {}
+  }, []);
+
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'EARN' | 'USE'>('EARN');
   const [activeUseTab, setActiveUseTab] = useState<'MERCH' | 'CARDS'>('MERCH');

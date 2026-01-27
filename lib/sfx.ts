@@ -1,6 +1,13 @@
 // Lightweight WebAudio SFX bus for near‑zero‑latency UI sounds
 // Usage: import { sfx } from "@/lib/sfx"; sfx.play('hover', 0.35)
 
+// Debug instrumentation: set window.__DEBUG_SFX__ = true in console to enable
+declare global {
+  interface Window {
+    __DEBUG_SFX__?: boolean;
+  }
+}
+
 type BufferMap = Record<string, AudioBuffer | null>;
 
 class SFXBus {
@@ -10,6 +17,9 @@ class SFXBus {
   private loading: Record<string, Promise<AudioBuffer> | undefined> = {};
   // Gate SFX until Start button unlocks the UI
   private enabled = false;
+
+  // Debug: per-key play counters
+  private _debugPlayCount: Record<string, number> = {};
 
   // Minimal preset map from keys to public audio assets
   private files: Record<string, string> = {
@@ -101,10 +111,19 @@ class SFXBus {
     );
   }
 
+  private _debugLog(msg: string, ...args: any[]) {
+    try {
+      if (typeof window !== 'undefined' && window.__DEBUG_SFX__) {
+        console.debug(`[SFX] ${msg}`, ...args);
+      }
+    } catch {}
+  }
+
   private async load(key: string): Promise<AudioBuffer> {
     if (this.buffers[key]) return this.buffers[key] as AudioBuffer;
     if (this.loading[key]) return this.loading[key] as Promise<AudioBuffer>;
     const url = this.files[key] || key; // allow direct URL
+    this._debugLog(`FETCH key="${key}" url="${url}" (not yet cached)`);
     const ctx = this.ensure();
     if (!ctx) throw new Error("No AudioContext");
     const p = fetch(url)
@@ -132,7 +151,12 @@ class SFXBus {
       if (ctx.state === 'suspended') {
         await ctx.resume().catch(() => {});
       }
+      const cached = !!this.buffers[key];
       const buf = this.buffers[key] || (await this.load(key));
+      this._debugPlayCount[key] = (this._debugPlayCount[key] || 0) + 1;
+      this._debugLog(
+        `PLAY key="${key}" url="${this.files[key] || key}" cached=${cached} playCount=${this._debugPlayCount[key]}`
+      );
       if (!buf) return;
       const src = ctx.createBufferSource();
       const gain = ctx.createGain();
@@ -154,8 +178,13 @@ class SFXBus {
         await new Promise((r) => setTimeout(r, 1000));
         return;
       }
+      const cachedWait = !!this.buffers[key];
       const buf = this.buffers[key] || (await this.load(key));
       if (!buf) { await new Promise((r) => setTimeout(r, 1000)); return; }
+      this._debugPlayCount[key] = (this._debugPlayCount[key] || 0) + 1;
+      this._debugLog(
+        `PLAY_WAIT key="${key}" url="${this.files[key] || key}" cached=${cachedWait} playCount=${this._debugPlayCount[key]}`
+      );
       const src = ctx.createBufferSource();
       const gain = ctx.createGain();
       gain.gain.value = Math.max(0, Math.min(1, volume));
