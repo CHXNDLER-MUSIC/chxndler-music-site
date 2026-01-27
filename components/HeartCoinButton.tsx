@@ -26,6 +26,22 @@ import { triggerCardCelebration } from '@/utils/cardCelebration';
 // Get basePath from env (supports deployments with basePath like /cockpit)
 const basePath = (process.env.NEXT_PUBLIC_BASE_PATH || '').replace(/\/$/, '');
 
+// Module-level throttle for hover SFX — at most once per 200ms globally
+let _lastHoverTime = 0;
+let _hoverCount = 0;
+function playHoverSfx(vol = 0.3) {
+  const now = Date.now();
+  if (now - _lastHoverTime < 200) return;
+  _lastHoverTime = now;
+  _hoverCount++;
+  try {
+    if (typeof window !== 'undefined' && (window as any).__DEBUG_SFX__) {
+      console.debug(`[HeartCoinButton] hover #${_hoverCount}`);
+    }
+  } catch {}
+  try { sfx.play('hover', vol); } catch {}
+}
+
 // Element of the Day bonus quest ID - completion happens in ElementOfDay modal, not here
 const ELEMENT_OF_DAY_BONUS_QUEST_ID = '4c24a82f-92ba-44f4-9386-d8c6438498bd';
 
@@ -464,18 +480,6 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
   // Loading state derived from hook status
   const dailyQuestsLoading = questsStatus === 'loading';
-
-  // DEBUG: hover event counter (toggle window.__DEBUG_SFX__ = true in console)
-  const _debugHoverCount = useRef(0);
-  const _debugHoverPlay = useCallback((vol = 0.3) => {
-    _debugHoverCount.current++;
-    try {
-      if (typeof window !== 'undefined' && (window as any).__DEBUG_SFX__) {
-        console.debug(`[HeartCoinButton] hover sfx.play('hover') #${_debugHoverCount.current}`);
-      }
-    } catch {}
-    try { sfx.play('hover', vol); } catch {}
-  }, []);
 
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'EARN' | 'USE'>('EARN');
@@ -2933,7 +2937,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               try { onClose?.(); } catch {}
               try { onBeamColorChange?.('off'); } catch {}
             }}
-            onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+            onMouseEnter={() => { playHoverSfx(0.3) }}
             className="absolute top-2 right-4 text-white hover:text-gray-200 cursor-pointer w-8 h-8 rounded-full border border-white/80 flex items-center justify-center transition-transform duration-200 hover:scale-110"
             style={{ 
               fontSize: '16px',
@@ -2966,7 +2970,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 setShowHeartCoinsInfo(!showHeartCoinsInfo);
               }}
               onMouseEnter={() => {
-                try { sfx.play('hover', 0.3); } catch {}
+                playHoverSfx(0.3)
               }}
             >
               HeartCoins
@@ -2991,7 +2995,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   fontSize: '14px'
                 }}
                 onMouseEnter={(e) => {
-                  try { sfx.play('hover', 0.3); } catch {}
+                  playHoverSfx(0.3)
                   if (activeTab !== 'EARN') {
                     e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.35) 100%)';
                     e.currentTarget.style.color = 'rgba(255,255,255,0.9)';
@@ -3024,7 +3028,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   fontSize: '14px'
                 }}
                 onMouseEnter={(e) => {
-                  try { sfx.play('hover', 0.3); } catch {}
+                  playHoverSfx(0.3)
                   if (activeTab !== 'USE') {
                     e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.35) 100%)';
                     e.currentTarget.style.color = 'rgba(255,255,255,0.9)';
@@ -3060,7 +3064,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       fontSize: '13px'
                     }}
                     onMouseEnter={(e) => {
-                      try { sfx.play('hover', 0.3); } catch {}
+                      playHoverSfx(0.3)
                       if (activeUseTab !== 'MERCH') {
                         e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.3) 100%)';
                         e.currentTarget.style.color = 'rgba(255,255,255,0.95)';
@@ -3093,7 +3097,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       fontSize: '13px'
                     }}
                     onMouseEnter={(e) => {
-                      try { sfx.play('hover', 0.3); } catch {}
+                      playHoverSfx(0.3)
                       if (activeUseTab !== 'CARDS') {
                         e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.3) 100%)';
                         e.currentTarget.style.color = 'rgba(255,255,255,0.95)';
@@ -3128,7 +3132,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       fontSize: '11px'
                     }}
                     onMouseEnter={(e) => {
-                      try { sfx.play('hover', 0.3); } catch {}
+                      playHoverSfx(0.3)
                       if (activeEarnTab !== 'DAILY QUESTS') {
                         e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.3) 100%)';
                         e.currentTarget.style.color = 'rgba(255,255,255,0.95)';
@@ -3161,7 +3165,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       fontSize: '11px'
                     }}
                     onMouseEnter={(e) => {
-                      try { sfx.play('hover', 0.3); } catch {}
+                      playHoverSfx(0.3)
                       if (activeEarnTab !== 'BONUS QUESTS') {
                         e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.3) 100%)';
                         e.currentTarget.style.color = 'rgba(255,255,255,0.95)';
@@ -3460,7 +3464,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               }, 150); // Let heart coin display close first
                             }}
                             className={`flex items-center transition-transform overflow-visible ${isQuestCompleted(quest) ? 'cursor-default' : 'cursor-pointer hover:scale-110'}`}
-                            onMouseEnter={() => { if (!isQuestCompleted(quest)) { try { sfx.play('hover', 0.5); } catch {} } }}
+                            onMouseEnter={() => { if (!isQuestCompleted(quest)) { playHoverSfx(0.5) } }}
                             style={{ pointerEvents: isQuestCompleted(quest) ? 'none' : 'auto', zIndex: 10, overflow: 'visible' }}
                           >
                             <div className="relative overflow-visible" style={{ overflow: 'visible' }}>
@@ -3537,7 +3541,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             }
                           }}
                           disabled={isLoggedIn && isQuestCompleted(quest)}
-                          onMouseEnter={() => { try { sfx.play('hover', 0.5); } catch {} }}
+                          onMouseEnter={() => { playHoverSfx(0.5) }}
                           className="px-5 py-2 text-xs rounded border font-bold transition-all duration-200 pointer-events-auto relative z-10 min-w-[140px] hover:scale-105"
                           style={(() => {
                             // Get element color for LISTEN_SONG_OF_DAY button
@@ -3997,7 +4001,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           }
                         }}
                         onMouseEnter={(e) => {
-                          try { sfx.play('hover', 0.3); } catch {}
+                          playHoverSfx(0.3)
                           if (!isLoggedIn) {
                             e.currentTarget.style.transform = 'scale(1.05)';
                             e.currentTarget.style.boxShadow = '0 0 20px rgba(78,205,196,0.8), 0 0 40px rgba(78,205,196,0.4)';
@@ -4315,7 +4319,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                                   handleConfirmShipping();
                                                 }
                                               }}
-                                              onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                                              onMouseEnter={() => { playHoverSfx(0.3) }}
                                             >
                                               {shippingStatus === 'saving' ? 'Saving...' :
                                                shippingStatus === 'error' ? 'RETRY SHIPPING' :
@@ -4468,7 +4472,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                         }`;
                                       })()}
                                       onMouseEnter={() => {
-                                        try { sfx.play('hover', 0.3); } catch {}
+                                        playHoverSfx(0.3)
                                       }}
                                       onClick={() => {
                                         const item = PHYSICAL_ITEMS[currentMerchIndex];
@@ -4517,7 +4521,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                         try { sfx.play('click', 0.6); } catch {}
                                         setCurrentMerchIndex(prev => prev > 0 ? prev - 1 : PHYSICAL_ITEMS.length - 1);
                                       }}
-                                      onMouseEnter={(e) => { e.stopPropagation(); try { sfx.play('hover', 0.3); } catch {} }}
+                                      onMouseEnter={(e) => { e.stopPropagation(); playHoverSfx(0.3) }}
                                       disabled={isPurchasing}
                                       className={`absolute left-[-40px] top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-125 transition-all duration-200 ${isPurchasing ? 'opacity-50 cursor-not-allowed' : ''}`}
                                       style={{ boxShadow: '0 0 8px rgba(255,255,255,0.3)' }}
@@ -4532,7 +4536,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                         try { sfx.play('click', 0.6); } catch {}
                                         setCurrentMerchIndex(prev => prev < PHYSICAL_ITEMS.length - 1 ? prev + 1 : 0);
                                       }}
-                                      onMouseEnter={(e) => { e.stopPropagation(); try { sfx.play('hover', 0.3); } catch {} }}
+                                      onMouseEnter={(e) => { e.stopPropagation(); playHoverSfx(0.3) }}
                                       disabled={isPurchasing}
                                       className={`absolute right-[-40px] top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full border border-white/60 bg-white/10 hover:bg-white/20 hover:scale-125 transition-all duration-200 ${isPurchasing ? 'opacity-50 cursor-not-allowed' : ''}`}
                                       style={{ boxShadow: '0 0 8px rgba(255,255,255,0.3)' }}
@@ -4606,7 +4610,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               console.log('[PURCHASE] CONFIRM clicked, calling handler from bottom confirm');
                               handleConfirmPurchase();
                             }}
-                            onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                            onMouseEnter={() => { playHoverSfx(0.3) }}
                             disabled={isPurchasing || isProcessing}
                           >
                             {isPurchasing || isProcessing ? 'Processing...' : 'CONFIRM'}
@@ -4740,7 +4744,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 setCurrentCardIndex(parseInt(e.target.value, 10));
                               }}
                               onMouseEnter={() => {
-                                try { sfx.play('hover', 0.3); } catch {}
+                                playHoverSfx(0.3)
                               }}
                               onInput={() => {
                                 // Play song-select sound when cycling through options
@@ -4783,7 +4787,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               return (
                                 <div className="relative w-full h-full flex flex-col">
                                   {/* Single Card Display */}
-                            <div key={card.id} className="flex flex-col items-center text-center max-w-full h-full" onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}>
+                            <div key={card.id} className="flex flex-col items-center text-center max-w-full h-full" onMouseEnter={() => { playHoverSfx(0.3) }}>
 
                               {/* Card Image with Navigation Arrows */}
                               <div className="flex items-center justify-center gap-4 mb-4">
@@ -4795,7 +4799,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       prev > 0 ? prev - 1 : filteredCards.length - 1
                                     );
                                   }}
-                                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                                  onMouseEnter={() => { playHoverSfx(0.3) }}
                                   className={`w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center transition-all duration-200 border-2 ${
                                     filteredCards.length > 1
                                       ? 'text-white hover:text-yellow-400 border-white/30 hover:border-yellow-400/60 hover:scale-125'
@@ -4812,7 +4816,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 {/* Card Image */}
                                 <div
                                   className="w-32 h-44 rounded-lg border-2 border-yellow-500/80 overflow-hidden relative cursor-pointer hover:border-yellow-400/90 transition-all duration-200 hover:scale-105"
-                                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                                  onMouseEnter={() => { playHoverSfx(0.3) }}
                                 >
                                 <img
                                   src={card.artwork_url || `/cards/${card.card_name}.webp`}
@@ -4843,7 +4847,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     prev < filteredCards.length - 1 ? prev + 1 : 0
                                   );
                                 }}
-                                onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                                onMouseEnter={() => { playHoverSfx(0.3) }}
                                 className={`w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center transition-all duration-200 border-2 ${
                                   filteredCards.length > 1
                                     ? 'text-white hover:text-yellow-400 border-white/30 hover:border-yellow-400/60 hover:scale-125'
@@ -5279,7 +5283,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     setShowCardConfirm(null);
                     setCardPurchaseStep('confirm');
                   }}
-                  onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                  onMouseEnter={() => { playHoverSfx(0.3) }}
                   className="absolute top-3 left-3 w-7 h-7 bg-transparent border-2 border-white rounded-full flex items-center justify-center text-white text-sm font-bold transition-all duration-200 z-10 hover:scale-110 hover:shadow-[0_0_20px_rgba(255,255,255,0.8)]"
                   style={{ textShadow: '0 0 8px rgba(255,255,255,0.9)', boxShadow: '0 0 12px rgba(255,255,255,0.6)' }}
                 >
@@ -5300,7 +5304,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       try { sfx.play('click', 0.6); } catch {}
                       setShowCardConfirm('digital');
                     }}
-                    onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                    onMouseEnter={() => { playHoverSfx(0.3) }}
                     className="px-1 py-2 rounded border border-yellow-500/60 bg-yellow-500/20 hover:bg-yellow-500/40 hover:scale-110 hover:border-yellow-400 hover:shadow-[0_0_25px_rgba(255,215,0,0.7)] transition-all duration-200 text-white font-semibold text-xs flex flex-col items-center gap-1 whitespace-nowrap z-20"
                     style={{ textShadow: '0 0 4px rgba(255,215,0,0.6)', boxShadow: '0 0 12px rgba(255,215,0,0.3)' }}
                   >
@@ -5450,7 +5454,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   handleConfirmCardShipping();
                                 }
                               }}
-                              onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                              onMouseEnter={() => { playHoverSfx(0.3) }}
                             >
                               {shippingStatus === 'saving' ? 'Saving...' :
                                shippingStatus === 'error' ? 'RETRY SHIPPING' :
@@ -5470,7 +5474,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               e.stopPropagation();
                               try { sfx.play('pause', 0.6); } catch {}
                             }}
-                            onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                            onMouseEnter={() => { playHoverSfx(0.3) }}
                             className="px-8 py-3 rounded border transition-all duration-200 text-black font-bold text-lg border-yellow-500/60 bg-yellow-500/80 cursor-not-allowed"
                             style={{ textShadow: '0 0 8px rgba(234,179,8,0.8)', boxShadow: '0 0 15px rgba(234,179,8,0.4)' }}
                           >
@@ -5491,7 +5495,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 window.dispatchEvent(new CustomEvent('openWelcomeHomeModal'));
                               }, 150);
                             }}
-                            onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                            onMouseEnter={() => { playHoverSfx(0.3) }}
                             className="px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg border-red-500/60 bg-red-500/20 hover:bg-red-500/40 hover:border-red-400 hover:shadow-[0_0_30px_rgba(239,68,68,0.8)] cursor-pointer hover:scale-110"
                             style={{ textShadow: '0 0 8px rgba(239,68,68,0.8)', boxShadow: '0 0 15px rgba(239,68,68,0.4)' }}
                           >
@@ -5505,7 +5509,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 e.stopPropagation();
                                 try { sfx.play('error', 0.6); } catch {}
                               }}
-                              onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                              onMouseEnter={() => { playHoverSfx(0.3) }}
                               disabled
                               className="px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg border-red-500/60 bg-red-500/20 cursor-not-allowed opacity-50"
                               style={{ textShadow: '0 0 8px rgba(239,68,68,0.5)', boxShadow: '0 0 15px rgba(239,68,68,0.2)' }}
@@ -5524,7 +5528,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 e.stopPropagation();
                                 try { sfx.play('error', 0.6); } catch {}
                               }}
-                              onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                              onMouseEnter={() => { playHoverSfx(0.3) }}
                               disabled
                               className="px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg border-gray-500/60 bg-gray-500/20 cursor-not-allowed opacity-50"
                               style={{ textShadow: '0 0 8px rgba(156,163,175,0.5)', boxShadow: '0 0 15px rgba(156,163,175,0.2)' }}
@@ -5543,7 +5547,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 e.stopPropagation();
                                 try { sfx.play('error', 0.6); } catch {}
                               }}
-                              onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                              onMouseEnter={() => { playHoverSfx(0.3) }}
                               disabled
                               className="px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg border-red-500/60 bg-red-500/20 cursor-not-allowed opacity-50"
                               style={{ textShadow: '0 0 8px rgba(239,68,68,0.5)', boxShadow: '0 0 15px rgba(239,68,68,0.2)' }}
@@ -5574,7 +5578,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 handlePhysicalCardConfirm();
                               }
                             }}
-                            onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                            onMouseEnter={() => { playHoverSfx(0.3) }}
                             disabled={isPurchasing}
                             className={`px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg border-green-500/60 bg-green-500/20 ${isPurchasing ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110 hover:bg-green-500/40 hover:border-green-400 hover:shadow-[0_0_30px_rgba(34,197,94,0.8)]'}`}
                             style={{ textShadow: '0 0 8px rgba(34,197,94,0.8)', boxShadow: '0 0 15px rgba(34,197,94,0.4)' }}
@@ -5650,7 +5654,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       try { sfx.play('click', 0.6); } catch {}
                       setShowCardConfirm('physical');
                     }}
-                    onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                    onMouseEnter={() => { playHoverSfx(0.3) }}
                     className="px-1 py-2 rounded border border-green-500/60 bg-green-500/20 hover:bg-green-500/40 hover:scale-110 hover:border-green-400 hover:shadow-[0_0_25px_rgba(34,197,94,0.7)] transition-all duration-200 text-white font-semibold text-xs flex flex-col items-center gap-1 whitespace-nowrap z-20"
                     style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)', boxShadow: '0 0 12px rgba(34,197,94,0.3)' }}
                   >
@@ -5699,7 +5703,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   setMerchRotation(0);
                   setShowEnlargedConfirm(false);
                 }}
-                onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                onMouseEnter={() => { playHoverSfx(0.3) }}
                 className="absolute top-3 left-3 w-7 h-7 bg-transparent border-2 border-white rounded-full flex items-center justify-center text-white text-sm font-bold transition-all duration-200 z-10 hover:scale-110 hover:shadow-[0_0_20px_rgba(255,255,255,0.8)]"
                 style={{ textShadow: '0 0 8px rgba(255,255,255,0.9)', boxShadow: '0 0 12px rgba(255,255,255,0.6)' }}
               >
@@ -5756,7 +5760,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         handleConfirmPurchase(activeMerchItem);
                       }}
                       disabled={isPurchasing || heartCoins < (activeMerchItem?.price_heartcoins || 0)}
-                      onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                      onMouseEnter={() => { playHoverSfx(0.3) }}
                       className={`px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg hover:scale-110 ${
                         !isPurchasing && heartCoins >= (activeMerchItem?.price_heartcoins || 0)
                           ? 'border-green-500/60 bg-green-500/20 hover:bg-green-500/40 hover:border-green-400 hover:shadow-[0_0_30px_rgba(34,197,94,0.8)]'
@@ -5785,7 +5789,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         try { sfx.play('click', 0.6); } catch {}
                         setShowEnlargedConfirm(true);
                       }}
-                      onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                      onMouseEnter={() => { playHoverSfx(0.3) }}
                       className="-mb-12 px-6 py-3 rounded border border-yellow-500/60 bg-yellow-500/20 hover:bg-yellow-500/40 hover:scale-110 hover:border-yellow-400 hover:shadow-[0_0_25px_rgba(255,215,0,0.7)] transition-all duration-200 text-white font-semibold text-sm flex items-center gap-2 whitespace-nowrap z-20 relative"
                       style={{ textShadow: '0 0 4px rgba(255,215,0,0.6)', boxShadow: '0 0 12px rgba(255,215,0,0.3)' }}
                     >
@@ -5804,7 +5808,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       enableSpin={true}
                       spinSensitivity={0.8}
                       onRotationChange={setMerchRotation}
-                      onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                      onMouseEnter={() => { playHoverSfx(0.3) }}
                       onClick={() => {
                         // Play flip sound and animate
                         sfx.play('flip', 0.8);
@@ -5890,7 +5894,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                           window.open(activeMerchItem.stripe_url, '_blank');
                         }
                       }}
-                      onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
+                      onMouseEnter={() => { playHoverSfx(0.3) }}
                       className="-mt-10 px-6 py-3 rounded border border-green-500/60 bg-green-500/20 hover:bg-green-500/40 hover:scale-110 hover:border-green-400 hover:shadow-[0_0_25px_rgba(34,197,94,0.7)] transition-all duration-200 text-white font-semibold text-sm flex items-center gap-2 whitespace-nowrap z-20 relative"
                       style={{ textShadow: '0 0 4px rgba(34,197,94,0.6)', boxShadow: '0 0 12px rgba(34,197,94,0.3)' }}
                     >

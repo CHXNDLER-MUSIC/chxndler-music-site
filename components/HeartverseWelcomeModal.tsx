@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { RELIC_CELEBRATION_EVENT } from "./RelicCelebration";
+import { sfx } from "@/lib/sfx";
 
 const HEARTVERSE_COLOR = "#FC54AF";
 const WARP_DURATION_MS = 3500; // Wait for warp effect to complete before showing modal
@@ -39,39 +40,20 @@ export default function HeartverseWelcomeModal() {
   const [nextStoryRelic, setNextStoryRelic] = useState<NextStoryRelic | null>(null);
   const [heartcoinBalance, setHeartcoinBalance] = useState<number>(0);
 
-  const hoverAudioRef = useRef<HTMLAudioElement | null>(null);
-  const clickAudioRef = useRef<HTMLAudioElement | null>(null);
-  const welcomeAudioRef = useRef<HTMLAudioElement | null>(null);
-
   // Play hover sound
   const handleHover = useCallback(() => {
     if (claimed || isClaiming || alreadyHasRelic) return;
-    if (!hoverAudioRef.current) {
-      hoverAudioRef.current = new Audio("/audio/hover.mp3");
-      hoverAudioRef.current.volume = 0.5;
-    }
-    hoverAudioRef.current.currentTime = 0;
-    hoverAudioRef.current.play().catch(() => {});
+    try { sfx.play('hover', 0.5); } catch {}
   }, [claimed, isClaiming, alreadyHasRelic]);
 
   // Play click sound
   const playClickSound = useCallback(() => {
-    if (!clickAudioRef.current) {
-      clickAudioRef.current = new Audio("/audio/click.mp3");
-      clickAudioRef.current.volume = 0.5;
-    }
-    clickAudioRef.current.currentTime = 0;
-    clickAudioRef.current.play().catch(() => {});
+    try { sfx.play('click', 0.5); } catch {}
   }, []);
 
   // Play welcome sound when modal appears
   const playWelcomeSound = useCallback(() => {
-    if (!welcomeAudioRef.current) {
-      welcomeAudioRef.current = new Audio("/audio/alien-wave.MP3");
-      welcomeAudioRef.current.volume = 0.6;
-    }
-    welcomeAudioRef.current.currentTime = 0;
-    welcomeAudioRef.current.play().catch(() => {});
+    try { sfx.play('alien-wave', 0.6); } catch {}
   }, []);
 
   // Fetch the next claimable story relic using the RPC
@@ -409,14 +391,7 @@ export default function HeartverseWelcomeModal() {
         {/* Close button */}
         <button
           onClick={handleClose}
-          onMouseEnter={() => {
-            if (!hoverAudioRef.current) {
-              hoverAudioRef.current = new Audio("/audio/hover.mp3");
-              hoverAudioRef.current.volume = 0.5;
-            }
-            hoverAudioRef.current.currentTime = 0;
-            hoverAudioRef.current.play().catch(() => {});
-          }}
+          onMouseEnter={() => { try { sfx.play('hover', 0.5); } catch {} }}
           className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 border border-white/20 text-white/70 hover:bg-white/20 transition-colors"
           aria-label="Close"
         >

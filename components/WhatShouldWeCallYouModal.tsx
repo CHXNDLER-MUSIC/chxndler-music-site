@@ -7,9 +7,12 @@ import { useProfile as useNewProfile } from "@/hooks/useProfile";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useTour } from "@/contexts/TourContext";
 
-const DEBUG_MODAL = true; // Set to true for detailed logs
 const debugModal = (message: string, data?: any) => {
-  if (DEBUG_MODAL) console.log(message, data);
+  try {
+    if (typeof window !== 'undefined' && (window as any).__DEBUG_UI__) {
+      console.log(message, data);
+    }
+  } catch {}
 };
 
 // Helper: Check if name is a "real" user-entered name (not auto-generated from email/defaults)

@@ -7,6 +7,7 @@ import { useAuth } from '@/app/providers/AuthProvider';
 import { useCelebrationLock } from '@/lib/celebrationQueue';
 import { isCelebrationAudioAllowed } from '@/utils/celebrationAudio';
 import { isHeartcoinCelebrationActive, getHeartcoinCelebrationRemainingTime } from '@/utils/celebrationQueue';
+import { sfx } from '@/lib/sfx';
 
 type CelebrationPhase = 'idle' | 'badge';
 
@@ -21,7 +22,6 @@ export default function BadgeCelebrationController() {
   const [phase, setPhase] = useState<CelebrationPhase>('idle');
   const [currentItem, setCurrentItem] = useState<BadgeCelebrationItem | null>(null);
   const [mounted, setMounted] = useState(false);
-  const badgeAudioRef = useRef<HTMLAudioElement | null>(null);
   const processingRef = useRef(false);
 
   // Track mount state for portal
@@ -30,17 +30,9 @@ export default function BadgeCelebrationController() {
     return () => setMounted(false);
   }, []);
 
-  // Initialize audio on client (use distinct sound for badge, not heart-coin)
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      badgeAudioRef.current = new Audio('/audio/card-ding.mp3');
-    }
-  }, []);
-
   const playBadgeSound = useCallback(() => {
-    if (badgeAudioRef.current && isCelebrationAudioAllowed()) {
-      badgeAudioRef.current.currentTime = 0;
-      badgeAudioRef.current.play().catch(() => {});
+    if (isCelebrationAudioAllowed()) {
+      try { sfx.play('card-ding', 0.8); } catch {}
     }
   }, []);
 

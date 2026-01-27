@@ -956,9 +956,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       return mapped;
     }
 
-    // On the homepage: during intro show lightspeed sky, after landing show calm space sky
+    // On the homepage: show calm space sky after landing; during intro return nothing
+    // to avoid loading YouTube iframes before the user clicks Enter.
     if (homeMode) {
-      return isLanded ? HOME_YOUTUBE_SKY : 'https://youtu.be/KFssNa5WvKc';
+      return isLanded ? HOME_YOUTUBE_SKY : undefined;
     }
 
     // Fallback: if we have a mapped sky but conditions above didn't match
@@ -2325,8 +2326,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         // Use the current track's YouTube sky as soon as a selection is in progress
         // or playback has started; keep looping even if audio pauses.
         youtubeUrl={computedYoutubeUrl}
-        // Use provided YouTube clip for lightspeed overlay on opening and Start
-        lightspeedYoutubeUrl={'https://youtu.be/KFssNa5WvKc'}
+        // Use provided YouTube clip for lightspeed overlay — only after user clicks Enter
+        // to avoid loading YouTube scripts while idle on the homepage
+        lightspeedYoutubeUrl={userClickedStart ? 'https://youtu.be/KFssNa5WvKc' : undefined}
         onWarpSfxEnd={() => {
           // Simple cleanup - core UI transitions handled by phase state machine
           console.log("🎵 Warp SFX ended");

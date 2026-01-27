@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import type { ElementType } from "@/lib/planetConfig";
 import { RELIC_CELEBRATION_EVENT } from "./RelicCelebration";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import { sfx } from "@/lib/sfx";
 
 interface ElementOfDayData {
   element: ElementType;
@@ -15,11 +16,11 @@ interface ElementOfDayData {
   relicKind: string | null;
 }
 
-const ELEMENT_CONFIG: Record<ElementType, { name: string; color: string; icon: string; sound: string }> = {
-  heart: { name: "HEART", color: "#FC54AF", icon: "/elements/heart.webp", sound: "/audio/heart-pulse.MP3" },
-  water: { name: "WATER", color: "#38B6FF", icon: "/elements/water.webp", sound: "/audio/water-ripple.MP3" },
-  lightning: { name: "LIGHTNING", color: "#F2EF1D", icon: "/elements/lightning.webp", sound: "/audio/lightning-spark.MP3" },
-  darkness: { name: "DARKNESS", color: "#FFFFFF", icon: "/elements/darkness.webp", sound: "/audio/shadow-glow.MP3" },
+const ELEMENT_CONFIG: Record<ElementType, { name: string; color: string; icon: string; sfxKey: string }> = {
+  heart: { name: "HEART", color: "#FC54AF", icon: "/elements/heart.webp", sfxKey: "heart-pulse" },
+  water: { name: "WATER", color: "#38B6FF", icon: "/elements/water.webp", sfxKey: "water-ripple" },
+  lightning: { name: "LIGHTNING", color: "#F2EF1D", icon: "/elements/lightning.webp", sfxKey: "lightning-spark" },
+  darkness: { name: "DARKNESS", color: "#FFFFFF", icon: "/elements/darkness.webp", sfxKey: "shadow-glow" },
 };
 
 export default function ElementOfDayModal() {
@@ -32,61 +33,32 @@ export default function ElementOfDayModal() {
   // Auth state
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
 
-  const hoverAudioRef = useRef<HTMLAudioElement | null>(null);
-  const clickAudioRef = useRef<HTMLAudioElement | null>(null);
-  const alienWaveAudioRef = useRef<HTMLAudioElement | null>(null);
-  const elementSoundRef = useRef<HTMLAudioElement | null>(null);
-  const starAudioRef = useRef<HTMLAudioElement | null>(null);
-
   // Play hover sound when hovering over the element
   const handleElementHover = useCallback(() => {
     if (claimed || elementQuestCompleted) return;
-    if (!hoverAudioRef.current) {
-      hoverAudioRef.current = new Audio("/audio/hover.mp3");
-      hoverAudioRef.current.volume = 0.5;
-    }
-    hoverAudioRef.current.currentTime = 0;
-    hoverAudioRef.current.play().catch(() => {});
+    try { sfx.play('hover', 0.5); } catch {}
   }, [claimed, elementQuestCompleted]);
 
   // Play click sound when clicking the element
   const playClickSound = useCallback(() => {
-    if (!clickAudioRef.current) {
-      clickAudioRef.current = new Audio("/audio/click.mp3");
-      clickAudioRef.current.volume = 0.5;
-    }
-    clickAudioRef.current.currentTime = 0;
-    clickAudioRef.current.play().catch(() => {});
+    try { sfx.play('click', 0.5); } catch {}
   }, []);
 
   // Play alien-wave.mp3 when modal appears
   const playAlienWaveSound = useCallback(() => {
-    if (!alienWaveAudioRef.current) {
-      alienWaveAudioRef.current = new Audio("/audio/alien-wave.MP3");
-      alienWaveAudioRef.current.volume = 0.6;
-    }
-    alienWaveAudioRef.current.currentTime = 0;
-    alienWaveAudioRef.current.play().catch(() => {});
+    try { sfx.play('alien-wave', 0.6); } catch {}
   }, []);
 
   // Play element-specific sound when clicking the element image
   const playElementSound = useCallback((element: ElementType) => {
     const config = ELEMENT_CONFIG[element];
-    if (!config?.sound) return;
-
-    elementSoundRef.current = new Audio(config.sound);
-    elementSoundRef.current.volume = 0.7;
-    elementSoundRef.current.play().catch(() => {});
+    if (!config?.sfxKey) return;
+    try { sfx.play(config.sfxKey, 0.7); } catch {}
   }, []);
 
   // Play star sound when clicking the element image
   const playStarSound = useCallback(() => {
-    if (!starAudioRef.current) {
-      starAudioRef.current = new Audio("/audio/star.mp3");
-      starAudioRef.current.volume = 0.7;
-    }
-    starAudioRef.current.currentTime = 0;
-    starAudioRef.current.play().catch(() => {});
+    try { sfx.play('star', 0.7); } catch {}
   }, []);
 
   // Check auth status when modal opens
@@ -439,14 +411,7 @@ export default function ElementOfDayModal() {
           {/* Close button */}
           <button
             onClick={handleClose}
-            onMouseEnter={() => {
-              if (!hoverAudioRef.current) {
-                hoverAudioRef.current = new Audio("/audio/hover.mp3");
-                hoverAudioRef.current.volume = 0.5;
-              }
-              hoverAudioRef.current.currentTime = 0;
-              hoverAudioRef.current.play().catch(() => {});
-            }}
+            onMouseEnter={() => { try { sfx.play('hover', 0.5); } catch {} }}
             className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 border border-white/20 text-white/70 hover:bg-white/20 transition-colors"
             aria-label="Close"
           >

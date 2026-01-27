@@ -449,6 +449,33 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
   // Plays when selecting an element quadrant
   const chimeAudioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Warm audio buffers exactly once after first user gesture.
+  const coverWarmedUp = useRef(false);
+  useEffect(() => {
+    const warmUp = () => {
+      if (coverWarmedUp.current) return;
+      coverWarmedUp.current = true;
+      const refs = [closeCoverRef, openDingRef, flipCoverRef, scrollAudioRef, chimeAudioRef];
+      let count = 0;
+      refs.forEach(ref => {
+        try { const el = ref.current as HTMLAudioElement | null; if (el) { el.load(); count++; } } catch {}
+      });
+      try {
+        if (typeof window !== 'undefined' && (window as any).__DEBUG_AUDIO_WARMUP__) {
+          console.debug(`[CoverHologram] warm-up ran once, loaded ${count} audio elements`);
+        }
+      } catch {}
+    };
+    const onPointer = () => warmUp();
+    const onKey = () => warmUp();
+    window.addEventListener('pointerdown', onPointer, { once: true });
+    window.addEventListener('keydown', onKey, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', onPointer);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, []);
+
   // Compute effective slug and preferred card image path (overridden by CARD_URLS when available)
   const effectiveSlug = (() => {
     // Prefer explicit slug when provided; else derive a diacritic-safe slug from title
@@ -1269,11 +1296,11 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
         }
       `}</style>
 
-      <audio ref={closeCoverRef} src="/audio/close.mp3" preload="auto" />
-      <audio ref={openDingRef} src="/audio/card-ding.mp3" preload="auto" />
-      <audio ref={flipCoverRef} src="/audio/flip.mp3" preload="auto" />
-      <audio ref={scrollAudioRef} src="/audio/scroll.mp3" preload="auto" />
-      <audio ref={chimeAudioRef} src="/audio/card-ding.mp3" preload="auto" />
+      <audio ref={closeCoverRef} src="/audio/close.mp3" preload="none" />
+      <audio ref={openDingRef} src="/audio/card-ding.mp3" preload="none" />
+      <audio ref={flipCoverRef} src="/audio/flip.mp3" preload="none" />
+      <audio ref={scrollAudioRef} src="/audio/scroll.mp3" preload="none" />
+      <audio ref={chimeAudioRef} src="/audio/card-ding.mp3" preload="none" />
 
     </motion.div>
   );

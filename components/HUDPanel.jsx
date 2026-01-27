@@ -1878,10 +1878,10 @@ const HUDPanel = React.memo(function HUDPanel({
       }
     };
     window.addEventListener('resize', updatePos);
-    window.addEventListener('scroll', updatePos, true);
+    window.addEventListener('scroll', updatePos, { capture: true, passive: true });
     return () => {
       window.removeEventListener('resize', updatePos);
-      window.removeEventListener('scroll', updatePos, true);
+      window.removeEventListener('scroll', updatePos, { capture: true });
     };
   }, [showHudVolumePopover]);
   // Bridge to 3D store available if installed

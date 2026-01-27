@@ -1,10 +1,12 @@
 // Lightweight WebAudio SFX bus for near‑zero‑latency UI sounds
 // Usage: import { sfx } from "@/lib/sfx"; sfx.play('hover', 0.35)
+//
+// Debug: set window.__DEBUG_SFX__ = true in console to see per-play logs.
 
-// Debug instrumentation: set window.__DEBUG_SFX__ = true in console to enable
 declare global {
   interface Window {
     __DEBUG_SFX__?: boolean;
+    __DEBUG_SFX_LIMIT__?: number;
   }
 }
 
@@ -15,10 +17,10 @@ class SFXBus {
   private buffers: BufferMap = {};
   private primed = false;
   private loading: Record<string, Promise<AudioBuffer> | undefined> = {};
-  // Gate SFX until Start button unlocks the UI
   private enabled = false;
+  private preloaded = false; // only preload once
 
-  // Debug: per-key play counters
+  // Debug counters
   private _debugPlayCount: Record<string, number> = {};
 
   // Minimal preset map from keys to public audio assets
@@ -29,10 +31,10 @@ class SFXBus {
     scroll: "/audio/scroll.mp3",
     volume: "/audio/scroll.mp3",
     join: "/audio/join-alien.mp3",
-    "join-aliens": "/audio/join-alien.mp3", // alias for convenience
+    "join-aliens": "/audio/join-alien.mp3",
     "join-alien": "/audio/join-alien.mp3",
     change: "/audio/change-channel.mp3",
-    "change-channel": "/audio/change-channel.mp3", // alias for consistency across code
+    "change-channel": "/audio/change-channel.mp3",
     pause: "/audio/pause.mp3",
     launch: "/audio/launch.mp3",
     select: "/audio/song-select.mp3",
@@ -43,45 +45,56 @@ class SFXBus {
     "card-ding": "/audio/card-ding.mp3",
     star: "/audio/star.mp3",
     "alien-wave": "/audio/alien-wave.MP3",
+    "heart-pulse": "/audio/heart-pulse.MP3",
+    "water-ripple": "/audio/water-ripple.MP3",
+    "lightning-spark": "/audio/lightning-spark.MP3",
+    "shadow-glow": "/audio/shadow-glow.MP3",
   };
 
-  private ensure() {
+  // --------------- AudioContext management ---------------
+
+  private ensure(): AudioContext | null {
     if (this.ctx) return this.ctx;
     try {
       // @ts-ignore webkit prefix for iOS
       const Ctor = window.AudioContext || (window as any).webkitAudioContext;
       if (!Ctor) return (this.ctx = null);
       this.ctx = new Ctor();
-      // Pre-decode common sounds in background (add warp/button/close for start flow)
-      this.preload(["hover", "click", "close", "join", "select", "button", "warp", "scroll", "volume"]).catch(() => {});
     } catch {
       this.ctx = null;
+    }
+    // Preload common sounds exactly once (not every time ensure() is called)
+    if (this.ctx && !this.preloaded) {
+      this.preloaded = true;
+      this.preload([
+        "hover", "click", "close", "join", "select",
+        "button", "warp", "scroll", "volume",
+      ]).catch(() => {});
     }
     return this.ctx;
   }
 
-  // External toggle so app can enable sounds after Start is clicked
+  // --------------- Enable / disable ---------------
+
   setEnabled(v: boolean) {
     this.enabled = !!v;
     try { (window as any).__CHX_UI_UNLOCKED = this.enabled; } catch {}
-    // Best-effort: create/resume AudioContext immediately on enable within the user gesture
     try {
       if (this.enabled) {
         const ctx = this.ensure();
-        if (ctx && ctx.state === 'suspended') {
-          // Resume asynchronously but without waiting
-          ctx.resume().catch(() => {});
-        }
+        if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
       }
     } catch {}
   }
+
   private isEnabled(): boolean {
     try {
-      // Allow enabling via global flag as a secondary path
       if (typeof window !== 'undefined' && (window as any).__CHX_UI_UNLOCKED === true) return true;
     } catch {}
     return this.enabled === true;
   }
+
+  // --------------- iOS / Safari unlock ---------------
 
   attachUnlock() {
     if (this.primed) return;
@@ -100,6 +113,15 @@ class SFXBus {
     window.addEventListener("keydown", unlock as any, { once: true } as any);
   }
 
+  /** Optional: call after first user gesture to eagerly decode all sounds. */
+  prime() {
+    const ctx = this.ensure();
+    if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+    this.preload(Object.keys(this.files)).catch(() => {});
+  }
+
+  // --------------- Loading / caching ---------------
+
   async preload(keys: string[]) {
     const ctx = this.ensure();
     if (!ctx) return;
@@ -111,53 +133,51 @@ class SFXBus {
     );
   }
 
-  private _debugLog(msg: string, ...args: any[]) {
-    try {
-      if (typeof window !== 'undefined' && window.__DEBUG_SFX__) {
-        console.debug(`[SFX] ${msg}`, ...args);
-      }
-    } catch {}
-  }
-
   private async load(key: string): Promise<AudioBuffer> {
+    // Return from buffer cache
     if (this.buffers[key]) return this.buffers[key] as AudioBuffer;
+    // De-duplicate concurrent fetches for the same key
     if (this.loading[key]) return this.loading[key] as Promise<AudioBuffer>;
-    const url = this.files[key] || key; // allow direct URL
-    this._debugLog(`FETCH key="${key}" url="${url}" (not yet cached)`);
+
+    const url = this.files[key] || key;
+    this._debugLog(`FETCH key="${key}" url="${url}" stack:\n${new Error().stack || ''}`);
+
     const ctx = this.ensure();
     if (!ctx) throw new Error("No AudioContext");
+
     const p = fetch(url)
       .then((r) => r.arrayBuffer())
       .then((buf) => ctx.decodeAudioData(buf))
       .then((ab) => {
         this.buffers[key] = ab;
-        this.loading[key] = undefined;
+        delete this.loading[key];
         return ab;
       })
       .catch((e) => {
-        this.loading[key] = undefined;
+        delete this.loading[key];
         throw e;
       });
+
     this.loading[key] = p;
     return p;
   }
+
+  // --------------- Playback ---------------
 
   async play(key: string, volume = 1.0) {
     if (!this.isEnabled()) return;
     const ctx = this.ensure();
     if (!ctx) return;
     try {
-      // Resume AudioContext if suspended (required for user gesture on iOS/Safari)
-      if (ctx.state === 'suspended') {
-        await ctx.resume().catch(() => {});
-      }
+      if (ctx.state === 'suspended') await ctx.resume().catch(() => {});
+
       const cached = !!this.buffers[key];
       const buf = this.buffers[key] || (await this.load(key));
-      this._debugPlayCount[key] = (this._debugPlayCount[key] || 0) + 1;
-      this._debugLog(
-        `PLAY key="${key}" url="${this.files[key] || key}" cached=${cached} playCount=${this._debugPlayCount[key]}`
-      );
       if (!buf) return;
+
+      this._debugPlayCount[key] = (this._debugPlayCount[key] || 0) + 1;
+      this._debugPlayLog(key, cached, 'PLAY');
+
       const src = ctx.createBufferSource();
       const gain = ctx.createGain();
       gain.gain.value = Math.max(0, Math.min(1, volume));
@@ -167,24 +187,20 @@ class SFXBus {
     } catch {}
   }
 
-  // Play SFX and return a promise that resolves when it ends.
-  // Falls back to a timeout based on buffer duration (or 1000ms if unavailable).
   async playAndWait(key: string, volume = 1.0): Promise<void> {
-    if (!this.isEnabled()) return Promise.resolve();
+    if (!this.isEnabled()) return;
     const ctx = this.ensure();
-    try { if (ctx && ctx.state === 'suspended') await ctx.resume().catch(()=>{}); } catch {}
+    try { if (ctx && ctx.state === 'suspended') await ctx.resume().catch(() => {}); } catch {}
     try {
-      if (!ctx) { // No AudioContext; best effort delay
-        await new Promise((r) => setTimeout(r, 1000));
-        return;
-      }
-      const cachedWait = !!this.buffers[key];
+      if (!ctx) { await new Promise((r) => setTimeout(r, 1000)); return; }
+
+      const cached = !!this.buffers[key];
       const buf = this.buffers[key] || (await this.load(key));
       if (!buf) { await new Promise((r) => setTimeout(r, 1000)); return; }
+
       this._debugPlayCount[key] = (this._debugPlayCount[key] || 0) + 1;
-      this._debugLog(
-        `PLAY_WAIT key="${key}" url="${this.files[key] || key}" cached=${cachedWait} playCount=${this._debugPlayCount[key]}`
-      );
+      this._debugPlayLog(key, cached, 'PLAY_WAIT');
+
       const src = ctx.createBufferSource();
       const gain = ctx.createGain();
       gain.gain.value = Math.max(0, Math.min(1, volume));
@@ -202,10 +218,40 @@ class SFXBus {
       await new Promise((r) => setTimeout(r, 1000));
     }
   }
+
+  // --------------- Debug ---------------
+
+  private _debugLog(msg: string) {
+    try {
+      if (typeof window !== 'undefined' && window.__DEBUG_SFX__) {
+        console.debug(`[SFX] ${msg}`);
+      }
+    } catch {}
+  }
+
+  /** Enhanced debug: logs key, timestamp, cached status, and stack trace.
+   *  Respects window.__DEBUG_SFX_LIMIT__ (max logs per key). */
+  private _debugPlayLog(key: string, cached: boolean, method: string) {
+    try {
+      if (typeof window === 'undefined' || !window.__DEBUG_SFX__) return;
+      const count = this._debugPlayCount[key] || 0;
+      const limit = window.__DEBUG_SFX_LIMIT__;
+      if (typeof limit === 'number' && count > limit) return;
+      const ts = new Date().toISOString();
+      const stack = new Error().stack || '(no stack)';
+      // Strip the Error + _debugPlayLog + play/playAndWait frames (first 3 lines)
+      const trimmedStack = stack.split('\n').slice(3).join('\n');
+      console.debug(
+        `[SFX] ${method} key="${key}" ts=${ts} cached=${cached} #${count}\n${trimmedStack}`
+      );
+      if (typeof limit === 'number' && count === limit) {
+        console.debug(`[SFX] key="${key}" hit __DEBUG_SFX_LIMIT__=${limit}, suppressing further logs`);
+      }
+    } catch {}
+  }
 }
 
 export const sfx = new SFXBus();
-// Attach unlock handlers immediately on module import
 if (typeof window !== "undefined") {
   try { sfx.attachUnlock(); } catch {}
 }

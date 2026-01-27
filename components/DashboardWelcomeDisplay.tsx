@@ -7,6 +7,7 @@ import BookButton from '@/components/BookButton';
 import WelcomeHomeForm from '@/components/WelcomeHomeForm';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { RELIC_CELEBRATION_EVENT } from './RelicCelebration';
+import { sfx } from '@/lib/sfx';
 
 const HEARTVERSE_COLOR = "#FC54AF";
 
@@ -48,9 +49,7 @@ export default function DashboardWelcomeDisplay({ onBeamColorChange }: Props) {
   const [isClaiming, setIsClaiming] = useState(false);
   const [allRelicsClaimed, setAllRelicsClaimed] = useState(false);
 
-  // Audio refs
-  const hoverAudioRef = useRef<HTMLAudioElement | null>(null);
-  const clickAudioRef = useRef<HTMLAudioElement | null>(null);
+  // Audio: use centralized sfx bus (no mount-time Audio objects)
 
   useEffect(() => {
     // Get token from cookies client-side
@@ -151,22 +150,12 @@ export default function DashboardWelcomeDisplay({ onBeamColorChange }: Props) {
   // Play hover sound
   const handleRelicHover = useCallback(() => {
     if (claimed || isClaiming || !nextStoryRelic) return;
-    if (!hoverAudioRef.current) {
-      hoverAudioRef.current = new Audio("/audio/hover.mp3");
-      hoverAudioRef.current.volume = 0.5;
-    }
-    hoverAudioRef.current.currentTime = 0;
-    hoverAudioRef.current.play().catch(() => {});
+    try { sfx.play('hover', 0.5); } catch {}
   }, [claimed, isClaiming, nextStoryRelic]);
 
   // Play click sound
   const playClickSound = useCallback(() => {
-    if (!clickAudioRef.current) {
-      clickAudioRef.current = new Audio("/audio/click.mp3");
-      clickAudioRef.current.volume = 0.5;
-    }
-    clickAudioRef.current.currentTime = 0;
-    clickAudioRef.current.play().catch(() => {});
+    try { sfx.play('click', 0.5); } catch {}
   }, []);
 
   // Handle clicking on the relic image to claim

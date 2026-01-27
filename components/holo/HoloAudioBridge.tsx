@@ -26,6 +26,33 @@ export default function HoloAudioBridge() {
   const welcomeBackRef = useRef<HTMLAudioElement | null>(null);
   const [currentTrack, setCurrentTrack] = useState(null);
 
+  // Warm audio buffers exactly once after first user gesture.
+  const holoWarmedUp = useRef(false);
+  useEffect(() => {
+    const warmUp = () => {
+      if (holoWarmedUp.current) return;
+      holoWarmedUp.current = true;
+      const refs = [warpAudioRef, joinAudioRef, spaceMusicRef, welcomeToHeartrverseRef, welcomeBackRef];
+      let count = 0;
+      refs.forEach(ref => {
+        try { if (ref.current) { ref.current.load(); count++; } } catch {}
+      });
+      try {
+        if (typeof window !== 'undefined' && (window as any).__DEBUG_AUDIO_WARMUP__) {
+          console.debug(`[HoloAudioBridge] warm-up ran once, loaded ${count} audio elements`);
+        }
+      } catch {}
+    };
+    const onPointer = () => warmUp();
+    const onKey = () => warmUp();
+    window.addEventListener('pointerdown', onPointer, { once: true });
+    window.addEventListener('keydown', onKey, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', onPointer);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, []);
+
   // Find the current track from player store songs and map to tracks array
   useEffect(() => {
     
@@ -265,12 +292,12 @@ export default function HoloAudioBridge() {
 
   return (
     <>
-      <audio ref={audioRef} data-holo-audio="1" preload="auto" />
-      <audio ref={warpAudioRef} src="/audio/warp.mp3" preload="auto" style={{ display: 'none' }} />
-      <audio ref={joinAudioRef} src="/audio/join-alien.mp3" preload="auto" style={{ display: 'none' }} />
-      <audio ref={spaceMusicRef} src="/tracks/space-music.opus" preload="auto" style={{ display: 'none' }} />
-      <audio ref={welcomeToHeartrverseRef} src="/tracks/welcome-to-the-heartverse.opus" preload="auto" style={{ display: 'none' }} />
-      <audio ref={welcomeBackRef} src="/tracks/welcome-back.opus" preload="auto" style={{ display: 'none' }} />
+      <audio ref={audioRef} data-holo-audio="1" preload="none" />
+      <audio ref={warpAudioRef} src="/audio/warp.mp3" preload="none" style={{ display: 'none' }} />
+      <audio ref={joinAudioRef} src="/audio/join-alien.mp3" preload="none" style={{ display: 'none' }} />
+      <audio ref={spaceMusicRef} src="/tracks/space-music.opus" preload="none" style={{ display: 'none' }} />
+      <audio ref={welcomeToHeartrverseRef} src="/tracks/welcome-to-the-heartverse.opus" preload="none" style={{ display: 'none' }} />
+      <audio ref={welcomeBackRef} src="/tracks/welcome-back.opus" preload="none" style={{ display: 'none' }} />
     </>
   );
 }
