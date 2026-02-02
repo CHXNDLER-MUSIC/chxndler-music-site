@@ -1,6 +1,7 @@
 "use client";
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
+import { supabaseTrackUrl as S } from "@/lib/supabaseTrackUrl";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useDailySongProgress, recordSongEndedPlay } from "@/hooks/useDailySongProgress";
 import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
@@ -73,37 +74,38 @@ export type TrackInfo = {
   oneLiner?: string;
 };
 
-// Audio source files
+// Audio source files — full-length songs served from Supabase Storage (public bucket).
+// Small UI sounds, welcome clips, and space ambience remain in /public.
 export const TRACKS = {
-  BABY: { mp3: "/tracks/baby.mp3", opus: "/tracks/baby.opus" },
-  BE_MY_BEE: { mp3: "/tracks/be-my-bee.mp3", opus: "/tracks/be-my-bee.opus" },
-  BRAIN_FREEZE: { mp3: "/tracks/brain-freeze.mp3", opus: "/tracks/brain-freeze.opus" },
-  COLLIDE: { mp3: "/tracks/collide.mp3", opus: "/tracks/collide.opus" },
-  COLORS_HOME: { mp3: "/tracks/COLORS OF OUR HOME.mp3", opus: "/tracks/COLORS-OF-OUR-HOME.opus" },
-  COLORS_HOME_ACOUSTIC: { mp3: "/tracks/COLORS OF OUR HOME (ACOUSTIC).mp3", opus: "/tracks/COLORS-OF-OUR-HOME-_ACOUSTIC_.opus" },
-  COLORS_HOME_BLUMA: { mp3: "/tracks/COLORS OF OUR HOME (BLUMA Game Soundtrack).mp3", opus: "/tracks/COLORS-OF-OUR-HOME-_BLUMA-Game-Soundtrack_.opus" },
-  GAME_BOY_HEART: { mp3: "/tracks/game-boy-heart.mp3", opus: "/tracks/game-boy-heart.opus" },
-  HOUSE_PARTY: { mp3: "/tracks/house-party.mp3", opus: "/tracks/house-party.opus" },
-  KID_FOREVER: { mp3: "/tracks/kid-forever.mp3", opus: "/tracks/kid-forever.opus" },
-  OCEAN_GIRL: { mp3: "/tracks/ocean-girl.mp3", opus: "/tracks/ocean-girl.opus" },
-  OCEAN_GIRL_ACOUSTIC: { mp3: "/tracks/ocean-girl-acoustic.mp3", opus: "/tracks/ocean-girl-acoustic.opus" },
-  OCEAN_GIRL_REMIX: { mp3: "/tracks/ocean-girl-remix.mp3", opus: "/tracks/ocean-girl-remix.opus" },
-  PARIS: { mp3: "/tracks/paris.mp3", opus: "/tracks/paris.opus" },
-  POKEMON: { mp3: "/tracks/pokemon.mp3", opus: "/tracks/pokemon.opus" },
-  WJF: { mp3: "/tracks/we're-just-friends.mp3", opus: "/tracks/we're-just-friends.opus" },
-  WJF_DMVRCO: { mp3: "/tracks/we're-just-friends-dmvrco-remix.mp3", opus: "/tracks/we're-just-friends-dmvrco-remix.opus" },
-  WJF_MICKEY_JAS: { mp3: "/tracks/we're-just-friends-mickey-jas-remix.mp3", opus: "/tracks/we're-just-friends-mickey-jas-remix.opus" },
-  // Ambient / voiceover
-  SPACE_MUSIC: { mp3: "/tracks/space-music.mp3", opus: "/tracks/space-music.opus" },
+  BABY: { mp3: S("baby.mp3"), opus: S("baby.opus") },
+  BE_MY_BEE: { mp3: S("be-my-bee.mp3"), opus: S("be-my-bee.opus") },
+  BRAIN_FREEZE: { mp3: S("brain-freeze.mp3"), opus: S("brain-freeze.opus") },
+  COLLIDE: { mp3: S("collide.mp3"), opus: S("collide.opus") },
+  COLORS_HOME: { mp3: S("COLORS OF OUR HOME.mp3"), opus: S("COLORS-OF-OUR-HOME.opus") },
+  COLORS_HOME_ACOUSTIC: { mp3: S("COLORS OF OUR HOME (ACOUSTIC).mp3"), opus: S("COLORS-OF-OUR-HOME-_ACOUSTIC_.opus") },
+  COLORS_HOME_BLUMA: { mp3: S("COLORS OF OUR HOME (BLUMA Game Soundtrack).mp3"), opus: S("COLORS-OF-OUR-HOME-_BLUMA-Game-Soundtrack_.opus") },
+  GAME_BOY_HEART: { mp3: S("game-boy-heart.mp3"), opus: S("game-boy-heart.opus") },
+  HOUSE_PARTY: { mp3: S("house-party.mp3"), opus: S("house-party.opus") },
+  KID_FOREVER: { mp3: S("kid-forever.mp3"), opus: S("kid-forever.opus") },
+  OCEAN_GIRL: { mp3: S("ocean-girl.mp3"), opus: S("ocean-girl.opus") },
+  OCEAN_GIRL_ACOUSTIC: { mp3: S("ocean-girl-acoustic.mp3"), opus: S("ocean-girl-acoustic.opus") },
+  OCEAN_GIRL_REMIX: { mp3: S("ocean-girl-remix.mp3"), opus: S("ocean-girl-remix.opus") },
+  PARIS: { mp3: S("paris.mp3"), opus: S("paris.opus") },
+  POKEMON: { mp3: S("pokemon.mp3"), opus: S("pokemon.opus") },
+  WJF: { mp3: S("we're-just-friends.mp3"), opus: S("we're-just-friends.opus") },
+  WJF_DMVRCO: { mp3: S("we're-just-friends-dmvrco-remix.mp3"), opus: S("we're-just-friends-dmvrco-remix.opus") },
+  WJF_MICKEY_JAS: { mp3: S("we're-just-friends-mickey-jas-remix.mp3"), opus: S("we're-just-friends-mickey-jas-remix.opus") },
+  // Ambient / voiceover — kept local in /public
+  SPACE_MUSIC: { mp3: "/tracks/space-music.mp3" },
   WELCOME_TO_HEARTVERSE: { mp3: "/tracks/welcome-to-the-heartverse.mp3", opus: "/tracks/welcome-to-the-heartverse.opus" },
   WELCOME_BACK: { mp3: "/tracks/welcome-back.mp3", opus: "/tracks/welcome-back.opus" },
   // Element planet tracks
-  WATER: { mp3: "/tracks/WATER.MP3" },
-  LIGHTNING: { mp3: "/tracks/LIGHTNING.MP3" },
-  DARKNESS: { mp3: "/tracks/darkness.MP3" },
-  HEART: { mp3: "/tracks/heart.MP3" },
-  CENTER: { mp3: "/tracks/center.MP3" },
-} as const;
+  WATER: { mp3: S("WATER.MP3") },
+  LIGHTNING: { mp3: S("LIGHTNING.MP3") },
+  DARKNESS: { mp3: S("darkness.MP3") },
+  HEART: { mp3: S("heart.MP3") },
+  CENTER: { mp3: S("center.MP3") },
+};
 
 // Track info mapping - links track keys to visual/metadata information
 export const TRACK_INFO: Record<string, TrackInfo> = {
@@ -976,7 +978,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (audioRef.current) return;
     const a = document.createElement("audio");
-    a.preload = "auto";
+    a.preload = "none";
     a.crossOrigin = "anonymous";
     a.setAttribute("data-global-audio", "1");
     a.style.display = "none";
@@ -1651,7 +1653,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           // Determine expected source using shared mapper with normalized slug
           const norm = normalizeSlug(state.currentTrack.id);
           const key = trackKeyFromSlug(norm) as TrackKey | null;
-          const expectedSource = key ? bestSourceFor(TRACKS[key]) : `/tracks/${norm}.opus`;
+          const expectedSource = key ? bestSourceFor(TRACKS[key]) : S(`${norm}.mp3`);
 
           // Only set src when there's no source at all. Do NOT reload when resuming.
           // Some filenames contain URL-encoded characters (e.g., we%27re-just-friends),
@@ -1763,7 +1765,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       // Find the track source using the shared mapper
       let trackSource = "";
       const key = trackKeyFromSlug(normId) as TrackKey | null;
-      trackSource = key ? bestSourceFor(TRACKS[key]) : `/tracks/${normId}.opus`;
+      trackSource = key ? bestSourceFor(TRACKS[key]) : S(`${normId}.mp3`);
 
       if (!trackSource) {
         console.warn(`No source found for track: ${trackId}`);
@@ -1846,7 +1848,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         console.log(`🎵 preloadTrack: Found track source via TRACKS mapping: ${key} -> ${trackSource}`);
       } else {
         // Fallback to direct file path
-        trackSource = `/tracks/${normId}.mp3`;
+        trackSource = S(`${normId}.mp3`);
         console.log(`🎵 preloadTrack: Using fallback track source: ${trackSource}`);
       }
 
@@ -1900,7 +1902,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         console.log(`🎵 Found track source via TRACKS mapping: ${key} -> ${trackSource}`);
       } else {
         // Fallback to direct file path
-        trackSource = `/tracks/${normId}.opus`;
+        trackSource = S(`${normId}.mp3`);
         console.log(`🎵 Using fallback track source: ${trackSource}`);
       }
 

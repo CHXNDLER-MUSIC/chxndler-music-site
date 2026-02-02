@@ -22,6 +22,7 @@ import { triggerMerchCelebration } from '@/utils/merchCelebration';
 import { triggerHeartCoinCelebration, suppressNextHeartcoinCelebration } from '@/utils/heartcoinCelebration';
 import { triggerElementCardCelebration } from '@/utils/elementCardCelebration';
 import { triggerCardCelebration } from '@/utils/cardCelebration';
+import { getCardImageUrl } from '@/lib/supabaseCardUrl';
 
 // Get basePath from env (supports deployments with basePath like /cockpit)
 const basePath = (process.env.NEXT_PUBLIC_BASE_PATH || '').replace(/\/$/, '');
@@ -1954,8 +1955,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       try { sfx.play('card-ding', 0.8); } catch {}
 
       // Trigger card celebration, then open binder after celebration ends (3 seconds)
-      const cardImage = selectedCard?.artwork_url || selectedCard?.image_url || '';
       const cardName = selectedCard?.card_name || 'Card';
+      const cardImage = getCardImageUrl(cardName);
       if (cardImage) {
         triggerCardCelebration(cardImage, cardName);
         // Open binder after celebration ends (3 seconds)
@@ -2100,7 +2101,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         source: 'CARDS',
         itemName: selectedCard?.card_name || 'Physical Card',
         idempotencyKey,
-        image: selectedCard?.artwork_url,
+        image: getCardImageUrl(selectedCard?.card_name || 'CHXNDLER'),
         orderId: extractedOrderId  // Store orderId for shipping step
       });
 
@@ -2186,7 +2187,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       try { sfx.play('card-ding', 0.8); } catch {}
 
       // Trigger card celebration
-      const cardImage = purchaseDraft.image || enlargedCard?.artwork_url || enlargedCard?.image_url || '';
+      const cardImage = purchaseDraft.image || getCardImageUrl(enlargedCard?.card_name || 'CHXNDLER');
       const cardName = purchaseDraft.itemName || enlargedCard?.card_name || 'Card';
       if (cardImage) {
         triggerCardCelebration(cardImage, cardName);
@@ -3640,7 +3641,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         }}>
                           <span className="text-base font-bold">+</span>
                           <img
-                            src={`/cards/${(profile?.element || 'HEART').toUpperCase()}.webp`}
+                            src={getCardImageUrl((profile?.element || 'HEART').toUpperCase())}
                             alt="Element Card"
                             className="w-10 h-10 ml-0.5 object-contain"
                             style={{ filter: 'drop-shadow(0 0 4px white)' }}
@@ -4819,7 +4820,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                   onMouseEnter={() => { playHoverSfx(0.3) }}
                                 >
                                 <img
-                                  src={card.artwork_url || `/cards/${card.card_name}.webp`}
+                                  src={getCardImageUrl(card.card_name)}
                                   alt={card.card_name}
                                   className={`w-full h-full object-cover ${shouldBlurCard(card) ? 'filter blur-sm opacity-60' : ''}`}
                                   onClick={() => {
@@ -5620,7 +5621,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   >
                     {/* Front of card - rotates with cardRotation */}
                     <img
-                      src={enlargedCard.artwork_url || `/cards/${enlargedCard.card_name}.webp`}
+                      src={getCardImageUrl(enlargedCard.card_name)}
                       alt={enlargedCard.card_name}
                       className="absolute inset-0 w-full h-full rounded-3xl shadow-2xl object-contain pointer-events-none"
                       style={{
@@ -5632,7 +5633,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                     />
                     {/* Back of card - offset by 180° */}
                     <img
-                      src="/cards/BACK.webp"
+                      src={getCardImageUrl('BACK')}
                       alt="Card back"
                       className="absolute inset-0 w-full h-full rounded-3xl shadow-2xl object-contain pointer-events-none"
                       style={{

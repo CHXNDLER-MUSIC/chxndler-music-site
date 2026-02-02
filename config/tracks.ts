@@ -1,4 +1,5 @@
 import { slugify } from "@/lib/slug";
+import { supabaseTrackUrl } from "@/lib/supabaseTrackUrl";
 
 export type Track = {
   title: string;
@@ -186,7 +187,7 @@ const MAPPED = RAW.map((t, idx) => {
     // Match existing asset locations under /public
     // audio: only when provided in RAW (no auto default)
     // cover: /public/cover/<slug>.png (updated, assets dropped "-cover" suffix)
-    src:  t.src ?? `/tracks/${base}.mp3`,
+    src:  t.src ? (t.src.startsWith('/tracks/') ? supabaseTrackUrl(t.src.replace('/tracks/', '')) : t.src) : supabaseTrackUrl(`${base}.mp3`),
     cover: t.cover ?? `/cover/${base}.png`,
     subtitle: tagline ?? `Channel ${idx + 1}`,
   };

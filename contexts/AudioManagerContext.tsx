@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useEffect, useRef, useMemo } from "react";
+import { supabaseTrackUrl as S } from "@/lib/supabaseTrackUrl";
 
 // Music and voiceover tracks
 // Track info for audio and visual display
@@ -13,31 +14,31 @@ export type TrackInfo = {
   oneLiner?: string;
 };
 
-// Audio source files  
+// Audio source files — full-length songs from Supabase Storage; welcome/space kept local.
 export const TRACKS = {
-  BABY: { mp3: "/tracks/baby.mp3", opus: "/tracks/baby.opus" },
-  BE_MY_BEE: { mp3: "/tracks/be-my-bee.mp3", opus: "/tracks/be-my-bee.opus" },
-  BRAIN_FREEZE: { mp3: "/tracks/brain-freeze.mp3", opus: "/tracks/brain-freeze.opus" },
-  COLLIDE: { mp3: "/tracks/collide.mp3", opus: "/tracks/collide.opus" },
-  COLORS_HOME: { mp3: "/tracks/COLORS OF OUR HOME.mp3", opus: "/tracks/COLORS-OF-OUR-HOME.opus" },
-  COLORS_HOME_ACOUSTIC: { mp3: "/tracks/COLORS OF OUR HOME (ACOUSTIC).mp3", opus: "/tracks/COLORS-OF-OUR-HOME-_ACOUSTIC_.opus" },
-  COLORS_HOME_BLUMA: { mp3: "/tracks/COLORS OF OUR HOME (BLUMA Game Soundtrack).mp3", opus: "/tracks/COLORS-OF-OUR-HOME-_BLUMA-Game-Soundtrack_.opus" },
-  GAME_BOY_HEART: { mp3: "/tracks/game-boy-heart.mp3", opus: "/tracks/game-boy-heart.opus" },
-  HOUSE_PARTY: { mp3: "/tracks/house-party.mp3", opus: "/tracks/house-party.opus" },
-  KID_FOREVER: { mp3: "/tracks/kid-forever.mp3", opus: "/tracks/kid-forever.opus" },
-  OCEAN_GIRL: { mp3: "/tracks/ocean-girl.mp3", opus: "/tracks/ocean-girl.opus" },
-  OCEAN_GIRL_ACOUSTIC: { mp3: "/tracks/ocean-girl-acoustic.mp3", opus: "/tracks/ocean-girl-acoustic.opus" },
-  OCEAN_GIRL_REMIX: { mp3: "/tracks/ocean-girl-remix.mp3", opus: "/tracks/ocean-girl-remix.opus" },
-  PARIS: { mp3: "/tracks/paris.mp3", opus: "/tracks/paris.opus" },
-  POKEMON: { mp3: "/tracks/pokemon.mp3", opus: "/tracks/pokemon.opus" },
-  WJF: { mp3: "/tracks/we're-just-friends.mp3", opus: "/tracks/we're-just-friends.opus" },
-  WJF_DMVRCO: { mp3: "/tracks/we're-just-friends-dmvrco-remix.mp3", opus: "/tracks/we're-just-friends-dmvrco-remix.opus" },
-  WJF_MICKEY_JAS: { mp3: "/tracks/we're-just-friends-mickey-jas-remix.mp3", opus: "/tracks/we're-just-friends-mickey-jas-remix.opus" },
-  // Ambient / voiceover
-  SPACE_MUSIC: { mp3: "/tracks/space-music.mp3", opus: "/tracks/space-music.opus" },
+  BABY: { mp3: S("baby.mp3"), opus: S("baby.opus") },
+  BE_MY_BEE: { mp3: S("be-my-bee.mp3"), opus: S("be-my-bee.opus") },
+  BRAIN_FREEZE: { mp3: S("brain-freeze.mp3"), opus: S("brain-freeze.opus") },
+  COLLIDE: { mp3: S("collide.mp3"), opus: S("collide.opus") },
+  COLORS_HOME: { mp3: S("COLORS OF OUR HOME.mp3"), opus: S("COLORS-OF-OUR-HOME.opus") },
+  COLORS_HOME_ACOUSTIC: { mp3: S("COLORS OF OUR HOME (ACOUSTIC).mp3"), opus: S("COLORS-OF-OUR-HOME-_ACOUSTIC_.opus") },
+  COLORS_HOME_BLUMA: { mp3: S("COLORS OF OUR HOME (BLUMA Game Soundtrack).mp3"), opus: S("COLORS-OF-OUR-HOME-_BLUMA-Game-Soundtrack_.opus") },
+  GAME_BOY_HEART: { mp3: S("game-boy-heart.mp3"), opus: S("game-boy-heart.opus") },
+  HOUSE_PARTY: { mp3: S("house-party.mp3"), opus: S("house-party.opus") },
+  KID_FOREVER: { mp3: S("kid-forever.mp3"), opus: S("kid-forever.opus") },
+  OCEAN_GIRL: { mp3: S("ocean-girl.mp3"), opus: S("ocean-girl.opus") },
+  OCEAN_GIRL_ACOUSTIC: { mp3: S("ocean-girl-acoustic.mp3"), opus: S("ocean-girl-acoustic.opus") },
+  OCEAN_GIRL_REMIX: { mp3: S("ocean-girl-remix.mp3"), opus: S("ocean-girl-remix.opus") },
+  PARIS: { mp3: S("paris.mp3"), opus: S("paris.opus") },
+  POKEMON: { mp3: S("pokemon.mp3"), opus: S("pokemon.opus") },
+  WJF: { mp3: S("we're-just-friends.mp3"), opus: S("we're-just-friends.opus") },
+  WJF_DMVRCO: { mp3: S("we're-just-friends-dmvrco-remix.mp3"), opus: S("we're-just-friends-dmvrco-remix.opus") },
+  WJF_MICKEY_JAS: { mp3: S("we're-just-friends-mickey-jas-remix.mp3"), opus: S("we're-just-friends-mickey-jas-remix.opus") },
+  // Ambient / voiceover — kept local
+  SPACE_MUSIC: { mp3: "/tracks/space-music.mp3" },
   WELCOME_TO_HEARTVERSE: { mp3: "/tracks/welcome-to-the-heartverse.mp3", opus: "/tracks/welcome-to-the-heartverse.opus" },
   WELCOME_BACK: { mp3: "/tracks/welcome-back.mp3", opus: "/tracks/welcome-back.opus" },
-} as const;
+};
 
 // Track info mapping - links track keys to visual/metadata information
 export const TRACK_INFO: Record<string, TrackInfo> = {

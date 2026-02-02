@@ -20,6 +20,7 @@ import { triggerMerchCelebration } from '@/utils/merchCelebration';
 import { triggerHeartCoinCelebration, suppressNextHeartcoinCelebration } from '@/utils/heartcoinCelebration';
 import { useUserCards } from '@/hooks/useUserCards';
 import { useHeartcoinBalance } from '@/providers/HeartcoinBalanceProvider';
+import { getCardImageUrl } from '@/lib/supabaseCardUrl';
 
 type Props = {
   open: boolean;
@@ -574,7 +575,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         id: `synthetic-${element}`,
         card_name: element,
         element: element,
-        artwork_url: `/cards/${element}.webp`,
+        artwork_url: getCardImageUrl(element),
         card_description: undefined,
       } as any;
       ordered = [synthetic, ...otherCards];
@@ -1509,7 +1510,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       // For physical cards, we need shipping info
       setSelectedItem({
         name: `${currentCard.card_name || currentCard.cards?.card_name || 'Card'} (Physical)`,
-        image: currentCard.artwork_url || `/cards/${currentCard.card_name || currentCard.cards?.card_name}.webp`,
+        image: getCardImageUrl(currentCard.card_name || currentCard.cards?.card_name),
         stripeUrl: '',
         description: currentCard.card_description || currentCard.cards?.card_description || 'Physical card',
         cost: 0,
@@ -1577,7 +1578,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
         // Trigger celebration for digital card purchase
         const cardName = currentCard.card_name || currentCard.cards?.card_name || 'Card';
-        const cardImage = currentCard.artwork_url || `/cards/${cardName}.webp`;
+        const cardImage = getCardImageUrl(cardName);
         triggerMerchCelebration(`${cardName} (Digital)`, cardImage);
 
         try { await refreshProfile(); } catch {}
@@ -1627,7 +1628,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     // Create unique client request ID for idempotency
     const clientRequestId = crypto.randomUUID();
     const cardName = currentCard.card_name || currentCard.cards?.card_name || 'Card';
-    const cardImage = currentCard.artwork_url || `/cards/${cardName}.webp`;
+    const cardImage = getCardImageUrl(cardName);
 
     console.log('[PHYSICAL CARD PURCHASE] Initiating immediate purchase:', {
       cardName,
@@ -2445,7 +2446,10 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                       </div>
 
                       {/* Tier unlock pill - shows for non-WANDERER items in both locked and unlocked states */}
-                      {titleItemMinTier !== 'WANDERER' && (
+                      {titleItemMinTier !== 'WANDERER' && (() => {
+                        const isPinkTier = isBeanie && selectedVariant?.value?.toLowerCase() === 'black';
+                        const pillColor = isPinkTier ? '#ec4899' : '#F2EF1D';
+                        return (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -2466,12 +2470,18 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                           onMouseEnter={() => {
                             try { sfx.play('hover', 0.3); } catch {}
                           }}
-                          className="relative z-20 px-3 py-1 text-xs font-bold text-[#F2EF1D] bg-[#F2EF1D]/10 border border-[#F2EF1D]/30 rounded-full hover:bg-[#F2EF1D]/20 hover:border-[#F2EF1D]/50 transition-all duration-200 cursor-pointer flex items-center gap-1.5"
+                          className="relative z-20 px-3 py-1 text-xs font-bold rounded-full transition-all duration-200 cursor-pointer flex items-center gap-1.5"
+                          style={{
+                            color: isPinkTier ? '#ec4899' : '#F2EF1D',
+                            backgroundColor: isPinkTier ? 'rgba(236,72,153,0.1)' : 'rgba(242,239,29,0.1)',
+                            border: `1px solid ${isPinkTier ? 'rgba(236,72,153,0.3)' : 'rgba(242,239,29,0.3)'}`,
+                          }}
                         >
                           <span>{isTitleItemLocked ? '🔒' : '✨'}</span>
-                          <span>{isTitleItemLocked ? 'Unlock at' : 'Unlocked at'} {titleItemMinTier}</span>
+                          <span>{isTitleItemLocked ? `Unlock at ${titleItemMinTier}` : `Unlocked at ${titleItemMinTier}`}</span>
                         </button>
-                      )}
+                        );
+                      })()}
                     </div>
                   );
                 })()}
@@ -2716,7 +2726,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                       </div>
 
                       {/* Journey Tier Status - Locked or Unlocked display */}
-                      {isLocked ? (
+                      {(() => {
+                        const isBlackBeanie = isDetailBeanie && detailSelectedVariant?.value?.toLowerCase() === 'black';
+                        return isLocked ? (
                         <button
                           onClick={() => {
                             try { sfx.play('click', 0.5); } catch {}
@@ -2726,25 +2738,37 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                           onMouseEnter={() => {
                             try { sfx.play('hover', 0.3); } catch {}
                           }}
-                          className="w-full py-2 px-4 rounded-lg font-bold text-xs text-center mt-2 bg-gray-600/50 text-gray-300 border border-gray-500/50 hover:bg-gray-500/50 hover:text-white hover:border-gray-400/50 transition-all duration-200 cursor-pointer"
+                          className="w-full py-2 px-4 rounded-lg font-bold text-xs text-center mt-2 transition-all duration-200 cursor-pointer"
+                          style={{
+                            color: isBlackBeanie ? '#ec4899' : '#d1d5db',
+                            backgroundColor: isBlackBeanie ? 'rgba(236,72,153,0.15)' : 'rgba(75,85,99,0.5)',
+                            border: `1px solid ${isBlackBeanie ? 'rgba(236,72,153,0.5)' : 'rgba(107,114,128,0.5)'}`,
+                          }}
                         >
                           <span className="flex items-center justify-center gap-2">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                             </svg>
-                            Unlock for {itemMinTier}
+                            Unlock at {itemMinTier}
                           </span>
                         </button>
                       ) : (
                         <>
-                          {/* Show "Unlocked for {TIER}" for tier-restricted items that user has access to */}
+                          {/* Show "Unlocked at {TIER}" for tier-restricted items that user has access to */}
                           {itemMinTier !== 'WANDERER' && (
-                            <div className="w-full py-2 px-4 rounded-lg font-bold text-xs text-center mt-2 bg-green-600/30 text-green-300 border border-green-500/50">
+                            <div
+                              className="w-full py-2 px-4 rounded-lg font-bold text-xs text-center mt-2"
+                              style={{
+                                color: isBlackBeanie ? '#ec4899' : '#86efac',
+                                backgroundColor: isBlackBeanie ? 'rgba(236,72,153,0.15)' : 'rgba(22,163,74,0.3)',
+                                border: `1px solid ${isBlackBeanie ? 'rgba(236,72,153,0.5)' : 'rgba(34,197,94,0.5)'}`,
+                              }}
+                            >
                               <span className="flex items-center justify-center gap-2">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
                                 </svg>
-                                Unlocked for {itemMinTier}
+                                Unlock at {itemMinTier}
                               </span>
                             </div>
                           )}
@@ -2825,7 +2849,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             {modalLoading ? 'Purchasing...' : 'Add to Collection'}
                           </button>
                         </>
-                      )}
+                      );
+                      })()}
                     </div>
                   );
                 })()}
@@ -2926,7 +2951,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 >
                   {selectedPurchaseType === null ? (
                     <img
-                      src={displayCards[displayCardIndex]?.artwork_url || `/cards/${displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name}.webp`}
+                      src={getCardImageUrl(displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name)}
                       alt={displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name || 'Card'}
                       className="w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain hover:scale-105 transition-transform duration-300"
                       style={{ filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))' }}
@@ -3540,7 +3565,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     >
                       {/* Front of card - rotates with cardRotation */}
                       <img
-                        src={displayCards[displayCardIndex]?.artwork_url || `/cards/${displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name}.webp`}
+                        src={getCardImageUrl(displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name)}
                         alt={displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name || 'Card'}
                         className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
                         style={{
@@ -3553,7 +3578,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                       />
                       {/* Back of card - offset by 180° */}
                       <img
-                        src="/cards/BACK.webp"
+                        src={getCardImageUrl('BACK')}
                         alt="Card back"
                         className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
                         style={{

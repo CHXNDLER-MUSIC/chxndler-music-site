@@ -53,8 +53,10 @@ import { useFocusElementOfDay } from "@/hooks/useFocusElementOfDay";
 // Use system font stack to avoid network font fetches during build
 
 // Constants to prevent recreating URLs on every render
+import { getCardImageUrl } from '@/lib/supabaseCardUrl';
+
 const DEFAULT_COVER = '/covers/CHXNDLER.webp';
-const DEFAULT_CARD = '/cards/CHXNDLER.webp';
+const DEFAULT_CARD = getCardImageUrl('CHXNDLER');
 const FALLBACK_COVER = '/elements/logo.webp';
 
 const ElementIcon = React.memo(function ElementIcon({ name, size = 18, glow = true }) {
@@ -395,7 +397,7 @@ const HUDPanel = React.memo(function HUDPanel({
     {
       id: 'chxndler',
       title: 'CHXNDLER',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
+      image: getCardImageUrl('CHXNDLER'),
       rarity: 'legendary',
       type: 'brand'
     },
@@ -419,7 +421,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'HEART',
       type: 'HEART',
       rarity: 'Rare',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/HEART.png',
+      image: getCardImageUrl('HEART'),
       description: 'This is the emotional core. These songs don\'t just want — they feel. Love isn\'t clean here — it\'s messy, soft, and intense.',
       collected: true
     },
@@ -428,7 +430,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'ALWAYS ON MY MIND',
       type: 'HEART',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/always-on-my-mind.png?updatedAt=1762388345883',
+      image: getCardImageUrl('ALWAYS ON MY MIND'),
       description: 'Some voices never fade — they just guide you from within.',
       collected: false
     },
@@ -437,7 +439,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'ALWAYS ON MY MIND (ACOUSTIC)',
       type: 'HEART',
       rarity: 'Common',
-      image: '/covers/ALWAYS ON MY MIND (ACOUSTIC).webp',
+      image: getCardImageUrl('ALWAYS ON MY MIND (ACOUSTIC)'),
       description: 'Some voices never fade — they just guide you from within.',
       collected: false
     },
@@ -446,7 +448,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'ALWAYS ON MY MIND (REMIX)',
       type: 'HEART',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/always-on-my-mind-remix.png?updatedAt=1762388342107',
+      image: getCardImageUrl('ALWAYS ON MY MIND (REMIX)'),
       description: 'Some voices never fade — they just guide you from within.',
       collected: false
     },
@@ -455,7 +457,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'BABY',
       type: 'HEART',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/baby.png?updatedAt=1762388345192',
+      image: getCardImageUrl('BABY'),
       description: 'A chaotic, messy, romantic ride through the magic of a first date.',
       collected: availableSongs.includes('BABY')
     },
@@ -464,7 +466,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'BE MY BEE',
       type: 'HEART',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/be-my-bee.png?updatedAt=1762388342848',
+      image: getCardImageUrl('BE MY BEE'),
       description: 'You buzzed like love on a first date… but the sting brought you back to Earth.',
       collected: availableSongs.includes('BE MY BEE')
     },
@@ -473,7 +475,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'BE MY BEE (ACOUSTIC)',
       type: 'HEART',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/be-my-bee-acoustic.png?updatedAt=1762388342912',
+      image: getCardImageUrl('BE MY BEE (ACOUSTIC)'),
       description: 'You buzzed like love on a first date… but the sting brought you back to Earth.',
       collected: false
     },
@@ -482,7 +484,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'COLLIDE',
       type: 'HEART',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/collide.png?updatedAt=1762388347054',
+      image: getCardImageUrl('COLLIDE'),
       description: 'Two souls crash into each other in a cosmic dance of fate.',
       collected: availableSongs.includes('COLLIDE')
     },
@@ -491,7 +493,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'COLORS OF OUR HOME',
       type: 'HEART',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/COLORS%20OF%20OUR%20HOME%20.png',
+      image: getCardImageUrl('COLORS OF OUR HOME'),
       description: 'A journey from isolation to connection in a world full of color.',
       collected: availableSongs.includes('COLORS OF OUR HOME')
     },
@@ -500,7 +502,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'COLORS OF OUR HOME (ACOUSTIC)',
       type: 'HEART',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/COLORS%20OF%20OUR%20HOME%20(ACOUSTIC).png?updatedAt=1763055064803',
+      image: getCardImageUrl('COLORS OF OUR HOME (ACOUSTIC)'),
       description: 'A journey from isolation to connection in a world full of color.',
       collected: availableSongs.includes('COLORS OF OUR HOME (ACOUSTIC)')
     },
@@ -509,7 +511,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'COLORS OF OUR HOME (BLUMA GAME SOUNDTRACK)',
       type: 'HEART',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/colors-of-our-home-bluma.png?updatedAt=1762388344204',
+      image: getCardImageUrl('COLORS OF OUR HOME (BLUMA GAME SOUNDTRACK)'),
       description: 'A journey from isolation to connection in a world full of color.',
       collected: availableSongs.includes('COLORS OF OUR HOME (BLUMA Game Soundtrack)')
     },
@@ -518,7 +520,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'I MIGHT FALL IN LOVE WITH YOU',
       type: 'HEART',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/i-might-fall-in-love-with-you.png?updatedAt=1762388340663',
+      image: getCardImageUrl('I MIGHT FALL IN LOVE WITH YOU'),
       description: 'Falling into warm sweaters, slow mornings, and a love that feels like home.',
       collected: false
     },
@@ -527,7 +529,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)',
       type: 'HEART',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/I%20MIGHT%20FALL%20IN%20LOVE%20WITH%20YOU%20(ACOUSTIC).png?updatedAt=1763055066309',
+      image: getCardImageUrl('I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)'),
       description: 'Falling into warm sweaters, slow mornings, and a love that feels like home.',
       collected: false
     },
@@ -536,7 +538,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'LITTLE BLACK HEART',
       type: 'DARKNESS',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/little-black-heart.png?updatedAt=1762388346814',
+      image: getCardImageUrl('LITTLE BLACK HEART'),
       description: 'Are you afraid to live or afraid to die?',
       collected: false
     },
@@ -545,7 +547,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'LITTLE BLACK HEART (ACOUSTIC)',
       type: 'DARKNESS',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/LITTLE%20BLACK%20HEART%20(ACOUSTIC).png?updatedAt=1763055066090',
+      image: getCardImageUrl('LITTLE BLACK HEART (ACOUSTIC)'),
       description: 'Are you afraid to live or afraid to die?',
       collected: false
     },
@@ -554,7 +556,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'LOVE ME',
       type: 'HEART',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/love-me.png?updatedAt=1762388339563',
+      image: getCardImageUrl('LOVE ME'),
       description: 'If I gave it all away for the dream and never made it — would you still love me?',
       collected: false
     },
@@ -563,7 +565,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'LOVE ME (ACOUSTIC)',
       type: 'HEART',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/love-me-acoustic.png?updatedAt=1762388330787',
+      image: getCardImageUrl('LOVE ME (ACOUSTIC)'),
       description: 'If I gave it all away for the dream and never made it — would you still love me?',
       collected: false
     },
@@ -572,7 +574,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'SOMEBODY TO LOVE',
       type: 'HEART',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/somebody-to-love.png?updatedAt=1762388347148',
+      image: getCardImageUrl('SOMEBODY TO LOVE'),
       description: 'You want to give real love — not the kind they expect, but the kind you know. Too bad they\'re not the one.',
       collected: false
     },
@@ -581,7 +583,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'TIENES UN AMIGO',
       type: 'HEART',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/tienes-un-amigo.png?updatedAt=1762388343639',
+      image: getCardImageUrl('TIENES UN AMIGO'),
       description: 'No galaxy too far, no accent too strong — friendship always finds a way.',
       collected: false
     },
@@ -590,7 +592,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: "WE'RE JUST FRIENDS",
       type: 'HEART',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/we\'re-just-friends.png?updatedAt=1762388347233',
+      image: getCardImageUrl("WE'RE JUST FRIENDS"),
       description: 'Unspoken feelings blur the lines between friendship and something more.',
       collected: availableSongs.includes("WE'RE JUST FRIENDS")
     },
@@ -599,7 +601,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: "WE'RE JUST FRIENDS (ACOUSTIC)",
       type: 'HEART',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/we\'re-just-friends-acoustic.png?updatedAt=1762388340285',
+      image: getCardImageUrl("WE'RE JUST FRIENDS (ACOUSTIC)"),
       description: 'Unspoken feelings blur the lines between friendship and something more.',
       collected: false
     },
@@ -608,7 +610,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: "WE'RE JUST FRIENDS (DMVRCO REMIX)",
       type: 'HEART',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/we\'re-just-friends-dmvrco-remix.png?updatedAt=1762388345669',
+      image: getCardImageUrl("WE'RE JUST FRIENDS (DMVRCO REMIX)"),
       description: 'Unspoken feelings blur the lines between friendship and something more.',
       collected: availableSongs.includes("WE'RE JUST FRIENDS (DMVRCO Remix)")
     },
@@ -617,7 +619,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: "WE'RE JUST FRIENDS (MICKEY JAS REMIX)",
       type: 'HEART',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/we\'re-just-friends-mickey-jas-remix.png?updatedAt=1762388346859',
+      image: getCardImageUrl("WE'RE JUST FRIENDS (MICKEY JAS REMIX)"),
       description: 'Unspoken feelings blur the lines between friendship and something more.',
       collected: availableSongs.includes("WE'RE JUST FRIENDS (mickey jas Remix)")
     },
@@ -626,7 +628,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'PINK MOON',
       type: 'HEART',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/pink-moon.png?updatedAt=1762388347173',
+      image: getCardImageUrl('PINK MOON'),
       description: 'Lost in the static, the pink moon guides me home.',
       collected: false
     },
@@ -637,7 +639,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'WATER',
       type: 'WATER',
       rarity: 'Rare',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/WATER.png',
+      image: getCardImageUrl('WATER'),
       description: 'These songs carry waves of emotion — not explosive, but steady, like a tide that pulls you out and then leaves you still',
       collected: true
     },
@@ -646,7 +648,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'LETTING GO',
       type: 'WATER',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/letting-go.png?updatedAt=1762388344472',
+      image: getCardImageUrl('LETTING GO'),
       description: 'Letting go of expectations — theirs and yours — to finally be free.',
       collected: false
     },
@@ -655,7 +657,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'OCEAN GIRL',
       type: 'WATER',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl.png?updatedAt=1762388343942',
+      image: getCardImageUrl('OCEAN GIRL'),
       description: 'A love that moves like the sea — you let go and trust to always come back to you.',
       collected: availableSongs.includes('OCEAN GIRL')
     },
@@ -664,7 +666,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'OCEAN GIRL (ACOUSTIC)',
       type: 'WATER',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl-acoustic.png?updatedAt=1762388344386',
+      image: getCardImageUrl('OCEAN GIRL (ACOUSTIC)'),
       description: 'A love that moves like the sea — you let go and trust to always come back to you.',
       collected: availableSongs.includes('OCEAN GIRL (ACOUSTIC)')
     },
@@ -673,7 +675,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'OCEAN GIRL (REMIX)',
       type: 'WATER',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl-remix.png?updatedAt=1762388346301',
+      image: getCardImageUrl('OCEAN GIRL (REMIX)'),
       description: 'A love that moves like the sea — you let go and trust to always come back to you.',
       collected: availableSongs.includes('OCEAN GIRL (REMIX)')
     },
@@ -684,7 +686,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'LIGHTNING',
       type: 'LIGHTNING',
       rarity: 'Rare',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/LIGHTNING.png',
+      image: getCardImageUrl('LIGHTNING'),
       description: 'Lightning is the electric jolt of feeling alive. These tracks buzz. You move fast, crash hard, and maybe regret nothing.',
       collected: true
     },
@@ -693,7 +695,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'AMERICAN DREAM',
       type: 'LIGHTNING',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/american-dream.png?updatedAt=1762388346126',
+      image: getCardImageUrl('AMERICAN DREAM'),
       description: 'The American Dream isn\'t where we live — it\'s where our dreams go to die.',
       collected: false
     },
@@ -702,7 +704,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'BLUE',
       type: 'LIGHTNING',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/blue.png?updatedAt=1762388346777',
+      image: getCardImageUrl('BLUE'),
       description: 'You were the match to ignite the ash in my heart.',
       collected: false
     },
@@ -711,7 +713,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'BLUE (ACOUSTIC)',
       type: 'LIGHTNING',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/BLUE%20(ACOUSTIC).png?updatedAt=1763055066119',
+      image: getCardImageUrl('BLUE (ACOUSTIC)'),
       description: 'You were the match to ignite the ash in my heart.',
       collected: false
     },
@@ -720,7 +722,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'BRAIN FREEZE',
       type: 'LIGHTNING',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/brain-freeze.png?updatedAt=1762388347224',
+      image: getCardImageUrl('BRAIN FREEZE'),
       description: 'A rush of emotion and chaos from chasing summer highs.',
       collected: availableSongs.includes('BRAIN FREEZE')
     },
@@ -729,7 +731,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'FEELING THIS',
       type: 'LIGHTNING',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/feeling-this.png?updatedAt=1762388347289',
+      image: getCardImageUrl('FEELING THIS'),
       description: 'When chaos feels like connection, and that\'s enough for tonight.',
       collected: false
     },
@@ -738,7 +740,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'GAME BOY HEART',
       type: 'LIGHTNING',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/game-boy-heart.png?updatedAt=1762388346348',
+      image: getCardImageUrl('GAME BOY HEART'),
       description: 'A nostalgic escape into an 8-bit dreamworld where your heart lives free.',
       collected: availableSongs.includes('GAME BOY HEART')
     },
@@ -747,7 +749,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'HOME',
       type: 'LIGHTNING',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/home.png?updatedAt=1762388345590',
+      image: getCardImageUrl('HOME'),
       description: 'A journey through the stars to fill the void—only to find home was within all along',
       collected: false
     },
@@ -756,7 +758,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'HOME (ACOUSTIC)',
       type: 'LIGHTNING',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/home-acoustic.png?updatedAt=1762388344295',
+      image: getCardImageUrl('HOME (ACOUSTIC)'),
       description: 'A journey through the stars to fill the void—only to find home was within all along',
       collected: false
     },
@@ -765,7 +767,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'HOUSE PARTY',
       type: 'LIGHTNING',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/HOUSE%20PARTY.png?updatedAt=1763055601783',
+      image: getCardImageUrl('HOUSE PARTY'),
       description: 'A crowded room, an unspoken crush, and the quiet realization that we\'re all aliens in disguise.',
       collected: availableSongs.includes('HOUSE PARTY')
     },
@@ -774,7 +776,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'HOUSE PARTY (ACOUSTIC)',
       type: 'LIGHTNING',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/house-party-acoustic.png?updatedAt=1762388343028',
+      image: getCardImageUrl('HOUSE PARTY (ACOUSTIC)'),
       description: 'A crowded room, an unspoken crush, and the quiet realization that we\'re all aliens in disguise.',
       collected: false
     },
@@ -783,7 +785,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'KID FOREVER',
       type: 'LIGHTNING',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/kid-forever.png?updatedAt=1762388339589',
+      image: getCardImageUrl('KID FOREVER'),
       description: 'Live fearlessly in the land your daydreams call home.',
       collected: availableSongs.includes('KID FOREVER')
     },
@@ -792,7 +794,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'POKÉMON',
       type: 'LIGHTNING',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/pokemon.png?updatedAt=1762388341960',
+      image: getCardImageUrl('POKEMON'),
       description: 'Some dreams don\'t fade — they evolve with you.',
       collected: availableSongs.includes('POKÉMON')
     },
@@ -803,7 +805,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'DARKNESS',
       type: 'DARKNESS',
       rarity: 'Rare',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png',
+      image: getCardImageUrl('DARKNESS'),
       description: 'Darkness isn\'t evil — it\'s vulnerability in disguise. These songs explore what\'s not said, what we hide, or what we want but don\'t admit.',
       collected: true
     },
@@ -812,7 +814,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'ALONE',
       type: 'DARKNESS',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/alone.png?updatedAt=1762388342410',
+      image: getCardImageUrl('ALONE'),
       description: 'Lost in a sea of strangers under the city\'s glittering glow.',
       collected: false
     },
@@ -821,7 +823,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'ALONE (ACOUSTIC)',
       type: 'DARKNESS',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/ALONE%20(ACOUSTIC).png?updatedAt=1763054836196',
+      image: getCardImageUrl('ALONE (ACOUSTIC)'),
       description: 'Lost in a sea of strangers under the city\'s glittering glow.',
       collected: false
     },
@@ -830,7 +832,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'CHEERLEADER',
       type: 'DARKNESS',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/cheerleader.png?updatedAt=1762388346177',
+      image: getCardImageUrl('CHEERLEADER'),
       description: 'Wanting the person you love most to be cheering in the crowd.',
       collected: false
     },
@@ -839,7 +841,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'MR. BRIGHTSIDE',
       type: 'DARKNESS',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/mr.brightside.png?updatedAt=1762388346700',
+      image: getCardImageUrl('MR. BRIGHTSIDE'),
       description: 'When love turns to doubt and every glance feels like betrayal.',
       collected: false
     },
@@ -848,7 +850,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'PARIS',
       type: 'DARKNESS',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/paris.png?updatedAt=1762388344978',
+      image: getCardImageUrl('PARIS'),
       description: 'A love affair with self-destruction — poison dressed up as romance.',
       collected: availableSongs.includes('PARIS')
     },
@@ -859,7 +861,7 @@ const HUDPanel = React.memo(function HUDPanel({
       name: 'CHXNDLER',
       type: 'HEART',
       rarity: 'Common',
-      image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
+      image: getCardImageUrl('CHXNDLER'),
       description: 'The artist himself, heart of the HEARTVERSE.',
       collected: true // Always collected
     }

@@ -7,6 +7,7 @@ import { AUDIO_ASSETS_BY_SLUG } from "@/data/audioAssets";
 import { SONG_ELEMENT_MAPPING } from "@/data/songElements";
 import { useAudio, TRACK_INFO, TRACKS, TrackKey } from "@/app/providers/AudioProvider";
 import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
+import { supabaseTrackUrl } from "@/lib/supabaseTrackUrl";
 import { sfx } from "@/lib/sfx";
 import SongDropdown from "./SongDropdown";
 
@@ -35,8 +36,8 @@ function getTrackUrlFromSongId(songId: string): string {
     // Prefer opus, fallback to mp3
     return TRACKS[key].opus || TRACKS[key].mp3 || "";
   }
-  // Fallback: try direct path
-  return `/tracks/${normalizeSlug(songId)}.mp3`;
+  // Fallback: try Supabase Storage path
+  return supabaseTrackUrl(`${normalizeSlug(songId)}.mp3`);
 }
 
 // Brand colors for the glowing progress bar

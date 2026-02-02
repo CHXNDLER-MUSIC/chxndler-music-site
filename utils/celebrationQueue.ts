@@ -128,6 +128,17 @@ export function queueBadgeCelebration(badgeImage: string, badgeTitle: string): v
     return;
   }
 
+  // Drop badge celebrations queued while a heartcoin celebration is active
+  // to prevent auto-chaining celebrations
+  if (isHeartcoinCelebrationActive()) {
+    badgeCelebrationQueue.length = 0;
+    debugQueue("BADGE_CELEBRATION_DROPPED", {
+      badge_title: badgeTitle,
+      reason: "heartcoin celebration active - no auto-chaining"
+    });
+    return;
+  }
+
   // Start processing if not already
   processQueue();
 }
@@ -162,11 +173,14 @@ function processQueue(): void {
     const remainingTime = getHeartcoinCelebrationRemainingTime();
 
     if (remainingTime > 0) {
-      debugQueue("Waiting for HeartCoin celebration to finish", {
-        remainingMs: remainingTime
+      // Drop queued badge celebrations instead of auto-chaining after heartcoin
+      debugQueue("Dropping queued badge celebrations - heartcoin celebration active", {
+        remainingMs: remainingTime,
+        dropped: badgeCelebrationQueue.length
       });
-      // Wait for HeartCoin celebration to finish + small buffer
-      setTimeout(processNext, remainingTime + 500);
+      badgeCelebrationQueue.length = 0;
+      isProcessingQueue = false;
+      return;
     } else {
       // No active HeartCoin celebration, trigger the badge celebration
       const next = badgeCelebrationQueue.shift();

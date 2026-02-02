@@ -295,7 +295,7 @@ export default function HoloAudioBridge() {
       <audio ref={audioRef} data-holo-audio="1" preload="none" />
       <audio ref={warpAudioRef} src="/audio/warp.mp3" preload="none" style={{ display: 'none' }} />
       <audio ref={joinAudioRef} src="/audio/join-alien.mp3" preload="none" style={{ display: 'none' }} />
-      <audio ref={spaceMusicRef} src="/tracks/space-music.opus" preload="none" style={{ display: 'none' }} />
+      <audio ref={spaceMusicRef} src="/tracks/space-music.mp3" preload="none" style={{ display: 'none' }} />
       <audio ref={welcomeToHeartrverseRef} src="/tracks/welcome-to-the-heartverse.opus" preload="none" style={{ display: 'none' }} />
       <audio ref={welcomeBackRef} src="/tracks/welcome-back.opus" preload="none" style={{ display: 'none' }} />
     </>

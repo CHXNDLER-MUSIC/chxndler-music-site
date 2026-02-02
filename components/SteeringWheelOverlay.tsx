@@ -10,6 +10,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { sfx } from "@/lib/sfx";
 import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
 import { triggerCardCelebration } from "@/utils/cardCelebration";
+import { getCardImageUrl } from "@/lib/supabaseCardUrl";
 import { triggerBadgeCelebration } from "@/utils/badgeCelebration";
 import { muteCelebrationAudio, enableCelebrationAudio } from "@/utils/celebrationAudio";
 
@@ -957,7 +958,7 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
 
       {/* Card Purchase Celebration Test Button (hidden by default) */}
       {showTestCelebrations && <button
-        onClick={() => triggerCardCelebration('/cards/CHXNDLER.webp', 'CHXNDLER')}
+        onClick={() => triggerCardCelebration(getCardImageUrl('CHXNDLER'), 'CHXNDLER')}
         data-no-track
         className="pointer-events-auto"
         style={{

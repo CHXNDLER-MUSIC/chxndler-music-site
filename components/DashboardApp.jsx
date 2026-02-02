@@ -2287,7 +2287,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             handled by AudioProvider (connected to play/pause button) */}
         {!hasEnteredHeartverse && (
           <AmbientSpace
-            ambientSrc="/tracks/space-music.opus"
+            ambientSrc="/tracks/space-music.mp3"
             // Welcome tracks are now played via audioManager.playTrack() in onWarpSfxEnd for tracking in user_song_daily_progress
             introSrc={undefined}
             playingMusic={isPlaying}

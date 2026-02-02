@@ -8,6 +8,7 @@ import { getDisplayDateString } from "@/utils/dateHelpers";
 import { sfx } from "@/lib/sfx";
 import Image from 'next/image';
 import UserBadges from "./UserBadges";
+import { getCardImageUrl } from "@/lib/supabaseCardUrl";
 import UserCards from "./UserCards";
 import TiltSpinCard from "./TiltSpinCard";
 
@@ -423,7 +424,7 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
               >
                 {/* Front of card - rotates with spinRotation */}
                 <img
-                  src={enlargedCard.card.artwork_url || '/cards/default-card.webp'}
+                  src={getCardImageUrl(enlargedCard.card.card_name || 'DEFAULT-CARD')}
                   alt={enlargedCard.card.card_name}
                   className="rounded-2xl pointer-events-none"
                   style={{
@@ -439,13 +440,13 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
                   }}
                   draggable={false}
                   onError={(e) => {
-                    e.currentTarget.src = '/cards/default-card.webp';
+                    e.currentTarget.src = getCardImageUrl('DEFAULT-CARD');
                   }}
                 />
 
                 {/* Back of card - offset by 180° */}
                 <img
-                  src="/cards/BACK.webp"
+                  src={getCardImageUrl('BACK')}
                   alt="Card Back"
                   className="absolute rounded-2xl pointer-events-none"
                   style={{

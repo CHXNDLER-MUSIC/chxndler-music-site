@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import HeartverseButton from "@/components/HeartverseButton";
 import { sfx } from "@/lib/sfx";
+import { getCardImageUrl } from "@/lib/supabaseCardUrl";
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   asChild?: boolean;
@@ -156,59 +157,59 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
   
   const getCardImage = (songName: string, element: string) => {
     const songImages: { [key: string]: string } = {
-      'ALWAYS ON MY MIND': 'https://ik.imagekit.io/CHXNDLER/card/HEART.png',
-      'ALWAYS ON MY MIND (REMIX)': 'https://ik.imagekit.io/CHXNDLER/card/always-on-my-mind-remix.png?updatedAt=1762388342107',
-      'ALONE': 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png',
-      'ALONE (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png',
-      'AMERICAN DREAM': 'https://ik.imagekit.io/CHXNDLER/card/american-dream.png?updatedAt=1762388346126',
-      'BABY': 'https://ik.imagekit.io/CHXNDLER/card/baby.png?updatedAt=1762388345192',
-      'BE MY BEE': 'https://ik.imagekit.io/CHXNDLER/card/be-my-bee.png?updatedAt=1762388342848',
-      'BE MY BEE (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/be-my-bee-acoustic.png?updatedAt=1762388342912',
-      'BLUE (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/BLUE%20(ACOUSTIC).png?updatedAt=1763055066119',
-      'BLUE': 'https://ik.imagekit.io/CHXNDLER/card/blue.png?updatedAt=1762388346777',
-      'BRAIN FREEZE': 'https://ik.imagekit.io/CHXNDLER/card/brain-freeze.png?updatedAt=1762388347224',
-      'CHEERLEADER (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/HEART.png',
-      'CHEERLEADER': 'https://ik.imagekit.io/CHXNDLER/card/cheerleader.png?updatedAt=1762388346177',
-      'COLLIDE': 'https://ik.imagekit.io/CHXNDLER/card/collide.png?updatedAt=1762388347054',
-      'COLORS OF OUR HOME': 'https://ik.imagekit.io/CHXNDLER/card/COLORS%20OF%20OUR%20HOME%20.png?updatedAt=1763055065493',
-      'COLORS OF OUR HOME (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/COLORS%20OF%20OUR%20HOME%20(ACOUSTIC).png?updatedAt=1763055064803',
-      'COLORS OF OUR HOME (BLUMA Game Soundtrack)': 'https://ik.imagekit.io/CHXNDLER/card/colors-of-our-home-bluma.png?updatedAt=1762388344204',
-      'FEELING THIS': 'https://ik.imagekit.io/CHXNDLER/card/feeling-this.png?updatedAt=1762388347289',
-      'GAME BOY HEART': 'https://ik.imagekit.io/CHXNDLER/card/game-boy-heart.png?updatedAt=1762388346348',
-      'HOME': 'https://ik.imagekit.io/CHXNDLER/card/home.png?updatedAt=1762388345590',
-      'HOME (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/home-acoustic.png?updatedAt=1762388344295',
-      'HOUSE PARTY': 'https://ik.imagekit.io/CHXNDLER/card/HOUSE%20PARTY.png?updatedAt=1763055601783',
-      'HOUSE PARTY (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/house-party-acoustic.png?updatedAt=1762388343028',
-      'I MIGHT FALL IN LOVE WITH YOU': 'https://ik.imagekit.io/CHXNDLER/card/i-might-fall-in-love-with-you.png?updatedAt=1762388340663',
-      'I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/I%20MIGHT%20FALL%20IN%20LOVE%20WITH%20YOU%20(ACOUSTIC).png?updatedAt=1763055066309',
-      'KID FOREVER': 'https://ik.imagekit.io/CHXNDLER/card/kid-forever.png?updatedAt=1762388339589',
-      'LETTING GO': 'https://ik.imagekit.io/CHXNDLER/card/letting-go.png?updatedAt=1762388344472',
-      'LITTLE BLACK HEART': 'https://ik.imagekit.io/CHXNDLER/card/little-black-heart.png?updatedAt=1762388346814',
-      'LITTLE BLACK HEART (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/LITTLE%20BLACK%20HEART%20(ACOUSTIC).png?updatedAt=1763055066090',
-      'LOVE ME': 'https://ik.imagekit.io/CHXNDLER/card/love-me.png?updatedAt=1762388339563',
-      'LOVE ME (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/love-me-acoustic.png?updatedAt=1762388330787',
-      'MAKE BELIEVE': 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
-      'MR. BRIGHTSIDE': 'https://ik.imagekit.io/CHXNDLER/card/mr.brightside.png?updatedAt=1762388346700',
-      'OCEAN GIRL': 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl.png?updatedAt=1762388343942',
-      'OCEAN GIRL (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl-acoustic.png?updatedAt=1762388344386',
-      'OCEAN GIRL (REMIX)': 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl-remix.png?updatedAt=1762388346301',
-      'PARIS': 'https://ik.imagekit.io/CHXNDLER/card/paris.png?updatedAt=1762388344978',
-      'PINK MOON': 'https://ik.imagekit.io/CHXNDLER/card/pink-moon.png?updatedAt=1762388347173',
-      'POKÉMON': 'https://ik.imagekit.io/CHXNDLER/card/pokemon.png?updatedAt=1762388341960',
-      'SOMEBODY TO LOVE': 'https://ik.imagekit.io/CHXNDLER/card/somebody-to-love.png?updatedAt=1762388347148',
-      'TIENES UN AMIGO': 'https://ik.imagekit.io/CHXNDLER/card/tienes-un-amigo.png?updatedAt=1762388343639',
-      'WE\'RE JUST FRIENDS': 'https://ik.imagekit.io/CHXNDLER/card/we\'re-just-friends.png?updatedAt=1762388347233',
-      'WE\'RE JUST FRIENDS (ACOUSTIC)': 'https://ik.imagekit.io/CHXNDLER/card/we\'re-just-friends-acoustic.png?updatedAt=1762388340285',
-      'WE\'RE JUST FRIENDS (DMVRCO REMIX)': 'https://ik.imagekit.io/CHXNDLER/card/we\'re-just-friends-dmvrco-remix.png?updatedAt=1762388345669',
-      'WE\'RE JUST FRIENDS (mickey jas REMIX)': 'https://ik.imagekit.io/CHXNDLER/card/we\'re-just-friends-mickey-jas-remix.png?updatedAt=1762388346859',
-      'CHXNDLER': 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
-      'WATER': 'https://ik.imagekit.io/CHXNDLER/card/WATER.png',
-      'HEART': 'https://ik.imagekit.io/CHXNDLER/card/HEART.png',
-      'LIGHTNING': 'https://ik.imagekit.io/CHXNDLER/card/LIGHTNING.png',
-      'DARKNESS': 'https://ik.imagekit.io/CHXNDLER/card/DARKNESS.png',
+      'ALWAYS ON MY MIND': getCardImageUrl('HEART'),
+      'ALWAYS ON MY MIND (REMIX)': getCardImageUrl('ALWAYS ON MY MIND (REMIX)'),
+      'ALONE': getCardImageUrl('DARKNESS'),
+      'ALONE (ACOUSTIC)': getCardImageUrl('DARKNESS'),
+      'AMERICAN DREAM': getCardImageUrl('AMERICAN DREAM'),
+      'BABY': getCardImageUrl('BABY'),
+      'BE MY BEE': getCardImageUrl('BE MY BEE'),
+      'BE MY BEE (ACOUSTIC)': getCardImageUrl('BE MY BEE (ACOUSTIC)'),
+      'BLUE (ACOUSTIC)': getCardImageUrl('BLUE (ACOUSTIC)'),
+      'BLUE': getCardImageUrl('BLUE'),
+      'BRAIN FREEZE': getCardImageUrl('BRAIN FREEZE'),
+      'CHEERLEADER (ACOUSTIC)': getCardImageUrl('HEART'),
+      'CHEERLEADER': getCardImageUrl('CHEERLEADER'),
+      'COLLIDE': getCardImageUrl('COLLIDE'),
+      'COLORS OF OUR HOME': getCardImageUrl('COLORS OF OUR HOME'),
+      'COLORS OF OUR HOME (ACOUSTIC)': getCardImageUrl('COLORS OF OUR HOME (ACOUSTIC)'),
+      'COLORS OF OUR HOME (BLUMA Game Soundtrack)': getCardImageUrl('COLORS OF OUR HOME (BLUMA GAME SOUNDTRACK)'),
+      'FEELING THIS': getCardImageUrl('FEELING THIS'),
+      'GAME BOY HEART': getCardImageUrl('GAME BOY HEART'),
+      'HOME': getCardImageUrl('HOME'),
+      'HOME (ACOUSTIC)': getCardImageUrl('HOME (ACOUSTIC)'),
+      'HOUSE PARTY': getCardImageUrl('HOUSE PARTY'),
+      'HOUSE PARTY (ACOUSTIC)': getCardImageUrl('HOUSE PARTY (ACOUSTIC)'),
+      'I MIGHT FALL IN LOVE WITH YOU': getCardImageUrl('I MIGHT FALL IN LOVE WITH YOU'),
+      'I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)': getCardImageUrl('I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)'),
+      'KID FOREVER': getCardImageUrl('KID FOREVER'),
+      'LETTING GO': getCardImageUrl('LETTING GO'),
+      'LITTLE BLACK HEART': getCardImageUrl('LITTLE BLACK HEART'),
+      'LITTLE BLACK HEART (ACOUSTIC)': getCardImageUrl('LITTLE BLACK HEART (ACOUSTIC)'),
+      'LOVE ME': getCardImageUrl('LOVE ME'),
+      'LOVE ME (ACOUSTIC)': getCardImageUrl('LOVE ME (ACOUSTIC)'),
+      'MAKE BELIEVE': getCardImageUrl('CHXNDLER'),
+      'MR. BRIGHTSIDE': getCardImageUrl('MR. BRIGHTSIDE'),
+      'OCEAN GIRL': getCardImageUrl('OCEAN GIRL'),
+      'OCEAN GIRL (ACOUSTIC)': getCardImageUrl('OCEAN GIRL (ACOUSTIC)'),
+      'OCEAN GIRL (REMIX)': getCardImageUrl('OCEAN GIRL (REMIX)'),
+      'PARIS': getCardImageUrl('PARIS'),
+      'PINK MOON': getCardImageUrl('PINK MOON'),
+      'POKÉMON': getCardImageUrl('POKEMON'),
+      'SOMEBODY TO LOVE': getCardImageUrl('SOMEBODY TO LOVE'),
+      'TIENES UN AMIGO': getCardImageUrl('TIENES UN AMIGO'),
+      'WE\'RE JUST FRIENDS': getCardImageUrl('WE\'RE JUST FRIENDS'),
+      'WE\'RE JUST FRIENDS (ACOUSTIC)': getCardImageUrl('WE\'RE JUST FRIENDS (ACOUSTIC)'),
+      'WE\'RE JUST FRIENDS (DMVRCO REMIX)': getCardImageUrl('WE\'RE JUST FRIENDS (DMVRCO REMIX)'),
+      'WE\'RE JUST FRIENDS (mickey jas REMIX)': getCardImageUrl('WE\'RE JUST FRIENDS (MICKEY JAS REMIX)'),
+      'CHXNDLER': getCardImageUrl('CHXNDLER'),
+      'WATER': getCardImageUrl('WATER'),
+      'HEART': getCardImageUrl('HEART'),
+      'LIGHTNING': getCardImageUrl('LIGHTNING'),
+      'DARKNESS': getCardImageUrl('DARKNESS'),
     };
-    
-    return songImages[songName] || 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910';
+
+    return songImages[songName] || getCardImageUrl('CHXNDLER');
   };
 
   const getFilteredCards = () => {
@@ -885,7 +886,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                           try { sfx.play('click', 0.8); } catch {}
                           setSelectedCard({
                             name: 'CHXNDLER',
-                            image: 'https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910',
+                            image: getCardImageUrl('CHXNDLER'),
                             rarity: 'Common',
                             element: 'ALL'
                           });
@@ -901,7 +902,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
                         }}
                       >
                         <img
-                          src="https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910"
+                          src={getCardImageUrl('CHXNDLER')}
                           alt="CHXNDLER Card"
                           className="w-full h-full object-cover rounded"
                           draggable={false}
@@ -1047,7 +1048,7 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
           >
             {/* Card image */}
             <img
-              src={selectedCard?.image || "https://ik.imagekit.io/CHXNDLER/card/chxndler.png?updatedAt=1762388337910"}
+              src={selectedCard?.image || getCardImageUrl('CHXNDLER')}
               alt={selectedCard?.name || "CHXNDLER Card"}
               className="w-full h-auto rounded-lg shadow-2xl"
               style={{

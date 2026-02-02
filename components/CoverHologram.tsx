@@ -9,6 +9,7 @@ import { sfx } from "@/lib/sfx";
 import { ELEMENT_COLORS, type Element } from "@/lib/planets";
 import TiltSpinCard from "@/components/TiltSpinCard";
 import { useAudio } from "@/app/providers/AudioProvider";
+import { getCardImageUrl } from "@/lib/supabaseCardUrl";
 
 // Helper function to determine element from title/slug
 const getTrackElement = (title: string, slug?: string): Element => {
@@ -130,50 +131,50 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
   // Explicit external card image URLs by slug
   const CARD_URLS: Record<string, string> = {
     // Special/back + brand
-    'back': 'https://ik.imagekit.io/CHXNDLER/card/back.png?updatedAt=1762388351170',
-    'chxndler': '/cards/CHXNDLER.webp',
-    'chxndler_home': '/cards/CHXNDLER.webp',
+    'back': getCardImageUrl('BACK'),
+    'chxndler': getCardImageUrl('CHXNDLER'),
+    'chxndler_home': getCardImageUrl('CHXNDLER'),
 
     // Cards by song
-    'baby': 'https://ik.imagekit.io/CHXNDLER/card/baby.png?updatedAt=1762388345192',
-    'feeling-this': 'https://ik.imagekit.io/CHXNDLER/card/feeling-this.png?updatedAt=1762388347289',
-    'colors-of-our-home': 'https://ik.imagekit.io/CHXNDLER/card/COLORS%20OF%20OUR%20HOME%20.png?updatedAt=1763055065493',
-    'tienes-un-amigo': 'https://ik.imagekit.io/CHXNDLER/card/tienes-un-amigo.png?updatedAt=1762388343639',
-    'alone': 'https://ik.imagekit.io/CHXNDLER/card/alone.png?updatedAt=1762388342410',
-    'always-on-my-mind': 'https://ik.imagekit.io/CHXNDLER/card/always-on-my-mind.png?updatedAt=1762388345883',
-    'always-on-my-mind-remix': 'https://ik.imagekit.io/CHXNDLER/card/always-on-my-mind-remix.png?updatedAt=1762388342107',
-    'be-my-bee': 'https://ik.imagekit.io/CHXNDLER/card/be-my-bee.png?updatedAt=1762388342848',
-    'be-my-bee-acoustic': 'https://ik.imagekit.io/CHXNDLER/card/be-my-bee-acoustic.png?updatedAt=1762388342912',
-    'blue': 'https://ik.imagekit.io/CHXNDLER/card/blue.png?updatedAt=1762388346777',
-    'brain-freeze': 'https://ik.imagekit.io/CHXNDLER/card/brain-freeze.png?updatedAt=1762388347224',
-    'cheerleader': 'https://ik.imagekit.io/CHXNDLER/card/cheerleader.png?updatedAt=1762388346177',
-    'colors-of-our-home-bluma': 'https://ik.imagekit.io/CHXNDLER/card/colors-of-our-home-bluma.png?updatedAt=1762388344204',
-    'colors-of-our-home-bluma-game-soundtrack': 'https://ik.imagekit.io/CHXNDLER/card/colors-of-our-home-bluma.png?updatedAt=1762388344204',
-    'colors-of-our-home-acoustic': 'https://ik.imagekit.io/CHXNDLER/card/COLORS%20OF%20OUR%20HOME%20(ACOUSTIC).png?updatedAt=1763056318632',
-    'game-boy-heart': 'https://ik.imagekit.io/CHXNDLER/card/game-boy-heart.png?updatedAt=1762388346348',
-    'home': 'https://ik.imagekit.io/CHXNDLER/card/home.png?updatedAt=1762388345590',
-    'home-acoustic': 'https://ik.imagekit.io/CHXNDLER/card/home-acoustic.png?updatedAt=1762388344295',
-    'letting-go': 'https://ik.imagekit.io/CHXNDLER/card/letting-go.png?updatedAt=1762388344472',
-    'house-party': 'https://ik.imagekit.io/CHXNDLER/card/house-party.png?updatedAt=1762388343549',
-    'i-might-fall-in-love-with-you': 'https://ik.imagekit.io/CHXNDLER/card/i-might-fall-in-love-with-you.png?updatedAt=1762388340663',
-    'little-black-heart': 'https://ik.imagekit.io/CHXNDLER/card/little-black-heart.png?updatedAt=1762388346814',
-    'kid-forever': 'https://ik.imagekit.io/CHXNDLER/card/kid-forever.png?updatedAt=1762388339589',
-    'love-me': 'https://ik.imagekit.io/CHXNDLER/card/love-me.png?updatedAt=1762388339563',
-    'love-me-acoustic': 'https://ik.imagekit.io/CHXNDLER/card/love-me-acoustic.png?updatedAt=1762388330787',
-    'house-party-acoustic': 'https://ik.imagekit.io/CHXNDLER/card/house-party-acoustic.png?updatedAt=1762388343028',
-    'ocean-girl-remix': 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl-remix.png?updatedAt=1762388346301',
-    'ocean-girl': 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl.png?updatedAt=1762388343942',
-    'ocean-girl-acoustic': 'https://ik.imagekit.io/CHXNDLER/card/ocean-girl-acoustic.png?updatedAt=1762388344386',
-    'pink-moon': 'https://ik.imagekit.io/CHXNDLER/card/pink-moon.png?updatedAt=1762388347173',
-    'somebody-to-love': 'https://ik.imagekit.io/CHXNDLER/card/somebody-to-love.png?updatedAt=1762388347148',
-    'we-re-just-friends-dmvrco-remix': "https://ik.imagekit.io/CHXNDLER/card/we're-just-friends-dmvrco-remix.png?updatedAt=1762388345669",
-    'we-re-just-friends-acoustic': "https://ik.imagekit.io/CHXNDLER/card/we're-just-friends-acoustic.png?updatedAt=1762388340285",
-    'we-re-just-friends-mickey-jas-remix': "https://ik.imagekit.io/CHXNDLER/card/we're-just-friends-mickey-jas-remix.png?updatedAt=1762388346859",
-    'we-re-just-friends': "https://ik.imagekit.io/CHXNDLER/card/we're-just-friends.png?updatedAt=1762388347233",
-    'collide': 'https://ik.imagekit.io/CHXNDLER/card/collide.png?updatedAt=1762388347054',
-    'mr-brightside': 'https://ik.imagekit.io/CHXNDLER/card/mr.brightside.png?updatedAt=1762388346700',
-    'paris': 'https://ik.imagekit.io/CHXNDLER/card/paris.png?updatedAt=1762388344978',
-    'pokemon': 'https://ik.imagekit.io/CHXNDLER/card/pokemon.png?updatedAt=1762388341960',
+    'baby': getCardImageUrl('BABY'),
+    'feeling-this': getCardImageUrl('FEELING THIS'),
+    'colors-of-our-home': getCardImageUrl('COLORS OF OUR HOME'),
+    'tienes-un-amigo': getCardImageUrl('TIENES UN AMIGO'),
+    'alone': getCardImageUrl('ALONE'),
+    'always-on-my-mind': getCardImageUrl('ALWAYS ON MY MIND'),
+    'always-on-my-mind-remix': getCardImageUrl('ALWAYS ON MY MIND (REMIX)'),
+    'be-my-bee': getCardImageUrl('BE MY BEE'),
+    'be-my-bee-acoustic': getCardImageUrl('BE MY BEE (ACOUSTIC)'),
+    'blue': getCardImageUrl('BLUE'),
+    'brain-freeze': getCardImageUrl('BRAIN FREEZE'),
+    'cheerleader': getCardImageUrl('CHEERLEADER'),
+    'colors-of-our-home-bluma': getCardImageUrl('COLORS OF OUR HOME (BLUMA GAME SOUNDTRACK)'),
+    'colors-of-our-home-bluma-game-soundtrack': getCardImageUrl('COLORS OF OUR HOME (BLUMA GAME SOUNDTRACK)'),
+    'colors-of-our-home-acoustic': getCardImageUrl('COLORS OF OUR HOME (ACOUSTIC)'),
+    'game-boy-heart': getCardImageUrl('GAME BOY HEART'),
+    'home': getCardImageUrl('HOME'),
+    'home-acoustic': getCardImageUrl('HOME (ACOUSTIC)'),
+    'letting-go': getCardImageUrl('LETTING GO'),
+    'house-party': getCardImageUrl('HOUSE PARTY'),
+    'i-might-fall-in-love-with-you': getCardImageUrl('I MIGHT FALL IN LOVE WITH YOU'),
+    'little-black-heart': getCardImageUrl('LITTLE BLACK HEART'),
+    'kid-forever': getCardImageUrl('KID FOREVER'),
+    'love-me': getCardImageUrl('LOVE ME'),
+    'love-me-acoustic': getCardImageUrl('LOVE ME (ACOUSTIC)'),
+    'house-party-acoustic': getCardImageUrl('HOUSE PARTY (ACOUSTIC)'),
+    'ocean-girl-remix': getCardImageUrl('OCEAN GIRL (REMIX)'),
+    'ocean-girl': getCardImageUrl('OCEAN GIRL'),
+    'ocean-girl-acoustic': getCardImageUrl('OCEAN GIRL (ACOUSTIC)'),
+    'pink-moon': getCardImageUrl('PINK MOON'),
+    'somebody-to-love': getCardImageUrl('SOMEBODY TO LOVE'),
+    'we-re-just-friends-dmvrco-remix': getCardImageUrl("WE'RE JUST FRIENDS (DMVRCO REMIX)"),
+    'we-re-just-friends-acoustic': getCardImageUrl("WE'RE JUST FRIENDS (ACOUSTIC)"),
+    'we-re-just-friends-mickey-jas-remix': getCardImageUrl("WE'RE JUST FRIENDS (MICKEY JAS REMIX)"),
+    'we-re-just-friends': getCardImageUrl("WE'RE JUST FRIENDS"),
+    'collide': getCardImageUrl('COLLIDE'),
+    'mr-brightside': getCardImageUrl('MR. BRIGHTSIDE'),
+    'paris': getCardImageUrl('PARIS'),
+    'pokemon': getCardImageUrl('POKEMON'),
   };
   const [showCard, setShowCard] = useState(false);
   const [cardFlipped, setCardFlipped] = useState(false); // legacy flag, kept for compatibility
@@ -490,10 +491,11 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
       .replace(/^-+|-+$/g, '');
     return (slug && slug.toLowerCase()) || safeFromTitle;
   })();
-  // Prefer local card image that mirrors the cover filename when available
-  const localCardFromCover = src && src.includes('/covers/') ? src.replace('/covers/', '/cards/') : null;
-  // Fallback to a title-based card filename in /cards (files are stored as WEBP with title casing)
-  const computedCardSrc = localCardFromCover || `/cards/${title}.webp`;
+  // Prefer card image that mirrors the cover filename when available
+  const coverFilename = src && src.includes('/covers/') ? src.split('/').pop() : null;
+  const localCardFromCover = coverFilename ? getCardImageUrl(coverFilename.replace(/\.\w+$/, '')) : null;
+  // Fallback to a title-based card filename (files are stored as WEBP with title casing)
+  const computedCardSrc = localCardFromCover || getCardImageUrl(title);
   const explicitCardSrc = CARD_URLS[effectiveSlug];
 
   useEffect(() => {
@@ -504,8 +506,8 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
     const img = new window.Image();
     img.onload = () => setHasRealCard(true);
     img.onerror = () => {
-      const fallback = src.replace('/covers/', '/cards/');
-      if (fallback !== src) {
+      const fallbackFilename = src.includes('/covers/') ? src.split('/').pop() : null;
+      if (fallbackFilename) {
         const img2 = new window.Image();
         img2.onload = () => setHasRealCard(true);
         img2.onerror = () => {
@@ -513,17 +515,17 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
             .toLowerCase()
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '')
-            .replace(/[’'\"]/g, '')
+            .replace(/[''\"]/g, '')
             .replace(/[()]/g, ' ')
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/^-+|-+$/g, '');
-          const lastTry = `/cards/${asciiFromTitle}.webp`;
+          const lastTry = getCardImageUrl(asciiFromTitle);
           const img3 = new window.Image();
           img3.onload = () => setHasRealCard(true);
           img3.onerror = () => setHasRealCard(false);
           img3.src = lastTry;
         };
-        img2.src = fallback;
+        img2.src = getCardImageUrl(fallbackFilename.replace(/\.\w+$/, ''));
       } else {
         setHasRealCard(false);
       }
@@ -651,7 +653,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
           >
             {/* Blue container with card - fills the display area */}
             <div
-              className="relative rounded-2xl p-4 flex flex-col items-center"
+              className="relative rounded-2xl p-4 flex flex-col items-center overflow-hidden"
               style={{
                 background: 'rgba(25, 227, 255, 0.45)',
                 boxShadow: '0 0 60px rgba(25, 227, 255, 0.45), inset 0 0 0 1px rgba(25, 227, 255, 0.35)',
@@ -727,12 +729,11 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                 className="relative card-float-animation"
                 style={{
                   width: 'auto',
-                  height: '100%',
                   maxWidth: '100%',
-                  maxHeight: 'calc(100% - 60px)',
                   aspectRatio: '3 / 4',
-                  flex: '1 1 auto',
+                  flex: '1 1 0',
                   minHeight: 0,
+                  overflow: 'hidden',
                 }}
               >
                 <TiltSpinCard
@@ -770,19 +771,19 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                     }}
                     onError={(e)=>{
                       const target = e.currentTarget as HTMLImageElement;
-                      const fallback = src.replace('/covers/', '/cards/');
-                      if (fallback && fallback !== src) {
-                        target.onerror = () => { target.src = CARD_URLS['back'] || '/cards/BACK.webp'; };
-                        target.src = fallback;
+                      const fbFilename = src.includes('/covers/') ? src.split('/').pop() : null;
+                      if (fbFilename) {
+                        target.onerror = () => { target.src = CARD_URLS['back'] || getCardImageUrl('BACK'); };
+                        target.src = getCardImageUrl(fbFilename.replace(/\.\w+$/, ''));
                       } else {
-                        target.src = CARD_URLS['back'] || '/cards/BACK.webp';
+                        target.src = CARD_URLS['back'] || getCardImageUrl('BACK');
                       }
                     }}
                     draggable={false}
                   />
                   {/* Back side */}
                   <img
-                    src={'/cards/BACK.webp'}
+                    src={getCardImageUrl('BACK')}
                     alt={`${title} card back`}
                     className="absolute inset-0 w-full h-full rounded-2xl object-contain pointer-events-none"
                     style={{

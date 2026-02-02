@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { ELEMENT_CARD_CELEBRATION_EVENT, type ElementCardCelebrationDetail } from '@/utils/elementCardCelebration';
+import { getCardImageUrl } from '@/lib/supabaseCardUrl';
 
 // Element display names
 const ELEMENT_NAMES: Record<string, string> = {
@@ -11,12 +12,12 @@ const ELEMENT_NAMES: Record<string, string> = {
   darkness: 'Darkness',
 };
 
-// Element card images from /cards/ folder
+// Element card images from Supabase Storage
 const ELEMENT_CARD_IMAGES: Record<string, string> = {
-  heart: '/cards/HEART.webp',
-  water: '/cards/WATER.webp',
-  lightning: '/cards/LIGHTNING.webp',
-  darkness: '/cards/DARKNESS.webp',
+  heart: getCardImageUrl('HEART'),
+  water: getCardImageUrl('WATER'),
+  lightning: getCardImageUrl('LIGHTNING'),
+  darkness: getCardImageUrl('DARKNESS'),
 };
 
 // Element colors for glow effect
@@ -75,7 +76,7 @@ export default function ElementCardCelebration() {
 
   if (!isVisible) return null;
 
-  const elementImage = ELEMENT_CARD_IMAGES[element] || `/cards/${element.toUpperCase()}.webp`;
+  const elementImage = ELEMENT_CARD_IMAGES[element] || getCardImageUrl(element);
   const elementName = ELEMENT_NAMES[element] || element;
   const glowColor = ELEMENT_COLORS[element] || 'rgba(255, 105, 180, 0.3)';
 

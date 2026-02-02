@@ -2,6 +2,7 @@
 // Replaces all ImageKit URLs with local /public paths
 
 import { slugify } from "@/lib/slug";
+import { supabaseTrackUrl } from "@/lib/supabaseTrackUrl";
 
 export interface TrackAsset {
   id: string;
@@ -30,132 +31,131 @@ export interface StoreItemAsset {
   price?: number;
 }
 
-// Track assets - all audio files as .opus format
+// Track assets - audio files served from Supabase Storage
 export const TRACKS: Record<string, TrackAsset> = {
   baby: {
     id: "baby",
     title: "BABY",
-    src: "/tracks/baby.opus",
+    src: supabaseTrackUrl("baby.opus"),
     cover: "/covers/BABY.webp",
     element: "HEART"
   },
   beMyBee: {
-    id: "be_my_bee", 
+    id: "be_my_bee",
     title: "BE MY BEE",
-    src: "/tracks/be-my-bee.opus",
+    src: supabaseTrackUrl("be-my-bee.opus"),
     cover: "/covers/BE MY BEE.webp",
     element: "EARTH"
   },
   colorsOfOurHome: {
     id: "colors_of_our_home",
-    title: "COLORS OF OUR HOME", 
-    src: "/tracks/COLORS-OF-OUR-HOME.opus",
+    title: "COLORS OF OUR HOME",
+    src: supabaseTrackUrl("COLORS-OF-OUR-HOME.opus"),
     cover: "/covers/COLORS OF OUR HOME.webp",
     element: "HEART"
   },
   colorsOfOurHomeAcoustic: {
     id: "colors_of_our_home_acoustic",
     title: "COLORS OF OUR HOME (ACOUSTIC)",
-    src: "/tracks/COLORS-OF-OUR-HOME-_ACOUSTIC_.opus", 
+    src: supabaseTrackUrl("COLORS-OF-OUR-HOME-_ACOUSTIC_.opus"),
     cover: "/covers/COLORS OF OUR HOME (ACOUSTIC).webp",
     element: "HEART"
   },
   colorsOfOurHomeBluma: {
     id: "colors_of_our_home_bluma",
     title: "COLORS OF OUR HOME (BLUMA Game Soundtrack)",
-    src: "/tracks/COLORS-OF-OUR-HOME-_BLUMA-Game-Soundtrack_.opus",
-    cover: "/covers/COLORS OF OUR HOME (BLUMA Game Soundtrack).webp", 
+    src: supabaseTrackUrl("COLORS-OF-OUR-HOME-_BLUMA-Game-Soundtrack_.opus"),
+    cover: "/covers/COLORS OF OUR HOME (BLUMA Game Soundtrack).webp",
     element: "HEART"
   },
   kidForever: {
     id: "kid_forever",
     title: "KID FOREVER (永遠の子供)",
-    src: "/tracks/kid-forever.opus",
+    src: supabaseTrackUrl("kid-forever.opus"),
     cover: "/covers/KID FOREVER.webp",
     element: "LIGHTNING"
   },
   oceanGirl: {
     id: "ocean_girl",
     title: "OCEAN GIRL",
-    src: "/tracks/ocean-girl.opus",
+    src: supabaseTrackUrl("ocean-girl.opus"),
     cover: "/covers/OCEAN GIRL.webp",
     element: "WATER"
   },
   oceanGirlAcoustic: {
-    id: "ocean_girl_acoustic", 
+    id: "ocean_girl_acoustic",
     title: "OCEAN GIRL (ACOUSTIC)",
-    src: "/tracks/ocean-girl-acoustic.opus",
+    src: supabaseTrackUrl("ocean-girl-acoustic.opus"),
     cover: "/covers/OCEAN GIRL (ACOUSTIC).webp",
     element: "WATER"
   },
   oceanGirlRemix: {
     id: "ocean_girl_remix",
-    title: "OCEAN GIRL (REMIX)", 
-    src: "/tracks/ocean-girl-remix.opus",
+    title: "OCEAN GIRL (REMIX)",
+    src: supabaseTrackUrl("ocean-girl-remix.opus"),
     cover: "/covers/OCEAN GIRL (REMIX).webp",
     element: "WATER"
   },
   pokemon: {
     id: "pokemon",
     title: "POKÉMON",
-    src: "/tracks/pokemon.opus", 
+    src: supabaseTrackUrl("pokemon.opus"),
     cover: "/covers/POKEMON.webp",
     element: "LIGHTNING"
   },
-  // Additional tracks that may exist with mp3 extension
   gameBoyheart: {
     id: "game_boy_heart",
     title: "GAME BOY HEART (ゲームボーイの心)",
-    src: "/tracks/game-boy-heart.mp3", // Still mp3 if not yet converted
+    src: supabaseTrackUrl("game-boy-heart.mp3"),
     cover: "/covers/GAME BOY HEART.webp",
     element: "LIGHTNING"
   },
   brainFreeze: {
     id: "brain_freeze",
-    title: "BRAIN FREEZE", 
-    src: "/tracks/brain-freeze.mp3",
+    title: "BRAIN FREEZE",
+    src: supabaseTrackUrl("brain-freeze.mp3"),
     cover: "/covers/BRAIN FREEZE.webp",
     element: "FIRE"
   },
   wereJustFriends: {
     id: "were_just_friends",
     title: "WE'RE JUST FRIENDS",
-    src: "/tracks/were-just-friends.mp3",
-    cover: "/covers/WE'RE JUST FRIENDS.webp", 
+    src: supabaseTrackUrl("were-just-friends.mp3"),
+    cover: "/covers/WE'RE JUST FRIENDS.webp",
     element: "HEART"
   },
   wereJustFriendsMickeyJasRemix: {
     id: "were_just_friends_mickey_jas_remix",
     title: "WE'RE JUST FRIENDS (mickey jas Remix)",
-    src: "/tracks/were-just-friends-mickey-jas-remix.mp3",
+    src: supabaseTrackUrl("were-just-friends-mickey-jas-remix.mp3"),
     cover: "/covers/WE'RE JUST FRIENDS (MICKEY JAS REMIX).webp",
-    element: "HEART"  
+    element: "HEART"
   },
   wereJustFriendsDmvrcoRemix: {
-    id: "were_just_friends_dmvrco_remix", 
+    id: "were_just_friends_dmvrco_remix",
     title: "WE'RE JUST FRIENDS (DMVRCO Remix)",
-    src: "/tracks/were-just-friends-dmvrco-remix.mp3",
+    src: supabaseTrackUrl("were-just-friends-dmvrco-remix.mp3"),
     cover: "/covers/WE'RE JUST FRIENDS (DMVRCO REMIX).webp",
     element: "HEART"
   },
   paris: {
     id: "paris",
-    title: "PARIS", 
-    src: "/tracks/paris.mp3",
+    title: "PARIS",
+    src: supabaseTrackUrl("paris.mp3"),
     cover: "/covers/PARIS.webp",
     element: "FIRE"
   },
   houseParty: {
     id: "house_party",
     title: "ALIEN (House Party)",
-    src: "/tracks/house-party.mp3",
+    src: supabaseTrackUrl("house-party.mp3"),
     cover: "/covers/HOUSE PARTY.webp",
     element: "LIGHTNING"
   },
   collide: {
     id: "collide",
     title: "COLLIDE",
-    src: "/tracks/collide.mp3", 
+    src: supabaseTrackUrl("collide.mp3"),
     cover: "/covers/COLLIDE.webp",
     element: "FIRE"
   }

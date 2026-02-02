@@ -86,43 +86,10 @@ export default function PreloadMedia({ maxImage = 6, maxAudio = 3, maxVideo = 2,
       aborts.push(() => { try { img.onload = img.onerror = img.onabort = null; } catch {} });
     });
 
-    // Audio preloader: seek to ~5s to prime range request, then reset to 0
-    const preloadAudio = (src: string) => new Promise<void>((resolve) => {
-      if (cancelled) return resolve();
-      const audio = document.createElement('audio');
-      audio.preload = 'auto';
-      audio.crossOrigin = '';
-      audio.src = src;
-      let done = false;
-      const cleanup = () => {
-        if (done) return; done = true;
-        try { audio.src = ''; } catch {}
-        resolve();
-      };
-      const onMeta = () => {
-        try {
-          const target = isFinite(audio.duration) && audio.duration > 6 ? 5 : Math.max(0, (audio.duration || 6) - 0.5);
-          const onSeeked = () => {
-            // Reset back to 0 to avoid audible pop later
-            try { audio.currentTime = 0; } catch {}
-            audio.removeEventListener('seeked', onSeeked);
-            cleanup();
-          };
-          audio.addEventListener('seeked', onSeeked);
-          // Force a range request up to ~5s
-          try { audio.currentTime = target; } catch { cleanup(); }
-        } catch { cleanup(); }
-      };
-      audio.addEventListener('loadedmetadata', onMeta);
-      audio.addEventListener('error', cleanup as any);
-      aborts.push(() => {
-        try { audio.removeEventListener('loadedmetadata', onMeta); } catch {}
-        try { audio.removeEventListener('error', cleanup as any); } catch {}
-        cleanup();
-      });
-      // Kick off load
-      try { audio.load(); } catch {}
-    });
+    // Audio preloading disabled — tracks are served from Supabase Storage and
+    // should only begin loading when the user explicitly clicks play.
+    // This avoids background probing, metadata fetching, and bandwidth waste.
+    const preloadAudio = (_src: string) => Promise.resolve();
 
     // Video preloader: metadata → seek ~5s to prime; no playback
     const preloadVideo = (src: string) => new Promise<void>((resolve) => {

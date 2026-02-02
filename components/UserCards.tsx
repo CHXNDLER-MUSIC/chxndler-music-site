@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { sfx } from "@/lib/sfx";
 import { useUserCards } from "@/hooks/useUserCards";
+import { getCardImageUrl } from "@/lib/supabaseCardUrl";
 
 // Types for user owned cards
 type OwnedCardRow = import("@/hooks/useUserCards").OwnedCardRow;
@@ -254,14 +255,14 @@ export default function UserCards({
               >
                 {hasCard ? (
                   <img
-                    src={collectedCard.cards.artwork_url || '/cards/default-card.webp'}
+                    src={getCardImageUrl(collectedCard.cards.card_name || 'DEFAULT-CARD')}
                     alt={collectedCard.cards.card_name}
                     className={embedded ? "w-full h-full object-contain" : "w-full h-full object-cover"}
                     draggable={false}
                     onError={(e) => {
                       // Fallback image if card image doesn't exist
                       console.log('Card image failed to load:', e.currentTarget.src);
-                      e.currentTarget.src = '/cards/default-card.webp';
+                      e.currentTarget.src = getCardImageUrl('DEFAULT-CARD');
                     }}
                     style={embedded ? { boxShadow: '0 0 10px rgba(255,105,180,0.6)', padding: 2 } : undefined}
                   />

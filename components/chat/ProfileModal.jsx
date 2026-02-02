@@ -7,6 +7,7 @@ import { chatService, getElementColor } from '@/lib/supabase/chat';
 import { ElementIcon } from '@/lib/elementIcons';
 import TiltSpinCard from '@/components/TiltSpinCard';
 import { sfx } from '@/lib/sfx';
+import { getCardImageUrl } from '@/lib/supabaseCardUrl';
 
 /**
  * ProfileModal Component
@@ -682,7 +683,7 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
                   >
                     {/* Front of card */}
                     <img
-                      src={enlargedCard.image_url || enlargedCard.artwork_url || '/cards/CHXNDLER.webp'}
+                      src={getCardImageUrl(enlargedCard.card_name || 'CHXNDLER')}
                       alt={enlargedCard.card_name}
                       className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
                       style={{
@@ -695,7 +696,7 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
                     />
                     {/* Back of card */}
                     <img
-                      src="/cards/BACK.webp"
+                      src={getCardImageUrl('BACK')}
                       alt="Card back"
                       className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
                       style={{

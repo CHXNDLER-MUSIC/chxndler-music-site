@@ -7,25 +7,25 @@ class AudioHeartverseController {
   private spaceMusicAudio: HTMLAudioElement | null = null;
   private isInitialized = false;
 
-  // Audio URLs - now using local /tracks .opus assets that exist in /public/tracks
+  // Welcome clips and space ambience stay local in /public
   private readonly WELCOME_TO_HEARTVERSE_URL = "/tracks/welcome-to-the-heartverse.opus";
-  private readonly WELCOME_HOME_URL = "/tracks/welcome-back.opus"; // previously welcome-home.mp3
-  private readonly SPACE_MUSIC_URL = "/tracks/space-music.opus";
+  private readonly WELCOME_HOME_URL = "/tracks/welcome-back.opus";
+  private readonly SPACE_MUSIC_URL = "/tracks/space-music.mp3";
 
   private initialize() {
     if (this.isInitialized || typeof window === 'undefined') return;
 
-    // Create audio elements
+    // Create audio elements — preload="none" for remote tracks
     this.welcomeToHeartvseAudio = new Audio(this.WELCOME_TO_HEARTVERSE_URL);
-    this.welcomeToHeartvseAudio.preload = 'auto';
+    this.welcomeToHeartvseAudio.preload = 'none';
     this.welcomeToHeartvseAudio.volume = 0.7;
 
     this.welcomeHomeAudio = new Audio(this.WELCOME_HOME_URL);
-    this.welcomeHomeAudio.preload = 'auto';
+    this.welcomeHomeAudio.preload = 'none';
     this.welcomeHomeAudio.volume = 0.7;
 
     this.spaceMusicAudio = new Audio(this.SPACE_MUSIC_URL);
-    this.spaceMusicAudio.preload = 'auto';
+    this.spaceMusicAudio.preload = 'none';
     this.spaceMusicAudio.volume = 0.5;
     this.spaceMusicAudio.loop = true;
 

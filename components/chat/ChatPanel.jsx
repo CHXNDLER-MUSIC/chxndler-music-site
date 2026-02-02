@@ -18,6 +18,7 @@ import FloatingRoomReactions from './FloatingRoomReactions';
 import { RATE_LIMITS, markSoulStarUsed } from '@/lib/reactions';
 import { useLogOnChange } from '@/lib/useLogOnChange';
 import { TiltSpinCard } from '@/components/TiltSpinCard';
+import { getCardImageUrl } from '@/lib/supabaseCardUrl';
 
 // Debug flag to control console logging
 const DEBUG = process.env.NODE_ENV === 'development' && true;
@@ -291,56 +292,56 @@ export default function ChatPanel({ isOpen, onClose }) {
   // Get card image URL for a given song
   const getCardImage = (songName, element) => {
     const songImages = {
-      'ALWAYS ON MY MIND': '/cards/HEART.webp',
-      'ALWAYS ON MY MIND (REMIX)': '/cards/ALWAYS ON MY MIND (REMIX).webp',
-      'ALONE': '/cards/ALONE.webp',
-      'ALONE (ACOUSTIC)': '/cards/ALONE.webp',
-      'AMERICAN DREAM': '/cards/AMERICAN DREAM.webp',
-      'BABY': '/cards/BABY.webp',
-      'BE MY BEE': '/cards/BE MY BEE.webp',
-      'BE MY BEE (ACOUSTIC)': '/cards/BE MY BEE (ACOUSTIC).webp',
-      'BLUE (ACOUSTIC)': '/cards/BLUE (ACOUSTIC).webp',
-      'BLUE': '/cards/BLUE.webp',
-      'BRAIN FREEZE': '/cards/BRAIN FREEZE.webp',
-      'CHEERLEADER': '/cards/CHEERLEADER.webp',
-      'CHEERLEADER (ACOUSTIC)': '/cards/CHEERLEADER (ACOUSTIC).webp',
-      'CHXNDLER': '/cards/CHXNDLER.webp',
-      'COLLIDE': '/cards/COLLIDE.webp',
-      'COLORS OF OUR HOME': '/cards/COLORS OF OUR HOME.webp',
-      'COLORS OF OUR HOME (ACOUSTIC)': '/cards/COLORS OF OUR HOME (ACOUSTIC).webp',
-      'COLORS OF OUR HOME (BLUMA Game Soundtrack)': '/cards/COLORS OF OUR HOME (BLUMA Game Soundtrack).webp',
-      'DARKNESS': '/cards/DARKNESS.webp',
-      'FEELING THIS': '/cards/FEELING THIS.webp',
-      'GAME BOY HEART': '/cards/GAME BOY HEART.webp',
-      'HEART': '/cards/HEART.webp',
-      'HOME': '/cards/HOME.webp',
-      'HOME (ACOUSTIC)': '/cards/HOME (ACOUSTIC).webp',
-      'HOUSE PARTY': '/cards/HOUSE PARTY.webp',
-      'HOUSE PARTY (ACOUSTIC)': '/cards/HOUSE PARTY (ACOUSTIC).webp',
-      'I MIGHT FALL IN LOVE WITH YOU': '/cards/I MIGHT FALL IN LOVE WITH YOU.webp',
-      'I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)': '/cards/I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC).webp',
-      'KID FOREVER': '/cards/KID FOREVER.webp',
-      'LETTING GO': '/cards/LETTING GO.webp',
-      'LIGHTNING': '/cards/LIGHTNING.webp',
-      'LITTLE BLACK HEART': '/cards/LITTLE BLACK HEART.webp',
-      'LITTLE BLACK HEART (ACOUSTIC)': '/cards/LITTLE BLACK HEART (ACOUSTIC).webp',
-      'LOVE ME': '/cards/LOVE ME.webp',
-      'LOVE ME (ACOUSTIC)': '/cards/LOVE ME (ACOUSTIC).webp',
-      'MAKE BELIEVE': '/cards/MAKE BELIEVE.webp',
-      'MR. BRIGHTSIDE': '/cards/MR. BRIGHTSIDE.webp',
-      'OCEAN GIRL': '/cards/OCEAN GIRL.webp',
-      'OCEAN GIRL (ACOUSTIC)': '/cards/OCEAN GIRL (ACOUSTIC).webp',
-      'OCEAN GIRL (REMIX)': '/cards/OCEAN GIRL (REMIX).webp',
-      'PARIS': '/cards/PARIS.webp',
-      'PINK MOON': '/cards/PINK MOON.webp',
-      'POKÉMON': '/cards/POKEMON.webp',
-      'SOMEBODY TO LOVE': '/cards/SOMEBODY TO LOVE.webp',
-      'TIENES UN AMIGO': '/cards/TIENES UN AMIGO.webp',
-      'WATER': '/cards/WATER.webp',
-      'WE\'RE JUST FRIENDS': '/cards/WE\'RE JUST FRIENDS.webp',
-      'WE\'RE JUST FRIENDS (ACOUSTIC)': '/cards/WE\'RE JUST FRIENDS (ACOUSTIC).webp',
-      'WE\'RE JUST FRIENDS (DMVRCO REMIX)': '/cards/WE\'RE JUST FRIENDS (DMVRCO REMIX).webp',
-      'WE\'RE JUST FRIENDS (mickey jas REMIX)': '/cards/WE\'RE JUST FRIENDS (MICKEY JAS REMIX).webp',
+      'ALWAYS ON MY MIND': getCardImageUrl('HEART'),
+      'ALWAYS ON MY MIND (REMIX)': getCardImageUrl('ALWAYS ON MY MIND (REMIX)'),
+      'ALONE': getCardImageUrl('ALONE'),
+      'ALONE (ACOUSTIC)': getCardImageUrl('ALONE'),
+      'AMERICAN DREAM': getCardImageUrl('AMERICAN DREAM'),
+      'BABY': getCardImageUrl('BABY'),
+      'BE MY BEE': getCardImageUrl('BE MY BEE'),
+      'BE MY BEE (ACOUSTIC)': getCardImageUrl('BE MY BEE (ACOUSTIC)'),
+      'BLUE (ACOUSTIC)': getCardImageUrl('BLUE (ACOUSTIC)'),
+      'BLUE': getCardImageUrl('BLUE'),
+      'BRAIN FREEZE': getCardImageUrl('BRAIN FREEZE'),
+      'CHEERLEADER': getCardImageUrl('CHEERLEADER'),
+      'CHEERLEADER (ACOUSTIC)': getCardImageUrl('CHEERLEADER (ACOUSTIC)'),
+      'CHXNDLER': getCardImageUrl('CHXNDLER'),
+      'COLLIDE': getCardImageUrl('COLLIDE'),
+      'COLORS OF OUR HOME': getCardImageUrl('COLORS OF OUR HOME'),
+      'COLORS OF OUR HOME (ACOUSTIC)': getCardImageUrl('COLORS OF OUR HOME (ACOUSTIC)'),
+      'COLORS OF OUR HOME (BLUMA Game Soundtrack)': getCardImageUrl('COLORS OF OUR HOME (BLUMA Game Soundtrack)'),
+      'DARKNESS': getCardImageUrl('DARKNESS'),
+      'FEELING THIS': getCardImageUrl('FEELING THIS'),
+      'GAME BOY HEART': getCardImageUrl('GAME BOY HEART'),
+      'HEART': getCardImageUrl('HEART'),
+      'HOME': getCardImageUrl('HOME'),
+      'HOME (ACOUSTIC)': getCardImageUrl('HOME (ACOUSTIC)'),
+      'HOUSE PARTY': getCardImageUrl('HOUSE PARTY'),
+      'HOUSE PARTY (ACOUSTIC)': getCardImageUrl('HOUSE PARTY (ACOUSTIC)'),
+      'I MIGHT FALL IN LOVE WITH YOU': getCardImageUrl('I MIGHT FALL IN LOVE WITH YOU'),
+      'I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)': getCardImageUrl('I MIGHT FALL IN LOVE WITH YOU (ACOUSTIC)'),
+      'KID FOREVER': getCardImageUrl('KID FOREVER'),
+      'LETTING GO': getCardImageUrl('LETTING GO'),
+      'LIGHTNING': getCardImageUrl('LIGHTNING'),
+      'LITTLE BLACK HEART': getCardImageUrl('LITTLE BLACK HEART'),
+      'LITTLE BLACK HEART (ACOUSTIC)': getCardImageUrl('LITTLE BLACK HEART (ACOUSTIC)'),
+      'LOVE ME': getCardImageUrl('LOVE ME'),
+      'LOVE ME (ACOUSTIC)': getCardImageUrl('LOVE ME (ACOUSTIC)'),
+      'MAKE BELIEVE': getCardImageUrl('MAKE BELIEVE'),
+      'MR. BRIGHTSIDE': getCardImageUrl('MR. BRIGHTSIDE'),
+      'OCEAN GIRL': getCardImageUrl('OCEAN GIRL'),
+      'OCEAN GIRL (ACOUSTIC)': getCardImageUrl('OCEAN GIRL (ACOUSTIC)'),
+      'OCEAN GIRL (REMIX)': getCardImageUrl('OCEAN GIRL (REMIX)'),
+      'PARIS': getCardImageUrl('PARIS'),
+      'PINK MOON': getCardImageUrl('PINK MOON'),
+      'POKÉMON': getCardImageUrl('POKEMON'),
+      'SOMEBODY TO LOVE': getCardImageUrl('SOMEBODY TO LOVE'),
+      'TIENES UN AMIGO': getCardImageUrl('TIENES UN AMIGO'),
+      'WATER': getCardImageUrl('WATER'),
+      'WE\'RE JUST FRIENDS': getCardImageUrl('WE\'RE JUST FRIENDS'),
+      'WE\'RE JUST FRIENDS (ACOUSTIC)': getCardImageUrl('WE\'RE JUST FRIENDS (ACOUSTIC)'),
+      'WE\'RE JUST FRIENDS (DMVRCO REMIX)': getCardImageUrl('WE\'RE JUST FRIENDS (DMVRCO REMIX)'),
+      'WE\'RE JUST FRIENDS (mickey jas REMIX)': getCardImageUrl('WE\'RE JUST FRIENDS (MICKEY JAS REMIX)'),
     };
 
     // Return the specific song image if available
@@ -350,10 +351,10 @@ export default function ChatPanel({ isOpen, onClose }) {
 
     // Fallback to element image
     const elementImages = {
-      'HEART': '/cards/HEART.webp',
-      'WATER': '/cards/WATER.webp',
-      'LIGHTNING': '/cards/LIGHTNING.webp',
-      'DARKNESS': '/cards/DARKNESS.webp'
+      'HEART': getCardImageUrl('HEART'),
+      'WATER': getCardImageUrl('WATER'),
+      'LIGHTNING': getCardImageUrl('LIGHTNING'),
+      'DARKNESS': getCardImageUrl('DARKNESS')
     };
 
     return elementImages[element] || elementImages['HEART'];
@@ -2759,7 +2760,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                 {/* Card back image */}
                 <div className="w-full h-full rounded-lg overflow-hidden relative">
                   <img
-                    src="/cards/BACK.webp"
+                    src={getCardImageUrl('BACK')}
                     alt="Card Back"
                     className="w-full h-full object-cover"
                     draggable={false}

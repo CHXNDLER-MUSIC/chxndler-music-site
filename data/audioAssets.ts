@@ -1,15 +1,16 @@
 // Audio assets mapping by slug, generated from existing track data
 // This provides the bridge between Supabase song slugs and actual audio/cover file paths
+import { supabaseTrackUrl } from "@/lib/supabaseTrackUrl";
 
-export const AUDIO_ASSETS_BY_SLUG: Record<string, { 
-  src: string; 
+export const AUDIO_ASSETS_BY_SLUG: Record<string, {
+  src: string;
   cover: string;
   spotify?: string;
   apple?: string;
   sections?: Array<{ time: number; label: string; kind?: 'intro' | 'verse' | 'chorus' | 'bridge' | 'outro' }>;
 }> = {
   "game-boy-heart": {
-    src: "/tracks/game-boy-heart.mp3",
+    src: supabaseTrackUrl("game-boy-heart.mp3"),
     cover: "/covers/GAME BOY HEART.webp",
     spotify: "https://open.spotify.com/track/5VypE0QkaggJemaNG6sMsF",
     apple: "https://music.apple.com/us/album/game-boy-heart-%E3%82%B2%E3%83%BC%E3%83%A0%E3%83%9C%E3%83%BC%E3%82%A4%E3%81%AE%E5%BF%83/1826340576?i=1826340577",
@@ -23,7 +24,7 @@ export const AUDIO_ASSETS_BY_SLUG: Record<string, {
     ]
   },
   "kid-forever": {
-    src: "/tracks/kid-forever.mp3",
+    src: supabaseTrackUrl("kid-forever.mp3"),
     cover: "/covers/KID FOREVER.webp",
     spotify: "https://open.spotify.com/track/5X27jqHBvMBsDvvFixeZdN",
     apple: "https://music.apple.com/us/album/kid-forever-%E6%B0%B8%E9%81%A0%E3%81%AE%E5%AD%90%E4%BE%9B-single/1826397337",
@@ -36,7 +37,7 @@ export const AUDIO_ASSETS_BY_SLUG: Record<string, {
     ]
   },
   "brain-freeze": {
-    src: "/tracks/brain-freeze.mp3",
+    src: supabaseTrackUrl("brain-freeze.mp3"),
     cover: "/covers/BRAIN FREEZE.webp",
     spotify: "https://open.spotify.com/track/5ou8AyA71rLFK6Ysxr2CpT",
     apple: "https://music.apple.com/us/album/brain-freeze/1823925483?i=1823925484",
@@ -50,7 +51,7 @@ export const AUDIO_ASSETS_BY_SLUG: Record<string, {
     ]
   },
   "we're-just-friends-mickey-jas-remix": {
-    src: "/tracks/we're-just-friends-mickey-jas-remix.opus",
+    src: supabaseTrackUrl("we're-just-friends-mickey-jas-remix.opus"),
     cover: "/covers/WE'RE JUST FRIENDS (MICKEY JAS REMIX).webp",
     spotify: "https://open.spotify.com/track/28wYsy2LrfVUT5glavy7hJ",
     apple: "https://music.apple.com/us/album/were-just-friends-mickey-jas-remix/1785153493?i=1785153499",
@@ -63,7 +64,7 @@ export const AUDIO_ASSETS_BY_SLUG: Record<string, {
     ]
   },
   "be-my-bee": {
-    src: "/tracks/be-my-bee.opus",
+    src: supabaseTrackUrl("be-my-bee.opus"),
     cover: "/covers/BE MY BEE.webp",
     spotify: "https://open.spotify.com/track/12iLygYksfcZ3nv6NkrnEr",
     apple: "https://music.apple.com/us/album/be-my-bee/1784058027?i=1784058028",
@@ -77,7 +78,7 @@ export const AUDIO_ASSETS_BY_SLUG: Record<string, {
     ]
   },
   "we're-just-friends": {
-    src: "/tracks/we're-just-friends.opus",
+    src: supabaseTrackUrl("we're-just-friends.opus"),
     cover: "/covers/WE'RE JUST FRIENDS.webp",
     spotify: "https://open.spotify.com/track/2IffMAupdw2alpsISKFs8y",
     apple: "https://music.apple.com/us/album/were-just-friends/1662517763?i=1662517764",
@@ -91,7 +92,7 @@ export const AUDIO_ASSETS_BY_SLUG: Record<string, {
     ]
   },
   "paris": {
-    src: "/tracks/paris.mp3",
+    src: supabaseTrackUrl("paris.mp3"),
     cover: "/covers/PARIS.webp",
     spotify: "https://open.spotify.com/track/2luPTqZK9w5fJ30T4rLZut",
     apple: "https://music.apple.com/us/album/paris/1779879728?i=1779879729",
@@ -104,7 +105,7 @@ export const AUDIO_ASSETS_BY_SLUG: Record<string, {
     ]
   },
   "pokemon": {
-    src: "/tracks/pokemon.opus",
+    src: supabaseTrackUrl("pokemon.opus"),
     cover: "/covers/POKEMON.webp",
     spotify: "https://open.spotify.com/track/7uzO8MyTy8402703kP2Xuk",
     apple: "https://music.apple.com/us/album/pok%C3%A9mon-single/1807448784",
@@ -118,7 +119,7 @@ export const AUDIO_ASSETS_BY_SLUG: Record<string, {
     ]
   },
   "house-party": {
-    src: "/tracks/house-party.mp3",
+    src: supabaseTrackUrl("house-party.mp3"),
     cover: "/covers/HOUSE PARTY.webp",
     spotify: "https://open.spotify.com/track/0b5y0gHMf3wLYX69B8S6g4",
     apple: "https://music.apple.com/us/album/alien-house-party/1757497439?i=1757497440",
@@ -132,7 +133,7 @@ export const AUDIO_ASSETS_BY_SLUG: Record<string, {
     ]
   },
   "we're-just-friends-dmvrco-remix": {
-    src: "/tracks/we're-just-friends-dmvrco-remix.opus",
+    src: supabaseTrackUrl("we're-just-friends-dmvrco-remix.opus"),
     cover: "/covers/WE'RE JUST FRIENDS (DMVRCO REMIX).webp",
     spotify: "https://open.spotify.com/track/1WfJUtDFUiz0rUdlGfLQBA",
     apple: "https://music.apple.com/us/album/were-just-friends-dmvrco-remix/1680307531?i=1680307532",
@@ -145,7 +146,7 @@ export const AUDIO_ASSETS_BY_SLUG: Record<string, {
     ]
   },
   "baby": {
-    src: "/tracks/baby.opus",
+    src: supabaseTrackUrl("baby.opus"),
     cover: "/covers/BABY.webp",
     spotify: "https://open.spotify.com/track/3UEVjChARWDbY4ruOIbIl3",
     apple: "https://music.apple.com/us/album/baby/1823220422?i=1823220423",
@@ -159,7 +160,7 @@ export const AUDIO_ASSETS_BY_SLUG: Record<string, {
     ]
   },
   "ocean-girl": {
-    src: "/tracks/ocean-girl.opus",
+    src: supabaseTrackUrl("ocean-girl.opus"),
     cover: "/covers/OCEAN GIRL.webp",
     spotify: "https://open.spotify.com/album/37niwECG0TJMuYFQdrJE3y?si=S_Btj1hMRU-RsnsVL2PBmQ",
     apple: "https://music.apple.com/us/album/ocean-girl/1829503198?i=1829503199",
@@ -173,7 +174,7 @@ export const AUDIO_ASSETS_BY_SLUG: Record<string, {
     ]
   },
   "ocean-girl-acoustic": {
-    src: "/tracks/ocean-girl-acoustic.opus",
+    src: supabaseTrackUrl("ocean-girl-acoustic.opus"),
     cover: "/covers/OCEAN GIRL (ACOUSTIC).webp",
     spotify: "https://open.spotify.com/track/62KREyqgAQxmq3zqCT7oMh?si=506cf1906fac4275",
     apple: "https://music.apple.com/us/album/ocean-girl-acoustic/1830685266?i=1830685267",
@@ -186,7 +187,7 @@ export const AUDIO_ASSETS_BY_SLUG: Record<string, {
     ]
   },
   "ocean-girl-remix": {
-    src: "/tracks/ocean-girl-remix.opus",
+    src: supabaseTrackUrl("ocean-girl-remix.opus"),
     cover: "/covers/OCEAN GIRL (REMIX).webp",
     spotify: "https://open.spotify.com/track/1wbgLONY1GsBZC5XW4MUzu?si=ff27a874552948c4",
     apple: "https://music.apple.com/us/album/ocean-girl-remix-single/1830764323",
@@ -199,7 +200,7 @@ export const AUDIO_ASSETS_BY_SLUG: Record<string, {
     ]
   },
   "collide": {
-    src: "/tracks/collide.mp3",
+    src: supabaseTrackUrl("collide.mp3"),
     cover: "/covers/COLLIDE.webp",
     spotify: "https://open.spotify.com/track/4CCfWIk6SDUwmcUvGvgVQG?si=2788de692cc3435d",
     apple: "https://music.apple.com/us/album/collide/1814599250?i=1814599264",

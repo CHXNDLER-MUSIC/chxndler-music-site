@@ -29,6 +29,8 @@ export function trackKeyFromSlug(slug?: string): string | null {
     "darkness": "DARKNESS",
     "heart": "HEART",
     "center": "CENTER",
+    // Ambient / voiceover tracks kept local
+    "space-music": "SPACE_MUSIC",
   };
   return map[s] || null;
 }

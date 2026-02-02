@@ -1,4 +1,5 @@
 import { slugify } from "@/lib/slug";
+import { supabaseTrackUrl } from "@/lib/supabaseTrackUrl";
 
 export type ElementKind = 'WATER' | 'HEART' | 'LIGHTNING' | 'DARKNESS' | 'FIRE' | 'EARTH' | 'AIR';
 
@@ -146,62 +147,39 @@ function getElementForSong(title: string, slug: string): ElementKind {
   return "WATER";
 }
 
-// Function to build audio sources array for dual format support
+// Function to build audio sources array for dual format support.
+// Sources now point to Supabase Storage (public bucket) instead of /public/tracks.
 function buildAudioSources(providedSrc: string | undefined, slug: string): AudioSource[] {
   const sources: AudioSource[] = [];
-  
-  // If a specific src is provided, use it and try to infer both formats
+
+  // Helper: if the path is a local /tracks/ reference, convert to Supabase URL.
+  // Already-absolute URLs or other paths are returned as-is.
+  const toRemote = (path: string): string => {
+    if (path.startsWith('/tracks/')) {
+      return supabaseTrackUrl(path.replace('/tracks/', ''));
+    }
+    return path;
+  };
+
   if (providedSrc) {
+    const remoteSrc = toRemote(providedSrc);
     if (providedSrc.endsWith('.opus')) {
-      // OPUS first for modern browsers
-      sources.push({
-        format: "opus",
-        src: providedSrc,
-        mimeType: "audio/ogg; codecs=opus",
-      });
-      // Try to find corresponding MP3
-      const mp3Src = providedSrc.replace(/\.opus$/, '.mp3');
-      sources.push({
-        format: "mp3",
-        src: mp3Src,
-        mimeType: "audio/mpeg",
-      });
+      sources.push({ format: "opus", src: remoteSrc, mimeType: "audio/ogg; codecs=opus" });
+      const mp3Src = remoteSrc.replace(/\.opus$/, '.mp3');
+      sources.push({ format: "mp3", src: mp3Src, mimeType: "audio/mpeg" });
     } else if (providedSrc.endsWith('.mp3')) {
-      // Try to find corresponding OPUS first
-      const opusSrc = providedSrc.replace(/\.mp3$/, '.opus');
-      sources.push({
-        format: "opus",
-        src: opusSrc,
-        mimeType: "audio/ogg; codecs=opus",
-      });
-      // Then MP3
-      sources.push({
-        format: "mp3",
-        src: providedSrc,
-        mimeType: "audio/mpeg",
-      });
+      const opusSrc = remoteSrc.replace(/\.mp3$/, '.opus');
+      sources.push({ format: "opus", src: opusSrc, mimeType: "audio/ogg; codecs=opus" });
+      sources.push({ format: "mp3", src: remoteSrc, mimeType: "audio/mpeg" });
     } else {
-      // Unknown format, just add as-is with generic MIME type
-      sources.push({
-        format: "mp3", // Default to mp3
-        src: providedSrc,
-        mimeType: "audio/mpeg",
-      });
+      sources.push({ format: "mp3", src: remoteSrc, mimeType: "audio/mpeg" });
     }
   } else {
-    // No specific src provided, use defaults with both formats
-    sources.push({
-      format: "opus",
-      src: `/tracks/${slug}.opus`,
-      mimeType: "audio/ogg; codecs=opus",
-    });
-    sources.push({
-      format: "mp3",
-      src: `/tracks/${slug}.mp3`,
-      mimeType: "audio/mpeg",
-    });
+    // No specific src provided — build both formats from slug via Supabase
+    sources.push({ format: "opus", src: supabaseTrackUrl(`${slug}.opus`), mimeType: "audio/ogg; codecs=opus" });
+    sources.push({ format: "mp3", src: supabaseTrackUrl(`${slug}.mp3`), mimeType: "audio/mpeg" });
   }
-  
+
   return sources;
 }
 
@@ -338,7 +316,7 @@ const MAPPED = RAW.map((t, idx) => {
     slug: base,
     // Legacy fields for backward compatibility
     type: t.src?.endsWith('.opus') ? "audio/ogg" : "audio/mpeg",
-    src: t.src ?? `/tracks/${base}.opus`,
+    src: t.src ? (t.src.startsWith('/tracks/') ? supabaseTrackUrl(t.src.replace('/tracks/', '')) : t.src) : supabaseTrackUrl(`${base}.mp3`),
     // New dual format support
     sources,
     cover,

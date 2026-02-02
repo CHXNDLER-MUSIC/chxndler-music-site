@@ -124,15 +124,16 @@ function flushPendingCoins(): void {
  * be shown in a follow-up celebration after the current one ends.
  *
  * @param amount - The amount of HeartCoins earned
+ * @param options.force - Bypass suppression check (used for manual triggers that set suppression to block realtime duplicates)
  */
-export function triggerHeartCoinCelebration(amount: number): void {
+export function triggerHeartCoinCelebration(amount: number, options?: { force?: boolean }): void {
   // Guard against server-side execution
   if (typeof window === 'undefined') {
     return;
   }
 
   // Check if celebrations are suppressed
-  if (suppressCelebration) {
+  if (suppressCelebration && !options?.force) {
     debugCelebration("COIN_CELEBRATION_SKIPPED", {
       amount,
       reason: "suppressed"
