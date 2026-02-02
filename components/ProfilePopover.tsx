@@ -82,6 +82,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
   const [selectedRelicModal, setSelectedRelicModal] = useState<string | null>(null);
   const [showMerchInline, setShowMerchInline] = useState(false);
   const [selectedMerchInline, setSelectedMerchInline] = useState<MerchItem | null>(null);
+  const [selectedMerchColor, setSelectedMerchColor] = useState<string | null>(null);
   const [merchRotation, setMerchRotation] = useState(0);
   const [relicRotationInline, setRelicRotationInline] = useState(0);
   const [relicRotationModal, setRelicRotationModal] = useState(0);
@@ -2099,7 +2100,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                   {/* Compact header bar */}
                   <div className="flex items-center px-3 py-2 bg-black/80 border-b border-cyan-400/40 flex-shrink-0">
                     <button
-                      onClick={() => { setSelectedMerchInline(null); setMerchRotation(0); try { sfx.play('close', 0.6); } catch {} }}
+                      onClick={() => { setSelectedMerchInline(null); setSelectedMerchColor(null); setMerchRotation(0); try { sfx.play('close', 0.6); } catch {} }}
                       onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
                       className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110"
                       style={{
@@ -2127,6 +2128,69 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                         </span>
                       )}
                     </div>
+                    {/* Color variant dots - top right */}
+                    {(() => {
+                      // Fallback color variants for items without DB variant_options
+                      const FALLBACK_COLORS: Record<string, Array<{ value: string; label: string; images: { main: string } }>> = {
+                        bracelet: [
+                          { value: 'pink', label: 'Pink', images: { main: '/store/bracelet-pink.webp' } },
+                          { value: 'blue', label: 'Blue', images: { main: '/store/bracelet-blue.webp' } },
+                          { value: 'yellow', label: 'Yellow', images: { main: '/store/bracelet-yellow.webp' } },
+                        ],
+                      };
+
+                      // Try DB variant_options first
+                      let colors: any[] | null = null;
+                      const opts = selectedMerchInline.variant_options;
+                      if (opts) {
+                        let parsed = opts;
+                        if (typeof parsed === 'string') {
+                          try { parsed = JSON.parse(parsed); } catch { parsed = null; }
+                        }
+                        if (parsed && typeof parsed === 'object') {
+                          const dbColors = (parsed as any).colors;
+                          if (Array.isArray(dbColors) && dbColors.length > 0) colors = dbColors;
+                        }
+                      }
+                      // Fallback for known items
+                      if (!colors) {
+                        colors = FALLBACK_COLORS[selectedMerchInline.slug] || null;
+                      }
+                      if (!colors || colors.length === 0) return <div className="w-8" />;
+
+                      const dotColorMap: Record<string, string> = {
+                        black: '#1a1a1a', blue: '#3b82f6', pink: '#ec4899',
+                        yellow: '#fbbf24', red: '#ef4444', white: '#ffffff'
+                      };
+                      const currentColor = selectedMerchColor || colors[0]?.value;
+                      return (
+                        <div className="flex items-center gap-1.5">
+                          {colors.map((c: any) => {
+                            const dotColor = dotColorMap[c.value?.toLowerCase()] || '#888';
+                            const isSelected = currentColor === c.value;
+                            return (
+                              <button
+                                key={c.value}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  try { sfx.play('click', 0.5); } catch {}
+                                  setSelectedMerchColor(c.value);
+                                }}
+                                className={`w-5 h-5 rounded-full border-2 hover:scale-125 transition-all ${
+                                  isSelected ? 'border-[#F2EF1D] ring-2 ring-[#F2EF1D]/50 scale-110' : 'border-white/40'
+                                }`}
+                                style={{
+                                  backgroundColor: dotColor,
+                                  boxShadow: isSelected ? `0 0 10px ${dotColor}` : 'none'
+                                }}
+                                title={c.label}
+                                aria-label={`Select ${c.label}`}
+                              />
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
                   {/* Full-size image container */}
                   <div className="relative flex-1 min-h-0 flex items-center justify-center overflow-hidden bg-black/80 p-2">
@@ -2148,7 +2212,37 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                       }}
                     >
                       <img
-                        src={selectedMerchInline.image_url || ''}
+                        src={(() => {
+                          if (selectedMerchColor) {
+                            // Fallback color variants for items without DB variant_options
+                            const FALLBACK_COLORS: Record<string, Array<{ value: string; images: { main: string } }>> = {
+                              bracelet: [
+                                { value: 'pink', images: { main: '/store/bracelet-pink.webp' } },
+                                { value: 'blue', images: { main: '/store/bracelet-blue.webp' } },
+                                { value: 'yellow', images: { main: '/store/bracelet-yellow.webp' } },
+                              ],
+                            };
+                            // Try DB variant_options first
+                            if (selectedMerchInline.variant_options) {
+                              let opts = selectedMerchInline.variant_options;
+                              if (typeof opts === 'string') {
+                                try { opts = JSON.parse(opts); } catch { opts = null; }
+                              }
+                              const colors = (opts as any)?.colors;
+                              if (Array.isArray(colors)) {
+                                const match = colors.find((c: any) => c.value === selectedMerchColor);
+                                if (match?.images?.main || match?.images?.front) return match.images.main || match.images.front;
+                              }
+                            }
+                            // Fallback for known items
+                            const fallback = FALLBACK_COLORS[selectedMerchInline.slug];
+                            if (fallback) {
+                              const match = fallback.find(c => c.value === selectedMerchColor);
+                              if (match?.images?.main) return match.images.main;
+                            }
+                          }
+                          return selectedMerchInline.image_url || '';
+                        })()}
                         alt={selectedMerchInline.name}
                         className="w-full h-full object-contain"
                         style={{

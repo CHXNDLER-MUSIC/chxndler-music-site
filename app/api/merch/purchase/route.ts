@@ -108,14 +108,16 @@ export async function POST(request: NextRequest) {
 
     // ============================================================
     // CALL RPC: purchase_merch_with_heartcoins_v4
-    // Signature: (p_merch_item_id uuid, p_quantity int, p_client_request_id uuid)
+    // Signature: (p_merch_item_id uuid, p_quantity int, p_client_request_id uuid, p_selected_variant jsonb, p_selected_color text)
     // v4 uses auth.uid() internally, order_type defaults to 'merch'
-    // Do NOT send: p_order_type, p_user_id, p_idempotency_key, p_client_slug
+    // Variant data is included in the RPC INSERT directly (SECURITY DEFINER bypasses RLS)
     // ============================================================
     const rpcParams = {
       p_merch_item_id: merchItemId,
       p_quantity: quantity,
       p_client_request_id: idempotencyKey,
+      p_selected_variant: selectedVariant && Object.keys(selectedVariant).length > 0 ? selectedVariant : {},
+      p_selected_color: selectedColor || null,
     };
     console.log('[PURCHASE] RPC call: purchase_merch_with_heartcoins_v4', {
       ...rpcParams,
@@ -175,53 +177,8 @@ export async function POST(request: NextRequest) {
     const ordersId = result?.order_id ? String(result.order_id) : null;
     console.log('[PURCHASE] orders.id', ordersId);
 
-    // Update order with variant selection if provided and order was created
-    console.log('[PURCHASE] Variant update check:', {
-      ordersId,
-      selectedVariant,
-      selectedColor,
-      hasOrderId: !!ordersId,
-      hasVariant: !!selectedVariant,
-      hasColor: !!selectedColor,
-      variantKeys: selectedVariant ? Object.keys(selectedVariant) : [],
-    });
-
-    if (ordersId && (selectedVariant || selectedColor)) {
-      console.log('[PURCHASE] Updating order with variant info:', {
-        ordersId,
-        selectedVariant,
-        selectedColor
-      });
-
-      const updatePayload: { selected_variant?: object; selected_color?: string | null } = {};
-      if (selectedVariant && Object.keys(selectedVariant).length > 0) {
-        updatePayload.selected_variant = selectedVariant;
-      }
-      if (selectedColor) {
-        updatePayload.selected_color = selectedColor;
-      }
-
-      console.log('[PURCHASE] Update payload:', updatePayload, 'payload keys:', Object.keys(updatePayload).length);
-
-      if (Object.keys(updatePayload).length > 0) {
-        const { error: updateError } = await supabase
-          .from('orders')
-          .update(updatePayload)
-          .eq('id', ordersId)
-          .eq('user_id', user.id); // Security: ensure user owns this order
-
-        if (updateError) {
-          console.error('[PURCHASE] Failed to update variant info (non-fatal):', updateError);
-          // Don't fail the whole purchase for this
-        } else {
-          console.log('[PURCHASE] Variant info updated successfully for order:', ordersId);
-        }
-      } else {
-        console.log('[PURCHASE] No variant data to update (payload empty)');
-      }
-    } else {
-      console.log('[PURCHASE] Skipping variant update - no ordersId or no variant data');
-    }
+    // Variant data is now included in the RPC INSERT directly (no separate UPDATE needed)
+    console.log('[PURCHASE] Variant data passed to RPC:', { selectedVariant, selectedColor });
 
     // Treat "Already processed" as success (idempotency)
     if (result?.message === 'Already processed' || result?.idempotent) {

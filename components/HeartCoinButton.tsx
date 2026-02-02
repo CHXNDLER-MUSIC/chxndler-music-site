@@ -221,6 +221,21 @@ const getLockLabel = ({ item, selectedVariantValue, userJourney }: LockLabelPara
     }
   }
 
+  // Frontend tier overrides for items whose DB min_tier is wanderer
+  if (!requiredJourney || requiredJourney.toUpperCase() === 'WANDERER') {
+    const tierOverrides: Record<string, string> = {
+      'bracelet': 'DREAMER',
+      'house-party-poster': 'DREAMER',
+      'house party poster': 'DREAMER',
+      'socks': 'DREAMER',
+      'hat': 'DREAMER',
+    };
+    const slug = (item.slug || item.id || '').toLowerCase();
+    const title = (item.title || '').toLowerCase();
+    if (tierOverrides[slug]) requiredJourney = tierOverrides[slug];
+    else if (tierOverrides[title]) requiredJourney = tierOverrides[title];
+  }
+
   // No requirement = unlocked
   if (!requiredJourney) return null;
 
@@ -230,8 +245,8 @@ const getLockLabel = ({ item, selectedVariantValue, userJourney }: LockLabelPara
   // 3. Return appropriate label
   if (!isLocked) return null; // User meets requirement
 
-  // Return custom label if available, otherwise default
-  return customLabel || `Unlock at ${requiredJourney}`;
+  // Always use consistent "Unlock at TIER" format
+  return `Unlock at ${requiredJourney}`;
 };
 
 // Card interface for Supabase data
@@ -5756,6 +5771,51 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                 className="relative w-64 mx-4 flex flex-col items-center"
                 onClick={(e) => e.stopPropagation()}
               >
+                {/* Color variant selector in enlarged modal */}
+                {!showEnlargedConfirm && (() => {
+                  const activeMerchIndex = merchItems.findIndex(item => item.id === activeMerchItem.id);
+                  if (activeMerchIndex < 0) return null;
+                  const storeItem = PHYSICAL_ITEMS[activeMerchIndex];
+                  if (!storeItem || !hasVariants(storeItem)) return null;
+                  const variants = getVariantOptions(storeItem);
+                  const selected = selectedVariants[activeMerchIndex]?.value || variants[0]?.value;
+                  return (
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      {variants.map((opt) => {
+                        const isColor = opt.type === 'color';
+                        const colorMap: Record<string, string> = {
+                          black: '#1a1a1a', blue: '#3b82f6', pink: '#ec4899',
+                          yellow: '#fbbf24', red: '#ef4444', white: '#ffffff'
+                        };
+                        const dotColor = isColor ? (colorMap[opt.value.toLowerCase()] || '#888') : null;
+                        const isSelected = selected === opt.value;
+                        return (
+                          <button
+                            key={opt.value}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              try { sfx.play('click', 0.5); } catch {}
+                              setSelectedVariants(prev => ({
+                                ...prev,
+                                [activeMerchIndex]: { value: opt.value, image: opt.image }
+                              }));
+                            }}
+                            className={`w-6 h-6 rounded-full border-2 hover:scale-125 transition-all ${
+                              isSelected ? 'border-[#F2EF1D] ring-2 ring-[#F2EF1D]/50 scale-110' : 'border-white/50'
+                            }`}
+                            style={{
+                              backgroundColor: dotColor || '#666',
+                              boxShadow: isSelected ? `0 0 12px ${dotColor || '#888'}` : 'none'
+                            }}
+                            title={opt.label}
+                            aria-label={`Select ${opt.label}`}
+                          />
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
                 {/* Show confirmation view or normal view */}
                 {showEnlargedConfirm ? (
                   /* Confirmation View */

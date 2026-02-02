@@ -1,11 +1,17 @@
 -- v4 RPC: Minimal, idempotent merch purchase with HeartCoins
 -- Signature matches app/api/merch/purchase/route.ts
 -- Ensures orders.payment_type is EXACTLY 'heartcoins'
+-- Includes selected_variant/selected_color in the INSERT for reliable storage
+
+-- Drop old 3-param signature so we can replace with 5-param version
+DROP FUNCTION IF EXISTS purchase_merch_with_heartcoins_v4(UUID, INTEGER, UUID);
 
 CREATE OR REPLACE FUNCTION purchase_merch_with_heartcoins_v4(
   p_merch_item_id UUID,
   p_quantity INTEGER,
-  p_client_request_id UUID
+  p_client_request_id UUID,
+  p_selected_variant JSONB DEFAULT '{}'::jsonb,
+  p_selected_color TEXT DEFAULT NULL
 )
 RETURNS JSON
 LANGUAGE plpgsql
@@ -76,7 +82,7 @@ BEGIN
 
   new_balance := current_balance - total_cost;
 
-  -- 1) Create order with explicit payment_type 'heartcoins'
+  -- 1) Create order with explicit payment_type 'heartcoins' and variant selection
   INSERT INTO public.orders (
     id,
     user_id,
@@ -89,6 +95,8 @@ BEGIN
     total_heartcoins,
     status,
     client_request_id,
+    selected_variant,
+    selected_color,
     created_at,
     updated_at
   ) VALUES (
@@ -103,6 +111,8 @@ BEGIN
     total_cost,
     'paid',
     p_client_request_id,
+    p_selected_variant,
+    p_selected_color,
     NOW(),
     NOW()
   ) RETURNING id INTO order_id;
@@ -155,5 +165,5 @@ EXCEPTION
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION purchase_merch_with_heartcoins_v4(UUID, INTEGER, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION purchase_merch_with_heartcoins_v4(UUID, INTEGER, UUID, JSONB, TEXT) TO authenticated;
 

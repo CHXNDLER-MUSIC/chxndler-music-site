@@ -91,10 +91,25 @@ BEGIN
     END IF;
 
     IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
+        SELECT 1 FROM information_schema.columns
         WHERE table_name = 'orders' AND column_name = 'shipping_country'
     ) THEN
         ALTER TABLE public.orders ADD COLUMN shipping_country TEXT DEFAULT 'United States';
+    END IF;
+
+    -- Add variant selection columns
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'orders' AND column_name = 'selected_variant'
+    ) THEN
+        ALTER TABLE public.orders ADD COLUMN selected_variant JSONB DEFAULT '{}'::jsonb;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'orders' AND column_name = 'selected_color'
+    ) THEN
+        ALTER TABLE public.orders ADD COLUMN selected_color TEXT DEFAULT NULL;
     END IF;
 END $$;
 
