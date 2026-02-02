@@ -1,16 +1,25 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CoverCard from './CoverCard';
 import { sfx } from '@/lib/sfx';
+import { fetchStarterCardId } from '@/lib/cardUtils';
 
 export default function YourBook({ isOpen, onClose }) {
   const [enlargedCard, setEnlargedCard] = useState(null);
-  
-  // CHXNDLER starter card that should always be present
+  const [starterCardId, setStarterCardId] = useState(null);
+
+  // Fetch the canonical starter card ID from Supabase on mount
+  useEffect(() => {
+    fetchStarterCardId().then((id) => {
+      if (id) setStarterCardId(id);
+    });
+  }, []);
+
+  // CHXNDLER starter card — uses the real Supabase ID when available
   const starterCard = {
-    id: 'chxndler-starter',
+    id: starterCardId || 'chxndler-starter',
     src: '/logo/CHXNDLER_Logo.png',
     label: 'CHXNDLER',
     isStarter: true

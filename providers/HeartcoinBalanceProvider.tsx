@@ -637,34 +637,52 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
     };
   }, [refreshProfileState]);
 
-  // Listen for Song of Day completion event with optimistic update
+  // Listen for Song of Day completion event — DB-driven balance update.
+  // The DB trigger on user_song_of_day_claims creates a heartcoin_transactions
+  // row, which the realtime subscription (channel 1 above) picks up.
   useEffect(() => {
     const handleSotdCompleted = async (event: CustomEvent) => {
       const detail = event.detail || {};
-      const transactionId = detail.transactionId;
-      const claimId = detail.claimId;
 
-      debugBalance("dailySongQuestCompleted event received", { transactionId, claimId });
+      debugBalance("dailySongQuestCompleted event received", detail);
 
-      // Mark as completed immediately for UI responsiveness
+      if (!detail.claimSuccess) {
+        // Claim insert failed (non-duplicate error) — don't update anything.
+        debugBalance("SOTD event - claim was not successful, skipping");
+        return;
+      }
+
+      // Mark quest as completed for UI (hides "Listen" prompt, shows checkmark).
       setSongOfDayCompletedToday(true);
 
-      // If we have a transaction ID, use optimistic increment
-      // This will check for duplicates and trigger celebration
-      if (transactionId) {
-        // The claim path will call optimisticIncrement directly
-        // This event handler is a fallback for when realtime is slow
-        if (!processedTransactionIdsRef.current.has(transactionId)) {
-          debugBalance("SOTD event - triggering optimistic increment", { transactionId });
-          optimisticIncrement(1, transactionId);
-        } else {
-          debugBalance("SOTD event - transaction already processed", { transactionId });
-        }
-      } else {
-        // No transaction ID - fall back to refetch (legacy path)
-        debugBalance("SOTD event - no transactionId, falling back to refetch");
-        await refetchBalanceAfterAward();
+      if (!detail.claimId) {
+        // Duplicate claim (23505) — already claimed today.
+        // Balance was already awarded on the original claim; nothing to do.
+        debugBalance("SOTD event - duplicate claim (already claimed today), no balance update needed");
+        return;
       }
+
+      // Fresh claim: the DB trigger will insert a heartcoin_transactions row,
+      // and our realtime subscription will update the balance via prev + amount.
+      // Safety net: if realtime hasn't delivered the update within 3 seconds
+      // (e.g. connection hiccup), fetch the real balance from the DB.
+      const snapshotBalance = prevBalanceRef.current;
+      debugBalance("SOTD event - fresh claim, waiting for realtime balance update", {
+        claimId: detail.claimId,
+        currentBalance: snapshotBalance,
+      });
+
+      setTimeout(async () => {
+        if (prevBalanceRef.current === snapshotBalance) {
+          debugBalance("SOTD safety-net: realtime hasn't updated balance, fetching from DB");
+          const dbBalance = await fetchBalance();
+          if (dbBalance !== null) {
+            updateBalanceWithCelebration(dbBalance, "sotd-safety-net-refetch");
+          }
+        } else {
+          debugBalance("SOTD safety-net: realtime already updated balance, skipping refetch");
+        }
+      }, 3000);
     };
 
     window.addEventListener("dailySongQuestCompleted", handleSotdCompleted as EventListener);
@@ -672,7 +690,7 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
     return () => {
       window.removeEventListener("dailySongQuestCompleted", handleSotdCompleted as EventListener);
     };
-  }, [optimisticIncrement, refetchBalanceAfterAward]);
+  }, [fetchBalance, updateBalanceWithCelebration]);
 
   // Listen for songOfDay:refresh event
   useEffect(() => {

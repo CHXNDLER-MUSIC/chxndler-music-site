@@ -92,6 +92,7 @@ export default function Pure3DPlanets({
 }: Pure3DPlanetsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isClient, setIsClient] = useState(false);
+  const [shouldRenderPlanets, setShouldRenderPlanets] = useState(false);
   const { stopAllAudio } = useAudio();
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
@@ -154,6 +155,28 @@ export default function Pure3DPlanets({
 
   useEffect(() => {
     setIsClient(true);
+
+    // Defer heavy 3D setup until after first paint / idle time
+    const enable = () => setShouldRenderPlanets(true);
+
+    // Allow immediate enable via custom event (e.g. a START button)
+    const handleImmediateStart = () => enable();
+    window.addEventListener('planets:start', handleImmediateStart);
+
+    let idleHandle: number | undefined;
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      idleHandle = (window as any).requestIdleCallback(enable);
+    } else {
+      timeoutHandle = setTimeout(enable, 400);
+    }
+
+    return () => {
+      window.removeEventListener('planets:start', handleImmediateStart);
+      if (idleHandle !== undefined) (window as any).cancelIdleCallback(idleHandle);
+      if (timeoutHandle !== undefined) clearTimeout(timeoutHandle);
+    };
   }, []);
 
   // Sync popup ref with state for animation loop access
@@ -183,7 +206,7 @@ export default function Pure3DPlanets({
   }, [songs, propSongsByElement]);
 
   useEffect(() => {
-    if (!isClient || !containerRef.current) return;
+    if (!isClient || !shouldRenderPlanets || !containerRef.current) return;
 
     const container = containerRef.current;
     const width = container.clientWidth || 500;
@@ -1495,7 +1518,7 @@ export default function Pure3DPlanets({
     };
   // Only rebuild when songs are first loaded (length changes from 0)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isClient, quality, songs.length]);
+  }, [isClient, shouldRenderPlanets, quality, songs.length]);
 
     // Toggle glow visibility when props change without rebuilding the scene
     // Use refs to track previous values and only log when actually changed

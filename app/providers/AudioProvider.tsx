@@ -4,7 +4,6 @@ import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
 import { supabaseTrackUrl as S } from "@/lib/supabaseTrackUrl";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useDailySongProgress, recordSongEndedPlay } from "@/hooks/useDailySongProgress";
-import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
 import { getNYDateString } from "@/lib/time";
 import { usePlanetRewardsContext } from "@/components/PlanetRewardsProvider";
 
@@ -617,12 +616,18 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
               // Still mark as success for UI update purposes
               claimSuccess = true;
             } else {
+              const triggerHint =
+                code === 'P0001' ? 'Trigger raised an exception (check heartcoin award/transaction trigger)' :
+                code === '23503' ? 'Foreign-key violation inside a downstream trigger (user_heartcoin_awards or heartcoin_transactions)' :
+                code === '42501' ? 'Insufficient privilege — RLS may block the trigger-inserted row' :
+                null;
               console.error('[SOTD-COMPLETE] user_song_of_day_claims insert error', {
                 error: claimError,
-                code: (claimError as any)?.code,
+                code,
                 message: (claimError as any)?.message,
                 details: (claimError as any)?.details,
                 hint: (claimError as any)?.hint,
+                ...(triggerHint ? { triggerDiagnostic: triggerHint } : {}),
                 table: 'user_song_of_day_claims',
                 payload: claimPayload,
               });
@@ -645,50 +650,42 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             lastSotdClaimRef.current = { songId: songUuid, day: nyDayString };
             claimSuccess = true;
           } else {
+            const pgCode = claimErr?.code;
+            const triggerHint =
+              pgCode === 'P0001' ? 'Trigger raised an exception (check heartcoin award/transaction trigger)' :
+              pgCode === '23503' ? 'Foreign-key violation inside a downstream trigger (user_heartcoin_awards or heartcoin_transactions)' :
+              pgCode === '42501' ? 'Insufficient privilege — RLS may block the trigger-inserted row' :
+              null;
             console.error('[SOTD-COMPLETE] user_song_of_day_claims insert error', {
               error: claimErr,
-              code: claimErr?.code,
+              code: pgCode,
               message: claimErr?.message,
               details: claimErr?.details,
               hint: claimErr?.hint,
+              ...(triggerHint ? { triggerDiagnostic: triggerHint } : {}),
               table: 'user_song_of_day_claims',
               payload: claimPayload,
             });
           }
         }
 
-        // Dispatch events with claim details for immediate UI update
-        // Generate a unique transaction ID for deduplication (claim-based)
-        // The backend creates the actual heartcoin_transaction, but we use this
-        // for optimistic update deduplication
-        const optimisticTransactionId = `sotd-claim-${nyDayString}-${songUuid}`;
-
         try {
           // Refresh SOTD status
           window.dispatchEvent(new CustomEvent('songOfDay:refresh'));
 
-          // Dispatch completion event with transaction details
-          // This allows HeartcoinBalanceProvider to:
-          // 1. Update UI immediately without page refresh (songOfDayCompletedToday = true)
-          // 2. Optimistically increment balance (+1)
-          // 3. Trigger celebration once (using transactionId for deduplication)
-          //
-          // NOTE: We do NOT call triggerHeartCoinCelebration here directly.
-          // HeartcoinBalanceProvider handles celebration via the event to ensure
-          // proper deduplication with realtime updates.
+          // Notify HeartcoinBalanceProvider that SOTD quest was completed.
+          // Balance update is handled server-side: the DB trigger on
+          // user_song_of_day_claims inserts a heartcoin_transactions row,
+          // and the realtime subscription picks it up.
           window.dispatchEvent(new CustomEvent('dailySongQuestCompleted', {
             detail: {
               day: nyDayString,
               claimId,
               claimSuccess,
-              // Use a deterministic ID for deduplication
-              // This prevents duplicate celebrations from both event and realtime
-              transactionId: optimisticTransactionId,
             }
           }));
 
           console.log('[SOTD-COMPLETE] Dispatched completion events', {
-            transactionId: optimisticTransactionId,
             claimId,
             claimSuccess,
           });
@@ -884,7 +881,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             .upsert(dailyProgressPayload, { onConflict: 'user_id,song_id,day', ignoreDuplicates: false });
 
           if (dailyProgressError) {
-            console.log('[DailyProgress Upsert Error]', dailyProgressError);
+            console.error('[DailyProgress Upsert Error]', {
+              error: dailyProgressError,
+              code: (dailyProgressError as any)?.code,
+              message: (dailyProgressError as any)?.message,
+              details: (dailyProgressError as any)?.details,
+              hint: (dailyProgressError as any)?.hint,
+              table: 'user_song_daily_progress',
+              payload: dailyProgressPayload,
+            });
           } else {
             console.log(`🎧 Upserted daily progress row for ${session.trackId} on ${nyDay}`);
           }
@@ -1078,7 +1083,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           .upsert(dailyProgressPayload, { onConflict: 'user_id,song_id,day', ignoreDuplicates: false });
 
         if (dailyProgressError) {
-          console.log('[DailyProgress Upsert Error]', dailyProgressError);
+          console.error('[DailyProgress Upsert Error]', {
+            error: dailyProgressError,
+            code: (dailyProgressError as any)?.code,
+            message: (dailyProgressError as any)?.message,
+            details: (dailyProgressError as any)?.details,
+            hint: (dailyProgressError as any)?.hint,
+            table: 'user_song_daily_progress',
+            payload: dailyProgressPayload,
+          });
         }
       } catch (progressErr) {
         // Be quiet on errors here to avoid console spam; detailed errors are logged above

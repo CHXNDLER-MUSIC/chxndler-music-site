@@ -14,6 +14,7 @@ import TiltSpinCard from "@/components/TiltSpinCard";
 import { useUserCards } from "@/hooks/useUserCards";
 import { getCardImageUrl } from "@/lib/supabaseCardUrl";
 import { useBinderSlots, BinderSlot, TOTAL_SLOTS } from "@/hooks/useBinderSlots";
+import { isValidUuid, fetchStarterCardId } from "@/lib/cardUtils";
 
 // Guest mode defaults (when user is not authenticated)
 const GUEST_DEFAULT_SLOTS = 2;
@@ -179,6 +180,14 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
   const [hoveredLockedSlot, setHoveredLockedSlot] = useState<number | null>(null);
   const [newlyUnlockedSlots, setNewlyUnlockedSlots] = useState<Set<number>>(new Set());
   const [prevUnlockedCount, setPrevUnlockedCount] = useState<number>(displayUnlockedSlots);
+  const [starterCardId, setStarterCardId] = useState<string | null>(null);
+
+  // Fetch the canonical starter card ID on mount
+  useEffect(() => {
+    fetchStarterCardId().then((id) => {
+      if (id) setStarterCardId(id);
+    });
+  }, []);
 
   // Binder pagination constants - use fixed TOTAL_SLOTS
   const PAGE_SIZE = 6;
@@ -280,12 +289,12 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     const result: BinderSlot[] = [];
     for (let i = 0; i < TOTAL_SLOTS; i++) {
       if (i === 0 && !slotMap.has(0)) {
-        // Slot 0: Default CHXNDLER card
+        // Slot 0: Default CHXNDLER card (use fetched starter card ID when available)
         result.push({
           user_id: profile?.id || '',
           slot_index: 0,
           is_unlocked: true,
-          card_id: 'chxndler-default',
+          card_id: starterCardId || 'chxndler-default',
           card_name: 'CHXNDLER',
           artwork_url: getCardImageUrl('CHXNDLER'),
           element: 'ALL',
@@ -311,7 +320,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     }
 
     return result;
-  }, [binderSlots, ownedCards, profile?.id]);
+  }, [binderSlots, ownedCards, profile?.id, starterCardId]);
 
   // Generate visible slots for the current page from the complete slot map
   const visibleSlots: BinderSlot[] = useMemo(() => {
@@ -333,7 +342,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       if (pageIndex === 0 && slotIndex === 0) {
         return {
           user_id: '', slot_index: slotIndex, is_unlocked: true,
-          card_id: 'chxndler-preview', card_name: 'CHXNDLER',
+          card_id: starterCardId || 'chxndler-preview', card_name: 'CHXNDLER',
           artwork_url: getCardImageUrl('CHXNDLER'),
           element: 'ALL', rarity: 'Common', is_starter: true
         };
@@ -346,7 +355,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
         element: null, rarity: null, is_starter: null
       };
     });
-  }, [pageIndex]);
+  }, [pageIndex, starterCardId]);
   // Purchase flow state machine
   const [selectedPurchaseType, setSelectedPurchaseType] = useState<'digital' | 'physical' | null>(null);
   const [purchaseState, setPurchaseState] = useState<'idle' | 'insufficient' | 'digital-preview' | 'confirm-digital' | 'confirm-physical' | 'physical-form' | 'success'>('idle');
@@ -762,16 +771,26 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
 
     if (!currentCard) return;
 
-    // Extract and trim the card ID
-    const rawCardId = currentCard.id || currentCard.card_id;
-    const cardId = typeof rawCardId === 'string' ? rawCardId.trim() : null;
+    // The songCollection is hardcoded without database IDs, so we MUST
+    // look up the canonical UUID from Supabase by card_name at purchase time.
+    const { data: cardRow, error: lookupError } = await supabaseBrowser
+      .from('cards')
+      .select('id')
+      .eq('card_name', currentCard.name)
+      .maybeSingle();
 
-    // UUID v4 format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (8-4-4-4-12 hex digits)
-    const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    if (lookupError || !cardRow?.id) {
+      console.error('[BINDER PURCHASE] Card lookup failed:', { name: currentCard.name, lookupError });
+      alert('Could not find this card. Please try again.');
+      return;
+    }
 
-    if (!cardId || !UUID_REGEX.test(cardId)) {
-      console.error('[BINDER PURCHASE] Invalid card UUID:', cardId);
-      alert('Purchase failed: invalid card id');
+    // Runtime guard: ensure cardId is always a string
+    const cardId = String(cardRow.id).trim();
+
+    if (!isValidUuid(cardId)) {
+      console.error('[BINDER PURCHASE] Invalid card UUID from database:', { cardId: String(cardId), length: String(cardId).length });
+      alert('Purchase failed: invalid card ID. Please refresh and try again.');
       return;
     }
 
@@ -783,27 +802,11 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       let response;
 
       if (selectedPurchaseType === 'digital') {
-        // DEFENSIVE GUARD: Validate UUID length
-        if (cardId.length !== 36) {
-          console.error('[BINDER PURCHASE] UUID length mismatch:', { cardId, length: cardId.length });
-          alert('Purchase failed: invalid card id length');
-          return;
-        }
-
-        // DEFENSIVE GUARD: Build args object with ONLY p_card_id key
         const digitalArgs: { p_card_id: string } = { p_card_id: cardId };
-
-        // DEFENSIVE GUARD: Assert args has exactly one key named "p_card_id"
-        const argKeys = Object.keys(digitalArgs);
-        if (argKeys.length !== 1 || argKeys[0] !== 'p_card_id') {
-          console.error('[BINDER PURCHASE] Unexpected args keys:', { keys: argKeys, args: JSON.stringify(digitalArgs) });
-          alert('Purchase failed: invalid args');
-          return;
-        }
 
         console.log('[BINDER PURCHASE] sending RPC with validated args:', {
           cardId,
-          argKeys,
+          cardName: currentCard.name,
           argsJson: JSON.stringify(digitalArgs),
         });
 

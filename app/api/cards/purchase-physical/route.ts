@@ -57,6 +57,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // 1b. Validate cardId is a well-formed UUID before touching the database
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (typeof cardId !== 'string' || !UUID_REGEX.test(cardId)) {
+      console.error('[purchase-physical] Invalid UUID for cardId:', cardId);
+      return NextResponse.json(
+        { ok: false, error: 'Invalid card ID format' },
+        { status: 400 }
+      );
+    }
+
     // 2. Extract access token from Supabase auth cookies
     const cookieStore = await cookies();
     const accessToken = extractAccessToken(cookieStore);

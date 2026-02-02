@@ -109,7 +109,17 @@ function useQuestStatus() {
             const journalDone = localStorage.getItem(`quest_journal_${clientToday}`) === 'true' || hasAnsweredToday();
             const inviteDone = localStorage.getItem(`quest_invite_${clientToday}`) === 'true';
             const inviteConfirmDone = localStorage.getItem(`quest_invite_confirm_${clientToday}`) === 'true';
-            const liveshowDone = localStorage.getItem(`quest_liveshow_${clientToday}`) === 'true';
+
+            // Query v_checked_in_today for authoritative check-in status (filtered by user)
+            let liveshowDone = false;
+            try {
+              const { data: checkinViewData } = await supabaseBrowser
+                .from('v_checked_in_today')
+                .select('checked_in_today')
+                .eq('user_id', sessionData.session.user.id)
+                .single();
+              liveshowDone = !!checkinViewData?.checked_in_today;
+            } catch {}
 
             // Use functional update to preserve any existing true state (prevents race conditions)
             setQuestStatus(prev => ({
@@ -130,15 +140,14 @@ function useQuestStatus() {
         const journalDone = localStorage.getItem(`quest_journal_${clientToday}`) === 'true' || hasAnsweredToday();
         const inviteDone = localStorage.getItem(`quest_invite_${clientToday}`) === 'true';
         const inviteConfirmDone = localStorage.getItem(`quest_invite_confirm_${clientToday}`) === 'true';
-        const liveshowDone = localStorage.getItem(`quest_liveshow_${clientToday}`) === 'true';
 
-        // Use functional update to preserve any existing true state (prevents race conditions)
+        // No session — cannot query v_checked_in_today, so liveShow stays false
         setQuestStatus(prev => ({
           elementOfDay: elementDone || prev.elementOfDay,
           journalEntry: journalDone || prev.journalEntry,
           inviteFriend: inviteDone || prev.inviteFriend,
           inviteFriendConfirm: inviteConfirmDone || prev.inviteFriendConfirm,
-          liveShow: liveshowDone || prev.liveShow,
+          liveShow: false,
           songOfDay: prev.songOfDay
         }));
 
@@ -163,15 +172,14 @@ function useQuestStatus() {
         const journalDone = localStorage.getItem(`quest_journal_${clientToday}`) === 'true' || hasAnsweredToday();
         const inviteDone = localStorage.getItem(`quest_invite_${clientToday}`) === 'true';
         const inviteConfirmDone = localStorage.getItem(`quest_invite_confirm_${clientToday}`) === 'true';
-        const liveshowDone = localStorage.getItem(`quest_liveshow_${clientToday}`) === 'true';
 
-        // Use functional update to preserve any existing true state (prevents race conditions)
+        // Error fallback — no server data, liveShow stays false
         setQuestStatus(prev => ({
           elementOfDay: elementDone || prev.elementOfDay,
           journalEntry: journalDone || prev.journalEntry,
           inviteFriend: inviteDone || prev.inviteFriend,
           inviteFriendConfirm: inviteConfirmDone || prev.inviteFriendConfirm,
-          liveShow: liveshowDone || prev.liveShow,
+          liveShow: false,
           songOfDay: prev.songOfDay
         }));
 

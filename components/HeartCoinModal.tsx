@@ -2444,44 +2444,6 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         {currentItem.name.toUpperCase()}
                       </h3>
                       </div>
-
-                      {/* Tier unlock pill - shows for non-WANDERER items in both locked and unlocked states */}
-                      {titleItemMinTier !== 'WANDERER' && (() => {
-                        const isPinkTier = isBeanie && selectedVariant?.value?.toLowerCase() === 'black';
-                        const pillColor = isPinkTier ? '#ec4899' : '#F2EF1D';
-                        return (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            try { sfx.play('click', 0.5); } catch {}
-                            onClose();
-                            setTimeout(() => {
-                              window.dispatchEvent(new CustomEvent('openJourneyModal'));
-                            }, 100);
-                          }}
-                          onTouchEnd={(e) => {
-                            e.stopPropagation();
-                            try { sfx.play('click', 0.5); } catch {}
-                            onClose();
-                            setTimeout(() => {
-                              window.dispatchEvent(new CustomEvent('openJourneyModal'));
-                            }, 100);
-                          }}
-                          onMouseEnter={() => {
-                            try { sfx.play('hover', 0.3); } catch {}
-                          }}
-                          className="relative z-20 px-3 py-1 text-xs font-bold rounded-full transition-all duration-200 cursor-pointer flex items-center gap-1.5"
-                          style={{
-                            color: isPinkTier ? '#ec4899' : '#F2EF1D',
-                            backgroundColor: isPinkTier ? 'rgba(236,72,153,0.1)' : 'rgba(242,239,29,0.1)',
-                            border: `1px solid ${isPinkTier ? 'rgba(236,72,153,0.3)' : 'rgba(242,239,29,0.3)'}`,
-                          }}
-                        >
-                          <span>{isTitleItemLocked ? '🔒' : '✨'}</span>
-                          <span>{isTitleItemLocked ? `Unlock at ${titleItemMinTier}` : `Unlocked at ${titleItemMinTier}`}</span>
-                        </button>
-                        );
-                      })()}
                     </div>
                   );
                 })()}
@@ -2759,16 +2721,16 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             <div
                               className="w-full py-2 px-4 rounded-lg font-bold text-xs text-center mt-2"
                               style={{
-                                color: isBlackBeanie ? '#ec4899' : '#86efac',
-                                backgroundColor: isBlackBeanie ? 'rgba(236,72,153,0.15)' : 'rgba(22,163,74,0.3)',
-                                border: `1px solid ${isBlackBeanie ? 'rgba(236,72,153,0.5)' : 'rgba(34,197,94,0.5)'}`,
+                                color: '#ec4899',
+                                backgroundColor: 'rgba(236,72,153,0.15)',
+                                border: '1px solid rgba(236,72,153,0.5)',
                               }}
                             >
                               <span className="flex items-center justify-center gap-2">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
                                 </svg>
-                                Unlock at {itemMinTier}
+                                Unlocked at {itemMinTier}
                               </span>
                             </div>
                           )}
@@ -3340,12 +3302,19 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     <div className="flex flex-col items-center gap-2">
                       {/* Show "Unlocked for {TIER}" for tier-restricted items that user has access to */}
                       {enlargedItemMinTier !== 'WANDERER' && (
-                        <div className="py-2 px-4 rounded-lg font-bold text-xs text-center bg-green-600/30 text-green-300 border border-green-500/50">
+                        <div
+                          className="py-2 px-4 rounded-lg font-bold text-xs text-center"
+                          style={{
+                            color: '#ec4899',
+                            backgroundColor: 'rgba(236,72,153,0.15)',
+                            border: '1px solid rgba(236,72,153,0.5)',
+                          }}
+                        >
                           <span className="flex items-center justify-center gap-2">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
                             </svg>
-                            Unlocked for {enlargedItemMinTier}
+                            Unlocked at {enlargedItemMinTier}
                           </span>
                         </div>
                       )}

@@ -23,6 +23,7 @@ import { triggerHeartCoinCelebration, suppressNextHeartcoinCelebration } from '@
 import { triggerElementCardCelebration } from '@/utils/elementCardCelebration';
 import { triggerCardCelebration } from '@/utils/cardCelebration';
 import { getCardImageUrl } from '@/lib/supabaseCardUrl';
+import { isValidUuid } from '@/lib/cardUtils';
 
 // Get basePath from env (supports deployments with basePath like /cockpit)
 const basePath = (process.env.NEXT_PUBLIC_BASE_PATH || '').replace(/\/$/, '');
@@ -1804,17 +1805,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     // Do NOT use derived IDs, normalized IDs, or DOM data attributes
     const cardUuid = selectedCard?.id?.trim?.() ?? '';
 
-    // UUID v4 format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (8-4-4-4-12 hex digits)
-    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
     // HARD VALIDATION GUARD: Block invalid UUIDs before any processing
-    if (!UUID_REGEX.test(String(cardUuid))) {
+    if (!isValidUuid(cardUuid)) {
       console.error('[CARD PURCHASE] Invalid UUID detected - blocking purchase', {
-        cardUuid,
-        cardUuidLength: cardUuid?.length,
+        cardUuid: String(cardUuid),
+        cardUuidLength: String(cardUuid).length,
         selectedCard: selectedCard ? { id: selectedCard.id, card_name: selectedCard.card_name } : null,
       });
-      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Purchase failed: invalid card ID', type: 'error' } })); } catch {}
+      try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Purchase failed: invalid card ID. Please refresh and try again.', type: 'error' } })); } catch {}
       return;
     }
 
@@ -1862,35 +1860,21 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     console.log('[CARD PURCHASE] In-flight set TRUE');
 
     try {
-      // DEFENSIVE GUARD 1: Normalize and validate UUID format
+      // DEFENSIVE GUARD 1: Normalize and re-validate UUID format
       const uuid = String(cardUuid ?? '').trim();
-      const UUID_REGEX_STRICT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-      if (uuid.length !== 36) {
-        console.error('[CARD PURCHASE] UUID length mismatch:', { uuid, length: uuid.length, expected: 36 });
-        throw new Error(`Invalid UUID length: ${uuid.length} (expected 36)`);
-      }
-
-      if (!UUID_REGEX_STRICT.test(uuid)) {
-        console.error('[CARD PURCHASE] UUID regex failed:', { uuid });
-        throw new Error('Invalid UUID format');
+      if (!isValidUuid(uuid)) {
+        console.error('[CARD PURCHASE] UUID validation failed at RPC boundary:', { uuid: String(uuid), length: String(uuid).length });
+        throw new Error(`Invalid UUID: "${String(uuid)}" (length ${String(uuid).length})`);
       }
 
       // DEFENSIVE GUARD 2: Build args object with ONLY p_card_id key
       const args: { p_card_id: string } = { p_card_id: uuid };
 
-      // DEFENSIVE GUARD 3: Assert args has exactly one key named "p_card_id"
-      const argKeys = Object.keys(args);
-      if (argKeys.length !== 1 || argKeys[0] !== 'p_card_id') {
-        console.error('[CARD PURCHASE] Unexpected args keys:', { keys: argKeys, args: JSON.stringify(args) });
-        throw new Error(`Invalid args object: keys=${JSON.stringify(argKeys)}, values=${JSON.stringify(args)}`);
-      }
-
       // Debug log immediately before RPC
       console.log('[CARD PURCHASE] sending RPC with validated args:', {
         uuid,
         uuidLength: uuid.length,
-        argKeys,
         argsJson: JSON.stringify(args),
       });
 
@@ -4435,7 +4419,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     })()}
                                     {PHYSICAL_ITEMS[currentMerchIndex].title.toUpperCase()}
                                   </div>
-                                  {/* Journey tier lock label */}
+                                  {/* Journey tier lock/unlock label */}
                                   {(() => {
                                     const item = PHYSICAL_ITEMS[currentMerchIndex];
                                     const variants = getVariantOptions(item);
@@ -4445,15 +4429,41 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       selectedVariantValue,
                                       userJourney: profile?.journey
                                     });
-                                    if (!lockLabel) return null;
-                                    return (
-                                      <div
-                                        className="text-xs text-yellow-400 font-medium mb-1 px-2 py-0.5 bg-black/40 rounded-full"
-                                        style={{ textShadow: '0 0 4px rgba(250,204,21,0.6)' }}
-                                      >
-                                        🔒 {lockLabel}
-                                      </div>
-                                    );
+                                    if (lockLabel) {
+                                      return (
+                                        <div
+                                          className="text-xs text-yellow-400 font-medium mb-1 px-2 py-0.5 bg-black/40 rounded-full"
+                                          style={{ textShadow: '0 0 4px rgba(250,204,21,0.6)' }}
+                                        >
+                                          🔒 {lockLabel}
+                                        </div>
+                                      );
+                                    }
+                                    // Show "Unlocked at TIER" for items that require a tier above WANDERER
+                                    const userJourneyNorm = (profile?.journey || 'WANDERER').toUpperCase();
+                                    let requiredJourney: string | null = null;
+                                    if (selectedVariantValue) {
+                                      const variantData = getFullVariantData(item, selectedVariantValue);
+                                      if (variantData?.unlock_journey) requiredJourney = variantData.unlock_journey;
+                                    }
+                                    if (!requiredJourney && item.min_tier && item.min_tier.toUpperCase() !== 'WANDERER') {
+                                      requiredJourney = item.min_tier.toUpperCase();
+                                    }
+                                    if (!requiredJourney) {
+                                      const itemUnlock = getItemLevelUnlock(item);
+                                      if (itemUnlock?.unlock_journey) requiredJourney = itemUnlock.unlock_journey;
+                                    }
+                                    if (requiredJourney && requiredJourney.toUpperCase() !== 'WANDERER') {
+                                      return (
+                                        <div
+                                          className="text-xs font-bold mb-1"
+                                          style={{ color: '#ec4899', textShadow: '0 0 4px rgba(236,72,153,0.6)' }}
+                                        >
+                                          Unlocked at {requiredJourney.toUpperCase()}
+                                        </div>
+                                      );
+                                    }
+                                    return null;
                                   })()}
                                   <div className="relative flex items-center justify-center">
                                     <div

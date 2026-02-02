@@ -265,8 +265,15 @@ export function suppressBadgeCelebrations(durationMs: number = 10000): void {
       // Notify all listeners that suppression has ended
       notifySuppressionEnd();
 
-      // Drain any badges that were queued during suppression
-      processQueue();
+      // Clear any badges that were queued during suppression instead of auto-playing them.
+      // Auto-draining caused unexpected delayed celebrations (e.g., badge popping up
+      // 10 seconds after a journal entry).
+      if (badgeCelebrationQueue.length > 0) {
+        debugQueue("Clearing queued badges on suppression end (not auto-playing)", {
+          dropped: badgeCelebrationQueue.length
+        });
+        badgeCelebrationQueue.length = 0;
+      }
     }, durationMs);
 
     debugQueue("Badge celebrations suppressed", { durationMs, endTime: suppressionEndTime });

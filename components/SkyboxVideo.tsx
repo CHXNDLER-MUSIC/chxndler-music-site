@@ -454,55 +454,17 @@ export default function SkyboxVideo({
             </div>
           </div>
         ) : (
-          <>
-            <video
-              ref={lsRef}
-              autoPlay={false}
-              loop={showLightspeed && (holdLightspeed && !readyToReveal)}
-              muted
-              playsInline
-              preload="auto"
-              controls={false}
-              controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
-              disablePictureInPicture
-              // @ts-ignore
-              disableRemotePlayback
-              tabIndex={-1}
-              onEnded={() => { setShowLightspeed(false); if (!flyEndCalledRef.current && onFlyEndRef.current) { try { onFlyEndRef.current(); } catch {} } flyEndCalledRef.current = true; }}
-              onError={() => {
-                // Fallback when lightspeed video is missing - simulate warp with CSS
-                const duration = minDurationMs || 1200;
-                setTimeout(() => {
-                  setShowLightspeed(false);
-                  if (!flyEndCalledRef.current && onFlyEndRef.current) { try { onFlyEndRef.current(); } catch {} }
-                  flyEndCalledRef.current = true;
-                }, duration);
-              }}
-              className="absolute inset-0 h-full w-full object-cover"
-              style={{ 
-                filter: `brightness(${Math.max(0.9, brightness)})`, 
-                mixBlendMode: 'screen' as any,
-                opacity: showLightspeed ? 1 : 0,
-                transition: 'opacity 220ms ease',
-                pointerEvents: 'none'
-              }}
-              onLoadedData={() => setHasStartedLoading(true)}
-            >
-              <source src="/skies/lightspeed.mp4" type="video/mp4" />
-            </video>
-            
-            {/* CSS-based fallback warp effect when video is missing */}
-            <div 
-              className="absolute inset-0 h-full w-full"
-              style={{
-                opacity: showLightspeed ? 0.8 : 0,
-                transition: 'opacity 220ms ease',
-                pointerEvents: 'none',
-                background: 'radial-gradient(circle at center, rgba(252, 84, 175, 0.3) 0%, rgba(252, 84, 175, 0.1) 50%, transparent 100%)',
-                animation: showLightspeed ? 'pulse 0.6s ease-in-out infinite alternate' : 'none'
-              }}
-            />
-          </>
+          /* CSS-based warp effect — no local MP4 exists, avoid 404 for /skies/lightspeed.mp4 */
+          <div
+            className="absolute inset-0 h-full w-full"
+            style={{
+              opacity: showLightspeed ? 0.8 : 0,
+              transition: 'opacity 220ms ease',
+              pointerEvents: 'none',
+              background: 'radial-gradient(circle at center, rgba(252, 84, 175, 0.3) 0%, rgba(252, 84, 175, 0.1) 50%, transparent 100%)',
+              animation: showLightspeed ? 'pulse 0.6s ease-in-out infinite alternate' : 'none'
+            }}
+          />
         )}
 
       </div>

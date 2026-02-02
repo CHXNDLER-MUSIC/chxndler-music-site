@@ -1,5 +1,4 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { triggerHeartCoinCelebration } from './heartcoinCelebration';
 
 /**
  * Award HeartCoins to a user by creating a transaction record.
@@ -61,10 +60,9 @@ export async function logHeartcoinTransaction(
     throw new Error('Failed to record HeartCoin transaction: No data returned');
   }
 
-  // Celebration on client for positive amounts
-  if (typeof window !== 'undefined' && input.amount > 0) {
-    try { triggerHeartCoinCelebration(input.amount); } catch {}
-  }
+  // NOTE: Celebration is handled by HeartcoinBalanceProvider's realtime subscription
+  // on heartcoin_transactions INSERT. Do NOT trigger here - it consumes the
+  // suppression flag before the realtime handler fires, causing double celebrations.
 
   return { id: data.id };
 }

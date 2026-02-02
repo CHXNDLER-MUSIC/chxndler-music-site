@@ -392,18 +392,23 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
         });
       }
 
-      // Subscribe to suppression end event to flush pending badges
-      unsubscribeSuppressionRef.current = onSuppressionEnd(async () => {
-        debugCelebration("Suppression ended, flushing pending badges", {
+      // Subscribe to suppression end event - mark pending badges as seen without celebrating.
+      // Badges earned during suppression (e.g., journal flow, tour) should not auto-celebrate
+      // when suppression ends, as this causes unexpected delayed celebrations.
+      unsubscribeSuppressionRef.current = onSuppressionEnd(() => {
+        debugCelebration("Suppression ended, marking pending badges as seen (no celebration)", {
           pendingCount: pendingBadgesRef.current.size
         });
 
-        // Process all pending badges
+        // Mark all pending badges as seen so they won't re-trigger on refresh
         const pendingBadges = Array.from(pendingBadgesRef.current.values());
         pendingBadgesRef.current.clear();
 
         for (const pending of pendingBadges) {
-          await processBadgeCelebration(pending.badgeId, pending.earnedAt, pending.rowId);
+          markBadgeAsSeen(pending.badgeId, pending.earnedAt, seenBadgesRef.current);
+          debugCelebration("BADGE_MARKED_SEEN_ON_SUPPRESSION_END", {
+            badgeId: pending.badgeId
+          });
         }
       });
 

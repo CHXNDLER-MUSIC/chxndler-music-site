@@ -428,7 +428,7 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
                   alt={enlargedCard.card.card_name}
                   className="rounded-2xl pointer-events-none"
                   style={{
-                    maxHeight: '90%',
+                    maxHeight: '70vh',
                     maxWidth: '80%',
                     objectFit: 'contain',
                     backfaceVisibility: 'hidden',
@@ -450,7 +450,7 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
                   alt="Card Back"
                   className="absolute rounded-2xl pointer-events-none"
                   style={{
-                    maxHeight: '90%',
+                    maxHeight: '70vh',
                     maxWidth: '80%',
                     objectFit: 'contain',
                     top: '50%',
