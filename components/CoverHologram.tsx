@@ -771,6 +771,8 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                     }}
                     onError={(e)=>{
                       const target = e.currentTarget as HTMLImageElement;
+                      const objectKey = title || 'unknown';
+                      console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: target.src });
                       const fbFilename = src.includes('/covers/') ? src.split('/').pop() : null;
                       if (fbFilename) {
                         target.onerror = () => { target.src = CARD_URLS['back'] || getCardImageUrl('BACK'); };

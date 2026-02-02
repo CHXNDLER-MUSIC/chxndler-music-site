@@ -683,7 +683,7 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
                   >
                     {/* Front of card */}
                     <img
-                      src={getCardImageUrl(enlargedCard.card_name || 'CHXNDLER')}
+                      src={getCardImageUrl(enlargedCard.image_object_key || enlargedCard.card_name || 'CHXNDLER')}
                       alt={enlargedCard.card_name}
                       className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
                       style={{
@@ -693,6 +693,14 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
                         transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
                       }}
                       draggable={false}
+                      onError={(e) => {
+                        const objectKey = enlargedCard.image_object_key || enlargedCard.card_name || 'CHXNDLER';
+                        console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
+                        const fallback = getCardImageUrl('CHXNDLER');
+                        if (e.currentTarget.src !== fallback) {
+                          e.currentTarget.src = fallback;
+                        }
+                      }}
                     />
                     {/* Back of card */}
                     <img

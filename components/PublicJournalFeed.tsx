@@ -424,7 +424,7 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
               >
                 {/* Front of card - rotates with spinRotation */}
                 <img
-                  src={getCardImageUrl(enlargedCard.card.card_name || 'DEFAULT-CARD')}
+                  src={getCardImageUrl((enlargedCard.card as any).image_object_key || enlargedCard.card.card_name || 'CHXNDLER')}
                   alt={enlargedCard.card.card_name}
                   className="rounded-2xl pointer-events-none"
                   style={{
@@ -440,7 +440,12 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
                   }}
                   draggable={false}
                   onError={(e) => {
-                    e.currentTarget.src = getCardImageUrl('DEFAULT-CARD');
+                    const objectKey = (enlargedCard.card as any).image_object_key || enlargedCard.card.card_name || 'CHXNDLER';
+                    console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
+                    const fallback = getCardImageUrl('CHXNDLER');
+                    if (e.currentTarget.src !== fallback) {
+                      e.currentTarget.src = fallback;
+                    }
                   }}
                 />
 

@@ -1311,6 +1311,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     }}
                     draggable={false}
                     onError={(e) => {
+                      const objectKey = selectedCard?.name || 'CHXNDLER';
+                      console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
                       const fallback = getCardImageUrl('CHXNDLER');
                       if (e.currentTarget.src !== fallback) {
                         e.currentTarget.src = fallback;
@@ -1465,6 +1467,8 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                                 className="w-full h-full object-contain transition-all duration-300"
                                 draggable={false}
                                 onError={(e) => {
+                                  const objectKey = slot.card_name;
+                                  console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
                                   const fallback = getCardImageUrl('CHXNDLER');
                                   if (e.currentTarget.src !== fallback) {
                                     e.currentTarget.src = fallback;

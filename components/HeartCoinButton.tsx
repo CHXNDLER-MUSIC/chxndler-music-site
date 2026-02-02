@@ -5677,7 +5677,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                   >
                     {/* Front of card - rotates with cardRotation */}
                     <img
-                      src={getCardImageUrl(enlargedCard.card_name)}
+                      src={getCardImageUrl((enlargedCard as any).image_object_key || enlargedCard.card_name)}
                       alt={enlargedCard.card_name}
                       className="absolute inset-0 w-full h-full rounded-3xl shadow-2xl object-contain pointer-events-none"
                       style={{
@@ -5686,6 +5686,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
                       }}
                       draggable={false}
+                      onError={(e) => {
+                        const objectKey = (enlargedCard as any).image_object_key || enlargedCard.card_name;
+                        console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
+                        const fallback = getCardImageUrl('CHXNDLER');
+                        if (e.currentTarget.src !== fallback) {
+                          e.currentTarget.src = fallback;
+                        }
+                      }}
                     />
                     {/* Back of card - offset by 180° */}
                     <img

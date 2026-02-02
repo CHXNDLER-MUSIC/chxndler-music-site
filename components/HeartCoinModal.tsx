@@ -2913,10 +2913,18 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 >
                   {selectedPurchaseType === null ? (
                     <img
-                      src={getCardImageUrl(displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name)}
+                      src={getCardImageUrl((displayCards[displayCardIndex] as any)?.image_object_key || displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name)}
                       alt={displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name || 'Card'}
                       className="w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain hover:scale-105 transition-transform duration-300"
                       style={{ filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))' }}
+                      onError={(e) => {
+                        const objectKey = displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name;
+                        console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
+                        const fallback = getCardImageUrl('CHXNDLER');
+                        if (e.currentTarget.src !== fallback) {
+                          e.currentTarget.src = fallback;
+                        }
+                      }}
                     />
                   ) : (
                     <div className="w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl flex flex-col items-center justify-center gap-4 bg-black/60">
@@ -3534,7 +3542,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     >
                       {/* Front of card - rotates with cardRotation */}
                       <img
-                        src={getCardImageUrl(displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name)}
+                        src={getCardImageUrl((displayCards[displayCardIndex] as any)?.image_object_key || displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name)}
                         alt={displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name || 'Card'}
                         className="absolute inset-0 w-full h-full rounded-lg border-4 border-yellow-500/80 shadow-2xl object-contain pointer-events-none"
                         style={{
@@ -3544,6 +3552,14 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                           transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
                         }}
                         draggable={false}
+                        onError={(e) => {
+                          const objectKey = displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name;
+                          console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
+                          const fallback = getCardImageUrl('CHXNDLER');
+                          if (e.currentTarget.src !== fallback) {
+                            e.currentTarget.src = fallback;
+                          }
+                        }}
                       />
                       {/* Back of card - offset by 180° */}
                       <img

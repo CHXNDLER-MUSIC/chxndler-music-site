@@ -941,6 +941,14 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                     border: '2px solid rgba(255,255,255,0.1)',
                   }}
                   draggable={false}
+                  onError={(e) => {
+                    const objectKey = selectedCard?.name || 'CHXNDLER';
+                    console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
+                    const fallback = getCardImageUrl('CHXNDLER');
+                    if (e.currentTarget.src !== fallback) {
+                      e.currentTarget.src = fallback;
+                    }
+                  }}
                 />
 
                 {/* Back of card - offset by 180° */}
