@@ -577,7 +577,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     setDailyQuests(prev => ({ ...prev, journalEntry: journalCompleted }));
   }, [journalCompleted]);
 
-  // Initialize checkedIn state from v_checked_in_today view (filtered by current user)
+  // Initialize checkedIn state from secret_phrase_redemptions (source of truth)
   // Re-runs on auth change (profile.id changes) so status cannot leak between users
   useEffect(() => {
     const checkLiveShowStatus = async () => {
@@ -586,12 +586,15 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         return;
       }
       try {
-        const { data } = await supabaseBrowser
-          .from('v_checked_in_today')
-          .select('checked_in_today')
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const { data: redemptionData, error: redemptionErr } = await supabaseBrowser
+          .from('secret_phrase_redemptions')
+          .select('id')
           .eq('user_id', profile.id)
-          .single();
-        const checkedIn = !!data?.checked_in_today;
+          .gte('redeemed_at', todayStart.toISOString())
+          .limit(1);
+        const checkedIn = !redemptionErr && (redemptionData?.length ?? 0) > 0;
         setDailyQuests(prev => ({ ...prev, checkedIn }));
       } catch {
         setDailyQuests(prev => ({ ...prev, checkedIn: false }));
@@ -4472,9 +4475,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       const tierOverrides: Record<string, string> = {
                                         'bracelet': 'DREAMER',
                                         'house-party-poster': 'DREAMER',
+                                        'house party poster': 'DREAMER',
+                                        'socks': 'DREAMER',
+                                        'hat': 'DREAMER',
                                       };
                                       const slug = (item.slug || item.id || '').toLowerCase();
+                                      const title = (item.title || '').toLowerCase();
                                       if (tierOverrides[slug]) requiredJourney = tierOverrides[slug];
+                                      else if (tierOverrides[title]) requiredJourney = tierOverrides[title];
                                     }
                                     if (requiredJourney && requiredJourney.toUpperCase() !== 'WANDERER') {
                                       return (

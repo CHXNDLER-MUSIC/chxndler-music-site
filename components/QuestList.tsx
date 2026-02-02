@@ -10,6 +10,7 @@ import { logHeartcoinTransaction } from "@/utils/heartcoins";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useProfile } from "@/contexts/ProfileContext";
 import { triggerHeartCoinCelebration, suppressNextHeartcoinCelebration } from "@/utils/heartcoinCelebration";
+import { suppressBadgeCelebrations } from "@/utils/celebrationQueue";
 import { getAllQuestsForUser } from "@/lib/bonusQuests";
 import { getNYDateString } from "@/lib/time";
 import LoginModal from "@/components/LoginModal";
@@ -110,15 +111,18 @@ function useQuestStatus() {
             const inviteDone = localStorage.getItem(`quest_invite_${clientToday}`) === 'true';
             const inviteConfirmDone = localStorage.getItem(`quest_invite_confirm_${clientToday}`) === 'true';
 
-            // Query v_checked_in_today for authoritative check-in status (filtered by user)
+            // Check secret_phrase_redemptions for today's check-in (source of truth)
             let liveshowDone = false;
             try {
-              const { data: checkinViewData } = await supabaseBrowser
-                .from('v_checked_in_today')
-                .select('checked_in_today')
+              const todayStart = new Date();
+              todayStart.setHours(0, 0, 0, 0);
+              const { data: redemptionData, error: redemptionErr } = await supabaseBrowser
+                .from('secret_phrase_redemptions')
+                .select('id')
                 .eq('user_id', sessionData.session.user.id)
-                .single();
-              liveshowDone = !!checkinViewData?.checked_in_today;
+                .gte('redeemed_at', todayStart.toISOString())
+                .limit(1);
+              liveshowDone = !redemptionErr && (redemptionData?.length ?? 0) > 0;
             } catch {}
 
             // Use functional update to preserve any existing true state (prevents race conditions)
@@ -351,17 +355,20 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         }
       }
 
-      // Sync Live Show quest status using v_checked_in_today view (filtered by user)
+      // Sync Live Show quest status by checking secret_phrase_redemptions for today
       const liveShowQuest = bonus.find(q => q.quest_key === 'ATTEND_LIVESTREAM');
       let liveShowIsComplete = liveShowQuest?.completed_today > 0;
       if (userId) {
         try {
-          const { data: checkinViewData } = await supabaseBrowser
-            .from('v_checked_in_today')
-            .select('checked_in_today')
+          const todayStart = new Date();
+          todayStart.setHours(0, 0, 0, 0);
+          const { data: redemptionData, error: redemptionErr } = await supabaseBrowser
+            .from('secret_phrase_redemptions')
+            .select('id')
             .eq('user_id', userId)
-            .single();
-          liveShowIsComplete = liveShowIsComplete || !!checkinViewData?.checked_in_today;
+            .gte('redeemed_at', todayStart.toISOString())
+            .limit(1);
+          liveShowIsComplete = liveShowIsComplete || (!redemptionErr && (redemptionData?.length ?? 0) > 0);
         } catch {}
       }
 
@@ -795,6 +802,9 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
           triggerHeartCoinCelebration(data.rewardHeartCoins);
           // Suppress the duplicate celebration from realtime subscription
           suppressNextHeartcoinCelebration();
+          // Suppress badge celebrations during profile refresh to prevent
+          // auto-awarded badges from showing unexpected celebrations
+          suppressBadgeCelebrations(10000);
           // Refresh profile to update balance
           await refreshProfile();
         }
