@@ -11,6 +11,22 @@ import { usePlanetRewardsContext } from "@/components/PlanetRewardsProvider";
 const SOD_COMPLETE_RATIO = 0.99;
 const SOD_COMPLETE_REMAINING_SECONDS = 1.0;
 
+// Writable columns for user_song_daily_progress.
+// award_date_ny is GENERATED ALWAYS – never include it (or any future generated col).
+const USDP_WRITABLE_COLS = [
+  'user_id', 'song_id', 'day', 'completed', 'completed_at',
+  'completion_percent', 'play_number', 'started_at', 'play_count',
+] as const;
+
+/** Strip any non-writable keys (e.g. generated columns) from a daily-progress payload. */
+function pickWritableUsdp(obj: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const k of USDP_WRITABLE_COLS) {
+    if (k in obj) out[k] = obj[k];
+  }
+  return out;
+}
+
 function isSongComplete(duration: number, currentTime: number) {
   if (!duration || duration <= 0) return false;
   const ratio = currentTime / duration;
@@ -450,14 +466,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       }
 
       const now = new Date().toISOString();
-      const payload = {
+      const payload = pickWritableUsdp({
         user_id: user.id,
         song_id: songUuid,
         day,
         completed: true,
         completed_at: now,
         completion_percent: 1,
-      } as const;
+      });
 
       console.log('[MARK COMPLETE] Upserting user_song_daily_progress', payload);
       const { error } = await supabaseBrowser
@@ -552,14 +568,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       });
 
       // 1) Upsert to user_song_daily_progress with completed=true and completed_at
-      const progressPayload = {
+      const progressPayload = pickWritableUsdp({
         user_id: user.id,
         song_id: songUuid,
         day: nyDayString,
         completed: true,
         completion_percent: 1,
         completed_at: nowIso,
-      } as const;
+      });
 
       console.log('[SOTD-COMPLETE] Upserting user_song_daily_progress payload', progressPayload);
       const { data: progressData, error: progressError } = await supabaseBrowser
@@ -869,11 +885,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             return;
           }
 
-          const dailyProgressPayload: any = {
+          const dailyProgressPayload = pickWritableUsdp({
             user_id: user.id,
             song_id: songUuid,
             day: nyDay, // explicit NY date; DB has default but we pass for clarity
-          };
+          });
 
           console.log('[DailyProgress Payload]', dailyProgressPayload);
           const { error: dailyProgressError } = await supabaseBrowser
@@ -1070,12 +1086,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         // Guard: ensure both IDs exist
         if (!user?.id || !songUuid) return;
         // Progress payload with incremental completion_percent
-        const dailyProgressPayload: any = {
+        const dailyProgressPayload = pickWritableUsdp({
           user_id: user.id,
           song_id: songUuid,
           day: nyDay,
           completion_percent: pct,
-        };
+        });
 
         console.log('[DailyProgress Payload]', dailyProgressPayload);
         const { error: dailyProgressError } = await supabaseBrowser

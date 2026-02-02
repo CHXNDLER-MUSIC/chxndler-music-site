@@ -2721,9 +2721,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             <div
                               className="w-full py-2 px-4 rounded-lg font-bold text-xs text-center mt-2"
                               style={{
-                                color: '#ec4899',
-                                backgroundColor: 'rgba(236,72,153,0.15)',
-                                border: '1px solid rgba(236,72,153,0.5)',
+                                color: itemMinTier === 'LOVER' ? '#ec4899' : '#F2EF1D',
+                                backgroundColor: itemMinTier === 'LOVER' ? 'rgba(236,72,153,0.15)' : 'rgba(242,239,29,0.1)',
+                                border: `1px solid ${itemMinTier === 'LOVER' ? 'rgba(236,72,153,0.5)' : 'rgba(242,239,29,0.3)'}`,
                               }}
                             >
                               <span className="flex items-center justify-center gap-2">
@@ -3305,9 +3305,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         <div
                           className="py-2 px-4 rounded-lg font-bold text-xs text-center"
                           style={{
-                            color: '#ec4899',
-                            backgroundColor: 'rgba(236,72,153,0.15)',
-                            border: '1px solid rgba(236,72,153,0.5)',
+                            color: enlargedItemMinTier === 'LOVER' ? '#ec4899' : '#F2EF1D',
+                            backgroundColor: enlargedItemMinTier === 'LOVER' ? 'rgba(236,72,153,0.15)' : 'rgba(242,239,29,0.1)',
+                            border: `1px solid ${enlargedItemMinTier === 'LOVER' ? 'rgba(236,72,153,0.5)' : 'rgba(242,239,29,0.3)'}`,
                           }}
                         >
                           <span className="flex items-center justify-center gap-2">

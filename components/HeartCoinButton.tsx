@@ -577,14 +577,28 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     setDailyQuests(prev => ({ ...prev, journalEntry: journalCompleted }));
   }, [journalCompleted]);
 
-  // Initialize checkedIn state from localStorage on mount
+  // Initialize checkedIn state from v_checked_in_today view (filtered by current user)
+  // Re-runs on auth change (profile.id changes) so status cannot leak between users
   useEffect(() => {
-    const today = new Date().toDateString();
-    const isCheckedIn = localStorage.getItem(`quest_liveshow_${today}`) === 'true';
-    if (isCheckedIn) {
-      setDailyQuests(prev => ({ ...prev, checkedIn: true }));
-    }
-  }, []);
+    const checkLiveShowStatus = async () => {
+      if (!profile?.id) {
+        setDailyQuests(prev => ({ ...prev, checkedIn: false }));
+        return;
+      }
+      try {
+        const { data } = await supabaseBrowser
+          .from('v_checked_in_today')
+          .select('checked_in_today')
+          .eq('user_id', profile.id)
+          .single();
+        const checkedIn = !!data?.checked_in_today;
+        setDailyQuests(prev => ({ ...prev, checkedIn }));
+      } catch {
+        setDailyQuests(prev => ({ ...prev, checkedIn: false }));
+      }
+    };
+    checkLiveShowStatus();
+  }, [profile?.id]);
 
   // Listen for journalCompleted event to immediately update local state
   useEffect(() => {
@@ -1278,12 +1292,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     if (quest.quest_key === 'JOURNAL_ENTRY_OF_DAY') {
       return dailyQuests.journalEntry || quest.completed_today > 0 || completedQuests.has(quest.id);
     }
-    // For ATTEND_LIVESTREAM quest, check local state, localStorage, and phraseStatus (from secret_phrase_redemptions)
+    // For ATTEND_LIVESTREAM quest, check DB-backed state and phraseStatus (from secret_phrase_redemptions)
     // Note: Do NOT check quest.completed_today here - ATTEND_LIVESTREAM uses secret_phrase_redemptions table, not user_bonus_quest_completions
+    // dailyQuests.checkedIn is loaded from v_checked_in_today filtered by user_id
     if (quest.quest_key === 'ATTEND_LIVESTREAM') {
-      const today = new Date().toDateString();
-      const localStorageCheckedIn = typeof window !== 'undefined' && localStorage.getItem(`quest_liveshow_${today}`) === 'true';
-      return dailyQuests.checkedIn || localStorageCheckedIn || phraseStatus === 'already' || completedQuests.has(quest.id);
+      return dailyQuests.checkedIn || phraseStatus === 'already' || completedQuests.has(quest.id);
     }
     // For other daily quests, check completed_today
     if (quest.completed_today !== undefined) {
@@ -4400,6 +4413,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                                 key={opt.value}
                                                 onClick={(e) => {
                                                   e.stopPropagation();
+                                                  try { sfx.play('click', 0.5); } catch {}
                                                   setSelectedVariants(prev => ({
                                                     ...prev,
                                                     [currentMerchIndex]: { value: opt.value, image: opt.image }
@@ -4453,11 +4467,20 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       const itemUnlock = getItemLevelUnlock(item);
                                       if (itemUnlock?.unlock_journey) requiredJourney = itemUnlock.unlock_journey;
                                     }
+                                    // Frontend tier overrides for items whose DB min_tier is wanderer
+                                    if (!requiredJourney || requiredJourney.toUpperCase() === 'WANDERER') {
+                                      const tierOverrides: Record<string, string> = {
+                                        'bracelet': 'DREAMER',
+                                        'house-party-poster': 'DREAMER',
+                                      };
+                                      const slug = (item.slug || item.id || '').toLowerCase();
+                                      if (tierOverrides[slug]) requiredJourney = tierOverrides[slug];
+                                    }
                                     if (requiredJourney && requiredJourney.toUpperCase() !== 'WANDERER') {
                                       return (
                                         <div
                                           className="text-xs font-bold mb-1"
-                                          style={{ color: '#ec4899', textShadow: '0 0 4px rgba(236,72,153,0.6)' }}
+                                          style={{ color: requiredJourney.toUpperCase() === 'LOVER' ? '#ec4899' : '#F2EF1D', textShadow: requiredJourney.toUpperCase() === 'LOVER' ? '0 0 4px rgba(236,72,153,0.6)' : '0 0 4px rgba(242,239,29,0.6)' }}
                                         >
                                           Unlocked at {requiredJourney.toUpperCase()}
                                         </div>

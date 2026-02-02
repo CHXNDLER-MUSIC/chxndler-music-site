@@ -351,19 +351,20 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         }
       }
 
-      // Sync Live Show quest status
-      // Check both server state AND localStorage (secret phrases are tracked separately)
-      // IMPORTANT: Always preserve liveShow if already true in state, OR if localStorage/server says true
+      // Sync Live Show quest status using v_checked_in_today view (filtered by user)
       const liveShowQuest = bonus.find(q => q.quest_key === 'ATTEND_LIVESTREAM');
-      const today = new Date().toDateString();
-      const localLiveShowDone = localStorage.getItem(`quest_liveshow_${today}`) === 'true';
-      const serverLiveShowDone = liveShowQuest?.completed_today > 0;
-      const liveShowIsComplete = serverLiveShowDone || localLiveShowDone;
-
-      if (liveShowIsComplete) {
-        localStorage.setItem(`quest_liveshow_${today}`, 'true');
+      let liveShowIsComplete = liveShowQuest?.completed_today > 0;
+      if (userId) {
+        try {
+          const { data: checkinViewData } = await supabaseBrowser
+            .from('v_checked_in_today')
+            .select('checked_in_today')
+            .eq('user_id', userId)
+            .single();
+          liveShowIsComplete = liveShowIsComplete || !!checkinViewData?.checked_in_today;
+        } catch {}
       }
-      // Always set the state to preserve checked-in status until next calendar day
+
       setQuestStatus(prev => ({
         ...prev,
         liveShow: liveShowIsComplete || prev.liveShow
@@ -404,6 +405,9 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
       async (event, session) => {
         const isAuth = !!session?.user;
         setIsAuthenticated(isAuth);
+
+        // Reset liveShow on auth change to prevent check-in status leaking between users
+        setQuestStatus(prev => ({ ...prev, liveShow: false }));
 
         // Close login modal if user successfully logs in
         if (isAuth && showLoginModal) {
