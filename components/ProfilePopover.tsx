@@ -63,6 +63,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
   const [allBadges, setAllBadges] = useState<Badge[]>([]);
   const [allMerch, setAllMerch] = useState<MerchItem[]>([]);
   const [userMerchDates, setUserMerchDates] = useState<Record<string, string>>({});
+  const [unlockedMerchColors, setUnlockedMerchColors] = useState<Record<string, string[]>>({});
 
 
   const [loading, setLoading] = useState(false);
@@ -520,13 +521,13 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
     }
   };
 
-  // Fetch user's merch order dates
+  // Fetch user's merch order dates and per-color unlock tracking
   const fetchUserMerchDates = async () => {
     if (!user) return;
     try {
       const { data: orders, error } = await supabaseBrowser
         .from('orders')
-        .select('merch_item_id, item_id, created_at')
+        .select('merch_item_id, item_id, created_at, selected_color')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -537,13 +538,23 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
 
       // Build a map of merch item ID to collection date
       const dateMap: Record<string, string> = {};
+      // Build a map of merch item ID to array of unlocked color values
+      const colorMap: Record<string, string[]> = {};
       orders?.forEach(order => {
         const merchId = order.merch_item_id || order.item_id;
         if (merchId && !dateMap[merchId]) {
           dateMap[merchId] = order.created_at;
         }
+        // Track per-color unlocks
+        if (merchId && order.selected_color) {
+          if (!colorMap[merchId]) colorMap[merchId] = [];
+          if (!colorMap[merchId].includes(order.selected_color)) {
+            colorMap[merchId].push(order.selected_color);
+          }
+        }
       });
       setUserMerchDates(dateMap);
+      setUnlockedMerchColors(colorMap);
     } catch (error) {
       console.log('Error fetching user merch dates:', error);
     }
@@ -2128,7 +2139,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                         </span>
                       )}
                     </div>
-                    {/* Color variant dots - top right */}
+                    {/* Color variant dots - top right (per-color unlock tracking) */}
                     {(() => {
                       // Fallback color variants for items without DB variant_options
                       const FALLBACK_COLORS: Record<string, Array<{ value: string; label: string; images: { main: string } }>> = {
@@ -2136,6 +2147,11 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                           { value: 'pink', label: 'Pink', images: { main: '/store/bracelet-pink.webp' } },
                           { value: 'blue', label: 'Blue', images: { main: '/store/bracelet-blue.webp' } },
                           { value: 'yellow', label: 'Yellow', images: { main: '/store/bracelet-yellow.webp' } },
+                        ],
+                        beanie: [
+                          { value: 'black', label: 'Black', images: { main: '/store/beanie-front-black.webp' } },
+                          { value: 'blue', label: 'Blue', images: { main: '/store/beanie-front-blue.webp' } },
+                          { value: 'pink', label: 'Pink', images: { main: '/store/beanie-front-pink.webp' } },
                         ],
                       };
 
@@ -2162,29 +2178,42 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                         black: '#1a1a1a', blue: '#3b82f6', pink: '#ec4899',
                         yellow: '#fbbf24', red: '#ef4444', white: '#ffffff'
                       };
-                      const currentColor = selectedMerchColor || colors[0]?.value;
+
+                      // Per-color unlock: check which colors user has purchased
+                      const itemUnlockedColors = unlockedMerchColors[selectedMerchInline.id] || [];
+                      // Default to first unlocked color (not first in list)
+                      const firstUnlocked = colors.find((c: any) => itemUnlockedColors.includes(c.value))?.value;
+                      const currentColor = selectedMerchColor || firstUnlocked || colors[0]?.value;
+
                       return (
                         <div className="flex items-center gap-1.5">
                           {colors.map((c: any) => {
                             const dotColor = dotColorMap[c.value?.toLowerCase()] || '#888';
                             const isSelected = currentColor === c.value;
+                            const isColorUnlocked = itemUnlockedColors.includes(c.value);
                             return (
                               <button
                                 key={c.value}
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  if (!isColorUnlocked) return; // Locked colors not clickable
                                   try { sfx.play('click', 0.5); } catch {}
                                   setSelectedMerchColor(c.value);
                                 }}
-                                className={`w-5 h-5 rounded-full border-2 hover:scale-125 transition-all ${
-                                  isSelected ? 'border-[#F2EF1D] ring-2 ring-[#F2EF1D]/50 scale-110' : 'border-white/40'
+                                className={`w-5 h-5 rounded-full border-2 transition-all ${
+                                  !isColorUnlocked
+                                    ? 'border-white/15 cursor-not-allowed'
+                                    : isSelected
+                                      ? 'border-[#F2EF1D] ring-2 ring-[#F2EF1D]/50 scale-110 hover:scale-125'
+                                      : 'border-white/40 hover:scale-125'
                                 }`}
                                 style={{
-                                  backgroundColor: dotColor,
-                                  boxShadow: isSelected ? `0 0 10px ${dotColor}` : 'none'
+                                  backgroundColor: isColorUnlocked ? dotColor : '#333',
+                                  opacity: isColorUnlocked ? 1 : 0.35,
+                                  boxShadow: isSelected && isColorUnlocked ? `0 0 10px ${dotColor}` : 'none',
                                 }}
-                                title={c.label}
-                                aria-label={`Select ${c.label}`}
+                                title={isColorUnlocked ? c.label : `${c.label} (Locked)`}
+                                aria-label={isColorUnlocked ? `Select ${c.label}` : `${c.label} locked`}
                               />
                             );
                           })}
@@ -2213,15 +2242,44 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                     >
                       <img
                         src={(() => {
-                          if (selectedMerchColor) {
-                            // Fallback color variants for items without DB variant_options
-                            const FALLBACK_COLORS: Record<string, Array<{ value: string; images: { main: string } }>> = {
-                              bracelet: [
-                                { value: 'pink', images: { main: '/store/bracelet-pink.webp' } },
-                                { value: 'blue', images: { main: '/store/bracelet-blue.webp' } },
-                                { value: 'yellow', images: { main: '/store/bracelet-yellow.webp' } },
-                              ],
-                            };
+                          // Fallback color variants for items without DB variant_options
+                          const FALLBACK_COLORS: Record<string, Array<{ value: string; images: { main: string } }>> = {
+                            bracelet: [
+                              { value: 'pink', images: { main: '/store/bracelet-pink.webp' } },
+                              { value: 'blue', images: { main: '/store/bracelet-blue.webp' } },
+                              { value: 'yellow', images: { main: '/store/bracelet-yellow.webp' } },
+                            ],
+                            beanie: [
+                              { value: 'black', images: { main: '/store/beanie-front-black.webp' } },
+                              { value: 'blue', images: { main: '/store/beanie-front-blue.webp' } },
+                              { value: 'pink', images: { main: '/store/beanie-front-pink.webp' } },
+                            ],
+                          };
+
+                          // Resolve effective color: explicit selection > first unlocked > first in list
+                          let effectiveColor = selectedMerchColor;
+                          if (!effectiveColor) {
+                            // Build color list to find first unlocked
+                            let allColors: any[] | null = null;
+                            if (selectedMerchInline.variant_options) {
+                              let parsed = selectedMerchInline.variant_options;
+                              if (typeof parsed === 'string') {
+                                try { parsed = JSON.parse(parsed); } catch { parsed = null; }
+                              }
+                              if (parsed && typeof parsed === 'object') {
+                                const dbC = (parsed as any).colors;
+                                if (Array.isArray(dbC) && dbC.length > 0) allColors = dbC;
+                              }
+                            }
+                            if (!allColors) allColors = FALLBACK_COLORS[selectedMerchInline.slug] || null;
+                            if (allColors && allColors.length > 0) {
+                              const itemUnlocked = unlockedMerchColors[selectedMerchInline.id] || [];
+                              const firstUnlocked = allColors.find((c: any) => itemUnlocked.includes(c.value));
+                              effectiveColor = firstUnlocked?.value || null;
+                            }
+                          }
+
+                          if (effectiveColor) {
                             // Try DB variant_options first
                             if (selectedMerchInline.variant_options) {
                               let opts = selectedMerchInline.variant_options;
@@ -2230,14 +2288,14 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                               }
                               const colors = (opts as any)?.colors;
                               if (Array.isArray(colors)) {
-                                const match = colors.find((c: any) => c.value === selectedMerchColor);
+                                const match = colors.find((c: any) => c.value === effectiveColor);
                                 if (match?.images?.main || match?.images?.front) return match.images.main || match.images.front;
                               }
                             }
                             // Fallback for known items
                             const fallback = FALLBACK_COLORS[selectedMerchInline.slug];
                             if (fallback) {
-                              const match = fallback.find(c => c.value === selectedMerchColor);
+                              const match = fallback.find(c => c.value === effectiveColor);
                               if (match?.images?.main) return match.images.main;
                             }
                           }

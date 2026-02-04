@@ -16,7 +16,7 @@ import { getLocalDateString } from "@/utils/dateHelpers";
 // HeartCoin celebrations are now triggered explicitly from logHeartcoinTransaction()
 // instead of detecting balance changes here (removed triggerHeartCoinCelebration import)
 import { updateBadgeProgressCounters } from "@/lib/updateBadgeProgress";
-// NOTE: suppressBadgeCelebrations removed - useBadgeCelebrations handles deduplication itself
+import { suppressBadgeCelebrations, enableBadgeCelebrations } from "@/utils/celebrationQueue";
 
 // Types for user owned cards and badges (joined from user_cards + cards table)
 type OwnedCardRow = {
@@ -501,11 +501,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
       // Update badge progress counters when profile loads
       // Then refresh user badges to show any newly unlocked badges
-      // NOTE: We no longer suppress badge celebrations here because:
-      // 1. useBadgeCelebrations already marks existing badges as "seen" on init
-      // 2. The 8-second suppression was blocking legitimate new badge celebrations
-      // 3. LocalStorage deduplication handles cross-session replay prevention
-
+      // Suppress celebrations during this initial check so badges awarded as a
+      // catch-up on page load don't trigger celebration animations. The
+      // useBadgeCelebrations hook marks suppressed badges as "seen" when
+      // suppression ends, preventing false celebrations while preserving proper
+      // celebration behavior for badges earned through explicit user actions.
+      suppressBadgeCelebrations(10000); // safety timeout
       updateBadgeProgressCounters(user.id)
         .then(() => {
           // Refresh user badges to pick up any newly awarded badges
@@ -513,6 +514,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         })
         .catch(err => {
           console.warn('Failed to update badge progress counters:', err);
+        })
+        .finally(() => {
+          // Re-enable celebrations now that the initial check is done.
+          // Any badges that were awarded during this window are already in the
+          // pending queue and will be marked as seen (not celebrated).
+          enableBadgeCelebrations();
         });
 
       setProfileWithCelebration(mappedProfile);

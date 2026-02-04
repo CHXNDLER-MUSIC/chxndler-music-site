@@ -9,6 +9,7 @@ export interface PurchaseRequest {
   quantity: number;         // -> p_quantity
   idempotencyKey: string;   // -> p_client_request_id (prevents double-submit)
   clientSlug?: string;      // UNUSED by v4 - kept for backwards compat, not sent to API
+  selected_color?: string;  // -> p_selected_color (color variant purchased)
 }
 
 /**
@@ -32,8 +33,8 @@ export function useMerchPurchase() {
   const purchaseWithHeartCoins = useCallback(async (
     request: PurchaseRequest
   ): Promise<PurchaseWithHeartcoinsResult | null> => {
-    // v4 only uses: merchItemId, quantity, idempotencyKey
-    const { merchItemId, quantity, idempotencyKey } = request;
+    // v4 only uses: merchItemId, quantity, idempotencyKey, selected_color
+    const { merchItemId, quantity, idempotencyKey, selected_color } = request;
 
     // ============================================================
     // CRITICAL: Synchronous duplicate prevention using ref
@@ -84,6 +85,8 @@ export function useMerchPurchase() {
       idempotencyKey,     // -> p_client_request_id
       // Explicitly declare paymentType for server normalization/logging
       paymentType: 'heartcoins' as const,
+      // Pass selected color variant if provided
+      ...(selected_color ? { selected_color } : {}),
     };
 
     console.log('[useMerchPurchase] Initiating purchase (single API call):', payload);

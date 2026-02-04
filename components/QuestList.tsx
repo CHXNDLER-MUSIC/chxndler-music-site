@@ -111,8 +111,8 @@ function useQuestStatus() {
             const inviteDone = localStorage.getItem(`quest_invite_${clientToday}`) === 'true';
             const inviteConfirmDone = localStorage.getItem(`quest_invite_confirm_${clientToday}`) === 'true';
 
-            // Check secret_phrase_redemptions for today's check-in (source of truth)
-            let liveshowDone = false;
+            // Check localStorage first (instant), then DB as source of truth
+            let liveshowDone = localStorage.getItem(`quest_liveshow_${clientToday}`) === 'true';
             try {
               const todayStart = new Date();
               todayStart.setHours(0, 0, 0, 0);
@@ -122,7 +122,15 @@ function useQuestStatus() {
                 .eq('user_id', sessionData.session.user.id)
                 .gte('redeemed_at', todayStart.toISOString())
                 .limit(1);
-              liveshowDone = !redemptionErr && (redemptionData?.length ?? 0) > 0;
+              if (!redemptionErr) {
+                // Combine localStorage + DB: never override a local true with a DB false
+                // (DB may return empty due to RLS or timing, but localStorage is reliable)
+                liveshowDone = liveshowDone || (redemptionData?.length ?? 0) > 0;
+                // Sync localStorage with DB truth
+                if (liveshowDone) {
+                  localStorage.setItem(`quest_liveshow_${clientToday}`, 'true');
+                }
+              }
             } catch {}
 
             // Use functional update to preserve any existing true state (prevents race conditions)
@@ -145,13 +153,14 @@ function useQuestStatus() {
         const inviteDone = localStorage.getItem(`quest_invite_${clientToday}`) === 'true';
         const inviteConfirmDone = localStorage.getItem(`quest_invite_confirm_${clientToday}`) === 'true';
 
-        // No session — cannot query v_checked_in_today, so liveShow stays false
+        // No session — use localStorage for liveShow
+        const liveshowCached = localStorage.getItem(`quest_liveshow_${clientToday}`) === 'true';
         setQuestStatus(prev => ({
           elementOfDay: elementDone || prev.elementOfDay,
           journalEntry: journalDone || prev.journalEntry,
           inviteFriend: inviteDone || prev.inviteFriend,
           inviteFriendConfirm: inviteConfirmDone || prev.inviteFriendConfirm,
-          liveShow: false,
+          liveShow: liveshowCached || prev.liveShow,
           songOfDay: prev.songOfDay
         }));
 
@@ -177,13 +186,14 @@ function useQuestStatus() {
         const inviteDone = localStorage.getItem(`quest_invite_${clientToday}`) === 'true';
         const inviteConfirmDone = localStorage.getItem(`quest_invite_confirm_${clientToday}`) === 'true';
 
-        // Error fallback — no server data, liveShow stays false
+        // Error fallback — use localStorage for liveShow
+        const liveshowFallback = localStorage.getItem(`quest_liveshow_${clientToday}`) === 'true';
         setQuestStatus(prev => ({
           elementOfDay: elementDone || prev.elementOfDay,
           journalEntry: journalDone || prev.journalEntry,
           inviteFriend: inviteDone || prev.inviteFriend,
           inviteFriendConfirm: inviteConfirmDone || prev.inviteFriendConfirm,
-          liveShow: false,
+          liveShow: liveshowFallback || prev.liveShow,
           songOfDay: prev.songOfDay
         }));
 
@@ -357,7 +367,10 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
 
       // Sync Live Show quest status by checking secret_phrase_redemptions for today
       const liveShowQuest = bonus.find(q => q.quest_key === 'ATTEND_LIVESTREAM');
+      const today = new Date().toDateString();
       let liveShowIsComplete = liveShowQuest?.completed_today > 0;
+      // Also check localStorage as fast fallback
+      const liveShowCached = localStorage.getItem(`quest_liveshow_${today}`) === 'true';
       if (userId) {
         try {
           const todayStart = new Date();
@@ -368,13 +381,20 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
             .eq('user_id', userId)
             .gte('redeemed_at', todayStart.toISOString())
             .limit(1);
-          liveShowIsComplete = liveShowIsComplete || (!redemptionErr && (redemptionData?.length ?? 0) > 0);
+          if (!redemptionErr) {
+            const hasRedemption = (redemptionData?.length ?? 0) > 0;
+            liveShowIsComplete = liveShowIsComplete || hasRedemption;
+            // Sync localStorage with DB truth
+            if (hasRedemption) {
+              localStorage.setItem(`quest_liveshow_${today}`, 'true');
+            }
+          }
         } catch {}
       }
 
       setQuestStatus(prev => ({
         ...prev,
-        liveShow: liveShowIsComplete || prev.liveShow
+        liveShow: liveShowIsComplete || liveShowCached || prev.liveShow
       }));
     } catch (error) {
       console.error('Failed to load quests:', error);
@@ -413,8 +433,11 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         const isAuth = !!session?.user;
         setIsAuthenticated(isAuth);
 
-        // Reset liveShow on auth change to prevent check-in status leaking between users
-        setQuestStatus(prev => ({ ...prev, liveShow: false }));
+        // Reset liveShow on actual user change (sign-in/out) to prevent status leaking between users
+        // Don't reset on INITIAL_SESSION (page refresh) - loadAllQuests will confirm from DB
+        if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
+          setQuestStatus(prev => ({ ...prev, liveShow: false }));
+        }
 
         // Close login modal if user successfully logs in
         if (isAuth && showLoginModal) {

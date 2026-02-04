@@ -357,6 +357,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   const [isEnlargedCardFlipped, setIsEnlargedCardFlipped] = useState(false);
   const [cardRotation, setCardRotation] = useState(0); // For 360° spin mode
   const [isAnimatingFlip, setIsAnimatingFlip] = useState(false); // For smooth flip transition
+  const [merchCardRotation, setMerchCardRotation] = useState(0); // For merch item 3D flip
+  const [isMerchFlipping, setIsMerchFlipping] = useState(false); // For merch flip animation
   // Toggle purchase preview (replaces card image with balance vs cost)
   const [selectedPurchaseType, setSelectedPurchaseType] = useState<null | 'digital' | 'physical'>(null);
   // Physical card confirmation in enlarged card view (for 20 PHYSICAL button)
@@ -1064,6 +1066,12 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         }
       };
     }
+  }, [enlargedItem]);
+
+  // Reset merch card flip rotation when enlarged item changes
+  useEffect(() => {
+    setMerchCardRotation(0);
+    setIsMerchFlipping(false);
   }, [enlargedItem]);
 
   function getRedirectUrl() {
@@ -2525,8 +2533,10 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                                 const storeItem: StoreItem = {
                                   name: item.name,
                                   image: displayImage,
-                                  // Ensure BEANIE back uses the static public/store/beanie-back.webp
-                                  image2: (item as any).slug === 'beanie' ? '/store/beanie-back.webp' : (item as any).secondary_image_url,
+                                  // Ensure known items use static back images
+                                  image2: ((item as any).slug || '').toLowerCase().includes('beanie') ? '/store/beanie-back.webp'
+                                    : (((item as any).slug || '').toLowerCase().replace(/[\s_-]/g, '').includes('tanktop') || item.name.toLowerCase().replace(/[\s_-]/g, '').includes('tanktop')) ? '/store/tank-top-back.webp'
+                                    : (item as any).secondary_image_url,
                                   stripeUrl: item.stripe_url || '',
                                   description: item.description || '',
                                   cost: item.price_usd || 0,
@@ -2772,7 +2782,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                               const storeItem: StoreItem = {
                                 name: item.name,
                                 image: displayImage,
-                                image2: item.secondary_image_url || undefined,
+                                image2: (((item as any).slug || '').toLowerCase().replace(/[\s_-]/g, '').includes('tanktop') || item.name.toLowerCase().replace(/[\s_-]/g, '').includes('tanktop')) ? '/store/tank-top-back.webp' : (item.secondary_image_url || undefined),
                                 stripeUrl: item.stripe_url || '',
                                 description: item.description || '',
                                 cost: item.price_usd || 0,
@@ -3367,70 +3377,55 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 })()}
               </div>
 
-              {/* Image Content */}
+              {/* Image Content - 3D Card Flip */}
               <div className="flex items-center justify-center w-full h-full">
-                <div className="relative max-w-full max-h-full">
-                  {(() => {
-                    const images = [enlargedItem.image, enlargedItem.image2].filter(Boolean);
-                    const currentImage = images[enlargedImageIndex] || enlargedItem.image;
-                    
-                    return (
-                      <>
-                        <img
-                          src={currentImage}
-                          alt=""
-                          className="max-w-full max-h-[70vh] object-contain rounded-lg transition-transform duration-500"
-                          style={{
-                            animation: 'merchPulse 2.5s ease-in-out infinite',
-                            transform: enlargedImageIndex === 1 && enlargedItem.image2 ? 'rotateY(180deg) scaleX(-1)' : 'rotateY(0deg)',
-                          }}
-                        />
-                        
-                        {/* Navigation arrows - only show if multiple images */}
-                        {images.length > 1 && (
-                          <>
-                            <button
-                              onClick={() => {
-                                try { sfx.play('flip', 0.8); } catch {}
-                                setEnlargedImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
-                              }}
-                              className="absolute left-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-all duration-200"
-                            >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                              </svg>
-                            </button>
-                            
-                            <button
-                              onClick={() => {
-                                try { sfx.play('flip', 0.8); } catch {}
-                                setEnlargedImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
-                              }}
-                              className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-all duration-200"
-                            >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                              </svg>
-                            </button>
-                            
-                            {/* Image indicators */}
-                            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
-                              {images.map((_, index) => (
-                                <div
-                                  key={index}
-                                  className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                                    index === enlargedImageIndex
-                                      ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]'
-                                      : 'bg-white/30'
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                          </>
-                        )}
-                      </>
-                    );
-                  })()}
+                {/* Perspective container */}
+                <div
+                  className="cursor-pointer"
+                  style={{ perspective: '1000px' }}
+                  onClick={() => {
+                    if (!enlargedItem.image2) return;
+                    try { sfx.play('flip', 0.8); } catch {}
+                    setIsMerchFlipping(true);
+                    setMerchCardRotation(prev => prev + 180);
+                    setTimeout(() => setIsMerchFlipping(false), 500);
+                  }}
+                >
+                  {/* Rotating wrapper - both faces rotate together */}
+                  <div
+                    className="relative"
+                    style={{
+                      transformStyle: 'preserve-3d',
+                      transform: `rotateY(${merchCardRotation}deg)`,
+                      transition: isMerchFlipping ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                    }}
+                  >
+                    {/* Front face */}
+                    <img
+                      src={enlargedItem.image}
+                      alt=""
+                      className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                      style={{
+                        animation: 'merchPulse 2.5s ease-in-out infinite',
+                        backfaceVisibility: 'hidden',
+                      }}
+                      draggable={false}
+                    />
+                    {/* Back face */}
+                    {enlargedItem.image2 && (
+                      <img
+                        src={enlargedItem.image2}
+                        alt=""
+                        className="absolute inset-0 w-full h-full object-contain rounded-lg"
+                        style={{
+                          animation: 'merchPulse 2.5s ease-in-out infinite',
+                          backfaceVisibility: 'hidden',
+                          transform: 'rotateY(180deg)',
+                        }}
+                        draggable={false}
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

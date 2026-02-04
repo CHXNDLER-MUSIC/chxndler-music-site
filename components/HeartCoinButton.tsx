@@ -229,6 +229,8 @@ const getLockLabel = ({ item, selectedVariantValue, userJourney }: LockLabelPara
       'house party poster': 'DREAMER',
       'socks': 'DREAMER',
       'hat': 'DREAMER',
+      'tank-top': 'DREAMER',
+      'tank top': 'DREAMER',
     };
     const slug = (item.slug || item.id || '').toLowerCase();
     const title = (item.title || '').toLowerCase();
@@ -277,6 +279,7 @@ interface PurchaseDraft {
   idempotencyKey: string;   // Generated ONCE when draft is created, reused on confirm
   image?: string;           // Item image URL for celebration
   orderId?: string;         // For card_physical: Order ID returned from purchase API
+  selected_color?: string;  // Color variant selected at time of purchase
 }
 
 // Physical store items - now loaded dynamically from database
@@ -573,12 +576,20 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // This prevents regeneration during StrictMode double-invocation
   const currentIdempotencyKeyRef = useRef<string | null>(null);
   const [heartCoinPayToggled, setHeartCoinPayToggled] = useState(false);
-  const [dailyQuests, setDailyQuests] = useState({
-    elementTapped: false,
-    journalEntry: journalCompleted,
-    friendInvited: false,
-    friendInviteConfirm: false,
-    checkedIn: false
+  const [dailyQuests, setDailyQuests] = useState(() => {
+    // Read localStorage immediately so checkedIn is correct on first render
+    let cachedCheckedIn = false;
+    if (typeof window !== 'undefined') {
+      const today = new Date().toDateString();
+      cachedCheckedIn = localStorage.getItem(`quest_liveshow_${today}`) === 'true';
+    }
+    return {
+      elementTapped: false,
+      journalEntry: journalCompleted,
+      friendInvited: false,
+      friendInviteConfirm: false,
+      checkedIn: cachedCheckedIn
+    };
   });
   
   // Cards state
@@ -592,7 +603,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     setDailyQuests(prev => ({ ...prev, journalEntry: journalCompleted }));
   }, [journalCompleted]);
 
-  // Initialize checkedIn state from secret_phrase_redemptions (source of truth)
+  // Initialize checkedIn state: localStorage first (instant), then DB confirmation
   // Re-runs on auth change (profile.id changes) so status cannot leak between users
   useEffect(() => {
     const checkLiveShowStatus = async () => {
@@ -600,6 +611,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         setDailyQuests(prev => ({ ...prev, checkedIn: false }));
         return;
       }
+      // Immediately restore from localStorage (fast, no network)
+      const today = new Date().toDateString();
+      const cachedCheckedIn = localStorage.getItem(`quest_liveshow_${today}`) === 'true';
+      if (cachedCheckedIn) {
+        setDailyQuests(prev => ({ ...prev, checkedIn: true }));
+      }
+      // Then confirm from DB (source of truth)
       try {
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);
@@ -609,10 +627,18 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           .eq('user_id', profile.id)
           .gte('redeemed_at', todayStart.toISOString())
           .limit(1);
-        const checkedIn = !redemptionErr && (redemptionData?.length ?? 0) > 0;
-        setDailyQuests(prev => ({ ...prev, checkedIn }));
+        if (!redemptionErr) {
+          const dbCheckedIn = (redemptionData?.length ?? 0) > 0;
+          // Never override a localStorage-based true with a DB false
+          // (DB may return empty due to RLS restrictions on secret_phrase_redemptions)
+          setDailyQuests(prev => ({ ...prev, checkedIn: prev.checkedIn || dbCheckedIn }));
+          if (dbCheckedIn) {
+            localStorage.setItem(`quest_liveshow_${today}`, 'true');
+          }
+        }
+        // If query errors, keep localStorage value (don't reset to false)
       } catch {
-        setDailyQuests(prev => ({ ...prev, checkedIn: false }));
+        // Keep localStorage value on error
       }
     };
     checkLiveShowStatus();
@@ -2310,6 +2336,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               return v.toString(16);
             }));
 
+        // Look up selected color variant for this item
+        const draftMerchIndex = merchItems.findIndex(m => m.id === item.id);
+        const draftSelectedColor = draftMerchIndex >= 0 ? selectedVariants[draftMerchIndex]?.value : undefined;
+
         setPurchaseDraft({
           kind: 'merch',
           merchItemId: item.id,
@@ -2320,6 +2350,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           itemName: item.name,
           idempotencyKey,
           image: item.image_url || '',
+          selected_color: draftSelectedColor,
         });
         currentIdempotencyKeyRef.current = idempotencyKey;
         setShowHeartCoinPurchase(true);
@@ -2381,12 +2412,22 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     const itemName = chosen?.name || purchaseDraft?.itemName;
     currentIdempotencyKeyRef.current = idempotencyKey;
 
+    // Resolve selected color: from item's variant selection or from purchaseDraft
+    let selected_color: string | undefined;
+    if (item) {
+      const itemMerchIndex = merchItems.findIndex(m => m.id === item.id);
+      selected_color = itemMerchIndex >= 0 ? selectedVariants[itemMerchIndex]?.value : undefined;
+    } else {
+      selected_color = purchaseDraft?.selected_color;
+    }
+
     console.log('[PURCHASE] calling API payload', {
       merchItemId,
       quantity,
       idempotencyKey,
       clientSlug,
       itemName,
+      selected_color,
       userBalance: profile.heartcoin_balance,
     });
 
@@ -2394,7 +2435,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       // ============================================================
       // SINGLE API CALL - purchaseWithHeartCoins has its own ref guard
       // ============================================================
-      const purchaseResult = await purchaseWithHeartCoins({ merchItemId, quantity, clientSlug, idempotencyKey });
+      const purchaseResult = await purchaseWithHeartCoins({ merchItemId, quantity, clientSlug, idempotencyKey, selected_color });
       console.log('[PURCHASE] API returned', purchaseResult);
 
       if (purchaseResult && purchaseResult.success) {
@@ -2511,10 +2552,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     const itemName = purchaseDraft.itemName;
     currentIdempotencyKeyRef.current = idempotencyKey;
 
+    // Include selected color from purchaseDraft
+    const shippingSelectedColor = purchaseDraft.selected_color;
+
     try {
       // Step 1: Make the purchase
       console.log('[SHIPPING] Calling purchase API');
-      const purchaseResult = await purchaseWithHeartCoins({ merchItemId, quantity, clientSlug, idempotencyKey });
+      const purchaseResult = await purchaseWithHeartCoins({ merchItemId, quantity, clientSlug, idempotencyKey, selected_color: shippingSelectedColor });
       console.log('[SHIPPING] Purchase API returned', purchaseResult);
 
       if (!purchaseResult || !purchaseResult.success) {
@@ -2795,6 +2839,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         try { sfx.play('click', 0.8); } catch {}
         setStatusType('success');
         setCheckInMessage(data.message || 'Signal accepted. You earned your reward.');
+        // Persist check-in to localStorage and state
+        const today = new Date().toDateString();
+        localStorage.setItem(`quest_liveshow_${today}`, 'true');
         setDailyQuests(prev => ({ ...prev, checkedIn: true }));
         setShowCheckInSuccess(true);
         setShowCheckInModal(false);
@@ -3664,8 +3711,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         </div>
                       ) : (
                         <div className="flex items-center" style={{
-                          color: (isQuestCompleted(quest) && quest.quest_key !== 'INVITE_ALIEN') ? '#666' : '#90EE90',
-                          textShadow: (isQuestCompleted(quest) && quest.quest_key !== 'INVITE_ALIEN') ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90'
+                          color: isQuestCompleted(quest) ? '#666' : '#90EE90',
+                          textShadow: isQuestCompleted(quest) ? 'none' : '0 0 8px #90EE90, 0 0 16px #90EE90, 0 0 24px #90EE90'
                         }}>
                           <span className="text-base font-bold">
                             {quest.quest_key === 'INVITE_ALIEN'
@@ -4493,6 +4540,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                         'house party poster': 'DREAMER',
                                         'socks': 'DREAMER',
                                         'hat': 'DREAMER',
+                                        'tank-top': 'DREAMER',
+                                        'tank top': 'DREAMER',
                                       };
                                       const slug = (item.slug || item.id || '').toLowerCase();
                                       const title = (item.title || '').toLowerCase();
@@ -5980,6 +6029,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               }
                             }
                             // Fallback to default back image
+                            const slug = (activeMerchItem.slug || '').toLowerCase().replace(/[\s_-]/g, '');
+                            const name = (activeMerchItem.name || '').toLowerCase().replace(/[\s_-]/g, '');
+                            if (slug.includes('tanktop') || name.includes('tanktop')) return '/store/tank-top-back.webp';
                             return activeMerchItem.image_url_2 || activeMerchItem.image_url;
                           })()}
                           alt={`${activeMerchItem.name} back`}
