@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import type { RealtimePostgresInsertPayload } from '@supabase/supabase-js';
 import { areBadgeCelebrationsSuppressed, onSuppressionEnd } from '@/utils/celebrationQueue';
+import { isOnboardingSequenceActive } from '@/utils/onboardingSequence';
 
 // ============================================================================
 // DEBUG FLAG - Toggle to enable/disable debug logging
@@ -276,6 +277,18 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
                 badgeId: newRow.badge_id,
                 reason: "already_seen"
               });
+              return;
+            }
+
+            // Skip auto-celebration during onboarding sequence
+            // The sequence orchestrator manually controls the Wanderer badge
+            if (isOnboardingSequenceActive()) {
+              debugCelebration("BADGE_CELEBRATION_SKIPPED", {
+                badgeId: newRow.badge_id,
+                reason: "onboarding_sequence_active - marking as seen"
+              });
+              // Still mark as seen to prevent future auto-triggers
+              markBadgeAsSeen(newRow.badge_id, newRow.earned_at, seenBadgesRef.current);
               return;
             }
 

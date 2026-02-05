@@ -2208,9 +2208,10 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                                       : 'border-white/40 hover:scale-125'
                                 }`}
                                 style={{
-                                  backgroundColor: isColorUnlocked ? dotColor : '#333',
-                                  opacity: isColorUnlocked ? 1 : 0.35,
+                                  backgroundColor: dotColor,
+                                  opacity: isColorUnlocked ? 1 : 0.5,
                                   boxShadow: isSelected && isColorUnlocked ? `0 0 10px ${dotColor}` : 'none',
+                                  filter: isColorUnlocked ? 'none' : 'grayscale(30%)',
                                 }}
                                 title={isColorUnlocked ? c.label : `${c.label} (Locked)`}
                                 aria-label={isColorUnlocked ? `Select ${c.label}` : `${c.label} locked`}

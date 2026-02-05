@@ -108,6 +108,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   }, [clearDisabled]);
 
   // Auto-start: after profile is complete, no previous completion/disable
+  // BUT if onboarding sequence is active, defer to sequence-complete event
   useEffect(() => {
     if (autostartGuard.current) return;
     if (!profile) return;
@@ -117,13 +118,14 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     if (profile.profile_complete) {
       autostartGuard.current = true;
 
-      // If HeartCoin celebration is active (during onboarding), don't auto-start
-      // The badge celebration will trigger the tour after it completes
-      if (isHeartcoinCelebrationActive()) {
-        console.log('[Tour] HeartCoin celebration active, deferring tour to badge celebration');
+      // If onboarding sequence is active, don't auto-start
+      // The sequence will dispatch ONBOARDING_SEQUENCE_COMPLETE when done
+      if (isOnboardingSequenceActive()) {
+        console.log('[Tour] Onboarding sequence active, deferring to sequence-complete event');
         return;
       }
 
+      // For users who complete onboarding without the sequence (edge case),
       // show welcome a tick later so UI settles after the last modal
       setTimeout(() => setWelcomeVisible(true), 250);
     }
@@ -143,27 +145,22 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("heartverse:entered", onEntered);
   }, [clearDisabled, profile, isCompleted, isDisabled]);
 
-  // Listen for any badge completion during onboarding to show tour prompt
+  // Listen for onboarding sequence completion to show tour prompt
   useEffect(() => {
-    const onBadgeCelebrationComplete = (event: CustomEvent<{ badgeTitle: string; badgeImage: string }>) => {
-      const { badgeTitle } = event.detail;
-      console.log('[Tour] Badge celebration complete:', badgeTitle);
+    const onSequenceComplete = () => {
+      console.log('[Tour] Onboarding sequence complete');
 
-      // Show tour for any badge if user hasn't completed the tour yet
-      // This ensures the tour shows after the first badge (Wanderer, First Steps, etc.)
+      // Show tour if user hasn't completed it yet
       const completed = profile?.has_seen_tour || isCompleted();
       if (!completed && !isDisabled()) {
-        // Small delay to let badge celebration fully clear
-        setTimeout(() => {
-          console.log('[Tour] Showing tour after badge celebration');
-          clearDisabled();
-          setWelcomeVisible(true);
-        }, 500);
+        console.log('[Tour] Showing tour after onboarding sequence');
+        clearDisabled();
+        setWelcomeVisible(true);
       }
     };
 
-    window.addEventListener('badge:celebration-complete', onBadgeCelebrationComplete as EventListener);
-    return () => window.removeEventListener('badge:celebration-complete', onBadgeCelebrationComplete as EventListener);
+    window.addEventListener(ONBOARDING_SEQUENCE_COMPLETE, onSequenceComplete);
+    return () => window.removeEventListener(ONBOARDING_SEQUENCE_COMPLETE, onSequenceComplete);
   }, [profile, isCompleted, isDisabled, clearDisabled]);
 
   const value = useMemo(() => ({ active, start, skip, restart, disable, enable }), [active, start, skip, restart, disable, enable]);
@@ -197,7 +194,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
               className="text-2xl font-bold text-white mb-4"
               style={{ textShadow: '0 0 18px rgba(56,182,255,0.7)' }}
             >
-              Want me to show you around?
+              Let me show you around
             </h2>
 
             <button
@@ -215,7 +212,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
                 boxShadow: '0 6px 14px rgba(0,0,0,0.35), 0 0 20px rgba(252,84,175,0.45)'
               }}
             >
-              Yes, show me!
+              Start tour
             </button>
 
             <button

@@ -4,6 +4,8 @@
  * HeartCoin celebrations have priority and badge celebrations wait for them to finish.
  */
 
+import { isOnboardingSequenceActive } from '@/utils/onboardingSequence';
+
 // ============================================================================
 // DEBUG FLAG - Toggle to enable/disable debug logging
 // ============================================================================
@@ -82,6 +84,15 @@ export function isHeartcoinCelebrationActive(): boolean {
  */
 export function queueBadgeCelebration(badgeImage: string, badgeTitle: string): void {
   if (typeof window === 'undefined') return;
+
+  // Skip queueing during onboarding sequence - we manually control badges
+  if (isOnboardingSequenceActive()) {
+    debugQueue("BADGE_CELEBRATION_SKIPPED", {
+      badge_title: badgeTitle,
+      reason: "onboarding_sequence_active"
+    });
+    return;
+  }
 
   // Prevent duplicate celebrations for the same badge (already celebrated)
   if (celebratedBadgeTitles.has(badgeTitle)) {
