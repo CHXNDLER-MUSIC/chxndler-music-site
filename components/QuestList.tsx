@@ -111,8 +111,9 @@ function useQuestStatus() {
             const inviteDone = localStorage.getItem(`quest_invite_${clientToday}`) === 'true';
             const inviteConfirmDone = localStorage.getItem(`quest_invite_confirm_${clientToday}`) === 'true';
 
-            // Check localStorage first (instant), then DB as source of truth
-            let liveshowDone = localStorage.getItem(`quest_liveshow_${clientToday}`) === 'true';
+            // Check user-specific localStorage first (instant), then DB as source of truth
+            const lsKey = `quest_liveshow_${sessionData.session.user.id}_${clientToday}`;
+            let liveshowDone = localStorage.getItem(lsKey) === 'true';
             try {
               const todayStart = new Date();
               todayStart.setHours(0, 0, 0, 0);
@@ -128,7 +129,7 @@ function useQuestStatus() {
                 liveshowDone = liveshowDone || (redemptionData?.length ?? 0) > 0;
                 // Sync localStorage with DB truth
                 if (liveshowDone) {
-                  localStorage.setItem(`quest_liveshow_${clientToday}`, 'true');
+                  localStorage.setItem(lsKey, 'true');
                 }
               }
             } catch {}
@@ -153,14 +154,13 @@ function useQuestStatus() {
         const inviteDone = localStorage.getItem(`quest_invite_${clientToday}`) === 'true';
         const inviteConfirmDone = localStorage.getItem(`quest_invite_confirm_${clientToday}`) === 'true';
 
-        // No session — use localStorage for liveShow
-        const liveshowCached = localStorage.getItem(`quest_liveshow_${clientToday}`) === 'true';
+        // No session — no user-specific localStorage key available, default to false
         setQuestStatus(prev => ({
           elementOfDay: elementDone || prev.elementOfDay,
           journalEntry: journalDone || prev.journalEntry,
           inviteFriend: inviteDone || prev.inviteFriend,
           inviteFriendConfirm: inviteConfirmDone || prev.inviteFriendConfirm,
-          liveShow: liveshowCached || prev.liveShow,
+          liveShow: false,
           songOfDay: prev.songOfDay
         }));
 
@@ -186,14 +186,13 @@ function useQuestStatus() {
         const inviteDone = localStorage.getItem(`quest_invite_${clientToday}`) === 'true';
         const inviteConfirmDone = localStorage.getItem(`quest_invite_confirm_${clientToday}`) === 'true';
 
-        // Error fallback — use localStorage for liveShow
-        const liveshowFallback = localStorage.getItem(`quest_liveshow_${clientToday}`) === 'true';
+        // Error fallback — no session available, default liveShow to false
         setQuestStatus(prev => ({
           elementOfDay: elementDone || prev.elementOfDay,
           journalEntry: journalDone || prev.journalEntry,
           inviteFriend: inviteDone || prev.inviteFriend,
           inviteFriendConfirm: inviteConfirmDone || prev.inviteFriendConfirm,
-          liveShow: liveshowFallback || prev.liveShow,
+          liveShow: prev.liveShow,
           songOfDay: prev.songOfDay
         }));
 
@@ -369,8 +368,9 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
       const liveShowQuest = bonus.find(q => q.quest_key === 'ATTEND_LIVESTREAM');
       const today = new Date().toDateString();
       let liveShowIsComplete = liveShowQuest?.completed_today > 0;
-      // Also check localStorage as fast fallback
-      const liveShowCached = localStorage.getItem(`quest_liveshow_${today}`) === 'true';
+      // Also check user-specific localStorage as fast fallback
+      const lsKey = userId ? `quest_liveshow_${userId}_${today}` : null;
+      const liveShowCached = lsKey ? localStorage.getItem(lsKey) === 'true' : false;
       if (userId) {
         try {
           const todayStart = new Date();
@@ -384,9 +384,9 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
           if (!redemptionErr) {
             const hasRedemption = (redemptionData?.length ?? 0) > 0;
             liveShowIsComplete = liveShowIsComplete || hasRedemption;
-            // Sync localStorage with DB truth
-            if (hasRedemption) {
-              localStorage.setItem(`quest_liveshow_${today}`, 'true');
+            // Sync user-specific localStorage with DB truth
+            if (hasRedemption && lsKey) {
+              localStorage.setItem(lsKey, 'true');
             }
           }
         } catch {}
@@ -785,7 +785,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
           // User already checked in today - update UI to reflect this
           setQuestStatus(prev => ({ ...prev, liveShow: true }));
           const today = new Date().toDateString();
-          localStorage.setItem(`quest_liveshow_${today}`, 'true');
+          if (session?.user?.id) localStorage.setItem(`quest_liveshow_${session.user.id}_${today}`, 'true');
           setSecretPhrase("");
           setShowCheckIn(false);
           showCelebration("You're already checked in for today!");
@@ -811,9 +811,9 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         // Success case - fresh check-in
         console.log('Secret phrase redemption successful:', data);
         setQuestStatus(prev => ({ ...prev, liveShow: true }));
-        // Save to localStorage to persist across sessions for today
+        // Save to user-specific localStorage to persist across sessions for today
         const today = new Date().toDateString();
-        localStorage.setItem(`quest_liveshow_${today}`, 'true');
+        if (session?.user?.id) localStorage.setItem(`quest_liveshow_${session.user.id}_${today}`, 'true');
 
         const successMessage = `Check-in successful +${data.rewardHeartCoins || 'reward'}`;
         showCelebration(successMessage);
@@ -835,9 +835,9 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         // User has already checked in today - update UI to reflect this
         console.log('User already checked in today');
         setQuestStatus(prev => ({ ...prev, liveShow: true }));
-        // Sync localStorage to ensure persistence for the rest of the day
+        // Sync user-specific localStorage to ensure persistence for the rest of the day
         const today = new Date().toDateString();
-        localStorage.setItem(`quest_liveshow_${today}`, 'true');
+        if (session?.user?.id) localStorage.setItem(`quest_liveshow_${session.user.id}_${today}`, 'true');
 
         setSecretPhrase(""); // Clear input
         setShowCheckIn(false);

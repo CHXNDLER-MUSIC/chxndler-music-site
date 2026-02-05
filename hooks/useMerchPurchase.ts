@@ -90,6 +90,7 @@ export function useMerchPurchase() {
     };
 
     console.log('[useMerchPurchase] Initiating purchase (single API call):', payload);
+    console.log('[useMerchPurchase] payload:', payload);
 
     try {
       console.log('[useMerchPurchase] Making fetch request to /api/merch/purchase');

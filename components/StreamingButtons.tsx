@@ -541,7 +541,7 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
         document.body
       ) : null}
 
-      {/* Volume Control Modal */}
+      {/* Volume Control Pop-out */}
       {typeof document !== 'undefined' && showVolumeControl ? createPortal(
         <div
           role="dialog"
@@ -549,32 +549,36 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
           className="volume-overlay"
           onClick={() => setShowVolumeControl(false)}
         >
-          <div className="volume-popover" onClick={(e) => e.stopPropagation()}>
-            <button
-              aria-label="Close"
-              title="Close"
-              className="volume-close"
-              onMouseEnter={() => { try { const el = hoverRef.current; if (el) { el.currentTime = 0; el.volume = 0.35; el.play().catch(()=>{}); } } catch {} }}
-              onClick={() => setShowVolumeControl(false)}
-            >
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                <path fill="currentColor" d="M18.3 5.71L12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.7 2.88 18.29 9.17 12 2.88 5.71 4.29 4.3 10.59 10.59 16.89 4.3z" />
+          <div
+            className="volume-popout"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'fixed',
+              left: `calc(${pos.xVw}vw + ${vertical ? 0 : size + gap}px)`,
+              top: `calc(${pos.yVh}vh + ${vertical ? gap + size/2 : 0}px)`,
+              transform: vertical ? 'translateX(-50%)' : 'translateY(-50%)',
+            }}
+          >
+            <div className="volume-popout-inner">
+              <svg className="volume-icon-small" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                {volume === 0 ? (
+                  <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
+                ) : volume < 0.5 ? (
+                  <path d="M18.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM5 9v6h4l5 5V4L9 9H5z" />
+                ) : (
+                  <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                )}
               </svg>
-            </button>
-            <div className="volume-content">
-              <h3>Volume</h3>
-              <div className="volume-slider-container">
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.05"
-                  value={volume}
-                  onChange={(e) => setVolume(parseFloat(e.target.value))}
-                  className="volume-slider"
-                />
-                <div className="volume-display">{Math.round(volume * 100)}%</div>
-              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value={Math.round(volume * 100)}
+                onChange={(e) => setVolume(parseInt(e.target.value) / 100)}
+                className="volume-slider-popout"
+              />
+              <span className="volume-value">{Math.round(volume * 100)}</span>
             </div>
           </div>
         </div>,
@@ -647,38 +651,85 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
 
         .volume-overlay {
           position: fixed; inset: 0; background: transparent; backdrop-filter: none;
-          display: flex; align-items: center; justify-content: center; z-index: 2147483647;
+          z-index: 2147483647;
         }
-        .volume-popover {
-          position: relative; width: min(90vw, 400px);
-          background: rgba(0,0,0,0.88);
+        .volume-popout {
+          background: rgba(0,0,0,0.92);
           border: 1px solid rgba(155,89,182,0.6);
-          border-radius: 14px; padding: 20px;
-          box-shadow: 0 18px 46px rgba(0,0,0,0.55), 0 0 32px rgba(155,89,182,0.35);
-          margin-top: -80px;
+          border-radius: 24px;
+          padding: 10px 16px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 20px rgba(155,89,182,0.3);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
         }
-        .volume-close { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%;
-          border: 1px solid rgba(255,255,255,0.4); background: rgba(0,0,0,0.45); color: #fff; display: inline-flex;
-          align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 0 16px rgba(255,255,255,0.25);
-          transition: transform .15s ease, background .15s ease, box-shadow .15s ease; }
-        .volume-close:hover { transform: scale(1.1); background: rgba(0,0,0,0.6); box-shadow: 0 0 24px rgba(255,255,255,0.55); }
-        .volume-close:active { transform: scale(0.95); }
-        .volume-content { color: #fff; padding-top: 10px; }
-        .volume-content h3 { color: #9B59B6; margin: 0 0 15px 0; font-size: 18px; font-weight: 600; }
-        .volume-slider-container { display: flex; align-items: center; gap: 15px; }
-        .volume-slider { flex: 1; height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; outline: none; cursor: pointer;
-          -webkit-appearance: none; appearance: none; }
-        .volume-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; 
-          border-radius: 50%; background: #9B59B6; cursor: pointer; box-shadow: 0 0 10px rgba(155,89,182,0.5); }
-        .volume-slider::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #9B59B6; cursor: pointer;
-          border: none; box-shadow: 0 0 10px rgba(155,89,182,0.5); }
-        .volume-display { min-width: 40px; font-weight: 600; color: #9B59B6; }
+        .volume-popout-inner {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .volume-icon-small {
+          color: #9B59B6;
+          flex-shrink: 0;
+        }
+        .volume-slider-popout {
+          width: 120px;
+          height: 6px;
+          background: rgba(255,255,255,0.15);
+          border-radius: 3px;
+          outline: none;
+          cursor: pointer;
+          -webkit-appearance: none;
+          appearance: none;
+        }
+        .volume-slider-popout::-webkit-slider-track {
+          height: 6px;
+          background: rgba(255,255,255,0.15);
+          border-radius: 3px;
+        }
+        .volume-slider-popout::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: #9B59B6;
+          cursor: pointer;
+          box-shadow: 0 0 10px rgba(155,89,182,0.6);
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .volume-slider-popout::-webkit-slider-thumb:hover {
+          transform: scale(1.15);
+          box-shadow: 0 0 16px rgba(155,89,182,0.8);
+        }
+        .volume-slider-popout::-moz-range-track {
+          height: 6px;
+          background: rgba(255,255,255,0.15);
+          border-radius: 3px;
+        }
+        .volume-slider-popout::-moz-range-thumb {
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: #9B59B6;
+          cursor: pointer;
+          border: none;
+          box-shadow: 0 0 10px rgba(155,89,182,0.6);
+        }
+        .volume-value {
+          min-width: 28px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #9B59B6;
+          text-align: right;
+        }
 
         @media (max-width: 768px) {
           .sp-popover { margin-top: -150px; width: min(95vw, 650px); }
           .am-popover { margin-top: -150px; width: min(95vw, 650px); }
           .lyrics-popover { width: min(98vw, 1400px); }
-          .volume-popover { margin-top: -60px; width: min(90vw, 320px); }
+          .volume-popout { padding: 8px 12px; }
+          .volume-slider-popout { width: 100px; }
+          .volume-value { min-width: 24px; font-size: 12px; }
         }
       `}</style>
     </>

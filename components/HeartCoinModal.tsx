@@ -357,8 +357,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   const [isEnlargedCardFlipped, setIsEnlargedCardFlipped] = useState(false);
   const [cardRotation, setCardRotation] = useState(0); // For 360° spin mode
   const [isAnimatingFlip, setIsAnimatingFlip] = useState(false); // For smooth flip transition
-  const [merchCardRotation, setMerchCardRotation] = useState(0); // For merch item 3D flip
-  const [isMerchFlipping, setIsMerchFlipping] = useState(false); // For merch flip animation
+  const [isMerchFlipped, setIsMerchFlipped] = useState(false); // Tracks which side of merch image is showing
+  const [merchFlipScale, setMerchFlipScale] = useState(1); // For 2D flip animation (scaleX)
   // Toggle purchase preview (replaces card image with balance vs cost)
   const [selectedPurchaseType, setSelectedPurchaseType] = useState<null | 'digital' | 'physical'>(null);
   // Physical card confirmation in enlarged card view (for 20 PHYSICAL button)
@@ -1068,10 +1068,10 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     }
   }, [enlargedItem]);
 
-  // Reset merch card flip rotation when enlarged item changes
+  // Reset merch flip state when enlarged item changes
   useEffect(() => {
-    setMerchCardRotation(0);
-    setIsMerchFlipping(false);
+    setIsMerchFlipped(false);
+    setMerchFlipScale(1);
   }, [enlargedItem]);
 
   function getRedirectUrl() {
@@ -2552,6 +2552,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                                   } : null,
                                   selected_color: enlargedSelectedVar?.type === 'color' ? enlargedSelectedVar.value : null
                                 };
+                                console.log('[ENLARGED VIEW] image2:', storeItem.image2, 'name:', storeItem.name);
                                 setEnlargedItem(storeItem);
                                 setEnlargedImageIndex(0);
                               }}
@@ -3377,55 +3378,33 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 })()}
               </div>
 
-              {/* Image Content - 3D Card Flip */}
+              {/* Image Content - 2D Flip */}
               <div className="flex items-center justify-center w-full h-full">
-                {/* Perspective container */}
                 <div
                   className="cursor-pointer"
-                  style={{ perspective: '1000px' }}
+                  style={{ animation: 'merchPulse 2.5s ease-in-out infinite' }}
                   onClick={() => {
                     if (!enlargedItem.image2) return;
                     try { sfx.play('flip', 0.8); } catch {}
-                    setIsMerchFlipping(true);
-                    setMerchCardRotation(prev => prev + 180);
-                    setTimeout(() => setIsMerchFlipping(false), 500);
+                    // Shrink to zero horizontally
+                    setMerchFlipScale(0);
+                    // At midpoint, swap which image shows, then expand back
+                    setTimeout(() => {
+                      setIsMerchFlipped(prev => !prev);
+                      setMerchFlipScale(1);
+                    }, 250);
                   }}
                 >
-                  {/* Rotating wrapper - both faces rotate together */}
-                  <div
-                    className="relative"
+                  <img
+                    src={isMerchFlipped ? enlargedItem.image2! : enlargedItem.image}
+                    alt=""
+                    className="max-w-full max-h-[70vh] object-contain rounded-lg"
                     style={{
-                      transformStyle: 'preserve-3d',
-                      transform: `rotateY(${merchCardRotation}deg)`,
-                      transition: isMerchFlipping ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                      transform: `scaleX(${merchFlipScale})`,
+                      transition: 'transform 250ms ease-in-out',
                     }}
-                  >
-                    {/* Front face */}
-                    <img
-                      src={enlargedItem.image}
-                      alt=""
-                      className="max-w-full max-h-[70vh] object-contain rounded-lg"
-                      style={{
-                        animation: 'merchPulse 2.5s ease-in-out infinite',
-                        backfaceVisibility: 'hidden',
-                      }}
-                      draggable={false}
-                    />
-                    {/* Back face */}
-                    {enlargedItem.image2 && (
-                      <img
-                        src={enlargedItem.image2}
-                        alt=""
-                        className="absolute inset-0 w-full h-full object-contain rounded-lg"
-                        style={{
-                          animation: 'merchPulse 2.5s ease-in-out infinite',
-                          backfaceVisibility: 'hidden',
-                          transform: 'rotateY(180deg)',
-                        }}
-                        draggable={false}
-                      />
-                    )}
-                  </div>
+                    draggable={false}
+                  />
                 </div>
               </div>
             </div>

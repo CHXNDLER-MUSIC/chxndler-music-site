@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
     // Extract variant selection (optional)
     const selectedVariant = body?.selected_variant || null;
     const selectedColor = body?.selected_color || null;
+    console.log('[API /api/merch/purchase] selectedColor:', selectedColor);
     // Normalize payment type to allowed values
     let normalizedPaymentType: 'heartcoins' | 'stripe';
     try {

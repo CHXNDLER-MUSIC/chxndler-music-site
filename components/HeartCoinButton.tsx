@@ -577,18 +577,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const currentIdempotencyKeyRef = useRef<string | null>(null);
   const [heartCoinPayToggled, setHeartCoinPayToggled] = useState(false);
   const [dailyQuests, setDailyQuests] = useState(() => {
-    // Read localStorage immediately so checkedIn is correct on first render
-    let cachedCheckedIn = false;
-    if (typeof window !== 'undefined') {
-      const today = new Date().toDateString();
-      cachedCheckedIn = localStorage.getItem(`quest_liveshow_${today}`) === 'true';
-    }
+    // Don't read localStorage here — the key is user-specific and profile.id
+    // isn't available during useState init. The useEffect below handles it.
     return {
       elementTapped: false,
       journalEntry: journalCompleted,
       friendInvited: false,
       friendInviteConfirm: false,
-      checkedIn: cachedCheckedIn
+      checkedIn: false
     };
   });
   
@@ -611,9 +607,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         setDailyQuests(prev => ({ ...prev, checkedIn: false }));
         return;
       }
-      // Immediately restore from localStorage (fast, no network)
+      // Use user-specific localStorage key to prevent cross-account leakage
       const today = new Date().toDateString();
-      const cachedCheckedIn = localStorage.getItem(`quest_liveshow_${today}`) === 'true';
+      const lsKey = `quest_liveshow_${profile.id}_${today}`;
+      // Immediately restore from localStorage (fast, no network)
+      const cachedCheckedIn = localStorage.getItem(lsKey) === 'true';
       if (cachedCheckedIn) {
         setDailyQuests(prev => ({ ...prev, checkedIn: true }));
       }
@@ -633,7 +631,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           // (DB may return empty due to RLS restrictions on secret_phrase_redemptions)
           setDailyQuests(prev => ({ ...prev, checkedIn: prev.checkedIn || dbCheckedIn }));
           if (dbCheckedIn) {
-            localStorage.setItem(`quest_liveshow_${today}`, 'true');
+            localStorage.setItem(lsKey, 'true');
           }
         }
         // If query errors, keep localStorage value (don't reset to false)
@@ -2292,6 +2290,18 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             const v = c === 'x' ? r : (r & 0x3) | 0x8;
             return v.toString(16);
           }));
+      // Resolve selected color: explicit pick or first variant default
+      const merchIndex = merchItems.findIndex(m => m.slug === item.slug);
+      const deprecatedColor = (() => {
+        if (merchIndex < 0) return undefined;
+        if (selectedVariants[merchIndex]?.value) return selectedVariants[merchIndex].value;
+        const storeItem = PHYSICAL_ITEMS[merchIndex];
+        if (storeItem && hasVariants(storeItem)) {
+          return getVariantOptions(storeItem)[0]?.value;
+        }
+        return undefined;
+      })();
+      console.log('[PURCHASE] deprecated handler selected_color:', deprecatedColor);
       setPurchaseDraft({
         kind: 'merch',
         merchItemId: merchItem.id,
@@ -2302,6 +2312,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         itemName: merchItem.name,
         idempotencyKey,
         image: merchItem.image_url || '',
+        selected_color: deprecatedColor,
       });
       currentIdempotencyKeyRef.current = idempotencyKey;
       handleConfirmPurchase();
@@ -2337,8 +2348,18 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             }));
 
         // Look up selected color variant for this item
+        // Fall back to first variant value (matches the visual default shown in the UI)
         const draftMerchIndex = merchItems.findIndex(m => m.id === item.id);
-        const draftSelectedColor = draftMerchIndex >= 0 ? selectedVariants[draftMerchIndex]?.value : undefined;
+        const draftSelectedColor = (() => {
+          if (draftMerchIndex < 0) return undefined;
+          if (selectedVariants[draftMerchIndex]?.value) return selectedVariants[draftMerchIndex].value;
+          const storeItem = PHYSICAL_ITEMS[draftMerchIndex];
+          if (storeItem && hasVariants(storeItem)) {
+            return getVariantOptions(storeItem)[0]?.value;
+          }
+          return undefined;
+        })();
+        console.log('[PURCHASE] draft selected_color resolved:', draftSelectedColor);
 
         setPurchaseDraft({
           kind: 'merch',
@@ -2413,13 +2434,21 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     currentIdempotencyKeyRef.current = idempotencyKey;
 
     // Resolve selected color: from item's variant selection or from purchaseDraft
+    // Fall back to first variant value (matches the visual default shown in the UI)
     let selected_color: string | undefined;
     if (item) {
       const itemMerchIndex = merchItems.findIndex(m => m.id === item.id);
       selected_color = itemMerchIndex >= 0 ? selectedVariants[itemMerchIndex]?.value : undefined;
+      if (!selected_color && itemMerchIndex >= 0) {
+        const storeItem = PHYSICAL_ITEMS[itemMerchIndex];
+        if (storeItem && hasVariants(storeItem)) {
+          selected_color = getVariantOptions(storeItem)[0]?.value;
+        }
+      }
     } else {
       selected_color = purchaseDraft?.selected_color;
     }
+    console.log('[PURCHASE] resolved selected_color:', selected_color);
 
     console.log('[PURCHASE] calling API payload', {
       merchItemId,
@@ -2839,9 +2868,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         try { sfx.play('click', 0.8); } catch {}
         setStatusType('success');
         setCheckInMessage(data.message || 'Signal accepted. You earned your reward.');
-        // Persist check-in to localStorage and state
+        // Persist check-in to user-specific localStorage and state
         const today = new Date().toDateString();
-        localStorage.setItem(`quest_liveshow_${today}`, 'true');
+        if (profile?.id) localStorage.setItem(`quest_liveshow_${profile.id}_${today}`, 'true');
         setDailyQuests(prev => ({ ...prev, checkedIn: true }));
         setShowCheckInSuccess(true);
         setShowCheckInModal(false);
@@ -3860,9 +3889,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                       if (code === 'P0003' || status === 409 || code === '23505') {
                                         setPhraseStatus('already');
                                         setPhraseValidationResult('already');
-                                        // Persist check-in status to localStorage and state so it stays until next calendar day
+                                        // Persist check-in status to user-specific localStorage and state so it stays until next calendar day
                                         const today = new Date().toDateString();
-                                        localStorage.setItem(`quest_liveshow_${today}`, 'true');
+                                        if (profile?.id) localStorage.setItem(`quest_liveshow_${profile.id}_${today}`, 'true');
                                         setDailyQuests(prev => ({ ...prev, checkedIn: true }));
                                         try { sfx.play('click', 0.7); } catch {}
                                         setCheckInMessage('Already checked in!');
@@ -3898,9 +3927,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     const reward = row?.granted_amount || row?.reward || 0;
                                     setPhraseStatus('success');
                                     setPhraseValidationResult('correct');
-                                    // Persist check-in status to localStorage and state so it stays until next calendar day
+                                    // Persist check-in status to user-specific localStorage and state so it stays until next calendar day
                                     const today = new Date().toDateString();
-                                    localStorage.setItem(`quest_liveshow_${today}`, 'true');
+                                    if (profile?.id) localStorage.setItem(`quest_liveshow_${profile.id}_${today}`, 'true');
                                     setDailyQuests(prev => ({ ...prev, checkedIn: true }));
                                     setAutoTextValue('');
                                     try { sfx.play('click', 0.7); } catch {}
