@@ -2526,12 +2526,10 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                                 const variantOptions = normalizeVariantOptions(item.variant_options, item.image_url);
                                 let enlargedSelectedVar: NormalizedVariantOption | null = null;
 
-                                if (variantOptions.length === 1) {
-                                  // Single-variant: auto-select
-                                  enlargedSelectedVar = variantOptions[0];
-                                } else if (variantOptions.length > 1) {
-                                  // Multi-variant: use explicit selection
-                                  enlargedSelectedVar = selectedVariants[item.id] || null;
+                                if (variantOptions.length >= 1) {
+                                  // Use explicit selection if available, otherwise default to first option
+                                  // This ensures back image matches front image for multi-variant items like beanie
+                                  enlargedSelectedVar = selectedVariants[item.id] || variantOptions[0];
                                 }
 
                                 console.log('[ENLARGED VIEW] Opening with variant:', {

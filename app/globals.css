@@ -1244,6 +1244,8 @@ img[src$="/elements/music.webp"] {
 .spotify-btn-waveform-hud{
   width: 32px;
   height: 32px;
+  max-width: 32px;
+  max-height: 32px;
   border-radius: 50%;
   background: linear-gradient(135deg, #1DB954, #1ed760);
   border: 1px solid rgba(255,255,255,.4);
@@ -1253,17 +1255,18 @@ img[src$="/elements/music.webp"] {
   justify-content: center;
   text-decoration: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   box-shadow: 0 0 12px rgba(29, 185, 84, 0.4);
   flex-shrink: 0;
+  contain: strict;
+  overflow: hidden;
 }
 .spotify-btn-waveform-hud:hover{
   background: linear-gradient(135deg, #1ed760, #22e55c);
-  transform: scale(1.06);
   box-shadow: 0 0 18px rgba(29, 185, 84, 0.6);
   border-color: rgba(255,255,255,.6);
 }
-.spotify-btn-waveform-hud:active{ transform: scale(0.95); }
+.spotify-btn-waveform-hud:active{ }
 
 .spotify-btn-unavailable-hud{
   width: 32px;
@@ -1284,6 +1287,8 @@ img[src$="/elements/music.webp"] {
 .apple-btn-waveform-hud{
   width: 32px;
   height: 32px;
+  max-width: 32px;
+  max-height: 32px;
   border-radius: 50%;
   background: linear-gradient(135deg, #FF3B30, #FF2D55);
   border: 1px solid rgba(255,255,255,.4);
@@ -1293,19 +1298,19 @@ img[src$="/elements/music.webp"] {
   justify-content: center;
   text-decoration: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   box-shadow: 0 0 12px rgba(255, 59, 48, 0.4);
   flex-shrink: 0;
-  contain: layout;
-  transform-origin: center center;
+  contain: strict;
+  overflow: hidden;
+  position: relative;
 }
 .apple-btn-waveform-hud:hover{
   background: linear-gradient(135deg, #FF2D55, #FF1744);
-  transform: scale(1.05);
   box-shadow: 0 0 18px rgba(255, 59, 48, 0.6);
   border-color: rgba(255,255,255,.6);
 }
-.apple-btn-waveform-hud:active{ transform: scale(0.95); }
+.apple-btn-waveform-hud:active{ }
 
 .apple-btn-unavailable-hud{
   width: 32px;
@@ -1620,6 +1625,8 @@ button:hover > .heart-coin-glow,
 .youtube-btn-waveform-hud{
   width: 32px;
   height: 32px;
+  max-width: 32px;
+  max-height: 32px;
   border-radius: 50%;
   background: radial-gradient(circle at 30% 30%, #FF6B6B, #FF0000);
   border: 1px solid rgba(255,255,255,0.4);
@@ -1628,10 +1635,10 @@ button:hover > .heart-coin-glow,
   align-items: center;
   justify-content: center;
   text-decoration: none;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   box-shadow: 0 4px 16px rgba(255,0,0,0.5);
-  position: relative;
-  z-index: 2;
+  contain: strict;
+  overflow: hidden;
 }
 /* Make the YouTube icon fill more of the circle */
 .youtube-btn-waveform-hud svg{
@@ -1671,11 +1678,10 @@ button:hover > .heart-coin-glow,
   filter: drop-shadow(0 0 8px rgba(25,227,255,1)) drop-shadow(0 0 18px rgba(25,227,255,0.9));
 }
 .youtube-btn-waveform-hud:hover{
-  transform: scale(1.06);
   box-shadow: 0 6px 22px rgba(255,0,0,0.85);
   border-color: rgba(255,255,255,.7);
 }
-.youtube-btn-waveform-hud:active{ transform: scale(0.95); }
+.youtube-btn-waveform-hud:active{ }
 
 /* Hologram styling for HEART popout */
 .heart-hologram {

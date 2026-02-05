@@ -1619,7 +1619,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                 </div>
 
                 {/* Messages Area */}
-                <div className={`flex flex-col transition-all duration-300 ${selectedUser ? 'hidden' : 'flex-1'} min-h-0 h-full overflow-hidden`}>
+                <div className={`flex flex-col transition-all duration-300 ${selectedUser ? 'hidden' : 'flex-1'} min-h-0 overflow-hidden`}>
                   {/* Messages Container - takes up remaining space and scrolls */}
                   <div className="flex-1 flex flex-col min-h-0">
                     {/* Always show messages */}
@@ -1649,7 +1649,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                   </div>
                   
                   {/* Bottom Fixed Section - typing indicators and input */}
-                  <div className="flex-shrink-0 sticky bottom-0 bg-inherit">
+                  <div className="flex-shrink-0">
                     {/* Typing Indicators */}
                     {typingUsers.length > 0 && (
                       <div className="px-3 py-2 border-t border-cyan-400/20">
@@ -2636,7 +2636,7 @@ export default function ChatPanel({ isOpen, onClose }) {
       {/* Card Popup Modal */}
       {selectedCardPopup && (
         <div
-          className="absolute inset-0 z-[2147483647] flex items-center justify-center p-4"
+          className="absolute inset-0 z-[2147483647] flex items-start justify-center pt-2 px-4 pb-4"
           style={{
             background: 'rgba(0, 0, 0, 0.8)'
           }}
@@ -2646,9 +2646,12 @@ export default function ChatPanel({ isOpen, onClose }) {
           }}
         >
           <div
-            className="relative w-64 aspect-[2/3] max-h-[70vh]"
+            className="relative"
             onClick={(e) => e.stopPropagation()}
             style={{
+              height: 'min(384px, calc(100% - 2rem))',
+              aspectRatio: '2 / 3',
+              maxWidth: '100%',
               perspective: '1000px',
               animation: 'cardPulse 2s ease-in-out infinite'
             }}

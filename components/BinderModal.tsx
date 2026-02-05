@@ -1293,53 +1293,60 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                     borderRadius: '24px',
                   }}
                 >
-                  {/* Front of card - rotates with cardRotation */}
-                  <img
-                    src={selectedCard?.image || getCardImageUrl(selectedCard?.name || 'CHXNDLER')}
-                    alt={selectedCard?.name || "Card"}
-                    className="rounded-2xl pointer-events-none"
+                  {/* Card container - front image determines size, back fills same space */}
+                  <div
+                    className="relative"
                     style={{
                       maxHeight: 'min(50vh, 75%)',
                       maxWidth: '70%',
-                      objectFit: 'contain',
-                      backfaceVisibility: 'hidden',
-                      WebkitBackfaceVisibility: 'hidden',
-                      transform: `rotateY(${cardRotation}deg)`,
-                      transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                      border: '2px solid rgba(255,255,255,0.1)',
                     }}
-                    draggable={false}
-                    onError={(e) => {
-                      const objectKey = selectedCard?.name || 'CHXNDLER';
-                      console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
-                      const fallback = getCardImageUrl('CHXNDLER');
-                      if (e.currentTarget.src !== fallback) {
-                        e.currentTarget.src = fallback;
-                      }
-                    }}
-                  />
+                  >
+                    {/* Front of card - rotates with cardRotation */}
+                    <img
+                      src={selectedCard?.image || getCardImageUrl(selectedCard?.name || 'CHXNDLER')}
+                      alt={selectedCard?.name || "Card"}
+                      className="rounded-2xl pointer-events-none"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                        backfaceVisibility: 'hidden',
+                        WebkitBackfaceVisibility: 'hidden',
+                        transform: `rotateY(${cardRotation}deg)`,
+                        transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                        border: '2px solid rgba(255,255,255,0.1)',
+                      }}
+                      draggable={false}
+                      onError={(e) => {
+                        const objectKey = selectedCard?.name || 'CHXNDLER';
+                        console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
+                        const fallback = getCardImageUrl('CHXNDLER');
+                        if (e.currentTarget.src !== fallback) {
+                          e.currentTarget.src = fallback;
+                        }
+                      }}
+                    />
 
-                  {/* Back of card - offset by 180° */}
-                  <img
-                    src={getCardImageUrl('BACK')}
-                    alt="Card Back"
-                    className="absolute rounded-2xl pointer-events-none"
-                    style={{
-                      maxHeight: 'min(50vh, 75%)',
-                      maxWidth: '70%',
-                      objectFit: 'contain',
-                      top: '50%',
-                      left: '50%',
-                      transform: `translate(-50%, -50%) rotateY(${cardRotation + 180}deg)`,
-                      backfaceVisibility: 'hidden',
-                      WebkitBackfaceVisibility: 'hidden',
-                      transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                      border: '2px solid rgba(255,255,255,0.1)',
-                    }}
-                    draggable={false}
-                  />
+                    {/* Back of card - fills same container as front */}
+                    <img
+                      src={getCardImageUrl('BACK')}
+                      alt="Card Back"
+                      className="absolute top-0 left-0 rounded-2xl pointer-events-none"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                        backfaceVisibility: 'hidden',
+                        WebkitBackfaceVisibility: 'hidden',
+                        transform: `rotateY(${cardRotation + 180}deg)`,
+                        transition: isAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                        border: '2px solid rgba(255,255,255,0.1)',
+                      }}
+                      draggable={false}
+                    />
+                  </div>
                 </TiltSpinCard>
               </div>
             </div>

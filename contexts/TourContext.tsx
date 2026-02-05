@@ -5,7 +5,8 @@ import { useProfile } from "@/contexts/ProfileContext";
 import { useMenuState } from "@/contexts/MenuStateContext";
 import OnboardingTour from "@/components/OnboardingTour";
 import { sfx } from "@/lib/sfx";
-import { suppressBadgeCelebrations, isHeartcoinCelebrationActive } from "@/utils/celebrationQueue";
+import { suppressBadgeCelebrations } from "@/utils/celebrationQueue";
+import { ONBOARDING_SEQUENCE_COMPLETE, isOnboardingSequenceActive } from "@/utils/onboardingSequence";
 
 type TourContextValue = {
   active: boolean;

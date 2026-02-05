@@ -11,6 +11,7 @@ import { sfx } from "@/lib/sfx";
 import type { Element } from "@/lib/planets";
 import { ELEMENT_COLORS } from "@/lib/planets";
 // HeartCoin celebration is now handled by HeartcoinBalanceProvider via realtime subscription
+import { startOnboardingSequence } from '@/utils/onboardingSequence';
 
 // Element sound mappings
 const ELEMENT_SOUNDS: Record<Element, string> = {
@@ -188,6 +189,10 @@ export default function WhatElementAreYouModal() {
       // and trigger the celebration automatically. Calling it here causes duplicates.
       console.log('🪙 Alignment successful! HeartCoin celebration will be triggered by realtime subscription');
 
+      // Start the onboarding reward sequence (HeartCoin -> Wanderer badge -> Tour prompt)
+      // This orchestrates the celebrations in sequence and shows the tour prompt when done
+      startOnboardingSequence(currentUser.id);
+
       // Refresh profile to get updated data (profile_complete will be set)
       await refreshProfile();
 
@@ -213,16 +218,8 @@ export default function WhatElementAreYouModal() {
         }
       }, 500);
 
-      // Tour prompt will be shown after badge celebration completes via badge:celebration-complete event
-      // This ensures proper order: HeartCoin celebration → Badge celebration → Tour prompt
-      // Fallback: dispatch heartverse:entered after 12 seconds in case badge celebration doesn't trigger tour
-      // This gives time for: HeartCoin (3s) + wait (0.3s) + Badge (1.6s) + buffer = ~5s, plus extra margin
-      setTimeout(() => {
-        try {
-          console.log('Dispatching heartverse:entered fallback event');
-          window.dispatchEvent(new CustomEvent('heartverse:entered'));
-        } catch {}
-      }, 12000);
+      // Tour prompt will be shown after onboarding sequence completes
+      // The onboardingSequence orchestrator handles: HeartCoin → Wanderer badge → Tour prompt
     } catch (e: any) {
       setError(e?.message || "Failed to save element selection");
       setLoading(false);

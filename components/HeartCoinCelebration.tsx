@@ -51,6 +51,10 @@ export default function HeartCoinCelebration() {
       hideTimeoutRef.current = setTimeout(() => {
         setIsVisible(false);
         hideTimeoutRef.current = null;
+        // Dispatch completion event for onboarding sequence orchestration
+        window.dispatchEvent(new CustomEvent('heartcoin:celebration-complete', {
+          detail: { amount: celebrationAmount }
+        }));
       }, 3000);
     };
 
@@ -76,7 +80,7 @@ export default function HeartCoinCelebration() {
       style={{
         alignItems: 'center',
         paddingBottom: '10vh',
-        zIndex: 2147483650,
+        zIndex: 2147483647,
         isolation: 'isolate'
       }}
     >

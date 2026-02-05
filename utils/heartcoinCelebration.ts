@@ -142,6 +142,28 @@ export function triggerHeartCoinCelebration(amount: number, options?: { force?: 
     return;
   }
 
+  // Force mode: bypass dedup window and active celebration checks entirely.
+  // Used by handleRitualComplete to guarantee the celebration is shown after
+  // the ritual animation, even if a realtime subscription fired a premature
+  // celebration during the animation sequence.
+  if (options?.force) {
+    // Clear any pending flush timer
+    if (pendingTimer) {
+      clearTimeout(pendingTimer);
+      pendingTimer = null;
+    }
+    // Combine any accumulated pending amount with this celebration
+    const totalAmount = amount + pendingAmount;
+    pendingAmount = 0;
+    debugCelebration("COIN_CELEBRATION_FORCED", {
+      amount,
+      pendingAbsorbed: totalAmount - amount,
+      totalAmount
+    });
+    dispatchCelebration(totalAmount, "force");
+    return;
+  }
+
   const now = Date.now();
   const timeSinceLastCelebration = now - lastCelebrationAt;
 
