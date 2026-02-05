@@ -9,6 +9,7 @@ import { supabaseBrowser } from "@/lib/supabase-browser";
 import { getLocalDateString, getDisplayDateString } from "@/utils/dateHelpers";
 import { triggerHeartCoinCelebration, suppressNextHeartcoinCelebration } from "@/utils/heartcoinCelebration";
 import { suppressBadgeCelebrations } from "@/utils/celebrationQueue";
+import { enableCelebrationAudio } from "@/utils/celebrationAudio";
 import { consumeActiveBoost } from "@/lib/boosts";
 import { logHeartcoinTransaction } from "@/utils/heartcoins";
 import BinderModal from "./BinderModal";
@@ -460,6 +461,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         } else {
           // If no button position, skip animation and trigger rewards immediately
           if (awardedCoins > 0) {
+            // Unlock celebration audio (user just interacted by clicking Cast)
+            enableCelebrationAudio();
             // Suppress first to block the realtime subscription duplicate, then
             // force-trigger the intended celebration
             suppressNextHeartcoinCelebration();
@@ -556,6 +559,8 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
     // Use ref to avoid stale closure issues (ref is always current)
     const rewardAmount = pendingRewardRef.current;
     if (rewardAmount > 0) {
+      // Unlock celebration audio (user interacted by clicking Cast)
+      enableCelebrationAudio();
       // Suppress first to block the realtime subscription duplicate, then
       // force-trigger the intended celebration (bypasses the suppression we just set)
       suppressNextHeartcoinCelebration();

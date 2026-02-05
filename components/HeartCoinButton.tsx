@@ -3046,8 +3046,20 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           </button>
 
           
-          {/* Removed Heart Coin Balance from top-left per request */}
-          
+          {/* Heart Coin Balance - top left */}
+          <div className="absolute top-3 left-4 flex items-center gap-2">
+            <img
+              src="/elements/heart-coin.webp"
+              alt="HeartCoin"
+              className="w-8 h-8 object-cover"
+              style={{ filter: 'drop-shadow(0 0 8px rgba(0, 255, 255, 0.6))' }}
+            />
+            <span className="text-white text-lg font-semibold" style={{ textShadow: '0 0 8px rgba(255,255,255,0.6)' }}>
+              {profile?.id ? heartCoins : 0}
+            </span>
+            <span className="text-white/60 text-sm">Balance</span>
+          </div>
+
           {/* Header */}
           <div className="text-center mb-0.5 mt-2">
             <span
@@ -4276,7 +4288,49 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           {/* USE Tab Content */}
           {activeTab === 'USE' && (
             <div className="pl-1 pr-2 pb-2 pt-0">
-              {!showItemDetail ? (
+              {/* Show HeartCoins info when title is clicked */}
+              {showHeartCoinsInfo ? (
+                <div
+                  className="text-center p-4 rounded-lg"
+                  style={{
+                    background: 'rgba(255,255,255,0.1)',
+                    border: '1px solid rgba(255,255,255,0.3)'
+                  }}
+                >
+                  <div
+                    className="text-base mb-3"
+                    style={{
+                      color: '#FFFFFF',
+                      textShadow: '0 0 4px rgba(255,255,255,0.8)',
+                      fontSize: '14px',
+                      fontWeight: 'bold',
+                      lineHeight: 1.4
+                    }}
+                  >
+                    HeartCoins are the energy of the Heartverse. You earn them by exploring, connecting, and showing up.
+                  </div>
+                  <div
+                    className="text-sm mb-3"
+                    style={{
+                      color: 'rgba(255,255,255,0.9)',
+                      fontSize: '14px',
+                      lineHeight: 1.4
+                    }}
+                  >
+                    Complete quests. Attend community events. Engage with the Heartverse.
+                  </div>
+                  <div
+                    className="text-sm"
+                    style={{
+                      color: 'rgba(255,255,255,0.8)',
+                      fontSize: '14px',
+                      lineHeight: 1.4
+                    }}
+                  >
+                    Use your HeartCoins to unlock collectibles and cards, and deepen your place in the community.
+                  </div>
+                </div>
+              ) : !showItemDetail ? (
                 <>
                   {/* Sub-tabs moved into header grid (MERCH/CARDS) */}
 

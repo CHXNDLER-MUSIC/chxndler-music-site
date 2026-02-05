@@ -1786,13 +1786,25 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
   };
 
   return (
-    <HeartversePopup 
-      isOpen={open} 
-      onClose={onClose} 
+    <HeartversePopup
+      isOpen={open}
+      onClose={onClose}
       title="HeartCoins"
       onTitleClick={() => setShowHeartCoinDescription(!showHeartCoinDescription)}
     >
       <div className="relative flex flex-col flex-1 h-full overflow-hidden">
+        {/* Balance Display */}
+        <div className="flex items-center gap-2 mb-3">
+          <img
+            src="/elements/heart-coin.webp"
+            alt="HeartCoin"
+            className="w-10 h-10 object-cover"
+            style={{ filter: 'drop-shadow(0 0 8px rgba(0, 255, 255, 0.6))' }}
+          />
+          <span className="text-white text-xl font-semibold">{heartcoinBalance}</span>
+          <span className="text-white/60 text-sm">Balance</span>
+        </div>
+
         {/* Top Level Tabs */}
         <div className="flex border-b border-white/20 mb-6">
           <button
@@ -2534,7 +2546,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                                   name: item.name,
                                   image: displayImage,
                                   // Ensure known items use static back images
-                                  image2: ((item as any).slug || '').toLowerCase().includes('beanie') ? '/store/beanie-back.webp'
+                                  image2: ((item as any).slug || '').toLowerCase().includes('beanie')
+                                    ? `/store/beanie-back-${(enlargedSelectedVar?.value || 'pink').toLowerCase()}.webp`
                                     : (((item as any).slug || '').toLowerCase().replace(/[\s_-]/g, '').includes('tanktop') || item.name.toLowerCase().replace(/[\s_-]/g, '').includes('tanktop')) ? '/store/tank-top-back.webp'
                                     : (item as any).secondary_image_url,
                                   stripeUrl: item.stripe_url || '',
@@ -2552,7 +2565,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                                   } : null,
                                   selected_color: enlargedSelectedVar?.type === 'color' ? enlargedSelectedVar.value : null
                                 };
-                                console.log('[ENLARGED VIEW] image2:', storeItem.image2, 'name:', storeItem.name);
+                                console.log('[ENLARGED VIEW] image2:', storeItem.image2, 'name:', storeItem.name, 'slug:', (item as any).slug, 'nameLower:', item.name.toLowerCase().replace(/[\s_-]/g, ''));
                                 setEnlargedItem(storeItem);
                                 setEnlargedImageIndex(0);
                               }}

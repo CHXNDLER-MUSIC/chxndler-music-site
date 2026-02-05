@@ -428,8 +428,8 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
                   alt={enlargedCard.card.card_name}
                   className="rounded-2xl pointer-events-none"
                   style={{
-                    maxHeight: '70vh',
-                    maxWidth: '80%',
+                    maxHeight: '50vh',
+                    maxWidth: '70%',
                     objectFit: 'contain',
                     backfaceVisibility: 'hidden',
                     WebkitBackfaceVisibility: 'hidden',
@@ -455,8 +455,8 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
                   alt="Card Back"
                   className="absolute rounded-2xl pointer-events-none"
                   style={{
-                    maxHeight: '70vh',
-                    maxWidth: '80%',
+                    maxHeight: '50vh',
+                    maxWidth: '70%',
                     objectFit: 'contain',
                     top: '50%',
                     left: '50%',
@@ -472,12 +472,6 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
               </TiltSpinCard>
             </div>
 
-            {/* Card name at bottom */}
-            <div className="text-center mt-4">
-              <div className="text-2xl font-bold text-white">
-                {enlargedCard.card.card_name}
-              </div>
-            </div>
           </div>
         </div>
       )}

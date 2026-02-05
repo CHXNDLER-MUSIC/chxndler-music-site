@@ -2082,6 +2082,13 @@ const HUDPanel = React.memo(function HUDPanel({
     };
   }, []);
 
+  // Close volume popover when blue display closes
+  useEffect(() => {
+    if (!showHUD) {
+      setShowHudVolumePopover(false);
+    }
+  }, [showHUD]);
+
   // Animation loop for smooth cursor movement when playing
   useEffect(() => {
     let animationId;
@@ -2559,7 +2566,7 @@ const HUDPanel = React.memo(function HUDPanel({
                       <div className="hud-top-controls" style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 8,
+                        gap: 10,
                         position: 'absolute',
                         left: 8,
                         right: 8,
@@ -2662,8 +2669,9 @@ const HUDPanel = React.memo(function HUDPanel({
                           href={spotifyUrl}
                           target="_blank"
                           rel="noopener noreferrer"
+                          data-button-id="spotify"
                           className="spotify-btn-waveform-hud"
-                          style={{ marginTop: 1, position: 'relative', width: 32, height: 32, flexShrink: 0, zIndex: 0, pointerEvents: 'auto', isolation: 'isolate' }}
+                          style={{ marginTop: 1, width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto', order: 3 }}
                           title={isSpotifyProfile ? "Open CHXNDLER on Spotify" : "Open on Spotify"}
                           aria-label={isSpotifyProfile ? "Open CHXNDLER on Spotify" : `Open ${currentSong?.title || 'current track'} on Spotify`}
                           data-song={currentSong?.title || ''}
@@ -2705,9 +2713,10 @@ const HUDPanel = React.memo(function HUDPanel({
                           href={appleUrl}
                           target="_blank"
                           rel="noopener noreferrer"
+                          data-button-id="apple-music"
                           className="apple-btn-waveform-hud"
-                          style={{ marginTop: 1, position: 'relative', overflow: 'hidden', width: 32, height: 32, flexShrink: 0, zIndex: 1, pointerEvents: 'auto', isolation: 'isolate' }}
-                          title={isAppleProfile ? "Open CHXNDLER on Apple Music" : "Open on Apple Music"}
+                          style={{ marginTop: 1, overflow: 'hidden', width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto', order: 4 }}
+                          title="Listen on Apple Music"
                           aria-label={isAppleProfile ? "Open CHXNDLER on Apple Music" : `Open ${currentSong?.title || 'current track'} on Apple Music`}
                           data-song={currentSong?.title || ''}
                           data-slug={currentSong?.id || ''}
@@ -2748,8 +2757,9 @@ const HUDPanel = React.memo(function HUDPanel({
                           href={youtubeUrl}
                           target="_blank"
                           rel="noopener noreferrer"
+                          data-button-id="youtube"
                           className="youtube-btn-waveform-hud"
-                          style={{ marginTop: 1, position: 'relative', width: 32, height: 32, flexShrink: 0, zIndex: 50, pointerEvents: 'auto', isolation: 'isolate' }}
+                          style={{ marginTop: 1, width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto', order: 5 }}
                           title={isYouTubeProfile ? "Open CHXNDLER on YouTube" : `Open ${currentSong?.title || 'current track'} on YouTube`}
                           aria-label={isYouTubeProfile ? "Open CHXNDLER on YouTube" : `Open ${currentSong?.title || 'current track'} on YouTube`}
                           data-song={currentSong?.title || ''}
@@ -2781,13 +2791,19 @@ const HUDPanel = React.memo(function HUDPanel({
                           </svg>
                         </a>
                       )}
-                      {/* Volume button moved to the right of YouTube */}
+                      {/* Volume button - MUST be last in row */}
                       <button
+                        data-button-id="volume-control"
                         className="hud-volume-btn"
-                        style={{ marginTop: 1, position: 'relative', zIndex: 100, width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto', isolation: 'isolate' }}
+                        style={{ marginTop: 1, width: 32, height: 32, flexShrink: 0, pointerEvents: 'auto', touchAction: 'manipulation', order: 99 }}
                         onMouseEnter={() => { try { sfx.play('hover', 0.35); } catch {} }}
                         onTouchStart={(e) => {
                           // Prevent touch events from propagating to underlying elements
+                          e.stopPropagation();
+                        }}
+                        onTouchEnd={(e) => {
+                          // Handle touch end to ensure proper button activation
+                          e.preventDefault();
                           e.stopPropagation();
                         }}
                         onClick={(e) => {
@@ -2808,8 +2824,8 @@ const HUDPanel = React.memo(function HUDPanel({
                             return next;
                           });
                         }}
-                        aria-label="Volume"
-                        title="Volume"
+                        aria-label="Adjust Volume"
+                        title="Adjust Volume"
                         ref={hudVolBtnRef}
                       >
                         {volume === 0 ? (
@@ -3099,12 +3115,20 @@ const HUDPanel = React.memo(function HUDPanel({
                       tabIndex={0}
                       onKeyDown={(e) => {
                         const playVol = () => { const now = (typeof performance !== 'undefined' ? performance.now() : Date.now()); const last = hudVolumeSfxLastRef.current || 0; if (now - last > 150) { hudVolumeSfxLastRef.current = now; try { sfx.play('volume', 0.32); } catch {} } };
-                        const applyVol = (newVol) => { setVolume(newVol); if (newVol > 0) lastNonZeroVolumeRef.current = newVol; try { localStorage.setItem(VOLUME_STORAGE_KEY, String(newVol)); } catch {}; const a = liveAudioRef.current; if (a) a.volume = newVol; playVol(); };
+                        const applyVol = (newVol) => {
+                          setVolume(newVol);
+                          if (newVol > 0) lastNonZeroVolumeRef.current = newVol;
+                          try { localStorage.setItem(VOLUME_STORAGE_KEY, String(newVol)); } catch {};
+                          // Apply to all audio elements
+                          const a = liveAudioRef.current; if (a) a.volume = newVol;
+                          const mediaPlayer = document.querySelector('audio[data-audio-player="1"]'); if (mediaPlayer) mediaPlayer.volume = newVol;
+                          try { audioManager.setVolume(newVol); } catch {}
+                          playVol();
+                        };
                         if (e.key === 'ArrowUp') { e.preventDefault(); applyVol(Math.max(0, Math.min(1, volume + 0.05))); }
                         else if (e.key === 'ArrowDown') { e.preventDefault(); applyVol(Math.max(0, Math.min(1, volume - 0.05))); }
                       }}
                       onPointerDown={(e) => {
-                        const a = liveAudioRef.current;
                         const el = e.currentTarget;
                         const playVol = () => { const now = (typeof performance !== 'undefined' ? performance.now() : Date.now()); const last = hudVolumeSfxLastRef.current || 0; if (now - last > 120) { hudVolumeSfxLastRef.current = now; try { sfx.play('volume', 0.28); } catch {} } };
                         const applyFromClientY = (clientY) => {
@@ -3116,8 +3140,10 @@ const HUDPanel = React.memo(function HUDPanel({
                           setVolume(newVol);
                           if (newVol > 0) lastNonZeroVolumeRef.current = newVol;
                           try { localStorage.setItem(VOLUME_STORAGE_KEY, String(newVol)); } catch {}
-                          // Apply to audio if available
-                          if (a) a.volume = newVol;
+                          // Apply to all audio elements
+                          const a = liveAudioRef.current; if (a) a.volume = newVol;
+                          const mediaPlayer = document.querySelector('audio[data-audio-player="1"]'); if (mediaPlayer) mediaPlayer.volume = newVol;
+                          try { audioManager.setVolume(newVol); } catch {}
                           playVol();
                         };
                         try { el.setPointerCapture?.(e.pointerId); } catch {}

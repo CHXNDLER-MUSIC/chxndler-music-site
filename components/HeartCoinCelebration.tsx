@@ -76,7 +76,7 @@ export default function HeartCoinCelebration() {
       style={{
         alignItems: 'center',
         paddingBottom: '10vh',
-        zIndex: 2147483647,
+        zIndex: 2147483650,
         isolation: 'isolate'
       }}
     >

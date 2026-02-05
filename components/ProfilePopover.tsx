@@ -1422,7 +1422,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                   textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 16px rgba(255,255,255,0.5)'
                 }}
               >
-                HeartCoins
+                HeartCoins Earned
               </span>
             </div>
 

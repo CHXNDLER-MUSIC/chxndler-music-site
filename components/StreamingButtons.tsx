@@ -7,7 +7,7 @@ import { toAppleEmbed, appleEmbedHeight } from "@/lib/apple";
 import { createPortal } from "react-dom";
 import { useAudio } from "@/app/providers/AudioProvider";
 
-export default function StreamingButtons({ pos, links, showControls = true, disabled = false }:{ pos: { xVw:number; yVh:number; sizePx:number; gapPx?:number; tilt?:string; vertical?: boolean; mobile?: {sizePx:number; gapPx?:number}; tablet?: {sizePx:number; gapPx?:number} }, links:{ spotify?:string; apple?:string; youtube?:string }, showControls?: boolean, disabled?: boolean }){
+export default function StreamingButtons({ pos, links, showControls = true, disabled = false, isDisplayOpen = true }:{ pos: { xVw:number; yVh:number; sizePx:number; gapPx?:number; tilt?:string; vertical?: boolean; mobile?: {sizePx:number; gapPx?:number}; tablet?: {sizePx:number; gapPx?:number} }, links:{ spotify?:string; apple?:string; youtube?:string }, showControls?: boolean, disabled?: boolean, isDisplayOpen?: boolean }){
   const { playing, play, pause, volume, setVolume } = useAudio();
   // Get responsive size based on screen width
   const getResponsiveSize = () => {
@@ -169,6 +169,13 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [showVolumeControl]);
+
+  // Close volume popover when parent display closes
+  useEffect(() => {
+    if (!isDisplayOpen) {
+      setShowVolumeControl(false);
+    }
+  }, [isDisplayOpen]);
 
   return (
     <>

@@ -100,7 +100,21 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
         return;
       }
 
-      setProfileData(profile);
+      // Fetch heartcoin_total directly from profiles table
+      const { data: heartcoinData, error: heartcoinError } = await supabaseClient
+        .from('profiles')
+        .select('heartcoin_total')
+        .eq('id', user.id)
+        .single();
+
+      if (heartcoinError) {
+        console.error('Error loading heartcoin_total:', heartcoinError);
+      }
+
+      setProfileData({
+        ...profile,
+        heartcoin_total: heartcoinData?.heartcoin_total || 0
+      });
 
       // Load user's badges
       const { data: userBadges, error: badgeError } = await supabaseClient
@@ -415,7 +429,7 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
                     >
                       {profileData?.heartcoin_total || 0}
                     </span>
-                    <span className="text-sm text-white/60 ml-1">HeartCoins</span>
+                    <span className="text-sm text-white/60 ml-1">HeartCoins Earned</span>
                   </div>
                 </div>
               </div>

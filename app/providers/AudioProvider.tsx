@@ -1245,6 +1245,20 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     a.addEventListener("canplaythrough", onLoadEnd);
     a.addEventListener("ended", onEnded);
 
+    // Also listen to MediaPlayer's audio element for volume sync
+    const syncMediaPlayerVolume = () => {
+      const mediaPlayerAudio = document.querySelector<HTMLAudioElement>('audio[data-audio-player="1"]');
+      if (mediaPlayerAudio) {
+        const onMediaPlayerVol = () => setState(s => ({ ...s, volume: mediaPlayerAudio.volume }));
+        mediaPlayerAudio.addEventListener("volumechange", onMediaPlayerVol);
+        // Sync initial volume from MediaPlayer
+        setState(s => ({ ...s, volume: mediaPlayerAudio.volume }));
+      }
+    };
+    // Try immediately and also after a short delay (MediaPlayer might not be mounted yet)
+    syncMediaPlayerVolume();
+    setTimeout(syncMediaPlayerVolume, 1000);
+
     // Debug: Track unexpected pauses
     const onPauseDebug = () => {
       console.log('🎵 Audio paused at time:', a.currentTime, 'src:', a.src);
@@ -1778,9 +1792,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     },
 
     setVolume: (v: number) => {
+      const clampedVol = Math.max(0, Math.min(1, v));
+      // Set volume on AudioProvider's audio element
       const a = audioRef.current;
-      if (!a) return;
-      a.volume = Math.max(0, Math.min(1, v));
+      if (a) a.volume = clampedVol;
+      // Also set volume on MediaPlayer's audio element (the actual playback element)
+      const mediaPlayerAudio = document.querySelector<HTMLAudioElement>('audio[data-audio-player="1"]');
+      if (mediaPlayerAudio) mediaPlayerAudio.volume = clampedVol;
+      // Update state
+      setState(s => ({ ...s, volume: clampedVol }));
     },
 
     selectTrack: async (trackId: string) => {
