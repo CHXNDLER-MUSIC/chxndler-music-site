@@ -1068,11 +1068,11 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     }
   }, [enlargedItem]);
 
-  // Reset merch flip state when enlarged item changes
+  // Reset merch flip state when enlarged item or carousel page changes
   useEffect(() => {
     setIsMerchFlipped(false);
     setMerchFlipScale(1);
-  }, [enlargedItem]);
+  }, [enlargedItem, currentPage]);
 
   function getRedirectUrl() {
     return `${window.location.origin}/auth/callback`;
@@ -2515,59 +2515,48 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             onTouchMove={onTouchMove}
                             onTouchEnd={onTouchEnd}
                           >
-                            <img
-                              src={displayImage}
-                              alt={item.name}
-                              className="w-auto max-w-full object-contain rounded-lg cursor-pointer hover:scale-105 transition-transform duration-300 select-none"
-                              style={{ height: '100%', maxHeight: '9rem', transform: 'scale(0.92)' }}
-                              draggable={false}
-                              onClick={() => {
-                                // Get variant selection for enlarged view (same logic as purchase button)
-                                const variantOptions = normalizeVariantOptions(item.variant_options, item.image_url);
-                                let enlargedSelectedVar: NormalizedVariantOption | null = null;
+                            {(() => {
+                              // Compute back image for flip
+                              const itemSlugOrName = ((item as any).slug || item.name || '').toLowerCase();
+                              const isBeanie = itemSlugOrName.includes('beanie');
+                              const isTankTop = itemSlugOrName.replace(/[\s_-]/g, '').includes('tanktop');
+                              // Get selected variant - check state first, then fall back to first option (same as getItemDisplayImage)
+                              let selectedVar = selectedVariants[item.id];
+                              if (!selectedVar) {
+                                const opts = normalizeVariantOptions(item.variant_options, item.image_url);
+                                if (opts.length > 0) selectedVar = opts[0];
+                              }
+                              const beanieColor = (selectedVar?.value || 'pink').toLowerCase();
+                              const carouselBackImage = isBeanie
+                                ? `/store/beanie-back-${beanieColor}.webp`
+                                : isTankTop ? '/store/tank-top-back.webp'
+                                : (item.image_url_2 || (item as any).secondary_image_url || undefined);
 
-                                if (variantOptions.length >= 1) {
-                                  // Use explicit selection if available, otherwise default to first option
-                                  // This ensures back image matches front image for multi-variant items like beanie
-                                  enlargedSelectedVar = selectedVariants[item.id] || variantOptions[0];
-                                }
-
-                                console.log('[ENLARGED VIEW] Opening with variant:', {
-                                  itemId: item.id,
-                                  itemName: item.name,
-                                  variantOptionsCount: variantOptions.length,
-                                  selectedVariantsState: selectedVariants,
-                                  enlargedSelectedVar,
-                                });
-
-                                const storeItem: StoreItem = {
-                                  name: item.name,
-                                  image: displayImage,
-                                  // Ensure known items use static back images
-                                  image2: ((item as any).slug || '').toLowerCase().includes('beanie')
-                                    ? `/store/beanie-back-${(enlargedSelectedVar?.value || 'pink').toLowerCase()}.webp`
-                                    : (((item as any).slug || '').toLowerCase().replace(/[\s_-]/g, '').includes('tanktop') || item.name.toLowerCase().replace(/[\s_-]/g, '').includes('tanktop')) ? '/store/tank-top-back.webp'
-                                    : (item as any).secondary_image_url,
-                                  stripeUrl: item.stripe_url || '',
-                                  description: item.description || '',
-                                  cost: item.price_usd || 0,
-                                  heartCoin: item.price_heartcoins || 0,
-                                  merch_item_id: item.id,
-                                  // Pass tier info for gating in enlarged view
-                                  min_tier: item.min_journey_tier || item.min_tier || null,
-                                  // Include variant selection for purchase from enlarged view
-                                  selected_variant: enlargedSelectedVar ? {
-                                    type: enlargedSelectedVar.type,
-                                    value: enlargedSelectedVar.value,
-                                    label: enlargedSelectedVar.label
-                                  } : null,
-                                  selected_color: enlargedSelectedVar?.type === 'color' ? enlargedSelectedVar.value : null
-                                };
-                                console.log('[ENLARGED VIEW] image2:', storeItem.image2, 'name:', storeItem.name, 'slug:', (item as any).slug, 'nameLower:', item.name.toLowerCase().replace(/[\s_-]/g, ''));
-                                setEnlargedItem(storeItem);
-                                setEnlargedImageIndex(0);
-                              }}
-                            />
+                              return (
+                              <img
+                                src={isMerchFlipped && carouselBackImage ? carouselBackImage : displayImage}
+                                alt={item.name}
+                                className="w-auto max-w-full object-contain rounded-lg cursor-pointer hover:scale-105 transition-transform duration-300 select-none"
+                                style={{
+                                  height: '100%',
+                                  maxHeight: '9rem',
+                                  transform: `scale(0.92) scaleX(${merchFlipScale})`,
+                                  transition: 'transform 250ms ease-in-out',
+                                }}
+                                draggable={false}
+                                onClick={() => {
+                                  console.log('[MERCH FLIP] Click detected', { carouselBackImage, beanieColor, isBeanie, selectedVarValue: selectedVar?.value, isMerchFlipped });
+                                  if (!carouselBackImage) { console.log('[MERCH FLIP] No back image, skipping'); return; }
+                                  try { sfx.play('flip', 0.8); } catch {}
+                                  setMerchFlipScale(0);
+                                  setTimeout(() => {
+                                    setIsMerchFlipped(prev => !prev);
+                                    setMerchFlipScale(1);
+                                  }, 250);
+                                }}
+                              />
+                              );
+                            })()}
                           </div>
 
                           {/* Page Indicator Dots */}
@@ -2791,10 +2780,18 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
                               const displayImage = getItemDisplayImage(item);
 
+                              const itemSlugOrName2 = ((item as any).slug || item.name || '').toLowerCase();
+                              const isBeanie2 = itemSlugOrName2.includes('beanie');
+                              const isTankTop2 = itemSlugOrName2.replace(/[\s_-]/g, '').includes('tanktop');
+                              const beanieColor2 = (selectedVar?.value || selectedVariants[item.id]?.value || 'pink').toLowerCase();
+
                               const storeItem: StoreItem = {
                                 name: item.name,
                                 image: displayImage,
-                                image2: (((item as any).slug || '').toLowerCase().replace(/[\s_-]/g, '').includes('tanktop') || item.name.toLowerCase().replace(/[\s_-]/g, '').includes('tanktop')) ? '/store/tank-top-back.webp' : (item.secondary_image_url || undefined),
+                                image2: isBeanie2
+                                  ? `/store/beanie-back-${beanieColor2}.webp`
+                                  : isTankTop2 ? '/store/tank-top-back.webp'
+                                  : (item.image_url_2 || (item as any).secondary_image_url || undefined),
                                 stripeUrl: item.stripe_url || '',
                                 description: item.description || '',
                                 cost: item.price_usd || 0,
@@ -3391,11 +3388,20 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
               {/* Image Content - 2D Flip */}
               <div className="flex items-center justify-center w-full h-full">
+                {(() => {
+                  // Compute back image: use image2 if set, otherwise derive from item name + color
+                  const itemNameLower = (enlargedItem.name || '').toLowerCase();
+                  const isBeanie = itemNameLower.includes('beanie');
+                  const beanieBackColor = (enlargedItem.selected_color || enlargedItem.selected_variant?.value || 'pink').toLowerCase();
+                  const backImage = enlargedItem.image2
+                    || (isBeanie ? `/store/beanie-back-${beanieBackColor}.webp` : undefined);
+
+                  return (
                 <div
                   className="cursor-pointer"
                   style={{ animation: 'merchPulse 2.5s ease-in-out infinite' }}
                   onClick={() => {
-                    if (!enlargedItem.image2) return;
+                    if (!backImage) return;
                     try { sfx.play('flip', 0.8); } catch {}
                     // Shrink to zero horizontally
                     setMerchFlipScale(0);
@@ -3407,7 +3413,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   }}
                 >
                   <img
-                    src={isMerchFlipped ? enlargedItem.image2! : enlargedItem.image}
+                    src={isMerchFlipped && backImage ? backImage : enlargedItem.image}
                     alt=""
                     className="max-w-full max-h-[70vh] object-contain rounded-lg"
                     style={{
@@ -3417,6 +3423,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                     draggable={false}
                   />
                 </div>
+                  );
+                })()}
               </div>
             </div>
           </div>

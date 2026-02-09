@@ -85,6 +85,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
   const [selectedMerchInline, setSelectedMerchInline] = useState<MerchItem | null>(null);
   const [selectedMerchColor, setSelectedMerchColor] = useState<string | null>(null);
   const [merchRotation, setMerchRotation] = useState(0);
+  const [merchShowBack, setMerchShowBack] = useState(false);
   const [relicRotationInline, setRelicRotationInline] = useState(0);
   const [relicRotationModal, setRelicRotationModal] = useState(0);
   const [showElementInfo, setShowElementInfo] = useState(false);
@@ -252,6 +253,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
           setShowMerchInline(false);
           setSelectedMerchInline(null);
           setMerchRotation(0);
+          setMerchShowBack(false);
         } else if (showRelicsInline) {
           setShowRelicsInline(false);
         } else if (showRelicsModal) {
@@ -272,6 +274,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
           setShowMerchInline(false);
           setSelectedMerchInline(null);
           setMerchRotation(0);
+          setMerchShowBack(false);
         } else if (showRelicsInline) {
           setShowRelicsInline(false);
         } else if (showRelicsModal) {
@@ -2067,6 +2070,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                   setShowMerchInline(false);
                   setSelectedMerchInline(null);
                   setMerchRotation(0);
+                  setMerchShowBack(false);
                   try { sfx.play('close', 0.6); } catch {}
                 }}
                 onMouseEnter={() => {
@@ -2111,7 +2115,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                   {/* Compact header bar */}
                   <div className="flex items-center px-3 py-2 bg-black/80 border-b border-cyan-400/40 flex-shrink-0">
                     <button
-                      onClick={() => { setSelectedMerchInline(null); setSelectedMerchColor(null); setMerchRotation(0); try { sfx.play('close', 0.6); } catch {} }}
+                      onClick={() => { setSelectedMerchInline(null); setSelectedMerchColor(null); setMerchRotation(0); setMerchShowBack(false); try { sfx.play('close', 0.6); } catch {} }}
                       onMouseEnter={() => { try { sfx.play('hover', 0.3); } catch {} }}
                       className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110"
                       style={{
@@ -2235,25 +2239,33 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                       returnDuration={400}
                       enableSpin={true}
                       spinSensitivity={0.8}
-                      onRotationChange={setMerchRotation}
+                      onRotationChange={(rot: number) => {
+                        setMerchRotation(rot);
+                        // Update back/front based on rotation angle during drag
+                        const showBack = Math.round(rot / 180) % 2 !== 0;
+                        setMerchShowBack(showBack);
+                      }}
                       onClick={() => {
                         try { sfx.play('flip', 0.8); } catch {}
                         setMerchRotation(prev => prev + 180);
+                        // Swap image at animation midpoint (200ms into 400ms transition)
+                        // when card is edge-on and invisible
+                        setTimeout(() => setMerchShowBack(prev => !prev), 200);
                       }}
                     >
                       <img
                         src={(() => {
                           // Fallback color variants for items without DB variant_options
-                          const FALLBACK_COLORS: Record<string, Array<{ value: string; images: { main: string } }>> = {
+                          const FALLBACK_COLORS: Record<string, Array<{ value: string; images: { main: string; back?: string } }>> = {
                             bracelet: [
                               { value: 'pink', images: { main: '/store/bracelet-pink.webp' } },
                               { value: 'blue', images: { main: '/store/bracelet-blue.webp' } },
                               { value: 'yellow', images: { main: '/store/bracelet-yellow.webp' } },
                             ],
                             beanie: [
-                              { value: 'black', images: { main: '/store/beanie-front-black.webp' } },
-                              { value: 'blue', images: { main: '/store/beanie-front-blue.webp' } },
-                              { value: 'pink', images: { main: '/store/beanie-front-pink.webp' } },
+                              { value: 'black', images: { main: '/store/beanie-front-black.webp', back: '/store/beanie-back-black.webp' } },
+                              { value: 'blue', images: { main: '/store/beanie-front-blue.webp', back: '/store/beanie-back-blue.webp' } },
+                              { value: 'pink', images: { main: '/store/beanie-front-pink.webp', back: '/store/beanie-back-pink.webp' } },
                             ],
                           };
 
@@ -2280,6 +2292,8 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                             }
                           }
 
+                          const isShowingBack = merchShowBack;
+
                           if (effectiveColor) {
                             // Try DB variant_options first
                             if (selectedMerchInline.variant_options) {
@@ -2290,16 +2304,23 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
                               const colors = (opts as any)?.colors;
                               if (Array.isArray(colors)) {
                                 const match = colors.find((c: any) => c.value === effectiveColor);
-                                if (match?.images?.main || match?.images?.front) return match.images.main || match.images.front;
+                                if (match) {
+                                  if (isShowingBack && match.images?.back) return match.images.back;
+                                  if (match.images?.main || match.images?.front) return match.images.main || match.images.front;
+                                }
                               }
                             }
                             // Fallback for known items
                             const fallback = FALLBACK_COLORS[selectedMerchInline.slug];
                             if (fallback) {
                               const match = fallback.find(c => c.value === effectiveColor);
-                              if (match?.images?.main) return match.images.main;
+                              if (match) {
+                                if (isShowingBack && match.images.back) return match.images.back;
+                                if (match.images.main) return match.images.main;
+                              }
                             }
                           }
+                          if (isShowingBack && selectedMerchInline.image_url_2) return selectedMerchInline.image_url_2;
                           return selectedMerchInline.image_url || '';
                         })()}
                         alt={selectedMerchInline.name}

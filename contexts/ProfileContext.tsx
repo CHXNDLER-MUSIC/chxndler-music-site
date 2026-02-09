@@ -297,7 +297,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     setProfile(newProfile);
   }, []);
 
-  const fetchProfile = async () => {
+  const fetchProfile = async (options?: { skipBadgeCheck?: boolean }) => {
     // Prevent duplicate concurrent fetch calls
     if (isFetchingProfileRef.current) return;
     isFetchingProfileRef.current = true;
@@ -499,28 +499,28 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         });
       }
 
-      // Update badge progress counters when profile loads
-      // Then refresh user badges to show any newly unlocked badges
-      // Suppress celebrations during this initial check so badges awarded as a
-      // catch-up on page load don't trigger celebration animations. The
-      // useBadgeCelebrations hook marks suppressed badges as "seen" when
-      // suppression ends, preventing false celebrations while preserving proper
-      // celebration behavior for badges earned through explicit user actions.
-      suppressBadgeCelebrations(10000); // safety timeout
-      updateBadgeProgressCounters(user.id)
-        .then(() => {
-          // Refresh user badges to pick up any newly awarded badges
-          fetchUserBadges(user.id);
-        })
-        .catch(err => {
-          console.warn('Failed to update badge progress counters:', err);
-        })
-        .finally(() => {
-          // Re-enable celebrations now that the initial check is done.
-          // Any badges that were awarded during this window are already in the
-          // pending queue and will be marked as seen (not celebrated).
-          enableBadgeCelebrations();
-        });
+      // Update badge progress counters only on initial page load, NOT on
+      // refreshProfile() calls (e.g., after merch purchases). Running badge
+      // checks during refreshProfile() causes a race condition: badges like
+      // True Alien or Stream Seeker get awarded, and the realtime INSERT event
+      // arrives after suppression ends, triggering unwanted celebrations.
+      if (!options?.skipBadgeCheck) {
+        suppressBadgeCelebrations(10000); // safety timeout
+        updateBadgeProgressCounters(user.id)
+          .then(() => {
+            // Refresh user badges to pick up any newly awarded badges
+            fetchUserBadges(user.id);
+          })
+          .catch(err => {
+            console.warn('Failed to update badge progress counters:', err);
+          })
+          .finally(() => {
+            // Re-enable celebrations now that the initial check is done.
+            // Any badges that were awarded during this window are already in the
+            // pending queue and will be marked as seen (not celebrated).
+            enableBadgeCelebrations();
+          });
+      }
 
       setProfileWithCelebration(mappedProfile);
     } catch (error) {
@@ -533,7 +533,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshProfile = useCallback(async () => {
-    await fetchProfile();
+    // Skip badge checks on refresh — badge checks should only run on initial
+    // page load. Running them here causes merch/card purchases to incorrectly
+    // trigger unrelated badge celebrations (e.g., True Alien, Stream Seeker).
+    await fetchProfile({ skipBadgeCheck: true });
   }, []);
 
   const updateProfile = useCallback(async (updates: Partial<Profile>) => {

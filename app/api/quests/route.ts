@@ -71,6 +71,17 @@ export async function GET(request: NextRequest) {
       }) || [];
 
       todayCompletionsFiltered.forEach(c => todayCompletionSet.add(c.bonus_quest_id));
+
+      // Fallback: also check last_completed_at from user_bonus_quests
+      // The RPC may update this field without inserting into user_bonus_quest_completions
+      completionMap.forEach((completion, questId) => {
+        if (completion.last_completed_at && !todayCompletionSet.has(questId)) {
+          const lastCompletedDate = new Date(completion.last_completed_at).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+          if (lastCompletedDate === nyDateStr) {
+            todayCompletionSet.add(questId);
+          }
+        }
+      });
     }
 
     // Transform quests with completion data

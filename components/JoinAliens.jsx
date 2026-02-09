@@ -7,6 +7,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 // import { useLiveStatus } from "@/hooks/useLiveStatus"; // Removed since chat is always available
 import ChatPanel from "@/components/chat/ChatPanel";
 import WelcomeHomeModal from "@/components/WelcomeHomeModal";
+import EpisodesLibrary from "@/components/EpisodesLibrary";
 
 export default function JoinAliens({ visible = true } = {}) {
   const { profile, savePhone, user } = useProfile();
@@ -240,7 +241,7 @@ export default function JoinAliens({ visible = true } = {}) {
         pointerEvents: visible ? 'auto' : 'none',
         width: '100%',
         height: '100%',
-        minHeight: 'fit-content',
+        minHeight: isChatOpen ? '0' : 'fit-content',
         maxHeight: '100%',
         margin: '0',
         padding: '0px 8px 0px 8px',
@@ -629,6 +630,9 @@ export default function JoinAliens({ visible = true } = {}) {
           }}
         />
       </button>
+
+      {/* Episodes Library - button + panel rendered directly in container */}
+      <EpisodesLibrary />
 
       {/* Phone Button - positioned in bottom left corner */}
       <button

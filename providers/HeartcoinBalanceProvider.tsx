@@ -399,16 +399,18 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
       updateBalanceWithCelebration(newBalance, "refetch after award");
     }
 
-    // Also refresh SOTD status
+    // Also refresh SOTD status — never downgrade true→false
     const sotdCompleted = await fetchSongOfDayStatus();
-    setSongOfDayCompletedToday(sotdCompleted);
+    setSongOfDayCompletedToday(prev => sotdCompleted || prev);
   }, [fetchBalance, fetchSongOfDayStatus, updateBalanceWithCelebration]);
 
   const refreshProfileState = useCallback(async () => {
     debugBalance("refreshProfileState called");
     await Promise.all([
       refetchBalance(),
-      fetchSongOfDayStatus().then(setSongOfDayCompletedToday),
+      fetchSongOfDayStatus().then(completed =>
+        setSongOfDayCompletedToday(prev => completed || prev)
+      ),
     ]);
   }, [refetchBalance, fetchSongOfDayStatus]);
 
@@ -697,7 +699,10 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
     const handleSotdRefresh = async () => {
       debugBalance("songOfDay:refresh event received");
       const completed = await fetchSongOfDayStatus();
-      setSongOfDayCompletedToday(completed);
+      // Use functional update: never downgrade true→false during same session.
+      // This prevents async fetch results from overriding a valid completion
+      // set by the dailySongQuestCompleted event handler.
+      setSongOfDayCompletedToday(prev => completed || prev);
     };
 
     window.addEventListener("songOfDay:refresh", handleSotdRefresh);

@@ -11,11 +11,25 @@ export default function HeartCoinCelebration() {
   const [mounted, setMounted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const portalRootRef = useRef<HTMLDivElement | null>(null);
 
-  // Track mount state for portal
+  // Create a dedicated portal root at the very end of <body> for guaranteed top-layer rendering.
+  // This ensures the celebration always paints above modals/journals regardless of stacking context.
   useEffect(() => {
+    const id = 'heartcoin-celebration-root';
+    let root = document.getElementById(id) as HTMLDivElement | null;
+    if (!root) {
+      root = document.createElement('div');
+      root.id = id;
+      root.style.position = 'relative';
+      root.style.zIndex = '2147483647';
+      document.body.appendChild(root);
+    }
+    portalRootRef.current = root;
     setMounted(true);
-    return () => setMounted(false);
+    return () => {
+      setMounted(false);
+    };
   }, []);
 
   useEffect(() => {
@@ -71,9 +85,9 @@ export default function HeartCoinCelebration() {
   }, []);
 
   // Don't render on server or when not visible
-  if (!mounted || !isVisible) return null;
+  if (!mounted || !isVisible || !portalRootRef.current) return null;
 
-  // Render via portal to document.body for top-layer rendering
+  // Render via portal to a dedicated root div at the end of <body> for guaranteed top-layer rendering
   const celebrationContent = (
     <div
       className="fixed inset-0 flex items-center justify-center pointer-events-none"
@@ -81,7 +95,6 @@ export default function HeartCoinCelebration() {
         alignItems: 'center',
         paddingBottom: '10vh',
         zIndex: 2147483647,
-        isolation: 'isolate'
       }}
     >
       {/* Backdrop */}
@@ -110,5 +123,5 @@ export default function HeartCoinCelebration() {
     </div>
   );
 
-  return createPortal(celebrationContent, document.body);
+  return createPortal(celebrationContent, portalRootRef.current);
 }

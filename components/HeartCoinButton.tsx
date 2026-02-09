@@ -1249,6 +1249,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   const [isAnimatingFlip, setIsAnimatingFlip] = useState(false); // For smooth flip transition
   const [merchRotation, setMerchRotation] = useState(0); // For merch 360° spin mode
   const [isMerchAnimatingFlip, setIsMerchAnimatingFlip] = useState(false); // For merch flip transition
+  const [isMerchFlipped, setIsMerchFlipped] = useState(false); // Which side of merch is showing
+  const [merchFlipScale, setMerchFlipScale] = useState(1); // For 2D scaleX flip animation
   // activeMerchItem state is declared earlier for effect ordering
   const [showCheckInSuccess, setShowCheckInSuccess] = useState(false);
   const [isSubmittingPhrase, setIsSubmittingPhrase] = useState(false);
@@ -5876,6 +5878,8 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               onClick={() => {
                 setActiveMerchItem(null);
                 setMerchRotation(0);
+                setIsMerchFlipped(false);
+                setMerchFlipScale(1);
                 setShowEnlargedConfirm(false);
               }}
             >
@@ -6040,94 +6044,53 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       {activeMerchItem.price_heartcoins}
                     </button>
 
-                    {/* TiltSpinCard wrapper for 3D rotation - with floating animation */}
-                    <TiltSpinCard
-                      className="relative w-full h-[360px] hover:scale-110 transition-all duration-200 cursor-pointer group hover:drop-shadow-[0_0_30px_rgba(255,255,255,0.5)]"
-                      style={{ perspective: '1000px', animation: 'merchFloat 2.5s ease-in-out infinite' }}
-                      maxRotateX={10}
-                      sensitivity={0.3}
-                      returnDuration={400}
-                      enableSpin={true}
-                      spinSensitivity={0.8}
-                      onRotationChange={setMerchRotation}
-                      onMouseEnter={() => { playHoverSfx(0.3) }}
-                      onClick={() => {
-                        // Play flip sound and animate
-                        sfx.play('flip', 0.8);
-                        setIsMerchAnimatingFlip(true);
-                        setMerchRotation(prev => prev + 180);
-                        setTimeout(() => setIsMerchAnimatingFlip(false), 500);
-                      }}
-                    >
-                      {/* 3D container for images - this spins */}
-                      <div
-                        className="absolute inset-0 w-full h-full group-hover:drop-shadow-[0_0_25px_rgba(255,255,255,0.6)]"
-                        style={{
-                          transformStyle: 'preserve-3d',
-                          transform: `rotateY(${merchRotation}deg)`,
-                          transition: isMerchAnimatingFlip ? 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                          filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.3))',
-                        }}
-                      >
-                        {/* Merchandise Image - Front */}
-                        <img
-                          src={(() => {
-                            // Find the index of activeMerchItem to look up selected variant
-                            const activeMerchIndex = merchItems.findIndex(item => item.id === activeMerchItem.id);
-                            const selectedVar = activeMerchIndex >= 0 ? selectedVariants[activeMerchIndex] : null;
-                            return selectedVar?.image || activeMerchItem.image_url;
-                          })()}
-                          alt={activeMerchItem.name}
-                          className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-                          style={{
-                            filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.3))',
-                            backfaceVisibility: 'hidden',
+                    {/* Merch image with 2D flip animation */}
+                    {(() => {
+                      const activeMerchIndex = merchItems.findIndex(item => item.id === activeMerchItem.id);
+                      const selectedVar = activeMerchIndex >= 0 ? selectedVariants[activeMerchIndex] : null;
+                      const frontImage = selectedVar?.image || activeMerchItem.image_url;
+                      const nameLower = (activeMerchItem.name || '').toLowerCase();
+                      const slugLower = (activeMerchItem.slug || '').toLowerCase();
+
+                      // Compute back image
+                      let backImage: string | undefined;
+                      if (nameLower.includes('beanie') || slugLower.includes('beanie')) {
+                        const beanieColor = (selectedVar?.value || 'pink').toLowerCase();
+                        backImage = `/store/beanie-back-${beanieColor}.webp`;
+                      } else if (nameLower.replace(/[\s_-]/g, '').includes('tanktop') || slugLower.replace(/[\s_-]/g, '').includes('tanktop')) {
+                        backImage = '/store/tank-top-back.webp';
+                      } else {
+                        backImage = activeMerchItem.image_url_2 || undefined;
+                      }
+
+                      return (
+                        <div
+                          className="relative w-full h-[360px] flex items-center justify-center cursor-pointer group"
+                          style={{ animation: 'merchFloat 2.5s ease-in-out infinite' }}
+                          onClick={() => {
+                            if (!backImage) return;
+                            try { sfx.play('flip', 0.8); } catch {}
+                            setMerchFlipScale(0);
+                            setTimeout(() => {
+                              setIsMerchFlipped(prev => !prev);
+                              setMerchFlipScale(1);
+                            }, 250);
                           }}
-                          draggable={false}
-                        />
-                        {/* Merchandise Image - Back */}
-                        <img
-                          src={(() => {
-                            // Find the selected variant's back image
-                            const activeMerchIndex = merchItems.findIndex(item => item.id === activeMerchItem.id);
-                            const selectedVar = activeMerchIndex >= 0 ? selectedVariants[activeMerchIndex] : null;
-                            if (selectedVar?.value && activeMerchItem.variant_options) {
-                              let opts = activeMerchItem.variant_options;
-                              if (typeof opts === 'string') {
-                                try { opts = JSON.parse(opts); } catch { opts = null; }
-                              }
-                              if (opts && typeof opts === 'object') {
-                                // Check colors array
-                                const colors = (opts as any).colors;
-                                if (Array.isArray(colors)) {
-                                  const match = colors.find((c: any) => c.value === selectedVar.value);
-                                  if (match?.images?.back) return match.images.back;
-                                }
-                                // Check variants array
-                                const variants = (opts as any).variants;
-                                if (Array.isArray(variants)) {
-                                  const match = variants.find((v: any) => v.value === selectedVar.value);
-                                  if (match?.images?.back) return match.images.back;
-                                }
-                              }
-                            }
-                            // Fallback to default back image
-                            const slug = (activeMerchItem.slug || '').toLowerCase().replace(/[\s_-]/g, '');
-                            const name = (activeMerchItem.name || '').toLowerCase().replace(/[\s_-]/g, '');
-                            if (slug.includes('tanktop') || name.includes('tanktop')) return '/store/tank-top-back.webp';
-                            return activeMerchItem.image_url_2 || activeMerchItem.image_url;
-                          })()}
-                          alt={`${activeMerchItem.name} back`}
-                          className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-                          style={{
-                            filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.3))',
-                            backfaceVisibility: 'hidden',
-                            transform: 'rotateY(180deg)',
-                          }}
-                          draggable={false}
-                        />
-                      </div>
-                    </TiltSpinCard>
+                        >
+                          <img
+                            src={isMerchFlipped && backImage ? backImage : frontImage}
+                            alt={activeMerchItem.name}
+                            className="w-full h-full object-contain group-hover:drop-shadow-[0_0_25px_rgba(255,255,255,0.6)]"
+                            style={{
+                              filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.3))',
+                              transform: `scaleX(${merchFlipScale})`,
+                              transition: 'transform 250ms ease-in-out',
+                            }}
+                            draggable={false}
+                          />
+                        </div>
+                      );
+                    })()}
 
                     {/* PAY WITH USD button - below image */}
                     <button

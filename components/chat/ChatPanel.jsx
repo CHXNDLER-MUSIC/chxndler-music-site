@@ -1360,7 +1360,7 @@ export default function ChatPanel({ isOpen, onClose }) {
               }}
             >
               {/* Header */}
-              <div className="p-4 border-b border-yellow-400/30 flex items-center">
+              <div className="p-4 border-b border-yellow-400/30 flex items-center flex-shrink-0">
                 <div className="flex items-center space-x-3 flex-1 mr-1 ml-20">
                   <div 
                     className="w-3 h-3 rounded-full animate-pulse flex-shrink-0"
