@@ -256,9 +256,18 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       }
     }
 
+    // Collect card_ids already placed in slots to prevent duplicates
+    // (handles race condition where binderSlots and ownedCards refresh at different times)
+    const placedCardIds = new Set<string>();
+    for (const [, slot] of slotMap) {
+      if (slot.card_id) placedCardIds.add(slot.card_id);
+    }
+
     // Find unassigned digital cards from ownedCards (those with slot_index === null)
+    // Skip any card that's already placed in a slot to prevent duplicates
     const unassignedCards = (ownedCards || []).filter(
       c => c.slot_index === null && (c.is_digital === true || c.is_digital === null) && c.cards
+        && !placedCardIds.has(c.card_id)
     );
 
     // Assign unassigned cards to empty slots (starting from slot 1, slot 0 is CHXNDLER default)
@@ -670,9 +679,15 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     if (!open || !profile?.id || !ownedCards?.length || autoAssignInProgress.current) return;
 
     const assignUnassignedCards = async () => {
-      // Find digital cards without slot assignments
+      // Collect card_ids already in binder slots to avoid re-assigning
+      const slotsCardIds = new Set(
+        binderSlots.filter(s => s.card_id).map(s => s.card_id!)
+      );
+
+      // Find digital cards without slot assignments that aren't already in a binder slot
       const unassignedCards = ownedCards.filter(
         c => (c.is_digital === true || c.is_digital === null) && c.slot_index === null
+          && !slotsCardIds.has(c.card_id)
       );
 
       if (unassignedCards.length === 0) {

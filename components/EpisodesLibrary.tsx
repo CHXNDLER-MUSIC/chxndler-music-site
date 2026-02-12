@@ -78,149 +78,151 @@ const VIDEOS: Video[] = [
   },
 
   // ── Live Signal – Practice ──
-  // First one is unlocked. Rest release weekly on Tuesdays at 6 PM starting 2/17/26.
+  // Releasing weekly on Mondays at 8 PM starting 2/16/26.
   {
     id: "lsp-001",
     title: "Practice — First Signal",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    youtubeUrl: "https://youtu.be/RXWbQzWjTPg",
     type: "practice",
-    releaseDate: "2026-02-17T18:00:00",
+    releaseDate: "2026-02-16T20:00:00",
+    description: "The signal starts here.",
+    postDescription: "Songs in this session:\n• OCEAN GIRL\n• ALWAYS ON MY MIND\n• SOMEBODY TO LOVE\n• MR. BRIGHTSIDE (The Killers)\n• Good Things Fall Apart — Audience Request (Illenium, Jon Bellion)\n• Julia — Audience Request (Lauv)\n• Too Old To Cry — Audience Request (Voodoo Blue)",
   },
   {
     id: "lsp-002",
     title: "Practice — Piano",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "practice",
-    releaseDate: "2026-02-24T18:00:00",
+    releaseDate: "2026-02-23T20:00:00",
   },
   {
     id: "lsp-003",
     title: "Practice — Late Night Keys",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "practice",
-    releaseDate: "2026-03-03T18:00:00",
+    releaseDate: "2026-03-02T20:00:00",
   },
   {
     id: "lsp-004",
     title: "Practice — Beat Sketches",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "practice",
-    releaseDate: "2026-03-10T18:00:00",
+    releaseDate: "2026-03-09T20:00:00",
   },
   {
     id: "lsp-005",
     title: "Practice — Frequencies",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "practice",
-    releaseDate: "2026-03-17T18:00:00",
+    releaseDate: "2026-03-16T20:00:00",
   },
   {
     id: "lsp-006",
     title: "Practice — Unplugged",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "practice",
-    releaseDate: "2026-03-24T18:00:00",
+    releaseDate: "2026-03-23T20:00:00",
   },
   {
     id: "lsp-007",
     title: "Practice — Loops",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "practice",
-    releaseDate: "2026-03-31T18:00:00",
+    releaseDate: "2026-03-30T20:00:00",
   },
   {
     id: "lsp-008",
     title: "Practice — Vocals",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "practice",
-    releaseDate: "2026-04-07T18:00:00",
+    releaseDate: "2026-04-06T20:00:00",
   },
   {
     id: "lsp-009",
     title: "Practice — Analog",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "practice",
-    releaseDate: "2026-04-14T18:00:00",
+    releaseDate: "2026-04-13T20:00:00",
   },
   {
     id: "lsp-010",
     title: "Practice — Midnight Run",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "practice",
-    releaseDate: "2026-04-21T18:00:00",
+    releaseDate: "2026-04-20T20:00:00",
   },
 
   // ── Live Signal – Performance ──
-  // Releasing weekly on Saturdays at 6 PM starting 2/21/26.
+  // Releasing weekly on Thursdays at 8 PM starting 2/19/26.
   {
     id: "lsf-001",
     title: "Performance — Heartverse Live",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "performance",
-    releaseDate: "2026-02-21T18:00:00",
+    releaseDate: "2026-02-19T20:00:00",
   },
   {
     id: "lsf-002",
     title: "Performance — Rooftop Session",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "performance",
-    releaseDate: "2026-02-28T18:00:00",
+    releaseDate: "2026-02-26T20:00:00",
   },
   {
     id: "lsf-003",
     title: "Performance — Sold Out",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "performance",
-    releaseDate: "2026-03-07T18:00:00",
+    releaseDate: "2026-03-05T20:00:00",
   },
   {
     id: "lsf-004",
     title: "Performance — Acoustic Set",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "performance",
-    releaseDate: "2026-03-14T18:00:00",
+    releaseDate: "2026-03-12T20:00:00",
   },
   {
     id: "lsf-005",
     title: "Performance — After Hours",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "performance",
-    releaseDate: "2026-03-21T18:00:00",
+    releaseDate: "2026-03-19T20:00:00",
   },
   {
     id: "lsf-006",
     title: "Performance — Warehouse",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "performance",
-    releaseDate: "2026-03-28T18:00:00",
+    releaseDate: "2026-03-26T20:00:00",
   },
   {
     id: "lsf-007",
     title: "Performance — Open Mic",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "performance",
-    releaseDate: "2026-04-04T18:00:00",
+    releaseDate: "2026-04-02T20:00:00",
   },
   {
     id: "lsf-008",
     title: "Performance — Festival",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "performance",
-    releaseDate: "2026-04-11T18:00:00",
+    releaseDate: "2026-04-09T20:00:00",
   },
   {
     id: "lsf-009",
     title: "Performance — Encore",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "performance",
-    releaseDate: "2026-04-18T18:00:00",
+    releaseDate: "2026-04-16T20:00:00",
   },
   {
     id: "lsf-010",
     title: "Performance — Grand Finale",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "performance",
-    releaseDate: "2026-04-25T18:00:00",
+    releaseDate: "2026-04-23T20:00:00",
   },
 ];
 
@@ -235,6 +237,8 @@ interface Video {
   youtubeUrl: string;
   type: VideoType;
   releaseDate?: string;
+  description?: string;
+  postDescription?: string;
 }
 
 type TopTab = "heartverse" | "livesignal";
@@ -266,13 +270,16 @@ function isLocked(video: Video): boolean {
   return new Date() < new Date(video.releaseDate);
 }
 
-/** Format a release date like "2/17/26" */
+/** Format a release date like "2/17/26 @ 8PM" */
 function formatReleaseDate(isoDate: string): string {
   const d = new Date(isoDate);
   const month = d.getMonth() + 1;
   const day = d.getDate();
   const year = String(d.getFullYear()).slice(2);
-  return `${month}/${day}/${year}`;
+  const hours = d.getHours();
+  const period = hours >= 12 ? "PM" : "AM";
+  const displayHour = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
+  return `${month}/${day}/${year} @ ${displayHour}${period}`;
 }
 
 // ──────────────────────────────────────────────
@@ -491,7 +498,7 @@ export default function EpisodesLibrary() {
 
           {/* ── Video Player Area ── */}
           {activeVideo && (
-            <div className="relative mx-3 mt-2">
+            <div className="relative flex-1 min-h-0 overflow-y-auto custom-scroll mx-3 mt-2 pb-3">
               <button
                 onClick={handleBack}
                 onMouseEnter={playHover}
@@ -499,6 +506,24 @@ export default function EpisodesLibrary() {
               >
                 <span className="text-sm">&#8592;</span> Back to list
               </button>
+              <p
+                className="text-xs text-white/90 font-medium mb-1.5 tracking-wide"
+                style={{
+                  textShadow: "0 0 6px rgba(252,84,175,0.3)",
+                }}
+              >
+                {activeVideo.title}
+              </p>
+              {activeVideo.description && (
+                <div
+                  className="mb-2 text-[11px] leading-relaxed text-white/80 whitespace-pre-line"
+                  style={{
+                    textShadow: "0 0 4px rgba(0,255,255,0.2)",
+                  }}
+                >
+                  {activeVideo.description}
+                </div>
+              )}
               <div
                 className="relative w-full rounded-lg overflow-hidden border border-[#FC54AF]/30"
                 style={{ aspectRatio: "16/9" }}
@@ -515,14 +540,16 @@ export default function EpisodesLibrary() {
                   style={{ borderRadius: "8px" }}
                 />
               </div>
-              <p
-                className="text-xs text-white/90 font-medium mt-1.5 tracking-wide"
-                style={{
-                  textShadow: "0 0 6px rgba(252,84,175,0.3)",
-                }}
-              >
-                {activeVideo.title}
-              </p>
+              {activeVideo.postDescription && (
+                <div
+                  className="mt-2 text-[11px] leading-relaxed text-white/80 whitespace-pre-line"
+                  style={{
+                    textShadow: "0 0 4px rgba(0,255,255,0.2)",
+                  }}
+                >
+                  {activeVideo.postDescription}
+                </div>
+              )}
             </div>
           )}
 
@@ -601,7 +628,7 @@ export default function EpisodesLibrary() {
                                 textShadow: '0 0 4px rgba(0,255,255,0.3)',
                               }}
                             >
-                              Released {formatReleaseDate(video.releaseDate)} 6PM
+                              Released {formatReleaseDate(video.releaseDate)}
                             </span>
                           )}
                         </div>
@@ -612,9 +639,6 @@ export default function EpisodesLibrary() {
               )}
             </div>
           )}
-
-          {/* Bottom padding when player is active */}
-          {activeVideo && <div className="pb-3" />}
         </div>
       )}
 
