@@ -305,72 +305,30 @@ export default function JoinAliens({ visible = true } = {}) {
         </div>
       </div>
 
-      {/* Countdown Section - Middle */}
-      <div style={{ 
-        textAlign: 'center', 
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '15vh',
-        marginBottom: '0px',
-        marginTop: '-10px',
-        gap: '2px'
+      {/* Twitch Stream Embed - Middle */}
+      <div style={{
+        width: '100%',
+        marginTop: '40px',
+        marginBottom: '8px',
+        padding: '0 4px'
       }}>
-
-        {/* Neon "Signal Lost" message */}
-        <div style={{ marginBottom: '2px', marginTop: '40px' }}>
-          <h2 
-            className="signal-lost-text"
-            style={{
-              color: '#FC54AF',
-              textShadow: `
-                0 0 8px #FC54AF,
-                0 0 16px #FC54AF,
-                0 0 24px #FC54AF,
-                0 0 32px #FC54AF,
-                0 0 48px #FC54AF,
-                0 0 64px #FC54AF,
-                0 0 80px #FC54AF
-              `,
-              animation: 'neonFlicker 2s infinite alternate',
-              fontSize: 'clamp(22px, 5vw, 36px)',
-              fontWeight: 'bold',
-              letterSpacing: '0.1em',
-              lineHeight: '1.2',
-              marginBottom: '0px'
-            }}
-          >
-            SIGNAL LOST
-          </h2>
-          <div 
-            style={{
-              color: isScrambling ? '#FF00FF' : '#00FFFF',
-              textShadow: isScrambling ? `
-                0 0 8px #FF00FF,
-                0 0 16px #FF00FF,
-                0 0 24px #FF00FF,
-                0 0 32px #FF00FF,
-                0 0 40px #FF00FF
-              ` : `
-                0 0 8px #00FFFF,
-                0 0 16px #00FFFF,
-                0 0 24px #00FFFF,
-                0 0 32px #00FFFF,
-                0 0 40px #00FFFF
-              `,
-              animation: isScrambling ? 'neonScramble 0.1s infinite' : 'neonPulse 1.5s infinite',
-              transition: 'all 0.05s ease',
-              fontSize: 'clamp(12px, 3vw, 16px)',
-              fontFamily: 'monospace',
-              letterSpacing: '0.05em',
-              lineHeight: '1.3',
-              marginBottom: '0px'
-            }}
-          >
-            Reconnecting in {scrambledTime}
-          </div>
-        </div>
+        <iframe
+          src={`https://player.twitch.tv/?channel=chxndlerthealien&parent=${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}&autoplay=true&muted=true`}
+          width="100%"
+          style={{
+            aspectRatio: '16 / 9',
+            borderRadius: '8px',
+            border: '1px solid rgba(252, 84, 175, 0.4)',
+            boxShadow: '0 0 15px rgba(252, 84, 175, 0.2)',
+            background: 'rgba(0, 0, 0, 0.8)',
+            display: 'block'
+          }}
+          frameBorder="0"
+          scrolling="no"
+          allowFullScreen
+          allow="autoplay; fullscreen"
+          title="CHXNDLER Twitch Stream"
+        />
       </div>
 
       {/* Divider */}

@@ -2,138 +2,166 @@
 
 import React, { useRef, useState, useEffect } from "react";
 
+// ── Broadcast schedule helpers ──────────────────────────────────────────────
+
+/**
+ * Returns the next upcoming broadcast based on the recurring schedule:
+ *   Monday  7 PM ET → Acoustic Session
+ *   Thursday 7 PM ET → Electric Session
+ *
+ * Respects America/New_York (EST/EDT) via Intl.DateTimeFormat.
+ */
+function getNextBroadcast(now = new Date()) {
+  const tz = 'America/New_York';
+
+  // Current date/time parts in Eastern Time
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).formatToParts(now);
+
+  const get = (type) => {
+    const val = parts.find((p) => p.type === type)?.value ?? '0';
+    return parseInt(val, 10);
+  };
+
+  const etYear = get('year');
+  const etMonth = get('month');
+  const etDay = get('day');
+  const etHour = get('hour') === 24 ? 0 : get('hour'); // midnight edge
+
+  // Day-of-week in ET (0 = Sun … 6 = Sat)
+  const etDate = new Date(etYear, etMonth - 1, etDay);
+  const etDow = etDate.getDay();
+
+  let daysUntil;
+  let kind;
+
+  const isBeforeStreamEnd = etHour < 20; // before 8 PM ET
+
+  if (etDow === 1 && isBeforeStreamEnd) {
+    // Monday before 8 PM → target this Monday
+    daysUntil = 0;
+    kind = 'acoustic';
+  } else if (etDow === 4 && isBeforeStreamEnd) {
+    // Thursday before 8 PM → target this Thursday
+    daysUntil = 0;
+    kind = 'electric';
+  } else {
+    // Find the soonest Monday (1) or Thursday (4) in the future
+    const daysToMon = ((1 - etDow + 7) % 7) || 7;
+    const daysToThu = ((4 - etDow + 7) % 7) || 7;
+
+    if (daysToMon < daysToThu) {
+      daysUntil = daysToMon;
+      kind = 'acoustic';
+    } else {
+      daysUntil = daysToThu;
+      kind = 'electric';
+    }
+  }
+
+  // Build the target calendar date in ET
+  const targetCalendar = new Date(etYear, etMonth - 1, etDay + daysUntil);
+  const tY = targetCalendar.getFullYear();
+  const tM = targetCalendar.getMonth(); // 0-indexed
+  const tD = targetCalendar.getDate();
+
+  // Convert "tY-tM-tD 19:00 ET" → UTC Date
+  // Try EST (UTC-5) first, then check if it's actually EDT (UTC-4)
+  let target = new Date(Date.UTC(tY, tM, tD, 19 + 5, 0, 0));
+  const checkParts = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    hour: '2-digit',
+    hour12: false,
+  }).formatToParts(target);
+  const checkHour = parseInt(checkParts.find((p) => p.type === 'hour')?.value ?? '0', 10);
+
+  if (checkHour !== 19) {
+    // EDT offset (UTC-4)
+    target = new Date(Date.UTC(tY, tM, tD, 19 + 4, 0, 0));
+  }
+
+  const label =
+    kind === 'acoustic'
+      ? 'MONDAY \u2022 7:00 PM EST \u2022 ACOUSTIC SESSION'
+      : 'THURSDAY \u2022 7:00 PM EST \u2022 ELECTRIC SESSION';
+
+  return { kind, start: target, label };
+}
+
+/**
+ * Formats a millisecond delta as DD:HH:MM:SS (always 2-digit, includes days).
+ */
+function formatCountdown(ms) {
+  if (ms <= 0) return '00:00:00:00';
+  const totalSeconds = Math.floor(ms / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return [days, hours, minutes, seconds]
+    .map((v) => String(v).padStart(2, '0'))
+    .join(':');
+}
+
+// ── Component ───────────────────────────────────────────────────────────────
+
 export default function TwitchEmbed({ visible = true, channel = "chxndlerthealien" } = {}) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
-  const [streamStatus, setStreamStatus] = useState('unknown'); // 'online', 'offline', 'unknown'
+  const [streamStatus, setStreamStatus] = useState('unknown');
   const [timeRemaining, setTimeRemaining] = useState(0);
-  const [scrambledTime, setScrambledTime] = useState("0:00");
-  const [isScrambling, setIsScrambling] = useState(false);
+  const [nextBroadcast, setNextBroadcast] = useState(null);
   const iframeRef = useRef(null);
-  const countdownRef = useRef(null);
-  const scrambleRef = useRef(null);
 
-  // Calculate time until specific target date: 11/28/25 12:00:00
-  const getTimeUntilTargetDate = () => {
-    const now = new Date();
-    // Target date: November 28, 2025 at 12:00:00 (noon)
-    const targetDate = new Date('2025-11-28T12:00:00');
-    
-    // Calculate difference in seconds
-    const diffMs = targetDate.getTime() - now.getTime();
-    
-    // If target date has passed, return 0
-    if (diffMs <= 0) {
-      return 0;
-    }
-    
-    return Math.floor(diffMs / 1000);
-  };
-
-
-  // Check actual stream status - show offline by default for immediate feedback
+  // Check stream status — default to offline for immediate feedback
   const checkStreamStatus = async () => {
-    // Always show offline message immediately when component loads
-    // This ensures users see the "Signal Lost" message right away
     setStreamStatus('offline');
     setIsOffline(true);
-    startCountdown();
-    
+
     try {
-      // Optional: Try to check if stream might be live
-      // But always default to offline for better UX
-      const response = await fetch(`https://www.twitch.tv/${channel}`, {
+      await fetch(`https://www.twitch.tv/${channel}`, {
         method: 'HEAD',
-        mode: 'no-cors'
+        mode: 'no-cors',
       });
-      
-      // Even if request succeeds, keep showing offline state
-      // User can manually try to reconnect if they think stream is live
       console.log('Stream status check completed - keeping offline state for user control');
-      
-    } catch (error) {
+    } catch {
       console.log('Stream status check failed - showing offline state');
     }
   };
 
-  // Initialize stream status when component becomes visible
+  // Initialize when component becomes visible
   useEffect(() => {
     if (visible) {
       checkStreamStatus();
-      // No need for periodic checking - always show offline state
-      // User can manually reconnect using the "Try Reconnect Now" button
     }
   }, [visible, channel]);
 
-  // Scrambling effect for numbers
-  const scrambleNumber = (targetTime) => {
-    setIsScrambling(true);
-    let scrambleCount = 0;
-    const maxScrambles = 8; // Number of scramble iterations
-    
-    scrambleRef.current = setInterval(() => {
-      if (scrambleCount < maxScrambles) {
-        // Generate random scrambled time format
-        const randomDays = Math.floor(Math.random() * 99);
-        const randomHours = Math.floor(Math.random() * 24);
-        const randomMinutes = Math.floor(Math.random() * 60);
-        const randomSeconds = Math.floor(Math.random() * 60);
-        
-        // Create scrambled display with random numbers
-        const scrambledDisplay = `${randomDays}d ${randomHours}h ${randomMinutes}m ${randomSeconds}s`;
-        setScrambledTime(scrambledDisplay);
-        scrambleCount++;
-      } else {
-        // Show actual time
-        setScrambledTime(formatTimeRemaining(targetTime));
-        setIsScrambling(false);
-        clearInterval(scrambleRef.current);
-      }
-    }, 50); // Fast scrambling
-  };
-
-  // Countdown timer for reconnection
-  const startCountdown = () => {
-    const initialTime = getTimeUntilTargetDate();
-    setTimeRemaining(initialTime);
-    setScrambledTime(formatTimeRemaining(initialTime));
-    
-    countdownRef.current = setInterval(() => {
-      setTimeRemaining(prev => {
-        const newTime = prev - 1;
-        
-        if (newTime <= 0) {
-          // Target date reached! Try to reconnect
-          setIsOffline(false);
-          setIsLoading(true);
-          clearInterval(countdownRef.current);
-          if (scrambleRef.current) clearInterval(scrambleRef.current);
-          return 0;
-        }
-        
-        // Trigger scramble effect every second
-        scrambleNumber(newTime);
-        return newTime;
-      });
-    }, 1000);
-  };
-
-  // Cleanup countdown on unmount
+  // Countdown ticker — runs every second while offline
   useEffect(() => {
-    return () => {
-      if (countdownRef.current) {
-        clearInterval(countdownRef.current);
-      }
-      if (scrambleRef.current) {
-        clearInterval(scrambleRef.current);
-      }
+    if (!isOffline || streamStatus !== 'offline') return;
+
+    const tick = () => {
+      const broadcast = getNextBroadcast();
+      setNextBroadcast(broadcast);
+      setTimeRemaining(Math.max(0, broadcast.start.getTime() - Date.now()));
     };
-  }, []);
+
+    tick(); // fire immediately
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [isOffline, streamStatus]);
 
   const handleIframeLoad = () => {
     setIsLoading(false);
-    // Don't automatically set offline to false - let the status check handle it
   };
 
   const handleIframeError = () => {
@@ -145,22 +173,6 @@ export default function TwitchEmbed({ visible = true, channel = "chxndlerthealie
     try {
       window.open(`https://www.twitch.tv/${channel}`, '_blank', 'noopener,noreferrer');
     } catch {}
-  };
-
-  // Format time remaining for display (supports days, hours, minutes)
-  const formatTimeRemaining = (seconds) => {
-    const days = Math.floor(seconds / 86400);
-    const hours = Math.floor((seconds % 86400) / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    
-    if (days > 0) {
-      return `${days}d ${hours}h ${minutes}m`;
-    } else if (hours > 0) {
-      return `${hours}h ${minutes}m ${secs}s`;
-    } else {
-      return `${minutes}m ${secs}s`;
-    }
   };
 
   if (hasError) {
@@ -180,78 +192,93 @@ export default function TwitchEmbed({ visible = true, channel = "chxndlerthealie
     );
   }
 
-  // Only show offline message if we've confirmed the stream is actually offline
+  // ── Offline: Heart Signal countdown ─────────────────────────────────────
   if (isOffline && streamStatus === 'offline') {
     return (
-      <div className={`flex flex-col items-center justify-center h-full ${visible ? 'pointer-events-auto' : 'pointer-events-none'}`} style={{ width: '100%', height: '400px' }}>
-        <div className="text-center">
-          {/* Neon "Signal Lost" message */}
-          <div className="mb-6">
-            <h2 
-              className="text-6xl md:text-8xl lg:text-9xl font-bold tracking-wider transform scale-110 hover:scale-125 transition-transform duration-300"
-              style={{
-                color: '#FC54AF',
-                textShadow: `
-                  0 0 8px #FC54AF,
-                  0 0 15px #FC54AF,
-                  0 0 25px #FC54AF,
-                  0 0 35px #FC54AF,
-                  0 0 50px #FC54AF,
-                  0 0 70px #FC54AF,
-                  0 0 90px #FC54AF
-                `,
-                animation: 'neonFlicker 2s infinite alternate, signalPop 3s ease-in-out infinite',
-                filter: 'drop-shadow(0 0 30px #FC54AF)',
-                fontFamily: 'monospace',
-                letterSpacing: '0.15em',
-                textTransform: 'uppercase'
-              }}
-            >
-              SIGNAL LOST
-            </h2>
-            <div 
-              className="text-3xl md:text-4xl lg:text-5xl font-mono tracking-wide mt-8 transform scale-105"
-              style={{
-                color: isScrambling ? '#FF00FF' : '#00FFFF',
-                textShadow: isScrambling ? `
-                  0 0 8px #FF00FF,
-                  0 0 15px #FF00FF,
-                  0 0 25px #FF00FF,
-                  0 0 35px #FF00FF,
-                  0 0 45px #FF00FF
-                ` : `
-                  0 0 8px #00FFFF,
-                  0 0 15px #00FFFF,
-                  0 0 25px #00FFFF,
-                  0 0 35px #00FFFF,
-                  0 0 45px #00FFFF
-                `,
-                animation: isScrambling ? 'neonScramble 0.1s infinite, signalBounce 0.5s ease-in-out infinite' : 'neonPulse 1.5s infinite, signalBounce 2s ease-in-out infinite',
-                transition: 'all 0.05s ease',
-                filter: 'drop-shadow(0 0 20px currentColor)',
-                fontWeight: 'bold',
-                letterSpacing: '0.1em',
-                lineHeight: '1.3'
-              }}
-            >
-              Reconnecting in {scrambledTime}
-            </div>
+      <div
+        className={`flex flex-col items-center justify-center h-full ${visible ? 'pointer-events-auto' : 'pointer-events-none'}`}
+        style={{ width: '100%', height: '400px' }}
+      >
+        <div className="text-center px-4">
+          {/* Small label */}
+          <div
+            className="text-xs md:text-sm font-mono tracking-widest mb-2"
+            style={{
+              color: '#FC54AF',
+              textShadow: '0 0 6px #FC54AF, 0 0 12px #FC54AF',
+              letterSpacing: '0.35em',
+              textTransform: 'uppercase',
+              opacity: 0.85,
+            }}
+          >
+            HEART SIGNAL
           </div>
-          
-          {/* Optional manual reconnect button */}
+
+          {/* Big headline */}
+          <h2
+            className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-wider"
+            style={{
+              color: '#FC54AF',
+              textShadow: `
+                0 0 8px #FC54AF,
+                0 0 15px #FC54AF,
+                0 0 25px #FC54AF,
+                0 0 35px #FC54AF,
+                0 0 50px #FC54AF
+              `,
+              animation: 'neonFlicker 2s infinite alternate',
+              filter: 'drop-shadow(0 0 20px #FC54AF)',
+              fontFamily: 'monospace',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+            }}
+          >
+            NEXT TRANSMISSION IN
+          </h2>
+
+          {/* Large countdown DD:HH:MM:SS */}
+          <div
+            className="text-5xl md:text-7xl lg:text-8xl font-mono tracking-wide mt-5"
+            style={{
+              color: '#00FFFF',
+              textShadow: `
+                0 0 8px #00FFFF,
+                0 0 15px #00FFFF,
+                0 0 25px #00FFFF,
+                0 0 35px #00FFFF,
+                0 0 45px #00FFFF
+              `,
+              animation: 'neonPulse 1.5s infinite',
+              filter: 'drop-shadow(0 0 20px #00FFFF)',
+              fontWeight: 'bold',
+              letterSpacing: '0.05em',
+            }}
+          >
+            {formatCountdown(timeRemaining)}
+          </div>
+
+          {/* Session info line */}
+          {nextBroadcast && (
+            <div
+              className="text-sm md:text-base lg:text-lg font-bold tracking-wide mt-4"
+              style={{
+                color: '#FFD700',
+                textShadow: '0 0 8px rgba(255, 215, 0, 0.6), 0 0 15px rgba(255, 215, 0, 0.3)',
+                letterSpacing: '0.12em',
+              }}
+            >
+              {nextBroadcast.label}
+            </div>
+          )}
+
+          {/* Manual reconnect */}
           <button
             onClick={() => {
               setIsOffline(false);
               setIsLoading(true);
-              checkStreamStatus(); // Recheck status immediately
-              if (countdownRef.current) {
-                clearInterval(countdownRef.current);
-              }
-              if (scrambleRef.current) {
-                clearInterval(scrambleRef.current);
-              }
+              checkStreamStatus();
             }}
-            className="text-white bg-[#9146FF]/30 ring-2 ring-[#9146FF] rounded-lg px-6 py-3 hover:bg-[#9146FF]/40 transition-all duration-200 shadow-[0_0_20px_rgba(145,70,255,0.5)]"
+            className="mt-6 text-white bg-[#9146FF]/30 ring-2 ring-[#9146FF] rounded-lg px-6 py-3 hover:bg-[#9146FF]/40 transition-all duration-200 shadow-[0_0_20px_rgba(145,70,255,0.5)]"
           >
             Try Reconnect Now
           </button>
@@ -260,80 +287,39 @@ export default function TwitchEmbed({ visible = true, channel = "chxndlerthealie
         <style jsx>{`
           @keyframes neonFlicker {
             0%, 100% {
-              text-shadow: 
-                0 0 5px #FF073A,
-                0 0 10px #FF073A,
-                0 0 15px #FF073A,
-                0 0 20px #FF073A,
-                0 0 35px #FF073A,
-                0 0 40px #FF073A;
+              text-shadow:
+                0 0 5px #FC54AF,
+                0 0 10px #FC54AF,
+                0 0 15px #FC54AF,
+                0 0 20px #FC54AF,
+                0 0 35px #FC54AF,
+                0 0 40px #FC54AF;
             }
             50% {
-              text-shadow: 
-                0 0 2px #FF073A,
-                0 0 5px #FF073A,
-                0 0 8px #FF073A,
-                0 0 12px #FF073A,
-                0 0 20px #FF073A,
-                0 0 25px #FF073A;
+              text-shadow:
+                0 0 2px #FC54AF,
+                0 0 5px #FC54AF,
+                0 0 8px #FC54AF,
+                0 0 12px #FC54AF,
+                0 0 20px #FC54AF,
+                0 0 25px #FC54AF;
             }
           }
-          
+
           @keyframes neonPulse {
             0%, 100% {
-              text-shadow: 
+              text-shadow:
                 0 0 5px #00FFFF,
                 0 0 10px #00FFFF,
                 0 0 15px #00FFFF,
                 0 0 20px #00FFFF;
             }
             50% {
-              text-shadow: 
+              text-shadow:
                 0 0 2px #00FFFF,
                 0 0 5px #00FFFF,
                 0 0 8px #00FFFF,
                 0 0 12px #00FFFF;
-            }
-          }
-          
-          @keyframes neonScramble {
-            0%, 20%, 40%, 60%, 80%, 100% {
-              text-shadow: 
-                0 0 5px #FF00FF,
-                0 0 10px #FF00FF,
-                0 0 15px #FF00FF,
-                0 0 20px #FF00FF;
-            }
-            10%, 30%, 50%, 70%, 90% {
-              text-shadow: 
-                0 0 3px #FF00FF,
-                0 0 7px #FF00FF,
-                0 0 12px #FF00FF,
-                0 0 17px #FF00FF;
-            }
-          }
-
-          @keyframes signalPop {
-            0%, 100% {
-              transform: scale(1.1) rotateX(0deg);
-            }
-            25% {
-              transform: scale(1.15) rotateX(2deg);
-            }
-            50% {
-              transform: scale(1.2) rotateX(0deg);
-            }
-            75% {
-              transform: scale(1.15) rotateX(-2deg);
-            }
-          }
-
-          @keyframes signalBounce {
-            0%, 100% {
-              transform: scale(1.05) translateY(0px);
-            }
-            50% {
-              transform: scale(1.1) translateY(-5px);
             }
           }
         `}</style>
@@ -348,7 +334,7 @@ export default function TwitchEmbed({ visible = true, channel = "chxndlerthealie
           <div className="text-white text-sm">Loading stream...</div>
         </div>
       )}
-      
+
       {/* Twitch chat iframe - positioned at top, half height */}
       <div style={{ height: '33%' }} className="mb-2">
         <iframe
@@ -365,7 +351,7 @@ export default function TwitchEmbed({ visible = true, channel = "chxndlerthealie
           title={`${channel} Twitch Chat`}
         />
       </div>
-      
+
       {/* Twitch embed iframe - video player */}
       <div className="relative" style={{ height: '67%' }}>
         <iframe
@@ -386,7 +372,7 @@ export default function TwitchEmbed({ visible = true, channel = "chxndlerthealie
           title={`${channel} Twitch Stream`}
           allow="autoplay; fullscreen"
         />
-        
+
         {/* Stream overlay controls */}
         <div className="absolute bottom-2 right-2 flex gap-2">
           <button
