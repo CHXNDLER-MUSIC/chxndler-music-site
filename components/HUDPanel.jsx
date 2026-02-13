@@ -2529,7 +2529,7 @@ const HUDPanel = React.memo(function HUDPanel({
             // Move the visual nudge into the bottom offset so it stays inside the overflow-hidden blue display
             // Position the control row directly below the music dropdown: align player bottom with cover art bottom
             // Cover art bottom is at -60px, player height is 60px
-            bottom: -56,
+            bottom: -120,
             overflow: 'visible'
           }}>
             <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '10px', paddingBottom: 10, position: 'relative', overflow: 'visible' }}>
@@ -2570,7 +2570,7 @@ const HUDPanel = React.memo(function HUDPanel({
                         position: 'absolute',
                         left: 8,
                         right: 8,
-                        top: 24,
+                        top: -38,
                         zIndex: 6,
                         borderRadius: '8px',
                         padding: '4px 2px',

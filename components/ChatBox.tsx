@@ -6,6 +6,10 @@ import { supabaseClient } from '@/lib/supabaseClient';
 import { useProfile } from '@/contexts/ProfileContext';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
+const PAGE_SIZE = 50;
+
+const MESSAGE_COLS = 'id, user_id, username, message, created_at, is_system';
+
 interface HeartSignalMessage {
   id: string;
   user_id: string;
@@ -13,6 +17,9 @@ interface HeartSignalMessage {
   message: string;
   created_at: string;
   is_system?: boolean;
+  // Client-only fields for optimistic UI
+  client_id?: string;
+  status?: 'pending' | 'failed';
 }
 
 interface ChatBoxProps {
@@ -21,45 +28,93 @@ interface ChatBoxProps {
   showInput?: boolean;
 }
 
-export default function ChatBox({ 
+const normalizeRow = (row: any): HeartSignalMessage => ({
+  id: row.id,
+  user_id: row.user_id,
+  username: row.username ?? 'ALIEN',
+  message: row.message,
+  created_at: row.created_at,
+  is_system: row.is_system,
+});
+
+export default function ChatBox({
   className = "",
   maxMessages = 50,
-  showInput = true 
+  showInput = true
 }: ChatBoxProps) {
   const { profile, user } = useProfile();
   const [messages, setMessages] = useState<HeartSignalMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
-  // Auto scroll to bottom
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Load recent messages
-  const loadMessages = async () => {
+  // Load recent messages with optional cursor for pagination
+  const loadMessages = async (cursor?: string) => {
     try {
-      const { data, error } = await supabaseClient
+      setFetchError(null);
+
+      let query = supabaseClient
         .from('heart_signal_messages')
-        .select('*')
+        .select(MESSAGE_COLS)
         .order('created_at', { ascending: false })
-        .limit(maxMessages);
+        .limit(cursor ? PAGE_SIZE : maxMessages);
+
+      if (cursor) {
+        query = query.lt('created_at', cursor);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error loading messages:', error);
+        if (!cursor) setFetchError('Signal unstable.');
         return;
       }
 
-      // Reverse to show oldest first
-      setMessages((data || []).reverse());
+      const rows = (data || []).map(normalizeRow).reverse();
+
+      if (rows.length < (cursor ? PAGE_SIZE : maxMessages)) {
+        setHasMore(false);
+      }
+
+      if (cursor) {
+        setMessages(prev => [...rows, ...prev]);
+      } else {
+        setMessages(rows);
+      }
+
+      if (!cursor) {
+        setTimeout(scrollToBottom, 100);
+      }
     } catch (error) {
       console.error('Error in loadMessages:', error);
+      if (!cursor) setFetchError('Signal unstable.');
+    } finally {
+      setLoadingOlder(false);
     }
   };
 
-  // Subscribe to real-time messages
+  const loadOlderMessages = async () => {
+    if (loadingOlder || !hasMore) return;
+    setLoadingOlder(true);
+    const oldest = messages.find(m => !m.client_id);
+    await loadMessages(oldest?.created_at);
+  };
+
+  const retryInitialLoad = async () => {
+    setFetchError(null);
+    await loadMessages();
+  };
+
+  // Subscribe to real-time messages with dedup
   const subscribeToMessages = () => {
     if (channelRef.current) {
       supabaseClient.removeChannel(channelRef.current);
@@ -69,52 +124,127 @@ export default function ChatBox({
       .channel('heart-signal-chatbox')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'heart_signal_messages' },
+        { event: 'INSERT', schema: 'public', table: 'heart_signal_messages' },
         (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const newMessage = payload.new as HeartSignalMessage;
-            setMessages((prev) => {
-              const updated = [...prev, newMessage];
-              // Keep only the latest maxMessages
-              return updated.slice(-maxMessages);
-            });
-            setTimeout(scrollToBottom, 100);
-          }
+          const incoming = normalizeRow(payload.new);
+          setMessages(prev => {
+            if (prev.some(m => m.id === incoming.id)) return prev;
+
+            const optIdx = prev.findIndex(
+              m => m.status === 'pending' && m.user_id === incoming.user_id && m.message === incoming.message
+            );
+
+            if (optIdx >= 0) {
+              const next = [...prev];
+              next[optIdx] = { ...incoming, client_id: prev[optIdx].client_id };
+              return next;
+            }
+
+            const updated = [...prev, incoming];
+            return updated.slice(-maxMessages);
+          });
+          setTimeout(scrollToBottom, 100);
         }
       )
       .subscribe();
   };
 
-  // Send message
+  // Optimistic send via POST API
   const sendMessage = async () => {
     if (!newMessage.trim() || isSending || !user) return;
-    
-    setIsSending(true);
-    try {
-      const username = profile?.name || user?.email || 'Anonymous';
-      
-      const { error } = await supabaseClient
-        .from('heart_signal_messages')
-        .insert({
-          user_id: user.id,
-          username: username,
-          message: newMessage.trim()
-        });
 
-      if (error) {
-        console.error('Error sending message:', error);
+    const clientId = crypto.randomUUID();
+    const optimistic: HeartSignalMessage = {
+      id: '',
+      client_id: clientId,
+      status: 'pending',
+      created_at: new Date().toISOString(),
+      user_id: user.id,
+      username: profile?.name || 'CHXNDLER',
+      message: newMessage.trim(),
+      is_system: false,
+    };
+
+    setMessages(prev => [...prev, optimistic]);
+    setNewMessage('');
+    setIsSending(true);
+
+    try {
+      const response = await fetch('/api/heart-signal-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: optimistic.message }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.ok) {
+        console.error('Error sending message:', result.error);
+        setMessages(prev =>
+          prev.map(m => m.client_id === clientId ? { ...m, status: 'failed' as const } : m)
+        );
         return;
       }
 
-      setNewMessage('');
+      const serverRow = normalizeRow(result.message);
+      setMessages(prev => {
+        if (prev.some(m => m.id === serverRow.id && !m.client_id)) {
+          return prev.filter(m => m.client_id !== clientId);
+        }
+        return prev.map(m =>
+          m.client_id === clientId ? { ...serverRow, client_id: clientId } : m
+        );
+      });
     } catch (error) {
       console.error('Error in sendMessage:', error);
+      setMessages(prev =>
+        prev.map(m => m.client_id === clientId ? { ...m, status: 'failed' as const } : m)
+      );
     } finally {
       setIsSending(false);
     }
   };
 
-  // Handle Enter key
+  const retryMessage = async (clientId: string) => {
+    const msg = messages.find(m => m.client_id === clientId);
+    if (!msg || !user) return;
+
+    setMessages(prev =>
+      prev.map(m => m.client_id === clientId ? { ...m, status: 'pending' as const } : m)
+    );
+
+    try {
+      const response = await fetch('/api/heart-signal-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg.message }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.ok) {
+        setMessages(prev =>
+          prev.map(m => m.client_id === clientId ? { ...m, status: 'failed' as const } : m)
+        );
+        return;
+      }
+
+      const serverRow = normalizeRow(result.message);
+      setMessages(prev => {
+        if (prev.some(m => m.id === serverRow.id && !m.client_id)) {
+          return prev.filter(m => m.client_id !== clientId);
+        }
+        return prev.map(m =>
+          m.client_id === clientId ? { ...serverRow, client_id: clientId } : m
+        );
+      });
+    } catch {
+      setMessages(prev =>
+        prev.map(m => m.client_id === clientId ? { ...m, status: 'failed' as const } : m)
+      );
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -143,44 +273,85 @@ export default function ChatBox({
     <div className={`flex flex-col bg-black/80 border border-purple-500/30 rounded-lg ${className}`}>
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-[200px] max-h-[400px]">
-        {messages.length === 0 ? (
+        {/* Error banner */}
+        {fetchError && (
+          <div className="text-center py-2 px-3 bg-red-900/40 border border-red-500/40 rounded flex items-center justify-between">
+            <span className="text-xs text-red-300">{fetchError}</span>
+            <button
+              onClick={retryInitialLoad}
+              className="ml-2 text-xs text-red-200 underline hover:text-white"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* Load older */}
+        {hasMore && !fetchError && messages.length > 0 && (
+          <div className="text-center">
+            <button
+              onClick={loadOlderMessages}
+              disabled={loadingOlder}
+              className="text-xs text-purple-400 hover:text-purple-200 transition-colors disabled:opacity-50"
+            >
+              {loadingOlder ? 'Loading...' : 'Load older'}
+            </button>
+          </div>
+        )}
+
+        {messages.length === 0 && !fetchError ? (
           <div className="text-center text-purple-400 py-8 text-sm">
             No messages yet...
           </div>
         ) : (
-          messages.map((msg) => (
-            <motion.div
-              key={msg.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`text-sm rounded p-2 ${
-                msg.is_system || msg.user_id === '00000000-0000-0000-0000-000000000000'
-                  ? 'bg-purple-900/20 text-purple-300 border-l-2 border-purple-500'
-                  : msg.user_id === user?.id
-                  ? 'bg-blue-900/20 text-blue-300'
-                  : 'bg-gray-800/30 text-gray-300'
-              }`}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <span className={`font-medium text-xs ${
+          messages.map((msg) => {
+            const isPending = msg.status === 'pending';
+            const isFailed = msg.status === 'failed';
+
+            return (
+              <motion.div
+                key={msg.id || msg.client_id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: isPending ? 0.6 : 1, y: 0 }}
+                className={`text-sm rounded p-2 ${
                   msg.is_system || msg.user_id === '00000000-0000-0000-0000-000000000000'
-                    ? 'text-purple-400'
+                    ? 'bg-purple-900/20 text-purple-300 border-l-2 border-purple-500'
                     : msg.user_id === user?.id
-                    ? 'text-blue-400'
-                    : 'text-green-400'
-                }`}>
-                  {msg.username}
-                </span>
-                <span className="text-xs text-gray-500">
-                  {new Date(msg.created_at).toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </span>
-              </div>
-              <div className="text-white">{msg.message}</div>
-            </motion.div>
-          ))
+                    ? 'bg-blue-900/20 text-blue-300'
+                    : 'bg-gray-800/30 text-gray-300'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`font-medium text-xs ${
+                    msg.is_system || msg.user_id === '00000000-0000-0000-0000-000000000000'
+                      ? 'text-purple-400'
+                      : msg.user_id === user?.id
+                      ? 'text-blue-400'
+                      : 'text-green-400'
+                  }`}>
+                    {msg.username || 'ALIEN'}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {new Date(msg.created_at).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                </div>
+                <div className="text-white">{msg.message}</div>
+
+                {/* Failed message retry */}
+                {isFailed && msg.client_id && (
+                  <button
+                    onClick={() => retryMessage(msg.client_id!)}
+                    className="text-xs text-red-400 hover:text-red-200 mt-1 underline"
+                  >
+                    Failed — tap to retry
+                  </button>
+                )}
+              </motion.div>
+            );
+          })
         )}
         <div ref={messagesEndRef} />
       </div>
@@ -193,8 +364,8 @@ export default function ChatBox({
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type a message..."
+              onKeyDown={handleKeyPress}
+              placeholder={user ? 'Type a message...' : 'Log in to transmit.'}
               disabled={!user || isSending}
               className="flex-1 bg-gray-800/50 border border-purple-500/30 rounded px-2 py-1 text-white text-sm placeholder-gray-400 focus:outline-none focus:border-purple-500"
             />
@@ -208,7 +379,7 @@ export default function ChatBox({
           </div>
           {!user && (
             <p className="text-xs text-yellow-400 mt-1">
-              Please log in to send messages
+              Log in to transmit.
             </p>
           )}
         </div>

@@ -7,6 +7,10 @@ import ProfileModal from '@/components/chat/ProfileModal';
 import { useProfile } from '@/contexts/ProfileContext';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
+const PAGE_SIZE = 50;
+
+const MESSAGE_COLS = 'id, user_id, username, message, created_at, is_system';
+
 interface HeartSignalMessage {
   id: string;
   user_id: string;
@@ -14,6 +18,9 @@ interface HeartSignalMessage {
   message: string;
   created_at: string;
   is_system?: boolean;
+  // Client-only fields for optimistic UI
+  client_id?: string;
+  status?: 'pending' | 'failed';
 }
 
 interface SignalChatProps {
@@ -22,8 +29,17 @@ interface SignalChatProps {
   className?: string;
 }
 
-export default function SignalChat({ 
-  isVisible = false, 
+const normalizeRow = (row: any): HeartSignalMessage => ({
+  id: row.id,
+  user_id: row.user_id,
+  username: row.username ?? 'ALIEN',
+  message: row.message,
+  created_at: row.created_at,
+  is_system: row.is_system,
+});
+
+export default function SignalChat({
+  isVisible = false,
   onToggle,
   className = ""
 }: SignalChatProps) {
@@ -32,6 +48,9 @@ export default function SignalChat({
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const [userElementMap, setUserElementMap] = useState<Record<string, string>>({});
@@ -50,14 +69,12 @@ export default function SignalChat({
       case 'darkness':
         return '#8B5CF6';
       default:
-        // No forced default color; inherit site default
         return undefined as unknown as string;
     }
   };
 
   const getUserTextColor = (userId?: string) => {
     if (!userId) return undefined as unknown as string;
-    // Only use profile color if we have both user and profile
     if (user?.id && profile && userId === user.id) {
       return elementToColor(profile.element);
     }
@@ -90,33 +107,69 @@ export default function SignalChat({
     } catch {}
   };
 
-  // Auto scroll to bottom
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Load all messages
-  const loadAllMessages = async () => {
+  // Load messages with optional cursor for pagination
+  const loadMessages = async (cursor?: string) => {
     try {
-      const { data, error } = await supabaseClient
+      setFetchError(null);
+
+      let query = supabaseClient
         .from('heart_signal_messages')
-        .select('*')
-        .order('created_at', { ascending: true });
+        .select(MESSAGE_COLS)
+        .order('created_at', { ascending: false })
+        .limit(PAGE_SIZE);
+
+      if (cursor) {
+        query = query.lt('created_at', cursor);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error loading messages:', error);
+        if (!cursor) setFetchError('Signal unstable.');
         return;
       }
 
-      const msgs = data || [];
-      setMessages(msgs);
-      setTimeout(scrollToBottom, 100);
+      const rows = (data || []).map(normalizeRow).reverse();
+
+      if (rows.length < PAGE_SIZE) {
+        setHasMore(false);
+      }
+
+      if (cursor) {
+        setMessages(prev => [...rows, ...prev]);
+      } else {
+        setMessages(rows);
+      }
+
+      if (!cursor) {
+        setTimeout(scrollToBottom, 100);
+      }
     } catch (error) {
-      console.error('Error in loadAllMessages:', error);
+      console.error('Error in loadMessages:', error);
+      if (!cursor) setFetchError('Signal unstable.');
+    } finally {
+      setLoadingOlder(false);
     }
   };
 
-  // Subscribe to global heart signal messages
+  const loadOlderMessages = async () => {
+    if (loadingOlder || !hasMore) return;
+    setLoadingOlder(true);
+    const oldest = messages.find(m => !m.client_id);
+    await loadMessages(oldest?.created_at);
+  };
+
+  const retryInitialLoad = async () => {
+    setFetchError(null);
+    await loadMessages();
+  };
+
+  // Subscribe to global heart signal messages with dedup
   const subscribeToGlobalSignal = () => {
     if (channelRef.current) {
       supabaseClient.removeChannel(channelRef.current);
@@ -132,80 +185,130 @@ export default function SignalChat({
           table: 'heart_signal_messages',
         },
         (payload) => {
-          console.log('NEW MESSAGE', payload.new);
-          setMessages(prev => [...prev, payload.new as HeartSignalMessage]);
+          const incoming = normalizeRow(payload.new);
+          setMessages(prev => {
+            if (prev.some(m => m.id === incoming.id)) return prev;
+
+            const optIdx = prev.findIndex(
+              m => m.status === 'pending' && m.user_id === incoming.user_id && m.message === incoming.message
+            );
+
+            if (optIdx >= 0) {
+              const next = [...prev];
+              next[optIdx] = { ...incoming, client_id: prev[optIdx].client_id };
+              return next;
+            }
+
+            return [...prev, incoming];
+          });
           setTimeout(scrollToBottom, 100);
         }
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          console.log('✅ Global Heart Signal subscription active');
           setIsConnected(true);
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Global Heart Signal subscription error');
           setIsConnected(false);
         }
       });
   };
 
-  // Send message to global chat via API
+  // Optimistic send via POST API
   const sendGlobalMessage = async () => {
     if (!newMessage.trim() || isSending || !user) return;
 
-    setIsSending(true);
-    try {
-      const username = profile?.name || user?.email || 'Anonymous';
+    const clientId = crypto.randomUUID();
+    const optimistic: HeartSignalMessage = {
+      id: '',
+      client_id: clientId,
+      status: 'pending',
+      created_at: new Date().toISOString(),
+      user_id: user.id,
+      username: profile?.name || 'CHXNDLER',
+      message: newMessage.trim(),
+      is_system: false,
+    };
 
+    setMessages(prev => [...prev, optimistic]);
+    setNewMessage('');
+    setIsSending(true);
+
+    try {
       const response = await fetch('/api/heart-signal-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: newMessage.trim(),
-          username: username,
-          is_system: false
-        }),
+        body: JSON.stringify({ message: optimistic.message }),
       });
 
-      if (!response.ok) {
-        const result = await response.json();
-        console.error('Error sending global message:', result.error);
+      const result = await response.json();
+
+      if (!response.ok || !result.ok) {
+        console.error('Error sending message:', result.error);
+        setMessages(prev =>
+          prev.map(m => m.client_id === clientId ? { ...m, status: 'failed' as const } : m)
+        );
         return;
       }
 
-      setNewMessage('');
+      const serverRow = normalizeRow(result.message);
+      setMessages(prev => {
+        if (prev.some(m => m.id === serverRow.id && !m.client_id)) {
+          return prev.filter(m => m.client_id !== clientId);
+        }
+        return prev.map(m =>
+          m.client_id === clientId ? { ...serverRow, client_id: clientId } : m
+        );
+      });
     } catch (error) {
       console.error('Error in sendGlobalMessage:', error);
+      setMessages(prev =>
+        prev.map(m => m.client_id === clientId ? { ...m, status: 'failed' as const } : m)
+      );
     } finally {
       setIsSending(false);
     }
   };
 
-  // Send system connection message via API
-  const sendConnectionMessage = async () => {
-    if (!user || !profile?.name) return;
+  const retryMessage = async (clientId: string) => {
+    const msg = messages.find(m => m.client_id === clientId);
+    if (!msg || !user) return;
+
+    setMessages(prev =>
+      prev.map(m => m.client_id === clientId ? { ...m, status: 'pending' as const } : m)
+    );
 
     try {
       const response = await fetch('/api/heart-signal-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: `${profile.name} connected to the signal`,
-          is_system: true,
-          client_id: crypto.randomUUID(),
-          created_at: new Date().toISOString(),
-        }),
+        body: JSON.stringify({ message: msg.message }),
       });
 
-      if (!response.ok) {
-        const result = await response.json();
-        console.error('Error sending connection message:', result.error);
+      const result = await response.json();
+
+      if (!response.ok || !result.ok) {
+        setMessages(prev =>
+          prev.map(m => m.client_id === clientId ? { ...m, status: 'failed' as const } : m)
+        );
+        return;
       }
-    } catch (error) {
-      console.error('Error sending connection message:', error);
+
+      const serverRow = normalizeRow(result.message);
+      setMessages(prev => {
+        if (prev.some(m => m.id === serverRow.id && !m.client_id)) {
+          return prev.filter(m => m.client_id !== clientId);
+        }
+        return prev.map(m =>
+          m.client_id === clientId ? { ...serverRow, client_id: clientId } : m
+        );
+      });
+    } catch {
+      setMessages(prev =>
+        prev.map(m => m.client_id === clientId ? { ...m, status: 'failed' as const } : m)
+      );
     }
   };
 
-  // Handle Enter key
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -216,13 +319,8 @@ export default function SignalChat({
   // Initialize when visible
   useEffect(() => {
     if (isVisible) {
-      loadAllMessages();
+      loadMessages();
       subscribeToGlobalSignal();
-      
-      // Send connection message when user opens chat
-      if (user && profile?.name) {
-        sendConnectionMessage();
-      }
     }
 
     return () => {
@@ -244,8 +342,8 @@ export default function SignalChat({
       <button
         onClick={onToggle}
         className={`fixed bottom-6 right-6 w-14 h-14 rounded-full z-50 transition-all duration-300 ${
-          isVisible 
-            ? 'bg-red-600 hover:bg-red-700' 
+          isVisible
+            ? 'bg-red-600 hover:bg-red-700'
             : 'bg-purple-600 hover:bg-purple-700'
         } ${isConnected ? 'ring-2 ring-green-500/50' : ''} shadow-lg`}
       >
@@ -266,7 +364,6 @@ export default function SignalChat({
             exit={{ opacity: 0, scale: 0.8, x: 50, y: 50 }}
             transition={{ duration: 0.3 }}
             className="fixed right-4 sm:right-6 w-[90vw] max-w-[20rem] sm:w-80 h-[60vh] sm:h-96 bg-black/95 border border-purple-500/50 rounded-lg shadow-2xl z-40 flex flex-col"
-            // Keep the panel above the toggle and respect safe-area on mobile
             style={{
               bottom: 'calc(env(safe-area-inset-bottom, 0px) + 6rem)'
             }}
@@ -284,22 +381,49 @@ export default function SignalChat({
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {messages.length === 0 ? (
+              {/* Error banner */}
+              {fetchError && (
+                <div className="text-center py-2 px-3 bg-red-900/40 border border-red-500/40 rounded flex items-center justify-between">
+                  <span className="text-xs text-red-300">{fetchError}</span>
+                  <button
+                    onClick={retryInitialLoad}
+                    className="ml-2 text-xs text-red-200 underline hover:text-white"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
+
+              {/* Load older */}
+              {hasMore && !fetchError && messages.length > 0 && (
+                <div className="text-center">
+                  <button
+                    onClick={loadOlderMessages}
+                    disabled={loadingOlder}
+                    className="text-xs text-purple-400 hover:text-purple-200 transition-colors disabled:opacity-50"
+                  >
+                    {loadingOlder ? 'Loading...' : 'Load older'}
+                  </button>
+                </div>
+              )}
+
+              {messages.length === 0 && !fetchError ? (
                 <div className="text-center text-purple-400 py-8 text-sm">
                   Listening for heart signals...
                 </div>
               ) : (
                 messages.map((msg) => {
-                  // Fallback for missing username
                   const displayName = msg.username || 'ALIEN';
                   const isSystemMsg = msg.is_system || msg.user_id === SYSTEM_USER_ID;
                   const isOwnMessage = user?.id && msg.user_id === user.id;
+                  const isPending = msg.status === 'pending';
+                  const isFailed = msg.status === 'failed';
 
                   return (
                     <motion.div
-                      key={msg.id}
+                      key={msg.id || msg.client_id}
                       initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
+                      animate={{ opacity: isPending ? 0.6 : 1, y: 0 }}
                       className={`text-xs rounded p-2 ${
                         isSystemMsg
                           ? 'bg-purple-900/30 border-l-2 border-purple-500'
@@ -315,7 +439,7 @@ export default function SignalChat({
                           className="font-medium text-left"
                           style={{ color: getUserTextColor(msg.user_id) }}
                           title="View profile"
-                          disabled={!msg?.user_id}
+                          disabled={!msg?.user_id || msg.user_id === SYSTEM_USER_ID}
                         >
                           {displayName}
                         </button>
@@ -333,12 +457,22 @@ export default function SignalChat({
                           className="break-words text-left"
                           style={{ color: getUserTextColor(msg.user_id) }}
                           title="View profile"
-                          disabled={!msg?.user_id}
+                          disabled={!msg?.user_id || msg.user_id === SYSTEM_USER_ID}
                         >
                           {msg.message}
                         </button>
                       ) : (
                         <div className="break-words" style={{ color: getUserTextColor(msg.user_id) }}>{msg.message}</div>
+                      )}
+
+                      {/* Failed message retry */}
+                      {isFailed && msg.client_id && (
+                        <button
+                          onClick={() => retryMessage(msg.client_id!)}
+                          className="text-xs text-red-400 hover:text-red-200 mt-1 underline"
+                        >
+                          Failed — tap to retry
+                        </button>
                       )}
                     </motion.div>
                   );
@@ -350,7 +484,6 @@ export default function SignalChat({
             {/* Input */}
             <div
               className="p-3 border-t border-purple-500/30"
-              // Prevent iOS home indicator/toolbar from overlapping the input
               style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.25rem)' }}
             >
               <div className="flex gap-2">
@@ -358,8 +491,8 @@ export default function SignalChat({
                   type="text"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Send to the Heartverse..."
+                  onKeyDown={handleKeyPress}
+                  placeholder={user ? 'Send to the Heartverse...' : 'Log in to transmit.'}
                   disabled={!user || isSending || !isConnected}
                   className="flex-1 bg-gray-800/50 border border-purple-500/30 rounded px-2 py-1 text-white text-xs placeholder-gray-400 focus:outline-none focus:border-purple-500"
                 />
@@ -373,7 +506,7 @@ export default function SignalChat({
               </div>
               {!user && (
                 <p className="text-xs text-yellow-400 mt-1">
-                  Please log in to send signals
+                  Log in to transmit.
                 </p>
               )}
               {!isConnected && user && (
@@ -386,7 +519,7 @@ export default function SignalChat({
         )}
       </AnimatePresence>
     </div>
-    
+
     {/* Profile modal for clicked users */}
     <ProfileModal
       user={selectedUser || undefined as any}

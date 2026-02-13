@@ -29,12 +29,16 @@ const EMOJI_CONFIG: Record<EmojiType, { emoji: string; label: string; color: str
   alien: { emoji: '👽', label: 'Alien', color: '#00FF7F' },
 };
 
+const PAGE_SIZE = 50;
+
+const MESSAGE_COLS =
+  'id, user_id, username, message, created_at, is_system, heart_count, water_count, lightning_count, darkness_count, alien_count';
+
 interface HeartSignalMessage {
   id: string;
   created_at: string;
-  user_id: string | null;
-  guest_id: string | null;
-  sender_name: string | null;
+  user_id: string;
+  username: string;
   message: string;
   is_system?: boolean;
   heart_count: number;
@@ -42,6 +46,9 @@ interface HeartSignalMessage {
   lightning_count: number;
   darkness_count: number;
   alien_count: number;
+  // Client-only fields for optimistic UI
+  client_id?: string;
+  status?: 'pending' | 'failed';
 }
 
 type UserReactionsMap = Map<string, Set<EmojiType>>;
@@ -51,7 +58,10 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
   const [messages, setMessages] = useState<HeartSignalMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const [heartSignalSent, setHeartSignalSent] = useState(false);
   const [heartSignalLoading, setHeartSignalLoading] = useState(false);
   const [userReactions, setUserReactions] = useState<UserReactionsMap>(new Map());
@@ -68,7 +78,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
 
   const openProfileForMessage = (msg: HeartSignalMessage) => {
     if (!msg?.user_id || msg.user_id === SYSTEM_USER_ID) return;
-    const nameFromMessage = msg.sender_name || 'ALIEN';
+    const nameFromMessage = msg.username || 'ALIEN';
     setSelectedUser({ id: msg.user_id, name: nameFromMessage });
     setShowProfileModal(true);
   };
@@ -77,10 +87,23 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Get display name - NO dependency on profiles
   const getDisplayName = (msg: HeartSignalMessage): string => {
-    return msg.sender_name ?? (msg.user_id ? 'ALIEN' : 'ALIEN');
+    return msg.username || 'ALIEN';
   };
+
+  const normalizeRow = (row: any): HeartSignalMessage => ({
+    id: row.id,
+    created_at: row.created_at,
+    user_id: row.user_id,
+    username: row.username ?? 'ALIEN',
+    message: row.message,
+    is_system: row.is_system,
+    heart_count: row.heart_count || 0,
+    water_count: row.water_count || 0,
+    lightning_count: row.lightning_count || 0,
+    darkness_count: row.darkness_count || 0,
+    alien_count: row.alien_count || 0,
+  });
 
   const loadUserReactions = useCallback(async (messageIds: string[]) => {
     if (!user?.id || messageIds.length === 0) return;
@@ -207,54 +230,79 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
     }
   }, [user?.id, userReactions, togglingReactions]);
 
-  // Load ALL messages - NO user_id filters
-  const loadMessages = async (client: SupabaseClient) => {
+  // Load messages with optional cursor for pagination
+  const loadMessages = async (client: SupabaseClient, cursor?: string) => {
     try {
-      console.log('📨 Loading Heart Signal messages (all users)...');
+      setFetchError(null);
 
-      const { data, error } = await client
+      let query = client
         .from('heart_signal_messages')
-        .select('id, created_at, user_id, guest_id, sender_name, message, is_system, heart_count, water_count, lightning_count, darkness_count, alien_count')
-        .order('created_at', { ascending: true })
-        .limit(200);
+        .select(MESSAGE_COLS)
+        .order('created_at', { ascending: false })
+        .limit(PAGE_SIZE);
+
+      if (cursor) {
+        query = query.lt('created_at', cursor);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
-        console.error('❌ Error loading messages:', error);
+        console.error('Error loading messages:', error);
+        if (!cursor) setFetchError('Signal unstable.');
         return;
       }
 
-      const messagesData = (data || []).map(msg => ({
-        ...msg,
-        heart_count: msg.heart_count || 0,
-        water_count: msg.water_count || 0,
-        lightning_count: msg.lightning_count || 0,
-        darkness_count: msg.darkness_count || 0,
-        alien_count: msg.alien_count || 0,
-      }));
+      const rows = (data || []).map(normalizeRow).reverse();
 
-      console.log(`✅ Loaded ${messagesData.length} messages (from all users)`);
-      setMessages(messagesData);
+      if (rows.length < PAGE_SIZE) {
+        setHasMore(false);
+      }
 
-      if (messagesData.length > 0 && user?.id) {
-        const messageIds = messagesData.map(m => m.id);
+      if (cursor) {
+        // Prepend older messages
+        setMessages(prev => [...rows, ...prev]);
+      } else {
+        setMessages(rows);
+      }
+
+      if (rows.length > 0 && user?.id) {
+        const messageIds = rows.map(m => m.id);
         await loadUserReactions(messageIds);
       }
 
-      setTimeout(scrollToBottom, 100);
+      if (!cursor) {
+        setTimeout(scrollToBottom, 100);
+      }
     } catch (error) {
-      console.error('❌ Error in loadMessages:', error);
+      console.error('Error in loadMessages:', error);
+      if (!cursor) setFetchError('Signal unstable.');
     } finally {
       setIsLoading(false);
+      setLoadingOlder(false);
     }
   };
 
-  // Subscribe to ALL INSERT events - NO filters
+  const loadOlderMessages = async () => {
+    if (!activeClient || loadingOlder || !hasMore) return;
+    setLoadingOlder(true);
+    const oldest = messages.find(m => !m.client_id);
+    const cursor = oldest?.created_at;
+    await loadMessages(activeClient, cursor);
+  };
+
+  const retryInitialLoad = async () => {
+    if (!activeClient) return;
+    setIsLoading(true);
+    setFetchError(null);
+    await loadMessages(activeClient);
+  };
+
+  // Subscribe to INSERT events — deduplicate by id and reconcile optimistic messages
   const subscribeToMessages = (client: SupabaseClient) => {
     if (channelRef.current) {
       client.removeChannel(channelRef.current);
     }
-
-    console.log('🔌 Subscribing to Heart Signal realtime (all users, no filters)...');
 
     channelRef.current = client
       .channel('heart_signal_messages_public')
@@ -266,43 +314,39 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
           table: 'heart_signal_messages',
         },
         (payload) => {
-          console.log('📩 NEW MESSAGE received:', payload.new);
-          const newMsg = payload.new as any;
-          const newMessage: HeartSignalMessage = {
-            id: newMsg.id,
-            created_at: newMsg.created_at,
-            user_id: newMsg.user_id,
-            guest_id: newMsg.guest_id,
-            sender_name: newMsg.sender_name,
-            message: newMsg.message,
-            is_system: newMsg.is_system,
-            heart_count: newMsg.heart_count || 0,
-            water_count: newMsg.water_count || 0,
-            lightning_count: newMsg.lightning_count || 0,
-            darkness_count: newMsg.darkness_count || 0,
-            alien_count: newMsg.alien_count || 0,
-          };
-          console.log('✅ Appending message to state:', newMessage);
-          setMessages((prev) => [...prev, newMessage]);
+          const incoming = normalizeRow(payload.new);
+          setMessages(prev => {
+            // Already have this row by id — skip
+            if (prev.some(m => m.id === incoming.id)) return prev;
+
+            // Check if we have a pending optimistic message that matches
+            const optIdx = prev.findIndex(
+              m => m.status === 'pending' && m.user_id === incoming.user_id && m.message === incoming.message
+            );
+
+            if (optIdx >= 0) {
+              const next = [...prev];
+              next[optIdx] = { ...incoming, client_id: prev[optIdx].client_id };
+              return next;
+            }
+
+            return [...prev, incoming];
+          });
           setTimeout(scrollToBottom, 100);
         }
       )
       .subscribe((status) => {
-        console.log('🔔 Subscription status:', status);
         if (status === 'SUBSCRIBED') {
-          console.log('✅ Heart Signal Live subscription active');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Heart Signal Live subscription error');
+          console.log('Heart Signal Live subscription active');
         }
       });
   };
 
-  // Aliens Online from recent messages - NO presence/profiles
+  // Aliens Online from recent messages
   const loadAliensOnline = async (client: SupabaseClient) => {
     setAliensLoading(true);
 
     const timeout = setTimeout(() => {
-      console.warn('⚠️ Aliens online loading timeout (1s)');
       setAliensLoading(false);
     }, 1000);
 
@@ -310,11 +354,9 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
       const tenMinutesAgo = new Date();
       tenMinutesAgo.setMinutes(tenMinutesAgo.getMinutes() - 10);
 
-      console.log('👽 Loading Aliens Online from recent messages...');
-
       const { data, error } = await client
         .from('heart_signal_messages')
-        .select('user_id, guest_id, sender_name')
+        .select('user_id, username')
         .gte('created_at', tenMinutesAgo.toISOString())
         .order('created_at', { ascending: false });
 
@@ -326,20 +368,15 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
         return;
       }
 
-      // Unique by (user_id || guest_id)
       const uniqueSenders = new Map<string, string>();
       (data || []).forEach((msg: any) => {
-        const senderId = msg.user_id || msg.guest_id;
+        const senderId = msg.user_id;
         if (!senderId || uniqueSenders.has(senderId)) return;
-
-        const displayName = msg.sender_name ?? 'ALIEN';
-        uniqueSenders.set(senderId, displayName);
+        uniqueSenders.set(senderId, msg.username ?? 'ALIEN');
       });
 
       const aliens = Array.from(uniqueSenders.values()).slice(0, 20);
-      console.log(`✅ Aliens Online: ${aliens.length} unique senders from messages`);
 
-      // Update state - keep existing users and add new ones
       setAliensOnline(prev => {
         const merged = new Set([...prev, ...aliens]);
         return Array.from(merged).slice(0, 20);
@@ -352,61 +389,107 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
     }
   };
 
+  // Optimistic send via POST API
   const sendMessage = async () => {
     if (!newMessage.trim() || isSending) return;
+    if (!user) return;
 
+    const clientId = crypto.randomUUID();
+    const optimistic: HeartSignalMessage = {
+      id: '',
+      client_id: clientId,
+      status: 'pending',
+      created_at: new Date().toISOString(),
+      user_id: user.id,
+      username: profile?.name || 'CHXNDLER',
+      message: newMessage.trim(),
+      is_system: false,
+      heart_count: 0,
+      water_count: 0,
+      lightning_count: 0,
+      darkness_count: 0,
+      alien_count: 0,
+    };
+
+    setMessages(prev => [...prev, optimistic]);
+    setNewMessage('');
     setIsSending(true);
+
     try {
-      if (!user) {
-        console.error('User not authenticated');
-        return;
-      }
-
-      const username = profile?.name || user?.email || 'Anonymous';
-
       const response = await fetch('/api/heart-signal-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: newMessage.trim(),
-          username: username,
-          is_system: false
-        }),
+        body: JSON.stringify({ message: optimistic.message }),
       });
 
       const result = await response.json();
 
-      if (!response.ok) {
+      if (!response.ok || !result.ok) {
         console.error('Error sending message:', result.error);
+        setMessages(prev =>
+          prev.map(m => m.client_id === clientId ? { ...m, status: 'failed' as const } : m)
+        );
         return;
       }
 
-      setNewMessage('');
-      console.log('Message sent successfully:', result.data);
+      // Replace optimistic with server row
+      const serverRow = normalizeRow(result.message);
+      setMessages(prev => {
+        // If realtime already delivered this row, remove the optimistic one
+        if (prev.some(m => m.id === serverRow.id && !m.client_id)) {
+          return prev.filter(m => m.client_id !== clientId);
+        }
+        return prev.map(m =>
+          m.client_id === clientId ? { ...serverRow, client_id: clientId } : m
+        );
+      });
     } catch (error) {
       console.error('Error in sendMessage:', error);
+      setMessages(prev =>
+        prev.map(m => m.client_id === clientId ? { ...m, status: 'failed' as const } : m)
+      );
     } finally {
       setIsSending(false);
     }
   };
 
-  const sendSystemMessage = async (message: string) => {
+  const retryMessage = async (clientId: string) => {
+    const msg = messages.find(m => m.client_id === clientId);
+    if (!msg || !user) return;
+
+    setMessages(prev =>
+      prev.map(m => m.client_id === clientId ? { ...m, status: 'pending' as const } : m)
+    );
+
     try {
       const response = await fetch('/api/heart-signal-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: message,
-          is_system: true
-        }),
+        body: JSON.stringify({ message: msg.message }),
       });
 
-      if (!response.ok) {
-        const result = await response.json();
-        console.error('Error sending system message:', result.error);
+      const result = await response.json();
+
+      if (!response.ok || !result.ok) {
+        setMessages(prev =>
+          prev.map(m => m.client_id === clientId ? { ...m, status: 'failed' as const } : m)
+        );
+        return;
       }
-    } catch (error) {
-      console.error('Error in sendSystemMessage:', error);
+
+      const serverRow = normalizeRow(result.message);
+      setMessages(prev => {
+        if (prev.some(m => m.id === serverRow.id && !m.client_id)) {
+          return prev.filter(m => m.client_id !== clientId);
+        }
+        return prev.map(m =>
+          m.client_id === clientId ? { ...serverRow, client_id: clientId } : m
+        );
+      });
+    } catch {
+      setMessages(prev =>
+        prev.map(m => m.client_id === clientId ? { ...m, status: 'failed' as const } : m)
+      );
     }
   };
 
@@ -434,7 +517,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
 
       if (response.ok) {
         setHeartSignalSent(true);
-        await sendSystemMessage(`💖 Heart signal sent to the Heartverse!`);
       } else {
         console.error('Failed to send heart signal');
       }
@@ -445,7 +527,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
     }
   };
 
-  // Initialize - use anon client when logged out
+  // Initialize — use anon client when logged out
   useEffect(() => {
     let client: SupabaseClient;
     let mounted = true;
@@ -454,10 +536,8 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
       const { data: { session } } = await supabaseClient.auth.getSession();
 
       if (session?.user) {
-        console.log('🔐 Using authenticated client');
         client = supabaseClient;
       } else {
-        console.log('👽 Using anonymous client (no cookies)');
         client = createAnonClient();
       }
 
@@ -465,39 +545,30 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
 
       setActiveClient(client);
 
-      // Get current user's display name
       const currentUserName = user && profile?.name
         ? profile.name
         : getAnonymousName();
 
-      // Immediately show current user in Aliens Online
       setAliensOnline([currentUserName]);
-      console.log('👽 Added current user to Aliens Online:', currentUserName);
 
       await loadMessages(client);
       subscribeToMessages(client);
 
-      // Load other aliens online (will merge with current user)
       loadAliensOnline(client).then(() => {
-        // Ensure current user is still in the list
         setAliensOnline(prev => {
-          if (prev.includes(currentUserName)) {
-            return prev;
-          }
+          if (prev.includes(currentUserName)) return prev;
           return [currentUserName, ...prev];
         });
       });
 
-      if (user && profile?.name) {
-        sendSystemMessage(`${profile.name} connected to the signal`);
-      } else {
+      // Local-only connection message (not persisted to DB)
+      if (!user) {
         const anonymousName = getAnonymousName();
-        const localConnectionMessage: HeartSignalMessage = {
-          id: `local-connection-${Date.now()}`,
+        const localMsg: HeartSignalMessage = {
+          id: `local-${Date.now()}`,
           created_at: new Date().toISOString(),
-          user_id: null,
-          guest_id: null,
-          sender_name: 'SYSTEM',
+          user_id: SYSTEM_USER_ID,
+          username: 'SYSTEM',
           message: `${anonymousName} connected to the signal`,
           is_system: true,
           heart_count: 0,
@@ -506,7 +577,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
           darkness_count: 0,
           alien_count: 0,
         };
-        setMessages((prev) => [...prev, localConnectionMessage]);
+        setMessages(prev => [...prev, localMsg]);
       }
     };
 
@@ -590,11 +661,37 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        {/* Error banner */}
+        {fetchError && (
+          <div className="text-center py-2 px-3 bg-red-900/40 border border-red-500/40 rounded-lg flex items-center justify-between">
+            <span className="text-sm text-red-300">{fetchError}</span>
+            <button
+              onClick={retryInitialLoad}
+              className="ml-2 text-xs text-red-200 underline hover:text-white"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* Load older */}
+        {hasMore && !isLoading && !fetchError && messages.length > 0 && (
+          <div className="text-center">
+            <button
+              onClick={loadOlderMessages}
+              disabled={loadingOlder}
+              className="text-xs text-purple-400 hover:text-purple-200 transition-colors disabled:opacity-50"
+            >
+              {loadingOlder ? 'Loading...' : 'Load older'}
+            </button>
+          </div>
+        )}
+
         {isLoading ? (
           <div className="text-center text-purple-400 py-8">
             Loading messages...
           </div>
-        ) : messages.length === 0 ? (
+        ) : messages.length === 0 && !fetchError ? (
           <div className="text-center text-purple-400 py-8">
             No messages yet. Be the first to send a heart signal!
           </div>
@@ -604,12 +701,14 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
               const displayName = getDisplayName(msg);
               const isSystemMsg = msg.is_system || msg.user_id === SYSTEM_USER_ID;
               const isOwnMessage = user?.id && msg.user_id === user.id;
+              const isPending = msg.status === 'pending';
+              const isFailed = msg.status === 'failed';
 
               return (
                 <motion.div
-                  key={msg.id}
+                  key={msg.id || msg.client_id}
                   initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  animate={{ opacity: isPending ? 0.6 : 1, y: 0 }}
                   className={`rounded-lg p-3 ${
                     isSystemMsg
                       ? 'bg-purple-900/30 border-l-4 border-purple-500'
@@ -638,7 +737,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
                         fontWeight: 600
                       }}
                       title="View profile"
-                      disabled={!msg?.user_id}
+                      disabled={!msg?.user_id || msg.user_id === SYSTEM_USER_ID}
                     >
                       {displayName}
                     </button>
@@ -656,7 +755,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
                       className="text-sm break-words"
                       style={{ color: '#C084FC', textAlign: 'left' }}
                       title="View profile"
-                      disabled={!msg?.user_id}
+                      disabled={!msg?.user_id || msg.user_id === SYSTEM_USER_ID}
                     >
                       {msg.message}
                     </button>
@@ -669,7 +768,17 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
                     </div>
                   )}
 
-                  {!isSystemMsg && (
+                  {/* Failed message retry */}
+                  {isFailed && msg.client_id && (
+                    <button
+                      onClick={() => retryMessage(msg.client_id!)}
+                      className="text-xs text-red-400 hover:text-red-200 mt-1 underline"
+                    >
+                      Failed to send — tap to retry
+                    </button>
+                  )}
+
+                  {!isSystemMsg && !isPending && !isFailed && (
                     <div className="flex items-center gap-1 mt-2 flex-wrap">
                       {(Object.keys(EMOJI_CONFIG) as EmojiType[]).map((emojiType) => {
                         const config = EMOJI_CONFIG[emojiType];
@@ -798,7 +907,6 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
 
       <div
         className="p-4 border-t border-purple-500/30 mt-4"
-        // Ensure the input area isn't overlapped by iOS home indicator/toolbars
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.5rem)' }}
       >
         <div className="flex gap-2">
@@ -806,8 +914,8 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Send a heart signal..."
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+            placeholder={user ? 'Send a heart signal...' : 'Log in to transmit.'}
             disabled={!user || isSending}
             className="flex-1 bg-gray-800/50 border border-purple-500/30 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
           />
@@ -821,7 +929,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
         </div>
         {!user && (
           <p className="text-sm text-yellow-400 mt-2">
-            Please log in to send messages
+            Log in to transmit.
           </p>
         )}
       </div>
