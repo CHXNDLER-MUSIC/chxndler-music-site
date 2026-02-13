@@ -822,7 +822,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         break;
 
       case 'FOLLOW_INSTAGRAM':
-        window.open('https://www.instagram.com/chxndlerr', '_blank');
+        window.open('https://www.instagram.com/chxndlerthealien/', '_blank');
         break;
 
       case 'INVITE_ALIEN':

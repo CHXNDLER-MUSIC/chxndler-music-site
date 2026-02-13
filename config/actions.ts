@@ -2,7 +2,7 @@
 import { BRAND } from "./ui";
 
 export const socialActions = [
-  { id: "ig", label: "Instagram", href: "https://www.instagram.com/chxndler_music/", icon: "Instagram", color: BRAND.pink },
+  { id: "ig", label: "Instagram", href: "https://www.instagram.com/chxndlerthealien/", icon: "Instagram", color: BRAND.pink },
   { id: "tiktok", label: "TikTok", href: "https://www.tiktok.com/@chxndler_music", icon: "TikTok", color: BRAND.yellow },
   { id: "yt", label: "YouTube", href: "https://www.youtube.com/channel/UCza6n_vQKltu04G8-UMxMig", icon: "Youtube", color: BRAND.blue },
 ];

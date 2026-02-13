@@ -2438,7 +2438,7 @@ const HUDPanel = React.memo(function HUDPanel({
           {/* Cover section at bottom right corner - using CoverHologram for pop-out functionality */}
           <div ref={coverRef} className="absolute hud-cover-pos" style={{
             // Align flush to the right and sit slightly higher from bottom
-            bottom: 60,
+            bottom: -60,
             right: 0,
             width: 'auto',
             display: 'flex',
@@ -2528,8 +2528,8 @@ const HUDPanel = React.memo(function HUDPanel({
             // Keep player snug to the blue display; slightly lower
             // Move the visual nudge into the bottom offset so it stays inside the overflow-hidden blue display
             // Position the control row directly below the music dropdown: align player bottom with cover art bottom
-            // Cover art bottom is at 60px, player height is 60px
-            bottom: 64,
+            // Cover art bottom is at -60px, player height is 60px
+            bottom: -56,
             overflow: 'visible'
           }}>
             <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '10px', paddingBottom: 10, position: 'relative', overflow: 'visible' }}>
@@ -2915,7 +2915,7 @@ const HUDPanel = React.memo(function HUDPanel({
                                 left: 0,
                                 right: 0,
                                 // Keep ambient glow near bottom but inside the blue display
-                                bottom: -84,
+                                bottom: -28,
                                 height: 20,
                                 borderRadius: 9999,
                                 background: 'radial-gradient(ellipse 100% 100%, rgba(25,227,255,0.25) 0%, rgba(25,227,255,0.1) 50%, transparent 80%)',
@@ -2931,8 +2931,8 @@ const HUDPanel = React.memo(function HUDPanel({
                                 left: 8,
                                 // Nudge a bit more past the right edge
                                 right: -96,
-                                // Keep the track bar just above the blue display bottom
-                                bottom: -76,
+                                // Keep the track bar just below the controls
+                                bottom: -20,
                                 height: 10,
                                 borderRadius: 9999,
                                 background: 'rgba(20,20,25,0.9)',
@@ -5025,14 +5025,14 @@ const HUDPanel = React.memo(function HUDPanel({
                       onClick={(e) => { e.stopPropagation(); }}
                       style={{
                         position: 'relative',
-                        width: 'min(88vw, 520px)',
-                        background: 'rgba(0,0,0,0.9)',
+                        width: 'min(88vw, 420px)',
+                        background: 'transparent',
                         border: '1px solid rgba(29,185,84,0.6)',
-                        boxShadow: '0 18px 46px rgba(0,0,0,0.55), 0 0 32px rgba(29,185,84,0.35)',
+                        boxShadow: '0 0 32px rgba(29,185,84,0.35)',
                         borderRadius: 14,
                         overflow: 'hidden',
                         // Slightly higher on the screen
-                        marginTop: -160
+                        marginTop: -150
                       }}
                     >
                       <button
@@ -7262,7 +7262,7 @@ const HUDPanel = React.memo(function HUDPanel({
         {/* Song selector and Media Player positioned outside content opacity container to avoid beamOnly blocking */}
         <div className="absolute" style={{ 
           left: inConsole ? 4 : 4,
-          bottom: 'calc(80px - 24px + 60px)', // Align dropdown top with cover art top
+          bottom: 'calc(80px - 24px + 60px - 120px)', // Shifted down to sit above track bar
           // Reserve dynamic space to the right so the dropdown never overlaps the cover
           right: oneLinerRight + 2, // Reduced padding to screen edge
           maxWidth: 'none',

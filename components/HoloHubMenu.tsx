@@ -255,6 +255,7 @@ export default function HoloHubMenu({
   const [clickedButtonId, setClickedButtonId] = useState<string | null>(null);
   const [buttonRefs, setButtonRefs] = useState<Map<string, HTMLButtonElement>>(new Map());
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const portalPanelRef = useRef<HTMLDivElement | null>(null);
   const hubRef = useRef<HTMLButtonElement | null>(null);
   const firstItemRef = useRef<HTMLButtonElement | null>(null);
   const lastItemRef = useRef<HTMLButtonElement | null>(null);
@@ -276,11 +277,13 @@ export default function HoloHubMenu({
     function onDoc(e: MouseEvent) {
       if (!open) return;
       const r = rootRef.current; if (!r) return;
-      if (!r.contains(e.target as Node)) {
-        setOpen(false);
-        // Return focus to hub when closing via outside click
-        setTimeout(() => hubRef.current?.focus(), 0);
-      }
+      const target = e.target as Node;
+      // Check both the hub root AND the portal-rendered panel
+      if (r.contains(target)) return;
+      if (portalPanelRef.current?.contains(target)) return;
+      setOpen(false);
+      // Return focus to hub when closing via outside click
+      setTimeout(() => hubRef.current?.focus(), 0);
     }
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
@@ -655,8 +658,10 @@ export default function HoloHubMenu({
       {typeof window !== 'undefined' ? createPortal(
         (
           <div
+            ref={portalPanelRef}
             className="panel-wrap"
             aria-hidden={!open || suspend}
+            onMouseDown={(e) => { e.stopPropagation(); }}
             style={{
               position: 'fixed',
               bottom: beamBottomCss,
@@ -667,7 +672,7 @@ export default function HoloHubMenu({
               pointerEvents: open && !suspend ? 'auto' : 'none',
               zIndex: 98,
               borderRadius: `var(--display-border-radius)`,
-              overflow: 'hidden',
+              overflow: 'visible',
               opacity: open && !suspend ? 1 : 0,
               transition: 'opacity 200ms ease, transform 220ms cubic-bezier(0.2,0.8,0.2,1)'
             } as React.CSSProperties}

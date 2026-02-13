@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
 import PublicJournalFeed from "@/components/PublicJournalFeed";
 import { sfx } from "@/lib/sfx";
@@ -157,6 +157,14 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   const [pendingRewardData, setPendingRewardData] = useState<{ awarded: number } | null>(null);
   // Ref to store pending reward amount - avoids stale closure issues in handleRitualComplete
   const pendingRewardRef = useRef<number>(0);
+
+  // Memoize target position for ritual overlay to prevent animation restarts.
+  // getGlowingPlanetPosition returns a new object every call, which would cause
+  // CastToStarsOverlay's animation useEffect to re-run on every parent re-render.
+  const ritualTargetPosition = useMemo(
+    () => getGlowingPlanetPosition((dailyPrompt?.element as ElementType) || null),
+    [dailyPrompt?.element]
+  );
 
   const today = getLocalDateString();
   const todayFormatted = getDisplayDateString(today);
@@ -817,11 +825,10 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
   if (!isOpen) {
     // Only render the ritual overlay if animation is active
     if (showRitualOverlay && ritualStartPosition) {
-      const targetPosition = getGlowingPlanetPosition(dailyPrompt?.element as ElementType || null);
       return (
         <CastToStarsOverlay
           startPosition={ritualStartPosition}
-          targetPosition={targetPosition}
+          targetPosition={ritualTargetPosition}
           onComplete={handleRitualComplete}
           element={dailyPrompt?.element as ElementType || null}
         />
@@ -2150,7 +2157,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       {showRitualOverlay && ritualStartPosition && (
         <CastToStarsOverlay
           startPosition={ritualStartPosition}
-          targetPosition={getGlowingPlanetPosition(dailyPrompt?.element as ElementType || null)}
+          targetPosition={ritualTargetPosition}
           onComplete={handleRitualComplete}
           element={dailyPrompt?.element as ElementType || null}
         />

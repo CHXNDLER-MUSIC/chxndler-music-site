@@ -300,7 +300,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
             top: triggerRect.bottom + window.scrollY + 2,
             left: triggerRect.left + window.scrollX,
             width: triggerRect.width,
-            maxHeight: maxListHeight ? `${maxListHeight}px` : '160px',
+            maxHeight: maxListHeight ? `${maxListHeight}px` : '200px',
             overflowY: 'auto',
             overflowX: 'hidden',
             pointerEvents: 'auto',

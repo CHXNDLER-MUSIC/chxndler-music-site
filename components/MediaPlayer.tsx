@@ -2305,7 +2305,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           justify-content: center;
           gap: 10px;
           width: 100%;
-          order: 1 !important; /* Above waveform, below title */
+          order: 4 !important; /* Below controls */
           margin-top: 6px;
         }
         
