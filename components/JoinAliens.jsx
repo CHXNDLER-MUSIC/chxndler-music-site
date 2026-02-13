@@ -20,7 +20,7 @@ export default function JoinAliens({ visible = true } = {}) {
   const [showWelcomeHome, setShowWelcomeHome] = useState(false);
   
   // Chat state
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(true);
   
   // Tip functionality state
   const [showTipOptions, setShowTipOptions] = useState(false);
@@ -30,7 +30,7 @@ export default function JoinAliens({ visible = true } = {}) {
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
   const [showPaymentOptions5, setShowPaymentOptions5] = useState(false);
   const [showPaymentOptions10, setShowPaymentOptions10] = useState(false);
-  const [showPhoneForm, setShowPhoneForm] = useState(true);
+  const [showPhoneForm, setShowPhoneForm] = useState(false);
   
   // Countdown state
   const [timeRemaining, setTimeRemaining] = useState(0);
@@ -261,37 +261,49 @@ export default function JoinAliens({ visible = true } = {}) {
       {/* Heart Signal Title - Top */}
       <div style={{ 
         textAlign: 'center', 
-        paddingTop: '10px',
-        paddingBottom: '10px',
+        paddingTop: '2px',
+        paddingBottom: '2px',
         borderBottom: '1px solid rgba(252, 84, 175, 0.3)',
         position: 'relative',
         width: '100%',
         display: 'flex',
         justifyContent: 'center'
       }}>
-        <div style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
           width: '100%',
           position: 'absolute',
           left: '50%',
           transform: 'translateX(-50%)'
         }}>
-          <h1 
-            className="text-xl font-bold whitespace-nowrap"
-            style={{
-              color: '#FC54AF !important',
-              textShadow: '0 0 10px #FC54AF, 0 0 20px #FC54AF, 0 0 30px #FC54AF',
-              letterSpacing: '0.05em',
-              fontWeight: 'bold',
-              fontSize: 'clamp(20px, 4vw, 28px)',
-              marginBottom: '8px'
-            }}
-          >
-            HEART SIGNAL
-          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <div
+              style={{
+                width: '10px',
+                height: '10px',
+                borderRadius: '50%',
+                background: '#FC54AF',
+                boxShadow: '0 0 8px #FC54AF, 0 0 16px #FC54AF',
+                animation: 'signalBlink 1.2s ease-in-out infinite'
+              }}
+            />
+            <h1
+              className="text-xl font-bold whitespace-nowrap"
+              style={{
+                color: '#FC54AF !important',
+                textShadow: '0 0 10px #FC54AF, 0 0 20px #FC54AF, 0 0 30px #FC54AF',
+                letterSpacing: '0.05em',
+                fontWeight: 'bold',
+                fontSize: 'clamp(20px, 4vw, 28px)',
+                margin: 0
+              }}
+            >
+              HEART SIGNAL
+            </h1>
+          </div>
           
           {/* Extended glow line centered */}
           <div 
@@ -307,18 +319,17 @@ export default function JoinAliens({ visible = true } = {}) {
 
       {/* Twitch Stream Embed - Middle */}
       <div style={{
-        width: '100%',
-        marginTop: '40px',
-        marginBottom: '8px',
-        padding: '0 4px'
+        width: 'calc(100% + 16px)',
+        padding: '0',
+        margin: '-6px -8px 8px'
       }}>
         <iframe
           src={`https://player.twitch.tv/?channel=chxndlerthealien&parent=${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}&autoplay=true&muted=true`}
           width="100%"
           style={{
             aspectRatio: '16 / 9',
-            borderRadius: '8px',
-            border: '1px solid rgba(252, 84, 175, 0.4)',
+            borderRadius: '0px',
+            border: 'none',
             boxShadow: '0 0 15px rgba(252, 84, 175, 0.2)',
             background: 'rgba(0, 0, 0, 0.8)',
             display: 'block'
@@ -332,22 +343,104 @@ export default function JoinAliens({ visible = true } = {}) {
       </div>
 
       {/* Divider */}
-      <div style={{ 
-        width: '100%', 
-        height: '1px', 
-        background: 'linear-gradient(90deg, transparent, rgba(252, 84, 175, 0.5), transparent)', 
-        margin: '0px 0 0px 0' 
+      <div style={{
+        width: '100%',
+        height: '1px',
+        background: 'linear-gradient(90deg, transparent, rgba(252, 84, 175, 0.5), transparent)',
+        margin: '0px 0 0px 0'
       }} />
 
-      {/* Stay Connected Section - Bottom */}
-      <div style={{ marginTop: '0px', paddingBottom: '80px' }}>
+      {/* Tip amount buttons - horizontal row below Twitch embed */}
+      {showTipOptions && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '16px',
+          padding: '10px 8px',
+        }}>
+          {[
+            { amount: 3, showState: showPaymentOptions, setShow: setShowPaymentOptions, closeOthers: () => { setShowPaymentOptions5(false); setShowPaymentOptions10(false); } },
+            { amount: 5, showState: showPaymentOptions5, setShow: setShowPaymentOptions5, closeOthers: () => { setShowPaymentOptions(false); setShowPaymentOptions10(false); } },
+            { amount: 10, showState: showPaymentOptions10, setShow: setShowPaymentOptions10, closeOthers: () => { setShowPaymentOptions(false); setShowPaymentOptions5(false); } },
+          ].map(({ amount, showState, setShow, closeOthers }) => {
+            const stripeUrls = { 3: 'https://buy.stripe.com/bJeeVe5X3fZH9Nnchh4gg0P', 5: 'https://buy.stripe.com/3cIaEYbhn00JbVv4OP4gg0Q', 10: 'https://buy.stripe.com/4gM5kEdpv3cV9Nn6WX4gg0R' };
+            const venmoNotes = { 3: 'Fuel the Signal', 5: 'Boost the Transmission', 10: 'Ignite the Heartverse' };
+            return (
+              <div key={amount} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                <button
+                  onClick={() => {
+                    try { sfx.play('audio/click.mp3', 0.3); } catch {}
+                    if (showState) { setShow(false); } else { closeOthers(); setShow(true); setSelectedTipAmount(amount); }
+                  }}
+                  style={{
+                    width: '55px', height: '55px',
+                    background: 'rgba(252, 84, 175, 0.1)', border: '2px solid #FC54AF', borderRadius: '50%',
+                    color: '#FC54AF', fontSize: amount === 10 ? '14px' : '16px', fontWeight: 'bold',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 300ms ease', textShadow: '0 0 8px #FC54AF', boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
+                  }}
+                  onMouseEnter={(e) => { try { sfx.play('hover', 0.3); } catch {} e.target.style.background = 'rgba(252, 84, 175, 0.2)'; e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)'; e.target.style.transform = 'scale(1.05)'; }}
+                  onMouseLeave={(e) => { e.target.style.background = 'rgba(252, 84, 175, 0.1)'; e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)'; e.target.style.transform = 'scale(1)'; }}
+                >
+                  ${amount}
+                </button>
+                {showState && (
+                  <>
+                    <button
+                      onClick={() => {
+                        try { sfx.play('card-ding', 0.7); } catch {}
+                        window.open(stripeUrls[amount], '_blank');
+                        setShow(false);
+                      }}
+                      style={{
+                        padding: '0', width: '58px', height: '38px',
+                        background: 'rgba(252, 84, 175, 0.1)', border: '2px solid #FC54AF', borderRadius: '8px',
+                        cursor: 'pointer', transition: 'all 300ms ease', boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                      }}
+                      onMouseEnter={(e) => { try { sfx.play('audio/hover.mp3', 0.3); } catch {} e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)'; e.target.style.background = 'rgba(252, 84, 175, 0.2)'; e.target.style.transform = 'scale(1.05)'; }}
+                      onMouseLeave={(e) => { e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)'; e.target.style.background = 'rgba(252, 84, 175, 0.1)'; e.target.style.transform = 'scale(1)'; }}
+                    >
+                      <img src="/elements/credit-card.webp" alt="Credit Card" style={{ width: '54px', height: '34px', filter: 'brightness(0) saturate(100%) invert(19%) sepia(95%) saturate(1646%) hue-rotate(300deg) brightness(102%) contrast(98%)' }} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        try { sfx.play('card-ding', 0.7); } catch {}
+                        const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=${amount}&note=${encodeURIComponent(venmoNotes[amount])}`;
+                        const webVenmoUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=${amount}&note=${encodeURIComponent(venmoNotes[amount])}`;
+                        window.open(venmoUrl, '_blank');
+                        setTimeout(() => { window.open(webVenmoUrl, '_blank'); }, 1000);
+                        setShow(false);
+                      }}
+                      style={{
+                        padding: '0', width: '48px', height: '48px',
+                        background: 'rgba(0, 255, 255, 0.1)', border: '2px solid #00FFFF', borderRadius: '50%',
+                        cursor: 'pointer', transition: 'all 300ms ease', boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                      }}
+                      onMouseEnter={(e) => { try { sfx.play('audio/hover.mp3', 0.3); } catch {} e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6)'; e.target.style.background = 'rgba(0, 255, 255, 0.2)'; e.target.style.transform = 'scale(1.05)'; }}
+                      onMouseLeave={(e) => { e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)'; e.target.style.background = 'rgba(0, 255, 255, 0.1)'; e.target.style.transform = 'scale(1)'; }}
+                    >
+                      <img src="/elements/venmo.webp" alt="Venmo" style={{ width: '44px', height: '44px', filter: 'brightness(1) invert(0)' }} />
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Stay Connected Section - fits below Twitch embed */}
+      {showPhoneForm && (
+      <div style={{
+        padding: '12px 12px 0',
+      }}>
         {/* Header Text */}
-        {showPhoneForm && (
         <div
           style={{
             textAlign: 'center',
             marginBottom: '8px',
-            marginTop: '40px',
             color: '#00FFFF',
             fontSize: '16px',
             fontWeight: '600',
@@ -356,7 +449,6 @@ export default function JoinAliens({ visible = true } = {}) {
         >
           {'Stay connected to the Heartverse.'}
         </div>
-        )}
 
       {/* Error/Success Messages */}
       {error && (
@@ -376,8 +468,6 @@ export default function JoinAliens({ visible = true } = {}) {
 
 
       {/* Phone Number Input */}
-      {showPhoneForm && (
-      <>
       <div style={{ marginBottom: '12px', width: '80%', margin: '0 auto 12px auto' }}>
         <input
           id="signal-phone"
@@ -526,9 +616,8 @@ export default function JoinAliens({ visible = true } = {}) {
         )}
       </button>
       </div>
-      </> 
+      </div>
       )}
-      </div> {/* Close Stay Connected Section */}
 
 
 
@@ -539,6 +628,10 @@ export default function JoinAliens({ visible = true } = {}) {
           e.stopPropagation();
           console.log('Chat button clicked! Current state:', isChatOpen);
           try { sfx.play('audio/click.mp3', 0.5); } catch {}
+          // Close phone form before opening chat
+          if (!isChatOpen && showPhoneForm) {
+            setShowPhoneForm(false);
+          }
           setIsChatOpen(!isChatOpen);
           console.log('Setting chat state to:', !isChatOpen);
         }}
@@ -546,10 +639,10 @@ export default function JoinAliens({ visible = true } = {}) {
         className="text-chat-button"
         style={{
           position: 'absolute',
-          top: '12px',
-          left: '12px',
-          width: '80px',
-          height: '80px',
+          bottom: '15px',
+          left: '10px',
+          width: '60px',
+          height: '60px',
           background: 'rgba(242, 239, 29, 0.1)',
           border: '2px solid #F2EF1D',
           borderRadius: '50%',
@@ -590,9 +683,9 @@ export default function JoinAliens({ visible = true } = {}) {
       </button>
 
       {/* Episodes Library - button + panel rendered directly in container */}
-      <EpisodesLibrary />
+      <EpisodesLibrary isChatOpen={isChatOpen} />
 
-      {/* Phone Button - positioned in bottom left corner */}
+      {/* Phone Button - positioned to the left of $ button */}
       <button
         onClick={() => {
           try { sfx.play('audio/click.mp3', 0.5); } catch {}
@@ -601,8 +694,8 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
         style={{
           position: 'absolute',
-          bottom: '50px',
-          left: '20px',
+          bottom: '15px',
+          right: '140px',
           width: '55px',
           height: '55px',
           background: 'rgba(0, 255, 255, 0.1)',
@@ -647,166 +740,8 @@ export default function JoinAliens({ visible = true } = {}) {
         />
       </button>
 
-      {/* $3 Button - positioned to the left of $5 button */}
-      {showTipOptions && (
-      <button
-        onClick={() => {
-          try { sfx.play('audio/click.mp3', 0.3); } catch {}
 
-          // Toggle VENMO/CARD options popup for $3
-          if (showPaymentOptions) {
-            setShowPaymentOptions(false);
-          } else {
-            setShowPaymentOptions5(false); // Close $5 payment options first
-            setShowPaymentOptions10(false); // Close $10 payment options first
-            setShowPaymentOptions(true);
-            setSelectedTipAmount(3);
-          }
-        }}
-        style={{
-          position: 'absolute',
-          bottom: '243px', // Position above $5 button
-          right: '20px',
-          width: '55px',
-          height: '55px',
-          background: 'rgba(252, 84, 175, 0.1)',
-          border: '2px solid #FC54AF',
-          borderRadius: '50%',
-          color: '#FC54AF',
-          fontSize: '16px',
-          fontWeight: 'bold',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'all 300ms ease',
-          textShadow: '0 0 8px #FC54AF',
-          boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
-          zIndex: 10
-        }}
-        onMouseEnter={(e) => {
-          try { sfx.play('hover', 0.3); } catch {}
-          e.target.style.background = 'rgba(252, 84, 175, 0.2)';
-          e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
-          e.target.style.transform = 'scale(1.05)';
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.background = 'rgba(252, 84, 175, 0.1)';
-          e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
-          e.target.style.transform = 'scale(1)';
-        }}
-      >
-        $3
-      </button>
-      )}
-
-      {/* $5 Button - positioned to the left of $10 button */}
-      {showTipOptions && (
-      <button
-        onClick={() => {
-          try { sfx.play('audio/click.mp3', 0.3); } catch {}
-
-          // Toggle VENMO/CARD options popup for $5
-          if (showPaymentOptions5) {
-            setShowPaymentOptions5(false);
-          } else {
-            setShowPaymentOptions(false); // Close $3 payment options first
-            setShowPaymentOptions10(false); // Close $10 payment options first
-            setShowPaymentOptions5(true);
-            setSelectedTipAmount(5);
-          }
-        }}
-        style={{
-          position: 'absolute',
-          bottom: '178px', // Position above $10 button
-          right: '20px',
-          width: '55px',
-          height: '55px',
-          background: 'rgba(252, 84, 175, 0.1)',
-          border: '2px solid #FC54AF',
-          borderRadius: '50%',
-          color: '#FC54AF',
-          fontSize: '16px',
-          fontWeight: 'bold',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'all 300ms ease',
-          textShadow: '0 0 8px #FC54AF',
-          boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
-          zIndex: 10
-        }}
-        onMouseEnter={(e) => {
-          try { sfx.play('hover', 0.3); } catch {}
-          e.target.style.background = 'rgba(252, 84, 175, 0.2)';
-          e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
-          e.target.style.transform = 'scale(1.05)';
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.background = 'rgba(252, 84, 175, 0.1)';
-          e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
-          e.target.style.transform = 'scale(1)';
-        }}
-      >
-        $5
-      </button>
-      )}
-
-      {/* $10 Button - positioned to the left of $ button */}
-      {showTipOptions && (
-      <button
-        onClick={() => {
-          try { sfx.play('audio/click.mp3', 0.3); } catch {}
-
-          // Toggle VENMO/CARD options popup for $10
-          if (showPaymentOptions10) {
-            setShowPaymentOptions10(false);
-          } else {
-            setShowPaymentOptions(false); // Close $3 payment options first
-            setShowPaymentOptions5(false); // Close $5 payment options first
-            setShowPaymentOptions10(true);
-            setSelectedTipAmount(10);
-          }
-        }}
-        style={{
-          position: 'absolute',
-          bottom: '113px', // Position above $ button
-          right: '20px',
-          width: '55px',
-          height: '55px',
-          background: 'rgba(252, 84, 175, 0.1)',
-          border: '2px solid #FC54AF',
-          borderRadius: '50%',
-          color: '#FC54AF',
-          fontSize: '14px',
-          fontWeight: 'bold',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'all 300ms ease',
-          textShadow: '0 0 8px #FC54AF',
-          boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
-          zIndex: 10
-        }}
-        onMouseEnter={(e) => {
-          try { sfx.play('hover', 0.3); } catch {}
-          e.target.style.background = 'rgba(252, 84, 175, 0.2)';
-          e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
-          e.target.style.transform = 'scale(1.05)';
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.background = 'rgba(252, 84, 175, 0.1)';
-          e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
-          e.target.style.transform = 'scale(1)';
-        }}
-      >
-        $10
-      </button>
-      )}
-
-      {/* $ Button - positioned in bottom right corner */}
+      {/* $ Button - positioned to the left of Episodes button */}
       <button
         onClick={() => {
           try { sfx.play('audio/click.mp3', 0.5); } catch {}
@@ -817,8 +752,8 @@ export default function JoinAliens({ visible = true } = {}) {
         }}
         style={{
           position: 'absolute',
-          bottom: '50px',
-          right: '20px',
+          bottom: '15px',
+          right: '75px',
           width: '55px',
           height: '55px',
           background: 'rgba(252, 84, 175, 0.1)',
@@ -1216,6 +1151,17 @@ export default function JoinAliens({ visible = true } = {}) {
           100% { transform: rotate(360deg); }
         }
         
+        @keyframes signalBlink {
+          0%, 100% {
+            opacity: 1;
+            box-shadow: 0 0 8px #FC54AF, 0 0 16px #FC54AF;
+          }
+          50% {
+            opacity: 0.2;
+            box-shadow: 0 0 2px #FC54AF;
+          }
+        }
+
         @keyframes neonFlicker {
           0%, 100% {
             text-shadow: 
@@ -1272,377 +1218,6 @@ export default function JoinAliens({ visible = true } = {}) {
         }
       `}</style>
 
-      {/* Payment buttons popup */}
-      {showPaymentOptions && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '243px',
-            right: '88px',
-            zIndex: 15,
-            display: 'flex',
-            gap: '10px',
-            alignItems: 'center'
-          }}
-          onClick={(e) => {
-            // Close if clicking the container (outside buttons)
-            if (e.target === e.currentTarget) {
-              setShowPaymentOptions(false);
-            }
-          }}
-        >
-          {/* Venmo Button */}
-          <button
-            onClick={() => {
-              try { sfx.play('card-ding', 0.7); } catch {}
-              const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=3&note=${encodeURIComponent('Fuel the Signal')}`;
-              const webVenmoUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=3&note=${encodeURIComponent('Fuel the Signal')}`;
-              
-              window.open(venmoUrl, '_blank');
-              setTimeout(() => {
-                window.open(webVenmoUrl, '_blank');
-              }, 1000);
-              
-              setShowPaymentOptions(false);
-            }}
-            style={{
-              padding: '0',
-              width: '48px',
-              height: '48px',
-              background: 'rgba(0, 255, 255, 0.1)',
-              border: '2px solid #00FFFF',
-              borderRadius: '50%',
-              color: '#00FFFF',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              transition: 'all 300ms ease',
-              boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)',
-              textShadow: '0 0 8px #00FFFF',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-            onMouseEnter={(e) => {
-              try { sfx.play('audio/hover.mp3', 0.3); } catch {}
-              e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6)';
-              e.target.style.background = 'rgba(0, 255, 255, 0.2)';
-              e.target.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
-              e.target.style.background = 'rgba(0, 255, 255, 0.1)';
-              e.target.style.transform = 'scale(1)';
-            }}
-          >
-            <img 
-              src="/elements/venmo.webp" 
-              alt="Venmo" 
-              style={{
-                width: '44px',
-                height: '44px',
-                filter: 'brightness(1) invert(0)'
-              }}
-            />
-          </button>
-
-          {/* Credit Card Button */}
-          <button
-            onClick={() => {
-              try { sfx.play('card-ding', 0.7); } catch {}
-              // Open Stripe payment page for $3
-              window.open('https://buy.stripe.com/bJeeVe5X3fZH9Nnchh4gg0P', '_blank');
-              setShowPaymentOptions(false);
-            }}
-            style={{
-              padding: '0',
-              width: '58px',
-              height: '38px',
-              background: 'rgba(252, 84, 175, 0.1)',
-              border: '2px solid #FC54AF',
-              borderRadius: '8px',
-              color: '#FC54AF',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              transition: 'all 300ms ease',
-              boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
-              textShadow: '0 0 8px #FC54AF',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-            onMouseEnter={(e) => {
-              try { sfx.play('audio/hover.mp3', 0.3); } catch {}
-              e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
-              e.target.style.background = 'rgba(252, 84, 175, 0.2)';
-              e.target.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
-              e.target.style.background = 'rgba(252, 84, 175, 0.1)';
-              e.target.style.transform = 'scale(1)';
-            }}
-          >
-            <img 
-              src="/elements/credit-card.webp" 
-              alt="Credit Card" 
-              style={{
-                width: '54px',
-                height: '34px',
-                filter: 'brightness(0) saturate(100%) invert(19%) sepia(95%) saturate(1646%) hue-rotate(300deg) brightness(102%) contrast(98%)'
-              }}
-            />
-          </button>
-        </div>
-      )}
-
-      {/* Payment buttons popup for $5 */}
-      {showPaymentOptions5 && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '178px',
-            right: '88px',
-            zIndex: 15,
-            display: 'flex',
-            gap: '10px',
-            alignItems: 'center'
-          }}
-          onClick={(e) => {
-            // Close if clicking the container (outside buttons)
-            if (e.target === e.currentTarget) {
-              setShowPaymentOptions5(false);
-            }
-          }}
-        >
-          {/* Venmo Button for $5 */}
-          <button
-            onClick={() => {
-              try { sfx.play('card-ding', 0.7); } catch {}
-              const venmoUrl = `venmo://paycharge?txn=pay&recipients=chxndlerthealien&amount=5&note=${encodeURIComponent('Boost the Transmission')}`;
-              const webVenmoUrl = `https://venmo.com/u/chxndlerthealien?txn=pay&amount=5&note=${encodeURIComponent('Boost the Transmission')}`;
-              
-              window.open(venmoUrl, '_blank');
-              setTimeout(() => {
-                window.open(webVenmoUrl, '_blank');
-              }, 1000);
-              
-              setShowPaymentOptions5(false);
-            }}
-            style={{
-              padding: '0',
-              width: '48px',
-              height: '48px',
-              background: 'rgba(0, 255, 255, 0.1)',
-              border: '2px solid #00FFFF',
-              borderRadius: '50%',
-              color: '#00FFFF',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              transition: 'all 300ms ease',
-              boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)',
-              textShadow: '0 0 8px #00FFFF',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-            onMouseEnter={(e) => {
-              try { sfx.play('audio/hover.mp3', 0.3); } catch {}
-              e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6)';
-              e.target.style.background = 'rgba(0, 255, 255, 0.2)';
-              e.target.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
-              e.target.style.background = 'rgba(0, 255, 255, 0.1)';
-              e.target.style.transform = 'scale(1)';
-            }}
-          >
-            <img 
-              src="/elements/venmo.webp" 
-              alt="Venmo" 
-              style={{
-                width: '44px',
-                height: '44px',
-                filter: 'brightness(1) invert(0)'
-              }}
-            />
-          </button>
-
-          {/* Credit Card Button for $5 */}
-          <button
-            onClick={() => {
-              try { sfx.play('card-ding', 0.7); } catch {}
-              // Open Stripe payment page for $5
-              window.open('https://buy.stripe.com/3cIaEYbhn00JbVv4OP4gg0Q', '_blank');
-              setShowPaymentOptions5(false);
-            }}
-            style={{
-              padding: '0',
-              width: '58px',
-              height: '38px',
-              background: 'rgba(252, 84, 175, 0.1)',
-              border: '2px solid #FC54AF',
-              borderRadius: '8px',
-              color: '#FC54AF',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              transition: 'all 300ms ease',
-              boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
-              textShadow: '0 0 8px #FC54AF',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-            onMouseEnter={(e) => {
-              try { sfx.play('audio/hover.mp3', 0.3); } catch {}
-              e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
-              e.target.style.background = 'rgba(252, 84, 175, 0.2)';
-              e.target.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
-              e.target.style.background = 'rgba(252, 84, 175, 0.1)';
-              e.target.style.transform = 'scale(1)';
-            }}
-          >
-            <img 
-              src="/elements/credit-card.webp" 
-              alt="Credit Card" 
-              style={{
-                width: '54px',
-                height: '34px',
-                filter: 'brightness(0) saturate(100%) invert(19%) sepia(95%) saturate(1646%) hue-rotate(300deg) brightness(102%) contrast(98%)'
-              }}
-            />
-          </button>
-        </div>
-      )}
-
-      {/* Payment buttons popup for $10 */}
-      {showPaymentOptions10 && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '113px',
-            right: '88px',
-            zIndex: 15,
-            display: 'flex',
-            gap: '10px',
-            alignItems: 'center'
-          }}
-          onClick={(e) => {
-            // Close if clicking the container (outside buttons)
-            if (e.target === e.currentTarget) {
-              setShowPaymentOptions10(false);
-            }
-          }}
-        >
-          {/* Venmo Button for $10 */}
-          <button
-            onClick={() => {
-              try { sfx.play('card-ding', 0.7); } catch {}
-              // Use the specific $10 Venmo URL
-              const venmoUrl = 'https://venmo.com/CHXNDLERTHEALIEN?txn=pay&amount=10&note=Ignite%20the%20Heartverse';
-              
-              window.open(venmoUrl, '_blank');
-              
-              setShowPaymentOptions10(false);
-            }}
-            style={{
-              padding: '0',
-              width: '48px',
-              height: '48px',
-              background: 'rgba(0, 255, 255, 0.1)',
-              border: '2px solid #00FFFF',
-              borderRadius: '50%',
-              color: '#00FFFF',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              transition: 'all 300ms ease',
-              boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)',
-              textShadow: '0 0 8px #00FFFF',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-            onMouseEnter={(e) => {
-              try { sfx.play('audio/hover.mp3', 0.3); } catch {}
-              e.target.style.boxShadow = '0 0 25px rgba(0, 255, 255, 0.6)';
-              e.target.style.background = 'rgba(0, 255, 255, 0.2)';
-              e.target.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.3)';
-              e.target.style.background = 'rgba(0, 255, 255, 0.1)';
-              e.target.style.transform = 'scale(1)';
-            }}
-          >
-            <img 
-              src="/elements/venmo.webp" 
-              alt="Venmo" 
-              style={{
-                width: '44px',
-                height: '44px',
-                filter: 'brightness(1) invert(0)'
-              }}
-            />
-          </button>
-
-          {/* Credit Card Button for $10 */}
-          <button
-            onClick={() => {
-              try { sfx.play('card-ding', 0.7); } catch {}
-              // Open Stripe payment page for $10
-              window.open('https://buy.stripe.com/4gM5kEdpv3cV9Nn6WX4gg0R', '_blank');
-              setShowPaymentOptions10(false);
-            }}
-            style={{
-              padding: '0',
-              width: '58px',
-              height: '38px',
-              background: 'rgba(252, 84, 175, 0.1)',
-              border: '2px solid #FC54AF',
-              borderRadius: '8px',
-              color: '#FC54AF',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              transition: 'all 300ms ease',
-              boxShadow: '0 0 15px rgba(252, 84, 175, 0.3)',
-              textShadow: '0 0 8px #FC54AF',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-            onMouseEnter={(e) => {
-              try { sfx.play('audio/hover.mp3', 0.3); } catch {}
-              e.target.style.boxShadow = '0 0 25px rgba(252, 84, 175, 0.6)';
-              e.target.style.background = 'rgba(252, 84, 175, 0.2)';
-              e.target.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.boxShadow = '0 0 15px rgba(252, 84, 175, 0.3)';
-              e.target.style.background = 'rgba(252, 84, 175, 0.1)';
-              e.target.style.transform = 'scale(1)';
-            }}
-          >
-            <img 
-              src="/elements/credit-card.webp" 
-              alt="Credit Card" 
-              style={{
-                width: '54px',
-                height: '34px',
-                filter: 'brightness(0) saturate(100%) invert(19%) sepia(95%) saturate(1646%) hue-rotate(300deg) brightness(102%) contrast(98%)'
-              }}
-            />
-          </button>
-        </div>
-      )}
 
       {/* Chat Panel */}
       <ChatPanel 

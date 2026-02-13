@@ -386,8 +386,9 @@ export default function ChatPanel({ isOpen, onClose }) {
   const [selectedUser, setSelectedUser] = useState(null);
   const [hasJoined, setHasJoined] = useState(false);
   const [typingUsers, setTypingUsers] = useState([]);
-  const [isUserPanelCollapsed, setIsUserPanelCollapsed] = useState(false); // Start expanded by default
-  
+  const [isUserPanelCollapsed, setIsUserPanelCollapsed] = useState(true); // Start collapsed by default
+  const [isChatCollapsed, setIsChatCollapsed] = useState(true); // Default to half-collapsed view
+
   // Reaction state
   const [messageReactions, setMessageReactions] = useState({});
   const [roomReactions, setRoomReactions] = useState([]);
@@ -1323,7 +1324,7 @@ export default function ChatPanel({ isOpen, onClose }) {
         <>
           {/* Backdrop */}
           <motion.div
-            className="absolute inset-0 bg-black/20 backdrop-blur-[2px] z-[100]"
+            className="absolute inset-0 z-[100]"
             variants={backdropVariants}
             initial="closed"
             animate="open"
@@ -1333,7 +1334,8 @@ export default function ChatPanel({ isOpen, onClose }) {
 
           {/* Chat Panel */}
           <motion.div
-            className="absolute inset-0 z-[110] flex overflow-hidden"
+            className={`absolute z-[110] flex overflow-hidden left-0 right-0 ${isChatCollapsed ? 'bottom-0' : 'inset-0'}`}
+            style={isChatCollapsed ? { top: 'auto', height: '55%' } : undefined}
             variants={panelVariants}
             initial="closed"
             animate="open"
@@ -1359,69 +1361,46 @@ export default function ChatPanel({ isOpen, onClose }) {
                 overscrollBehavior: 'contain'
               }}
             >
-              {/* Header */}
-              <div className="p-4 border-b border-yellow-400/30 flex items-center flex-shrink-0">
-                <div className="flex items-center space-x-3 flex-1 mr-1 ml-20">
-                  <div 
-                    className="w-3 h-3 rounded-full animate-pulse flex-shrink-0"
-                    style={{
-                      background: '#F2EF1D',
-                      boxShadow: '0 0 15px rgba(242, 239, 29, 0.8)',
-                      animation: 'neonBlink 1s infinite'
-                    }}
-                  />
-                  <h2 
-                    className="text-xl font-bold whitespace-nowrap"
-                    style={{
-                      color: '#F2EF1D !important',
-                      textShadow: '0 0 10px #F2EF1D, 0 0 20px #F2EF1D, 0 0 30px #F2EF1D',
-                      letterSpacing: '0.05em',
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    HEART SIGNAL CHAT
-                  </h2>
-                  
-                  {/* Extended glow line */}
-                  <div 
-                    className="flex-1 h-px ml-4"
-                    style={{
-                      background: 'linear-gradient(90deg, rgba(242, 239, 29, 0.6), rgba(242, 239, 29, 0.2), transparent)',
-                      boxShadow: '0 0 8px rgba(242, 239, 29, 0.4)'
-                    }}
-                  />
-                </div>
-                
-                <button
-                  onClick={handleClose}
-                  onMouseEnter={() => {
-                    try { sfx.play('hover', 0.3); } catch {}
+
+              {/* Content Area */}
+              <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative" style={{ overscrollBehavior: 'contain' }}>
+
+                {/* Collapse/Expand toggle — hidden when viewing a profile */}
+                {!selectedUser && <button
+                  onClick={() => {
+                    try { sfx.play('audio/click.mp3', 0.5); } catch {}
+                    setIsChatCollapsed(prev => !prev);
                   }}
-                  className="text-yellow-400 hover:text-yellow-300 transition-all duration-200 p-2 flex-shrink-0 hover:scale-110"
+                  onMouseEnter={() => { try { sfx.play('hover', 0.2); } catch {} }}
+                  className="text-yellow-400 hover:text-yellow-300 transition-all duration-200 hover:scale-110"
                   style={{
+                    position: 'absolute',
+                    top: '6px',
+                    right: '8px',
+                    zIndex: 20,
                     background: 'rgba(242, 239, 29, 0.2)',
-                    borderRadius: '8px',
+                    borderRadius: '6px',
                     border: '2px solid rgba(242, 239, 29, 0.6)',
                     color: '#F2EF1D',
                     textShadow: '0 0 12px rgba(242, 239, 29, 0.8)',
                     boxShadow: '0 0 16px rgba(242, 239, 29, 0.4)',
-                    fontSize: '16px',
-                    minWidth: '32px',
-                    minHeight: '36px',
-                    padding: '4px 8px',
+                    fontSize: '14px',
+                    minWidth: '28px',
+                    minHeight: '28px',
+                    padding: '2px 6px',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    cursor: 'pointer'
                   }}
+                  title={isChatCollapsed ? 'Expand chat' : 'Collapse chat'}
                 >
-                  ◀
-                </button>
-              </div>
+                  {isChatCollapsed ? '▲' : '▼'}
+                </button>}
 
-              {/* Content Area */}
-              <div className="flex-1 flex min-h-0 overflow-hidden" style={{ overscrollBehavior: 'contain' }}>
+                <div className="flex-1 flex min-h-0 overflow-hidden">
                 {/* User List */}
-                <div 
+                <div
                   className={`border-r border-cyan-400/20 transition-all duration-300 ease-in-out flex-shrink-0 ${
                     isUserPanelCollapsed ? 'w-8' : selectedUser ? 'w-32 sm:w-40 md:w-48' : 'w-48'
                   }`}
@@ -2263,8 +2242,8 @@ export default function ChatPanel({ isOpen, onClose }) {
 
                       {/* Binder Section */}
                       {showUserBinder && (
-                        <div className="pt-1">
-                          <h4 className="text-base font-semibold mb-3 flex items-center" style={{ color: '#FF69B4' }}>
+                        <div style={{ marginTop: '-8px' }}>
+                          <h4 className="text-base font-semibold mb-0 flex items-center" style={{ color: '#FF69B4' }}>
                             <img src="/elements/binder.webp" alt="Cards" className="w-4 h-4 mr-2" draggable={false} />
                             CARD COLLECTION
                           </h4>
@@ -2621,6 +2600,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                     </div>
                   </div>
                 )}
+                </div>
               </div>
             </div>
           </motion.div>

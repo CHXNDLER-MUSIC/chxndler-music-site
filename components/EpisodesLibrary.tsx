@@ -285,7 +285,7 @@ function formatReleaseDate(isoDate: string): string {
 // ──────────────────────────────────────────────
 // COMPONENT
 // ──────────────────────────────────────────────
-export default function EpisodesLibrary() {
+export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const [topTab, setTopTab] = useState<TopTab>("heartverse");
   const [liveSignalSection, setLiveSignalSection] = useState<LiveSignalSection>("practice");
@@ -350,10 +350,10 @@ export default function EpisodesLibrary() {
         }}
         style={{
           position: 'absolute',
-          top: '12px',
-          right: '12px',
-          width: '80px',
-          height: '80px',
+          bottom: '15px',
+          right: '10px',
+          width: '55px',
+          height: '55px',
           background: 'rgba(242, 239, 29, 0.1)',
           border: '2px solid #F2EF1D',
           borderRadius: '50%',
@@ -364,9 +364,9 @@ export default function EpisodesLibrary() {
           transition: 'all 300ms ease',
           outline: 'none',
           boxShadow: '0 0 15px rgba(242, 239, 29, 0.4)',
-          zIndex: 1000,
+          zIndex: isChatOpen ? 10 : 1000,
           overflow: 'hidden',
-          pointerEvents: 'auto',
+          pointerEvents: isChatOpen ? 'none' : 'auto',
         }}
       >
         <img
@@ -394,7 +394,7 @@ export default function EpisodesLibrary() {
             right: '8px',
             left: '8px',
             bottom: '8px',
-            zIndex: 200,
+            zIndex: 1100,
             boxShadow:
               "0 0 30px rgba(252,84,175,0.3), inset 0 0 16px rgba(252,84,175,0.06)",
           }}
