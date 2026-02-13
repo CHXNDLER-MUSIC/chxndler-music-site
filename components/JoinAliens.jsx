@@ -253,7 +253,7 @@ export default function JoinAliens({ visible = true } = {}) {
         opacity: visible ? 1 : 0,
         transform: visible ? 'scale(1)' : 'scale(0.95)',
         transition: 'all 300ms ease',
-        overflow: 'auto',
+        overflow: 'hidden',
         boxSizing: 'border-box',
         display: 'block'
       }}

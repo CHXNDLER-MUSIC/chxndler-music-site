@@ -1420,7 +1420,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                         }
                         setIsUserPanelCollapsed(!isUserPanelCollapsed);
                       }}
-                      className="w-full p-2 hover:bg-yellow-400/10 transition-colors duration-200 border-b border-cyan-400/20 flex items-center justify-between relative"
+                      className="w-full py-1 px-2 hover:bg-yellow-400/10 transition-colors duration-200 border-b border-cyan-400/20 flex items-center justify-between relative"
                       style={{
                         color: '#F2EF1D',
                         textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
@@ -1438,7 +1438,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                     >
                       {/* ONLINE label on the left */}
                       {!isUserPanelCollapsed && (
-                        <p 
+                        <p
                           className="text-sm font-semibold"
                           style={{
                             color: '#F2EF1D',
@@ -1545,7 +1545,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                           }
                           setIsVotingPanelCollapsed(!isVotingPanelCollapsed);
                         }}
-                        className="w-full p-2 hover:bg-yellow-400/10 transition-colors duration-200 border-b border-cyan-400/20 flex items-center justify-between relative"
+                        className="w-full py-1 px-2 hover:bg-yellow-400/10 transition-colors duration-200 border-b border-cyan-400/20 flex items-center justify-between relative"
                         style={{
                           color: '#F2EF1D',
                           textShadow: '0 0 8px rgba(242, 239, 29, 0.6)'
@@ -1948,7 +1948,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                       {/* Badges Section */}
                       {showUserBadges && (
                         <div className="pt-2 border-t border-white/20">
-                          <h4 className="text-sm font-semibold mb-3 flex items-center animate-pulse" 
+                          <h4 className="text-sm font-semibold mb-1 flex items-center animate-pulse"
                               style={{ 
                                 color: '#1E90FF',
                                 textShadow: '0 0 10px rgba(0,255,255,0.8), 0 0 20px rgba(0,255,255,0.6), 0 0 30px rgba(0,255,255,0.4)',
@@ -1982,9 +1982,6 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 {/* Show message for anonymous users or other users */}
                                 {(isViewingAnonymous || (!isViewingOwnProfile && selectedUser?.id !== user?.id)) && (
                                   <div className="text-center py-4">
-                                    <div className="text-sm text-white/60 mb-2">
-                                      {isViewingAnonymous ? 'Anonymous users don\'t have badges' : 'Can only view your own badges'}
-                                    </div>
                                     <div className="flex justify-center space-x-2">
                                       {Array.from({ length: 5 }, (_, index) => (
                                         <div 
