@@ -1388,6 +1388,20 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     }
   }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose, uiPhase, uiRevealLocked]);
 
+  // Listen for profile popover toggle to show cyan light beam
+  React.useEffect(() => {
+    const handleProfilePopoverToggle = (e) => {
+      const { open } = e.detail || {};
+      if (open) {
+        handleBeamToggle('cyan');
+      } else {
+        handleBeamToggle('off');
+      }
+    };
+    window.addEventListener('profilePopoverToggle', handleProfilePopoverToggle);
+    return () => window.removeEventListener('profilePopoverToggle', handleProfilePopoverToggle);
+  }, [handleBeamToggle]);
+
   // Function to open HeartCoin modal with a specific tab
   const openHeartCoinModal = React.useCallback((tab = 'earn') => {
     setHeartCoinModalTab(tab);

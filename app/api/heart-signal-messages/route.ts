@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { getSupabaseAdmin } from '@/lib/supabaseServer';
 
 // POST - Send a new heart signal message (authenticated users only)
@@ -17,29 +17,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create @supabase/ssr route handler client to read session cookies
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
-            } catch {
-              // setAll called from Server Component context — middleware
-              // handles session refresh so this is safe to ignore.
-            }
-          },
-        },
-      }
-    );
+    // Create authenticated route handler client
+    const cookieStore = cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
     // Authenticate the user
     const {
@@ -54,7 +34,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Use admin client for profile lookup + insert (bypasses RLS)
+    // Use admin client for profile lookup (bypasses RLS)
     const admin = getSupabaseAdmin();
 
     // Derive username: profiles.name → user_metadata.name → full_name → "CHXNDLER"
@@ -70,8 +50,8 @@ export async function POST(req: NextRequest) {
       user.user_metadata?.full_name ||
       'CHXNDLER';
 
-    // Insert the message
-    const { data, error } = await admin
+    // Insert using authenticated client so RLS matches auth.uid()
+    const { data, error } = await supabase
       .from('heart_signal_messages')
       .insert({
         user_id: user.id,

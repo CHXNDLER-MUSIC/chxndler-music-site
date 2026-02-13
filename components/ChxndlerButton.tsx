@@ -98,8 +98,8 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
             style={{
               width: 'min(92vw, 850px)',
               minWidth: '320px',
-              minHeight: '380px',
-              padding: '20px 20px 6px 20px',
+              minHeight: '435px',
+              padding: '20px 20px 14px 20px',
               borderRadius: 18,
               background: 'rgba(0,0,0,0.8)',
               border: '1px solid rgba(252,84,175,0.6)',

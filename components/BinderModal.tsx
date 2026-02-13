@@ -1235,7 +1235,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
         title="DIGITAL CARD BINDER"
         subtitle={`CARDS COLLECTED: ${profile?.id ? Math.max(1, totalOwnedCards) : 1}`}
         minWidth={'min(96vw, 440px)'}
-        maxHeight={'calc(100vh - 8vh - var(--display-touch-top))'}
+        maxHeight={'calc(100vh - 8vh - var(--light-beam-boundary) - var(--beam-height))'}
         onClose={() => {
           try { sfx.play('close', 0.8); } catch {}
           onClose();

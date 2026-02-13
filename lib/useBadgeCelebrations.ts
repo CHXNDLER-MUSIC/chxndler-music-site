@@ -123,6 +123,22 @@ function isBadgeSeen(badgeId: string, earnedAt: string, seenMap: Map<string, See
   return seenMap.has(key);
 }
 
+/**
+ * Mark a badge as "seen" directly in localStorage from outside the hook.
+ * Used by checkAndAwardEligibleBadges to prevent the realtime handler from
+ * celebrating badges that were awarded during the initial page-load badge check.
+ */
+export function markBadgeAsSeenInStorage(badgeId: string, earnedAt: string): void {
+  if (typeof window === 'undefined') return;
+  const seenMap = getSeenBadgesFromStorage();
+  const key = `${badgeId}_${earnedAt}`;
+  if (!seenMap.has(key)) {
+    seenMap.set(key, { badgeId, earnedAt, seenAt: Date.now() });
+    saveSeenBadgesToStorage(seenMap);
+    debugCelebration("markBadgeAsSeenInStorage", { badgeId, earnedAt });
+  }
+}
+
 // ============================================================================
 // Main Hook
 // ============================================================================

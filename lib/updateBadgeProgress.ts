@@ -1,6 +1,7 @@
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { getBadgeProgressForUser } from '@/lib/badgeProgress';
 import { log, warn } from '@/lib/logger';
+import { markBadgeAsSeenInStorage } from '@/lib/useBadgeCelebrations';
 
 // Session-level cache tracking now only prevents duplicate DB inserts
 // Celebration UI is handled by the realtime controller listening to user_badges inserts
@@ -194,12 +195,13 @@ export async function checkAndAwardEligibleBadges(userId: string) {
         // Mark as celebrated BEFORE attempting insert to prevent race condition duplicates
         celebratedBadgesThisSession.add(celebrationKey);
 
+        const earnedAt = new Date().toISOString();
         const { error: awardError } = await supabaseBrowser
           .from('user_badges')
           .insert({
             user_id: userId,
             badge_id: badge.id,
-            earned_at: new Date().toISOString()
+            earned_at: earnedAt
           });
 
         if (awardError) {
@@ -213,7 +215,11 @@ export async function checkAndAwardEligibleBadges(userId: string) {
           newlyAwardedBadges.push(badge);
           log(`✅ Successfully awarded badge: ${badge.badge_name}`);
 
-          // Celebration is triggered by BadgeCelebrationController via realtime INSERT on user_badges
+          // Mark this badge as "seen" in localStorage immediately so the realtime
+          // handler won't celebrate it. This fixes a race condition where the
+          // Supabase realtime INSERT event arrives after suppression has ended,
+          // causing unwanted celebrations on page load.
+          markBadgeAsSeenInStorage(badge.id, earnedAt);
         }
       }
     }

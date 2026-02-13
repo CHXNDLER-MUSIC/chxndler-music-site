@@ -66,6 +66,7 @@ export default function AuthButton() {
         setShowRelicsOnOpen(shouldShowRelics);
         setShowMerchOnOpen(shouldShowMerch);
         setShowProfilePopover(true);
+        window.dispatchEvent(new CustomEvent('profilePopoverToggle', { detail: { open: true } }));
       }
     };
 
@@ -77,6 +78,7 @@ export default function AuthButton() {
   useEffect(() => {
     const handleCloseProfile = () => {
       setShowProfilePopover(false);
+      window.dispatchEvent(new CustomEvent('profilePopoverToggle', { detail: { open: false } }));
     };
 
     window.addEventListener('closeProfilePopover', handleCloseProfile);
@@ -167,7 +169,10 @@ export default function AuthButton() {
         
       case 'profile':
         // Mode B: Complete profile - show profile popover
-        setShowProfilePopover(!showProfilePopover);
+        const nextOpen = !showProfilePopover;
+        setShowProfilePopover(nextOpen);
+        // Toggle cyan light beam when profile popover opens/closes
+        window.dispatchEvent(new CustomEvent('profilePopoverToggle', { detail: { open: nextOpen } }));
         break;
     }
   };
@@ -274,6 +279,7 @@ export default function AuthButton() {
           setShowProfilePopover(false);
           setShowRelicsOnOpen(false);
           setShowMerchOnOpen(false);
+          window.dispatchEvent(new CustomEvent('profilePopoverToggle', { detail: { open: false } }));
         }}
         anchorElement={buttonRef.current}
         showRelicsOnOpen={showRelicsOnOpen}
