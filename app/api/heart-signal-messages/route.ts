@@ -1,80 +1,89 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { getSupabaseAdmin } from '@/lib/supabaseServer';
 
 // POST - Send a new heart signal message (authenticated users only)
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
+  console.log("✅ HEART SIGNAL ROUTE HIT (APP ROUTER)");
   try {
-    const body = await req.json();
-    const { message } = body;
+    const body = await req.json().catch(() => ({} as any));
 
-    // Validate message
-    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+    const raw = (body?.message ?? body?.messageText ?? "").toString();
+    const message = raw.trim();
+    const displayName = (body?.displayName ?? body?.username ?? "").toString().trim();
+
+    if (!message) {
       return NextResponse.json(
-        { ok: false, error: 'Message is required' },
+        { ok: false, error: "Message is required", receivedKeys: Object.keys(body || {}) },
         { status: 400 }
       );
     }
 
-    // Create authenticated route handler client
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              // Ignored in route handlers if middleware handles session refresh
+            }
+          },
+        },
+      }
+    );
 
-    // Authenticate the user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { ok: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
+    const { data: userResult, error: userError } = await supabase.auth.getUser();
+    if (userError || !userResult?.user) {
+      return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
     }
 
-    // Use admin client for profile lookup (bypasses RLS)
-    const admin = getSupabaseAdmin();
-
-    // Derive username: profiles.name → user_metadata.name → full_name → "CHXNDLER"
-    const { data: profile } = await admin
-      .from('profiles')
-      .select('name')
-      .eq('id', user.id)
-      .single();
+    const userId = userResult.user.id;
 
     const username =
-      profile?.name ||
-      user.user_metadata?.name ||
-      user.user_metadata?.full_name ||
-      'CHXNDLER';
+      displayName ||
+      userResult.user.user_metadata?.name ||
+      userResult.user.user_metadata?.full_name ||
+      "CHXNDLER";
 
-    // Insert using authenticated client so RLS matches auth.uid()
     const { data, error } = await supabase
-      .from('heart_signal_messages')
+      .from("heart_signal_messages")
       .insert({
-        user_id: user.id,
+        user_id: userId,
         username,
-        message: message.trim(),
+        message,
         is_system: false,
       })
-      .select('id, user_id, username, message, created_at, is_system')
+      .select("id, user_id, username, message, created_at, is_system")
       .single();
 
     if (error) {
-      console.error('POST /api/heart-signal-messages: Insert error:', error);
+      console.error("heart-signal insert error:", error);
       return NextResponse.json(
-        { ok: false, error: error.message, code: error.code },
+        { ok: false, error: error.message, code: error.code, details: error.details, hint: error.hint },
         { status: 500 }
       );
     }
 
     return NextResponse.json({ ok: true, message: data });
-  } catch (error) {
-    console.error('POST /api/heart-signal-messages: Unexpected error:', error);
+  } catch (err: any) {
+    console.error("heart-signal POST crash:", err);
     return NextResponse.json(
-      { ok: false, error: 'Internal server error' },
+      {
+        ok: false,
+        error: "Route crashed",
+        details: err?.message ?? String(err),
+        stack: err?.stack ?? null,
+      },
       { status: 500 }
     );
   }

@@ -20,7 +20,7 @@ export default function JoinAliens({ visible = true } = {}) {
   const [showWelcomeHome, setShowWelcomeHome] = useState(false);
   
   // Chat state
-  const [isChatOpen, setIsChatOpen] = useState(true);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   
   // Tip functionality state
   const [showTipOptions, setShowTipOptions] = useState(false);

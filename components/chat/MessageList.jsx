@@ -12,31 +12,15 @@ import MessageReactions from './MessageReactions';
 const DEBUG = process.env.NODE_ENV === 'development';
 
 // Stable key helper for messages. Never returns empty; guarantees uniqueness.
-// Rules:
-// - Use `msg:${id}` when `id` is a non-empty string/number
-// - Else use `tmp:${tempId}` (or `cid:${client_id}`) when non-empty
-// - Else fallback to composite: created_at, user_id/username, slice of message, and idx
+// Priority: id → client_nonce → dedupe_key → user_id:created_at:index
 export const stableKey = (m, idx) => {
   const i = typeof idx === 'number' ? idx : 0;
-  if (!m) return `msg:fallback:${i}:${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 8)}`;
+  if (!m) return `fallback:${i}`;
 
-  const id = (typeof m.id === 'number' || typeof m.id === 'string') ? String(m.id) : '';
-  if (id && id.length > 0) return `msg:${id}`;
-
-  const tempId = (typeof m.tempId === 'number' || typeof m.tempId === 'string') ? String(m.tempId) : '';
-  if (tempId && tempId.length > 0) return `tmp:${tempId}`;
-
-  const cid = (typeof m.client_id === 'number' || typeof m.client_id === 'string') ? String(m.client_id) : '';
-  if (cid && cid.length > 0) return `cid:${cid}`;
-
-  const ts = m.created_at ? String(m.created_at) : '';
-  const uid = m.user_id ? String(m.user_id) : '';
-  const uname = m.username ? String(m.username) : '';
-  const msgSlice = m.message ? String(m.message).slice(0, 12) : '';
-  const suffix = `${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 6)}`;
-  return [
-    'msg', ts || '0', uid || uname || 'anon', msgSlice || 'm', String(i), suffix
-  ].join(':');
+  if (m.id) return `msg:${m.id}`;
+  if (m.client_nonce) return `nonce:${m.client_nonce}`;
+  if (m.dedupe_key) return `dk:${m.dedupe_key}`;
+  return `${m.user_id || 'anon'}:${m.created_at || '0'}:${i}`;
 };
 
 /**

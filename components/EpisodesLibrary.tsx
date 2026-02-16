@@ -8,228 +8,228 @@ import { sfx } from "@/lib/sfx";
 // Add, remove, or reorder videos here.
 // Each video needs: id, title, youtubeUrl, type
 // Optional: releaseDate (ISO string) — video is locked until this date
-// type: "heartverse" | "practice" | "performance"
+// type: "heartverse" | "acoustic" | "electric"
 // ──────────────────────────────────────────────
 const VIDEOS: Video[] = [
   // ── Episodes ──
-  // Releasing weekly on Thursdays at 6 PM starting 2/12/26.
+  // Releasing weekly on Wednesdays at 7 PM starting 2/18/26.
   {
-    id: "hv-001",
-    title: "Episode 1 — Pilot",
+    id: "hv-000",
+    title: "First Contact — Welcome to the Heartverse",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
-    releaseDate: "2026-02-12T18:00:00",
+    releaseDate: "2026-02-12T06:00:00",
+  },
+  {
+    id: "hv-001",
+    title: "Episode 1 — Searching for Our First Apartment in NYC",
+    youtubeUrl: "https://youtube.com/shorts/9qEktORb8EY?feature=share",
+    type: "heartverse",
+    releaseDate: "2026-02-18T19:00:00",
   },
   {
     id: "hv-002",
-    title: "Episode 2 — Searching For A Place To Call Home",
+    title: "Episode 2 — Moving Day",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
-    releaseDate: "2026-02-19T18:00:00",
+    releaseDate: "2026-02-25T19:00:00",
   },
   {
     id: "hv-003",
-    title: "Episode 3 — Moving Day",
+    title: "Episode 3 — Welcome To New York",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
-    releaseDate: "2026-02-26T18:00:00",
+    releaseDate: "2026-03-04T19:00:00",
   },
   {
     id: "hv-004",
-    title: "Episode 4 — Welcome To New York",
+    title: "Episode 4 — Fight Club",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
-    releaseDate: "2026-03-05T18:00:00",
+    releaseDate: "2026-03-11T19:00:00",
   },
   {
     id: "hv-005",
-    title: "Episode 5 — Fight Club",
+    title: "Episode 5 — I Got Cheated On Last Night",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
-    releaseDate: "2026-03-12T18:00:00",
+    releaseDate: "2026-03-18T19:00:00",
   },
   {
     id: "hv-006",
-    title: "Episode 6 — I Got Cheated On Last Night",
+    title: "Episode 6 — First Gig",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
-    releaseDate: "2026-03-19T18:00:00",
+    releaseDate: "2026-03-25T19:00:00",
   },
   {
     id: "hv-007",
-    title: "Episode 7 — First Gig",
+    title: "Episode 7 — Our First Tattoos",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
-    releaseDate: "2026-03-26T18:00:00",
+    releaseDate: "2026-04-01T19:00:00",
   },
   {
     id: "hv-008",
-    title: "Episode 8 — Our First Tattoos",
+    title: "Episode 8 — The Dirty Thirties",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
-    releaseDate: "2026-04-02T18:00:00",
-  },
-  {
-    id: "hv-009",
-    title: "Episode 9 — The Dirty Thirties",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "heartverse",
-    releaseDate: "2026-04-09T18:00:00",
+    releaseDate: "2026-04-08T19:00:00",
   },
 
-  // ── Live Signal – Practice ──
+  // ── Live Signal – Acoustic Session ──
   // Releasing weekly on Mondays at 8 PM starting 2/16/26.
   {
     id: "lsp-001",
-    title: "Practice — First Signal",
+    title: "Acoustic Session — First Signal",
     youtubeUrl: "https://youtu.be/RXWbQzWjTPg",
-    type: "practice",
-    releaseDate: "2026-02-16T20:00:00",
+    type: "acoustic",
+    releaseDate: "2026-02-17T12:00:00",
     description: "The signal starts here.",
     postDescription: "Songs in this session:\n• OCEAN GIRL\n• ALWAYS ON MY MIND\n• SOMEBODY TO LOVE\n• MR. BRIGHTSIDE (The Killers)\n• Good Things Fall Apart — Audience Request (Illenium, Jon Bellion)\n• Julia — Audience Request (Lauv)\n• Too Old To Cry — Audience Request (Voodoo Blue)",
   },
   {
     id: "lsp-002",
-    title: "Practice — Piano",
+    title: "Acoustic Session — Piano",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "practice",
-    releaseDate: "2026-02-23T20:00:00",
+    type: "acoustic",
+    releaseDate: "2026-02-24T12:00:00",
   },
   {
     id: "lsp-003",
-    title: "Practice — Late Night Keys",
+    title: "Acoustic Session — Late Night Keys",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "practice",
-    releaseDate: "2026-03-02T20:00:00",
+    type: "acoustic",
+    releaseDate: "2026-03-03T12:00:00",
   },
   {
     id: "lsp-004",
-    title: "Practice — Beat Sketches",
+    title: "Acoustic Session — Beat Sketches",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "practice",
-    releaseDate: "2026-03-09T20:00:00",
+    type: "acoustic",
+    releaseDate: "2026-03-10T12:00:00",
   },
   {
     id: "lsp-005",
-    title: "Practice — Frequencies",
+    title: "Acoustic Session — Frequencies",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "practice",
-    releaseDate: "2026-03-16T20:00:00",
+    type: "acoustic",
+    releaseDate: "2026-03-17T12:00:00",
   },
   {
     id: "lsp-006",
-    title: "Practice — Unplugged",
+    title: "Acoustic Session — Unplugged",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "practice",
-    releaseDate: "2026-03-23T20:00:00",
+    type: "acoustic",
+    releaseDate: "2026-03-24T12:00:00",
   },
   {
     id: "lsp-007",
-    title: "Practice — Loops",
+    title: "Acoustic Session — Loops",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "practice",
-    releaseDate: "2026-03-30T20:00:00",
+    type: "acoustic",
+    releaseDate: "2026-03-31T12:00:00",
   },
   {
     id: "lsp-008",
-    title: "Practice — Vocals",
+    title: "Acoustic Session — Vocals",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "practice",
-    releaseDate: "2026-04-06T20:00:00",
+    type: "acoustic",
+    releaseDate: "2026-04-07T12:00:00",
   },
   {
     id: "lsp-009",
-    title: "Practice — Analog",
+    title: "Acoustic Session — Analog",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "practice",
-    releaseDate: "2026-04-13T20:00:00",
+    type: "acoustic",
+    releaseDate: "2026-04-14T12:00:00",
   },
   {
     id: "lsp-010",
-    title: "Practice — Midnight Run",
+    title: "Acoustic Session — Midnight Run",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "practice",
-    releaseDate: "2026-04-20T20:00:00",
+    type: "acoustic",
+    releaseDate: "2026-04-21T12:00:00",
   },
 
-  // ── Live Signal – Performance ──
+  // ── Live Signal – Electric Set ──
   // Releasing weekly on Thursdays at 8 PM starting 2/19/26.
   {
     id: "lsf-001",
-    title: "Performance — Heartverse Live",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "performance",
-    releaseDate: "2026-02-19T20:00:00",
+    title: "Electric Set — Heartverse Is Live",
+    youtubeUrl: "https://youtu.be/TVCTbXqwJ5A",
+    type: "electric",
+    releaseDate: "2026-02-21T12:00:00",
   },
   {
     id: "lsf-002",
-    title: "Performance — Rooftop Session",
+    title: "Electric Set — Rooftop Session",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "performance",
-    releaseDate: "2026-02-26T20:00:00",
+    type: "electric",
+    releaseDate: "2026-02-28T12:00:00",
   },
   {
     id: "lsf-003",
-    title: "Performance — Sold Out",
+    title: "Electric Set — Sold Out",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "performance",
-    releaseDate: "2026-03-05T20:00:00",
+    type: "electric",
+    releaseDate: "2026-03-07T12:00:00",
   },
   {
     id: "lsf-004",
-    title: "Performance — Acoustic Set",
+    title: "Electric Set — Acoustic Set",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "performance",
-    releaseDate: "2026-03-12T20:00:00",
+    type: "electric",
+    releaseDate: "2026-03-14T12:00:00",
   },
   {
     id: "lsf-005",
-    title: "Performance — After Hours",
+    title: "Electric Set — After Hours",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "performance",
-    releaseDate: "2026-03-19T20:00:00",
+    type: "electric",
+    releaseDate: "2026-03-21T12:00:00",
   },
   {
     id: "lsf-006",
-    title: "Performance — Warehouse",
+    title: "Electric Set — Warehouse",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "performance",
-    releaseDate: "2026-03-26T20:00:00",
+    type: "electric",
+    releaseDate: "2026-03-28T12:00:00",
   },
   {
     id: "lsf-007",
-    title: "Performance — Open Mic",
+    title: "Electric Set — Open Mic",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "performance",
-    releaseDate: "2026-04-02T20:00:00",
+    type: "electric",
+    releaseDate: "2026-04-04T12:00:00",
   },
   {
     id: "lsf-008",
-    title: "Performance — Festival",
+    title: "Electric Set — Festival",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "performance",
-    releaseDate: "2026-04-09T20:00:00",
+    type: "electric",
+    releaseDate: "2026-04-11T12:00:00",
   },
   {
     id: "lsf-009",
-    title: "Performance — Encore",
+    title: "Electric Set — Encore",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "performance",
-    releaseDate: "2026-04-16T20:00:00",
+    type: "electric",
+    releaseDate: "2026-04-18T12:00:00",
   },
   {
     id: "lsf-010",
-    title: "Performance — Grand Finale",
+    title: "Electric Set — Grand Finale",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    type: "performance",
-    releaseDate: "2026-04-23T20:00:00",
+    type: "electric",
+    releaseDate: "2026-04-25T12:00:00",
   },
 ];
 
 // ──────────────────────────────────────────────
 // TYPES
 // ──────────────────────────────────────────────
-type VideoType = "heartverse" | "practice" | "performance";
+type VideoType = "heartverse" | "acoustic" | "electric";
 
 interface Video {
   id: string;
@@ -242,7 +242,7 @@ interface Video {
 }
 
 type TopTab = "heartverse" | "livesignal";
-type LiveSignalSection = "practice" | "performance";
+type LiveSignalSection = "acoustic" | "electric";
 
 // ──────────────────────────────────────────────
 // HELPERS
@@ -255,6 +255,8 @@ function getYouTubeEmbedUrl(url: string): string {
     const parsed = new URL(url);
     if (parsed.hostname.includes("youtu.be")) {
       videoId = parsed.pathname.slice(1);
+    } else if (parsed.pathname.startsWith("/shorts/")) {
+      videoId = parsed.pathname.split("/shorts/")[1];
     } else {
       videoId = parsed.searchParams.get("v") || "";
     }
@@ -288,7 +290,7 @@ function formatReleaseDate(isoDate: string): string {
 export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const [topTab, setTopTab] = useState<TopTab>("heartverse");
-  const [liveSignalSection, setLiveSignalSection] = useState<LiveSignalSection>("practice");
+  const [liveSignalSection, setLiveSignalSection] = useState<LiveSignalSection>("acoustic");
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
 
   // Close on Escape
@@ -465,33 +467,33 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
             <div className="relative flex gap-1 mx-3 mt-2 p-1 rounded-md bg-white/3 border border-[#00FFFF]/15">
               <button
                 className={`flex-1 py-1 px-2 text-xs font-medium rounded transition-all duration-200 tracking-wide ${
-                  liveSignalSection === "practice"
+                  liveSignalSection === "acoustic"
                     ? "bg-[#00FFFF]/15 text-[#00FFFF] border border-[#00FFFF]/30"
                     : "text-white/40 hover:text-white/70 border border-transparent"
                 }`}
                 onClick={() => {
                   playClick();
-                  setLiveSignalSection("practice");
+                  setLiveSignalSection("acoustic");
                   setActiveVideo(null);
                 }}
                 onMouseEnter={playHover}
               >
-                Practice
+                Acoustic
               </button>
               <button
                 className={`flex-1 py-1 px-2 text-xs font-medium rounded transition-all duration-200 tracking-wide ${
-                  liveSignalSection === "performance"
+                  liveSignalSection === "electric"
                     ? "bg-[#00FFFF]/15 text-[#00FFFF] border border-[#00FFFF]/30"
                     : "text-white/40 hover:text-white/70 border border-transparent"
                 }`}
                 onClick={() => {
                   playClick();
-                  setLiveSignalSection("performance");
+                  setLiveSignalSection("electric");
                   setActiveVideo(null);
                 }}
                 onMouseEnter={playHover}
               >
-                Performance
+                Electric
               </button>
             </div>
           )}

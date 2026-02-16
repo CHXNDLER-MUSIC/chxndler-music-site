@@ -28,22 +28,11 @@ function AnchoredPreviewModal({
   if (!buttonPosition) return null;
 
   // Calculate preview card positioning - center on page and reduce height
-  // Match the yellow display width: calc(var(--display-width) + 32px)
-  // Using CSS variable fallback values based on typical responsive breakpoints
-  const getYellowDisplayWidth = () => {
-    const vw = window.innerWidth;
-    // These values should match your CSS --display-width variable
-    if (vw <= 480) return Math.min(vw - 40, 320) + 32; // Mobile
-    if (vw <= 768) return Math.min(vw - 60, 400) + 32; // Tablet
-    return Math.min(vw - 80, 480) + 32; // Desktop
-  };
-  
-  const cardWidth = getYellowDisplayWidth();
+  // Width uses the same CSS variable as the yellow display: calc(var(--display-width) + 32px)
   const cardHeight = Math.min(heightPx || 240, 280); // Reduced from 280 to 240, max 280
-  
-  // Center the preview on the page, positioned slightly higher
-  const left = (window.innerWidth - cardWidth) / 2;
-  const top = (window.innerHeight - cardHeight) / 2 - 80; // Move 80px higher
+
+  // Vertical centering offset (moved 80px higher)
+  const top = (window.innerHeight - cardHeight) / 2 - 80;
 
   return createPortal(
     <div
@@ -57,9 +46,10 @@ function AnchoredPreviewModal({
         className="preview-card"
         style={{
           position: 'fixed',
-          left: `${left}px`,
+          left: '50%',
+          transform: 'translateX(-50%)',
           top: `${top}px`,
-          width: `${cardWidth}px`,
+          width: `calc(var(--display-width) + 32px)`,
           height: `${cardHeight}px`,
           zIndex: 2147483648
         }}

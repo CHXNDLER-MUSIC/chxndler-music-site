@@ -6,7 +6,7 @@ import { chatService } from '@/lib/supabase/chat';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { useProfile } from '@/contexts/ProfileContext';
 import { sfx } from '@/lib/sfx';
-import { getOrCreateGuestNameSync } from '@/lib/supabase/guest';
+import { getOrCreateGuestNameSync, clearGuestIdentity } from '@/lib/supabase/guest';
 // import { useLiveStatus } from '@/hooks/useLiveStatus'; // Removed since chat is always available
 import UserList from './UserList';
 import MessageList from './MessageList';
@@ -23,8 +23,8 @@ import { getCardImageUrl } from '@/lib/supabaseCardUrl';
 // Debug flag to control console logging
 const DEBUG = process.env.NODE_ENV === 'development' && true;
 
-// Global guest username cache - persists across component remounts
-let cachedGuestUsername = null;
+// NOTE: Guest username is now resolved per-instance via identity resolution in ChatPanel.
+// Do NOT use a module-level cache—it causes stale guest aliases to leak into auth sessions.
 
 /**
  * Generate a unique client_id for messages that don't have a DB id yet
@@ -175,20 +175,10 @@ const normalizeUser = (user) => {
   return { ...user, client_id: `user_${generateClientId('anon')}` };
 };
 
-// Function to get guest username (for display purposes - synchronous)
-// Uses localStorage for persistence across sessions
-const getGlobalAlienName = () => {
-  if (cachedGuestUsername) {
-    return cachedGuestUsername;
-  }
-
-  if (typeof window !== 'undefined') {
-    cachedGuestUsername = getOrCreateGuestNameSync();
-    DEBUG && console.log('🔥 Got guest username (sync):', cachedGuestUsername);
-    return cachedGuestUsername;
-  }
-
-  return 'ALIEN000000';
+// Helper: derive a short guest alias from a guest ID (last 6 chars, uppercased)
+const guestAliasFromId = (guestId) => {
+  if (!guestId || guestId.length < 6) return 'ALIEN000000';
+  return 'ALIEN' + guestId.replace(/-/g, '').slice(-6).toUpperCase();
 };
 
 /**
@@ -196,7 +186,7 @@ const getGlobalAlienName = () => {
  * Slides in from the left side when live streaming is active
  */
 export default function ChatPanel({ isOpen, onClose }) {
-  const { profile, user, unlockedBadges, badgesLoading, badgesError, userBadges } = useProfile();
+  const { profile, user, loading: profileLoading, unlockedBadges, badgesLoading, badgesError, userBadges } = useProfile();
   
   // Log badges debug only when values change
   useLogOnChange('🔥 ChatPanel badges debug:', {
@@ -363,23 +353,57 @@ export default function ChatPanel({ isOpen, onClose }) {
   // Log render state only when values change
   useLogOnChange('🔥 ChatPanel render:', { isOpen, profile: !!profile, user: !!user });
 
-  // Use the global alien name function
-  const alienName = getGlobalAlienName();
+  // ─── Identity resolution: never announce presence until we know who we are ───
+  const [resolvedName, setResolvedName] = useState(null);      // display name for presence & messages
+  const [resolvedUserId, setResolvedUserId] = useState(null);  // auth user.id when authenticated
+  const [resolvedGuestId, setResolvedGuestId] = useState(null); // localStorage guest id when unauthenticated
+  const [isIdentityReady, setIsIdentityReady] = useState(false);
+
+  // Resolve identity once ProfileContext finishes loading
+  useEffect(() => {
+    // Don't resolve while profile is still loading — we'd get a false "guest" result.
+    // IMPORTANT: do NOT reset isIdentityReady here. ProfileContext re-fetches on
+    // auth state change, which toggles profileLoading true→false again. Resetting
+    // would cause initializeChat to fire twice (duplicate channels, broken scroll).
+    if (profileLoading) return;
+
+    if (user) {
+      // ── Authenticated path ──
+      // Immediately clear any guest alias state so it can never leak
+      clearGuestIdentity();
+
+      const name = profile?.name
+        ?? profile?.display_name
+        ?? profile?.username
+        ?? ('ALIEN' + user.id.replace(/-/g, '').slice(-6).toUpperCase());
+
+      setResolvedUserId(user.id);
+      setResolvedGuestId(null);
+      setResolvedName(name);
+      setIsIdentityReady(true);
+      DEBUG && console.log('🔥 Identity resolved (auth):', name);
+    } else {
+      // ── Guest path ──
+      // Use the stable guest name from localStorage (creates if missing)
+      const guestName = getOrCreateGuestNameSync();
+      setResolvedUserId(null);
+      setResolvedGuestId(guestName); // storing the name directly for simplicity
+      setResolvedName(guestName);
+      setIsIdentityReady(true);
+      DEBUG && console.log('🔥 Identity resolved (guest):', guestName);
+    }
+  }, [profileLoading, user, profile?.name, profile?.display_name, profile?.username, profile?.id]);
 
   /**
-   * Get display name for user - logged in name or anonymous alien name
+   * Get display name — always returns the identity-resolved name.
+   * Falls back to a safe default only if called before resolution (should not happen).
    */
-  const getDisplayName = () => {
-    // If user is authenticated and has a profile with a name, use it
-    if (user && profile?.name) {
-      DEBUG && console.log('🔥 Using authenticated user profile name:', profile.name);
-      return profile.name;
-    }
-    
-    // For unauthenticated users or users without names, use alien name
-    DEBUG && console.log('🔥 Using stored alien name (not authenticated or no profile name):', alienName);
-    return alienName;
-  };
+  const getDisplayName = useCallback(() => {
+    return resolvedName || 'ALIEN000000';
+  }, [resolvedName]);
+
+  // Convenience alias used in the profile panel
+  const alienName = resolvedName || 'ALIEN000000';
   const [messages, setMessages] = useState([]);
   const [chatUsers, setChatUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -449,42 +473,48 @@ export default function ChatPanel({ isOpen, onClose }) {
   const [isVotingPanelCollapsed, setIsVotingPanelCollapsed] = useState(true); // Start collapsed by default
   const channelRef = useRef(null);
 
-  // Initialize chat users when chat opens - either authenticated user or anonymous
+  // Initialize chat users when chat opens — only after identity is resolved
   useEffect(() => {
-    if (isOpen) {
-      if (user && profile?.name) {
-        // For authenticated users with complete profile, add them to chat users
-        DEBUG && console.log('🚀 IMMEDIATE: Using authenticated user:', profile.name);
-        const authenticatedUser = {
-          id: user.id,
-          name: profile.name,
-          element: profile.element || null,
-          avatar_badge_id: profile.avatar_badge_id || null,
-          profile_image_url: profile.profile_image_url || null,
-          last_seen: new Date().toISOString()
-        };
-        setChatUsers([authenticatedUser]);
-        DEBUG && console.log('🚀 Set initial chat users with authenticated user:', [authenticatedUser]);
-      } else {
-        // For unauthenticated users, use stable guest username
-        const guestUsername = getGlobalAlienName();
-        DEBUG && console.log('🚀 IMMEDIATE: Using guest username:', guestUsername);
-        const guestUser = normalizeUser({
-          id: `guest-${guestUsername}`,
-          name: guestUsername,
-          element: 'alien',
-          avatar_badge_id: null,
-          last_seen: new Date().toISOString()
-        });
-        setChatUsers([guestUser]);
-        DEBUG && console.log('🚀 Set initial chat users with guest user:', [guestUser]);
-      }
-    }
-  }, [user, profile?.name, profile?.id, isOpen, alienName]);
+    if (!isOpen || !isIdentityReady) return;
 
-  // Initialize chat when panel opens
+    if (resolvedUserId && resolvedName) {
+      // Authenticated user
+      DEBUG && console.log('🚀 IMMEDIATE: Using authenticated user:', resolvedName);
+      const authenticatedUser = {
+        id: resolvedUserId,
+        name: resolvedName,
+        element: profile?.element || null,
+        avatar_badge_id: profile?.avatar_badge_id || null,
+        profile_image_url: profile?.profile_image_url || null,
+        last_seen: new Date().toISOString()
+      };
+      setChatUsers([authenticatedUser]);
+    } else if (resolvedName) {
+      // Guest user
+      DEBUG && console.log('🚀 IMMEDIATE: Using guest username:', resolvedName);
+      const guestUser = normalizeUser({
+        id: `guest-${resolvedName}`,
+        name: resolvedName,
+        element: 'alien',
+        avatar_badge_id: null,
+        last_seen: new Date().toISOString()
+      });
+      setChatUsers([guestUser]);
+    }
+  }, [isIdentityReady, resolvedUserId, resolvedName, isOpen]);
+
+  // Initialize chat when panel opens — but ONLY after identity is resolved.
+  // Uses a ref to prevent double-init when isIdentityReady re-fires (profile refresh).
+  const hasInitializedRef = useRef(false);
+
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && isIdentityReady) {
+      // Guard: don't re-init if already subscribed (prevents duplicate channels)
+      if (hasInitializedRef.current && channelRef.current) {
+        DEBUG && console.log('🔥 Skipping re-init: channel already active');
+        return;
+      }
+      hasInitializedRef.current = true;
       initializeChat();
       // Reset profile-related states when chat opens
       setSelectedUser(null);
@@ -496,49 +526,45 @@ export default function ChatPanel({ isOpen, onClose }) {
       setSelectedBadgePopup(null);
       setCardFlipped(false);
       setBinderStartIndex(0);
-    } else {
+    } else if (!isOpen) {
+      hasInitializedRef.current = false;
       cleanupChat();
     }
-  }, [isOpen]);
+  }, [isOpen, isIdentityReady]);
 
-  // Update chat users when authentication state changes
+  // Update chat users when resolved identity changes (e.g. auth becomes available mid-session)
   useEffect(() => {
-    if (isOpen) {
-      if (user && profile?.name) {
-        // For authenticated users, ensure they're properly represented
-        DEBUG && console.log('🔥 Chat opened - ensuring authenticated user exists:', profile.name);
-        setChatUsers(prev => {
-          const otherUsers = prev.filter(u => u.id !== user.id && u.id !== 'anonymous');
-          const authenticatedUser = {
-            id: user.id,
-            name: profile.name,
-            element: profile.element || null,
-            avatar_badge_id: profile.avatar_badge_id || null,
-            profile_image_url: profile.profile_image_url || null,
-            last_seen: new Date().toISOString()
-          };
-          DEBUG && console.log('🔥 Setting authenticated user:', authenticatedUser);
-          return [authenticatedUser, ...otherUsers];
+    if (!isOpen || !isIdentityReady) return;
+
+    if (resolvedUserId && resolvedName) {
+      DEBUG && console.log('🔥 Chat: ensuring authenticated user exists:', resolvedName);
+      setChatUsers(prev => {
+        const otherUsers = prev.filter(u => u.id !== resolvedUserId && u.id !== 'anonymous' && !u.id?.startsWith('guest-'));
+        const authenticatedUser = {
+          id: resolvedUserId,
+          name: resolvedName,
+          element: profile?.element || null,
+          avatar_badge_id: profile?.avatar_badge_id || null,
+          profile_image_url: profile?.profile_image_url || null,
+          last_seen: new Date().toISOString()
+        };
+        return [authenticatedUser, ...otherUsers];
+      });
+    } else if (resolvedName) {
+      DEBUG && console.log('🔥 Chat: ensuring guest user exists:', resolvedName);
+      setChatUsers(prev => {
+        const otherUsers = prev.filter(u => u.id !== 'anonymous' && u.name !== resolvedName);
+        const guestUser = normalizeUser({
+          id: `guest-${resolvedName}`,
+          name: resolvedName,
+          element: 'alien',
+          avatar_badge_id: null,
+          last_seen: new Date().toISOString()
         });
-      } else {
-        // For unauthenticated users, ensure guest user exists with stable username
-        const guestUsername = getGlobalAlienName();
-        DEBUG && console.log('🔥 Chat opened - ensuring guest user exists:', guestUsername);
-        setChatUsers(prev => {
-          const otherUsers = prev.filter(u => u.id !== 'anonymous' && u.name !== guestUsername);
-          const guestUser = normalizeUser({
-            id: `guest-${guestUsername}`,
-            name: guestUsername,
-            element: 'alien',
-            avatar_badge_id: null,
-            last_seen: new Date().toISOString()
-          });
-          DEBUG && console.log('🔥 Setting guest user with stable username:', guestUser);
-          return [guestUser, ...otherUsers];
-        });
-      }
+        return [guestUser, ...otherUsers];
+      });
     }
-  }, [isOpen, user, profile?.id, profile?.name, alienName]);
+  }, [isOpen, isIdentityReady, resolvedUserId, resolvedName]);
 
   // Reaction subscription useEffect
   useEffect(() => {
@@ -664,33 +690,40 @@ export default function ChatPanel({ isOpen, onClose }) {
       // Load current chat users from database
       const databaseUsers = await chatService.getChatUsers();
       
-      // Handle user representation based on authentication state
-      if (user && profile?.name) {
-        // For authenticated users, add them to the users list
-        DEBUG && console.log('🔥 InitializeChat: Adding authenticated user:', profile.name);
+      // Handle user representation using resolved identity (guaranteed ready at this point)
+      if (resolvedUserId && resolvedName) {
+        DEBUG && console.log('🔥 InitializeChat: Adding authenticated user:', resolvedName);
         const authenticatedUser = {
-          id: user.id,
-          name: profile.name,
-          element: profile.element || null,
-          avatar_badge_id: profile.avatar_badge_id || null,
-          profile_image_url: profile.profile_image_url || null,
+          id: resolvedUserId,
+          name: resolvedName,
+          element: profile?.element || null,
+          avatar_badge_id: profile?.avatar_badge_id || null,
+          profile_image_url: profile?.profile_image_url || null,
           last_seen: new Date().toISOString()
         };
-        setChatUsers([authenticatedUser, ...databaseUsers.filter(u => u.id !== user.id)]);
-      } else if (!user || !profile?.name) {
-        // For unauthenticated users, get or create guest identity (username only)
-        const guestUsername = getGlobalAlienName();
-        DEBUG && console.log('🔥 InitializeChat: Using guest username:', guestUsername);
+        setChatUsers([authenticatedUser, ...databaseUsers.filter(u => u.id !== resolvedUserId)]);
+      } else if (resolvedName) {
+        DEBUG && console.log('🔥 InitializeChat: Using guest username:', resolvedName);
         const guestUser = {
-          id: `guest-${guestUsername}`,
-          name: guestUsername,
+          id: `guest-${resolvedName}`,
+          name: resolvedName,
           element: 'alien',
           avatar_badge_id: null,
           last_seen: new Date().toISOString()
         };
-        setChatUsers([guestUser, ...databaseUsers.filter(u => u.name !== guestUsername)]);
+        setChatUsers([guestUser, ...databaseUsers.filter(u => u.name !== resolvedName)]);
       } else {
         setChatUsers(databaseUsers);
+      }
+
+      // Clean up any existing channel before subscribing (prevents duplicate subscriptions)
+      if (channelRef.current) {
+        try {
+          await supabaseClient.removeChannel(channelRef.current);
+          channelRef.current = null;
+        } catch (err) {
+          DEBUG && console.warn('⚠️ Error removing stale channel:', err);
+        }
       }
 
       // Subscribe to heart_signal_messages table directly
@@ -721,15 +754,17 @@ export default function ChatPanel({ isOpen, onClose }) {
               }
             });
 
-            // Use upsertMessages for proper deduplication and optimistic replacement
-            setMessages(prev => upsertMessages(prev, newMessage));
+            // Dedupe: skip if a message with this id already exists in state
+            setMessages(prev => {
+              if (msg.id && prev.some(m => m.id === msg.id)) return prev;
+              return upsertMessages(prev, newMessage);
+            });
 
             // Play notification sound for new messages (not system messages)
             if (!msg.is_system) {
               // Check if it's our own message (don't play sound for own messages)
-              const currentGuestUsername = getGlobalAlienName();
-              const isOwnMessage = (user && msg.user_id === user.id) ||
-                (!user && msg.username === currentGuestUsername);
+              const isOwnMessage = (resolvedUserId && msg.user_id === resolvedUserId) ||
+                (!resolvedUserId && msg.username === resolvedName);
 
               if (!isOwnMessage) {
                 try {
@@ -810,12 +845,13 @@ export default function ChatPanel({ isOpen, onClose }) {
 
       // Send sync message if not already joined this session
       // Use sessionStorage to prevent duplicate "connected" messages across panel open/close cycles
-      const guestUsername = !user ? getGlobalAlienName() : null;
-      const sessionJoinKey = user ? `heartverse_joined_${user.id}` : `heartverse_joined_guest_${guestUsername || 'unknown'}`;
+      const sessionJoinKey = resolvedUserId
+        ? `heartverse_joined_${resolvedUserId}`
+        : `heartverse_joined_guest_${resolvedName || 'unknown'}`;
       const hasJoinedThisSession = typeof window !== 'undefined' && sessionStorage.getItem(sessionJoinKey) === 'true';
 
       if (!hasJoined && !hasJoinedThisSession) {
-        const displayName = getDisplayName();
+        const displayName = resolvedName;
         DEBUG && console.log('🔥 Joining chat with name:', displayName);
 
         // Send connection message via heart-signal-messages API
@@ -842,13 +878,13 @@ export default function ChatPanel({ isOpen, onClose }) {
         }
 
         // For guest users, ensure they're in the user list
-        if (!user && guestUsername) {
+        if (!resolvedUserId && resolvedName) {
           setChatUsers(prev => {
-            const existingGuest = prev.find(u => u.name === guestUsername);
+            const existingGuest = prev.find(u => u.name === resolvedName);
             if (!existingGuest) {
               return [...prev, {
-                id: `guest-${guestUsername}`,
-                name: guestUsername,
+                id: `guest-${resolvedName}`,
+                name: resolvedName,
                 element: 'alien',
                 avatar_badge_id: null,
                 last_seen: new Date().toISOString()
@@ -916,9 +952,9 @@ export default function ChatPanel({ isOpen, onClose }) {
     const client_nonce = crypto.randomUUID();
     const tempId = crypto.randomUUID();
 
-    // Determine if authenticated or guest
-    const isAuthenticated = user && profile?.name;
-    const guestUsername = isAuthenticated ? null : getGlobalAlienName();
+    // Determine if authenticated or guest using resolved identity
+    const isAuthenticated = !!resolvedUserId;
+    const guestUsername = isAuthenticated ? null : resolvedName;
     const finalUsername = isAuthenticated ? displayName : guestUsername;
 
     // Create optimistic message
@@ -928,7 +964,7 @@ export default function ChatPanel({ isOpen, onClose }) {
       client_id: client_nonce, // Keep existing dedupe behavior
       tempId, // For React key and matching
       clientKey: client_nonce, // For animation stability
-      user_id: isAuthenticated ? user.id : null,
+      user_id: isAuthenticated ? resolvedUserId : null,
       username: finalUsername,
       message: messageText.trim(),
       message_type: 'message',
@@ -938,9 +974,9 @@ export default function ChatPanel({ isOpen, onClose }) {
       errorMessage: null,
       user_profile: isAuthenticated ? {
         name: displayName,
-        element: profile.element || null,
-        avatar_badge_id: profile.avatar_badge_id || null,
-        profile_image_url: profile.profile_image_url || null,
+        element: profile?.element || null,
+        avatar_badge_id: profile?.avatar_badge_id || null,
+        profile_image_url: profile?.profile_image_url || null,
       } : {
         name: guestUsername,
         element: 'alien',
@@ -1009,16 +1045,18 @@ export default function ChatPanel({ isOpen, onClose }) {
         });
 
         setMessages(prev => {
-          // Replace the optimistic message (matched by tempId/client_nonce) with the real one
+          // If realtime already delivered this id (and it's not an optimistic), skip
+          if (realMessage.id && prev.some(m => m.id === realMessage.id && !m.pending)) return prev;
+          // Replace optimistic message matched by client_nonce
           const next = prev.map(m => {
-            if (m.tempId === tempId || m.client_nonce === client_nonce) {
+            if (m.client_nonce === client_nonce || m.tempId === tempId) {
               return { ...realMessage, status: 'sent', pending: false, tempId: m.tempId };
             }
             return m;
           });
-          // In case optimistic wasn't found, upsert the real message
-          const hasReplaced = next.some(m => m.id === realMessage.id);
-          return hasReplaced ? next : upsertMessages(next, realMessage, { replaceOptimistic: true });
+          // If no optimistic was found and id still absent, append
+          const hasIt = next.some(m => m.id === realMessage.id);
+          return hasIt ? next : [...next, { ...realMessage, status: 'sent', pending: false }];
         });
       }
       // Realtime subscription will also deliver the message, upsertMessages handles dedup
@@ -1079,9 +1117,9 @@ export default function ChatPanel({ isOpen, onClose }) {
     DEBUG && console.log('🔥 Found user in chatUsers:', user);
     DEBUG && console.log('🔥 Current chatUsers:', chatUsers);
     
-    // For anonymous/guest users, use stable guest username
+    // For anonymous/guest users, use resolved guest name
     if (userId === 'anonymous' || (typeof userId === 'string' && userId.startsWith('guest-'))) {
-      const guestUsername = getGlobalAlienName();
+      const guestUsername = resolvedName || 'ALIEN000000';
       user = normalizeUser({
         id: `guest-${guestUsername}`,
         name: guestUsername,
@@ -1504,9 +1542,9 @@ export default function ChatPanel({ isOpen, onClose }) {
                             last_seen: new Date().toISOString()
                           }];
                         }
-                        // If no users and not authenticated, show guest user with stable username
-                        else if (chatUsers.length === 0 && (!user || !profile?.name)) {
-                          const guestUsername = getGlobalAlienName();
+                        // If no users and not authenticated, show guest user with resolved name
+                        else if (chatUsers.length === 0 && !resolvedUserId) {
+                          const guestUsername = resolvedName || 'ALIEN000000';
                           usersToShow = [normalizeUser({
                             id: `guest-${guestUsername}`,
                             name: guestUsername,
