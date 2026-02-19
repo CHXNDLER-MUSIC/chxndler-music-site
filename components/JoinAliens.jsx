@@ -689,8 +689,15 @@ export default function JoinAliens({ visible = true } = {}) {
       <button
         onClick={() => {
           try { sfx.play('audio/click.mp3', 0.5); } catch {}
-          // Toggle the phone form visibility
-          setShowPhoneForm(!showPhoneForm);
+          // Toggle the phone form visibility — close tip options so they don't stack
+          const opening = !showPhoneForm;
+          if (opening) {
+            setShowTipOptions(false);
+            setShowPaymentOptions(false);
+            setShowPaymentOptions5(false);
+            setShowPaymentOptions10(false);
+          }
+          setShowPhoneForm(opening);
         }}
         style={{
           position: 'absolute',
@@ -745,10 +752,15 @@ export default function JoinAliens({ visible = true } = {}) {
       <button
         onClick={() => {
           try { sfx.play('audio/click.mp3', 0.5); } catch {}
-          setShowTipOptions(!showTipOptions);
-          setShowPaymentOptions(false); // Also close payment options when closing tip menu
-          setShowPaymentOptions5(false); // Also close $5 payment options
-          setShowPaymentOptions10(false); // Also close $10 payment options
+          const opening = !showTipOptions;
+          setShowTipOptions(opening);
+          setShowPaymentOptions(false);
+          setShowPaymentOptions5(false);
+          setShowPaymentOptions10(false);
+          // Close phone form so they don't stack
+          if (opening) {
+            setShowPhoneForm(false);
+          }
         }}
         style={{
           position: 'absolute',
