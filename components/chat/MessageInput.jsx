@@ -125,7 +125,7 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "S
               disabled={disabled}
               maxLength={500}
               rows={1}
-              className="w-full resize-none rounded-lg px-3 text-sm transition-all duration-200 focus:outline-none"
+              className="w-full resize-none rounded-lg px-3 text-sm focus:outline-none"
               style={{
                 height: '44px',
                 minHeight: '44px',
@@ -136,19 +136,12 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "S
                 border: `2px solid ${getElementColor(currentUserElement)}`,
                 color: getElementColor(currentUserElement),
                 textShadow: 'none',
-                boxShadow: isFocused 
+                boxShadow: isFocused
                   ? '0 0 20px currentColor, inset 0 0 10px rgba(0,0,0,0.2)'
                   : '0 0 10px currentColor',
                 overflow: 'hidden',
                 resize: 'none',
-                whiteSpace: 'nowrap',
-                textOverflow: 'ellipsis',
-                display: 'flex',
-                alignItems: 'center'
-              }}
-              onInput={(e) => {
-                // Ensure textarea stays at fixed height
-                e.target.style.height = '44px';
+                transition: 'box-shadow 200ms ease'
               }}
             />
             

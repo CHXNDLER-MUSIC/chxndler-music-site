@@ -12,13 +12,15 @@ import MessageReactions from './MessageReactions';
 const DEBUG = process.env.NODE_ENV === 'development';
 
 // Stable key helper for messages. Never returns empty; guarantees uniqueness.
-// Priority: id → client_nonce → dedupe_key → user_id:created_at:index
+// Priority: client_nonce → id → dedupe_key → user_id:created_at:index
+// client_nonce is checked FIRST so the key stays stable when an optimistic
+// message (no id yet) gets replaced by the real server message (has id).
 export const stableKey = (m, idx) => {
   const i = typeof idx === 'number' ? idx : 0;
   if (!m) return `fallback:${i}`;
 
-  if (m.id) return `msg:${m.id}`;
   if (m.client_nonce) return `nonce:${m.client_nonce}`;
+  if (m.id) return `msg:${m.id}`;
   if (m.dedupe_key) return `dk:${m.dedupe_key}`;
   return `${m.user_id || 'anon'}:${m.created_at || '0'}:${i}`;
 };

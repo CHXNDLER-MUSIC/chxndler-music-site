@@ -19,6 +19,7 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     releaseDate: "2026-02-12T06:00:00",
+    locked: true,
   },
   {
     id: "hv-001",
@@ -90,8 +91,8 @@ const VIDEOS: Video[] = [
   },
   {
     id: "lsp-002",
-    title: "Acoustic Session — Piano",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    title: "Acoustic Session — Valentine's Day",
+    youtubeUrl: "https://youtu.be/MWyv2bfps9w",
     type: "acoustic",
     releaseDate: "2026-02-24T12:00:00",
   },
@@ -239,6 +240,7 @@ interface Video {
   releaseDate?: string;
   description?: string;
   postDescription?: string;
+  locked?: boolean;
 }
 
 type TopTab = "heartverse" | "livesignal";
@@ -266,8 +268,9 @@ function getYouTubeEmbedUrl(url: string): string {
   return `https://www.youtube.com/embed/${videoId}?rel=0`;
 }
 
-/** Check if a video is still locked based on its releaseDate */
+/** Check if a video is still locked based on its releaseDate or explicit lock */
 function isLocked(video: Video): boolean {
+  if (video.locked) return true;
   if (!video.releaseDate) return false;
   return new Date() < new Date(video.releaseDate);
 }

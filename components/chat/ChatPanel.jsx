@@ -110,9 +110,9 @@ const upsertMessages = (prev, incoming, options = {}) => {
           const matchByNonce = normalized.client_nonce && existingMsg.client_nonce === normalized.client_nonce;
           const matchByContent = existingMsg.username === normalized.username && existingMsg.message === normalized.message;
           if (matchByNonce || matchByContent) {
-            // Replace optimistic with real, preserving clientKey for animations
+            // Replace optimistic with real, preserving clientKey and client_nonce for stable React keys
             messageMap.delete(existingKey);
-            messageMap.set(key, { ...normalized, clientKey: existingMsg.clientKey || existingMsg.client_id });
+            messageMap.set(key, { ...normalized, clientKey: existingMsg.clientKey || existingMsg.client_id, client_nonce: existingMsg.client_nonce || normalized.client_nonce });
             return;
           }
         }
