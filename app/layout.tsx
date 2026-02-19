@@ -21,6 +21,7 @@ import MerchCelebration from "@/components/MerchCelebration";
 import CardCelebration from "@/components/CardCelebration";
 import BadgeCelebrationController from "@/components/BadgeCelebrationController";
 import GlobalKeyboardHandler from "@/components/GlobalKeyboardHandler";
+import GeoOnLogin from "@/components/GeoOnLogin";
 import { PlanetRewardsProvider } from "@/components/PlanetRewardsProvider";
 
 export const metadata: Metadata = {
@@ -105,6 +106,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <HeartcoinBalanceProvider>
             <AudioProvider>
               <GlobalKeyboardHandler />
+              <GeoOnLogin />
               <MenuStateProvider>
                 <TourProvider>
                   <PlanetRewardsProvider>

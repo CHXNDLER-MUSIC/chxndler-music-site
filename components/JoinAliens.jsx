@@ -653,9 +653,9 @@ export default function JoinAliens({ visible = true } = {}) {
           transition: 'all 300ms ease',
           outline: 'none',
           boxShadow: '0 0 15px rgba(242, 239, 29, 0.4)',
-          zIndex: 1000,
+          zIndex: isChatOpen ? 10 : 1000,
           overflow: 'hidden',
-          pointerEvents: 'auto'
+          pointerEvents: isChatOpen ? 'none' : 'auto'
         }}
         onMouseEnter={(e) => {
           try { sfx.play('hover', 0.3); } catch {}
