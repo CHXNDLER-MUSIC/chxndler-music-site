@@ -746,9 +746,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             });
           }
           await fetchProfile();
-          await loadJournalEntries(session.user.id);
-          await fetchAllBadges();
-          await fetchUserBadges(session.user.id);
+          await Promise.all([
+            loadJournalEntries(session.user.id),
+            fetchAllBadges(),
+            fetchUserBadges(session.user.id),
+          ]);
         }
       } else {
         if (typeof window !== 'undefined') {
@@ -804,8 +806,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             });
           }
           await fetchProfile();
-          await loadJournalEntries(session.user.id);
-          await fetchUserBadges(session.user.id);
+          await Promise.all([
+            loadJournalEntries(session.user.id),
+            fetchUserBadges(session.user.id),
+          ]);
         } else if (!session) {
           // No session - user is logged out
           setLoading(false);

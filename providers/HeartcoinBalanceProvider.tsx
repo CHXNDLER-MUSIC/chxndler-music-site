@@ -17,8 +17,8 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 // ============================================================================
 // DEBUG FLAGS - Toggle these to enable/disable debug logging
 // ============================================================================
-const DEBUG_BALANCE = true; // Set to false in production
-const DEBUG_CELEBRATIONS = true; // Set to false in production
+const DEBUG_BALANCE = false;
+const DEBUG_CELEBRATIONS = false;
 
 // Minimum delay after initial load before celebrations can fire
 // This prevents celebrations on hydration/page load
