@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
+import { useGoLiveOverride } from "@/hooks/useGoLiveOverride";
 
 // ── Broadcast schedule helpers ──────────────────────────────────────────────
 
@@ -121,29 +122,57 @@ export default function TwitchEmbed({ visible = true, channel = "chxndlerthealie
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [nextBroadcast, setNextBroadcast] = useState(null);
   const iframeRef = useRef(null);
+  const { isOverrideActive } = useGoLiveOverride();
 
-  // Check stream status — default to offline for immediate feedback
+  // Check if currently inside a broadcast window (Mon/Thu 7-9 PM ET)
+  const isInBroadcastWindow = () => {
+    const now = new Date();
+    const tz = 'America/New_York';
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(now);
+
+    const get = (type) => {
+      const val = parts.find((p) => p.type === type)?.value ?? '0';
+      return parseInt(val, 10);
+    };
+
+    const etHour = get('hour') === 24 ? 0 : get('hour');
+    const etDate = new Date(get('year'), get('month') - 1, get('day'));
+    const etDow = etDate.getDay(); // 0=Sun, 1=Mon, 4=Thu
+
+    const isBroadcastDay = etDow === 1 || etDow === 4; // Monday or Thursday
+    const isDuringStream = etHour >= 19 && etHour < 20;  // 7 PM – 8 PM ET
+
+    return isBroadcastDay && isDuringStream;
+  };
+
+  // Check stream status — show embed during broadcast windows OR when override is active
   const checkStreamStatus = async () => {
-    setStreamStatus('offline');
-    setIsOffline(true);
-
-    try {
-      await fetch(`https://www.twitch.tv/${channel}`, {
-        method: 'HEAD',
-        mode: 'no-cors',
-      });
-      console.log('Stream status check completed - keeping offline state for user control');
-    } catch {
-      console.log('Stream status check failed - showing offline state');
+    if (isOverrideActive || isInBroadcastWindow()) {
+      setStreamStatus('live');
+      setIsOffline(false);
+      setIsLoading(true);
+    } else {
+      setStreamStatus('offline');
+      setIsOffline(true);
     }
   };
 
-  // Initialize when component becomes visible
+  // Initialize when component becomes visible + re-check every 30s for window transitions
   useEffect(() => {
     if (visible) {
       checkStreamStatus();
+      const id = setInterval(checkStreamStatus, 30000);
+      return () => clearInterval(id);
     }
-  }, [visible, channel]);
+  }, [visible, channel, isOverrideActive]);
 
   // Countdown ticker — runs every second while offline
   useEffect(() => {

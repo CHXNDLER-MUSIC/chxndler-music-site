@@ -185,7 +185,7 @@ const guestAliasFromId = (guestId) => {
  * Main Chat Panel Component
  * Slides in from the left side when live streaming is active
  */
-export default function ChatPanel({ isOpen, onClose }) {
+export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
   const { profile, user, loading: profileLoading, unlockedBadges, badgesLoading, badgesError, userBadges } = useProfile();
   
   // Log badges debug only when values change
@@ -472,6 +472,11 @@ export default function ChatPanel({ isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState('chat'); // 'chat', 'voting', 'badges', 'cards'
   const [isVotingPanelCollapsed, setIsVotingPanelCollapsed] = useState(true); // Start collapsed by default
   const channelRef = useRef(null);
+
+  // Notify parent when a user profile is opened/closed
+  useEffect(() => {
+    onProfileOpen?.(!!selectedUser);
+  }, [selectedUser, onProfileOpen]);
 
   // Initialize chat users when chat opens — only after identity is resolved
   useEffect(() => {
@@ -1986,7 +1991,7 @@ export default function ChatPanel({ isOpen, onClose }) {
                       {/* Badges Section */}
                       {showUserBadges && (
                         <div className="pt-2 border-t border-white/20">
-                          <h4 className="text-sm font-semibold mb-1 flex items-center animate-pulse"
+                          <h4 className="text-sm font-semibold mb-1 flex items-center"
                               style={{ 
                                 color: '#1E90FF',
                                 textShadow: '0 0 10px rgba(0,255,255,0.8), 0 0 20px rgba(0,255,255,0.6), 0 0 30px rgba(0,255,255,0.4)',
@@ -2078,10 +2083,10 @@ export default function ChatPanel({ isOpen, onClose }) {
                                         setBadgeStartIndex(Math.max(0, badgeStartIndex - 4));
                                       }}
                                       disabled={!badgesToShow || badgesToShow.length === 0 || badgeStartIndex === 0}
-                                      className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
+                                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
                                       style={{
                                         textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
-                                        fontSize: '14px',
+                                        fontSize: '20px',
                                         fontWeight: 'bold',
                                         textRendering: 'optimizeLegibility',
                                         WebkitFontSmoothing: 'antialiased',
@@ -2231,10 +2236,10 @@ export default function ChatPanel({ isOpen, onClose }) {
                                         setBadgeStartIndex(Math.min(Math.max(0, (badgesToShow?.length || 0) - 4), badgeStartIndex + 4));
                                       }}
                                       disabled={!badgesToShow || badgesToShow.length <= 4 || badgeStartIndex + 4 >= badgesToShow.length}
-                                      className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
+                                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
                                       style={{
                                         textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
-                                        fontSize: '14px',
+                                        fontSize: '20px',
                                         fontWeight: 'bold',
                                         textRendering: 'optimizeLegibility',
                                         WebkitFontSmoothing: 'antialiased',
@@ -2301,10 +2306,10 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 try { sfx.play('hover', 0.3); } catch {}
                               }}
                               disabled={binderStartIndex === 0}
-                              className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
+                              className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
                               style={{
                                 textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
-                                fontSize: '14px',
+                                fontSize: '20px',
                                 fontWeight: 'bold',
                                 textRendering: 'optimizeLegibility',
                                 WebkitFontSmoothing: 'antialiased',
@@ -2488,10 +2493,10 @@ export default function ChatPanel({ isOpen, onClose }) {
                                 }
                                 return binderStartIndex + 4 >= cardsToShow.length;
                               })()}
-                              className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
+                              className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-yellow-400 hover:text-yellow-300 disabled:text-yellow-400/30 transition-colors"
                               style={{
                                 textShadow: '0 0 8px rgba(242, 239, 29, 0.6)',
-                                fontSize: '14px',
+                                fontSize: '20px',
                                 fontWeight: 'bold',
                                 textRendering: 'optimizeLegibility',
                                 WebkitFontSmoothing: 'antialiased',

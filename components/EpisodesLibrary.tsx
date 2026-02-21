@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { sfx } from "@/lib/sfx";
+import { useAudio } from "@/app/providers/AudioProvider";
 
 // ──────────────────────────────────────────────
 // VIDEO DATA STRUCTURE
@@ -27,6 +28,7 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://youtube.com/shorts/9qEktORb8EY?feature=share",
     type: "heartverse",
     releaseDate: "2026-02-18T19:00:00",
+    postDescription: "Sofia and I search New York City for a place to call home. This episode is about more than apartment hunting. It is about building something real. A home for us. A home for the music. A home for the Aliens.\nWelcome to the Heartverse.",
   },
   {
     id: "hv-002",
@@ -86,8 +88,8 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://youtu.be/RXWbQzWjTPg",
     type: "acoustic",
     releaseDate: "2026-02-17T12:00:00",
-    description: "The signal starts here.",
-    postDescription: "Songs in this session:\n• OCEAN GIRL\n• ALWAYS ON MY MIND\n• SOMEBODY TO LOVE\n• MR. BRIGHTSIDE (The Killers)\n• Good Things Fall Apart — Audience Request (Illenium, Jon Bellion)\n• Julia — Audience Request (Lauv)\n• Too Old To Cry — Audience Request (Voodoo Blue)",
+    description: "The debut Acoustic Session live stream inside the Heartverse.\nMuch love to the Aliens who joined.\nIf you've ever felt like you're searching for your people, this is your signal.",
+    postDescription: "Setlist\n00:00 OCEAN GIRL\n03:50 ALWAYS ON MY MIND\n07:15 SOMEBODY TO LOVE\n11:48 MR. BRIGHTSIDE (The Killers)\n14:48 Good Things Fall Apart — Audience Request (Illenium, Jon Bellion)\n15:54 Julia — Audience Request (Lauv)\n16:56 Too Old To Cry — Audience Request (Voodoo Blue)",
   },
   {
     id: "lsp-002",
@@ -161,6 +163,8 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://youtu.be/TVCTbXqwJ5A",
     type: "electric",
     releaseDate: "2026-02-21T12:00:00",
+    description: "The debut Electric Set live stream inside the Heartverse.\nMuch love to the Aliens who joined.\nIf you've been searching for your signal, you just found it.",
+    postDescription: "Setlist\n00:00 WELCOME ALIENS\n00:21 WE'RE JUST FRIENDS\n04:28 MR. BRIGHTSIDE (The Killers)\n07:39 SOMEBODY TO LOVE\n10:15 ALWAYS ON MY MIND\n13:29 OCEAN GIRL\n16:29 BE MY BEE\n20:24 BABY (Justin Bieber)",
   },
   {
     id: "lsf-002",
@@ -295,19 +299,23 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
   const [topTab, setTopTab] = useState<TopTab>("heartverse");
   const [liveSignalSection, setLiveSignalSection] = useState<LiveSignalSection>("acoustic");
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
+  const [startTime, setStartTime] = useState(0);
+  const audio = useAudio();
+  const wasPlayingRef = useRef(false);
 
   // Close on Escape
   useEffect(() => {
     if (!isOpen) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
+        if (wasPlayingRef.current) audio.play();
         setIsOpen(false);
         setActiveVideo(null);
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [isOpen]);
+  }, [isOpen, audio]);
 
   const playHover = useCallback(() => {
     try { sfx.play("hover", 0.3); } catch {}
@@ -326,33 +334,74 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
   const handleVideoClick = (video: Video) => {
     if (isLocked(video)) return;
     playClick();
+    // Remember if music was playing, then pause it
+    wasPlayingRef.current = audio.playing;
+    if (audio.playing) audio.pause();
     setActiveVideo(video);
+    setStartTime(0);
   };
 
   const handleBack = () => {
     playClick();
+    // Resume music if it was playing before
+    if (wasPlayingRef.current) audio.play();
     setActiveVideo(null);
+    setStartTime(0);
   };
 
   return (
     <>
+      {/* ── Episodes Pulse Animation ── */}
+      <style>{`
+        @keyframes episodesGlowPulse {
+          0%, 100% {
+            transform: scale(1);
+            filter: brightness(1.2) saturate(1.3);
+            box-shadow:
+              0 16px 30px rgba(0,0,0,.6),
+              0 0 18px rgba(242,239,29,0.8),
+              0 0 40px rgba(242,239,29,0.6),
+              0 0 70px rgba(242,239,29,0.4),
+              0 0 110px rgba(242,239,29,0.2),
+              inset 0 2px 0 rgba(255,255,255,.25),
+              inset 0 -6px 14px rgba(0,0,0,.7);
+          }
+          50% {
+            transform: scale(1.08);
+            filter: brightness(1.5) saturate(1.6);
+            box-shadow:
+              0 18px 34px rgba(0,0,0,.7),
+              0 0 30px rgba(242,239,29,0.93),
+              0 0 60px rgba(242,239,29,0.73),
+              0 0 100px rgba(242,239,29,0.53),
+              0 0 140px rgba(242,239,29,0.27),
+              inset 0 2px 0 rgba(255,255,255,.35),
+              inset 0 -6px 14px rgba(0,0,0,.7);
+          }
+        }
+        .episodes-trigger-btn {
+          animation: episodesGlowPulse 2s ease-in-out infinite;
+        }
+        .episodes-trigger-btn:hover {
+          animation: none;
+          transform: scale(1.1) !important;
+          box-shadow:
+            0 0 30px rgba(242,239,29,0.93),
+            0 0 60px rgba(242,239,29,0.73),
+            0 0 100px rgba(242,239,29,0.53) !important;
+          filter: brightness(1.6) saturate(1.7);
+        }
+      `}</style>
+
       {/* ── Trigger Button (matches text chat button style) ── */}
       <button
         type="button"
+        className="episodes-trigger-btn"
         aria-label="Open Heartverse Library"
         title="Heartverse Library"
         onClick={() => { playClick(); setIsOpen(!isOpen); }}
-        onMouseEnter={(e) => {
-          playHover();
-          (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.1)';
-          (e.currentTarget as HTMLButtonElement).style.background = 'rgba(242, 239, 29, 0.2)';
-          (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 25px rgba(242, 239, 29, 0.6)';
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)';
-          (e.currentTarget as HTMLButtonElement).style.background = 'rgba(242, 239, 29, 0.1)';
-          (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 15px rgba(242, 239, 29, 0.4)';
-        }}
+        onMouseEnter={() => { playHover(); }}
+        onMouseLeave={() => {}}
         style={{
           position: 'absolute',
           bottom: '15px',
@@ -366,9 +415,7 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          transition: 'all 300ms ease',
           outline: 'none',
-          boxShadow: '0 0 15px rgba(242, 239, 29, 0.4)',
           zIndex: isChatOpen ? 10 : 1000,
           overflow: 'hidden',
           pointerEvents: isChatOpen ? 'none' : 'auto',
@@ -422,7 +469,7 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
             <button
               type="button"
               aria-label="Close"
-              onClick={() => { playClick(); setIsOpen(false); setActiveVideo(null); }}
+              onClick={() => { playClick(); if (wasPlayingRef.current) audio.play(); setIsOpen(false); setActiveVideo(null); }}
               onMouseEnter={playHover}
               className="inline-flex h-7 w-7 items-center justify-center rounded-full border-2 text-xs font-bold transition-all duration-200 hover:scale-110 episodes-close-btn"
               style={{ position: 'absolute', right: '12px' }}
@@ -534,12 +581,13 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
                 style={{ aspectRatio: "16/9" }}
               >
                 <iframe
-                  src={getYouTubeEmbedUrl(activeVideo.youtubeUrl)}
+                  key={startTime}
+                  src={`${getYouTubeEmbedUrl(activeVideo.youtubeUrl)}&start=${startTime}&autoplay=${startTime > 0 ? 1 : 0}`}
                   title={activeVideo.title}
                   width="100%"
                   height="100%"
                   frameBorder="0"
-                  allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                   className="absolute inset-0 w-full h-full"
                   style={{ borderRadius: "8px" }}
@@ -547,12 +595,35 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
               </div>
               {activeVideo.postDescription && (
                 <div
-                  className="mt-2 text-[11px] leading-relaxed text-white/80 whitespace-pre-line"
+                  className="mt-2 text-[11px] leading-relaxed text-white/80"
                   style={{
                     textShadow: "0 0 4px rgba(0,255,255,0.2)",
                   }}
                 >
-                  {activeVideo.postDescription}
+                  {activeVideo.postDescription.split('\n').map((line, i) => {
+                    if (i === 0 && line.trim().toLowerCase() === 'setlist') {
+                      return <div key={i} className="font-bold text-white mb-1">{line}</div>;
+                    }
+                    const timeMatch = line.match(/^(\d+):(\d+)\s+(.+)$/);
+                    if (timeMatch) {
+                      const seconds = parseInt(timeMatch[1]) * 60 + parseInt(timeMatch[2]);
+                      const timestamp = timeMatch[1] + ':' + timeMatch[2];
+                      const songTitle = timeMatch[3];
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => { playClick(); setStartTime(seconds); }}
+                          onMouseEnter={playHover}
+                          className="block w-full text-left py-0.5 transition-colors duration-150 hover:text-[#00FFFF] cursor-pointer"
+                        >
+                          <span className="text-[#FC54AF]/70 mr-1.5">{timestamp}</span>
+                          {songTitle}
+                        </button>
+                      );
+                    }
+                    return <div key={i}>{line}</div>;
+                  })}
                 </div>
               )}
             </div>
