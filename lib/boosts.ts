@@ -126,7 +126,7 @@ export async function consumeBoostOnce(
     });
 
     if (error) {
-      console.warn(`[consumeBoostOnce] RPC error for boostKey=${boostKey}, scope=${scope}:`, error.message);
+      if (process.env.NODE_ENV !== "production") console.warn(`[consumeBoostOnce] RPC error for boostKey=${boostKey}, scope=${scope}:`, error.message);
       return {
         multiplier: 1,
         addAmount: 0,
@@ -150,11 +150,13 @@ export async function consumeBoostOnce(
     }
 
     // Boost was consumed successfully
-    console.log(`[consumeBoostOnce] Consumed boost boostKey=${boostKey}, scope=${scope}:`, {
-      multiplier: data.multiplier,
-      addAmount: data.add_amount,
-      usesRemaining: data.uses_remaining
-    });
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[consumeBoostOnce] Consumed boost boostKey=${boostKey}, scope=${scope}:`, {
+        multiplier: data.multiplier,
+        addAmount: data.add_amount,
+        usesRemaining: data.uses_remaining
+      });
+    }
 
     return {
       multiplier: data.multiplier ?? 1,
@@ -210,14 +212,14 @@ export async function consumeActiveBoost(
     });
 
     if (error) {
-      console.warn(`[consumeActiveBoost] RPC error for boostKey=${boostKey}:`, error.message);
+      if (process.env.NODE_ENV !== "production") console.warn(`[consumeActiveBoost] RPC error for boostKey=${boostKey}:`, error.message);
       return false;
     }
 
     const consumed = data === true;
 
     if (consumed) {
-      console.log(`[consumeActiveBoost] Successfully consumed boost: ${boostKey}`);
+      if (process.env.NODE_ENV !== "production") console.log(`[consumeActiveBoost] Successfully consumed boost: ${boostKey}`);
       // Dispatch event to refresh boosts in UI
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('boosts:refresh'));
@@ -287,7 +289,7 @@ export async function fetchActiveBoosts(userId: string): Promise<ActiveBoost[]> 
       .order('starts_at', { ascending: false });
 
     if (error) {
-      console.warn('[fetchActiveBoosts] Error fetching boosts:', error.message);
+      if (process.env.NODE_ENV !== "production") console.warn('[fetchActiveBoosts] Error fetching boosts:', error.message);
       return [];
     }
 

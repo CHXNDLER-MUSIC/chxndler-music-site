@@ -26,7 +26,7 @@ export default function RuntimePlanetScene({
       try {
         if (typeof window === 'undefined') return;
 
-        console.log('RuntimePlanetScene: Starting dynamic imports...');
+        if (process.env.NODE_ENV !== "production") console.log('RuntimePlanetScene: Starting dynamic imports...');
         
         // Dynamically import all Three.js dependencies
         const [
@@ -45,10 +45,10 @@ export default function RuntimePlanetScene({
           import('../planet-positions-context')
         ]);
         
-        console.log('RuntimePlanetScene: Dynamic imports completed');
+        if (process.env.NODE_ENV !== "production") console.log('RuntimePlanetScene: Dynamic imports completed');
 
         if (!mounted) {
-          console.log('RuntimePlanetScene: Component unmounted, aborting');
+          if (process.env.NODE_ENV !== "production") console.log('RuntimePlanetScene: Component unmounted, aborting');
           return;
         }
 
@@ -56,7 +56,7 @@ export default function RuntimePlanetScene({
         const { CameraRig } = CameraRigModule;
         const { Lights } = LightsModule;
         
-        console.log('RuntimePlanetScene: Destructured components successfully');
+        if (process.env.NODE_ENV !== "production") console.log('RuntimePlanetScene: Destructured components successfully');
 
         // Create the React element wrapped with PlanetPositionsProvider
         const planetElement = React.createElement(
@@ -94,19 +94,19 @@ export default function RuntimePlanetScene({
           )
         );
         
-        console.log('RuntimePlanetScene: Created React element with provider');
+        if (process.env.NODE_ENV !== "production") console.log('RuntimePlanetScene: Created React element with provider');
 
         // Render using React 18 createRoot
         if (containerRef.current && mounted) {
-          console.log('RuntimePlanetScene: Rendering to DOM');
+          if (process.env.NODE_ENV !== "production") console.log('RuntimePlanetScene: Rendering to DOM');
           const root = createRoot(containerRef.current);
           root.render(planetElement);
           setLoading(false);
-          console.log('RuntimePlanetScene: Successfully rendered!');
+          if (process.env.NODE_ENV !== "production") console.log('RuntimePlanetScene: Successfully rendered!');
 
           // Cleanup function
           return () => {
-            console.log('RuntimePlanetScene: Cleaning up');
+            if (process.env.NODE_ENV !== "production") console.log('RuntimePlanetScene: Cleaning up');
             root.unmount();
           };
         }

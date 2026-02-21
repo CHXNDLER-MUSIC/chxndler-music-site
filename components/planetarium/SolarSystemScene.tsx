@@ -25,7 +25,7 @@ export const SolarSystemScene = React.memo(({
   onPlanetSelect,
   quality 
 }: SolarSystemSceneProps) => {
-  console.log('🌌 SolarSystemScene rendering with:', { songCount: songs.length, quality });
+  if (process.env.NODE_ENV !== "production") console.log('🌌 SolarSystemScene rendering with:', { songCount: songs.length, quality });
   const { camera } = useThree();
   const centerPlanetRef = useRef<THREE.Group>(null);
   const elementOrbitRef = useRef<THREE.Group>(null);

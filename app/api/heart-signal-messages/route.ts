@@ -5,7 +5,7 @@ import { getSupabaseAdmin } from '@/lib/supabaseServer';
 
 // POST - Send a new heart signal message (authenticated users only)
 export async function POST(req: Request) {
-  console.log("✅ HEART SIGNAL ROUTE HIT (APP ROUTER)");
+  if (process.env.NODE_ENV !== "production") console.log("✅ HEART SIGNAL ROUTE HIT (APP ROUTER)");
   try {
     const body = await req.json().catch(() => ({} as any));
 

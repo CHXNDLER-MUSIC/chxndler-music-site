@@ -26,7 +26,7 @@ export async function getAllQuestsForUser(userId?: string | null): Promise<{
     }
 
     if (!quests || quests.length === 0) {
-      console.log('[getAllQuestsForUser] No active quests found');
+      if (process.env.NODE_ENV !== "production") console.log('[getAllQuestsForUser] No active quests found');
       return { dailyQuests: [], bonusQuests: [], allQuests: [] };
     }
 
@@ -99,12 +99,14 @@ export async function getAllQuestsForUser(userId?: string | null): Promise<{
     const bonusQuests = allQuestsWithCompletion.filter(q => q.category === 'BONUS');
 
     // Log summary (only once after fetch)
-    console.log('[getAllQuestsForUser] Summary:', {
-      totalQuests: allQuestsWithCompletion.length,
-      dailyCount: dailyQuests.length,
-      bonusCount: bonusQuests.length,
-      questKeys: allQuestsWithCompletion.map(q => q.quest_key)
-    });
+    if (process.env.NODE_ENV !== "production") {
+      console.log('[getAllQuestsForUser] Summary:', {
+        totalQuests: allQuestsWithCompletion.length,
+        dailyCount: dailyQuests.length,
+        bonusCount: bonusQuests.length,
+        questKeys: allQuestsWithCompletion.map(q => q.quest_key)
+      });
+    }
 
     return { dailyQuests, bonusQuests, allQuests: allQuestsWithCompletion };
 

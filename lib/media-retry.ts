@@ -240,7 +240,7 @@ export const playWithAutoplayFallback = async (
           element.muted = originalMuted;
           element.volume = originalVolume;
         } catch {
-          console.warn('🔴 Failed to unmute audio');
+          if (process.env.NODE_ENV !== "production") console.warn('🔴 Failed to unmute audio');
         }
       }, 100);
       

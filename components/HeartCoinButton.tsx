@@ -38,7 +38,7 @@ function playHoverSfx(vol = 0.3) {
   _hoverCount++;
   try {
     if (typeof window !== 'undefined' && (window as any).__DEBUG_SFX__) {
-      console.debug(`[HeartCoinButton] hover #${_hoverCount}`);
+      if (process.env.NODE_ENV !== "production") console.debug(`[HeartCoinButton] hover #${_hoverCount}`);
     }
   } catch {}
   try { sfx.play('hover', vol); } catch {}
@@ -746,7 +746,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // Listen for close-heartcoin-modal event
   useEffect(() => {
     const handleCloseModal = () => {
-      console.log('[HeartCoinButton] Received close-heartcoin-modal event');
+      if (process.env.NODE_ENV !== "production") console.log('[HeartCoinButton] Received close-heartcoin-modal event');
       setOpen(false);
     };
     window.addEventListener('close-heartcoin-modal', handleCloseModal);
@@ -756,7 +756,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // Listen for element-of-day-claimed event to mark daily quest as completed
   useEffect(() => {
     const handleElementClaimed = (e: CustomEvent) => {
-      console.log('[HeartCoinButton] Element of day claimed:', e.detail);
+      if (process.env.NODE_ENV !== "production") console.log('[HeartCoinButton] Element of day claimed:', e.detail);
       // Find the TAP_ELEMENT_OF_DAY quest and mark it as completed
       const elementQuest = dailyQuestItems.find(q => q.quest_key === 'TAP_ELEMENT_OF_DAY');
       if (elementQuest) {
@@ -836,7 +836,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           }
         } catch {}
       } catch (err) {
-        console.warn('Error handling openHeartCoinCards event:', err);
+        if (process.env.NODE_ENV !== "production") console.warn('Error handling openHeartCoinCards event:', err);
       }
     };
 
@@ -1305,7 +1305,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           .limit(1);
 
         if (error) {
-          console.warn('Error checking today redemption:', error);
+          if (process.env.NODE_ENV !== "production") console.warn('Error checking today redemption:', error);
           return;
         }
 
@@ -1314,7 +1314,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           setPhraseStatus('already');
         }
       } catch (err) {
-        console.warn('Error in checkTodayRedemption:', err);
+        if (process.env.NODE_ENV !== "production") console.warn('Error in checkTodayRedemption:', err);
       }
     };
 
@@ -1389,7 +1389,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
       try {
         if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
-          console.debug('[secret-phrase]', {
+          if (process.env.NODE_ENV !== "production") console.debug('[secret-phrase]', {
             ok: true,
             day: row?.active_date ?? row?.activeDate ?? row?.day ?? null,
             reward: row?.reward ?? row?.granted_amount ?? 0,
@@ -1472,7 +1472,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
               return true;
             } catch (err) {
               // If user cancels share, don't record completion
-              console.warn('Share canceled or failed:', err);
+              if (process.env.NODE_ENV !== "production") console.warn('Share canceled or failed:', err);
               return false;
             }
           }
@@ -1657,7 +1657,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       // dev-only debug
       try {
         if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
-          console.debug('[secret-phrase]', { ok: true, day: result?.active_date ?? (result as any)?.day ?? null, reward });
+          if (process.env.NODE_ENV !== "production") console.debug('[secret-phrase]', { ok: true, day: result?.active_date ?? (result as any)?.day ?? null, reward });
         }
       } catch {}
 
@@ -1846,7 +1846,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // Confirm handler for DIGITAL card purchases via Supabase RPC
   // Accepts an optional card to support confirm from non-enlarged view
   const handleConfirmCardPurchase = async (targetCard?: Card) => {
-    console.log('[CARD PURCHASE] Confirm clicked', {
+    if (process.env.NODE_ENV !== "production") console.log('[CARD PURCHASE] Confirm clicked', {
       card: (targetCard || enlargedCard)?.card_name,
       cardId: (targetCard || enlargedCard)?.id,
       type: showCardConfirm,
@@ -1875,38 +1875,38 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
     // Defensive guard: check if card is already owned (digital)
     if (cardUuid && isCardOwned(cardUuid)) {
-      console.warn('[CARD PURCHASE] Card already collected', cardUuid);
+      if (process.env.NODE_ENV !== "production") console.warn('[CARD PURCHASE] Card already collected', cardUuid);
       try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'You already own this card!', type: 'info' } })); } catch {}
       return;
     }
 
     // Guards with logs for every early return
     if (isPurchasing) {
-      console.warn('[CARD PURCHASE] GUARD: isPurchasing already true');
-      console.warn('[CARD PURCHASE] blocked: isPurchasing');
+      if (process.env.NODE_ENV !== "production") console.warn('[CARD PURCHASE] GUARD: isPurchasing already true');
+      if (process.env.NODE_ENV !== "production") console.warn('[CARD PURCHASE] blocked: isPurchasing');
       return;
     }
     if (cardPurchaseInFlightRef.current) {
-      console.warn('[CARD PURCHASE] GUARD: cardPurchaseInFlightRef already true');
-      console.warn('[CARD PURCHASE] blocked: inFlightRef');
+      if (process.env.NODE_ENV !== "production") console.warn('[CARD PURCHASE] GUARD: cardPurchaseInFlightRef already true');
+      if (process.env.NODE_ENV !== "production") console.warn('[CARD PURCHASE] blocked: inFlightRef');
       return;
     }
     if (!profile?.id) {
-      console.warn('[CARD PURCHASE] GUARD: missing profile/user');
+      if (process.env.NODE_ENV !== "production") console.warn('[CARD PURCHASE] GUARD: missing profile/user');
       try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Please log in to buy cards', type: 'error' } })); } catch {}
       return;
     }
     // UUID already validated above - no duplicate check needed
     if (showCardConfirm !== 'digital' && !targetCard) {
-      console.warn('[CARD PURCHASE] GUARD: confirm type is not digital');
+      if (process.env.NODE_ENV !== "production") console.warn('[CARD PURCHASE] GUARD: confirm type is not digital');
       return;
     }
     const cost = selectedCard?.digitalCost || 5;
     if (heartCoins == null) {
-      console.warn('[CARD PURCHASE] GUARD: missing balance in UI');
+      if (process.env.NODE_ENV !== "production") console.warn('[CARD PURCHASE] GUARD: missing balance in UI');
     }
     if ((profile?.heartcoin_balance ?? heartCoins ?? 0) < cost) {
-      console.warn('[CARD PURCHASE] GUARD: insufficient balance', { balance: profile?.heartcoin_balance ?? heartCoins ?? 0, cost });
+      if (process.env.NODE_ENV !== "production") console.warn('[CARD PURCHASE] GUARD: insufficient balance', { balance: profile?.heartcoin_balance ?? heartCoins ?? 0, cost });
       try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Insufficient HeartCoins', type: 'error' } })); } catch {}
       return;
     }
@@ -1914,7 +1914,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     // Set in-flight BEFORE any async work and ensure reset in finally
     cardPurchaseInFlightRef.current = true;
     setIsPurchasing(true);
-    console.log('[CARD PURCHASE] In-flight set TRUE');
+    if (process.env.NODE_ENV !== "production") console.log('[CARD PURCHASE] In-flight set TRUE');
 
     try {
       // DEFENSIVE GUARD 1: Normalize and re-validate UUID format
@@ -1929,7 +1929,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       const args: { p_card_id: string } = { p_card_id: uuid };
 
       // Debug log immediately before RPC
-      console.log('[CARD PURCHASE] sending RPC with validated args:', {
+      if (process.env.NODE_ENV !== "production") console.log('[CARD PURCHASE] sending RPC with validated args:', {
         uuid,
         uuidLength: uuid.length,
         argsJson: JSON.stringify(args),
@@ -1951,7 +1951,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
         // Check if it's a duplicate (user already owns card) - RPC may return this as an error
         if (error.code === '23505' || error.message?.includes('already own')) {
-          console.log('[CARD PURCHASE] User already owns this card');
+          if (process.env.NODE_ENV !== "production") console.log('[CARD PURCHASE] User already owns this card');
           try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'You already own this card!', type: 'info' } })); } catch {}
           return;
         }
@@ -1968,7 +1968,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
       // Extract new balance from RPC response if available
       const newBalance = data?.new_balance ?? data?.heartcoin_balance ?? null;
-      console.log('[CARD PURCHASE] RPC success', { data, newBalance });
+      if (process.env.NODE_ENV !== "production") console.log('[CARD PURCHASE] RPC success', { data, newBalance });
 
       // Update local UI balance if returned by RPC
       if (newBalance !== null) {
@@ -2016,14 +2016,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       // Always reset flags so it can't fail silently
       cardPurchaseInFlightRef.current = false;
       setIsPurchasing(false);
-      console.log('[CARD PURCHASE] In-flight reset FALSE');
+      if (process.env.NODE_ENV !== "production") console.log('[CARD PURCHASE] In-flight reset FALSE');
     }
   };
 
   // Step 1: Physical card purchase - create order, deduct HeartCoins, get orderId
   // Called when user clicks "CONFIRM" on physical card (before shipping form)
   const handlePhysicalCardConfirm = async () => {
-    console.log('[CARD PURCHASE] Physical confirm clicked', {
+    if (process.env.NODE_ENV !== "production") console.log('[CARD PURCHASE] Physical confirm clicked', {
       card: enlargedCard?.card_name,
       cardId: enlargedCard?.id,
       cost: enlargedCard?.physicalCost || 20,
@@ -2037,20 +2037,20 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
     // Guards
     if (isPurchasing) {
-      console.warn('[CARD PURCHASE] GUARD: isPurchasing already true');
+      if (process.env.NODE_ENV !== "production") console.warn('[CARD PURCHASE] GUARD: isPurchasing already true');
       return;
     }
     if (cardPurchaseInFlightRef.current) {
-      console.warn('[CARD PURCHASE] GUARD: cardPurchaseInFlightRef already true');
+      if (process.env.NODE_ENV !== "production") console.warn('[CARD PURCHASE] GUARD: cardPurchaseInFlightRef already true');
       return;
     }
     if (!profile?.id) {
-      console.warn('[CARD PURCHASE] GUARD: missing profile/user');
+      if (process.env.NODE_ENV !== "production") console.warn('[CARD PURCHASE] GUARD: missing profile/user');
       try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Please log in to buy cards', type: 'error' } })); } catch {}
       return;
     }
     if (!selectedCardId) {
-      console.warn('[CARD PURCHASE] GUARD: missing selectedCardId');
+      if (process.env.NODE_ENV !== "production") console.warn('[CARD PURCHASE] GUARD: missing selectedCardId');
       try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'No card selected', type: 'error' } })); } catch {}
       return;
     }
@@ -2058,11 +2058,11 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     // Set in-flight BEFORE any async work
     cardPurchaseInFlightRef.current = true;
     setIsPurchasing(true);
-    console.log('[CARD PURCHASE] Physical card in-flight set TRUE');
+    if (process.env.NODE_ENV !== "production") console.log('[CARD PURCHASE] Physical card in-flight set TRUE');
 
     try {
       const purchaseUrl = `${basePath}/api/cards/purchase-physical`;
-      console.log('[CARD PURCHASE] Calling', purchaseUrl);
+      if (process.env.NODE_ENV !== "production") console.log('[CARD PURCHASE] Calling', purchaseUrl);
       const response = await fetch(purchaseUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2077,7 +2077,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       }
 
       const result = await response.json();
-      console.log('[CARD PURCHASE] API response:', result);
+      if (process.env.NODE_ENV !== "production") console.log('[CARD PURCHASE] API response:', result);
 
       // Check for failure: HTTP error OR ok:false in response
       if (!response.ok || result.ok === false) {
@@ -2112,9 +2112,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       setPendingPhysicalOrderId(extractedOrderId);
       const newBalance = result.new_balance as number | undefined;
       const cost = selectedCard?.physicalCost || 20;
-      console.log('[CARD PURCHASE] order_id:', extractedOrderId);
-      console.log('[CARD PURCHASE] cost:', cost);
-      console.log('[CARD PURCHASE] new_balance:', newBalance);
+      if (process.env.NODE_ENV !== "production") console.log('[CARD PURCHASE] order_id:', extractedOrderId);
+      if (process.env.NODE_ENV !== "production") console.log('[CARD PURCHASE] cost:', cost);
+      if (process.env.NODE_ENV !== "production") console.log('[CARD PURCHASE] new_balance:', newBalance);
 
       // Update local balance
       if (typeof newBalance === 'number') {
@@ -2148,7 +2148,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
       // Transition to shipping step
       setCardPurchaseStep('shipping');
-      console.log('[CARD PURCHASE] Transitioned to shipping step with orderId:', extractedOrderId);
+      if (process.env.NODE_ENV !== "production") console.log('[CARD PURCHASE] Transitioned to shipping step with orderId:', extractedOrderId);
 
       // Success toast
       try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: `Order created! Please provide shipping details.`, type: 'success' } })); } catch {}
@@ -2159,14 +2159,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     } finally {
       cardPurchaseInFlightRef.current = false;
       setIsPurchasing(false);
-      console.log('[CARD PURCHASE] Physical card in-flight reset FALSE');
+      if (process.env.NODE_ENV !== "production") console.log('[CARD PURCHASE] Physical card in-flight reset FALSE');
     }
   };
 
   // Step 2: Submit shipping for physical card order
   // Called when user clicks "CONFIRM SHIPPING" after order is created
   const handleConfirmCardShipping = async () => {
-    console.log('[CARD SHIPPING] Confirm shipping clicked');
+    if (process.env.NODE_ENV !== "production") console.log('[CARD SHIPPING] Confirm shipping clicked');
 
     // Must have purchaseDraft with orderId
     if (!purchaseDraft || purchaseDraft.kind !== 'card_physical' || !purchaseDraft.orderId) {
@@ -2177,7 +2177,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
     // Validate shipping form
     if (!shippingForm.full_name || !shippingForm.address_line1 || !shippingForm.city || !shippingForm.state || !shippingForm.zip || !shippingForm.country) {
-      console.warn('[CARD SHIPPING] GUARD: missing shipping fields');
+      if (process.env.NODE_ENV !== "production") console.warn('[CARD SHIPPING] GUARD: missing shipping fields');
       setCardShippingAttempted(true);
       try { sfx.play('scroll', 0.5); } catch {}
       return;
@@ -2185,7 +2185,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
     setShippingStatus('saving');
 
-    console.log('FINAL shipping order_id', pendingPhysicalOrderId, typeof pendingPhysicalOrderId);
+    if (process.env.NODE_ENV !== "production") console.log('FINAL shipping order_id', pendingPhysicalOrderId, typeof pendingPhysicalOrderId);
 
     if (!pendingPhysicalOrderId) {
       console.error('[CARD SHIPPING] No pendingPhysicalOrderId');
@@ -2212,7 +2212,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       });
 
       const result = await response.json();
-      console.log('[CARD SHIPPING] API response:', result);
+      if (process.env.NODE_ENV !== "production") console.log('[CARD SHIPPING] API response:', result);
 
       if (!response.ok || !result.success) {
         console.error('[CARD SHIPPING] Shipping update failed:', result.error);
@@ -2221,7 +2221,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         return;
       }
 
-      console.log('[CARD SHIPPING] Shipping submitted for order:', pendingPhysicalOrderId);
+      if (process.env.NODE_ENV !== "production") console.log('[CARD SHIPPING] Shipping submitted for order:', pendingPhysicalOrderId);
       setShippingStatus('success');
 
       // Play success sound
@@ -2281,7 +2281,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
   // DEPRECATED: Old handler that looked up by slug - kept for backwards compat
   const handlePurchaseWithHeartCoins = async (item: StoreItem) => {
-    console.warn('[PURCHASE] handlePurchaseWithHeartCoins is deprecated, use handleConfirmPurchase');
+    if (process.env.NODE_ENV !== "production") console.warn('[PURCHASE] handlePurchaseWithHeartCoins is deprecated, use handleConfirmPurchase');
     // Redirect to new flow by setting purchaseDraft
     const merchItem = merchItems.find(m => m.slug === item.slug);
     if (merchItem) {
@@ -2303,7 +2303,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
         }
         return undefined;
       })();
-      console.log('[PURCHASE] deprecated handler selected_color:', deprecatedColor);
+      if (process.env.NODE_ENV !== "production") console.log('[PURCHASE] deprecated handler selected_color:', deprecatedColor);
       setPurchaseDraft({
         kind: 'merch',
         merchItemId: merchItem.id,
@@ -2327,7 +2327,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
   // ============================================================
   const handleConfirmPurchase = async (item?: MerchItem) => {
     // Entry log for debugging silent exits
-    console.log('[PURCHASE] handleConfirmPurchase ENTER', {
+    if (process.env.NODE_ENV !== "production") console.log('[PURCHASE] handleConfirmPurchase ENTER', {
       isPurchasing,
       inFlightRef: purchaseInFlightRef.current,
       itemId: item?.id || null,
@@ -2337,7 +2337,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
     // If we're in confirm step, just transition to shipping form (no purchase yet)
     if (step === 'confirm') {
-      console.log('[PURCHASE] Transitioning to shipping form');
+      if (process.env.NODE_ENV !== "production") console.log('[PURCHASE] Transitioning to shipping form');
 
       // Build and set purchaseDraft from the item for the shipping step
       if (item) {
@@ -2361,7 +2361,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
           }
           return undefined;
         })();
-        console.log('[PURCHASE] draft selected_color resolved:', draftSelectedColor);
+        if (process.env.NODE_ENV !== "production") console.log('[PURCHASE] draft selected_color resolved:', draftSelectedColor);
 
         setPurchaseDraft({
           kind: 'merch',
@@ -2389,13 +2389,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
     // CRITICAL: Synchronous ref check FIRST - prevents double-submit
     if (purchaseInFlightRef.current) {
-      console.warn('[PURCHASE] BLOCKED: Purchase already in flight (ref check in handleConfirmPurchase)');
+      if (process.env.NODE_ENV !== "production") console.warn('[PURCHASE] BLOCKED: Purchase already in flight (ref check in handleConfirmPurchase)');
       return;
     }
 
     // Also check state
     if (isPurchasing) {
-      console.warn('[PURCHASE] BLOCKED: isPurchasing state is true');
+      if (process.env.NODE_ENV !== "production") console.warn('[PURCHASE] BLOCKED: isPurchasing state is true');
       return;
     }
 
@@ -2415,7 +2415,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     // ============================================================
     purchaseInFlightRef.current = true;
     setIsPurchasing(true);
-    console.log('[PURCHASE] In-flight ref set to TRUE');
+    if (process.env.NODE_ENV !== "production") console.log('[PURCHASE] In-flight ref set to TRUE');
 
     // Clear any previous errors
     clearError();
@@ -2450,9 +2450,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     } else {
       selected_color = purchaseDraft?.selected_color;
     }
-    console.log('[PURCHASE] resolved selected_color:', selected_color);
+    if (process.env.NODE_ENV !== "production") console.log('[PURCHASE] resolved selected_color:', selected_color);
 
-    console.log('[PURCHASE] calling API payload', {
+    if (process.env.NODE_ENV !== "production") console.log('[PURCHASE] calling API payload', {
       merchItemId,
       quantity,
       idempotencyKey,
@@ -2467,10 +2467,10 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       // SINGLE API CALL - purchaseWithHeartCoins has its own ref guard
       // ============================================================
       const purchaseResult = await purchaseWithHeartCoins({ merchItemId, quantity, clientSlug, idempotencyKey, selected_color });
-      console.log('[PURCHASE] API returned', purchaseResult);
+      if (process.env.NODE_ENV !== "production") console.log('[PURCHASE] API returned', purchaseResult);
 
       if (purchaseResult && purchaseResult.success) {
-        console.log('[PURCHASE] Success, order created:', purchaseResult.order_id);
+        if (process.env.NODE_ENV !== "production") console.log('[PURCHASE] Success, order created:', purchaseResult.order_id);
 
         setCurrentOrderId(purchaseResult.order_id || null);
         setStep('shipping');
@@ -2481,7 +2481,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
         // Refresh profile to update HeartCoin balance (authoritative from DB)
         await refreshProfile();
-        console.log('[PURCHASE] Profile refreshed; new balance from Supabase');
+        if (process.env.NODE_ENV !== "production") console.log('[PURCHASE] Profile refreshed; new balance from Supabase');
 
         // Success toast and inventory refresh event
         try {
@@ -2527,7 +2527,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       // ============================================================
       purchaseInFlightRef.current = false;
       setIsPurchasing(false);
-      console.log('[PURCHASE] In-flight ref reset to FALSE');
+      if (process.env.NODE_ENV !== "production") console.log('[PURCHASE] In-flight ref reset to FALSE');
     }
   };
 
@@ -2547,13 +2547,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
     // CRITICAL: Synchronous ref check FIRST - prevents double-submit
     if (purchaseInFlightRef.current) {
-      console.warn('[PURCHASE] BLOCKED: Purchase already in flight');
+      if (process.env.NODE_ENV !== "production") console.warn('[PURCHASE] BLOCKED: Purchase already in flight');
       return;
     }
 
     // Also check state
     if (isPurchasing || isProcessing) {
-      console.warn('[PURCHASE] BLOCKED: isPurchasing or isProcessing state is true');
+      if (process.env.NODE_ENV !== "production") console.warn('[PURCHASE] BLOCKED: isPurchasing or isProcessing state is true');
       return;
     }
 
@@ -2564,7 +2564,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
     purchaseInFlightRef.current = true;
     setIsPurchasing(true);
-    console.log('[SHIPPING] Making purchase with shipping info');
+    if (process.env.NODE_ENV !== "production") console.log('[SHIPPING] Making purchase with shipping info');
 
     // Clear any previous errors
     clearError();
@@ -2588,9 +2588,9 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
     try {
       // Step 1: Make the purchase
-      console.log('[SHIPPING] Calling purchase API');
+      if (process.env.NODE_ENV !== "production") console.log('[SHIPPING] Calling purchase API');
       const purchaseResult = await purchaseWithHeartCoins({ merchItemId, quantity, clientSlug, idempotencyKey, selected_color: shippingSelectedColor });
-      console.log('[SHIPPING] Purchase API returned', purchaseResult);
+      if (process.env.NODE_ENV !== "production") console.log('[SHIPPING] Purchase API returned', purchaseResult);
 
       if (!purchaseResult || !purchaseResult.success) {
         console.error('[SHIPPING] Purchase failed:', purchaseError);
@@ -2607,14 +2607,14 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       }
 
       const orderId = purchaseResult.order_id;
-      console.log('[PURCHASE] orders.id', orderId);
+      if (process.env.NODE_ENV !== "production") console.log('[PURCHASE] orders.id', orderId);
       setCurrentOrderId(orderId);
 
       // Refresh profile to update HeartCoin balance
       await refreshProfile();
 
       // Step 2: Update shipping info
-      console.log('[SHIPPING] using orders.id', orderId);
+      if (process.env.NODE_ENV !== "production") console.log('[SHIPPING] using orders.id', orderId);
       setShippingStatus('saving');
       const updateResult = await updateShipping({
         orderId: orderId,
@@ -2628,7 +2628,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       });
 
       if (updateResult) {
-        console.log('[SHIPPING] Shipping saved for order:', orderId);
+        if (process.env.NODE_ENV !== "production") console.log('[SHIPPING] Shipping saved for order:', orderId);
         setShippingStatus('success');
 
         // Play success sound
@@ -2698,7 +2698,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
     } finally {
       purchaseInFlightRef.current = false;
       setIsPurchasing(false);
-      console.log('[SHIPPING] In-flight ref reset to FALSE');
+      if (process.env.NODE_ENV !== "production") console.log('[SHIPPING] In-flight ref reset to FALSE');
     }
   };
 
@@ -2736,7 +2736,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       return;
     }
 
-    console.log('[SHIPPING] using orders.id', currentOrderId);
+    if (process.env.NODE_ENV !== "production") console.log('[SHIPPING] using orders.id', currentOrderId);
     setShippingStatus('saving');
     clearError();
 
@@ -2753,7 +2753,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
       });
 
       if (updateResult) {
-        console.log('[SHIPPING] Shipping saved for order:', currentOrderId);
+        if (process.env.NODE_ENV !== "production") console.log('[SHIPPING] Shipping saved for order:', currentOrderId);
         setShippingStatus('success');
 
         // Play success sound
@@ -3501,25 +3501,25 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
                               // Guard: if already completed, don't process again
                               if (isQuestCompleted(quest)) {
-                                console.log('[HeartCoinButton] Quest already completed, skipping');
+                                if (process.env.NODE_ENV !== "production") console.log('[HeartCoinButton] Quest already completed, skipping');
                                 return;
                               }
 
                               const targetElement = elementOfDay || 'heart';
-                              console.log('[HeartCoinButton] Element image clicked for quest:', quest.id);
+                              if (process.env.NODE_ENV !== "production") console.log('[HeartCoinButton] Element image clicked for quest:', quest.id);
                               try { sfx.play('click', 0.8); } catch {}
 
                               // ========== ELEMENT OF THE DAY: TRIGGER WARP THEN OPEN MODAL ==========
                               // Quest completion happens in the ElementOfDay modal, not here
                               if (quest.id === ELEMENT_OF_DAY_BONUS_QUEST_ID) {
-                                console.log('[HeartCoinButton] Element of Day quest - triggering warp then opening modal');
+                                if (process.env.NODE_ENV !== "production") console.log('[HeartCoinButton] Element of Day quest - triggering warp then opening modal');
                                 // Close the HeartCoin popup first
                                 setOpen(false);
                                 try { onClose?.(); } catch {}
 
                                 // Dispatch planet:warp event to trigger warp visual effect
                                 setTimeout(() => {
-                                  console.log('[HeartCoinButton] Dispatching planet:warp event for element:', targetElement);
+                                  if (process.env.NODE_ENV !== "production") console.log('[HeartCoinButton] Dispatching planet:warp event for element:', targetElement);
                                   window.dispatchEvent(new CustomEvent('planet:warp', {
                                     detail: {
                                       element: targetElement,
@@ -3547,21 +3547,21 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               // Delay to let heart coin display close before warp
                               setTimeout(() => {
                                 // Dispatch planet:warp event FIRST to trigger warp animation
-                                console.log('[HeartCoinButton] Dispatching planet:warp event');
+                                if (process.env.NODE_ENV !== "production") console.log('[HeartCoinButton] Dispatching planet:warp event');
                                 window.dispatchEvent(new CustomEvent('planet:warp', {
                                   detail: { element: targetElement }
                                 }));
                                 // After warp effect, open the 3D planet view
                                 setTimeout(() => {
                                   if (onOpenBlueDisplay) {
-                                    console.log('[HeartCoinButton] Calling onOpenBlueDisplay');
+                                    if (process.env.NODE_ENV !== "production") console.log('[HeartCoinButton] Calling onOpenBlueDisplay');
                                     onOpenBlueDisplay();
                                   } else {
                                     window.dispatchEvent(new CustomEvent('open-blue-display'));
                                   }
                                   // After blue display opens, show Element of the Day modal
                                   setTimeout(() => {
-                                    console.log('[HeartCoinButton] Showing Element of the Day modal');
+                                    if (process.env.NODE_ENV !== "production") console.log('[HeartCoinButton] Showing Element of the Day modal');
                                     window.dispatchEvent(new CustomEvent('element-of-day:show', {
                                       detail: { element: targetElement }
                                     }));
@@ -3621,7 +3621,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             if (quest.quest_key === 'JOURNAL_ENTRY_OF_DAY') {
                               handleJournalEntry();
                             } else if (quest.quest_key === 'LISTEN_SONG_OF_DAY') {
-                              console.log('[LISTEN BUTTON] Clicked! songOfDaySlug:', songOfDaySlug);
+                              if (process.env.NODE_ENV !== "production") console.log('[LISTEN BUTTON] Clicked! songOfDaySlug:', songOfDaySlug);
                               try { sfx.play('click', 0.6); } catch {}
 
                               // Close the HeartCoin popup first (notify parent to close)
@@ -3632,17 +3632,17 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               // Warp to the song of the day with full visual warp effect
                               // Song will play AFTER warp completes via pendingTrackPlay mechanism
                               if (songOfDaySlug) {
-                                console.log('[LISTEN BUTTON] Dispatching song:warp-request with slug:', songOfDaySlug);
+                                if (process.env.NODE_ENV !== "production") console.log('[LISTEN BUTTON] Dispatching song:warp-request with slug:', songOfDaySlug);
                                 setTimeout(() => {
                                   // Dispatch song:warp-request to trigger warp sequence (camera + visual effect)
                                   // Song plays after warp completes via pendingTrackPlay in onSongChange
                                   window.dispatchEvent(new CustomEvent('song:warp-request', {
                                     detail: { songSlug: songOfDaySlug, source: 'daily-quest', autoPlay: false }
                                   }));
-                                  console.log('[LISTEN BUTTON] Warp request dispatched!');
+                                  if (process.env.NODE_ENV !== "production") console.log('[LISTEN BUTTON] Warp request dispatched!');
                                 }, 300);
                               } else {
-                                console.log('[LISTEN BUTTON] ERROR: songOfDaySlug is null/undefined');
+                                if (process.env.NODE_ENV !== "production") console.log('[LISTEN BUTTON] ERROR: songOfDaySlug is null/undefined');
                               }
                             }
                           }}
@@ -3959,7 +3959,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     // dev-only debug
                                     try {
                                       if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
-                                        console.debug('[secret-phrase]', { ok: true, day: row?.active_date ?? (row as any)?.day ?? null, reward });
+                                        if (process.env.NODE_ENV !== "production") console.debug('[secret-phrase]', { ok: true, day: row?.active_date ?? (row as any)?.day ?? null, reward });
                                       }
                                     } catch {}
                                     try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: `Redeemed +${reward} HeartCoins`, type: 'success' } })); } catch {}
@@ -4050,7 +4050,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 }
 
                                 if (!elementCard) {
-                                  console.warn('[RETURN HOME] No element card found for:', userElement);
+                                  if (process.env.NODE_ENV !== "production") console.warn('[RETURN HOME] No element card found for:', userElement);
                                   return;
                                 }
 
@@ -4065,7 +4065,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 if (grantError) {
                                   console.error('[RETURN HOME] Error granting element card:', grantError);
                                 } else {
-                                  console.log('[RETURN HOME] Granted element card:', elementCard.card_name);
+                                  if (process.env.NODE_ENV !== "production") console.log('[RETURN HOME] Granted element card:', elementCard.card_name);
                                 }
                               } catch (err) {
                                 console.error('[RETURN HOME] Error in grantElementCard:', err);
@@ -4454,16 +4454,16 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                               onClick={(e) => {
                                                 e.stopPropagation();
                                                 if (missingRequired) {
-                                                  console.log('[SHIPPING] CONFIRM clicked with missing fields - playing scroll sound');
+                                                  if (process.env.NODE_ENV !== "production") console.log('[SHIPPING] CONFIRM clicked with missing fields - playing scroll sound');
                                                   setShippingAttempted(true);
                                                   try { sfx.play('scroll', 0.5); } catch {}
                                                   return;
                                                 }
                                                 if (shippingStatus === 'error') {
-                                                  console.log('[SHIPPING] RETRY SHIPPING clicked');
+                                                  if (process.env.NODE_ENV !== "production") console.log('[SHIPPING] RETRY SHIPPING clicked');
                                                   retryShipping();
                                                 } else {
-                                                  console.log('[SHIPPING] CONFIRM SHIPPING clicked');
+                                                  if (process.env.NODE_ENV !== "production") console.log('[SHIPPING] CONFIRM SHIPPING clicked');
                                                   handleConfirmShipping();
                                                 }
                                               }}
@@ -4677,13 +4677,13 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                         // If locked, show message and don't open modal
                                         if (lockLabel) {
                                           try { sfx.play('error', 0.5); } catch {}
-                                          console.log('[MERCH] Item locked:', lockLabel);
+                                          if (process.env.NODE_ENV !== "production") console.log('[MERCH] Item locked:', lockLabel);
                                           return;
                                         }
                                         try { sfx.play('click', 0.8); } catch {}
                                         const clicked = merchItems[currentMerchIndex];
                                         if (clicked) {
-                                          console.log('[MERCH] Tile clicked', { id: clicked.id, name: clicked.name });
+                                          if (process.env.NODE_ENV !== "production") console.log('[MERCH] Tile clicked', { id: clicked.id, name: clicked.name });
                                           setActiveMerchItem(clicked);
                                         }
                                       }}
@@ -4798,7 +4798,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                             onClick={(e) => {
                               e.stopPropagation();
                               // Single entrypoint: handler manages in-flight guard & logging
-                              console.log('[PURCHASE] CONFIRM clicked, calling handler from bottom confirm');
+                              if (process.env.NODE_ENV !== "production") console.log('[PURCHASE] CONFIRM clicked, calling handler from bottom confirm');
                               handleConfirmPurchase();
                             }}
                             onMouseEnter={() => { playHoverSfx(0.3) }}
@@ -5245,7 +5245,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                           // Trigger the unified digital purchase handler with this card
                                           handleConfirmCardPurchase(card);
                                         } else {
-                                          console.warn('[CARD PURCHASE] GUARD: physical confirm clicked in list view, no handler here');
+                                          if (process.env.NODE_ENV !== "production") console.warn('[CARD PURCHASE] GUARD: physical confirm clicked in list view, no handler here');
                                           try { window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'Physical purchase flow coming soon', type: 'info' } })); } catch {}
                                         }
                                       }}
@@ -5632,16 +5632,16 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (missingRequired) {
-                                  console.log('[CARD SHIPPING] CONFIRM clicked with missing fields - playing scroll sound');
+                                  if (process.env.NODE_ENV !== "production") console.log('[CARD SHIPPING] CONFIRM clicked with missing fields - playing scroll sound');
                                   setCardShippingAttempted(true);
                                   try { sfx.play('scroll', 0.5); } catch {}
                                   return;
                                 }
                                 if (shippingStatus === 'error') {
-                                  console.log('[CARD SHIPPING] RETRY clicked');
+                                  if (process.env.NODE_ENV !== "production") console.log('[CARD SHIPPING] RETRY clicked');
                                   handleConfirmCardShipping();
                                 } else {
-                                  console.log('[CARD SHIPPING] CONFIRM SHIPPING clicked - calling handleConfirmCardShipping');
+                                  if (process.env.NODE_ENV !== "production") console.log('[CARD SHIPPING] CONFIRM SHIPPING clicked - calling handleConfirmCardShipping');
                                   handleConfirmCardShipping();
                                 }
                               }}
@@ -5756,7 +5756,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               e.stopPropagation();
                               // Block if already in-flight
                               if (isPurchasing || cardPurchaseInFlightRef.current) {
-                                console.warn('[CARD PURCHASE] BUTTON GUARD: blocked duplicate click');
+                                if (process.env.NODE_ENV !== "production") console.warn('[CARD PURCHASE] BUTTON GUARD: blocked duplicate click');
                                 return;
                               }
                               try { sfx.play('click', 0.6); } catch {}
@@ -5765,7 +5765,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 handleConfirmCardPurchase();
                               } else {
                                 // Physical card - Step 1: create order, get orderId, then transition to shipping
-                                console.log('[CARD PURCHASE] Physical confirm clicked - calling handlePhysicalCardConfirm');
+                                if (process.env.NODE_ENV !== "production") console.log('[CARD PURCHASE] Physical confirm clicked - calling handlePhysicalCardConfirm');
                                 handlePhysicalCardConfirm();
                               }
                             }}
@@ -5822,7 +5822,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       draggable={false}
                       onError={(e) => {
                         const objectKey = (enlargedCard as any).image_object_key || enlargedCard.card_name;
-                        console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
+                        if (process.env.NODE_ENV !== "production") console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
                         const fallback = getCardImageUrl('CHXNDLER');
                         if (e.currentTarget.src !== fallback) {
                           e.currentTarget.src = fallback;

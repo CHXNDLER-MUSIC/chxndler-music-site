@@ -342,7 +342,7 @@ THE ELEMENTS OF THE HEARTVERSE
                     // Play star.mp3 when ALIGN button is clicked
                     try {
                       const audio = new Audio('/audio/star.mp3');
-                      audio.play().catch(e => console.log('Star audio play failed:', e));
+                      audio.play().catch(e => { if (process.env.NODE_ENV !== "production") console.log('Star audio play failed:', e); });
                     } catch {}
 
                     // Save to database if user is logged in (do NOT send updated_at)
@@ -396,7 +396,7 @@ THE ELEMENTS OF THE HEARTVERSE
                   onMouseEnter={(e) => {
                     // Play hover.mp3 sound on ALIGN button hover
                     const audio = new Audio('/audio/hover.mp3');
-                    audio.play().catch(e => console.log('Hover audio play failed:', e));
+                    audio.play().catch(e => { if (process.env.NODE_ENV !== "production") console.log('Hover audio play failed:', e); });
                     e.currentTarget.style.boxShadow = '0 0 35px rgba(255, 255, 255, 1), 0 0 70px rgba(255, 255, 255, 0.7), 0 0 105px rgba(255, 255, 255, 0.4), inset 0 0 15px rgba(255, 255, 255, 0.3)';
                     e.currentTarget.style.textShadow = '0 0 15px rgba(255, 255, 255, 1), 0 0 25px rgba(255, 255, 255, 0.9), 0 0 35px rgba(255, 255, 255, 0.7)';
                   }}

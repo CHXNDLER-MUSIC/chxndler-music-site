@@ -17,7 +17,7 @@ export default function ClientOnly3DWrapper(props: ClientOnly3DWrapperProps) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    console.log('ClientOnly3DWrapper: Setting isClient to true');
+    if (process.env.NODE_ENV !== "production") console.log('ClientOnly3DWrapper: Setting isClient to true');
     setIsClient(true);
   }, []);
 
@@ -28,12 +28,12 @@ export default function ClientOnly3DWrapper(props: ClientOnly3DWrapperProps) {
 
     const loadCanvas = async () => {
       try {
-        console.log('ClientOnly3DWrapper: Loading SolarSystemCanvas...');
+        if (process.env.NODE_ENV !== "production") console.log('ClientOnly3DWrapper: Loading SolarSystemCanvas...');
         const module = await import('./SolarSystemCanvas');
         
         if (!isMounted) return;
         
-        console.log('ClientOnly3DWrapper: SolarSystemCanvas loaded successfully');
+        if (process.env.NODE_ENV !== "production") console.log('ClientOnly3DWrapper: SolarSystemCanvas loaded successfully');
         setSolarSystemCanvas(() => module.default);
       } catch (error) {
         console.error('ClientOnly3DWrapper: Failed to load SolarSystemCanvas:', error);
@@ -47,7 +47,7 @@ export default function ClientOnly3DWrapper(props: ClientOnly3DWrapperProps) {
     };
   }, [isClient]);
 
-  console.log('ClientOnly3DWrapper render:', { isClient, hasCanvas: !!SolarSystemCanvas });
+  if (process.env.NODE_ENV !== "production") console.log('ClientOnly3DWrapper render:', { isClient, hasCanvas: !!SolarSystemCanvas });
 
   if (!isClient) {
     return (

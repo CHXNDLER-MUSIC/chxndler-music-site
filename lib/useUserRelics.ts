@@ -33,7 +33,7 @@ export function useUserRelics(userId?: string) {
   // Listen for relics:refresh event to trigger refetch
   useEffect(() => {
     const handleRelicsRefresh = () => {
-      console.log('[useUserRelics] Received relics:refresh event, refetching...');
+      if (process.env.NODE_ENV !== "production") console.log('[useUserRelics] Received relics:refresh event, refetching...');
       refetch();
     };
     window.addEventListener('relics:refresh', handleRelicsRefresh);
@@ -42,7 +42,7 @@ export function useUserRelics(userId?: string) {
 
   useEffect(() => {
     if (!userId) {
-      console.log('[useUserRelics] No userId provided, skipping fetch');
+      if (process.env.NODE_ENV !== "production") console.log('[useUserRelics] No userId provided, skipping fetch');
       setLoading(false);
       return;
     }
@@ -53,7 +53,7 @@ export function useUserRelics(userId?: string) {
       try {
         setLoading(true);
         setError(null);
-        console.log('[useUserRelics] Fetching relics for user:', userId);
+        if (process.env.NODE_ENV !== "production") console.log('[useUserRelics] Fetching relics for user:', userId);
 
         // First, get all available relics (only kind='RELIC', not boosts/slots)
         const { data: allRelics, error: relicsError } = await supabaseClient
@@ -66,7 +66,7 @@ export function useUserRelics(userId?: string) {
           console.error('[useUserRelics] Error fetching relics definitions:', relicsError);
           throw relicsError;
         }
-        console.log('[useUserRelics] Fetched', allRelics?.length || 0, 'relic definitions');
+        if (process.env.NODE_ENV !== "production") console.log('[useUserRelics] Fetched', allRelics?.length || 0, 'relic definitions');
 
         // Then get user's unlocked relics from user_relics
         const { data: userRelicsData, error: userRelicsError } = await supabaseClient
@@ -94,7 +94,7 @@ export function useUserRelics(userId?: string) {
           }
 
           // Continue with empty user relics instead of throwing
-          console.warn('[useUserRelics] Continuing with empty user_relics due to error');
+          if (process.env.NODE_ENV !== "production") console.warn('[useUserRelics] Continuing with empty user_relics due to error');
         }
 
         if (!mounted) return;
@@ -103,7 +103,7 @@ export function useUserRelics(userId?: string) {
         const ownedRelicIds = new Set<string>(
           (userRelicsData || []).map(ur => ur.relic_id)
         );
-        console.log('[useUserRelics] User owns', ownedRelicIds.size, 'relics:', Array.from(ownedRelicIds));
+        if (process.env.NODE_ENV !== "production") console.log('[useUserRelics] User owns', ownedRelicIds.size, 'relics:', Array.from(ownedRelicIds));
 
         // Build a map of relic_id -> obtained_at for display
         const obtainedAtMap = new Map<string, string>();
@@ -131,11 +131,13 @@ export function useUserRelics(userId?: string) {
           };
         });
 
-        console.log('[useUserRelics] Built relicsWithStatus:', {
-          total: relicsWithStatus.length,
-          unlocked: relicsWithStatus.filter(r => r.isUnlocked).length,
-          locked: relicsWithStatus.filter(r => r.isLocked).length,
-        });
+        if (process.env.NODE_ENV !== "production") {
+          console.log('[useUserRelics] Built relicsWithStatus:', {
+            total: relicsWithStatus.length,
+            unlocked: relicsWithStatus.filter(r => r.isUnlocked).length,
+            locked: relicsWithStatus.filter(r => r.isLocked).length,
+          });
+        }
 
         setRelics(relicsWithStatus);
       } catch (err) {

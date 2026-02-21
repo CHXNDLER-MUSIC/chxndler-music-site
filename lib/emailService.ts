@@ -60,7 +60,7 @@ class EmailService {
         html,
       });
 
-      console.log(`Order confirmation email sent to ${orderData.customerEmail} for order ${orderData.orderId}`);
+      if (process.env.NODE_ENV !== "production") console.log(`Order confirmation email sent to ${orderData.customerEmail} for order ${orderData.orderId}`);
       return true;
     } catch (error) {
       console.error('Failed to send order confirmation email:', error);
@@ -80,7 +80,7 @@ class EmailService {
         html,
       });
 
-      console.log(`Shipping notification email sent to ${shippingData.customerEmail} for order ${shippingData.orderId}`);
+      if (process.env.NODE_ENV !== "production") console.log(`Shipping notification email sent to ${shippingData.customerEmail} for order ${shippingData.orderId}`);
       return true;
     } catch (error) {
       console.error('Failed to send shipping notification email:', error);

@@ -35,7 +35,7 @@ export default function RelicCelebration() {
 
     const handleCelebration = (event: CustomEvent<RelicCelebrationDetail>) => {
       const detail = event.detail;
-      console.log('[RelicCelebration] Received event:', detail);
+      if (process.env.NODE_ENV !== "production") console.log('[RelicCelebration] Received event:', detail);
 
       if (!detail?.element || !detail?.rewardKey) return;
 

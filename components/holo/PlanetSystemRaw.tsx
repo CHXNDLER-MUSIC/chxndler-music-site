@@ -2306,7 +2306,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       isDragging = true;
       isUserCameraDragging.current = true;
       previousMousePosition = { x: event.clientX, y: event.clientY };
-      console.log('🎮 Started camera drag');
+      if (process.env.NODE_ENV !== "production") console.log('🎮 Started camera drag');
     };
     
     const onMouseMove = (event: MouseEvent) => {
@@ -2349,7 +2349,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       // Persist the final position as the new target
       targetCameraPos.current.copy(camera.position);
       targetCameraLookAt.current.set(0, 0, 0);
-      console.log('🎮 Ended camera drag');
+      if (process.env.NODE_ENV !== "production") console.log('🎮 Ended camera drag');
     };
     
     // Mouse wheel zoom
@@ -2375,7 +2375,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
       // Small timeout to allow the tick to resume smoothing after wheel
       setTimeout(() => { isUserCameraDragging.current = false; }, 100);
 
-      console.log('🔍 Mouse wheel zoom, distance:', distance);
+      if (process.env.NODE_ENV !== "production") console.log('🔍 Mouse wheel zoom, distance:', distance);
     };
     
     renderer.domElement.addEventListener('mousedown', onMouseDown);
@@ -2609,7 +2609,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
 
           // ADD 4 ELEMENTAL PLANETS AROUND THE HEART
           try {
-            console.log("🚨🪐 ADDING ELEMENTAL PLANETS TO RAW SYSTEM! 🪐🚨");
+            if (process.env.NODE_ENV !== "production") console.log("🚨🪐 ADDING ELEMENTAL PLANETS TO RAW SYSTEM! 🪐🚨");
             
             const elementalPlanets = [
               { name: 'WATER', color: '#38B6FF', position: [35, 0, 0] },
@@ -2644,7 +2644,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
                 transparent: false
               });
               
-              console.log(`Loading texture for ${planet.name}: ${textureUrl}`);
+              if (process.env.NODE_ENV !== "production") console.log(`Loading texture for ${planet.name}: ${textureUrl}`);
               
               // Create main planet mesh
               const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
@@ -2687,7 +2687,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
               outerGlowMesh.position.copy(sphereMesh.position);
               sys.add(outerGlowMesh);
               
-              console.log(`Enhanced ${planet.name} planet at position:`, planet.position);
+              if (process.env.NODE_ENV !== "production") console.log(`Enhanced ${planet.name} planet at position:`, planet.position);
               
               // ADD ORBITING SONG PLANETS AROUND THIS ELEMENTAL PLANET
               const elementName = planet.name.toLowerCase();
@@ -2722,7 +2722,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
                 };
                 sys.add(songMesh);
                 
-                console.log(`Added orbiting song planet for ${elementName} at:`, [x, y, z]);
+                if (process.env.NODE_ENV !== "production") console.log(`Added orbiting song planet for ${elementName} at:`, [x, y, z]);
               }
             });
           } catch (error) {
@@ -3022,9 +3022,9 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
         opacity: isHomeOverview ? 1 : (planetsVisible && effectiveMode !== 'hidden' ? 1 : 0),
         transition: 'opacity 400ms ease-in-out'
       }}
-      onLoad={() => console.log('🚀 PLANETSYSTEMRAW COMPONENT IS DEFINITELY RENDERING!')}
+      onLoad={() => { if (process.env.NODE_ENV !== "production") console.log('🚀 PLANETSYSTEMRAW COMPONENT IS DEFINITELY RENDERING!'); }}
       ref={(el) => {
-        if (el) console.log('🎯 PLANETSYSTEMRAW DOM ELEMENT CREATED!', el);
+        if (el && process.env.NODE_ENV !== "production") console.log('🎯 PLANETSYSTEMRAW DOM ELEMENT CREATED!', el);
       }}
     >
 
@@ -3036,7 +3036,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
         {/* Zoom Out Button */}
         <button
           onClick={() => {
-            console.log('🔍 ZOOM OUT!');
+            if (process.env.NODE_ENV !== "production") console.log('🔍 ZOOM OUT!');
             if (cameraRef.current && sceneRef.current) {
               const camera = cameraRef.current;
               const currentPos = camera.position.clone();
@@ -3056,7 +3056,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
         {/* Zoom In Button */}
         <button
           onClick={() => {
-            console.log('🔍 ZOOM IN!');
+            if (process.env.NODE_ENV !== "production") console.log('🔍 ZOOM IN!');
             if (cameraRef.current && sceneRef.current) {
               const camera = cameraRef.current;
               const currentPos = camera.position.clone();
@@ -3076,7 +3076,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
         {/* Camera Reset Button */}
         <button
           onClick={() => {
-            console.log('🎯 RESET CAMERA!');
+            if (process.env.NODE_ENV !== "production") console.log('🎯 RESET CAMERA!');
             if (cameraRef.current) {
               cameraRef.current.position.set(0, 8, 25);
               cameraRef.current.lookAt(0, 0, 0);

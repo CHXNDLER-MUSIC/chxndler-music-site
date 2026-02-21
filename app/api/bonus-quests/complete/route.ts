@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Force profile refresh event to update UI with new heartcoin balance
-    console.log(`✅ Bonus quest '${questKey}' completed successfully for user ${userId}`, { rewards: result.rewards });
+    if (process.env.NODE_ENV !== "production") console.log(`✅ Bonus quest '${questKey}' completed successfully for user ${userId}`, { rewards: result.rewards });
 
     return NextResponse.json({
       success: true,

@@ -56,7 +56,7 @@ class AudioCoordinator {
         // Don't reset currentTime for main audio to preserve position
       }
     } catch (e) {
-      console.warn('🎵 AudioCoordinator: Error stopping main audio:', e);
+      if (process.env.NODE_ENV !== "production") console.warn('🎵 AudioCoordinator: Error stopping main audio:', e);
     }
   }
 
@@ -78,7 +78,7 @@ class AudioCoordinator {
         fadeOut();
       }
     } catch (e) {
-      console.warn('🎵 AudioCoordinator: Error stopping ambient audio:', e);
+      if (process.env.NODE_ENV !== "production") console.warn('🎵 AudioCoordinator: Error stopping ambient audio:', e);
     }
   }
 
@@ -91,7 +91,7 @@ class AudioCoordinator {
         introAudio.volume = 0;
       }
     } catch (e) {
-      console.warn('🎵 AudioCoordinator: Error stopping intro audio:', e);
+      if (process.env.NODE_ENV !== "production") console.warn('🎵 AudioCoordinator: Error stopping intro audio:', e);
     }
   }
 
@@ -104,7 +104,7 @@ class AudioCoordinator {
         ambientAudio.volume = 0;
       }
     } catch (e) {
-      console.warn('🎵 AudioCoordinator: Error force stopping ambient audio:', e);
+      if (process.env.NODE_ENV !== "production") console.warn('🎵 AudioCoordinator: Error force stopping ambient audio:', e);
     }
   }
 

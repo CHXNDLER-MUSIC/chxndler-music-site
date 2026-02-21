@@ -55,7 +55,7 @@ export default function BadgeCelebrationController() {
     // Check if HeartCoin celebration is active - wait for it to finish
     if (isHeartcoinCelebrationActive()) {
       const remainingTime = getHeartcoinCelebrationRemainingTime();
-      console.log('[BadgeCelebration] Waiting for HeartCoin celebration to finish', { remainingTime });
+      if (process.env.NODE_ENV !== "production") console.log('[BadgeCelebration] Waiting for HeartCoin celebration to finish', { remainingTime });
 
       const waitTimeout = setTimeout(() => {
         // After waiting, try to acquire lock and start

@@ -146,7 +146,7 @@ function useQuestStatus() {
             return;
           }
         } catch (dbErr) {
-          console.warn('[QuestList] Failed to check daily_checkins or song progress:', dbErr);
+          if (process.env.NODE_ENV !== "production") console.warn('[QuestList] Failed to check daily_checkins or song progress:', dbErr);
         }
 
         // Other quests use client date (they don't have server-time dependencies)
@@ -179,7 +179,7 @@ function useQuestStatus() {
         }
       })
       .catch(err => {
-        console.warn('Failed to fetch element-of-day, using client date:', err);
+        if (process.env.NODE_ENV !== "production") console.warn('Failed to fetch element-of-day, using client date:', err);
         // Fallback to client-only behavior
         const elementDone = localStorage.getItem(`quest_element_${clientToday}`) === 'true';
         const journalDone = localStorage.getItem(`quest_journal_${clientToday}`) === 'true' || hasAnsweredToday();
@@ -220,7 +220,7 @@ function useQuestStatus() {
 
     // Listen for dailySongQuestCompleted event (when backend claims insert succeeds)
     const handleSongQuestCompleted = (e: CustomEvent) => {
-      console.log('[QuestList] Song of Day quest completed:', e.detail);
+      if (process.env.NODE_ENV !== "production") console.log('[QuestList] Song of Day quest completed:', e.detail);
       setQuestStatus(prev => ({ ...prev, songOfDay: true }));
     };
 
@@ -288,7 +288,7 @@ function useQuestStatus() {
         setQuestStatus(prev => ({ ...prev, songOfDay: (count ?? 0) > 0 }));
       }
     } catch (err) {
-      console.warn('[QuestList] refreshSongOfDayState failed:', err);
+      if (process.env.NODE_ENV !== "production") console.warn('[QuestList] refreshSongOfDayState failed:', err);
     }
   }, []);
 
@@ -460,7 +460,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
   // Element of Day click -> claim_daily_checkin RPC updates UI here
   useEffect(() => {
     const handleElementClaimed = (event: CustomEvent) => {
-      console.log('[QuestList] Element of day claimed:', event.detail);
+      if (process.env.NODE_ENV !== "production") console.log('[QuestList] Element of day claimed:', event.detail);
       const { checkinDate, alreadyCheckedIn } = event.detail || {};
 
       // Update quest status to mark element of day as completed
@@ -552,7 +552,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
 
     // Get the element track slug (matches TRACK_INFO keys: 'water', 'lightning', 'darkness', 'heart')
     const elementTrackSlug = todaysElement.name.toLowerCase();
-    console.log('[QuestList] Element image clicked, playing element track:', elementTrackSlug);
+    if (process.env.NODE_ENV !== "production") console.log('[QuestList] Element image clicked, playing element track:', elementTrackSlug);
 
     // Start playback of the element track immediately (for user_song_daily_progress tracking)
     // This ensures a row is created in user_song_daily_progress for the element track
@@ -565,7 +565,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
     }
 
     // Dispatch planet:warp event to trigger warp visual effect
-    console.log('[QuestList] Dispatching planet:warp event for element:', todaysElement.name);
+    if (process.env.NODE_ENV !== "production") console.log('[QuestList] Dispatching planet:warp event for element:', todaysElement.name);
     window.dispatchEvent(new CustomEvent('planet:warp', {
       detail: {
         element: todaysElement.name,
@@ -680,7 +680,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
       
       if (response.ok) {
         const data = await response.json();
-        console.log('🎯 Bonus quest completion result:', data);
+        if (process.env.NODE_ENV !== "production") console.log('🎯 Bonus quest completion result:', data);
         
         // Handle both successful completion and already completed cases
         if (data.status === 'completed_today' || data.status === 'already_completed_today') {
@@ -702,7 +702,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
           
           // Refresh profile to update heartcoin balance if needed
           if (data.shouldRefreshProfile || data.status === 'completed_today') {
-            console.debug('🔄 Refreshing profile to update heartcoin balance after bonus quest completion');
+            if (process.env.NODE_ENV !== "production") console.debug('🔄 Refreshing profile to update heartcoin balance after bonus quest completion');
             await refreshProfile();
           }
           
@@ -733,8 +733,8 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
     // This function should ONLY be called when confirming a secret phrase
     if (questStatus.liveShow || loading || !isAuthenticated || !secretPhrase.trim()) return;
     
-    console.log('handleCheckInSubmit called with phrase:', secretPhrase.trim());
-    console.log('this should only happen on CONFIRM button click');
+    if (process.env.NODE_ENV !== "production") console.log('handleCheckInSubmit called with phrase:', secretPhrase.trim());
+    if (process.env.NODE_ENV !== "production") console.log('this should only happen on CONFIRM button click');
     
     try { sfx.play('click', 0.8); } catch {}
     setLoading(true);
@@ -809,7 +809,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
       // Use API response to set UI state
       if (data.status === 'success') {
         // Success case - fresh check-in
-        console.log('Secret phrase redemption successful:', data);
+        if (process.env.NODE_ENV !== "production") console.log('Secret phrase redemption successful:', data);
         setQuestStatus(prev => ({ ...prev, liveShow: true }));
         // Save to user-specific localStorage to persist across sessions for today
         const today = new Date().toDateString();
@@ -833,7 +833,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
         }
       } else if (data.status === 'already_redeemed') {
         // User has already checked in today - update UI to reflect this
-        console.log('User already checked in today');
+        if (process.env.NODE_ENV !== "production") console.log('User already checked in today');
         setQuestStatus(prev => ({ ...prev, liveShow: true }));
         // Sync user-specific localStorage to ensure persistence for the rest of the day
         const today = new Date().toDateString();
@@ -906,7 +906,7 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
 
       if (response.ok) {
         const data = await response.json();
-        console.log('🎯 Elemental song quest completion result:', data);
+        if (process.env.NODE_ENV !== "production") console.log('🎯 Elemental song quest completion result:', data);
 
         if (data.status === 'completed_today' || data.status === 'already_completed_today') {
           if (data.status === 'completed_today') {
@@ -1468,9 +1468,9 @@ export default function QuestList({ onBack, onOpenStore, onOpenBlueDisplay, onCl
                       value={secretPhrase}
                       onChange={(e) => {
                         const newValue = e.target.value;
-                        console.log('Input changed:', newValue);
-                        console.log('Input length:', newValue.length);
-                        console.log('Trimmed value:', newValue.trim());
+                        if (process.env.NODE_ENV !== "production") console.log('Input changed:', newValue);
+                        if (process.env.NODE_ENV !== "production") console.log('Input length:', newValue.length);
+                        if (process.env.NODE_ENV !== "production") console.log('Trimmed value:', newValue.trim());
                         setSecretPhrase(newValue);
                         setCheckInError("");
                       }}

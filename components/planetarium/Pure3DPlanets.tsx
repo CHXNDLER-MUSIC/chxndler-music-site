@@ -253,7 +253,7 @@ export default function Pure3DPlanets({
       // Release camera lock when user starts interacting (drag/wheel/touch)
       // They must press Warp again to re-lock the camera to a planet
       if (cameraModeRef.current === 'locked' || cameraModeRef.current === 'animating') {
-        console.log('[CAMERA] User interaction detected - releasing camera lock');
+        if (process.env.NODE_ENV !== "production") console.log('[CAMERA] User interaction detected - releasing camera lock');
         cameraModeRef.current = 'free';
         try { setCameraMode('free'); } catch {}
       }
@@ -896,7 +896,7 @@ export default function Pure3DPlanets({
       // Check if the click was on the WARP button or popup UI - if so, don't process as 3D click
       const target = event.target as HTMLElement;
       if (target.closest('.warp-button') || target.closest('[data-popup-card]')) {
-        console.log('[3D Click] Ignoring click - target is popup UI element');
+        if (process.env.NODE_ENV !== "production") console.log('[3D Click] Ignoring click - target is popup UI element');
         return;
       }
 
@@ -1086,7 +1086,7 @@ export default function Pure3DPlanets({
       const target = event.target as HTMLElement;
       // If clicking on popup UI, let the popup handle it
       if (target.closest('.warp-button') || target.closest('[data-popup-card]')) {
-        console.log('[3D MouseDown] Ignoring - target is popup UI element');
+        if (process.env.NODE_ENV !== "production") console.log('[3D MouseDown] Ignoring - target is popup UI element');
         return;
       }
       event.stopPropagation();
@@ -1348,12 +1348,12 @@ export default function Pure3DPlanets({
       const element = e.detail?.element as ElementType;
       if (!element) return;
 
-      console.log('[Pure3DPlanets] Received element-planet:select for:', element);
+      if (process.env.NODE_ENV !== "production") console.log('[Pure3DPlanets] Received element-planet:select for:', element);
 
       // Find the element sprite
       const elementSprite = elementSpriteMapRef.current.get(element);
       if (!elementSprite) {
-        console.warn('[Pure3DPlanets] Element sprite not found for:', element);
+        if (process.env.NODE_ENV !== "production") console.warn('[Pure3DPlanets] Element sprite not found for:', element);
         return;
       }
 
@@ -1725,14 +1725,14 @@ export default function Pure3DPlanets({
     // === SET CAMERA MODE FOR FOCUS PLANET ON WARP ===
     // Start in animating mode, then transition to locked after animation completes
     cameraModeRef.current = 'animating';
-    console.log('[CAMERA] Starting warp animation to planet:', key);
+    if (process.env.NODE_ENV !== "production") console.log('[CAMERA] Starting warp animation to planet:', key);
 
     // After animation time (~1.2s), switch to locked mode to follow the planet
     const lockTimeoutId = setTimeout(() => {
       // Only lock if still focused on the same planet
       if (focusedSongSlugRef.current === key && cameraModeRef.current === 'animating') {
         cameraModeRef.current = 'locked';
-        console.log('[CAMERA] Animation complete - now locked to planet:', key);
+        if (process.env.NODE_ENV !== "production") console.log('[CAMERA] Animation complete - now locked to planet:', key);
       }
     }, 1200);
 
@@ -1759,7 +1759,7 @@ export default function Pure3DPlanets({
       targetObject = elementSpriteMapRef.current.get(key);
     }
     if (!targetObject) {
-      console.warn('[WARP] warpToPlanet: No object found for key:', key);
+      if (process.env.NODE_ENV !== "production") console.warn('[WARP] warpToPlanet: No object found for key:', key);
       return;
     }
 
@@ -1822,7 +1822,7 @@ export default function Pure3DPlanets({
     restCameraPositionRef.current = endCamPos.clone();
     restCameraTargetRef.current = targetPos.clone();
 
-    console.log('[WARP] warpToPlanet:', key, isElementPlanet ? '(element)' : '(song)');
+    if (process.env.NODE_ENV !== "production") console.log('[WARP] warpToPlanet:', key, isElementPlanet ? '(element)' : '(song)');
   }, [sceneReady, setCameraMode, setFocusedPlanetId]);
 
   // Ref to hold latest warpToPlanet to avoid re-adding event listeners
@@ -1878,7 +1878,7 @@ export default function Pure3DPlanets({
   const handleWarpClick = async () => {
     // Prevent double-firing from both onClick and onTouchEnd
     if (warpTriggeredRef.current) {
-      console.log('[WARP] skipping - already triggered');
+      if (process.env.NODE_ENV !== "production") console.log('[WARP] skipping - already triggered');
       return;
     }
     warpTriggeredRef.current = true;
@@ -1968,7 +1968,7 @@ export default function Pure3DPlanets({
         // Set focused planet for camera follow
         focusedSongSlugRef.current = key;
         cameraModeRef.current = 'animating';
-        console.log('[CAMERA] Planet button warp - starting animation to:', key);
+        if (process.env.NODE_ENV !== "production") console.log('[CAMERA] Planet button warp - starting animation to:', key);
 
         // Get current world position and compute camera target
         const targetPos = new THREE.Vector3();
@@ -1990,7 +1990,7 @@ export default function Pure3DPlanets({
         setTimeout(() => {
           if (focusedSongSlugRef.current === key && cameraModeRef.current === 'animating') {
             cameraModeRef.current = 'locked';
-            console.log('[CAMERA] Planet button warp - now locked to:', key);
+            if (process.env.NODE_ENV !== "production") console.log('[CAMERA] Planet button warp - now locked to:', key);
           }
         }, 1200);
       }
@@ -2009,7 +2009,7 @@ export default function Pure3DPlanets({
         console.error('[WARP] planet button warp failed:', result.error);
         // Fallback: try calling onSongChange directly with slug if we have it
         if (onSongChange && slug) {
-          console.log('[WARP] attempting fallback with direct slug:', slug);
+          if (process.env.NODE_ENV !== "production") console.log('[WARP] attempting fallback with direct slug:', slug);
           onSongChange(slug);
         }
       }
@@ -2025,7 +2025,7 @@ export default function Pure3DPlanets({
         center: '/tracks/center.MP3'
       };
       const elementAudioPath = elementAudioPaths[slug.toLowerCase()] || `/tracks/${slug.toLowerCase()}.MP3`;
-      console.log('[WARP] element planet warp', { element: slug, isElementOfDay, audioPath: elementAudioPath });
+      if (process.env.NODE_ENV !== "production") console.log('[WARP] element planet warp', { element: slug, isElementOfDay, audioPath: elementAudioPath });
 
       // Dispatch event for listeners - include the audio path for DashboardApp to play
       try {
@@ -2038,7 +2038,7 @@ export default function Pure3DPlanets({
           }
         }));
       } catch (e) {
-        console.warn('[WARP] Could not dispatch planet:warp event:', e);
+        if (process.env.NODE_ENV !== "production") console.warn('[WARP] Could not dispatch planet:warp event:', e);
       }
 
       // NOTE: Do NOT call onSongChange for element planets!
@@ -2049,10 +2049,10 @@ export default function Pure3DPlanets({
       // Must match DashboardApp's WARP_DURATION_MS (3000ms) + buffer for visual effect to fully complete
       const WARP_DURATION_MS = 3500; // Duration to wait before showing modal (3000ms warp + 500ms buffer)
       if (isElementOfDay && element !== 'center') {
-        console.log('[WARP] waiting for warp effect before showing element of day modal for:', element);
+        if (process.env.NODE_ENV !== "production") console.log('[WARP] waiting for warp effect before showing element of day modal for:', element);
         // Wait for warp effect to complete
         await new Promise(resolve => setTimeout(resolve, WARP_DURATION_MS));
-        console.log('[WARP] warp effect complete, showing element of day modal, intentionOfDay:', intentionOfDay);
+        if (process.env.NODE_ENV !== "production") console.log('[WARP] warp effect complete, showing element of day modal, intentionOfDay:', intentionOfDay);
 
         // Always show the Element of the Day modal after warp
         try {
@@ -2065,14 +2065,14 @@ export default function Pure3DPlanets({
               relicImageUrl: relicImageUrl
             }
           }));
-          console.log('[WARP] Dispatched element-of-day:show event with intention:', intentionOfDay, 'rewardKey:', rewardKey, 'relicLabel:', relicLabel);
+          if (process.env.NODE_ENV !== "production") console.log('[WARP] Dispatched element-of-day:show event with intention:', intentionOfDay, 'rewardKey:', rewardKey, 'relicLabel:', relicLabel);
         } catch (err) {
           console.error('[WARP] Failed to show element of day modal:', err);
         }
 
         // Only attempt to claim if not already claimed
         if (shouldAttemptClaim && onDailyPlanetClick) {
-          console.log('[WARP] attempting to claim reward for:', element);
+          if (process.env.NODE_ENV !== "production") console.log('[WARP] attempting to claim reward for:', element);
           try {
             await onDailyPlanetClick(element as ElementType);
           } catch (err) {
@@ -2135,32 +2135,32 @@ export default function Pure3DPlanets({
           {/* Warp Button - iOS safe with onClick + onTouchEnd fallback */}
           <button
             onClick={(e) => {
-              console.log('[WARP] button onClick triggered');
+              if (process.env.NODE_ENV !== "production") console.log('[WARP] button onClick triggered');
               e.stopPropagation();
               e.preventDefault();
               handleWarpClick();
             }}
             onPointerDown={(e) => {
-              console.log('[WARP] button onPointerDown');
+              if (process.env.NODE_ENV !== "production") console.log('[WARP] button onPointerDown');
               e.stopPropagation();
               e.preventDefault();
             }}
             onPointerUp={(e) => {
-              console.log('[WARP] button onPointerUp');
+              if (process.env.NODE_ENV !== "production") console.log('[WARP] button onPointerUp');
               e.stopPropagation();
             }}
             onMouseDown={(e) => {
-              console.log('[WARP] button onMouseDown');
+              if (process.env.NODE_ENV !== "production") console.log('[WARP] button onMouseDown');
               e.stopPropagation();
               e.preventDefault();
             }}
             onTouchStart={(e) => {
-              console.log('[WARP] button onTouchStart');
+              if (process.env.NODE_ENV !== "production") console.log('[WARP] button onTouchStart');
               e.stopPropagation();
             }}
             onTouchEnd={(e) => {
               // iOS fallback: some iOS versions don't fire onClick reliably
-              console.log('[WARP] button onTouchEnd - triggering warp');
+              if (process.env.NODE_ENV !== "production") console.log('[WARP] button onTouchEnd - triggering warp');
               e.stopPropagation();
               e.preventDefault();
               handleWarpClick();

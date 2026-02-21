@@ -12,7 +12,7 @@ import { isOnboardingSequenceActive } from '@/utils/onboardingSequence';
 const DEBUG_CELEBRATIONS = false;
 
 function debugQueue(message: string, data?: any) {
-  if (DEBUG_CELEBRATIONS) {
+  if (DEBUG_CELEBRATIONS && process.env.NODE_ENV !== "production") {
     console.log(`[CELEBRATION_QUEUE] ${message}`, data ?? "");
   }
 }

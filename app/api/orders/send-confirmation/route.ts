@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
 
     if (!emailSent) {
       // Don't fail the entire request if email fails, just log it
-      console.warn(`Failed to send confirmation email for order ${orderId}`);
+      if (process.env.NODE_ENV !== "production") console.warn(`Failed to send confirmation email for order ${orderId}`);
       return NextResponse.json({
         success: true,
         message: 'Order processed, but confirmation email failed to send',
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log(`Confirmation email sent successfully for order ${orderId} to ${customerEmail}`);
+    if (process.env.NODE_ENV !== "production") console.log(`Confirmation email sent successfully for order ${orderId} to ${customerEmail}`);
 
     return NextResponse.json({
       success: true,

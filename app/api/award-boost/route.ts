@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('[award-boost API] Boost awarded:', boostKey, 'scope:', scope, 'for user:', userId);
+    if (process.env.NODE_ENV !== "production") console.log('[award-boost API] Boost awarded:', boostKey, 'scope:', scope, 'for user:', userId);
 
     return NextResponse.json({
       success: true,

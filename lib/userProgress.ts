@@ -107,7 +107,7 @@ export async function updateStreak(
         protected_ = await consumeActiveBoost(userId, 'boost_streak_shield');
         if (protected_) {
           shieldUsed = true;
-          console.log('[updateStreak] Streak protected by shield!');
+          if (process.env.NODE_ENV !== "production") console.log('[updateStreak] Streak protected by shield!');
         }
       }
 

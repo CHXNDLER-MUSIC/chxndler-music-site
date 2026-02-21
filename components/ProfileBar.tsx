@@ -383,7 +383,7 @@ export default function ProfileBar({
           setActivePanel('binder');
         }
       } catch (err) {
-        console.warn('Error handling openBinderCard event:', err);
+        if (process.env.NODE_ENV !== "production") console.warn('Error handling openBinderCard event:', err);
       }
     };
 
@@ -1107,7 +1107,7 @@ export default function ProfileBar({
               onClick={() => {
                 try { sfx.play('click', 0.8); } catch {}
                 // TODO: Open store popup
-                console.log("Open store popup");
+                if (process.env.NODE_ENV !== "production") console.log("Open store popup");
               }}
               className="px-4 py-2 bg-pink-600/30 hover:bg-pink-600/40 border border-pink-500/50 text-pink-300 rounded text-sm transition-all duration-200"
               style={{
@@ -1153,7 +1153,7 @@ export default function ProfileBar({
               onOpenStore={() => {
                 setShowQuests(false);
                 // TODO: Open store popup
-                console.log("Open store popup from quest list");
+                if (process.env.NODE_ENV !== "production") console.log("Open store popup from quest list");
               }}
               onOpenBlueDisplay={onOpenBlueDisplay}
               onCloseHeartCoinPopup={() => {

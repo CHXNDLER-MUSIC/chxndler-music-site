@@ -64,7 +64,7 @@ function flattenCardRows(data: unknown[]): { cards: OwnedCardRow[], flattened: F
   for (const uc of data as OwnedCardRow[]) {
     const c = uc.cards;
     if (!c) {
-      console.warn("[Binder] user_cards row missing cards join", uc);
+      if (process.env.NODE_ENV !== "production") console.warn("[Binder] user_cards row missing cards join", uc);
       continue; // Skip rows where cards join failed
     }
 

@@ -218,7 +218,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
         return;
       }
 
-      console.log(`Reaction ${emoji} on message ${messageId}: ${isNowReacted ? 'ON' : 'OFF'}`);
+      if (process.env.NODE_ENV !== "production") console.log(`Reaction ${emoji} on message ${messageId}: ${isNowReacted ? 'ON' : 'OFF'}`);
     } catch (error) {
       console.error('Error in toggleReaction:', error);
     } finally {
@@ -337,7 +337,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          console.log('Heart Signal Live subscription active');
+          if (process.env.NODE_ENV !== "production") console.log('Heart Signal Live subscription active');
         }
       });
   };
@@ -947,7 +947,7 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
       >
         <button
           onClick={() => {
-            console.log('Tip button clicked in HeartSignalLive');
+            if (process.env.NODE_ENV !== "production") console.log('Tip button clicked in HeartSignalLive');
           }}
           style={{
             width: '100%',

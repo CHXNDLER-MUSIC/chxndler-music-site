@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'userEmail is required' }, { status: 400 });
     }
 
-    console.log('🧪 Testing auth callback profile creation for:', userEmail);
+    if (process.env.NODE_ENV !== "production") console.log('🧪 Testing auth callback profile creation for:', userEmail);
 
     const admin = getSupabaseAdmin();
     
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User not found in auth.users' }, { status: 404 });
     }
 
-    console.log('🧪 Found auth user:', user.id, user.email);
+    if (process.env.NODE_ENV !== "production") console.log('🧪 Found auth user:', user.id, user.email);
 
     // Check if profile already exists
     const { data: existingProfile } = await admin
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    console.log('🧪 Creating new profile for user:', user.id);
+    if (process.env.NODE_ENV !== "production") console.log('🧪 Creating new profile for user:', user.id);
     
     // Create profile (same logic as auth callback)
     const displayName = user.user_metadata?.full_name || 
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       }, { status: 500 });
     }
 
-    console.log('🧪 Profile created successfully:', newProfile);
+    if (process.env.NODE_ENV !== "production") console.log('🧪 Profile created successfully:', newProfile);
     // Award welcome bonus via transaction insert
     try {
       await logHeartcoinTransaction(admin as any, {

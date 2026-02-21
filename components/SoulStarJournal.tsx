@@ -326,7 +326,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
       sfx.play('star', 0.8);
 
       // Debug logging to help identify the source of invalid UUIDs
-      console.log('Saving journal entry - Daily prompt data:', {
+      if (process.env.NODE_ENV !== "production") console.log('Saving journal entry - Daily prompt data:', {
         dailyPrompt,
         promptId: dailyPrompt?.id,
         isValidUUID: dailyPrompt?.id ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(dailyPrompt.id) : false
@@ -348,7 +348,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         throw new Error("Failed to save journal entry");
       }
 
-      console.log('Successfully saved journal entry:', result);
+      if (process.env.NODE_ENV !== "production") console.log('Successfully saved journal entry:', result);
 
       // Award heartcoins for journal entry (idempotent - only once per NY day per user)
       let awardedCoins = 0;
@@ -356,7 +356,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         // Get current user for idempotency check
         const { data: { session } } = await supabaseBrowser.auth.getSession();
         if (!session?.user?.id) {
-          console.warn('No authenticated user, skipping journal heartcoin award');
+          if (process.env.NODE_ENV !== "production") console.warn('No authenticated user, skipping journal heartcoin award');
         } else {
           const userId = session.user.id;
 
@@ -381,7 +381,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             .maybeSingle();
 
           if (existingAward) {
-            console.log('Journal heartcoins already awarded today');
+            if (process.env.NODE_ENV !== "production") console.log('Journal heartcoins already awarded today');
             awardedCoins = 0;
           } else {
             // Attempt to consume an active reflection boost
@@ -416,7 +416,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
             });
 
             awardedCoins = finalAmount;
-            console.log('Journal heartcoins award result:', {
+            if (process.env.NODE_ENV !== "production") console.log('Journal heartcoins award result:', {
               awarded: finalAmount,
               boostApplied: boostConsumed,
               multiplier
@@ -424,7 +424,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
           }
         }
       } catch (awardErr) {
-        console.warn('Error awarding journal heartcoins:', awardErr);
+        if (process.env.NODE_ENV !== "production") console.warn('Error awarding journal heartcoins:', awardErr);
       }
 
       // Suppress badge celebrations during the ritual animation
@@ -515,9 +515,9 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         } else if (error.message.includes('network') || error.message.includes('fetch')) {
           errorMessage = "Network error. Please check your connection and try again.";
         } else if (error.message.includes('unique') || error.message.includes('constraint')) {
-          console.log('Unique constraint error - checking local journal entries vs database');
-          console.log('Current journalEntries length:', journalEntries.length);
-          console.log('Today entry in local state:', journalEntries.find(entry => 
+          if (process.env.NODE_ENV !== "production") console.log('Unique constraint error - checking local journal entries vs database');
+          if (process.env.NODE_ENV !== "production") console.log('Current journalEntries length:', journalEntries.length);
+          if (process.env.NODE_ENV !== "production") console.log('Today entry in local state:', journalEntries.find(entry => 
             entry.entry_date === getLocalDateString() && entry.element === dailyPrompt?.element
           ));
           
@@ -955,7 +955,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
                   draggable={false}
                   onError={(e) => {
                     const objectKey = selectedCard?.name || 'CHXNDLER';
-                    console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
+                    if (process.env.NODE_ENV !== "production") console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
                     const fallback = getCardImageUrl('CHXNDLER');
                     if (e.currentTarget.src !== fallback) {
                       e.currentTarget.src = fallback;
@@ -1578,11 +1578,11 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
               <button
                 className="privacy-toggle-button"
                 onClick={async () => {
-                  console.log('Privacy button clicked!', journalState.isPrivate);
+                  if (process.env.NODE_ENV !== "production") console.log('Privacy button clicked!', journalState.isPrivate);
                   try {
                     sfx.play('change-channel', 0.8);
                   } catch (e) {
-                    console.log('SFX not available');
+                    if (process.env.NODE_ENV !== "production") console.log('SFX not available');
                   }
 
                   const newPrivacySetting = !journalState.isPrivate;

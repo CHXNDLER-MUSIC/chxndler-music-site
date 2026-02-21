@@ -21,9 +21,9 @@ export default function Test3D() {
         
         if (!isMounted) return;
 
-        console.log('Loading Three.js components...');
+        if (process.env.NODE_ENV !== "production") console.log('Loading Three.js components...');
         const { Canvas } = await import('@react-three/fiber');
-        console.log('Three.js loaded successfully!');
+        if (process.env.NODE_ENV !== "production") console.log('Three.js loaded successfully!');
         
         if (!isMounted) return;
 

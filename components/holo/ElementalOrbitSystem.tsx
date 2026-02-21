@@ -135,7 +135,7 @@ export default function ElementalOrbitSystem({
                 isHover={hoverId === orbitGroup.songId}
                 onClick={() => {
                   // Handle song selection if needed
-                  console.log(`Clicked song: ${orbitGroup.songId}, state: ${gateState}`);
+                  if (process.env.NODE_ENV !== "production") console.log(`Clicked song: ${orbitGroup.songId}, state: ${gateState}`);
                 }}
               />
             </group>

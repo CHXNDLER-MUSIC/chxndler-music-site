@@ -22,7 +22,7 @@ export default function ProfileBarWrapper(props: Props) {
 
   // Debug logging
   React.useEffect(() => {
-    console.log("🔧 ProfileBarWrapper state:", {
+    if (process.env.NODE_ENV !== "production") console.log("🔧 ProfileBarWrapper state:", {
       hydrated,
       hasEnteredHeartverse,
       willRender: hydrated && hasEnteredHeartverse

@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log(`[MERCH_ITEMS] Retrieved ${items?.length || 0} active merch items`);
+    if (process.env.NODE_ENV !== "production") console.log(`[MERCH_ITEMS] Retrieved ${items?.length || 0} active merch items`);
 
     return NextResponse.json({
       success: true,

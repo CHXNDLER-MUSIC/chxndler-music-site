@@ -96,7 +96,7 @@ export default function UserCards({
     // Temporary debug to compare Binder vs Journal
     try {
       const names = slice.map(c => c.cards.card_name);
-      console.debug('[CardDataDebug] Journal(UserCards) rendered names:', names);
+      if (process.env.NODE_ENV !== "production") console.debug('[CardDataDebug] Journal(UserCards) rendered names:', names);
     } catch {}
     return slice;
   }, [userCards, currentPage, maxCards]);
@@ -261,7 +261,7 @@ export default function UserCards({
                     draggable={false}
                     onError={(e) => {
                       const objectKey = (collectedCard.cards as any).image_object_key || collectedCard.cards.card_name || 'CHXNDLER';
-                      console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
+                      if (process.env.NODE_ENV !== "production") console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
                       const fallback = getCardImageUrl('CHXNDLER');
                       if (e.currentTarget.src !== fallback) {
                         e.currentTarget.src = fallback;

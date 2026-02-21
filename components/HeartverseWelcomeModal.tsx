@@ -73,7 +73,7 @@ export default function HeartverseWelcomeModal() {
         return;
       }
 
-      console.log('[HeartverseWelcome] Next claimable story relic:', data);
+      if (process.env.NODE_ENV !== "production") console.log('[HeartverseWelcome] Next claimable story relic:', data);
 
       if (data) {
         setNextStoryRelic(data);
@@ -161,12 +161,12 @@ export default function HeartverseWelcomeModal() {
   useEffect(() => {
     const handleWarp = async (e: CustomEvent<{ element: string; isCenterPlanet?: boolean; isOnboarding?: boolean }>) => {
       if (e.detail?.isCenterPlanet) {
-        console.log('[HeartverseWelcome] Received center planet warp event');
+        if (process.env.NODE_ENV !== "production") console.log('[HeartverseWelcome] Received center planet warp event');
 
         // Skip showing this modal if user is in onboarding flow (no name set)
         // The name prompt modal will be shown instead
         if (e.detail?.isOnboarding) {
-          console.log('[HeartverseWelcome] Skipping modal - user is in onboarding flow');
+          if (process.env.NODE_ENV !== "production") console.log('[HeartverseWelcome] Skipping modal - user is in onboarding flow');
           return;
         }
 
@@ -190,7 +190,7 @@ export default function HeartverseWelcomeModal() {
   // Listen for direct open event (used after onboarding completes to show welcome without warp)
   useEffect(() => {
     const handleShowWelcome = async () => {
-      console.log('[HeartverseWelcome] Received heartverse:showWelcome event');
+      if (process.env.NODE_ENV !== "production") console.log('[HeartverseWelcome] Received heartverse:showWelcome event');
       await fetchUserData();
       setIsOpen(true);
       playWelcomeSound();
@@ -230,7 +230,7 @@ export default function HeartverseWelcomeModal() {
       // Claim the wanderer relic via RPC
       const { data, error } = await supabaseBrowser.rpc('claim_wanderer_relic');
 
-      console.log('[HeartverseWelcome] Claim wanderer relic result:', data, error);
+      if (process.env.NODE_ENV !== "production") console.log('[HeartverseWelcome] Claim wanderer relic result:', data, error);
 
       if (error) {
         console.error('[HeartverseWelcome] RPC error:', {
@@ -252,7 +252,7 @@ export default function HeartverseWelcomeModal() {
       if (data?.ok === true) {
         setClaimed(true);
         const relicLabel = STORY_RELIC_LABELS[nextStoryRelic.story_key] || nextStoryRelic.story_key;
-        console.log(`[HeartverseWelcome] ${relicLabel} Relic awarded!`);
+        if (process.env.NODE_ENV !== "production") console.log(`[HeartverseWelcome] ${relicLabel} Relic awarded!`);
 
         // Show success toast
         window.dispatchEvent(new CustomEvent('toast:show', {
@@ -304,7 +304,7 @@ export default function HeartverseWelcomeModal() {
         // Refresh to get the next relic
         await fetchNextStoryRelic();
       } else {
-        console.warn('[HeartverseWelcome] Unexpected claim response:', data);
+        if (process.env.NODE_ENV !== "production") console.warn('[HeartverseWelcome] Unexpected claim response:', data);
         window.dispatchEvent(new CustomEvent('toast:show', {
           detail: { message: 'Failed to claim relic. Please try again.', type: 'error' }
         }));

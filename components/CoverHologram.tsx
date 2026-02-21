@@ -225,7 +225,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
     let introBuffer: string[] = [];
     let afterTitle = false;
     
-    console.log('🔍 Parsing content with', lines.length, 'lines'); // Debug
+    if (process.env.NODE_ENV !== "production") console.log('🔍 Parsing content with', lines.length, 'lines'); // Debug
     
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -235,13 +235,13 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
       if (i === 0 && line.trim()) {
         title = line.trim();
         afterTitle = true;
-        console.log('📌 Title:', title); // Debug
+        if (process.env.NODE_ENV !== "production") console.log('📌 Title:', title); // Debug
         continue;
       }
       
       // Found an element heading
       if (asKey) {
-        console.log('🎯 Found element:', asKey, 'at line', i); // Debug
+        if (process.env.NODE_ENV !== "production") console.log('🎯 Found element:', asKey, 'at line', i); // Debug
         
         // Save previous intro content
         if (!currentElement && introBuffer.length) {
@@ -252,7 +252,7 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
         // Save previous element content
         if (currentElement && buffer.length) {
           elements[currentElement].text = buffer.join('\n').trim();
-          console.log('💾 Saved content for', currentElement, ':', elements[currentElement].text.substring(0, 50) + '...'); // Debug
+          if (process.env.NODE_ENV !== "production") console.log('💾 Saved content for', currentElement, ':', elements[currentElement].text.substring(0, 50) + '...'); // Debug
           buffer = [];
         }
         
@@ -275,10 +275,10 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
     }
     if (currentElement && buffer.length) {
       elements[currentElement].text = buffer.join('\n').trim();
-      console.log('💾 Final save for', currentElement, ':', elements[currentElement].text.substring(0, 50) + '...'); // Debug
+      if (process.env.NODE_ENV !== "production") console.log('💾 Final save for', currentElement, ':', elements[currentElement].text.substring(0, 50) + '...'); // Debug
     }
     
-    console.log('📋 Parsed elements:', Object.keys(elements)); // Debug
+    if (process.env.NODE_ENV !== "production") console.log('📋 Parsed elements:', Object.keys(elements)); // Debug
     
     return { title, intro, elements };
   };
@@ -357,7 +357,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
     let contentToShow = defaultIntro; // Default to summary text
     
     if (selectedElement && updatedElements[selectedElement]) {
-      console.log(`🎯 Showing content for selected element: ${selectedElement}`);
+      if (process.env.NODE_ENV !== "production") console.log(`🎯 Showing content for selected element: ${selectedElement}`);
       const element = updatedElements[selectedElement];
 
       // Special handling: HEART shows only the title "LOVE AND CONNECTION"
@@ -397,7 +397,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
   const selectElement = async (key: ElementKey) => {
     try {
       // Select the element section to reveal; keep intro visible
-      console.log(`🔥 Element selected: ${key}`); // Debug log
+      if (process.env.NODE_ENV !== "production") console.log(`🔥 Element selected: ${key}`); // Debug log
       setSelectedElement(key);
       try { 
         const a = chimeAudioRef.current; 
@@ -419,7 +419,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
         // Update the local state for the Heart Coin display
         setUserSelectedElement(key);
       } catch (error) {
-        console.warn('Failed to save selected element:', error);
+        if (process.env.NODE_ENV !== "production") console.warn('Failed to save selected element:', error);
       }
     } catch {}
   };
@@ -463,7 +463,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
       });
       try {
         if (typeof window !== 'undefined' && (window as any).__DEBUG_AUDIO_WARMUP__) {
-          console.debug(`[CoverHologram] warm-up ran once, loaded ${count} audio elements`);
+          if (process.env.NODE_ENV !== "production") console.debug(`[CoverHologram] warm-up ran once, loaded ${count} audio elements`);
         }
       } catch {}
     };
@@ -772,7 +772,7 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                     onError={(e)=>{
                       const target = e.currentTarget as HTMLImageElement;
                       const objectKey = title || 'unknown';
-                      console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: target.src });
+                      if (process.env.NODE_ENV !== "production") console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: target.src });
                       const fbFilename = src.includes('/covers/') ? src.split('/').pop() : null;
                       if (fbFilename) {
                         target.onerror = () => { target.src = CARD_URLS['back'] || getCardImageUrl('BACK'); };

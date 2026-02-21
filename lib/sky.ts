@@ -54,7 +54,7 @@ export function skyFor(slug?: string) {
       }
     }
   } catch (error) {
-    console.warn('Error in dynamic sky discovery for slug:', slug, error);
+    if (process.env.NODE_ENV !== "production") console.warn('Error in dynamic sky discovery for slug:', slug, error);
   }
   
   // Final fallback - no video to avoid 404s

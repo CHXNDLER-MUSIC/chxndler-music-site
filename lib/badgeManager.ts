@@ -44,7 +44,7 @@ export class BadgeManager {
     const { newBadges, shieldUsed } = await updateStreak(progress, userId);
 
     if (shieldUsed) {
-      console.log('[BadgeManager] Streak was protected by streak shield!');
+      if (process.env.NODE_ENV !== "production") console.log('[BadgeManager] Streak was protected by streak shield!');
     }
 
     newBadges.forEach(badge => {
@@ -130,21 +130,21 @@ export function useBadgeManager() {
 
 // Helper function to simulate achievements for testing
 export function simulateAchievements() {
-  console.log('🎵 Simulating first listen...');
+  if (process.env.NODE_ENV !== "production") console.log('🎵 Simulating first listen...');
   badgeManager.onFirstListen();
-  
+
   setTimeout(() => {
-    console.log('🌌 Simulating first SOUL Sky...');
+    if (process.env.NODE_ENV !== "production") console.log('🌌 Simulating first SOUL Sky...');
     badgeManager.onFirstSoulSky();
   }, 2000);
-  
+
   setTimeout(() => {
-    console.log('🃏 Simulating first card purchase...');
+    if (process.env.NODE_ENV !== "production") console.log('🃏 Simulating first card purchase...');
     badgeManager.onFirstCardPurchase();
   }, 4000);
-  
+
   setTimeout(() => {
-    console.log('📺 Simulating first livestream...');
+    if (process.env.NODE_ENV !== "production") console.log('📺 Simulating first livestream...');
     badgeManager.onFirstLivestream();
   }, 6000);
 }
@@ -167,14 +167,14 @@ export function simulateStreakProgress(days: number) {
   // Check for newly unlocked badges
   badgeManager.checkStreakBadges();
   
-  console.log(`🔥 Simulated ${days} day streak!`);
+  if (process.env.NODE_ENV !== "production") console.log(`🔥 Simulated ${days} day streak!`);
 }
 
 // Debug function to reset all progress
 export function resetAllProgress() {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('heartverse_user_progress');
-    console.log('🔄 All progress reset!');
+    if (process.env.NODE_ENV !== "production") console.log('🔄 All progress reset!');
     window.location.reload();
   }
 }

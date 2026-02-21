@@ -19,7 +19,7 @@ export default function StyledElementPlanet({
   position,
   radius = 1.5
 }: StyledElementPlanetProps) {
-  console.log(`🌍 Rendering StyledElementPlanet: ${elementKey} at position:`, position, `radius: ${radius}`);
+  if (process.env.NODE_ENV !== "production") console.log(`🌍 Rendering StyledElementPlanet: ${elementKey} at position:`, position, `radius: ${radius}`);
   
   const planetRef = useRef<Mesh>(null);
   const planetMatRef = useRef<THREE.MeshStandardMaterial | null>(null);
@@ -28,21 +28,21 @@ export default function StyledElementPlanet({
   const [texture, setTexture] = useState<THREE.Texture | null>(null);
   
   const styles = ELEMENT_STYLES[elementKey];
-  console.log(`🎨 Element styles for ${elementKey}:`, styles);
+  if (process.env.NODE_ENV !== "production") console.log(`🎨 Element styles for ${elementKey}:`, styles);
 
   // Load the appropriate texture for each element
   useEffect(() => {
     const textureLoader = new TextureLoader();
     const texturePath = getElementalPlanetTexture(elementKey);
     
-    console.log(`🖼️ Loading texture for ${elementKey}: ${texturePath}`);
+    if (process.env.NODE_ENV !== "production") console.log(`🖼️ Loading texture for ${elementKey}: ${texturePath}`);
     
     if (texturePath) {
       textureLoader.load(
         texturePath,
         (loadedTexture) => {
           loadedTexture.wrapS = loadedTexture.wrapT = THREE.RepeatWrapping;
-          console.log(`✅ Successfully loaded texture for ${elementKey}`);
+          if (process.env.NODE_ENV !== "production") console.log(`✅ Successfully loaded texture for ${elementKey}`);
           setTexture(loadedTexture);
         },
         undefined,

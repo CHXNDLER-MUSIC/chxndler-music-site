@@ -80,9 +80,9 @@ function OnboardingContent() {
         const { data: { session } } = await supabaseBrowser.auth.getSession();
         if (session?.user?.id) {
           setUserId(session.user.id);
-          console.log('[Onboarding] User ID fetched:', session.user.id);
+          if (process.env.NODE_ENV !== "production") console.log('[Onboarding] User ID fetched:', session.user.id);
         } else {
-          console.log('[Onboarding] No session found, redirecting to login');
+          if (process.env.NODE_ENV !== "production") console.log('[Onboarding] No session found, redirecting to login');
           router.push('/login');
         }
       } catch (err) {
@@ -158,7 +158,7 @@ function OnboardingContent() {
       const audio = new Audio('/audio/join-alien.mp3');
       audio.play().catch(() => {});
 
-      console.log('[Onboarding] Saving name for user:', userId);
+      if (process.env.NODE_ENV !== "production") console.log('[Onboarding] Saving name for user:', userId);
 
       // Save name to profile (but don't complete yet)
       const { error: updateError } = await supabaseBrowser
@@ -168,7 +168,7 @@ function OnboardingContent() {
 
       if (updateError) throw updateError;
 
-      console.log('[Onboarding] Name saved, moving to element selection');
+      if (process.env.NODE_ENV !== "production") console.log('[Onboarding] Name saved, moving to element selection');
 
       // Move to element selection
       setStep('element');

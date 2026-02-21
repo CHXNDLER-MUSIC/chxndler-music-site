@@ -150,7 +150,7 @@ export function useSongVoting(): UseSongVotingReturn {
           filter: `poll_id=eq.${activePoll.id}`
         },
         (payload) => {
-          console.log('Song poll vote update:', payload);
+          if (process.env.NODE_ENV !== "production") console.log('Song poll vote update:', payload);
           // Refresh the poll data when votes change
           loadActivePoll();
         }
@@ -164,7 +164,7 @@ export function useSongVoting(): UseSongVotingReturn {
           filter: `poll_id=eq.${activePoll.id}`
         },
         (payload) => {
-          console.log('Song poll option update:', payload);
+          if (process.env.NODE_ENV !== "production") console.log('Song poll option update:', payload);
           // Refresh the poll data when options change
           loadActivePoll();
         }
@@ -178,7 +178,7 @@ export function useSongVoting(): UseSongVotingReturn {
           filter: `id=eq.${activePoll.id}`
         },
         (payload) => {
-          console.log('Song poll status update:', payload);
+          if (process.env.NODE_ENV !== "production") console.log('Song poll status update:', payload);
           // Refresh if poll status changes
           loadActivePoll();
         }
@@ -205,7 +205,7 @@ export function useSongVoting(): UseSongVotingReturn {
           filter: 'is_live=eq.true'
         },
         (payload) => {
-          console.log('New active poll created:', payload);
+          if (process.env.NODE_ENV !== "production") console.log('New active poll created:', payload);
           loadActivePoll();
         }
       )

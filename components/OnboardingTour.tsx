@@ -17,13 +17,13 @@ export interface TourStep {
 function getTarget(selector: string): HTMLElement | null {
   try {
     const el = selector ? document.querySelector(selector) as HTMLElement : null;
-    console.log("STEP TARGET:", selector, el ? "✅ FOUND" : "❌ NOT FOUND");
+    if (process.env.NODE_ENV !== "production") console.log("STEP TARGET:", selector, el ? "✅ FOUND" : "❌ NOT FOUND");
     if (!el) {
-      console.warn("TOUR: target not found:", selector);
+      if (process.env.NODE_ENV !== "production") console.warn("TOUR: target not found:", selector);
     }
     return el;
   } catch (error) {
-    console.warn("TOUR: target selector error:", selector, error);
+    if (process.env.NODE_ENV !== "production") console.warn("TOUR: target selector error:", selector, error);
     return null;
   }
 }
@@ -178,19 +178,19 @@ export default function OnboardingTour({
   // DEBUG: Log step changes with special signal step handling
   useEffect(() => {
     if (active) {
-      console.log("TOUR STEP:", currentStepIndex, currentStep?.id || 'unknown');
+      if (process.env.NODE_ENV !== "production") console.log("TOUR STEP:", currentStepIndex, currentStep?.id || 'unknown');
       
       // Special handling for signal step (Step 9)
       if (currentStep?.id === 'signal') {
-        console.log("🎯 SIGNAL STEP ACTIVATED - Looking for pink antennas button");
+        if (process.env.NODE_ENV !== "production") console.log("🎯 SIGNAL STEP ACTIVATED - Looking for pink antennas button");
         
         // Double-check the signal button exists after a delay
         setTimeout(() => {
           const signalBtn = getTarget('[data-tour-id="signal-button"]');
           if (signalBtn) {
-            console.log("✅ Signal button found:", signalBtn);
+            if (process.env.NODE_ENV !== "production") console.log("✅ Signal button found:", signalBtn);
           } else {
-            console.warn("❌ Signal button NOT FOUND - may be covered by menu or not rendered");
+            if (process.env.NODE_ENV !== "production") console.warn("❌ Signal button NOT FOUND - may be covered by menu or not rendered");
           }
         }, 500);
       }
@@ -199,7 +199,7 @@ export default function OnboardingTour({
 
   // Force menu open with retry logic
   const forceMenuOpen = (callback: () => void) => {
-    console.log('🔥 FORCING MENU OPEN');
+    if (process.env.NODE_ENV !== "production") console.log('🔥 FORCING MENU OPEN');
     
     if (onMenuToggle) {
       onMenuToggle(true);
@@ -211,7 +211,7 @@ export default function OnboardingTour({
       try {
         (hamburgerButton as HTMLButtonElement).click();
       } catch (e) {
-        console.warn('Could not click hamburger button:', e);
+        if (process.env.NODE_ENV !== "production") console.warn('Could not click hamburger button:', e);
       }
     }
     
@@ -220,14 +220,14 @@ export default function OnboardingTour({
     const checkMenuOpen = () => {
       const menuPanel = getTarget('[data-tour-id="nav-panel"]');
       if (menuPanel && menuPanel.offsetParent !== null) {
-        console.log('✅ Menu is now open');
+        if (process.env.NODE_ENV !== "production") console.log('✅ Menu is now open');
         callback();
       } else if (attempts < 5) {
         attempts++;
-        console.log(`🔄 Menu not open yet, retrying... attempt ${attempts}`);
+        if (process.env.NODE_ENV !== "production") console.log(`🔄 Menu not open yet, retrying... attempt ${attempts}`);
         setTimeout(checkMenuOpen, 150);
       } else {
-        console.warn('⚠️ Could not open menu after 5 attempts, proceeding anyway');
+        if (process.env.NODE_ENV !== "production") console.warn('⚠️ Could not open menu after 5 attempts, proceeding anyway');
         callback();
       }
     };
@@ -237,7 +237,7 @@ export default function OnboardingTour({
 
   // Force menu closed
   const forceMenuClosed = (callback: () => void) => {
-    console.log('🔥 FORCING MENU CLOSED');
+    if (process.env.NODE_ENV !== "production") console.log('🔥 FORCING MENU CLOSED');
     
     if (onMenuToggle) {
       onMenuToggle(false);
@@ -256,7 +256,7 @@ export default function OnboardingTour({
     
     // If no element, center the tooltip (ERROR-PROOF TARGETING)
     if (!element) {
-      console.warn(`⚠️ No target element found for step "${step.id}", showing centered tooltip`);
+      if (process.env.NODE_ENV !== "production") console.warn(`⚠️ No target element found for step "${step.id}", showing centered tooltip`);
       setBubblePosition({
         top: viewportHeight / 2 - bubbleHeight / 2,
         left: viewportWidth / 2 - bubbleWidth / 2
@@ -402,7 +402,7 @@ export default function OnboardingTour({
 
   // Setup step with menu state management and safe targeting
   const setupStep = (step: TourStep, retryCount = 0) => {
-    console.log(`🎯 Setting up step "${step.id}", attempt ${retryCount + 1}`);
+    if (process.env.NODE_ENV !== "production") console.log(`🎯 Setting up step "${step.id}", attempt ${retryCount + 1}`);
 
     // Clear any existing timeouts
     if (retryTimeoutRef.current) {
@@ -435,7 +435,7 @@ export default function OnboardingTour({
       const element = getTarget(step.selector);
       
       if (element) {
-        console.log(`✅ Found element for step "${step.id}"`);
+        if (process.env.NODE_ENV !== "production") console.log(`✅ Found element for step "${step.id}"`);
         setTargetElement(element);
         
         // Remove previous highlights
@@ -457,17 +457,17 @@ export default function OnboardingTour({
         // Scroll element into view
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
-        console.warn(`⚠️ Element not found for step "${step.id}" with selector "${step.selector}"`);
+        if (process.env.NODE_ENV !== "production") console.warn(`⚠️ Element not found for step "${step.id}" with selector "${step.selector}"`);
         
         // Retry for menu items (they may not be rendered yet)
         if (step.id.startsWith('menu-') && retryCount < 8) {
-          console.log(`🔄 Retrying step "${step.id}" in 200ms...`);
+          if (process.env.NODE_ENV !== "production") console.log(`🔄 Retrying step "${step.id}" in 200ms...`);
           retryTimeoutRef.current = setTimeout(() => setupStep(step, retryCount + 1), 200);
           return;
         }
         
         // ERROR-PROOF TARGETING: Show centered tooltip and continue
-        console.log(`📍 Using fallback positioning for step "${step.id}"`);
+        if (process.env.NODE_ENV !== "production") console.log(`📍 Using fallback positioning for step "${step.id}"`);
         setTargetElement(null);
         positionBubble(null, step);
       }
@@ -478,7 +478,7 @@ export default function OnboardingTour({
       forceMenuOpen(setupStepElement);
     } else if (step.requiresMenuClosed) {
       // CRITICAL: Close menu before Signal/HeartCoin/Music steps to make top-right buttons visible
-      console.log(`🔥 CLOSING MENU for step "${step.id}" to expose top-right buttons`);
+      if (process.env.NODE_ENV !== "production") console.log(`🔥 CLOSING MENU for step "${step.id}" to expose top-right buttons`);
       forceMenuClosed(setupStepElement);
     } else {
       // No menu requirement, setup immediately
@@ -595,7 +595,7 @@ export default function OnboardingTour({
 
   // Safety check: if no current step and tour is active, don't render
   if (!currentStep && active) {
-    console.warn(`No step found at index ${currentStepIndex}`);
+    if (process.env.NODE_ENV !== "production") console.warn(`No step found at index ${currentStepIndex}`);
     return null;
   }
 

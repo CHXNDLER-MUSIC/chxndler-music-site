@@ -23,7 +23,7 @@ export default function AuthButton() {
 
   // Debug log auth and profile states
   useEffect(() => {
-    console.log('🔧 AuthButton state:', {
+    if (process.env.NODE_ENV !== "production") console.log('🔧 AuthButton state:', {
       browser: typeof navigator !== "undefined" ? navigator.userAgent : "server",
       hasUser: !!user,
       userId: user?.id,
@@ -99,7 +99,7 @@ export default function AuthButton() {
 
     // Additional validation - if we have user but no profile data at all after loading is done
     if (user && !profileLoading && !profile) {
-      console.warn('AuthButton: User session exists but no profile found - clearing session');
+      if (process.env.NODE_ENV !== "production") console.warn('AuthButton: User session exists but no profile found - clearing session');
       // Force logout to clear invalid session
       import('@/lib/supabase-browser').then(({ supabaseBrowser }) => {
         supabaseBrowser.auth.signOut();
@@ -137,12 +137,12 @@ export default function AuthButton() {
 
   // Handle button click
   const handleButtonClick = () => {
-    console.log('AuthButton: Click handler called', { buttonMode, authLoading, profileLoading, hasEnteredHeartverse });
+    if (process.env.NODE_ENV !== "production") console.log('AuthButton: Click handler called', { buttonMode, authLoading, profileLoading, hasEnteredHeartverse });
     try { sfx.play('click', 0.4); } catch {}
 
     // Only disable clicks before entering Heartverse
     if (!hasEnteredHeartverse && (authLoading || profileLoading)) {
-      console.log('AuthButton: Click blocked due to loading state before Heartverse entry');
+      if (process.env.NODE_ENV !== "production") console.log('AuthButton: Click blocked due to loading state before Heartverse entry');
       return;
     }
 

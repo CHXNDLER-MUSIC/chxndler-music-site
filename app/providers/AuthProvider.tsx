@@ -55,11 +55,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const getInitialSession = async () => {
       try {
         // Debug: Log all cookies visible to JavaScript
-        console.log('[AuthProvider] Checking cookies:', document.cookie.split(';').map(c => c.trim().split('=')[0]).filter(Boolean));
+        if (process.env.NODE_ENV !== "production") console.log('[AuthProvider] Checking cookies:', document.cookie.split(';').map(c => c.trim().split('=')[0]).filter(Boolean));
 
         const { data: { session }, error } = await supabaseBrowser.auth.getSession();
 
-        console.log('[AuthProvider] getSession result:', {
+        if (process.env.NODE_ENV !== "production") console.log('[AuthProvider] getSession result:', {
           hasSession: !!session,
           hasUser: !!session?.user,
           userId: session?.user?.id,
@@ -109,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Subscribe to auth state changes (only once)
     const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('[AuthProvider] onAuthStateChange fired:', {
+        if (process.env.NODE_ENV !== "production") console.log('[AuthProvider] onAuthStateChange fired:', {
           event,
           hasSession: !!session,
           userId: session?.user?.id,

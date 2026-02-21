@@ -94,12 +94,16 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         .eq('user_id', user.id)
         .maybeSingle();
       if (error) {
-        console.warn('[BadgesModal] unique songs fetch error', error);
+        if (process.env.NODE_ENV !== "production") {
+          console.warn('[BadgesModal] unique songs fetch error', error);
+        }
       }
       const count = data?.unique_songs_listened ?? 0;
       setUniqueSongsListened(typeof count === 'number' ? count : 0);
     } catch (e) {
-      console.warn('[BadgesModal] unique songs fetch exception', e);
+      if (process.env.NODE_ENV !== "production") {
+        console.warn('[BadgesModal] unique songs fetch exception', e);
+      }
       setUniqueSongsListened(0);
     }
   };
@@ -154,7 +158,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           target: required,
           percentage: percent,
         };
-        console.log(`Badge ${badge.badge_name} (First Listen): progress=${current}/${required} (${percent}%) via view`);
+        if (process.env.NODE_ENV !== "production") console.log(`Badge ${badge.badge_name} (First Listen): progress=${current}/${required} (${percent}%) via view`);
       } else if (profile) {
         // Pass attendance counts for community badges that use attendance-based requirements
         const badgeProgress = getBadgeProgressForUser({
@@ -174,7 +178,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
           target: badgeProgress.target,
           percentage: badgeProgress.percentage
         };
-        console.log(`Badge ${badge.badge_name}: progress=${badgeProgress.current}/${badgeProgress.target} (${badgeProgress.percentage}%)`);
+        if (process.env.NODE_ENV !== "production") console.log(`Badge ${badge.badge_name}: progress=${badgeProgress.current}/${badgeProgress.target} (${badgeProgress.percentage}%)`);
       } else {
         // Fallback if profile not yet loaded
         progress = {
@@ -190,7 +194,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
         target: badge.requirement_count || 1,
         percentage: 0
       };
-      console.warn(`Badge ${badge.badge_name} missing requirement data: type=${badge.requirement_type}, count=${badge.requirement_count}`);
+      if (process.env.NODE_ENV !== "production") console.warn(`Badge ${badge.badge_name} missing requirement data: type=${badge.requirement_type}, count=${badge.requirement_count}`);
     }
     
     // If this is First Listen and progress is complete, treat as unlocked for display
@@ -724,14 +728,9 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
     // Use requirement_count directly from badge, not progress.target with fallback
     const target = badge.requirement_count > 0 ? badge.requirement_count : 1;
     const isEarned = current >= target && target > 0;
-    // Debug: log ALL badges with their status
-    console.log(`Badge "${badge.badge_name}": current=${current}, target=${target} (requirement_count=${badge.requirement_count}), isEarned=${isEarned}`);
     return isEarned;
   });
 
-  // Log summary of earned badges
-  console.log(`📊 BADGES CLAIMED: ${userUnlockedBadges.length} badges earned:`, userUnlockedBadges.map(b => b.badge_name));
-  
   // Main badges view - horizontal row of user badges like chat profile
   const badgesContent = (
     <>

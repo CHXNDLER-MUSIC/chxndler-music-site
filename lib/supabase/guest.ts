@@ -93,7 +93,7 @@ export async function getOrCreateGuestIdentity(): Promise<GuestIdentity> {
   const storedUsername = localStorage.getItem(GUEST_USERNAME_KEY);
 
   if (storedGuestId && storedUsername) {
-    console.log('🔥 Using existing guest identity from localStorage:', { guest_id: storedGuestId, username: storedUsername });
+    if (process.env.NODE_ENV !== "production") console.log('🔥 Using existing guest identity from localStorage:', { guest_id: storedGuestId, username: storedUsername });
     return {
       guest_id: storedGuestId,
       username: storedUsername,
@@ -111,19 +111,19 @@ export async function getOrCreateGuestIdentity(): Promise<GuestIdentity> {
 
       if (!error && data?.username) {
         localStorage.setItem(GUEST_USERNAME_KEY, data.username);
-        console.log('🔥 Recovered guest username from DB:', data.username);
+        if (process.env.NODE_ENV !== "production") console.log('🔥 Recovered guest username from DB:', data.username);
         return {
           guest_id: storedGuestId,
           username: data.username,
         };
       }
     } catch (e) {
-      console.warn('Failed to recover guest username, creating new identity');
+      if (process.env.NODE_ENV !== "production") console.warn('Failed to recover guest username, creating new identity');
     }
   }
 
   // Create new guest profile via RPC
-  console.log('🔥 Creating new guest identity via RPC...');
+  if (process.env.NODE_ENV !== "production") console.log('🔥 Creating new guest identity via RPC...');
 
   try {
     const { data, error } = await supabaseClient.rpc('create_guest_profile');
@@ -143,7 +143,7 @@ export async function getOrCreateGuestIdentity(): Promise<GuestIdentity> {
     localStorage.setItem(GUEST_ID_KEY, guest_id);
     localStorage.setItem(GUEST_USERNAME_KEY, username);
 
-    console.log('🔥 Created new guest identity:', { guest_id, username });
+    if (process.env.NODE_ENV !== "production") console.log('🔥 Created new guest identity:', { guest_id, username });
 
     return {
       guest_id,
@@ -160,7 +160,7 @@ export async function getOrCreateGuestIdentity(): Promise<GuestIdentity> {
     localStorage.setItem(GUEST_ID_KEY, fallbackGuestId);
     localStorage.setItem(GUEST_USERNAME_KEY, fallbackUsername);
 
-    console.log('🔥 Using fallback guest identity:', { guest_id: fallbackGuestId, username: fallbackUsername });
+    if (process.env.NODE_ENV !== "production") console.log('🔥 Using fallback guest identity:', { guest_id: fallbackGuestId, username: fallbackUsername });
 
     return {
       guest_id: fallbackGuestId,
@@ -202,7 +202,7 @@ export function clearGuestIdentity(): void {
 
   localStorage.removeItem(GUEST_ID_KEY);
   localStorage.removeItem(GUEST_USERNAME_KEY);
-  console.log('🔥 Cleared guest identity from localStorage');
+  if (process.env.NODE_ENV !== "production") console.log('🔥 Cleared guest identity from localStorage');
 }
 
 /**

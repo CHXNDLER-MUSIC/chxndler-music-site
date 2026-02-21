@@ -75,7 +75,7 @@ export default function AmbientSpace({
       try {
         amb.volume = clamp01(v);
       } catch (e) {
-        console.warn('Failed to set volume during fade:', e);
+        if (process.env.NODE_ENV !== "production") console.warn('Failed to set volume during fade:', e);
         rafRef.current = undefined;
         if (then) then();
         return;

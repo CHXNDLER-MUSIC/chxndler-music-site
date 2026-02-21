@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     
     // If anonymous heart signal, just return success
     if (anonymous) {
-      console.log('Anonymous heart signal sent:', message || 'Anonymous heart signal');
+      if (process.env.NODE_ENV !== "production") console.log('Anonymous heart signal sent:', message || 'Anonymous heart signal');
       return NextResponse.json({ 
         success: true, 
         message: 'Anonymous heart signal sent to the Heartverse!' 
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     
     // Optional: Create a heart_signals table to track signals
     // For now, we'll just log and potentially add a heart to their profile
-    console.log(`Heart signal from user ${user.id}:`, message || 'Heart signal');
+    if (process.env.NODE_ENV !== "production") console.log(`Heart signal from user ${user.id}:`, message || 'Heart signal');
     
     // Optional: Add a heart to the user's profile
     try {
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
           .eq('id', user.id);
       }
     } catch (e) {
-      console.log('Could not update hearts for user:', e);
+      if (process.env.NODE_ENV !== "production") console.log('Could not update hearts for user:', e);
     }
 
     return NextResponse.json({ 

@@ -82,13 +82,15 @@ export function triggerWarpToSong(params: TriggerWarpParams): WarpResult {
   const { source, songId, songSlug, songs, onSongChange, planetName } = params;
 
   // Log entry
-  console.log(`[WARP] trigger from ${source}`, {
-    songId,
-    songSlug,
-    planetName,
-    hasOnSongChange: !!onSongChange,
-    songsCount: songs?.length || 0
-  });
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[WARP] trigger from ${source}`, {
+      songId,
+      songSlug,
+      planetName,
+      hasOnSongChange: !!onSongChange,
+      songsCount: songs?.length || 0
+    });
+  }
 
   // Resolve the song identifier
   const { id: resolvedId, method } = resolveSongId({
@@ -98,7 +100,7 @@ export function triggerWarpToSong(params: TriggerWarpParams): WarpResult {
     songs
   });
 
-  console.log(`[WARP] resolved id: ${resolvedId} (method: ${method})`);
+  if (process.env.NODE_ENV !== "production") console.log(`[WARP] resolved id: ${resolvedId} (method: ${method})`);
 
   // Validate we have a valid identifier
   if (!resolvedId) {
@@ -115,7 +117,7 @@ export function triggerWarpToSong(params: TriggerWarpParams): WarpResult {
   }
 
   // Trigger the warp
-  console.log(`[WARP] start - calling onSongChange with: ${resolvedId}`);
+  if (process.env.NODE_ENV !== "production") console.log(`[WARP] start - calling onSongChange with: ${resolvedId}`);
 
   try {
     // Notify 3D scene to focus/warp camera toward this song's planet
@@ -126,7 +128,7 @@ export function triggerWarpToSong(params: TriggerWarpParams): WarpResult {
     } catch {}
 
     onSongChange(resolvedId);
-    console.log(`[WARP] onSongChange called successfully`);
+    if (process.env.NODE_ENV !== "production") console.log(`[WARP] onSongChange called successfully`);
     return { success: true, resolvedId };
   } catch (err) {
     const error = `onSongChange threw: ${err}`;

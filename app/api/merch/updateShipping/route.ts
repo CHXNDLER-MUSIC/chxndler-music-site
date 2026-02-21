@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       shipping_country
     } = await request.json();
 
-    console.log('[SHIPPING] using orders.id', orderId);
+    if (process.env.NODE_ENV !== "production") console.log('[SHIPPING] using orders.id', orderId);
 
     // Validate required fields
     if (!orderId) {
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`[SHIPPING] User ${user.id} updating shipping info for order ${orderId}`);
+    if (process.env.NODE_ENV !== "production") console.log(`[SHIPPING] User ${user.id} updating shipping info for order ${orderId}`);
 
     // Call the RPC with exact parameter names
     const { error: rpcError } = await supabase.rpc('update_order_shipping', {
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[SHIPPING] Shipping saved for order:', orderId);
+    if (process.env.NODE_ENV !== "production") console.log('[SHIPPING] Shipping saved for order:', orderId);
 
     return NextResponse.json({ success: true });
 

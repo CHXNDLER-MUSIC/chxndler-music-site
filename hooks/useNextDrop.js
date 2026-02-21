@@ -28,11 +28,8 @@ export function useNextDrop() {
       .eq("key", "next_drop")
       .single()
       .then(({ data, error }) => {
-        console.log("[useNextDrop] fetch result:", { data, error });
         if (!error && data) {
-          const parsed = parse(data.value);
-          console.log("[useNextDrop] parsed:", parsed);
-          setNextDrop(parsed);
+          setNextDrop(parse(data.value));
         }
         setLoading(false);
       });

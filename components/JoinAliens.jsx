@@ -745,14 +745,14 @@ export default function JoinAliens({ visible = true } = {}) {
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          console.log('Chat button clicked! Current state:', isChatOpen);
+          if (process.env.NODE_ENV !== "production") console.log('Chat button clicked! Current state:', isChatOpen);
           try { sfx.play('audio/click.mp3', 0.5); } catch {}
           // Close phone form before opening chat
           if (!isChatOpen && showPhoneForm) {
             setShowPhoneForm(false);
           }
           setIsChatOpen(!isChatOpen);
-          console.log('Setting chat state to:', !isChatOpen);
+          if (process.env.NODE_ENV !== "production") console.log('Setting chat state to:', !isChatOpen);
         }}
         title="Open text chat"
         className="text-chat-button"

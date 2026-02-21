@@ -212,7 +212,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       const missingFromView = (ownedCards || []).filter(
         c => c.slot_index !== null && !viewSlotIndices.includes(c.slot_index)
       );
-      console.log('[Binder Debug]', {
+      if (process.env.NODE_ENV !== "production") console.log('[Binder Debug]', {
         totalOwnedCards,
         ownedCardsLength: ownedCards?.length || 0,
         binderSlotsWithCards: assignedCards.length,
@@ -666,7 +666,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       const names = (ownedCards || [])
         .filter(c => c.cards && (c.cards.element === selectedElement || c.cards.element === 'ALL'))
         .map(c => c.cards.card_name);
-      console.debug('[CardDataDebug] Binder owned names for element', selectedElement, ':', names);
+      if (process.env.NODE_ENV !== "production") console.debug('[CardDataDebug] Binder owned names for element', selectedElement, ':', names);
     } catch {}
   }, [ownedCards, selectedElement]);
 
@@ -691,11 +691,11 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       );
 
       if (unassignedCards.length === 0) {
-        console.log('[Binder] No unassigned digital cards to auto-assign');
+        if (process.env.NODE_ENV !== "production") console.log('[Binder] No unassigned digital cards to auto-assign');
         return;
       }
 
-      console.log('[Binder] Found', unassignedCards.length, 'unassigned digital cards, auto-assigning to slots...');
+      if (process.env.NODE_ENV !== "production") console.log('[Binder] Found', unassignedCards.length, 'unassigned digital cards, auto-assigning to slots...');
 
       // Get occupied slot indices from binderSlots
       const occupiedSlots = new Set(
@@ -711,7 +711,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       }
 
       if (emptySlots.length === 0) {
-        console.log('[Binder] No empty slots available for auto-assignment');
+        if (process.env.NODE_ENV !== "production") console.log('[Binder] No empty slots available for auto-assignment');
         return;
       }
 
@@ -731,7 +731,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
           if (error) {
             console.error('[Binder] Failed to assign card to slot:', error);
           } else {
-            console.log('[Binder] Assigned card', card.cards?.card_name, 'to slot', slotIndex);
+            if (process.env.NODE_ENV !== "production") console.log('[Binder] Assigned card', card.cards?.card_name, 'to slot', slotIndex);
           }
         } catch (e) {
           console.error('[Binder] Error assigning card:', e);
@@ -775,7 +775,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
   const handleConfirmPurchase = async () => {
     // DEFENSIVE GUARD: Block duplicate requests
     if (purchaseInFlightRef.current) {
-      console.warn('[BINDER PURCHASE] Blocked: purchase already in-flight');
+      if (process.env.NODE_ENV !== "production") console.warn('[BINDER PURCHASE] Blocked: purchase already in-flight');
       return;
     }
     if (!selectedPurchaseType || !profile) return;
@@ -811,7 +811,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
 
     // Set in-flight BEFORE any async work
     purchaseInFlightRef.current = true;
-    console.log('[BINDER PURCHASE] In-flight set TRUE');
+    if (process.env.NODE_ENV !== "production") console.log('[BINDER PURCHASE] In-flight set TRUE');
 
     try {
       let response;
@@ -819,7 +819,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
       if (selectedPurchaseType === 'digital') {
         const digitalArgs: { p_card_id: string } = { p_card_id: cardId };
 
-        console.log('[BINDER PURCHASE] sending RPC with validated args:', {
+        if (process.env.NODE_ENV !== "production") console.log('[BINDER PURCHASE] sending RPC with validated args:', {
           cardId,
           cardName: currentCard.name,
           argsJson: JSON.stringify(digitalArgs),
@@ -898,7 +898,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     } finally {
       // Always reset in-flight flag
       purchaseInFlightRef.current = false;
-      console.log('[BINDER PURCHASE] In-flight reset FALSE');
+      if (process.env.NODE_ENV !== "production") console.log('[BINDER PURCHASE] In-flight reset FALSE');
     }
   };
 
@@ -921,7 +921,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
     if (onOpenHeartCoin) {
       onOpenHeartCoin();
     } else {
-      console.warn('Heart coin trigger not available');
+      if (process.env.NODE_ENV !== "production") console.warn('Heart coin trigger not available');
     }
   };
 
@@ -1335,7 +1335,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                       draggable={false}
                       onError={(e) => {
                         const objectKey = selectedCard?.name || 'CHXNDLER';
-                        console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
+                        if (process.env.NODE_ENV !== "production") console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
                         const fallback = getCardImageUrl('CHXNDLER');
                         if (e.currentTarget.src !== fallback) {
                           e.currentTarget.src = fallback;
@@ -1490,7 +1490,7 @@ export default function BinderModal({ open, onClose, preselectedCard, preselecte
                                 draggable={false}
                                 onError={(e) => {
                                   const objectKey = slot.card_name;
-                                  console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
+                                  if (process.env.NODE_ENV !== "production") console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
                                   const fallback = getCardImageUrl('CHXNDLER');
                                   if (e.currentTarget.src !== fallback) {
                                     e.currentTarget.src = fallback;

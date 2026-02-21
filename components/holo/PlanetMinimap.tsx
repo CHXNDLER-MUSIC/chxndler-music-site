@@ -334,17 +334,17 @@ export default function PlanetMinimap({ currentMainId, hoverId, songs = [], onCl
                 onMouseLeave={() => setHoveredPlanet(null)}
                 title={songPlanet.title + (isReleased ? "" : " (Unreleased)")}
                 onClick={() => {
-                  console.log('🎯 Planet clicked:', songPlanet.id, songPlanet.title);
+                  if (process.env.NODE_ENV !== "production") console.log('🎯 Planet clicked:', songPlanet.id, songPlanet.title);
                   sfx.play('close', 0.5);
                   setSelectedPlanet(songPlanet.title + (isReleased ? "" : " (Unreleased)"));
                   // Auto-hide the selected planet name after 3 seconds
                   setTimeout(() => setSelectedPlanet(null), 3000);
                   // Call the callback to highlight planet in 3D view
                   if (onPlanetClick) {
-                    console.log('🚀 Calling onPlanetClick with:', songPlanet.id);
+                    if (process.env.NODE_ENV !== "production") console.log('🚀 Calling onPlanetClick with:', songPlanet.id);
                     onPlanetClick(songPlanet.id);
                   } else {
-                    console.log('❌ No onPlanetClick callback provided');
+                    if (process.env.NODE_ENV !== "production") console.log('❌ No onPlanetClick callback provided');
                   }
                 }}
               >

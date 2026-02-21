@@ -66,7 +66,7 @@ async function getSongUuidBySlug(slug: string): Promise<string | null> {
       .single();
 
     if (error || !data) {
-      console.warn('🎧 Could not find song UUID for slug:', slug);
+      if (process.env.NODE_ENV !== "production") console.warn('🎧 Could not find song UUID for slug:', slug);
       return null;
     }
 
@@ -397,7 +397,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       // Get song UUID for tracking
       const songUuid = await getSongUuidBySlug(trackSlug);
       if (!songUuid) {
-        console.warn('[TRACK] Cannot record play - song UUID not found for:', trackSlug);
+        if (process.env.NODE_ENV !== "production") console.warn('[TRACK] Cannot record play - song UUID not found for:', trackSlug);
         return;
       }
 
@@ -406,7 +406,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const lastPlay = lastPlayTrackRef.current;
 
       if (lastPlay && lastPlay.songId === songUuid && (now - lastPlay.timestamp) < PLAY_DEBOUNCE_MS) {
-        console.log('[TRACK] Debounced duplicate play event', {
+        if (process.env.NODE_ENV !== "production") console.log('[TRACK] Debounced duplicate play event', {
           songId: songUuid,
           timeSinceLastPlay: now - lastPlay.timestamp
         });
@@ -424,7 +424,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Log play start event (analytics only, no HeartCoin award)
-      console.log('[TRACK] play started', {
+      if (process.env.NODE_ENV !== "production") console.log('[TRACK] play started', {
         songId: songUuid,
         songName: state.currentTrack?.title || trackSlug
       });
@@ -454,14 +454,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       if (!user) {
-        console.log('[MARK COMPLETE] skipped: no authenticated user');
+        if (process.env.NODE_ENV !== "production") console.log('[MARK COMPLETE] skipped: no authenticated user');
         return;
       }
 
       const day = getNYDateString();
       const key = `${user.id}|${songUuid}|${day}`;
       if (completedOnceRef.current.has(key)) {
-        console.log('[MARK COMPLETE] skipped: already marked this user/song/day', { songUuid, day, userId: user.id });
+        if (process.env.NODE_ENV !== "production") console.log('[MARK COMPLETE] skipped: already marked this user/song/day', { songUuid, day, userId: user.id });
         return;
       }
 
@@ -475,7 +475,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         completion_percent: 1,
       });
 
-      console.log('[MARK COMPLETE] Upserting user_song_daily_progress', payload);
+      if (process.env.NODE_ENV !== "production") console.log('[MARK COMPLETE] Upserting user_song_daily_progress', payload);
       const { error } = await supabaseBrowser
         .from('user_song_daily_progress')
         .upsert(payload, { onConflict: 'user_id,song_id,day', ignoreDuplicates: false });
@@ -498,7 +498,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           });
           return;
         }
-        console.log('[MARK COMPLETE] heartcoin already awarded (duplicate trigger) — treating as success', {
+        if (process.env.NODE_ENV !== "production") console.log('[MARK COMPLETE] heartcoin already awarded (duplicate trigger) — treating as success', {
           code: errCode,
           songUuid,
           day,
@@ -506,7 +506,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       }
 
       completedOnceRef.current.add(key);
-      console.log('[MARK COMPLETE] success', { songUuid, day, userId: user.id });
+      if (process.env.NODE_ENV !== "production") console.log('[MARK COMPLETE] success', { songUuid, day, userId: user.id });
       // Broadcast completion so UI (e.g., badges modal) can refresh progress
       try {
         window.dispatchEvent(new CustomEvent('song:completed', { detail: { songUuid, day } }));
@@ -530,24 +530,24 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       // Guard: require authenticated user
       const user = authUserRef.current;
       if (!user) {
-        console.log('[SOTD-COMPLETE] skipped: no authenticated user');
+        if (process.env.NODE_ENV !== "production") console.log('[SOTD-COMPLETE] skipped: no authenticated user');
         return;
       }
 
       // Guard: require songUuid
       if (!songUuid) {
-        console.log('[SOTD-COMPLETE] skipped: no songUuid provided');
+        if (process.env.NODE_ENV !== "production") console.log('[SOTD-COMPLETE] skipped: no songUuid provided');
         return;
       }
 
       // Guard: only complete the Song of the Day
       const currentSongOfDayId = songOfDayIdRef.current;
       if (!currentSongOfDayId) {
-        console.log('[SOTD-COMPLETE] skipped: no Song of the Day configured');
+        if (process.env.NODE_ENV !== "production") console.log('[SOTD-COMPLETE] skipped: no Song of the Day configured');
         return;
       }
       if (songUuid !== currentSongOfDayId) {
-        console.log('[SOTD-COMPLETE] skipped: not Song of the Day', {
+        if (process.env.NODE_ENV !== "production") console.log('[SOTD-COMPLETE] skipped: not Song of the Day', {
           songUuid,
           currentSongOfDayId
         });
@@ -561,7 +561,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       // Guard: check if we already completed this song today (in-memory cache)
       const completionKey = `${nyDayString}:${songUuid}`;
       if (completedSotdRef.current.has(completionKey)) {
-        console.log('[SOTD-COMPLETE] skipped: already completed today', {
+        if (process.env.NODE_ENV !== "production") console.log('[SOTD-COMPLETE] skipped: already completed today', {
           songUuid,
           day: nyDayString
         });
@@ -573,7 +573,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const currentTime = audioEl?.currentTime ?? 0;
       const duration = audioEl?.duration ?? 0;
 
-      console.log('[SOTD-COMPLETE] Marking daily song completed', {
+      if (process.env.NODE_ENV !== "production") console.log('[SOTD-COMPLETE] Marking daily song completed', {
         songUuid,
         day: nyDayString,
         currentTime: currentTime.toFixed(2),
@@ -590,7 +590,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         completed_at: nowIso,
       });
 
-      console.log('[SOTD-COMPLETE] Upserting user_song_daily_progress payload', progressPayload);
+      if (process.env.NODE_ENV !== "production") console.log('[SOTD-COMPLETE] Upserting user_song_daily_progress payload', progressPayload);
       const { data: progressData, error: progressError } = await supabaseBrowser
         .from('user_song_daily_progress')
         .upsert(progressPayload, { onConflict: 'user_id,song_id,day', ignoreDuplicates: false })
@@ -613,7 +613,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           // Do not proceed to claim if progress write failed
           return;
         }
-        console.log('[SOTD-COMPLETE] heartcoin already awarded (duplicate trigger) — continuing', {
+        if (process.env.NODE_ENV !== "production") console.log('[SOTD-COMPLETE] heartcoin already awarded (duplicate trigger) — continuing', {
           code: pErrCode,
           songUuid,
           day: nyDayString,
@@ -624,7 +624,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       // Guard: ensure we do not spam claim writes within the same session
       const lastClaim = lastSotdClaimRef.current;
       if (lastClaim && lastClaim.songId === songUuid && lastClaim.day === nyDayString) {
-        console.log('[SOTD-COMPLETE] Claim skipped (already attempted this session)', {
+        if (process.env.NODE_ENV !== "production") console.log('[SOTD-COMPLETE] Claim skipped (already attempted this session)', {
           songUuid,
           day: nyDayString,
         });
@@ -636,7 +636,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           claimed_at: nowIso,
         } as const;
 
-        console.log('[SOTD-COMPLETE] Inserting user_song_of_day_claims payload', claimPayload);
+        if (process.env.NODE_ENV !== "production") console.log('[SOTD-COMPLETE] Inserting user_song_of_day_claims payload', claimPayload);
         let claimSuccess = false;
         let claimId: string | null = null;
 
@@ -651,7 +651,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             // Check for duplicate key (already claimed today)
             const code = (claimError as any)?.code;
             if (code === '23505') {
-              console.log('[SOTD-COMPLETE] Claim already exists for today');
+              if (process.env.NODE_ENV !== "production") console.log('[SOTD-COMPLETE] Claim already exists for today');
               lastSotdClaimRef.current = { songId: songUuid, day: nyDayString };
               // Still mark as success for UI update purposes
               claimSuccess = true;
@@ -677,7 +677,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             lastSotdClaimRef.current = { songId: songUuid, day: nyDayString };
             claimId = claimData?.id || null;
             claimSuccess = true;
-            console.log('[SOTD-COMPLETE] Claim inserted successfully', {
+            if (process.env.NODE_ENV !== "production") console.log('[SOTD-COMPLETE] Claim inserted successfully', {
               returnedRow: claimData,
               claimId,
             });
@@ -686,7 +686,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           // Ignore duplicate key (already claimed today)
           const code = claimErr?.code || claimErr?.data?.code || claimErr?.status;
           if (code === '23505') {
-            console.log('[SOTD-COMPLETE] Claim already exists for today');
+            if (process.env.NODE_ENV !== "production") console.log('[SOTD-COMPLETE] Claim already exists for today');
             lastSotdClaimRef.current = { songId: songUuid, day: nyDayString };
             claimSuccess = true;
           } else {
@@ -725,19 +725,19 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             }
           }));
 
-          console.log('[SOTD-COMPLETE] Dispatched completion events', {
+          if (process.env.NODE_ENV !== "production") console.log('[SOTD-COMPLETE] Dispatched completion events', {
             claimId,
             claimSuccess,
           });
         } catch (eventErr) {
-          console.warn('[SOTD-COMPLETE] Failed to dispatch events', eventErr);
+          if (process.env.NODE_ENV !== "production") console.warn('[SOTD-COMPLETE] Failed to dispatch events', eventErr);
         }
       }
 
       // Mark as completed in our in-memory cache (prevents re-running completion logic)
       completedSotdRef.current.add(completionKey);
 
-      console.log('[SOTD-COMPLETE] Completed progress+claim flow', {
+      if (process.env.NODE_ENV !== "production") console.log('[SOTD-COMPLETE] Completed progress+claim flow', {
         songUuid,
         day: nyDayString,
         returnedRow: progressData?.[0] || progressData,
@@ -793,19 +793,19 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         // Guard log once
         if (!(flushSession as any)._skippedLogged) {
           (flushSession as any)._skippedLogged = true;
-          console.log('[DailyProgress] skipped: no session');
+          if (process.env.NODE_ENV !== "production") console.log('[DailyProgress] skipped: no session');
         }
         // Look up the song UUID for the anonymous_song_listen_sessions table
         const songUuid = await getSongUuidBySlug(session.trackId);
         if (!songUuid) {
-          console.warn('🎧 Cannot track anonymous listen - song UUID not found for:', session.trackId);
+          if (process.env.NODE_ENV !== "production") console.warn('🎧 Cannot track anonymous listen - song UUID not found for:', session.trackId);
           flushInFlightRef.current = false;
           return false;
         }
 
         const anonSessionId = getAnonSessionId();
         if (!anonSessionId) {
-          console.warn('🎧 Cannot track anonymous listen - no anon session ID');
+          if (process.env.NODE_ENV !== "production") console.warn('🎧 Cannot track anonymous listen - no anon session ID');
           flushInFlightRef.current = false;
           return false;
         }
@@ -821,7 +821,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           duration_seconds: durationSeconds
         };
 
-        console.log('🎧 Flushing anonymous session:', JSON.stringify(anonPayload, null, 2));
+        if (process.env.NODE_ENV !== "production") console.log('🎧 Flushing anonymous session:', JSON.stringify(anonPayload, null, 2));
 
         const { error: anonInsertError } = await supabaseBrowser
           .from('anonymous_song_listen_sessions')
@@ -841,7 +841,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           return false;
         }
 
-        console.log(`🎧 Recorded anonymous: ${session.trackId}, ${listenedSeconds}s`);
+        if (process.env.NODE_ENV !== "production") console.log(`🎧 Recorded anonymous: ${session.trackId}, ${listenedSeconds}s`);
         flushInFlightRef.current = false;
         return true;
       }
@@ -875,7 +875,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         metadata: null
       };
 
-      console.log('🎧 Flushing session:', JSON.stringify(payload, null, 2));
+      if (process.env.NODE_ENV !== "production") console.log('🎧 Flushing session:', JSON.stringify(payload, null, 2));
 
       const { error: insertError } = await supabaseBrowser
         .from('song_listen_sessions')
@@ -896,7 +896,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
 
-      console.log(`🎧 Recorded: ${session.trackId}, ${listenedSeconds}s`);
+      if (process.env.NODE_ENV !== "production") console.log(`🎧 Recorded: ${session.trackId}, ${listenedSeconds}s`);
 
       // Also upsert to user_song_daily_progress for logged-in users
       try {
@@ -915,7 +915,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             day: nyDay, // explicit NY date; DB has default but we pass for clarity
           });
 
-          console.log('[DailyProgress Payload]', dailyProgressPayload);
+          if (process.env.NODE_ENV !== "production") console.log('[DailyProgress Payload]', dailyProgressPayload);
           const { error: dailyProgressError } = await supabaseBrowser
             .from('user_song_daily_progress')
             .upsert(dailyProgressPayload, { onConflict: 'user_id,song_id,day', ignoreDuplicates: false });
@@ -931,7 +931,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
               payload: dailyProgressPayload,
             });
           } else {
-            console.log(`🎧 Upserted daily progress row for ${session.trackId} on ${nyDay}`);
+            if (process.env.NODE_ENV !== "production") console.log(`🎧 Upserted daily progress row for ${session.trackId} on ${nyDay}`);
           }
         }
       } catch (dailyProgressErr) {
@@ -980,7 +980,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       }
     }, 1000);
 
-    console.log(`🎧 Started session: ${trackId}`);
+    if (process.env.NODE_ENV !== "production") console.log(`🎧 Started session: ${trackId}`);
     // Reset SOTD completion trigger for new playback session
     sodFiredRef.current = false;
 
@@ -991,7 +991,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         getSongUuidBySlug(trackId).then(async (songUuid) => {
           if (!songUuid) return;
           const nyDay = getNYDateString();
-          console.log('[PLAY COUNT] increment_song_play RPC', { song_id: songUuid, day: nyDay });
+          if (process.env.NODE_ENV !== "production") console.log('[PLAY COUNT] increment_song_play RPC', { song_id: songUuid, day: nyDay });
           const { error: incErr } = await supabaseBrowser.rpc('increment_song_play', { p_song_id: songUuid });
           if (incErr) {
             console.error('[PLAY COUNT] RPC error', {
@@ -1047,7 +1047,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         !sessionRef.current.flushed &&
         sessionRef.current.listenedSeconds >= 2 // Had meaningful listen time
       ) {
-        console.log(`🎧 Repeat detected: ${lastTime.toFixed(1)}s -> ${currentTime.toFixed(1)}s (duration: ${duration.toFixed(1)}s)`);
+        if (process.env.NODE_ENV !== "production") console.log(`🎧 Repeat detected: ${lastTime.toFixed(1)}s -> ${currentTime.toFixed(1)}s (duration: ${duration.toFixed(1)}s)`);
         // On repeat, mark completion once (progress only)
         if (currentTrackRef.current && !sodFiredRef.current) {
           sodFiredRef.current = true;
@@ -1079,7 +1079,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           (onTime as any)._skippedLogged = (onTime as any)._skippedLogged || false;
           if (!(onTime as any)._skippedLogged) {
             (onTime as any)._skippedLogged = true;
-            console.log('[DailyProgress] skipped: no session');
+            if (process.env.NODE_ENV !== "production") console.log('[DailyProgress] skipped: no session');
           }
           return; // Do not attempt to write if logged out
         }
@@ -1117,7 +1117,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           completion_percent: pct,
         });
 
-        console.log('[DailyProgress Payload]', dailyProgressPayload);
+        if (process.env.NODE_ENV !== "production") console.log('[DailyProgress Payload]', dailyProgressPayload);
         const { error: dailyProgressError } = await supabaseBrowser
           .from('user_song_daily_progress')
           .upsert(dailyProgressPayload, { onConflict: 'user_id,song_id,day', ignoreDuplicates: false });
@@ -1143,7 +1143,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const meetsListenedThreshold = trackLengthSeconds > 0 && listenedSeconds >= Math.floor(0.995 * trackLengthSeconds);
 
       if (!sodFiredRef.current && (meetsTimeRatio || meetsListenedThreshold)) {
-        console.log('[COMPLETE CHECK]', {
+        if (process.env.NODE_ENV !== "production") console.log('[COMPLETE CHECK]', {
           currentTime: Number.isFinite(currentTime) ? Number(currentTime.toFixed(2)) : currentTime,
           duration: Number.isFinite(duration) ? Number(duration.toFixed(2)) : duration,
           percent: Number(percent.toFixed(4)),
@@ -1167,7 +1167,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     };
     const onDur = () => setState(s => ({ ...s, duration: a.duration || 0 }));
     const onPlay = () => {
-      console.log('🎵 AudioProvider: onPlay event fired');
+      if (process.env.NODE_ENV !== "production") console.log('🎵 AudioProvider: onPlay event fired');
       setState(s => ({ ...s, playing: true, isLoading: false }));
 
       // Record play event for analytics
@@ -1191,7 +1191,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       }
     };
     const onPause = () => {
-      console.log('🎵 AudioProvider: onPause event fired');
+      if (process.env.NODE_ENV !== "production") console.log('🎵 AudioProvider: onPause event fired');
       setState(s => ({ ...s, playing: false }));
       // Flush listen session with 2-second minimum threshold
       if (sessionRef.current && !sessionRef.current.flushed) {
@@ -1203,7 +1203,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const onLoadEnd = () => setState(s => ({ ...s, isLoading: false }));
 
     const onEnded = () => {
-      console.log('🎵 AudioProvider: Song ended');
+      if (process.env.NODE_ENV !== "production") console.log('🎵 AudioProvider: Song ended');
       // Completion handling on ended (once per session)
       try {
         const slug = currentTrackRef.current;
@@ -1212,7 +1212,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           const aDur = a.duration || 0;
           const aCT = a.currentTime || aDur;
           const percent = aDur > 0 ? aCT / aDur : 1;
-          console.log('[COMPLETE CHECK]', {
+          if (process.env.NODE_ENV !== "production") console.log('[COMPLETE CHECK]', {
             currentTime: Number.isFinite(aCT) ? Number(aCT.toFixed(2)) : aCT,
             duration: Number.isFinite(aDur) ? Number(aDur.toFixed(2)) : aDur,
             percent: Number(percent.toFixed(4)),
@@ -1242,7 +1242,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
               }
             }
           } catch (err) {
-            console.warn('Failed end-of-track completion processing:', err);
+            if (process.env.NODE_ENV !== "production") console.warn('Failed end-of-track completion processing:', err);
           }
           // Start a new session for the repeated playback
           if (currentTrackRef.current) {
@@ -1285,22 +1285,22 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     // Debug: Track unexpected pauses
     const onPauseDebug = () => {
-      console.log('🎵 Audio paused at time:', a.currentTime, 'src:', a.src);
+      if (process.env.NODE_ENV !== "production") console.log('🎵 Audio paused at time:', a.currentTime, 'src:', a.src);
       if (a.currentTime > 0 && a.currentTime < 10) {
-        console.log('🎵 ⚠️  Audio paused early! This might be the 4-second stop issue');
-        console.log('🎵 Checking if pause was user-initiated or system-caused...');
+        if (process.env.NODE_ENV !== "production") console.log('🎵 ⚠️  Audio paused early! This might be the 4-second stop issue');
+        if (process.env.NODE_ENV !== "production") console.log('🎵 Checking if pause was user-initiated or system-caused...');
 
         // Check if this was an unexpected pause (not user-initiated)
         // If audio was stopped very early, it might be a race condition
         if (a.currentTime < 5 && !a.ended) {
-          console.log('🎵 🚨 DETECTED: Potential race condition causing early audio stop');
-          console.log('🎵 Current playing state:', state.playing);
-          console.log('🎵 Audio src:', a.src);
-          console.log('🎵 Audio readyState:', a.readyState);
-          console.log('🎵 All audio elements on page:');
+          if (process.env.NODE_ENV !== "production") console.log('🎵 🚨 DETECTED: Potential race condition causing early audio stop');
+          if (process.env.NODE_ENV !== "production") console.log('🎵 Current playing state:', state.playing);
+          if (process.env.NODE_ENV !== "production") console.log('🎵 Audio src:', a.src);
+          if (process.env.NODE_ENV !== "production") console.log('🎵 Audio readyState:', a.readyState);
+          if (process.env.NODE_ENV !== "production") console.log('🎵 All audio elements on page:');
           const allAudio = document.querySelectorAll('audio');
           allAudio.forEach((audio, index) => {
-            console.log(`🎵 Audio ${index}:`, {
+            if (process.env.NODE_ENV !== "production") console.log(`🎵 Audio ${index}:`, {
               src: audio.src,
               paused: audio.paused,
               currentTime: audio.currentTime,
@@ -1316,9 +1316,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     // Debug: Track when audio ends unexpectedly
     const onEndedDebug = () => {
-      console.log('🎵 Audio ended at time:', a.currentTime, 'duration:', a.duration);
+      if (process.env.NODE_ENV !== "production") console.log('🎵 Audio ended at time:', a.currentTime, 'duration:', a.duration);
       if (a.currentTime < (a.duration - 1)) {
-        console.log('🎵 ⚠️  Audio ended early! This might be the 5-second stop issue');
+        if (process.env.NODE_ENV !== "production") console.log('🎵 ⚠️  Audio ended early! This might be the 5-second stop issue');
       }
     };
     a.addEventListener("ended", onEndedDebug);
@@ -1382,7 +1382,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           try {
             audio.pause();
             audio.currentTime = 0;
-            console.log('🎵 Stopped existing conflicting audio element');
+            if (process.env.NODE_ENV !== "production") console.log('🎵 Stopped existing conflicting audio element');
           } catch {}
         }
       });
@@ -1427,7 +1427,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         // Stop all audio when page becomes hidden (new tab opened, etc.)
         const a = audioRef.current;
         if (a && !a.paused) {
-          console.log('🎧 Page hidden, stopping audio playback');
+          if (process.env.NODE_ENV !== "production") console.log('🎧 Page hidden, stopping audio playback');
           try { a.pause(); } catch {}
           setState(s => ({ ...s, playing: false }));
         }
@@ -1442,7 +1442,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
         // Flush session if active
         if (sessionRef.current && !sessionRef.current.flushed) {
-          console.log('🎧 Page hidden, flushing session');
+          if (process.env.NODE_ENV !== "production") console.log('🎧 Page hidden, flushing session');
           flushSession(2); // Require at least 2 seconds
         }
       }
@@ -1450,7 +1450,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     const handleBeforeUnload = () => {
       if (sessionRef.current && !sessionRef.current.flushed) {
-        console.log('🎧 Page unloading, flushing session');
+        if (process.env.NODE_ENV !== "production") console.log('🎧 Page unloading, flushing session');
         // Use fetch with keepalive for best-effort flush on unload
         const session = sessionRef.current;
         const listenedSeconds = Math.max(0, Math.floor(session.listenedSeconds));
@@ -1497,7 +1497,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
                     body: JSON.stringify(payload),
                     keepalive: true
                   }).catch(() => {}); // Ignore errors on unload
-                  console.log('🎧 Sent session via keepalive fetch');
+                  if (process.env.NODE_ENV !== "production") console.log('🎧 Sent session via keepalive fetch');
                 }
               } else {
                 // Anonymous user - send to anonymous_song_listen_sessions
@@ -1526,7 +1526,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
                     body: JSON.stringify(anonPayload),
                     keepalive: true
                   }).catch(() => {}); // Ignore errors on unload
-                  console.log('🎧 Sent anonymous session via keepalive fetch');
+                  if (process.env.NODE_ENV !== "production") console.log('🎧 Sent anonymous session via keepalive fetch');
                 }
               }
             }
@@ -1682,7 +1682,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
       // Check if audio has a valid source before trying to play
       if (!a.src || a.src === 'null' || a.src === '') {
-        console.warn('No audio source loaded. Cannot play.');
+        if (process.env.NODE_ENV !== "production") console.warn('No audio source loaded. Cannot play.');
         return;
       }
 
@@ -1701,21 +1701,21 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const a = audioRef.current;
       if (!a) return;
 
-      console.log('🎵 togglePlayPause called - current playing state:', state.playing);
-      console.log('🎵 Audio element src:', a.src);
-      console.log('🎵 State src:', state.src);
-      console.log('🎵 Current track:', state.currentTrack?.id);
-      console.log('🎵 Audio readyState:', a.readyState);
+      if (process.env.NODE_ENV !== "production") console.log('🎵 togglePlayPause called - current playing state:', state.playing);
+      if (process.env.NODE_ENV !== "production") console.log('🎵 Audio element src:', a.src);
+      if (process.env.NODE_ENV !== "production") console.log('🎵 State src:', state.src);
+      if (process.env.NODE_ENV !== "production") console.log('🎵 Current track:', state.currentTrack?.id);
+      if (process.env.NODE_ENV !== "production") console.log('🎵 Audio readyState:', a.readyState);
 
       if (state.playing) {
-        console.log('🎵 Pausing audio');
+        if (process.env.NODE_ENV !== "production") console.log('🎵 Pausing audio');
         // Update state immediately to provide instant UI feedback
         setState(s => ({ ...s, playing: false }));
         try { a.pause(); } catch {}
       } else {
         // Check if there's a current track that should be playing
         if (state.currentTrack) {
-          console.log('🎵 Current track exists, validating audio source for resume:', state.currentTrack.id);
+          if (process.env.NODE_ENV !== "production") console.log('🎵 Current track exists, validating audio source for resume:', state.currentTrack.id);
 
           // Determine expected source using shared mapper with normalized slug
           const norm = normalizeSlug(state.currentTrack.id);
@@ -1727,19 +1727,19 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           // which makes naive substring checks unreliable and could cause unwanted reloads
           // that reset currentTime to 0 on resume.
           if (!a.src || a.src === 'null' || a.src === '') {
-            console.log('🎵 No audio source loaded, setting expected source:', expectedSource);
+            if (process.env.NODE_ENV !== "production") console.log('🎵 No audio source loaded, setting expected source:', expectedSource);
             a.src = expectedSource;
             try { a.load(); } catch {}
             setState(s => ({ ...s, src: expectedSource }));
           } else {
             // Keep existing src to preserve currentTime on resume
-            console.log('🎵 Source already present; skipping reload to preserve position');
+            if (process.env.NODE_ENV !== "production") console.log('🎵 Source already present; skipping reload to preserve position');
           }
         } else {
           // If no track loaded, load space music as default for now
           // Note: The existing player store sync logic will handle switching to selected songs
           if (!a.src || a.src === 'null' || a.src === '') {
-            console.log('🎵 No track loaded, loading space music as default');
+            if (process.env.NODE_ENV !== "production") console.log('🎵 No track loaded, loading space music as default');
             const spaceMusicSource = bestSourceFor(TRACKS.SPACE_MUSIC);
             a.src = spaceMusicSource;
             try { a.load(); } catch {}
@@ -1751,12 +1751,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        console.log('🎵 Starting audio playback with src:', a.src);
+        if (process.env.NODE_ENV !== "production") console.log('🎵 Starting audio playback with src:', a.src);
 
         // Check if audio is ready to play
         if (a.readyState >= 3) {
           // Audio is ready, play immediately
-          console.log('🎵 Audio ready, playing immediately');
+          if (process.env.NODE_ENV !== "production") console.log('🎵 Audio ready, playing immediately');
           setState(s => ({ ...s, playing: true }));
           void a.play().catch((err) => {
             console.error('Failed to toggle play audio:', err);
@@ -1764,11 +1764,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           });
         } else {
           // Audio not ready, wait for it to load
-          console.log('🎵 Audio not ready (readyState:', a.readyState, '), waiting for load...');
+          if (process.env.NODE_ENV !== "production") console.log('🎵 Audio not ready (readyState:', a.readyState, '), waiting for load...');
           setState(s => ({ ...s, playing: true, isLoading: true }));
 
           const handleCanPlay = () => {
-            console.log('🎵 Audio can play, starting playback');
+            if (process.env.NODE_ENV !== "production") console.log('🎵 Audio can play, starting playback');
             setState(s => ({ ...s, isLoading: false }));
             void a.play().catch((err) => {
               console.error('Failed to play audio after load:', err);
@@ -1796,7 +1796,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           // Timeout fallback
           setTimeout(() => {
             if (a.readyState < 3) {
-              console.warn('🎵 Audio load timeout, attempting to play anyway');
+              if (process.env.NODE_ENV !== "production") console.warn('🎵 Audio load timeout, attempting to play anyway');
               a.removeEventListener('canplay', handleCanPlay);
               a.removeEventListener('error', handleError);
               void a.play().catch((err) => {
@@ -1831,7 +1831,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const normId = normalizeSlug(trackId);
       const trackInfo = TRACK_INFO[normId] || TRACK_INFO[trackId];
       if (!trackInfo) {
-        console.warn(`Track not found: ${trackId}`);
+        if (process.env.NODE_ENV !== "production") console.warn(`Track not found: ${trackId}`);
         return;
       }
 
@@ -1841,11 +1841,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       trackSource = key ? bestSourceFor(TRACKS[key]) : S(`${normId}.mp3`);
 
       if (!trackSource) {
-        console.warn(`No source found for track: ${trackId}`);
+        if (process.env.NODE_ENV !== "production") console.warn(`No source found for track: ${trackId}`);
         return;
       }
 
-      console.log('🎵 selectTrack: Setting up track for warp sequence:', normId);
+      if (process.env.NODE_ENV !== "production") console.log('🎵 selectTrack: Setting up track for warp sequence:', normId);
 
       // Update currentTrack state FIRST to prevent the playerStore subscription
       // from triggering a duplicate playTrack call
@@ -1857,13 +1857,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       try {
         const { playerStore } = await import('@/store/usePlayerStore');
         playerStore.setState({ mainId: normId, prevMainId: playerStore.getState().mainId });
-        console.log('🎵 Updated playerStore.mainId to:', normId);
+        if (process.env.NODE_ENV !== "production") console.log('🎵 Updated playerStore.mainId to:', normId);
       } catch (err) {
-        console.warn('Failed to update playerStore:', err);
+        if (process.env.NODE_ENV !== "production") console.warn('Failed to update playerStore:', err);
       }
 
       // Stop current music immediately
-      console.log('🎵 Stopping current music for track selection');
+      if (process.env.NODE_ENV !== "production") console.log('🎵 Stopping current music for track selection');
       stopAllAudioInternal();
       setState(s => ({ ...s, playing: false }));
 
@@ -1885,11 +1885,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const a = audioRef.current;
       if (!a) return;
 
-      console.log('🎵 Pre-loading track for post-warp playback:', normId, 'source:', trackSource);
+      if (process.env.NODE_ENV !== "production") console.log('🎵 Pre-loading track for post-warp playback:', normId, 'source:', trackSource);
       a.src = trackSource;
       try {
         a.load();
-        console.log('🎵 Track pre-loaded successfully');
+        if (process.env.NODE_ENV !== "production") console.log('🎵 Track pre-loaded successfully');
       } catch (loadErr) {
         console.error('Failed to pre-load track:', loadErr);
       }
@@ -1904,7 +1904,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
       // If track not found in static list, create dynamic track info
       if (!trackInfo) {
-        console.log(`🎵 preloadTrack: Track not in TRACK_INFO, creating dynamic info for: ${trackId}`);
+        if (process.env.NODE_ENV !== "production") console.log(`🎵 preloadTrack: Track not in TRACK_INFO, creating dynamic info for: ${trackId}`);
         trackInfo = {
           id: normId || trackId,
           title: (trackId || '').toUpperCase().replace(/-/g, ' '),
@@ -1918,19 +1918,19 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const key = trackKeyFromSlug(normId) as TrackKey | null;
       if (key && TRACKS[key]) {
         trackSource = bestSourceFor(TRACKS[key]);
-        console.log(`🎵 preloadTrack: Found track source via TRACKS mapping: ${key} -> ${trackSource}`);
+        if (process.env.NODE_ENV !== "production") console.log(`🎵 preloadTrack: Found track source via TRACKS mapping: ${key} -> ${trackSource}`);
       } else {
         // Fallback to direct file path
         trackSource = S(`${normId}.mp3`);
-        console.log(`🎵 preloadTrack: Using fallback track source: ${trackSource}`);
+        if (process.env.NODE_ENV !== "production") console.log(`🎵 preloadTrack: Using fallback track source: ${trackSource}`);
       }
 
       if (!trackSource) {
-        console.warn(`🎵 preloadTrack: No source found for track: ${trackId}`);
+        if (process.env.NODE_ENV !== "production") console.warn(`🎵 preloadTrack: No source found for track: ${trackId}`);
         return;
       }
 
-      console.log(`🎵 preloadTrack: Loading ${trackId} without autoplay`);
+      if (process.env.NODE_ENV !== "production") console.log(`🎵 preloadTrack: Loading ${trackId} without autoplay`);
 
       // Load the track source
       const a = audioRef.current;
@@ -1945,9 +1945,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       // Update playerStore.mainId to keep play/pause button in sync
       import('@/store/usePlayerStore').then(({ playerStore }) => {
         playerStore.setState({ mainId: normId, prevMainId: playerStore.getState().mainId });
-        console.log('🎵 preloadTrack: Updated playerStore.mainId to:', normId);
+        if (process.env.NODE_ENV !== "production") console.log('🎵 preloadTrack: Updated playerStore.mainId to:', normId);
       }).catch(err => {
-        console.warn('preloadTrack: Failed to update playerStore:', err);
+        if (process.env.NODE_ENV !== "production") console.warn('preloadTrack: Failed to update playerStore:', err);
       });
     },
 
@@ -1958,7 +1958,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       // If track not found in static list, create dynamic track info
       // This allows playing songs from database that aren't hardcoded
       if (!trackInfo) {
-        console.log(`🎵 Track not in TRACK_INFO, creating dynamic info for: ${trackId}`);
+        if (process.env.NODE_ENV !== "production") console.log(`🎵 Track not in TRACK_INFO, creating dynamic info for: ${trackId}`);
         trackInfo = {
           id: normId || trackId,
           title: (trackId || '').toUpperCase().replace(/-/g, ' '),
@@ -1972,19 +1972,19 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const key = trackKeyFromSlug(normId) as TrackKey | null;
       if (key && TRACKS[key]) {
         trackSource = bestSourceFor(TRACKS[key]);
-        console.log(`🎵 Found track source via TRACKS mapping: ${key} -> ${trackSource}`);
+        if (process.env.NODE_ENV !== "production") console.log(`🎵 Found track source via TRACKS mapping: ${key} -> ${trackSource}`);
       } else {
         // Fallback to direct file path
         trackSource = S(`${normId}.mp3`);
-        console.log(`🎵 Using fallback track source: ${trackSource}`);
+        if (process.env.NODE_ENV !== "production") console.log(`🎵 Using fallback track source: ${trackSource}`);
       }
 
       if (!trackSource) {
-        console.warn(`🎵 No source found for track: ${trackId}`);
+        if (process.env.NODE_ENV !== "production") console.warn(`🎵 No source found for track: ${trackId}`);
         return;
       }
 
-      console.log(`🎵 playTrack: ${trackId} -> ${normId}`);
+      if (process.env.NODE_ENV !== "production") console.log(`🎵 playTrack: ${trackId} -> ${normId}`);
 
       // Update current track info immediately
       // Store original trackId as trackingSlug for daily progress tracking (before normalization)
@@ -1993,7 +1993,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       // Always flush any existing listen session when starting a new track
       // This ensures session tracking works even when track is pre-loaded
       if (sessionRef.current && !sessionRef.current.flushed) {
-        console.log('🎧 Flushing session before playing new track');
+        if (process.env.NODE_ENV !== "production") console.log('🎧 Flushing session before playing new track');
         await flushSession(0);
       }
 
@@ -2008,7 +2008,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         // Small delay to ensure audio has fully stopped before starting new track
         await new Promise(resolve => setTimeout(resolve, 50));
       } else {
-        console.log('🎵 Same track detected, not stopping current audio to prevent interruption');
+        if (process.env.NODE_ENV !== "production") console.log('🎵 Same track detected, not stopping current audio to prevent interruption');
       }
 
       // Load and play the track
@@ -2074,7 +2074,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         // Set playing state immediately for instant UI feedback
         setState(s => ({ ...s, playing: true, isLoading: false }));
         await a.play();
-        console.log('🎵 Successfully started playing:', normId);
+        if (process.env.NODE_ENV !== "production") console.log('🎵 Successfully started playing:', normId);
       } catch (err) {
         console.error('Failed to play track:', err);
         setState(s => ({ ...s, isLoading: false, playing: false }));
@@ -2104,7 +2104,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         }
 
         // After all SFX complete, load space music but don't auto-play
-        console.log('🎵 Start sequence complete, loading space music...');
+        if (process.env.NODE_ENV !== "production") console.log('🎵 Start sequence complete, loading space music...');
 
         // Load space music track into the global player for user to play manually
         const spaceMusicSource = bestSourceFor(TRACKS.SPACE_MUSIC);
@@ -2162,7 +2162,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     const trackToPlay = state.pendingTrack;
 
-    console.log('🎵 Auto-playing after warp completion:', trackToPlay);
+    if (process.env.NODE_ENV !== "production") console.log('🎵 Auto-playing after warp completion:', trackToPlay);
 
     // Clear pending track
     setState(s => ({ ...s, pendingTrack: null }));
@@ -2189,13 +2189,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
           // Check if HoloAudioBridge is handling the warp sequence - if so, don't interfere
           if ((window as any).__HOLO_WARP_IN_PROGRESS) {
-            console.log('🎵 AudioProvider: Warp in progress, skipping track sync');
+            if (process.env.NODE_ENV !== "production") console.log('🎵 AudioProvider: Warp in progress, skipping track sync');
             return;
           }
 
           // Only sync if a different song is selected AND we're not already playing that specific track
           if (currentMainId && currentMainId !== currentTrackId) {
-            console.log('🎵 AudioProvider: Syncing with player store selection:', currentMainId, 'was playing:', currentTrackId);
+            if (process.env.NODE_ENV !== "production") console.log('🎵 AudioProvider: Syncing with player store selection:', currentMainId, 'was playing:', currentTrackId);
 
             // Set current track info immediately for UI updates
             const trackInfo = TRACK_INFO[currentMainId];
@@ -2206,14 +2206,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             // A new song was selected via playerStore.setMain() - this triggers a warp effect
             // Reset warpCompleted to false and set as pending track to wait for warp to finish
             // The warp SFX completion (markWarpCompleted) will trigger auto-play via the effect
-            console.log('🎵 AudioProvider: New song selected, setting as pending track and waiting for warp:', currentMainId);
+            if (process.env.NODE_ENV !== "production") console.log('🎵 AudioProvider: New song selected, setting as pending track and waiting for warp:', currentMainId);
             setState(s => ({ ...s, pendingTrack: currentMainId, warpCompleted: false }));
           }
         });
 
         return unsubscribe;
       } catch (err) {
-        console.warn('Failed to subscribe to player store:', err);
+        if (process.env.NODE_ENV !== "production") console.warn('Failed to subscribe to player store:', err);
       }
     };
 
@@ -2240,7 +2240,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const source = e?.detail?.source || 'unknown';
 
       if (!trackSlug) {
-        console.warn('🎵 song:play-now event received without slug');
+        if (process.env.NODE_ENV !== "production") console.warn('🎵 song:play-now event received without slug');
         return;
       }
 

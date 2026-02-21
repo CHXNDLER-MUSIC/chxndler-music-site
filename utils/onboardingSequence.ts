@@ -40,7 +40,7 @@ let cleanupFns: (() => void)[] = [];
 const DEBUG_ONBOARDING = true;
 
 function debugOnboarding(message: string, data?: any) {
-  if (DEBUG_ONBOARDING) {
+  if (DEBUG_ONBOARDING && process.env.NODE_ENV !== "production") {
     console.log(`[ONBOARDING_SEQUENCE] ${message}`, data ?? '');
   }
 }

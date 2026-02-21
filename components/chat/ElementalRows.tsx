@@ -25,10 +25,10 @@ export default function ElementalRows({ active }: ElementalRowsProps) {
       const audio = new Audio('/audio/click.mp3');
       audio.volume = 0.3;
       audio.play().catch(error => {
-        console.log('Click audio play failed:', error);
+        if (process.env.NODE_ENV !== "production") console.log('Click audio play failed:', error);
       });
     } catch (error) {
-      console.log('Click audio creation failed:', error);
+      if (process.env.NODE_ENV !== "production") console.log('Click audio creation failed:', error);
     }
     
     // Toggle selection - if clicking the same element, deselect it
@@ -65,10 +65,10 @@ export default function ElementalRows({ active }: ElementalRowsProps) {
                 const audio = new Audio('/audio/hover.mp3');
                 audio.volume = 0.3;
                 audio.play().catch(error => {
-                  console.log('Hover audio play failed:', error);
+                  if (process.env.NODE_ENV !== "production") console.log('Hover audio play failed:', error);
                 });
               } catch (error) {
-                console.log('Hover audio creation failed:', error);
+                if (process.env.NODE_ENV !== "production") console.log('Hover audio creation failed:', error);
               }
             }}
           >

@@ -262,7 +262,7 @@ export function TourProvider({ children, onMenuAction }: {
       try {
         const step = tourSteps[currentStep];
         if (step?.action) {
-          console.log(`Tour: Executing action "${step.action}" for step "${step.id}"`);
+          if (process.env.NODE_ENV !== "production") console.log(`Tour: Executing action "${step.action}" for step "${step.id}"`);
           
           if (step.action === 'open-menu' || step.action === 'close-menu') {
             if (onMenuAction) {
@@ -287,16 +287,16 @@ export function TourProvider({ children, onMenuAction }: {
                 
                 if (heartCoinsButton && heartCoinsButton.offsetParent) {
                   // Element exists and is visible
-                  console.log(`Tour: Found Heart Coins button, attempt ${attempts + 1}`);
+                  if (process.env.NODE_ENV !== "production") console.log(`Tour: Found Heart Coins button, attempt ${attempts + 1}`);
                   try {
                     (heartCoinsButton as HTMLElement).click();
-                    console.log('Tour: Heart Coins button clicked successfully');
+                    if (process.env.NODE_ENV !== "production") console.log('Tour: Heart Coins button clicked successfully');
                   } catch (error) {
                     console.error('Tour: Error clicking Heart Coins button:', error);
                   }
                 } else {
                   // Element not found or not visible, retry
-                  console.log(`Tour: Heart Coins button not ready, retrying... attempt ${attempts + 1}`);
+                  if (process.env.NODE_ENV !== "production") console.log(`Tour: Heart Coins button not ready, retrying... attempt ${attempts + 1}`);
                   setTimeout(() => attemptHeartCoinsOpen(attempts + 1), 200);
                 }
               };
@@ -322,12 +322,12 @@ export function TourProvider({ children, onMenuAction }: {
                 
                 if (tabElement && tabElement.offsetParent) {
                   // Element exists and is visible
-                  console.log(`Tour: Clicking tab element: ${step.targetId}, attempt ${attempts + 1}`);
+                  if (process.env.NODE_ENV !== "production") console.log(`Tour: Clicking tab element: ${step.targetId}, attempt ${attempts + 1}`);
                   (tabElement as HTMLElement).click();
-                  console.log(`Tour: Tab ${step.targetId} clicked successfully`);
+                  if (process.env.NODE_ENV !== "production") console.log(`Tour: Tab ${step.targetId} clicked successfully`);
                 } else {
                   // Element not found or not visible, retry
-                  console.log(`Tour: Tab element ${step.targetId} not ready, retrying... attempt ${attempts + 1}`);
+                  if (process.env.NODE_ENV !== "production") console.log(`Tour: Tab element ${step.targetId} not ready, retrying... attempt ${attempts + 1}`);
                   setTimeout(() => attemptTabClick(attempts + 1), 250);
                 }
               } catch (error) {
@@ -415,13 +415,13 @@ function TourOverlay() {
       const isSignalStep = currentStepData.id === 'signal-streaming';
       
       const findElementAndPosition = (attempts = 0) => {
-        console.log(`Tour: Looking for element with data-tour-id="${currentStepData.targetId}", attempt ${attempts + 1}`);
+        if (process.env.NODE_ENV !== "production") console.log(`Tour: Looking for element with data-tour-id="${currentStepData.targetId}", attempt ${attempts + 1}`);
         const element = document.querySelector(`[data-tour-id="${currentStepData.targetId}"]`) as HTMLElement;
-        console.log(`Tour: Element found:`, element);
+        if (process.env.NODE_ENV !== "production") console.log(`Tour: Element found:`, element);
         
         // If element not found and it's a special step, retry up to 5 times with 100ms delays
         if (!element && (isMenuStep || isHeartCoinsStep || isSignalStep) && attempts < 5) {
-          console.log(`Tour: Element not found, retrying in 100ms...`);
+          if (process.env.NODE_ENV !== "production") console.log(`Tour: Element not found, retrying in 100ms...`);
           setTimeout(() => findElementAndPosition(attempts + 1), 100);
           return;
         }

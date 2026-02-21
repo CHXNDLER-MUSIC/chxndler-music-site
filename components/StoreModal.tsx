@@ -215,12 +215,12 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
   const handleSpendHeartCoins = async () => {
     if (!item || !profile || isSpending) return;
     
-    console.log('handleSpendHeartCoins called');
+    if (process.env.NODE_ENV !== "production") console.log('handleSpendHeartCoins called');
     setIsSpending(true);
     setCheckoutError(null);
     
     try {
-      console.log('Attempting purchase with parameters:', {
+      if (process.env.NODE_ENV !== "production") console.log('Attempting purchase with parameters:', {
         p_user_id: profile.id,
         p_item_slug: item.id,
         p_cost: item.priceHeartCoins,
@@ -236,9 +236,9 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
         .single();
         
       if (functionError) {
-        console.warn('Could not verify function existence:', functionError);
+        if (process.env.NODE_ENV !== "production") console.warn('Could not verify function existence:', functionError);
       } else {
-        console.log('Function exists:', functionCheck);
+        if (process.env.NODE_ENV !== "production") console.log('Function exists:', functionCheck);
       }
       
       // Call the RPC with correct parameters
@@ -248,7 +248,7 @@ export default function StoreModal({ item, isOpen, onClose, onPurchaseSuccess }:
         p_cost: item.priceHeartCoins
       });
       
-      console.log('RPC Response:', { data, error });
+      if (process.env.NODE_ENV !== "production") console.log('RPC Response:', { data, error });
       
       if (error) {
         console.error('RPC Error Details:', {

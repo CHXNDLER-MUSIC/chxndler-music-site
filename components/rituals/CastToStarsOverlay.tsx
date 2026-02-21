@@ -168,7 +168,7 @@ export default function CastToStarsOverlay({
         // This prevents unhandled promise rejections when controls.start() is cancelled
         if (!cancelled && isMountedRef.current) {
           // Only log if it's a genuine error, not a cancellation
-          console.warn("CastToStarsOverlay animation interrupted:", error);
+          if (process.env.NODE_ENV !== "production") console.warn("CastToStarsOverlay animation interrupted:", error);
         }
       }
     };

@@ -47,7 +47,7 @@ async function getOrderedPrompt(promptType: 'intention' | 'reflection', element:
 
   // If sort_order column doesn't exist yet, fall back to ordering by id (creation order)
   if (error && (error.message.includes('sort_order') || error.message.includes('does not exist'))) {
-    console.log(`Falling back to id ordering for ${promptType} ${element}`);
+    if (process.env.NODE_ENV !== "production") console.log(`Falling back to id ordering for ${promptType} ${element}`);
     const fallbackResult = await supabase
       .from('soul_prompts')
       .select('id, text, element, prompt_type')
@@ -57,7 +57,7 @@ async function getOrderedPrompt(promptType: 'intention' | 'reflection', element:
     
     data = fallbackResult.data;
     error = fallbackResult.error;
-    console.log(`Fallback result: ${data?.length} prompts found`);
+    if (process.env.NODE_ENV !== "production") console.log(`Fallback result: ${data?.length} prompts found`);
   }
 
   if (error) {
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
 
     // If daily prompt exists in database, use it as the absolute source of truth
     if (dailyPrompt) {
-      console.log(`Using daily prompt from database for ${today}: element=${dailyPrompt.element}`);
+      if (process.env.NODE_ENV !== "production") console.log(`Using daily prompt from database for ${today}: element=${dailyPrompt.element}`);
       
       // Ensure we have valid prompt data
       if (!dailyPrompt?.intention || !dailyPrompt?.prompt) {
@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
 
     // If no database entry exists, we cannot create one without the soul_prompts table
     // This should prompt the admin to create the entry manually
-    console.warn(`No daily prompt found in database for ${today}. Database should be the source of truth.`);
+    if (process.env.NODE_ENV !== "production") console.warn(`No daily prompt found in database for ${today}. Database should be the source of truth.`);
     
     return NextResponse.json(
       { 

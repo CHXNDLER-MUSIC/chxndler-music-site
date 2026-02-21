@@ -10,16 +10,18 @@ export async function GET(request: NextRequest) {
   const origin = requestUrl.origin;
   const profileSetup = requestUrl.searchParams.get('profileSetup');
 
-  console.log('[auth/callback] ========== REQUEST RECEIVED ==========');
-  console.log('[auth/callback] Full URL:', requestUrl.toString());
-  console.log('[auth/callback] Parsed:', {
-    code: code ? `${code.substring(0, 10)}...` : 'MISSING',
-    token_hash: token_hash ? `${token_hash.substring(0, 10)}...` : 'MISSING',
-    type,
-    next,
-    profileSetup,
-    origin
-  });
+  if (process.env.NODE_ENV !== "production") {
+    console.log('[auth/callback] ========== REQUEST RECEIVED ==========');
+    console.log('[auth/callback] Full URL:', requestUrl.toString());
+    console.log('[auth/callback] Parsed:', {
+      code: code ? `${code.substring(0, 10)}...` : 'MISSING',
+      token_hash: token_hash ? `${token_hash.substring(0, 10)}...` : 'MISSING',
+      type,
+      next,
+      profileSetup,
+      origin
+    });
+  }
 
   // Handle case where no code is provided (could be token_hash for older flows)
   if (!code && !token_hash) {
@@ -33,7 +35,7 @@ export async function GET(request: NextRequest) {
     const separator = redirectUrl.includes('?') ? '&' : '?';
     redirectUrl = `${redirectUrl}${separator}profileSetup=1`;
   }
-  console.log('[auth/callback] Will redirect to:', redirectUrl);
+  if (process.env.NODE_ENV !== "production") console.log('[auth/callback] Will redirect to:', redirectUrl);
 
   // Create the response object first - cookies will be set directly on this
   const response = NextResponse.redirect(redirectUrl);
@@ -49,11 +51,11 @@ export async function GET(request: NextRequest) {
       cookies: {
         getAll() {
           const cookies = request.cookies.getAll();
-          console.log('[auth/callback] Reading cookies:', cookies.map(c => c.name));
+          if (process.env.NODE_ENV !== "production") console.log('[auth/callback] Reading cookies:', cookies.map(c => c.name));
           return cookies;
         },
         setAll(cookiesToSet) {
-          console.log('[auth/callback] Setting cookies:', cookiesToSet.map(c => ({ name: c.name, hasValue: !!c.value })));
+          if (process.env.NODE_ENV !== "production") console.log('[auth/callback] Setting cookies:', cookiesToSet.map(c => ({ name: c.name, hasValue: !!c.value })));
           cookiesToSet.forEach(({ name, value, options }) => {
             // Ensure cookies work on localhost (http)
             const cookieOptions = {
@@ -73,14 +75,14 @@ export async function GET(request: NextRequest) {
 
   // Try code exchange first (PKCE flow)
   if (code) {
-    console.log('[auth/callback] Exchanging code for session (PKCE flow)...');
+    if (process.env.NODE_ENV !== "production") console.log('[auth/callback] Exchanging code for session (PKCE flow)...');
     const result = await supabase.auth.exchangeCodeForSession(code);
     sessionData = result.data;
     error = result.error;
   }
   // Fallback to token_hash verification (older magic link flow)
   else if (token_hash && type) {
-    console.log('[auth/callback] Verifying token_hash (legacy flow)...');
+    if (process.env.NODE_ENV !== "production") console.log('[auth/callback] Verifying token_hash (legacy flow)...');
     const result = await supabase.auth.verifyOtp({
       token_hash,
       type: type as 'email' | 'magiclink',
@@ -109,10 +111,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/?error=auth_exchange_failed&details=${encodeURIComponent(error.message)}`);
   }
 
-  console.log('[auth/callback] ========== AUTH SUCCESS ==========');
-  console.log('[auth/callback] User:', sessionData?.session?.user?.email);
-  console.log('[auth/callback] User ID:', sessionData?.session?.user?.id);
-  console.log('[auth/callback] Session exists:', !!sessionData?.session);
+  if (process.env.NODE_ENV !== "production") {
+    console.log('[auth/callback] ========== AUTH SUCCESS ==========');
+    console.log('[auth/callback] User:', sessionData?.session?.user?.email);
+    console.log('[auth/callback] User ID:', sessionData?.session?.user?.id);
+    console.log('[auth/callback] Session exists:', !!sessionData?.session);
+  }
 
   // If we got here without an error but also without a session, something went wrong
   if (!sessionData?.session) {
@@ -124,22 +128,24 @@ export async function GET(request: NextRequest) {
   // Call the ensure_profile RPC to create profile if it doesn't exist
   // This runs as the authenticated user (no service role needed)
   try {
-    console.log('[auth/callback] Calling ensure_profile RPC...');
+    if (process.env.NODE_ENV !== "production") console.log('[auth/callback] Calling ensure_profile RPC...');
     const { error: rpcError } = await supabase.rpc('ensure_profile');
 
     if (rpcError) {
       console.error('[auth/callback] ensure_profile RPC failed:', rpcError.message);
       // Don't fail the auth flow, just log the error
     } else {
-      console.log('[auth/callback] ensure_profile RPC succeeded');
+      if (process.env.NODE_ENV !== "production") console.log('[auth/callback] ensure_profile RPC succeeded');
     }
   } catch (profileError: any) {
     console.error('[auth/callback] Profile creation error:', profileError?.message);
     // Don't fail the auth flow
   }
 
-  console.log('[auth/callback] ========== REDIRECT ==========');
-  console.log('[auth/callback] Redirecting to:', redirectUrl);
-  console.log('[auth/callback] Cookies set:', cookiesSet);
+  if (process.env.NODE_ENV !== "production") {
+    console.log('[auth/callback] ========== REDIRECT ==========');
+    console.log('[auth/callback] Redirecting to:', redirectUrl);
+    console.log('[auth/callback] Cookies set:', cookiesSet);
+  }
   return response;
 }

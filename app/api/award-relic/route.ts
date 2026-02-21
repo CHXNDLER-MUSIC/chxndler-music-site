@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     }
 
     if (existingRelic) {
-      console.log('[award-relic API] User already owns relic:', relicCode);
+      if (process.env.NODE_ENV !== "production") console.log('[award-relic API] User already owns relic:', relicCode);
       return NextResponse.json({
         success: true,
         alreadyOwned: true,
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
 
     // Ignore update error - the main thing is the relic was awarded
     if (updateError) {
-      console.warn('[award-relic API] Could not update relics count:', updateError);
+      if (process.env.NODE_ENV !== "production") console.warn('[award-relic API] Could not update relics count:', updateError);
     }
 
     // If this is a BOOST relic, create a user_active_boosts entry
@@ -139,14 +139,14 @@ export async function POST(request: Request) {
           });
 
         if (boostError) {
-          console.warn('[award-relic API] Could not create user_active_boosts:', boostError);
+          if (process.env.NODE_ENV !== "production") console.warn('[award-relic API] Could not create user_active_boosts:', boostError);
         } else {
-          console.log('[award-relic API] Created user_active_boosts:', relicCode.toLowerCase(), 'for user:', userId);
+          if (process.env.NODE_ENV !== "production") console.log('[award-relic API] Created user_active_boosts:', relicCode.toLowerCase(), 'for user:', userId);
         }
       }
     }
 
-    console.log('[award-relic API] Relic awarded successfully:', relicCode, 'to user:', userId);
+    if (process.env.NODE_ENV !== "production") console.log('[award-relic API] Relic awarded successfully:', relicCode, 'to user:', userId);
 
     return NextResponse.json({
       success: true,

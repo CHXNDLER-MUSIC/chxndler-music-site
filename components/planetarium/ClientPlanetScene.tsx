@@ -49,7 +49,7 @@ export default function ClientPlanetScene({
 
   // Handle song/element track changes from planet warp
   const handleSongChange = useCallback(async (trackId: string) => {
-    console.log('[ClientPlanetScene] handleSongChange called with:', trackId);
+    if (process.env.NODE_ENV !== "production") console.log('[ClientPlanetScene] handleSongChange called with:', trackId);
     try {
       // Use selectTrack which handles stopping current music, playing warp SFX, and auto-playing
       await audioManager.selectTrack(trackId);
@@ -58,7 +58,7 @@ export default function ClientPlanetScene({
     }
   }, [audioManager]);
 
-  console.log('ClientPlanetScene render:', { loading, error: error?.message, songsCount: songs.length, quality });
+  if (process.env.NODE_ENV !== "production") console.log('ClientPlanetScene render:', { loading, error: error?.message, songsCount: songs.length, quality });
 
   if (loading) {
     return (
@@ -82,7 +82,7 @@ export default function ClientPlanetScene({
     );
   }
 
-  console.log('ClientPlanetScene rendering Pure3DPlanets with:', { songs: songs.length, quality, glowingElement, intention });
+  if (process.env.NODE_ENV !== "production") console.log('ClientPlanetScene rendering Pure3DPlanets with:', { songs: songs.length, quality, glowingElement, intention });
 
   // Prefer element_of_day from DB; fallback to focus element source if needed
   const glowingElement = useMemo(() => element ?? focusElement ?? null, [element, focusElement]);
@@ -114,7 +114,7 @@ export default function ClientPlanetScene({
       if (resp.ok) {
         // Modal is now shown from Pure3DPlanets after warp effect
         // Just log success here
-        console.log('[ClientPlanetScene] Successfully claimed element of day reward');
+        if (process.env.NODE_ENV !== "production") console.log('[ClientPlanetScene] Successfully claimed element of day reward');
         return resp;
       }
       // Not ok and not already claimed: revert

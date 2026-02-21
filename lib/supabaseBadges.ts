@@ -203,7 +203,7 @@ export class SupabaseBadgeService {
 
   static async initializeDefaultBadges(): Promise<void> {
     try {
-      console.log('🚀 Badge initialization disabled - using public.badges table instead');
+      if (process.env.NODE_ENV !== "production") console.log('🚀 Badge initialization disabled - using public.badges table instead');
       // This function is deprecated - badges are now managed through public.badges table
       return;
     } catch (error) {

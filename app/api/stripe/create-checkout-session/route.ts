@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       });
     } catch (logError) {
       // Don't fail the request if logging fails
-      console.warn('Failed to log purchase attempt:', logError);
+      if (process.env.NODE_ENV !== "production") console.warn('Failed to log purchase attempt:', logError);
     }
 
     return NextResponse.json({

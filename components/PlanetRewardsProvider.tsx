@@ -77,14 +77,14 @@ export function PlanetRewardsProvider({
       // Fetch from server API to get server-time based "today"
       const res = await fetch('/api/element-of-day');
       if (!res.ok) {
-        console.warn('Error fetching element-of-day API:', res.status);
+        if (process.env.NODE_ENV !== "production") console.warn('Error fetching element-of-day API:', res.status);
         setElementOfDay(null);
         setIsSyncing(false);
         return null;
       }
       const data = await res.json();
       if (data.error) {
-        console.warn('Error in element-of-day API:', data.error);
+        if (process.env.NODE_ENV !== "production") console.warn('Error in element-of-day API:', data.error);
         setElementOfDay(null);
         setIsSyncing(false);
         return null;
@@ -128,7 +128,7 @@ export function PlanetRewardsProvider({
           if (cancelled) return;
 
           if (claimErr) {
-            console.warn('Error fetching user_element_claims:', claimErr.message);
+            if (process.env.NODE_ENV !== "production") console.warn('Error fetching user_element_claims:', claimErr.message);
             setClaimedToday(false);
           } else {
             const alreadyClaimed = (count ?? 0) > 0;
@@ -286,7 +286,7 @@ export function PlanetRewardsProvider({
           metadata: { element, source: 'warp' }
         });
       } catch (err) {
-        console.warn('Failed to log HeartCoin transaction:', err);
+        if (process.env.NODE_ENV !== "production") console.warn('Failed to log HeartCoin transaction:', err);
       }
 
       // Celebration is triggered by logHeartcoinTransaction; avoid double-trigger here

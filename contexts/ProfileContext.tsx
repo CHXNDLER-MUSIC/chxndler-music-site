@@ -354,7 +354,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       if (!data) {
         // No profile row yet - auth callback route should create one
         // Don't sign out - the profile may still be getting created
-        console.warn('ProfileContext: No profile data found for authenticated user');
+        if (process.env.NODE_ENV !== "production") console.warn('ProfileContext: No profile data found for authenticated user');
         setProfile(null);
         return;
       }
@@ -432,7 +432,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       // Filter out card rows where the join failed (defensive null handling)
       const validCardRows = (cardRows || []).filter((row: OwnedCardRow) => {
         if (!row.cards) {
-          console.warn("[ProfileContext] user_cards row missing cards join", row);
+          if (process.env.NODE_ENV !== "production") console.warn("[ProfileContext] user_cards row missing cards join", row);
           return false;
         }
         return true;
@@ -512,7 +512,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             fetchUserBadges(user.id);
           })
           .catch(err => {
-            console.warn('Failed to update badge progress counters:', err);
+            if (process.env.NODE_ENV !== "production") console.warn('Failed to update badge progress counters:', err);
           })
           .finally(() => {
             // Re-enable celebrations now that the initial check is done.
@@ -620,7 +620,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         };
         setProfileWithCelebration(mappedProfile);
       } else {
-        console.warn("Profile update returned no data. Profile may not exist yet - waiting for trigger to create it.");
+        if (process.env.NODE_ENV !== "production") console.warn("Profile update returned no data. Profile may not exist yet - waiting for trigger to create it.");
       }
     } catch (error) {
       console.error("Error in updateProfile:", error);
@@ -664,7 +664,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
       // If no profile exists, create one first using upsert
       if (!profile) {
-        console.log("No profile found, creating one for user:", user.id);
+        if (process.env.NODE_ENV !== "production") console.log("No profile found, creating one for user:", user.id);
         const { error: upsertError } = await supabaseBrowser
           .from("profiles")
           .upsert(
@@ -932,7 +932,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         if ((isValidUUID || entry.prompt_id === 'relic-id-here') && !isProblematicValue) {
           entryData.prompt_id = entry.prompt_id;
         } else {
-          console.warn('Invalid or problematic UUID for prompt_id, skipping:', {
+          if (process.env.NODE_ENV !== "production") console.warn('Invalid or problematic UUID for prompt_id, skipping:', {
             prompt_id: entry.prompt_id,
             isValidUUID,
             isProblematicValue
@@ -1035,7 +1035,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             fetchUserBadges(user.id);
           })
           .catch(err => {
-            console.warn('Failed to update badge progress after journal save:', err);
+            if (process.env.NODE_ENV !== "production") console.warn('Failed to update badge progress after journal save:', err);
           })
           .finally(() => {
             enableBadgeCelebrations();

@@ -182,10 +182,10 @@ export default function VanillaPlanetarium({
 
   useEffect(() => {
     setIsClient(true);
-    console.log('VanillaPlanetarium mounted on client');
+    if (process.env.NODE_ENV !== "production") console.log('VanillaPlanetarium mounted on client');
   }, []);
 
-  console.log('VanillaPlanetarium render:', { 
+  if (process.env.NODE_ENV !== "production") console.log('VanillaPlanetarium render:', { 
     songsLoading, 
     songsError: songsError?.slice(0, 50), 
     songsCount: songs.length,

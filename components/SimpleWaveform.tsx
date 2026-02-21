@@ -93,7 +93,7 @@ const SimpleWaveform: React.FC<SimpleWaveformProps> = ({
       } catch (error) {
         // Only log if it's not the known "already connected" error
         if (!(error instanceof DOMException && error.name === 'InvalidStateError')) {
-          console.warn("Failed to setup audio context:", error);
+          if (process.env.NODE_ENV !== "production") console.warn("Failed to setup audio context:", error);
         }
       }
     };

@@ -198,7 +198,7 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
           .in('id', allUserIds);
 
         if (profilesError) {
-          console.warn('PublicJournalFeed: failed to query public_profiles_table', profilesError);
+          if (process.env.NODE_ENV !== "production") console.warn('PublicJournalFeed: failed to query public_profiles_table', profilesError);
           return;
         }
 
@@ -217,7 +217,7 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
           setAuthorOverrides(next);
         }
       } catch (err) {
-        console.warn('PublicJournalFeed: failed to load public author profiles', err);
+        if (process.env.NODE_ENV !== "production") console.warn('PublicJournalFeed: failed to load public author profiles', err);
       }
     };
 
@@ -441,7 +441,7 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
                   draggable={false}
                   onError={(e) => {
                     const objectKey = (enlargedCard.card as any).image_object_key || enlargedCard.card.card_name || 'CHXNDLER';
-                    console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
+                    if (process.env.NODE_ENV !== "production") console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
                     const fallback = getCardImageUrl('CHXNDLER');
                     if (e.currentTarget.src !== fallback) {
                       e.currentTarget.src = fallback;
@@ -944,7 +944,7 @@ export default function PublicJournalFeed({ onStarToggle }: PublicJournalFeedPro
                             e.stopPropagation();
                             try { sfx.play('click', 0.4); } catch {}
                             // TODO: Add send heart coin functionality
-                            console.log('Send heart coin to:', entry.user_id);
+                            if (process.env.NODE_ENV !== "production") console.log('Send heart coin to:', entry.user_id);
                           }}
                           onMouseEnter={() => {
                             try { sfx.play('hover', 0.6); } catch {}

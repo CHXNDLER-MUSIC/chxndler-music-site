@@ -57,18 +57,18 @@ export class ChatService {
     try {
       const { data, error } = await supabaseClient.rpc('get_current_stream_session');
       if (error) {
-        console.warn('Stream session RPC not available, using fallback:', error.message || 'Unknown error');
+        if (process.env.NODE_ENV !== "production") console.warn('Stream session RPC not available, using fallback:', error.message || 'Unknown error');
         throw error;
       }
       
       this.currentSessionId = data;
-      console.log('✅ Got stream session from DB:', data);
+      if (process.env.NODE_ENV !== "production") console.log('✅ Got stream session from DB:', data);
       return data;
     } catch (error) {
       // Fallback: generate session ID client-side
       const fallback = `stream_${new Date().getFullYear()}_${String(new Date().getMonth() + 1).padStart(2, '0')}_${String(new Date().getDate()).padStart(2, '0')}_${String(new Date().getHours()).padStart(2, '0')}`;
       this.currentSessionId = fallback;
-      console.log('⚡ Using fallback session ID:', fallback);
+      if (process.env.NODE_ENV !== "production") console.log('⚡ Using fallback session ID:', fallback);
       return fallback;
     }
   }
@@ -135,7 +135,7 @@ export class ChatService {
         })
         .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
-            console.log('✅ Chat subscription active');
+            if (process.env.NODE_ENV !== "production") console.log('✅ Chat subscription active');
           } else if (status === 'CHANNEL_ERROR') {
             console.error('❌ Chat subscription error');
             onError?.('Chat subscription failed');
@@ -241,7 +241,7 @@ export class ChatService {
     const welcomeMessage = `✨ ${userName} has connected to the Heartverse. Welcome home.`;
     await this.postSystemMessage(welcomeMessage);
     
-    console.log(`🎉 First-time connection: ${userName} (${userId})`);
+    if (process.env.NODE_ENV !== "production") console.log(`🎉 First-time connection: ${userName} (${userId})`);
   }
 
   /**
@@ -259,7 +259,7 @@ export class ChatService {
       const firstTransmissionMessage = `⭐ First Transmission Received from ${userName}`;
       await this.postSystemMessage(firstTransmissionMessage);
       
-      console.log(`🌟 First-ever message from: ${userName} (${userId})`);
+      if (process.env.NODE_ENV !== "production") console.log(`🌟 First-ever message from: ${userName} (${userId})`);
     }
   }
 
@@ -292,7 +292,7 @@ export class ChatService {
       const transferMessage = `💛 ${sender.name} sent a HeartCoin to ${receiver.name} — the signal strengthens.`;
       await this.postSystemMessage(transferMessage);
       
-      console.log(`💛 HeartCoin transfer: ${sender.name} → ${receiver.name}`);
+      if (process.env.NODE_ENV !== "production") console.log(`💛 HeartCoin transfer: ${sender.name} → ${receiver.name}`);
     } catch (error) {
       console.error('Error in handleHeartCoinTransfer:', error);
     }
@@ -307,11 +307,11 @@ export class ChatService {
       
       // Check if user is authenticated
       const { data: { session } } = await supabaseClient.auth.getSession();
-      console.log('🔥 SendMessage session check:', { hasSession: !!session, hasUser: !!session?.user, anonymousName });
+      if (process.env.NODE_ENV !== "production") console.log('🔥 SendMessage session check:', { hasSession: !!session, hasUser: !!session?.user, anonymousName });
       
       if (!session?.user) {
         // For anonymous users, return a mock message with alien name for local display
-        console.log('🔥 Anonymous user message:', message, 'Display name:', anonymousName);
+        if (process.env.NODE_ENV !== "production") console.log('🔥 Anonymous user message:', message, 'Display name:', anonymousName);
         const mockMessage = {
           id: `anonymous-${Date.now()}`,
           user_id: 'anonymous',
@@ -326,7 +326,7 @@ export class ChatService {
             profile_image_url: null
           }
         } as ChatMessage;
-        console.log('🔥 Returning mock message:', mockMessage);
+        if (process.env.NODE_ENV !== "production") console.log('🔥 Returning mock message:', mockMessage);
         return mockMessage;
       }
 
@@ -364,7 +364,7 @@ export class ChatService {
         .single();
 
       if (error) {
-        console.warn('Database not accessible for sending message:', error.message || 'Unknown error');
+        if (process.env.NODE_ENV !== "production") console.warn('Database not accessible for sending message:', error.message || 'Unknown error');
         return null;
       }
 
@@ -419,13 +419,13 @@ export class ChatService {
         .limit(limit);
 
       if (error) {
-        console.warn('Database not accessible for chat messages, using empty state:', error.message || 'Unknown error');
+        if (process.env.NODE_ENV !== "production") console.warn('Database not accessible for chat messages, using empty state:', error.message || 'Unknown error');
         return [];
       }
 
       return (data || []).reverse() as ChatMessage[];
     } catch (error) {
-      console.warn('Chat messages unavailable, starting fresh session');
+      if (process.env.NODE_ENV !== "production") console.warn('Chat messages unavailable, starting fresh session');
       return [];
     }
   }
@@ -449,7 +449,7 @@ export class ChatService {
         .limit(100);
 
       if (error) {
-        console.warn('Database not accessible for chat users, using local state:', error.message || 'Unknown error');
+        if (process.env.NODE_ENV !== "production") console.warn('Database not accessible for chat users, using local state:', error.message || 'Unknown error');
         return [];
       }
 
@@ -502,7 +502,7 @@ export class ChatService {
 
       return Array.from(uniqueUsers.values());
     } catch (error) {
-      console.warn('Chat users unavailable, relying on local state');
+      if (process.env.NODE_ENV !== "production") console.warn('Chat users unavailable, relying on local state');
       return [];
     }
   }
@@ -646,7 +646,7 @@ export class ChatService {
         })
         .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
-            console.log('✅ Reaction subscription active');
+            if (process.env.NODE_ENV !== "production") console.log('✅ Reaction subscription active');
           } else if (status === 'CHANNEL_ERROR') {
             console.error('❌ Reaction subscription error');
             onError?.('Reaction subscription failed');
@@ -695,7 +695,7 @@ export class ChatService {
         payload: reactionEvent
       });
 
-      console.log('✅ Reaction sent:', reactionEvent);
+      if (process.env.NODE_ENV !== "production") console.log('✅ Reaction sent:', reactionEvent);
     } catch (error) {
       console.error('Error sending reaction:', error);
       throw error;
@@ -709,7 +709,7 @@ export class ChatService {
     if (this.reactionChannel) {
       await supabaseClient.removeChannel(this.reactionChannel);
       this.reactionChannel = null;
-      console.log('❌ Disconnected from reactions');
+      if (process.env.NODE_ENV !== "production") console.log('❌ Disconnected from reactions');
     }
   }
 }

@@ -5,13 +5,13 @@ import { getSupabaseAdmin } from '@/lib/supabaseServer';
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('🔍 DEBUG: Profile Creation Diagnostic Started');
+    if (process.env.NODE_ENV !== "production") console.log('🔍 DEBUG: Profile Creation Diagnostic Started');
     
     const cookieStore = await cookies();
     const token = cookieStore.get('sb-access-token')?.value || '';
     
     if (!token) {
-      console.log('❌ DEBUG: No access token found');
+      if (process.env.NODE_ENV !== "production") console.log('❌ DEBUG: No access token found');
       return NextResponse.json({ 
         error: 'No authentication token found',
         debug: {
@@ -21,13 +21,13 @@ export async function GET(req: NextRequest) {
       }, { status: 401 });
     }
 
-    console.log('✅ DEBUG: Access token found, length:', token.length);
+    if (process.env.NODE_ENV !== "production") console.log('✅ DEBUG: Access token found, length:', token.length);
     
     const supabase = createSupabaseServerClientWithJwt(token);
     const { data: userResult, error: userError } = await supabase.auth.getUser();
     
     if (userError || !userResult?.user) {
-      console.log('❌ DEBUG: User auth failed:', userError);
+      if (process.env.NODE_ENV !== "production") console.log('❌ DEBUG: User auth failed:', userError);
       return NextResponse.json({ 
         error: 'User authentication failed',
         debug: {
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     }
 
     const user = userResult.user;
-    console.log('✅ DEBUG: User authenticated:', user.id, user.email);
+    if (process.env.NODE_ENV !== "production") console.log('✅ DEBUG: User authenticated:', user.id, user.email);
 
     // Check current profile status
     const supabaseAdmin = getSupabaseAdmin();
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
       .eq('id', user.id)
       .single();
 
-    console.log('📋 DEBUG: Profile check result:', {
+    if (process.env.NODE_ENV !== "production") console.log('📋 DEBUG: Profile check result:', {
       profileExists: !!existingProfile,
       profileCheckError: profileCheckError?.message,
       profileData: existingProfile
@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
       .eq('id', user.id)
       .single();
 
-    console.log('👤 DEBUG: Auth user data:', {
+    if (process.env.NODE_ENV !== "production") console.log('👤 DEBUG: Auth user data:', {
       authUserError: authUserError?.message,
       authUser: authUser
     });
@@ -101,7 +101,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('🔧 DEBUG: Manual Profile Creation Started');
+    if (process.env.NODE_ENV !== "production") console.log('🔧 DEBUG: Manual Profile Creation Started');
     
     const cookieStore = await cookies();
     const token = cookieStore.get('sb-access-token')?.value || '';
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
     }
 
     const user = userResult.user;
-    console.log('✅ DEBUG: Creating profile for user:', user.id);
+    if (process.env.NODE_ENV !== "production") console.log('✅ DEBUG: Creating profile for user:', user.id);
 
     const supabaseAdmin = getSupabaseAdmin();
     
@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (existingProfile) {
-      console.log('⚠️  DEBUG: Profile already exists');
+      if (process.env.NODE_ENV !== "production") console.log('⚠️  DEBUG: Profile already exists');
       return NextResponse.json({ 
         message: 'Profile already exists',
         profileId: existingProfile.id 
@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString()
     };
 
-    console.log('📝 DEBUG: Inserting profile data:', profileData);
+    if (process.env.NODE_ENV !== "production") console.log('📝 DEBUG: Inserting profile data:', profileData);
 
     const { data: newProfile, error: profileError } = await supabaseAdmin
       .from('profiles')
@@ -175,7 +175,7 @@ export async function POST(req: NextRequest) {
       }, { status: 500 });
     }
 
-    console.log('✅ DEBUG: Profile created successfully:', newProfile);
+    if (process.env.NODE_ENV !== "production") console.log('✅ DEBUG: Profile created successfully:', newProfile);
 
     return NextResponse.json({
       success: true,

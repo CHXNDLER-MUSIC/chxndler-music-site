@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseServer';
 
 export async function POST(req: NextRequest) {
-  console.log('[updateShipping] POST request received');
+  if (process.env.NODE_ENV !== "production") console.log('[updateShipping] POST request received');
 
   try {
     const body = await req.json();
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('[updateShipping] Updating order:', orderId);
+    if (process.env.NODE_ENV !== "production") console.log('[updateShipping] Updating order:', orderId);
 
     const supabase = getSupabaseAdmin();
 
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('[updateShipping] SUCCESS order:', orderId);
+    if (process.env.NODE_ENV !== "production") console.log('[updateShipping] SUCCESS order:', orderId);
 
     return NextResponse.json({ success: true });
 

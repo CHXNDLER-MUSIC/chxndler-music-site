@@ -30,7 +30,7 @@ export async function recordSongEndedPlay(songId: string): Promise<boolean> {
     const { data: { session } } = await supabaseBrowser.auth.getSession();
     const userId = session?.user?.id;
     if (!userId) {
-      console.log('[DailyProgress] skipped: no session');
+      if (process.env.NODE_ENV !== "production") console.log('[DailyProgress] skipped: no session');
       return false;
     }
 
@@ -80,7 +80,7 @@ export async function recordSongEndedPlay(songId: string): Promise<boolean> {
 
         if ((count ?? 0) > 0) {
           claimFound = true;
-          console.log(`[DailySongProgress] Claim found after ${i + 1} attempt(s)`);
+          if (process.env.NODE_ENV !== "production") console.log(`[DailySongProgress] Claim found after ${i + 1} attempt(s)`);
         }
       } catch {}
     }
@@ -88,7 +88,7 @@ export async function recordSongEndedPlay(songId: string): Promise<boolean> {
     // Notify UI to refresh
     window.dispatchEvent(new CustomEvent('songOfDay:refresh'));
     if (claimFound) {
-      console.log('[DailySongProgress] Dispatching dailySongQuestCompleted event');
+      if (process.env.NODE_ENV !== "production") console.log('[DailySongProgress] Dispatching dailySongQuestCompleted event');
       window.dispatchEvent(new CustomEvent('dailySongQuestCompleted', { detail: { day: nyDay } }));
     }
 

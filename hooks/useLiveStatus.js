@@ -51,7 +51,7 @@ export function useLiveStatus() {
     const username = 'chxndlerthealien'; // Your Twitch username
     
     if (!clientId) {
-      console.warn('Twitch client ID not configured');
+      if (process.env.NODE_ENV !== "production") console.warn('Twitch client ID not configured');
       return false;
     }
 

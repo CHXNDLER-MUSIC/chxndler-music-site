@@ -23,7 +23,7 @@ export default function Pure3DSystem(props: Pure3DSystemProps) {
     // Add timeout to automatically fall back to 2D after 3 seconds
     const fallbackTimeout = setTimeout(() => {
       if (mounted && isLoading) {
-        console.warn('3D system taking too long to load, falling back to 2D');
+        if (process.env.NODE_ENV !== "production") console.warn('3D system taking too long to load, falling back to 2D');
         setHasError(true);
         setIsLoading(false);
       }

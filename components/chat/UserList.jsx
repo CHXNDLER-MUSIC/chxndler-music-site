@@ -46,7 +46,7 @@ export default function UserList({ users, onUserClick, loading, currentUserProfi
     const emptyKeys = keys.filter(k => !k).length;
     const duplicateCount = keys.length - keySet.size;
     if (emptyKeys > 0 || duplicateCount > 0) {
-      console.warn(`⚠️ UserList key issues: ${emptyKeys} empty keys, ${duplicateCount} duplicates`);
+      if (process.env.NODE_ENV !== "production") console.warn(`⚠️ UserList key issues: ${emptyKeys} empty keys, ${duplicateCount} duplicates`);
     }
   }
 
@@ -109,10 +109,10 @@ function UserListItem({ user, onClick, currentUserProfile }) {
           const audio = new Audio('/audio/click.mp3');
           audio.volume = 0.3;
           audio.play().catch(error => {
-            console.log('Click audio play failed:', error);
+            if (process.env.NODE_ENV !== "production") console.log('Click audio play failed:', error);
           });
         } catch (error) {
-          console.log('Click audio creation failed:', error);
+          if (process.env.NODE_ENV !== "production") console.log('Click audio creation failed:', error);
         }
         onClick();
       }}

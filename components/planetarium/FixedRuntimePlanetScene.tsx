@@ -20,7 +20,7 @@ export default function FixedRuntimePlanetScene({
   onPlanetSelect, 
   worldId 
 }: RuntimePlanetSceneProps) {
-  console.log('FixedRuntimePlanetScene: Rendering with props:', { zoomLevel, initialActivePlanet, onPlanetSelect, worldId });
+  if (process.env.NODE_ENV !== "production") console.log('FixedRuntimePlanetScene: Rendering with props:', { zoomLevel, initialActivePlanet, onPlanetSelect, worldId });
   
   return (
     <div className="w-full h-[500px]" style={{ position: 'relative' }}>

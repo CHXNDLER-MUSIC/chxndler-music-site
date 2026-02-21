@@ -19,7 +19,7 @@ export async function middleware(request: NextRequest) {
     searchParams.forEach((value, key) => {
       callbackUrl.searchParams.set(key, value);
     });
-    console.log('[MIDDLEWARE] Caught bad redirect, forwarding to /auth/callback');
+    if (process.env.NODE_ENV !== "production") console.log('[MIDDLEWARE] Caught bad redirect, forwarding to /auth/callback');
     return NextResponse.redirect(callbackUrl);
   }
 
@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
   // This is critical - the callback page needs to receive the ?code= parameter
   // and exchange it for a session before any auth validation can occur
   if (AUTH_BYPASS_ROUTES.some(route => pathname.startsWith(route))) {
-    console.log('[MIDDLEWARE] Bypassing auth for:', pathname);
+    if (process.env.NODE_ENV !== "production") console.log('[MIDDLEWARE] Bypassing auth for:', pathname);
     return NextResponse.next({ request });
   }
 

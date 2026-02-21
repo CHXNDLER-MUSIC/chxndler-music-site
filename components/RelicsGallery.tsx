@@ -183,10 +183,10 @@ export default function RelicsGallery({ className = '' }: RelicsGalleryProps) {
       try {
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (mounted && session?.user) {
-          console.log('[RelicsGallery] User session found:', session.user.id);
+          if (process.env.NODE_ENV !== "production") console.log('[RelicsGallery] User session found:', session.user.id);
           setUser({ id: session.user.id });
         } else {
-          console.log('[RelicsGallery] No user session found');
+          if (process.env.NODE_ENV !== "production") console.log('[RelicsGallery] No user session found');
         }
       } catch (error) {
         console.error('[RelicsGallery] Error getting user:', error);
@@ -198,7 +198,7 @@ export default function RelicsGallery({ className = '' }: RelicsGalleryProps) {
     const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
       (event, session) => {
         if (mounted) {
-          console.log('[RelicsGallery] Auth state changed:', event, session?.user?.id);
+          if (process.env.NODE_ENV !== "production") console.log('[RelicsGallery] Auth state changed:', event, session?.user?.id);
           setUser(session?.user ? { id: session.user.id } : null);
         }
       }
@@ -213,7 +213,7 @@ export default function RelicsGallery({ className = '' }: RelicsGalleryProps) {
   // Listen for relics:refresh event to update after Element of Day claim
   useEffect(() => {
     const handleRelicsRefresh = () => {
-      console.log('[RelicsGallery] Received relics:refresh event, refetching...');
+      if (process.env.NODE_ENV !== "production") console.log('[RelicsGallery] Received relics:refresh event, refetching...');
       refetch();
     };
     window.addEventListener('relics:refresh', handleRelicsRefresh);
@@ -223,7 +223,7 @@ export default function RelicsGallery({ className = '' }: RelicsGalleryProps) {
   // Log when relics data changes
   useEffect(() => {
     if (!loading && user) {
-      console.log('[RelicsGallery] Relics data updated:', {
+      if (process.env.NODE_ENV !== "production") console.log('[RelicsGallery] Relics data updated:', {
         total: totalCount,
         unlocked: unlockedCount,
         locked: lockedRelics.length,
@@ -233,7 +233,7 @@ export default function RelicsGallery({ className = '' }: RelicsGalleryProps) {
   }, [relics, loading, user, totalCount, unlockedCount, lockedRelics, unlockedRelics]);
 
   const handleRelicDownload = (relic: RelicWithStatus) => {
-    console.log(`Downloaded relic: ${relic.label}`);
+    if (process.env.NODE_ENV !== "production") console.log(`Downloaded relic: ${relic.label}`);
   };
 
   if (!user) {

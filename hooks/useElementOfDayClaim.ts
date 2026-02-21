@@ -108,7 +108,7 @@ export function useElementOfDayClaim(): ElementOfDayClaimState {
       const data = await res.json();
 
       if (data.error) {
-        console.warn("useElementOfDayClaim: API error:", data.error);
+        if (process.env.NODE_ENV !== "production") console.warn("useElementOfDayClaim: API error:", data.error);
         setElement(null);
         setRewardKey(null);
         setIntention(null);
@@ -142,7 +142,7 @@ export function useElementOfDayClaim(): ElementOfDayClaimState {
             .eq("day", dateToCheck);
 
           if (claimErr) {
-            console.warn("useElementOfDayClaim: user_element_claims fetch error:", claimErr.message);
+            if (process.env.NODE_ENV !== "production") console.warn("useElementOfDayClaim: user_element_claims fetch error:", claimErr.message);
             claimStatus = false;
           } else {
             claimStatus = (count ?? 0) > 0;

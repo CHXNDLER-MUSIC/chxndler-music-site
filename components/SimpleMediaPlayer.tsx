@@ -76,7 +76,7 @@ export default function MediaPlayer({
   // Handle gated play attempt
   const handleToggle = () => {
     if (!gateResult.allowed) {
-      console.log('Audio playback blocked:', gateResult.reason);
+      if (process.env.NODE_ENV !== "production") console.log('Audio playback blocked:', gateResult.reason);
       return;
     }
     onToggle();

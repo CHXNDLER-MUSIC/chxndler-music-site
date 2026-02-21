@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
 
     // If nothing to record, still return ok to keep UX smooth
     if (!email && !source) {
-      console.warn('track-heart-signal called with no email or source');
+      if (process.env.NODE_ENV !== "production") console.warn('track-heart-signal called with no email or source');
       return NextResponse.json({ ok: true }, { status: 200 });
     }
 

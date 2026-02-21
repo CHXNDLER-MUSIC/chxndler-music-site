@@ -79,7 +79,7 @@ export default function ElementOfDayModal() {
       // Must be logged in to have claimed
       const { data: { session } } = await supabaseBrowser.auth.getSession();
       if (!session?.user?.id) {
-        console.log('[ElementOfDayModal] checkClaimedStatus: No session, returning false');
+        if (process.env.NODE_ENV !== "production") console.log('[ElementOfDayModal] checkClaimedStatus: No session, returning false');
         return false;
       }
 
@@ -91,7 +91,7 @@ export default function ElementOfDayModal() {
         .eq('user_id', session.user.id)
         .maybeSingle();
 
-      console.log('[ElementOfDayModal] checkClaimedStatus response:', { data, error, userId: session.user.id });
+      if (process.env.NODE_ENV !== "production") console.log('[ElementOfDayModal] checkClaimedStatus response:', { data, error, userId: session.user.id });
 
       if (error) {
         console.error('[ElementOfDayModal] Error checking claim status from view:', error);
@@ -100,12 +100,12 @@ export default function ElementOfDayModal() {
 
       // If no row exists, user hasn't claimed
       if (!data) {
-        console.log('[ElementOfDayModal] checkClaimedStatus: No row found, returning false');
+        if (process.env.NODE_ENV !== "production") console.log('[ElementOfDayModal] checkClaimedStatus: No row found, returning false');
         return false;
       }
 
       const result = !!data.claimed_today;
-      console.log('[ElementOfDayModal] checkClaimedStatus: claimed_today =', data.claimed_today, '-> returning', result);
+      if (process.env.NODE_ENV !== "production") console.log('[ElementOfDayModal] checkClaimedStatus: claimed_today =', data.claimed_today, '-> returning', result);
       return result;
     } catch (err) {
       console.error('[ElementOfDayModal] Exception in checkClaimedStatus:', err);
@@ -117,7 +117,7 @@ export default function ElementOfDayModal() {
   useEffect(() => {
     const checkDailyElementClaim = async () => {
       const isClaimed = await checkClaimedStatus();
-      console.log('[ElementOfDayModal] Initial claim check:', isClaimed);
+      if (process.env.NODE_ENV !== "production") console.log('[ElementOfDayModal] Initial claim check:', isClaimed);
       setClaimed(isClaimed);
       setElementQuestCompleted(isClaimed);
     };
@@ -128,11 +128,11 @@ export default function ElementOfDayModal() {
   // Listen for 'elementOfDay:open' event from HeartCoinButton
   useEffect(() => {
     const handleOpenEvent = async () => {
-      console.log('[ElementOfDayModal] Received elementOfDay:open event');
+      if (process.env.NODE_ENV !== "production") console.log('[ElementOfDayModal] Received elementOfDay:open event');
       try {
         // Check if already claimed today using correct schema
         const isClaimed = await checkClaimedStatus();
-        console.log('[ElementOfDayModal] Claim check on open:', isClaimed);
+        if (process.env.NODE_ENV !== "production") console.log('[ElementOfDayModal] Claim check on open:', isClaimed);
         setClaimed(isClaimed);
         setElementQuestCompleted(isClaimed);
 
@@ -140,7 +140,7 @@ export default function ElementOfDayModal() {
         const res = await fetch('/api/element-of-day');
         if (res.ok) {
           const apiData = await res.json();
-          console.log('[ElementOfDayModal] Fetched from API:', apiData);
+          if (process.env.NODE_ENV !== "production") console.log('[ElementOfDayModal] Fetched from API:', apiData);
           const eventData: ElementOfDayData = {
             element: apiData.element || 'heart',
             intention: apiData.intentionOfDay || null,
@@ -187,12 +187,12 @@ export default function ElementOfDayModal() {
 
   // Handle clicking on the element image to claim Element of the Day relic
   const handleImageClick = useCallback(async () => {
-    console.log('[ElementOfDayModal] handleImageClick called!');
-    console.log('[ElementOfDayModal] Guard check: data=', !!data, 'claimed=', claimed, 'isCompletingElementQuest=', isCompletingElementQuest, 'elementQuestCompleted=', elementQuestCompleted);
+    if (process.env.NODE_ENV !== "production") console.log('[ElementOfDayModal] handleImageClick called!');
+    if (process.env.NODE_ENV !== "production") console.log('[ElementOfDayModal] Guard check: data=', !!data, 'claimed=', claimed, 'isCompletingElementQuest=', isCompletingElementQuest, 'elementQuestCompleted=', elementQuestCompleted);
 
     // Loading guard - prevent double-submit or already completed
     if (!data || claimed || isCompletingElementQuest || elementQuestCompleted) {
-      console.log('[ElementOfDayModal] Guard clause triggered - returning early');
+      if (process.env.NODE_ENV !== "production") console.log('[ElementOfDayModal] Guard clause triggered - returning early');
       return;
     }
 
@@ -205,7 +205,7 @@ export default function ElementOfDayModal() {
       }));
       return;
     }
-    console.log('[ElementOfDayModal] Authenticated user:', session.user.id);
+    if (process.env.NODE_ENV !== "production") console.log('[ElementOfDayModal] Authenticated user:', session.user.id);
 
     // Play sounds
     playStarSound();
@@ -226,7 +226,7 @@ export default function ElementOfDayModal() {
         return;
       }
 
-      console.log('[ElementOfDayModal] claim_daily_element response:', rpcData);
+      if (process.env.NODE_ENV !== "production") console.log('[ElementOfDayModal] claim_daily_element response:', rpcData);
 
       // Handle response based on success status - use RPC response directly, don't refetch
       if (rpcData?.success === true) {
@@ -267,7 +267,7 @@ export default function ElementOfDayModal() {
         }));
       } else {
         // Unexpected response format or success=false without already_claimed
-        console.warn('[ElementOfDayModal] Unexpected response:', rpcData);
+        if (process.env.NODE_ENV !== "production") console.warn('[ElementOfDayModal] Unexpected response:', rpcData);
         window.dispatchEvent(new CustomEvent('toast:show', {
           detail: { message: rpcData?.message || 'Unable to claim relic.', type: 'error' }
         }));
@@ -286,11 +286,11 @@ export default function ElementOfDayModal() {
   // Listen for 'element-of-day:show' event (existing event)
   useEffect(() => {
     const handleShow = async (e: CustomEvent<ElementOfDayData>) => {
-      console.log('[ElementOfDayModal] Received event:', e.detail);
+      if (process.env.NODE_ENV !== "production") console.log('[ElementOfDayModal] Received event:', e.detail);
       if (e.detail?.element) {
         // Check if already claimed today using correct schema
         const isClaimed = await checkClaimedStatus();
-        console.log('[ElementOfDayModal] Claim check on show:', isClaimed);
+        if (process.env.NODE_ENV !== "production") console.log('[ElementOfDayModal] Claim check on show:', isClaimed);
         setClaimed(isClaimed);
         setElementQuestCompleted(isClaimed);
 
@@ -299,7 +299,7 @@ export default function ElementOfDayModal() {
           const res = await fetch('/api/element-of-day');
           if (res.ok) {
             const apiData = await res.json();
-            console.log('[ElementOfDayModal] Fetched from API:', apiData);
+            if (process.env.NODE_ENV !== "production") console.log('[ElementOfDayModal] Fetched from API:', apiData);
             const eventData: ElementOfDayData = {
               element: e.detail.element,
               intention: apiData.intentionOfDay || e.detail.intention || null,
@@ -315,7 +315,7 @@ export default function ElementOfDayModal() {
             return;
           }
         } catch (err) {
-          console.warn('[ElementOfDayModal] Failed to fetch from API:', err);
+          if (process.env.NODE_ENV !== "production") console.warn('[ElementOfDayModal] Failed to fetch from API:', err);
         }
 
         // Fallback to event data if API fails

@@ -33,8 +33,6 @@ export function useBadges() {
   // Fetch badges from public.badges table
   const fetchBadges = async () => {
     try {
-      console.log('DEBUG useBadges: Attempting to fetch badges from public.badges');
-      
       const { data, error } = await supabaseBrowser
         .from('badges')
         .select('*')
@@ -47,7 +45,6 @@ export function useBadges() {
         return;
       }
 
-      console.log('DEBUG useBadges: Successfully fetched badges', { count: data?.length || 0 });
       setBadges(data || []);
     } catch (err) {
       console.error('Error fetching badges:', err);
@@ -155,7 +152,7 @@ export function useBadges() {
   // Award a badge to the current user
   const awardBadge = async (badgeId: string) => {
     if (!user) {
-      console.warn('Cannot award badge: no user logged in');
+      if (process.env.NODE_ENV !== "production") console.warn('Cannot award badge: no user logged in');
       return false;
     }
 
@@ -189,13 +186,6 @@ export function useBadges() {
   // Initial data fetch
   useEffect(() => {
     const fetchData = async () => {
-      console.log('DEBUG useBadges: Starting fetch', { 
-        hasUser: !!user, 
-        userId: user?.id, 
-        hasProfile: !!profile,
-        browser: typeof navigator !== 'undefined' ? navigator.userAgent.includes('Chrome') ? 'Chrome' : 'Safari' : 'unknown'
-      });
-      
       setLoading(true);
       setError(null);
       
@@ -227,20 +217,15 @@ export function useBadges() {
         if (user?.id) {
           await fetchWithRetry(fetchUserBadges);
         } else {
-          console.warn('useBadges: No user ID, skipping user badges fetch');
+          if (process.env.NODE_ENV !== "production") console.warn('useBadges: No user ID, skipping user badges fetch');
           setUserBadges([]);
         }
         
         clearTimeout(timeoutId);
         setLoading(false);
-        
-        console.log('DEBUG useBadges: Fetch completed', { 
-          badgesCount: badges.length, 
-          userBadgesCount: userBadges.length 
-        });
       } catch (err) {
         clearTimeout(timeoutId);
-        console.error('DEBUG useBadges: Fetch failed with exception:', err);
+        console.error('useBadges: Fetch failed:', err);
         setError(`Network error - please check your connection and try again`);
         setLoading(false);
       }

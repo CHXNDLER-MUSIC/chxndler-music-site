@@ -161,7 +161,7 @@ export default function SimpleThreeScene({
           
           if (distFromCenter < 40) {
             onPlanetSelect?.('center');
-            console.log('Clicked center planet');
+            if (process.env.NODE_ENV !== "production") console.log('Clicked center planet');
           } else if (distFromCenter > 60 && distFromCenter < 120) {
             // Determine which planet was clicked based on angle
             const angle = Math.atan2(y - centerY, x - centerX);
@@ -173,7 +173,7 @@ export default function SimpleThreeScene({
             else planetId = 'darkness';
             
             onPlanetSelect?.(planetId);
-            console.log('Clicked planet:', planetId);
+            if (process.env.NODE_ENV !== "production") console.log('Clicked planet:', planetId);
           }
         }}
       />

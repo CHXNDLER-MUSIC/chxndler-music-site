@@ -68,7 +68,7 @@ export default function WhatElementAreYouModal() {
     if (soundUrl) {
       const audio = new Audio(soundUrl);
       audio.volume = 0.7;
-      audio.play().catch(e => console.log('Element audio play failed:', e));
+      audio.play().catch(e => { if (process.env.NODE_ENV !== "production") console.log('Element audio play failed:', e); });
     }
 
     // Only one card can be flipped at a time
@@ -94,7 +94,7 @@ export default function WhatElementAreYouModal() {
       // Play change-channel.mp3 sound on hover
       const audio = new Audio('/audio/change-channel.mp3');
       audio.volume = 0.5;
-      audio.play().catch(e => console.log('Hover audio play failed:', e));
+      audio.play().catch(e => { if (process.env.NODE_ENV !== "production") console.log('Hover audio play failed:', e); });
     }
     setHoveredCard(elementKey);
   };
@@ -137,7 +137,7 @@ export default function WhatElementAreYouModal() {
       if (elementSound) {
         const alignAudio = new Audio(elementSound);
         alignAudio.volume = 0.8;
-        alignAudio.play().catch(e => console.log('Element sound play failed:', e));
+        alignAudio.play().catch(e => { if (process.env.NODE_ENV !== "production") console.log('Element sound play failed:', e); });
       }
 
       // Map element key to Title Case for the RPC
@@ -150,7 +150,7 @@ export default function WhatElementAreYouModal() {
       const mappedElement = elementToTitleCase[selectedElement];
 
       // Call RPC to align element and award first HeartCoin
-      console.log('🎯 Calling align_element_and_award_first_coin RPC with element:', mappedElement);
+      if (process.env.NODE_ENV !== "production") console.log('🎯 Calling align_element_and_award_first_coin RPC with element:', mappedElement);
       const { data: alignResult, error: alignError } = await supabaseBrowser.rpc(
         'align_element_and_award_first_coin',
         {
@@ -166,12 +166,12 @@ export default function WhatElementAreYouModal() {
         return;
       }
 
-      console.log('🎯 Align result:', alignResult);
+      if (process.env.NODE_ENV !== "production") console.log('🎯 Align result:', alignResult);
 
       // Set profile image URL to the selected element's icon
       const selectedElementIcon = ELEMENTS.find(el => el.key === selectedElement)?.icon;
       if (selectedElementIcon && currentUser?.id) {
-        console.log('🖼️ Setting profile image URL to:', selectedElementIcon);
+        if (process.env.NODE_ENV !== "production") console.log('🖼️ Setting profile image URL to:', selectedElementIcon);
         await supabaseBrowser
           .from('profiles')
           .update({ profile_image_url: selectedElementIcon })
@@ -187,7 +187,7 @@ export default function WhatElementAreYouModal() {
       // DO NOT call triggerHeartCoinCelebration here!
       // The HeartcoinBalanceProvider will detect the transaction via realtime subscription
       // and trigger the celebration automatically. Calling it here causes duplicates.
-      console.log('🪙 Alignment successful! HeartCoin celebration will be triggered by realtime subscription');
+      if (process.env.NODE_ENV !== "production") console.log('🪙 Alignment successful! HeartCoin celebration will be triggered by realtime subscription');
 
       // Start the onboarding reward sequence (HeartCoin -> Wanderer badge -> Tour prompt)
       // This orchestrates the celebrations in sequence and shows the tour prompt when done
@@ -196,10 +196,10 @@ export default function WhatElementAreYouModal() {
       // Refresh profile to get updated data (profile_complete will be set)
       await refreshProfile();
 
-      console.log('Profile completed! Name:', alienName, 'Element:', selectedElement);
+      if (process.env.NODE_ENV !== "production") console.log('Profile completed! Name:', alienName, 'Element:', selectedElement);
 
       // Trigger warp to Heartverse center planet and play heart.mp3
-      console.log('🚀 Triggering warp to Heartverse');
+      if (process.env.NODE_ENV !== "production") console.log('🚀 Triggering warp to Heartverse');
 
       // Dispatch warp event to center planet
       window.dispatchEvent(new CustomEvent('planet:warp', {
@@ -210,11 +210,11 @@ export default function WhatElementAreYouModal() {
       setTimeout(() => {
         try {
           if (audio?.playTrack) {
-            console.log('🎵 Playing heart.mp3');
+            if (process.env.NODE_ENV !== "production") console.log('🎵 Playing heart.mp3');
             audio.playTrack('heart');
           }
         } catch (e) {
-          console.log('Failed to play heart.mp3:', e);
+          if (process.env.NODE_ENV !== "production") console.log('Failed to play heart.mp3:', e);
         }
       }, 500);
 

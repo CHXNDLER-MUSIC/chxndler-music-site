@@ -33,7 +33,7 @@ function extractAccessToken(cookieStore: Awaited<ReturnType<typeof cookies>>): s
 }
 
 export async function POST(req: NextRequest) {
-  console.log('[purchase-physical] POST request received');
+  if (process.env.NODE_ENV !== "production") console.log('[purchase-physical] POST request received');
 
   try {
     // 1. Parse request body
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       const body = await req.json();
       cardId = body.cardId;
     } catch {
-      console.log('[purchase-physical] Invalid JSON body');
+      if (process.env.NODE_ENV !== "production") console.log('[purchase-physical] Invalid JSON body');
       return NextResponse.json(
         { ok: false, error: 'Invalid request body' },
         { status: 400 }
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!cardId) {
-      console.log('[purchase-physical] Missing cardId');
+      if (process.env.NODE_ENV !== "production") console.log('[purchase-physical] Missing cardId');
       return NextResponse.json(
         { ok: false, error: 'Missing required field: cardId' },
         { status: 400 }
@@ -72,14 +72,14 @@ export async function POST(req: NextRequest) {
     const accessToken = extractAccessToken(cookieStore);
 
     if (!accessToken) {
-      console.log('[purchase-physical] No auth token found');
+      if (process.env.NODE_ENV !== "production") console.log('[purchase-physical] No auth token found');
       return NextResponse.json(
         { ok: false, error: 'Not authenticated - please log in' },
         { status: 401 }
       );
     }
 
-    console.log('[purchase-physical] Processing purchase for cardId:', cardId);
+    if (process.env.NODE_ENV !== "production") console.log('[purchase-physical] Processing purchase for cardId:', cardId);
 
     // 3. Create Supabase client with anon key and user's access token in Authorization header
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
     const orderId = data?.order_id ?? data;
     const newBalance = data?.new_balance ?? undefined;
 
-    console.log('[purchase-physical] SUCCESS order_id:', orderId, 'new_balance:', newBalance);
+    if (process.env.NODE_ENV !== "production") console.log('[purchase-physical] SUCCESS order_id:', orderId, 'new_balance:', newBalance);
 
     return NextResponse.json({
       ok: true,

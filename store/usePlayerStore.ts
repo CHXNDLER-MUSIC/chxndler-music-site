@@ -30,7 +30,7 @@ const __prebuiltSongs = (() => {
     if (Array.isArray(holoSongs) && holoSongs.length > 0) return holoSongs as unknown as Song[];
   } catch (e) {
     // eslint-disable-next-line no-console
-    console.warn("playerStore: Failed to prebuild songs:", e);
+    if (process.env.NODE_ENV !== "production") console.warn("playerStore: Failed to prebuild songs:", e);
   }
   return [] as Song[];
 })();

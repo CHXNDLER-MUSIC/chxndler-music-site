@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
         .eq('id', orderId);
 
       if (updateError) {
-        console.warn(`Failed to update order status for ${orderId}:`, updateError);
+        if (process.env.NODE_ENV !== "production") console.warn(`Failed to update order status for ${orderId}:`, updateError);
       }
     }
 
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`Shipping notification email sent successfully for order ${orderId} to ${customerEmail}`);
+    if (process.env.NODE_ENV !== "production") console.log(`Shipping notification email sent successfully for order ${orderId} to ${customerEmail}`);
 
     return NextResponse.json({
       success: true,

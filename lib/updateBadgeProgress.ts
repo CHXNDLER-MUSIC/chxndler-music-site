@@ -95,7 +95,7 @@ export async function calculateRealtimeBadgeProgress(userId: string, requirement
       
       // Add more requirement types as needed
       default:
-        console.warn('Real-time calculation not implemented for requirement type:', requirementType);
+        if (process.env.NODE_ENV !== "production") console.warn('Real-time calculation not implemented for requirement type:', requirementType);
     }
 
     return current;

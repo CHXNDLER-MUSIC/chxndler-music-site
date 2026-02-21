@@ -38,7 +38,7 @@ export function useBonusQuests(): UseBonusQuestsReturn {
       try {
         const { data: { session }, error } = await supabaseBrowser.auth.getSession();
         if (error) {
-          console.warn('[useBonusQuests] Unexpected session error:', error.message);
+          if (process.env.NODE_ENV !== "production") console.warn('[useBonusQuests] Unexpected session error:', error.message);
         }
         if (mounted) {
           setCurrentUserId(session?.user?.id || null);
@@ -120,7 +120,7 @@ export function useBonusQuests(): UseBonusQuestsReturn {
   // Listen for quests:refresh event to refetch quests
   useEffect(() => {
     const handleRefresh = () => {
-      console.log('[useBonusQuests] Received quests:refresh event');
+      if (process.env.NODE_ENV !== "production") console.log('[useBonusQuests] Received quests:refresh event');
       fetchQuests();
     };
 
@@ -137,21 +137,21 @@ export function useBonusQuests(): UseBonusQuestsReturn {
     quest: BonusQuestWithCompletion
   ): Promise<QuestCompletionResult> => {
     if (!currentUserId) {
-      console.log('[completeQuest] User not authenticated');
+      if (process.env.NODE_ENV !== "production") console.log('[completeQuest] User not authenticated');
       return {
         success: false,
         message: 'User not authenticated'
       };
     }
 
-    console.log('[completeQuest] Calling RPC complete_bonus_quest_once_per_day with p_quest_id:', quest.id);
+    if (process.env.NODE_ENV !== "production") console.log('[completeQuest] Calling RPC complete_bonus_quest_once_per_day with p_quest_id:', quest.id);
 
     try {
       const { data, error } = await supabaseBrowser.rpc('complete_bonus_quest_once_per_day', {
         p_quest_id: quest.id
       });
 
-      console.log('[completeQuest] RPC response:', { data, error });
+      if (process.env.NODE_ENV !== "production") console.log('[completeQuest] RPC response:', { data, error });
 
       // Handle RPC error (network error, function not found, etc.)
       if (error) {
@@ -211,7 +211,7 @@ export function useBonusQuests(): UseBonusQuestsReturn {
       const wasAwarded = data?.awarded === true;
       const alreadyCompleted = data?.already_completed === true;
 
-      console.log('[completeQuest] Success! awarded:', wasAwarded, 'already_completed:', alreadyCompleted);
+      if (process.env.NODE_ENV !== "production") console.log('[completeQuest] Success! awarded:', wasAwarded, 'already_completed:', alreadyCompleted);
 
       // Update local state immediately so button flips to COMPLETED
       setQuests(prev => prev.map(q =>
@@ -222,7 +222,7 @@ export function useBonusQuests(): UseBonusQuestsReturn {
 
       // Handle already_completed case
       if (alreadyCompleted) {
-        console.log('[completeQuest] Already completed today - no celebration');
+        if (process.env.NODE_ENV !== "production") console.log('[completeQuest] Already completed today - no celebration');
 
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('toast:show', {
@@ -239,7 +239,7 @@ export function useBonusQuests(): UseBonusQuestsReturn {
 
       // Handle awarded case - trigger celebration and refresh profile
       if (wasAwarded) {
-        console.log('[completeQuest] Coins awarded! Triggering celebration and refreshing profile');
+        if (process.env.NODE_ENV !== "production") console.log('[completeQuest] Coins awarded! Triggering celebration and refreshing profile');
 
         // Trigger the celebration animation + sound
         const rewardAmount = quest.reward_heartcoins > 0 ? quest.reward_heartcoins : 1;
@@ -250,9 +250,9 @@ export function useBonusQuests(): UseBonusQuestsReturn {
         // Refresh profile to update displayed heartcoin_balance
         try {
           await refreshProfile();
-          console.log('[completeQuest] Profile refreshed successfully');
+          if (process.env.NODE_ENV !== "production") console.log('[completeQuest] Profile refreshed successfully');
         } catch (refreshErr) {
-          console.warn('[completeQuest] Profile refresh failed:', refreshErr);
+          if (process.env.NODE_ENV !== "production") console.warn('[completeQuest] Profile refresh failed:', refreshErr);
         }
 
         // Dispatch events for other components
@@ -273,7 +273,7 @@ export function useBonusQuests(): UseBonusQuestsReturn {
       }
 
       // Fallback: success but neither awarded nor already_completed explicitly set
-      console.log('[completeQuest] Success but no explicit awarded/already_completed flags');
+      if (process.env.NODE_ENV !== "production") console.log('[completeQuest] Success but no explicit awarded/already_completed flags');
       return {
         success: true,
         alreadyCompleted: false,

@@ -121,7 +121,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
     // CRITICAL: If opening JOURNAL, immediately close any live stream display first
     // This must happen BEFORE any other logic to prevent the Signal button from being triggered
     if (label === 'JOURNAL' || label === 'COMPLETED') {
-      console.log('🚫 BLOCKING LIVE STREAM - Opening Journal instead');
+      if (process.env.NODE_ENV !== "production") console.log('🚫 BLOCKING LIVE STREAM - Opening Journal instead');
       // Close live stream immediately by dispatching closeAllModals event
       try { window.dispatchEvent(new CustomEvent('closeAllModals')); } catch {}
       // Turn off beam immediately

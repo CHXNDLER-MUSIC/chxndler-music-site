@@ -105,9 +105,9 @@ export const PlanetSystem: React.FC<PlanetSystemProps> = ({
   songs,
   showDebug = false,
 }) => {
-  console.log("🚨🚨🚨 MAIN PLANETSYSTEM.TSX IS RENDERING!!! 🚨🚨🚨");
-  console.log("Songs passed:", songs?.length || 0);
-  console.log("ELEMENTAL_PLANETS:", ELEMENTAL_PLANETS);
+  if (process.env.NODE_ENV !== "production") console.log("🚨🚨🚨 MAIN PLANETSYSTEM.TSX IS RENDERING!!! 🚨🚨🚨");
+  if (process.env.NODE_ENV !== "production") console.log("Songs passed:", songs?.length || 0);
+  if (process.env.NODE_ENV !== "production") console.log("ELEMENTAL_PLANETS:", ELEMENTAL_PLANETS);
   
   const timeRef = useRef(0);
 

@@ -42,16 +42,18 @@ export function useMerchPurchase() {
     // by React's state batching or StrictMode double-invocation
     // ============================================================
     if (purchaseInFlightRef.current) {
-      console.warn('[useMerchPurchase] BLOCKED: Purchase already in flight (ref check)', {
-        idempotencyKey,
-        merchItemId,
-      });
+      if (process.env.NODE_ENV !== "production") {
+        console.warn('[useMerchPurchase] BLOCKED: Purchase already in flight (ref check)', {
+          idempotencyKey,
+          merchItemId,
+        });
+      }
       return null;
     }
 
     // Set ref IMMEDIATELY and SYNCHRONOUSLY before any async work
     purchaseInFlightRef.current = true;
-    console.log('[useMerchPurchase] Purchase in flight set to TRUE', { idempotencyKey });
+    if (process.env.NODE_ENV !== "production") console.log('[useMerchPurchase] Purchase in flight set to TRUE', { idempotencyKey });
 
     // Also set state for UI updates (button disabled state)
     setIsProcessing(true);
@@ -89,11 +91,11 @@ export function useMerchPurchase() {
       ...(selected_color ? { selected_color } : {}),
     };
 
-    console.log('[useMerchPurchase] Initiating purchase (single API call):', payload);
-    console.log('[useMerchPurchase] payload:', payload);
+    if (process.env.NODE_ENV !== "production") console.log('[useMerchPurchase] Initiating purchase (single API call):', payload);
+    if (process.env.NODE_ENV !== "production") console.log('[useMerchPurchase] payload:', payload);
 
     try {
-      console.log('[useMerchPurchase] Making fetch request to /api/merch/purchase');
+      if (process.env.NODE_ENV !== "production") console.log('[useMerchPurchase] Making fetch request to /api/merch/purchase');
 
       let response: Response;
       try {
@@ -109,17 +111,19 @@ export function useMerchPurchase() {
         throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Failed to connect to server'}`);
       }
 
-      console.log('[useMerchPurchase] Response received:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-      });
+      if (process.env.NODE_ENV !== "production") {
+        console.log('[useMerchPurchase] Response received:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok,
+        });
+      }
 
       let result: any;
       try {
         const responseText = await response.text();
         // Log full body safely (truncate to avoid massive output)
-        console.log('[useMerchPurchase] Response text (first 1500 chars):', responseText.slice(0, 1500));
+        if (process.env.NODE_ENV !== "production") console.log('[useMerchPurchase] Response text (first 1500 chars):', responseText.slice(0, 1500));
         result = responseText ? JSON.parse(responseText) : {};
       } catch (parseError) {
         console.error('[useMerchPurchase] Failed to parse response as JSON:', parseError);
@@ -127,11 +131,13 @@ export function useMerchPurchase() {
       }
 
       // Log the API response
-      console.log('[useMerchPurchase] API response:', {
-        status: response.status,
-        ok: response.ok,
-        result,
-      });
+      if (process.env.NODE_ENV !== "production") {
+        console.log('[useMerchPurchase] API response:', {
+          status: response.status,
+          ok: response.ok,
+          result,
+        });
+      }
 
       if (!response.ok) {
         // Handle idempotency as success if server indicates already processed
@@ -140,10 +146,12 @@ export function useMerchPurchase() {
           result?.idempotent === true ||
           (typeof result?.message === 'string' && result.message.toLowerCase().includes('already processed'))
         ) {
-          console.warn('[useMerchPurchase] Treating idempotent response as success', {
-            status: response.status,
-            result,
-          });
+          if (process.env.NODE_ENV !== "production") {
+            console.warn('[useMerchPurchase] Treating idempotent response as success', {
+              status: response.status,
+              result,
+            });
+          }
           const normalized = Array.isArray(result) ? result[0] : result || {};
           return {
             success: true,
@@ -173,7 +181,7 @@ export function useMerchPurchase() {
         throw new Error(normalizedResult?.message || 'Purchase failed');
       }
 
-      console.log('[useMerchPurchase] Purchase successful:', normalizedResult);
+      if (process.env.NODE_ENV !== "production") console.log('[useMerchPurchase] Purchase successful:', normalizedResult);
       return normalizedResult as PurchaseWithHeartcoinsResult;
 
     } catch (err) {
@@ -204,7 +212,7 @@ export function useMerchPurchase() {
       // ============================================================
       purchaseInFlightRef.current = false;
       setIsProcessing(false);
-      console.log('[useMerchPurchase] Purchase in flight reset to FALSE');
+      if (process.env.NODE_ENV !== "production") console.log('[useMerchPurchase] Purchase in flight reset to FALSE');
     }
   }, []);
 
@@ -212,7 +220,7 @@ export function useMerchPurchase() {
     setIsProcessing(true);
     setError(null);
 
-    console.log('[SHIPPING] using orders.id', shippingInfo.orderId);
+    if (process.env.NODE_ENV !== "production") console.log('[SHIPPING] using orders.id', shippingInfo.orderId);
 
     try {
       let response: Response;
@@ -243,7 +251,7 @@ export function useMerchPurchase() {
         throw new Error(`Shipping update failed (${response.status}): ${errorMessage}`);
       }
 
-      console.log('[SHIPPING] Shipping saved for order:', shippingInfo.orderId);
+      if (process.env.NODE_ENV !== "production") console.log('[SHIPPING] Shipping saved for order:', shippingInfo.orderId);
       return { success: true } as ShippingUpdateResponse;
 
     } catch (err) {

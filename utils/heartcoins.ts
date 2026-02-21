@@ -41,7 +41,7 @@ export async function logHeartcoinTransaction(
   if (input.from_user_id) payload.from_user_id = input.from_user_id;
   if (input.to_user_id) payload.to_user_id = input.to_user_id;
 
-  console.debug('🪙 Inserting heartcoin transaction', payload);
+  if (process.env.NODE_ENV !== "production") console.debug('🪙 Inserting heartcoin transaction', payload);
 
   const { data, error } = await supabaseClient
     .from('heartcoin_transactions')
@@ -158,7 +158,7 @@ export async function transferHeartCoins(
       // Don't fail the transfer if chat message fails
     }
 
-    console.log(`💛 HeartCoin transfer successful: ${senderProfile?.name} → ${receiverProfile?.name} (${amount})`);
+    if (process.env.NODE_ENV !== "production") console.log(`💛 HeartCoin transfer successful: ${senderProfile?.name} → ${receiverProfile?.name} (${amount})`);
     return { success: true, transfer };
 
   } catch (error) {

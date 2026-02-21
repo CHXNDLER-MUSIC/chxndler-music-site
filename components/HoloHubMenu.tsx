@@ -61,7 +61,7 @@ function AnchoredPreviewModal({
           <button
             className="preview-close"
             onClick={(e) => {
-              console.log('Close button clicked');
+              if (process.env.NODE_ENV !== "production") console.log('Close button clicked');
               e.stopPropagation();
               onClose();
             }}
@@ -755,7 +755,7 @@ export default function HoloHubMenu({
           heightPx={inlineHeightPx}
           iframeHeightPx={inlineIframeHeightPx}
           onClose={() => {
-            console.log('Modal onClose called');
+            if (process.env.NODE_ENV !== "production") console.log('Modal onClose called');
             try { sfx.play('close', 0.35); } catch {}
             setInlineUrl(null);
             setInlineCompact(false);

@@ -145,13 +145,14 @@ const upsertMessages = (prev, incoming, options = {}) => {
     const emptyKeys = keys.filter(k => !k || k.length === 0).length;
     const duplicateCount = keys.length - keySet.size;
     if (emptyKeys > 0 || duplicateCount > 0) {
-      console.warn(`⚠️ upsertMessages result: ${emptyKeys} empty keys, ${duplicateCount} duplicates out of ${keys.length} messages`);
-      // Log which keys are problematic
-      const keyCounts = {};
-      keys.forEach(k => { keyCounts[k] = (keyCounts[k] || 0) + 1; });
-      const duplicates = Object.entries(keyCounts).filter(([_, count]) => count > 1);
-      if (duplicates.length > 0) {
-        console.warn('⚠️ Duplicate keys:', duplicates);
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(`⚠️ upsertMessages result: ${emptyKeys} empty keys, ${duplicateCount} duplicates out of ${keys.length} messages`);
+        const keyCounts = {};
+        keys.forEach(k => { keyCounts[k] = (keyCounts[k] || 0) + 1; });
+        const duplicates = Object.entries(keyCounts).filter(([_, count]) => count > 1);
+        if (duplicates.length > 0) {
+          console.warn('⚠️ Duplicate keys:', duplicates);
+        }
       }
     }
   }
@@ -776,10 +777,10 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
                   const audio = new Audio('/notification.mp3');
                   audio.volume = 0.3;
                   audio.play().catch(error => {
-                    console.log('Notification sound failed:', error);
+                    if (process.env.NODE_ENV !== "production") console.log('Notification sound failed:', error);
                   });
                 } catch (error) {
-                  console.log('Audio creation failed:', error);
+                  if (process.env.NODE_ENV !== "production") console.log('Audio creation failed:', error);
                 }
               }
             }
@@ -1100,12 +1101,12 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
       const audio = new Audio('/audio/click.mp3');
       audio.volume = 0.3;
       audio.play().catch(error => {
-        console.log('Click audio play failed:', error);
+        if (process.env.NODE_ENV !== "production") console.log('Click audio play failed:', error);
       });
     } catch (error) {
-      console.log('Click audio creation failed:', error);
+      if (process.env.NODE_ENV !== "production") console.log('Click audio creation failed:', error);
     }
-    
+
     // Toggle profile - if clicking on same user, close profile
     if (selectedUser && selectedUser.id === userId) {
       DEBUG && console.log('🔥 Closing profile for same user');
@@ -1191,10 +1192,10 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
       const audio = new Audio('/audio/close.mp3');
       audio.volume = 0.5;
       audio.play().catch(error => {
-        console.log('Audio play failed:', error);
+        if (process.env.NODE_ENV !== "production") console.log('Audio play failed:', error);
       });
     } catch (error) {
-      console.log('Audio creation failed:', error);
+      if (process.env.NODE_ENV !== "production") console.log('Audio creation failed:', error);
     }
     onClose();
   };
@@ -1208,12 +1209,12 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
 
     // Rate limiting checks
     if (now - lastReactionTime < RATE_LIMITS.global) {
-      console.log('Rate limited: too fast');
+      if (process.env.NODE_ENV !== "production") console.log('Rate limited: too fast');
       return;
     }
 
     if (reaction === 'lightning_spark' && now - lastLightningTime < RATE_LIMITS.lightning_spark) {
-      console.log('Rate limited: lightning too fast');
+      if (process.env.NODE_ENV !== "production") console.log('Rate limited: lightning too fast');
       return;
     }
 
@@ -1221,7 +1222,7 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
       const cooldownKey = `${messageId}_${reaction}`;
       const lastMessageReaction = messageReactionCooldowns[cooldownKey] || 0;
       if (now - lastMessageReaction < RATE_LIMITS.message_repeat) {
-        console.log('Rate limited: same reaction on same message');
+        if (process.env.NODE_ENV !== "production") console.log('Rate limited: same reaction on same message');
         return;
       }
     }
@@ -1277,7 +1278,7 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
             if (error) {
               console.error('Failed to persist reaction count:', error);
             } else {
-              console.log(`Reaction ${emoji} persisted for message ${messageId}:`, isNowReacted);
+              if (process.env.NODE_ENV !== "production") console.log(`Reaction ${emoji} persisted for message ${messageId}:`, isNowReacted);
             }
           } catch (e) {
             console.error('Error calling toggle_heart_signal_reaction RPC:', e);
@@ -1318,7 +1319,7 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
         setRoomReactions(prev => [...prev, roomReaction]);
       }
 
-      console.log(`✨ ${reaction} sent for ${messageId ? 'message' : 'room'}`);
+      if (process.env.NODE_ENV !== "production") console.log(`✨ ${reaction} sent for ${messageId ? 'message' : 'room'}`);
     } catch (error) {
       console.error('Error sending reaction:', error);
     }
@@ -1456,10 +1457,10 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
                           const audio = new Audio('/audio/close.mp3');
                           audio.volume = 0.5;
                           audio.play().catch(error => {
-                            console.log('Collapse audio play failed:', error);
+                            if (process.env.NODE_ENV !== "production") console.log('Collapse audio play failed:', error);
                           });
                         } catch (error) {
-                          console.log('Collapse audio creation failed:', error);
+                          if (process.env.NODE_ENV !== "production") console.log('Collapse audio creation failed:', error);
                         }
                         setIsUserPanelCollapsed(!isUserPanelCollapsed);
                       }}
@@ -1581,10 +1582,10 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
                             const audio = new Audio('/audio/close.mp3');
                             audio.volume = 0.5;
                             audio.play().catch(error => {
-                              console.log('Vote toggle audio play failed:', error);
+                              if (process.env.NODE_ENV !== "production") console.log('Vote toggle audio play failed:', error);
                             });
                           } catch (error) {
-                            console.log('Vote toggle audio creation failed:', error);
+                            if (process.env.NODE_ENV !== "production") console.log('Vote toggle audio creation failed:', error);
                           }
                           setIsVotingPanelCollapsed(!isVotingPanelCollapsed);
                         }}
@@ -1922,10 +1923,10 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
                               const audio = new Audio('/audio/close.mp3');
                               audio.volume = 0.5;
                               audio.play().catch(error => {
-                                console.log('Close audio play failed:', error);
+                                if (process.env.NODE_ENV !== "production") console.log('Close audio play failed:', error);
                               });
                             } catch (error) {
-                              console.log('Close audio creation failed:', error);
+                              if (process.env.NODE_ENV !== "production") console.log('Close audio creation failed:', error);
                             }
                             setSelectedUser(null);
                             setSelectedUserCards([]);
@@ -2075,10 +2076,10 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
                                           const audio = new Audio('/audio/click.mp3');
                                           audio.volume = 0.3;
                                           audio.play().catch(error => {
-                                            console.log('Click audio play failed:', error);
+                                            if (process.env.NODE_ENV !== "production") console.log('Click audio play failed:', error);
                                           });
                                         } catch (error) {
-                                          console.log('Click audio creation failed:', error);
+                                          if (process.env.NODE_ENV !== "production") console.log('Click audio creation failed:', error);
                                         }
                                         setBadgeStartIndex(Math.max(0, badgeStartIndex - 4));
                                       }}
@@ -2150,10 +2151,10 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
                                             const audio = new Audio('/audio/hover.mp3');
                                             audio.volume = 0.3;
                                             audio.play().catch(error => {
-                                              console.log('Hover audio play failed:', error);
+                                              if (process.env.NODE_ENV !== "production") console.log('Hover audio play failed:', error);
                                             });
                                           } catch (error) {
-                                            console.log('Hover audio creation failed:', error);
+                                            if (process.env.NODE_ENV !== "production") console.log('Hover audio creation failed:', error);
                                           }
                                         }}
                                         onClick={() => {
@@ -2228,10 +2229,10 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
                                           const audio = new Audio('/audio/click.mp3');
                                           audio.volume = 0.3;
                                           audio.play().catch(error => {
-                                            console.log('Click audio play failed:', error);
+                                            if (process.env.NODE_ENV !== "production") console.log('Click audio play failed:', error);
                                           });
                                         } catch (error) {
-                                          console.log('Click audio creation failed:', error);
+                                          if (process.env.NODE_ENV !== "production") console.log('Click audio creation failed:', error);
                                         }
                                         setBadgeStartIndex(Math.min(Math.max(0, (badgesToShow?.length || 0) - 4), badgeStartIndex + 4));
                                       }}
@@ -2295,10 +2296,10 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
                                   const audio = new Audio('/audio/click.mp3');
                                   audio.volume = 0.3;
                                   audio.play().catch(error => {
-                                    console.log('Click audio play failed:', error);
+                                    if (process.env.NODE_ENV !== "production") console.log('Click audio play failed:', error);
                                   });
                                 } catch (error) {
-                                  console.log('Click audio creation failed:', error);
+                                  if (process.env.NODE_ENV !== "production") console.log('Click audio creation failed:', error);
                                 }
                                 setBinderStartIndex(Math.max(0, binderStartIndex - 5));
                               }}
@@ -2367,10 +2368,10 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
                                           const audio = new Audio('/audio/hover.mp3');
                                           audio.volume = 0.3;
                                           audio.play().catch(error => {
-                                            console.log('Hover audio play failed:', error);
+                                            if (process.env.NODE_ENV !== "production") console.log('Hover audio play failed:', error);
                                           });
                                         } catch (error) {
-                                          console.log('Hover audio creation failed:', error);
+                                          if (process.env.NODE_ENV !== "production") console.log('Hover audio creation failed:', error);
                                         }
                                       }
                                     }}
@@ -2380,10 +2381,10 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
                                           const audio = new Audio('/audio/click.mp3');
                                           audio.volume = 0.3;
                                           audio.play().catch(error => {
-                                            console.log('Click audio play failed:', error);
+                                            if (process.env.NODE_ENV !== "production") console.log('Click audio play failed:', error);
                                           });
                                         } catch (error) {
-                                          console.log('Click audio creation failed:', error);
+                                          if (process.env.NODE_ENV !== "production") console.log('Click audio creation failed:', error);
                                         }
                                         setSelectedCardPopup({
                                           name: cardSong.name,
@@ -2456,10 +2457,10 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
                                   const audio = new Audio('/audio/click.mp3');
                                   audio.volume = 0.3;
                                   audio.play().catch(error => {
-                                    console.log('Click audio play failed:', error);
+                                    if (process.env.NODE_ENV !== "production") console.log('Click audio play failed:', error);
                                   });
                                 } catch (error) {
-                                  console.log('Click audio creation failed:', error);
+                                  if (process.env.NODE_ENV !== "production") console.log('Click audio creation failed:', error);
                                 }
                                 // Get owned cards count for pagination based on selected user
                                 const chxndlerCard = songCollection.find(song => song.name === 'CHXNDLER');
@@ -2540,10 +2541,10 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
                                   const audio = new Audio('/audio/click.mp3');
                                   audio.volume = 0.3;
                                   audio.play().catch(error => {
-                                    console.log('Click audio play failed:', error);
+                                    if (process.env.NODE_ENV !== "production") console.log('Click audio play failed:', error);
                                   });
                                 } catch (error) {
-                                  console.log('Click audio creation failed:', error);
+                                  if (process.env.NODE_ENV !== "production") console.log('Click audio creation failed:', error);
                                 }
                                 
                                 // Only allow transfers between authenticated users
@@ -2576,10 +2577,10 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
                                       const successAudio = new Audio('/audio/success.mp3');
                                       successAudio.volume = 0.5;
                                       successAudio.play().catch(error => {
-                                        console.log('Success audio play failed:', error);
+                                        if (process.env.NODE_ENV !== "production") console.log('Success audio play failed:', error);
                                       });
                                     } catch (error) {
-                                      console.log('Success audio creation failed:', error);
+                                      if (process.env.NODE_ENV !== "production") console.log('Success audio creation failed:', error);
                                     }
                                     
                                     // Optionally refresh user's profile to show updated balance
@@ -2604,10 +2605,10 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
                                       const errorAudio = new Audio('/audio/error.mp3');
                                       errorAudio.volume = 0.3;
                                       errorAudio.play().catch(error => {
-                                        console.log('Error audio play failed:', error);
+                                        if (process.env.NODE_ENV !== "production") console.log('Error audio play failed:', error);
                                       });
                                     } catch (error) {
-                                      console.log('Error audio creation failed:', error);
+                                      if (process.env.NODE_ENV !== "production") console.log('Error audio creation failed:', error);
                                     }
                                     
                                     // TODO: Show error message to user in UI
@@ -2804,10 +2805,10 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
                   const audio = new Audio('/audio/click.mp3');
                   audio.volume = 0.3;
                   audio.play().catch(error => {
-                    console.log('Click audio play failed:', error);
+                    if (process.env.NODE_ENV !== "production") console.log('Click audio play failed:', error);
                   });
                 } catch (error) {
-                  console.log('Click audio creation failed:', error);
+                  if (process.env.NODE_ENV !== "production") console.log('Click audio creation failed:', error);
                 }
                 setSelectedCardPopup(null);
                 setCardFlipped(false);
@@ -2855,10 +2856,10 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
                   const audio = new Audio('/audio/close.mp3');
                   audio.volume = 0.3;
                   audio.play().catch(error => {
-                    console.log('Close audio play failed:', error);
+                    if (process.env.NODE_ENV !== "production") console.log('Close audio play failed:', error);
                   });
                 } catch (error) {
-                  console.log('Close audio creation failed:', error);
+                  if (process.env.NODE_ENV !== "production") console.log('Close audio creation failed:', error);
                 }
                 setSelectedBadgePopup(null);
                 setBadgeRotation(0); // Reset rotation when closing
@@ -2868,10 +2869,10 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
                   const audio = new Audio('/audio/hover.mp3');
                   audio.volume = 0.3;
                   audio.play().catch(error => {
-                    console.log('Hover audio play failed:', error);
+                    if (process.env.NODE_ENV !== "production") console.log('Hover audio play failed:', error);
                   });
                 } catch (error) {
-                  console.log('Hover audio creation failed:', error);
+                  if (process.env.NODE_ENV !== "production") console.log('Hover audio creation failed:', error);
                 }
               }}
               className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 z-10"

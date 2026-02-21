@@ -39,7 +39,7 @@ export default function HoloAudioBridge() {
       });
       try {
         if (typeof window !== 'undefined' && (window as any).__DEBUG_AUDIO_WARMUP__) {
-          console.debug(`[HoloAudioBridge] warm-up ran once, loaded ${count} audio elements`);
+          if (process.env.NODE_ENV !== "production") console.debug(`[HoloAudioBridge] warm-up ran once, loaded ${count} audio elements`);
         }
       } catch {}
     };
@@ -62,13 +62,13 @@ export default function HoloAudioBridge() {
     const holoSong = songs.find(s => s.id === mainId);
     
     if (!holoSong) {
-      console.warn('🎵 HoloAudioBridge: No holo song found for mainId:', mainId);
+      if (process.env.NODE_ENV !== "production") console.warn('🎵 HoloAudioBridge: No holo song found for mainId:', mainId);
       return;
     }
 
     // Map back to the original track using the slug/ID
-    console.log('🎵 HoloAudioBridge: Looking for track with slug:', holoSong.id);
-    console.log('🎵 HoloAudioBridge: Available track slugs:', tracks.map(t => `${t.slug}(${t.title})`).slice(0, 5), '...');
+    if (process.env.NODE_ENV !== "production") console.log('🎵 HoloAudioBridge: Looking for track with slug:', holoSong.id);
+    if (process.env.NODE_ENV !== "production") console.log('🎵 HoloAudioBridge: Available track slugs:', tracks.map(t => `${t.slug}(${t.title})`).slice(0, 5), '...');
     
     const track = tracks.find(t => t.slug === holoSong.id);
     
@@ -78,7 +78,7 @@ export default function HoloAudioBridge() {
       return;
     }
     
-    console.log('🎵 HoloAudioBridge: Selected track:', track.title, 'sources:', track.sources?.map(s => s.src) || [track.src]);
+    if (process.env.NODE_ENV !== "production") console.log('🎵 HoloAudioBridge: Selected track:', track.title, 'sources:', track.sources?.map(s => s.src) || [track.src]);
     setCurrentTrack(track);
   }, [mainId, songs]);
 
@@ -136,7 +136,7 @@ export default function HoloAudioBridge() {
     // Don't load the track immediately - wait until after warp effect
     const primarySrc = (currentTrack as any).sources?.[0]?.src || (currentTrack as any).src;
     if (primarySrc) {
-      console.log('🎵 HoloAudioBridge: Starting warp sequence for:', currentTrack.title);
+      if (process.env.NODE_ENV !== "production") console.log('🎵 HoloAudioBridge: Starting warp sequence for:', currentTrack.title);
 
       // Visual feedback that warp is happening
       document.body.style.backgroundColor = '#FF0000';
@@ -169,7 +169,7 @@ export default function HoloAudioBridge() {
           }
 
           // Play warp SFX and wait (fallback ~1.6s if needed)
-          console.log('🎵 HoloAudioBridge: Playing warp effect...');
+          if (process.env.NODE_ENV !== "production") console.log('🎵 HoloAudioBridge: Playing warp effect...');
           const warpEl = warpAudioRef.current; if (warpEl) warpEl.volume = 0.7;
           await playAndWait(warpAudioRef.current, 1600);
           if (cancelled) return;
@@ -181,7 +181,7 @@ export default function HoloAudioBridge() {
             return;
           }
 
-          console.log('🎵 HoloAudioBridge: Pre-loading track:', trackSrc);
+          if (process.env.NODE_ENV !== "production") console.log('🎵 HoloAudioBridge: Pre-loading track:', trackSrc);
 
           // Disable browser media session before playing to prevent title overlays
           if ('mediaSession' in navigator) {
@@ -221,12 +221,12 @@ export default function HoloAudioBridge() {
           if (cancelled) return;
 
           // Play join-alien SFX (blue display) AND song SIMULTANEOUSLY
-          console.log('🎵 HoloAudioBridge: Playing join effect + song simultaneously...');
+          if (process.env.NODE_ENV !== "production") console.log('🎵 HoloAudioBridge: Playing join effect + song simultaneously...');
           const joinEl = joinAudioRef.current; if (joinEl) joinEl.volume = 0.9;
 
           // Reveal planet and start song at the SAME time as join sound
           const onPlaying = () => {
-            console.log('🎵 HoloAudioBridge: Song started playing, revealing planet');
+            if (process.env.NODE_ENV !== "production") console.log('🎵 HoloAudioBridge: Song started playing, revealing planet');
             try { playerStore.getState().setPlanetsVisible(true); } catch {}
             try { playerStore.getState().setPlanetDisplayMode('single'); } catch {}
             try { a.removeEventListener('playing', onPlaying); } catch {}

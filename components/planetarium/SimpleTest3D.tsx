@@ -7,7 +7,7 @@ export default function SimpleTest3D() {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    console.log('SimpleTest3D: Setting isClient to true');
+    if (process.env.NODE_ENV !== "production") console.log('SimpleTest3D: Setting isClient to true');
     setIsClient(true);
   }, []);
 
@@ -18,7 +18,7 @@ export default function SimpleTest3D() {
 
     const loadThree = async () => {
       try {
-        console.log('SimpleTest3D: Loading React Three Fiber...');
+        if (process.env.NODE_ENV !== "production") console.log('SimpleTest3D: Loading React Three Fiber...');
         
         const [
           { Canvas },
@@ -30,7 +30,7 @@ export default function SimpleTest3D() {
           import('react')
         ]);
         
-        console.log('SimpleTest3D: Three.js imports loaded successfully');
+        if (process.env.NODE_ENV !== "production") console.log('SimpleTest3D: Three.js imports loaded successfully');
         
         if (!isMounted) return;
 
@@ -57,7 +57,7 @@ export default function SimpleTest3D() {
           </Canvas>
         );
 
-        console.log('SimpleTest3D: Setting Three component');
+        if (process.env.NODE_ENV !== "production") console.log('SimpleTest3D: Setting Three component');
         setThreeComponent(() => SimpleScene);
       } catch (error) {
         console.error('SimpleTest3D: Failed to load Three.js:', error);
@@ -71,7 +71,7 @@ export default function SimpleTest3D() {
     };
   }, [isClient]);
 
-  console.log('SimpleTest3D render:', { isClient, hasComponent: !!ThreeComponent });
+  if (process.env.NODE_ENV !== "production") console.log('SimpleTest3D render:', { isClient, hasComponent: !!ThreeComponent });
 
   if (!isClient) {
     return (

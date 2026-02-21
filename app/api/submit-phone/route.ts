@@ -14,7 +14,7 @@ async function awardRelicToUser(admin: ReturnType<typeof getSupabaseAdmin>, user
       .maybeSingle();
 
     if (relicError || !relic) {
-      console.log(`[submit-phone] Relic '${relicCode}' not found, skipping award`);
+      if (process.env.NODE_ENV !== "production") console.log(`[submit-phone] Relic '${relicCode}' not found, skipping award`);
       return { awarded: false, alreadyOwned: false };
     }
 
@@ -27,7 +27,7 @@ async function awardRelicToUser(admin: ReturnType<typeof getSupabaseAdmin>, user
       .maybeSingle();
 
     if (existingRelic) {
-      console.log(`[submit-phone] User ${userId} already owns relic '${relicCode}'`);
+      if (process.env.NODE_ENV !== "production") console.log(`[submit-phone] User ${userId} already owns relic '${relicCode}'`);
       return { awarded: false, alreadyOwned: true, relicLabel: relic.label };
     }
 
@@ -47,10 +47,10 @@ async function awardRelicToUser(admin: ReturnType<typeof getSupabaseAdmin>, user
     // Update relics_unlocked_count in profiles
     await admin.rpc('increment_relics_count', { p_user_id: userId }).catch(() => {
       // If RPC doesn't exist, just log it
-      console.log('[submit-phone] Could not increment relics count via RPC');
+      if (process.env.NODE_ENV !== "production") console.log('[submit-phone] Could not increment relics count via RPC');
     });
 
-    console.log(`[submit-phone] Awarded relic '${relicCode}' to user ${userId}`);
+    if (process.env.NODE_ENV !== "production") console.log(`[submit-phone] Awarded relic '${relicCode}' to user ${userId}`);
     return { awarded: true, alreadyOwned: false, relicLabel: relic.label };
   } catch (err) {
     console.error(`[submit-phone] Unexpected error awarding relic:`, err);
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
           userId = userResult.user.id;
         }
       } catch (e) {
-        console.log('Auth check failed, treating as anonymous');
+        if (process.env.NODE_ENV !== "production") console.log('Auth check failed, treating as anonymous');
       }
     }
 

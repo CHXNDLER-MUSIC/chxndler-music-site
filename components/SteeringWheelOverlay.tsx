@@ -302,19 +302,19 @@ const SteeringWheelOverlay = React.memo(function SteeringWheelOverlay({
         setPlainWheel(prev => {
           const next = !prev;
           try { window.localStorage.setItem('PLAIN_WHEEL', next ? '1' : '0'); } catch {}
-          try { console.log(`Wheel video mode: ${next ? 'PLAIN' : 'LUMA'}`); } catch {}
+          try { if (process.env.NODE_ENV !== "production") console.log(`Wheel video mode: ${next ? 'PLAIN' : 'LUMA'}`); } catch {}
           return next;
         });
       }
     };
-    
+
     window.addEventListener('keydown', onKey);
-    
+
     // expose manual toggle for convenience
     (window as any).__toggleWheelVideo = () => setPlainWheel(prev => {
       const next = !prev;
       try { window.localStorage.setItem('PLAIN_WHEEL', next ? '1' : '0'); } catch {}
-      try { console.log(`Wheel video mode: ${next ? 'PLAIN' : 'LUMA'}`); } catch {}
+      try { if (process.env.NODE_ENV !== "production") console.log(`Wheel video mode: ${next ? 'PLAIN' : 'LUMA'}`); } catch {}
       return next;
     });
     

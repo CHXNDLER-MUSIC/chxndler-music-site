@@ -26,13 +26,13 @@ const DEBUG_CELEBRATIONS = false;
 const INITIAL_LOAD_CELEBRATION_DELAY_MS = 500;
 
 function debugBalance(message: string, data?: any) {
-  if (DEBUG_BALANCE) {
+  if (DEBUG_BALANCE && process.env.NODE_ENV !== "production") {
     console.log(`[BALANCE] ${message}`, data ?? "");
   }
 }
 
 function debugCelebration(message: string, data?: any) {
-  if (DEBUG_CELEBRATIONS) {
+  if (DEBUG_CELEBRATIONS && process.env.NODE_ENV !== "production") {
     console.log(`[CELEBRATION] ${message}`, data ?? "");
   }
 }

@@ -1204,7 +1204,7 @@ const HUDPanel = React.memo(function HUDPanel({
         
         // Show completion message somewhere or trigger celebration
         if (process.env.NODE_ENV === "development") {
-          console.log('Profile completed successfully!');
+          if (process.env.NODE_ENV !== "production") console.log('Profile completed successfully!');
         }
       }
     } catch (error) {
@@ -1244,7 +1244,7 @@ const HUDPanel = React.memo(function HUDPanel({
         setIdenticalPopoverPos({ left: r.left + r.width/2, top, height });
       }
     } catch(e) {
-      console.warn('Failed to position identical popover:', e);
+      if (process.env.NODE_ENV !== "production") console.warn('Failed to position identical popover:', e);
     }
     setShowIdenticalPopup(true);
   }
@@ -1281,7 +1281,7 @@ const HUDPanel = React.memo(function HUDPanel({
         setElementPopoverPos({ left: r.left + r.width/2, top, height });
       }
     } catch(e) {
-      console.warn('Failed to position element popover:', e);
+      if (process.env.NODE_ENV !== "production") console.warn('Failed to position element popover:', e);
     }
     setShowElementPopup(true);
   }
@@ -1317,10 +1317,10 @@ const HUDPanel = React.memo(function HUDPanel({
         const height = Math.max(0, bottom - top);
         setSoulSkyPopoverPos({left: leftEdge, top, width, height});
       } else {
-        console.warn('Failed to find refs for Soul Sky positioning');
+        if (process.env.NODE_ENV !== "production") console.warn('Failed to find refs for Soul Sky positioning');
       }
     } catch(e) {
-      console.warn('Failed to position Soul Sky popover:', e);
+      if (process.env.NODE_ENV !== "production") console.warn('Failed to position Soul Sky popover:', e);
     }
     setShowSoulSkyPopover(true);
   }
@@ -1526,7 +1526,7 @@ const HUDPanel = React.memo(function HUDPanel({
         }
         
       } catch (err) {
-        console.warn('Error handling openStoreCards event:', err);
+        if (process.env.NODE_ENV !== "production") console.warn('Error handling openStoreCards event:', err);
       }
     };
 
@@ -2420,7 +2420,7 @@ const HUDPanel = React.memo(function HUDPanel({
                     if (emsg.includes('ReactCurrentOwner') || emsg.includes('Cannot read properties of undefined')) {
                       // Switch to raw 3D fallback; keep 3D enabled
                       setPreferRaw3D(true);
-                      console.warn('Switched to Raw3D due to React compatibility issue:', emsg);
+                      if (process.env.NODE_ENV !== "production") console.warn('Switched to Raw3D due to React compatibility issue:', emsg);
                     }
                     setThreeFailed(emsg || 'Render error');
                     // Do not disable can3D here; fallback may still work
@@ -3024,7 +3024,7 @@ const HUDPanel = React.memo(function HUDPanel({
                                     ne.stopImmediatePropagation();
                                   }
                                 } catch {}
-                                console.log('CLICKED AT', e.clientX);
+                                if (process.env.NODE_ENV !== "production") console.log('CLICKED AT', e.clientX);
 
                                 // Try multiple ways to get the audio element
                                 let audioEl = liveAudioRef?.current;
@@ -3064,7 +3064,7 @@ const HUDPanel = React.memo(function HUDPanel({
                                 const ratio = Math.max(0, Math.min(1, clickX / rect.width));
                                 const newTime = ratio * dur;
 
-                                console.log('Seeking to', newTime, 'seconds (', ratio * 100, '%)');
+                                if (process.env.NODE_ENV !== "production") console.log('Seeking to', newTime, 'seconds (', ratio * 100, '%)');
                                 audioEl.currentTime = newTime;
                                 try { sfx.play('click', 0.3); } catch {}
                               }}
@@ -6413,7 +6413,7 @@ const HUDPanel = React.memo(function HUDPanel({
                             if (profileName.trim()) {
                               try { sfx.play('click', 0.6); } catch {}
                               // Save the name (could update database here)
-                              console.log('Name saved:', profileName);
+                              if (process.env.NODE_ENV !== "production") console.log('Name saved:', profileName);
                               setSavedProfileName(profileName); // Persist the name
                               if (onNameSaved) onNameSaved(profileName); // Notify parent component
                               setShowIdenticalPopup(false);
@@ -6708,7 +6708,7 @@ const HUDPanel = React.memo(function HUDPanel({
                                 return;
                               }
 
-                              console.log('Profile completed successfully:', { name: profileName, element: selectedElement });
+                              if (process.env.NODE_ENV !== "production") console.log('Profile completed successfully:', { name: profileName, element: selectedElement });
                               
                               // Play success sound
                               try { sfx.play('success', 0.8); } catch {}
@@ -6728,7 +6728,7 @@ const HUDPanel = React.memo(function HUDPanel({
                               setCurrentProfileId(null);
                               
                               // Optional: Show success message or trigger confetti
-                              console.log('Profile setup completed successfully!')
+                              if (process.env.NODE_ENV !== "production") console.log('Profile setup completed successfully!')
                               
                             } catch (err) {
                               console.error('Unexpected error:', err);
@@ -7590,7 +7590,7 @@ const HUDPanel = React.memo(function HUDPanel({
         onClose={() => setShowSoulStarJournal(false)}
         prompt={dailySoulPrompt}
         openWelcomeHome={() => {
-          console.log('🎯 HUDPanel openWelcomeHome called, setting showWelcomeHomeModal to true');
+          if (process.env.NODE_ENV !== "production") console.log('🎯 HUDPanel openWelcomeHome called, setting showWelcomeHomeModal to true');
           setShowWelcomeHomeModal(true);
         }}
       />

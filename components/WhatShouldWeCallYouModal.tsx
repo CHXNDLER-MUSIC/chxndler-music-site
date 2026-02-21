@@ -10,7 +10,7 @@ import { useTour } from "@/contexts/TourContext";
 const debugModal = (message: string, data?: any) => {
   try {
     if (typeof window !== 'undefined' && (window as any).__DEBUG_UI__) {
-      console.log(message, data);
+      if (process.env.NODE_ENV !== "production") console.log(message, data);
     }
   } catch {}
 };

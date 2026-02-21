@@ -11,7 +11,7 @@ import { markHeartcoinCelebrationStarted, isHeartcoinCelebrationActive, getHeart
 const DEBUG_CELEBRATIONS = true; // Set to false in production
 
 function debugCelebration(message: string, data?: any) {
-  if (DEBUG_CELEBRATIONS) {
+  if (DEBUG_CELEBRATIONS && process.env.NODE_ENV !== "production") {
     console.log(`[HEARTCOIN_CELEBRATION] ${message}`, data ?? "");
   }
 }

@@ -656,7 +656,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
     try { 
       a.currentTime = seekTime; 
     } catch(e) { 
-      console.warn('Seek failed:', e); 
+      if (process.env.NODE_ENV !== "production") console.warn('Seek failed:', e); 
     }
     
     setTimeout(() => {
@@ -2017,42 +2017,42 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
             
             // Show meaningful error message based on error type
             if (errorCode === 4 || errorInfo.src === 'unknown' || !errorInfo.src) {
-              console.warn('🟠 Audio source not supported or unavailable:', {
+              if (process.env.NODE_ENV !== "production") console.warn('🟠 Audio source not supported or unavailable:', {
                 track: cur?.title || 'Unknown',
                 src: errorInfo.src,
                 readyState: errorInfo.readyStateMeaning,
                 networkState: errorInfo.networkStateMeaning
               });
             } else {
-              console.warn('🟠 Audio playback error:', errorInfo);
+              if (process.env.NODE_ENV !== "production") console.warn('🟠 Audio playback error:', errorInfo);
             }
             
             // Only log raw error details if they contain useful information
             if (a.error && a.error.message && a.error.message.trim() !== '') {
-              console.warn('🟠 Error details:', a.error.message);
+              if (process.env.NODE_ENV !== "production") console.warn('🟠 Error details:', a.error.message);
             }
             
             // Skip logging empty event objects to reduce console noise
             
             // Handle specific error types
             if (errorCode === 4) { // MEDIA_ELEMENT_ERROR: MEDIA_ERR_SRC_NOT_SUPPORTED
-              console.warn('🟠 Media source not supported, attempting to skip to next track');
+              if (process.env.NODE_ENV !== "production") console.warn('🟠 Media source not supported, attempting to skip to next track');
               // Could trigger next track here if desired
             } else if (errorCode === 3) { // MEDIA_ELEMENT_ERROR: MEDIA_ERR_DECODE
-              console.warn('🟠 Media decode error, may be corrupted file');
+              if (process.env.NODE_ENV !== "production") console.warn('🟠 Media decode error, may be corrupted file');
             } else if (errorCode === 2) { // MEDIA_ELEMENT_ERROR: MEDIA_ERR_NETWORK
-              console.warn('🟠 Network error loading media');
+              if (process.env.NODE_ENV !== "production") console.warn('🟠 Network error loading media');
             } else if (errorCode === 1) { // MEDIA_ELEMENT_ERROR: MEDIA_ERR_ABORTED
-              console.warn('🟠 Media loading aborted');
+              if (process.env.NODE_ENV !== "production") console.warn('🟠 Media loading aborted');
             } else if (!errorCode && a.networkState === 3) {
-              console.warn('🟠 No source available for audio element');
+              if (process.env.NODE_ENV !== "production") console.warn('🟠 No source available for audio element');
             } else if (!errorCode) {
-              console.warn('🟠 Unknown audio error - check network connection and audio file format');
+              if (process.env.NODE_ENV !== "production") console.warn('🟠 Unknown audio error - check network connection and audio file format');
             }
             
             // Additional troubleshooting for "NotSupportedError"
             if (errorMessage && errorMessage.includes('no supported source')) {
-              console.warn('🔧 Troubleshooting: Check if audio file exists and is in a supported format (MP3, AAC, OGG)');
+              if (process.env.NODE_ENV !== "production") console.warn('🔧 Troubleshooting: Check if audio file exists and is in a supported format (MP3, AAC, OGG)');
             }
             
             if (DEBUG_MEDIA) { 

@@ -24,7 +24,7 @@ export default function ReactionTray({ onReact, userId, disabled = false, classN
       const remainingMs = getSoulStarCooldownRemaining(userId);
       const remainingHours = Math.ceil(remainingMs / (1000 * 60 * 60));
       // Show tooltip - we'll implement this in the parent component
-      console.log(`⭐ You can give one Soul Star per day. ${remainingHours}h remaining.`);
+      if (process.env.NODE_ENV !== "production") console.log(`⭐ You can give one Soul Star per day. ${remainingHours}h remaining.`);
       return;
     }
     

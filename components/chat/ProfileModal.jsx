@@ -709,7 +709,7 @@ export default function ProfileModal({ user, isOpen, onClose, isOwnProfile = fal
                       draggable={false}
                       onError={(e) => {
                         const objectKey = enlargedCard.image_object_key || enlargedCard.card_name || 'CHXNDLER';
-                        console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
+                        if (process.env.NODE_ENV !== "production") console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
                         const fallback = getCardImageUrl('CHXNDLER');
                         if (e.currentTarget.src !== fallback) {
                           e.currentTarget.src = fallback;

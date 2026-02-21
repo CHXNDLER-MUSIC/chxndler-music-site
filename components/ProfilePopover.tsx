@@ -148,7 +148,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
   useEffect(() => {
     const handleRelicsRefresh = () => {
       if (user) {
-        console.log('[ProfilePopover] Received relics:refresh event, refetching...');
+        if (process.env.NODE_ENV !== "production") console.log('[ProfilePopover] Received relics:refresh event, refetching...');
         fetchUnlockedItems();
       }
     };
@@ -176,7 +176,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
     if (!user) return;
 
     const handleBoostsRefresh = async () => {
-      console.log('[ProfilePopover] Received boosts:refresh event, refetching...');
+      if (process.env.NODE_ENV !== "production") console.log('[ProfilePopover] Received boosts:refresh event, refetching...');
       const boosts = await fetchActiveBoostsFromDB(user.id);
       setActiveBoosts(boosts);
     };
@@ -199,7 +199,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
           .eq('user_id', user.id);
 
         if (error) {
-          console.warn('Failed to fetch soul stars:', error);
+          if (process.env.NODE_ENV !== "production") console.warn('Failed to fetch soul stars:', error);
           return;
         }
 
@@ -207,7 +207,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
         const total = data?.reduce((sum, entry) => sum + (entry.stars_count || 0), 0) || 0;
         setTotalSoulStars(total);
       } catch (err) {
-        console.warn('Error fetching soul stars:', err);
+        if (process.env.NODE_ENV !== "production") console.warn('Error fetching soul stars:', err);
       }
     };
 
@@ -482,7 +482,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
         setAllRelics(result.filter((x): x is Relic => x !== null));
       }
     } catch (error) {
-      console.log('Relics table not found, skipping');
+      if (process.env.NODE_ENV !== "production") console.log('Relics table not found, skipping');
       setAllRelics([]);
     }
   };
@@ -502,7 +502,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
         setAllBadges(badgesData || []);
       }
     } catch (error) {
-      console.log('Badges table not found, skipping');
+      if (process.env.NODE_ENV !== "production") console.log('Badges table not found, skipping');
       setAllBadges([]);
     }
   };
@@ -519,7 +519,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
       const data = await response.json();
       setAllMerch(data.data || []);
     } catch (error) {
-      console.log('Error fetching merch items:', error);
+      if (process.env.NODE_ENV !== "production") console.log('Error fetching merch items:', error);
       setAllMerch([]);
     }
   };
@@ -535,7 +535,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.log('Error fetching user orders:', error);
+        if (process.env.NODE_ENV !== "production") console.log('Error fetching user orders:', error);
         return;
       }
 
@@ -559,7 +559,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
       setUserMerchDates(dateMap);
       setUnlockedMerchColors(colorMap);
     } catch (error) {
-      console.log('Error fetching user merch dates:', error);
+      if (process.env.NODE_ENV !== "production") console.log('Error fetching user merch dates:', error);
     }
   };
 
@@ -568,7 +568,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
     if (!user) return;
 
     setLoading(true);
-    console.log('[ProfilePopover] Fetching unlocked items for user:', user.id);
+    if (process.env.NODE_ENV !== "production") console.log('[ProfilePopover] Fetching unlocked items for user:', user.id);
 
     try {
       // Fetch all relics and unlocked badges/relics in parallel
@@ -608,7 +608,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
         console.error('[ProfilePopover] Error fetching user badges:', badgeResult.error);
         setUserBadges([]);
       } else {
-        console.log('[ProfilePopover] Fetched user badges:', badgeResult.data?.length || 0);
+        if (process.env.NODE_ENV !== "production") console.log('[ProfilePopover] Fetched user badges:', badgeResult.data?.length || 0);
         setUserBadges(badgeResult.data || []);
       }
 
@@ -633,7 +633,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
 
         setUserRelics([]);
       } else {
-        console.log('[ProfilePopover] Fetched user_relics:', relicResult.data?.length || 0, 'relic_ids:', relicResult.data?.map(r => r.relic_id));
+        if (process.env.NODE_ENV !== "production") console.log('[ProfilePopover] Fetched user_relics:', relicResult.data?.length || 0, 'relic_ids:', relicResult.data?.map(r => r.relic_id));
 
         // Transform the user relics data to match our interface
         const transformedUserRelics = relicResult.data?.map(userRelic => ({
@@ -773,7 +773,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
     setSaving(true);
     try {
       // Log the exact update we're about to perform
-      console.log('[handleSave] Updating profile image:', {
+      if (process.env.NODE_ENV !== "production") console.log('[handleSave] Updating profile image:', {
         table: 'profiles',
         id: user.id,
         profile_image_url: selectedImageUrl
@@ -791,7 +791,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
         return;
       }
 
-      console.log('[handleSave] Profile image updated successfully:', data);
+      if (process.env.NODE_ENV !== "production") console.log('[handleSave] Profile image updated successfully:', data);
 
       // Refresh profile context to update UI immediately
       await refreshProfile();
@@ -825,7 +825,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorElement, showRel
       if (error) {
         console.error('Error signing out:', error);
       } else {
-        console.log('Successfully signed out');
+        if (process.env.NODE_ENV !== "production") console.log('Successfully signed out');
         onClose();
         // Redirect to home page after sign out
         window.location.href = '/';

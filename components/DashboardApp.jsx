@@ -122,7 +122,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     const welcome = searchParams.get('welcome');
     const shouldShowNamePrompt = searchParams.get('showNamePrompt');
 
-    console.log("🔍 DashboardApp checking URL params:", {
+    if (process.env.NODE_ENV !== "production") console.log("🔍 DashboardApp checking URL params:", {
       profileSetup,
       completeProfile,
       welcome,
@@ -134,7 +134,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // Mark that user came from magic link - this will make START button warp to Heartverse
     if (profileSetup === '1' || completeProfile === '1' || welcome === '1' || shouldShowNamePrompt === '1') {
       cameFromMagicLinkRef.current = true;
-      console.log("🔗 User arrived via magic link - setting cameFromMagicLinkRef to TRUE");
+      if (process.env.NODE_ENV !== "production") console.log("🔗 User arrived via magic link - setting cameFromMagicLinkRef to TRUE");
 
       // Clean up URL parameters while preserving current pathname
       const newParams = new URLSearchParams(searchParams.toString());
@@ -229,7 +229,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   // Wrapper for setChannelIdx with logging for song selection debugging
   const setChannelIdxWithLog = (newIdx) => {
     if (process.env.NODE_ENV === "development") {
-      console.log('🎵 Playing track:', tracks[newIdx]?.title);
+      if (process.env.NODE_ENV !== "production") console.log('🎵 Playing track:', tracks[newIdx]?.title);
     }
     setChannelIdx(newIdx);
   };
@@ -411,7 +411,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         const newSky = skyFor(audioManager.currentTrack.id);
         if (newSky && (newSky.key !== sky.key)) {
           if (process.env.NODE_ENV === "development") {
-            console.log('🎨 Context overriding sky!', {
+            if (process.env.NODE_ENV !== "production") console.log('🎨 Context overriding sky!', {
               from: sky.key,
               to: newSky.key,
               trackInfo: audioManager.currentTrack.id
@@ -420,7 +420,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           setSky(newSky);
         }
       } catch (error) {
-        console.warn('Failed to update sky for track:', audioManager.currentTrack.id, error);
+        if (process.env.NODE_ENV !== "production") console.warn('Failed to update sky for track:', audioManager.currentTrack.id, error);
       }
       
       // Update curTrack to match the context (maintain compatibility with existing logic)
@@ -612,7 +612,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           }
         }, 100);
       } catch (e) {
-        console.warn('🌍 DashboardApp: Error initializing homepage planets:', e);
+        if (process.env.NODE_ENV !== "production") console.warn('🌍 DashboardApp: Error initializing homepage planets:', e);
       }
     }
   }, []); // Only run once on mount
@@ -676,8 +676,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
   function onSongChange(id, options){
     // [WARP] Entry point for all song changes
-    console.log('[WARP] ====== onSongChange CALLED ======');
-    console.log('[WARP] start - onSongChange entry point', { id, options, tracksCount: tracks?.length || 0 });
+    if (process.env.NODE_ENV !== "production") console.log('[WARP] ====== onSongChange CALLED ======');
+    if (process.env.NODE_ENV !== "production") console.log('[WARP] start - onSongChange entry point', { id, options, tracksCount: tracks?.length || 0 });
 
     // In-app song change without spotlight/beam/route reloads
     // The id parameter is already the track slug from buildPlanetSongs()
@@ -685,10 +685,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // Guard against empty/invalid ids to avoid matching the first track
     if (!slug || slug.trim() === '') {
       console.error('[WARP] start - early return: empty id');
-      console.warn('DashboardApp: onSongChange called with empty id; ignoring selection');
+      if (process.env.NODE_ENV !== "production") console.warn('DashboardApp: onSongChange called with empty id; ignoring selection');
       return;
     }
-    console.log('[WARP] start - resolved slug:', slug);
+    if (process.env.NODE_ENV !== "production") console.log('[WARP] start - resolved slug:', slug);
     // Notify planetarium to focus camera on destination immediately
     try {
       if (typeof window !== 'undefined' && slug) {
@@ -717,15 +717,15 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     
     if (idx < 0) {
       console.error('[WARP] start - early return: track not found', { id, slug });
-      console.warn('DashboardApp: onSongChange - track not found for id:', id, 'slug:', slug);
-      console.log('[WARP] Available tracks:', tracks.map(t => ({title: t.title, slug: t.slug})));
+      if (process.env.NODE_ENV !== "production") console.warn('DashboardApp: onSongChange - track not found for id:', id, 'slug:', slug);
+      if (process.env.NODE_ENV !== "production") console.log('[WARP] Available tracks:', tracks.map(t => ({title: t.title, slug: t.slug})));
       return;
     }
-    console.log('[WARP] Track found at index:', idx, 'selectedTrack:', tracks[idx]?.slug);
+    if (process.env.NODE_ENV !== "production") console.log('[WARP] Track found at index:', idx, 'selectedTrack:', tracks[idx]?.slug);
     const selectedTrack = tracks[idx];
     if (process.env.NODE_ENV === "development") {
-      console.log('🎵 Song selected:', selectedTrack.title);
-      console.log('🎵 Current state before update:', { userSelected, homeMode, pendingTrackPlay, curTrack: curTrack?.slug });
+      if (process.env.NODE_ENV !== "production") console.log('🎵 Song selected:', selectedTrack.title);
+      if (process.env.NODE_ENV !== "production") console.log('🎵 Current state before update:', { userSelected, homeMode, pendingTrackPlay, curTrack: curTrack?.slug });
     }
     // Unblock main player audio now that a song is explicitly selected
     try { if (typeof window !== 'undefined') { window.__BLOCK_MAIN_AUDIO = false; } } catch (e) {}
@@ -738,9 +738,9 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // Stop all audio via unified AudioProvider before warp effect
     try {
       audioManager.stopAllAudio();
-      console.log('🎵 AudioProvider: Stopped all audio immediately on song selection');
+      if (process.env.NODE_ENV !== "production") console.log('🎵 AudioProvider: Stopped all audio immediately on song selection');
     } catch (e) {
-      console.warn('DashboardApp: Error stopping unified audio:', e);
+      if (process.env.NODE_ENV !== "production") console.warn('DashboardApp: Error stopping unified audio:', e);
     }
     
     // Stop main music player audio
@@ -751,7 +751,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         audioEl.currentTime = 0;
       }
     } catch (e) {
-      console.warn('DashboardApp: Error stopping main audio:', e);
+      if (process.env.NODE_ENV !== "production") console.warn('DashboardApp: Error stopping main audio:', e);
     }
     
     // IMMEDIATELY stop ambient space music - don't wait for fade
@@ -763,7 +763,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         
       }
     } catch (e) {
-      console.warn('DashboardApp: Error stopping ambient audio:', e);
+      if (process.env.NODE_ENV !== "production") console.warn('DashboardApp: Error stopping ambient audio:', e);
     }
     // Also stop welcome VO immediately if present
     try {
@@ -774,7 +774,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         
       }
     } catch (e) {
-      console.warn('DashboardApp: Error stopping intro VO:', e);
+      if (process.env.NODE_ENV !== "production") console.warn('DashboardApp: Error stopping intro VO:', e);
     }
     
     // Stop ambient space music by setting isPlaying to false 
@@ -811,7 +811,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // Set the current track directly for immediate UI updates
     setCurTrack(selectedTrack);
     if (process.env.NODE_ENV === "development") {
-      console.log('🎵 State updated - new curTrack:', selectedTrack.slug, 'userSelected: true, pendingTrackPlay: true');
+      if (process.env.NODE_ENV !== "production") console.log('🎵 State updated - new curTrack:', selectedTrack.slug, 'userSelected: true, pendingTrackPlay: true');
     }
     
     // Always switch the base sky immediately so it can load under the overlay.
@@ -824,7 +824,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // If a warp is already active (or being initiated by Start), avoid stacking warps.
     // Keep the current warp running and let the latest pending selection take effect when it finishes.
     if (!warpActive && !isWarping) {
-      console.log('[WARP] triggering warp sequence for:', selectedTrack.title);
+      if (process.env.NODE_ENV !== "production") console.log('[WARP] triggering warp sequence for:', selectedTrack.title);
       // Mark warp overlay as active immediately before triggering
       setWarpActive(true);
       // Reset button reveal guard for this new warp
@@ -832,7 +832,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       // Add a brief delay before triggering warp sequence, allowing for anticipation
       setTimeout(() => {
         // Trigger warp sequence
-        console.log('[WARP] flySignal incremented - warp effect starting');
+        if (process.env.NODE_ENV !== "production") console.log('[WARP] flySignal incremented - warp effect starting');
         setAllowWarp(true);
         setFlySignal((n) => n + 1);
         
@@ -840,7 +840,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         setTimeout(() => {
           if (!warpFullyComplete) {
             if (process.env.NODE_ENV === "development") {
-        console.log("🔧 BACKUP: Setting warpFullyComplete to true (song selection warp)");
+        if (process.env.NODE_ENV !== "production") console.log("🔧 BACKUP: Setting warpFullyComplete to true (song selection warp)");
       }
             setWarpFullyComplete(true);
           }
@@ -850,7 +850,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         }, WARP_DURATION_MS + 500);
       }, 300);
     } else {
-      console.log('[WARP] warp blocked - already active', { warpActive, isWarping });
+      if (process.env.NODE_ENV !== "production") console.log('[WARP] warp blocked - already active', { warpActive, isWarping });
     }
 
     // Audio channel change is now handled by the unified audio system
@@ -875,7 +875,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       setTimeout(() => {
         if (!warpFullyComplete) {
           if (process.env.NODE_ENV === "development") {
-          console.log("🔧 BACKUP: Setting warpFullyComplete to true (auto warp)");
+          if (process.env.NODE_ENV !== "production") console.log("🔧 BACKUP: Setting warpFullyComplete to true (auto warp)");
         }
           setWarpFullyComplete(true);
         }
@@ -1104,7 +1104,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     setTimeout(() => {
       if (!warpFullyComplete) {
         if (process.env.NODE_ENV === "development") {
-        console.log("🔧 BACKUP: Setting warpFullyComplete to true (initial slug warp)");
+        if (process.env.NODE_ENV !== "production") console.log("🔧 BACKUP: Setting warpFullyComplete to true (initial slug warp)");
       }
         setWarpFullyComplete(true);
       }
@@ -1414,7 +1414,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   const WARP_DURATION_MS = 3000; // Match the minDurationMs from SkyboxVideo
 
   const handleStartClick = React.useCallback(async () => {
-    console.log("🚀 START CLICKED");
+    if (process.env.NODE_ENV !== "production") console.log("🚀 START CLICKED");
 
     // Suppress badge celebrations during warp sequence (15 seconds)
     suppressBadgeCelebrations(15000);
@@ -1439,14 +1439,14 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
       if (!session?.user) {
         // User is logged out - will show WelcomeHomeModal after warp (not redirect to /login)
-        console.log("🚀 User not logged in - will show WelcomeHomeModal after warp");
+        if (process.env.NODE_ENV !== "production") console.log("🚀 User not logged in - will show WelcomeHomeModal after warp");
         needsWelcomeHome = true;
         needsOnboarding = false;
         // Set welcome audio type: logged out → welcome-to-the-heartverse
         welcomeAudioTypeRef.current = 'heartverse';
       } else {
         // Step 2: Fetch profile_complete directly from Supabase
-        console.log("🚀 Fetching profile_complete from Supabase for user:", session.user.id);
+        if (process.env.NODE_ENV !== "production") console.log("🚀 Fetching profile_complete from Supabase for user:", session.user.id);
         const { data: profileData, error: profileError } = await supabaseClient
           .from('profiles')
           .select('profile_complete')
@@ -1458,20 +1458,20 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
         if (profileError) {
           console.error("🚀 Error fetching profile:", profileError);
-          console.log("🚀 Profile fetch failed - will show name prompt after warp");
+          if (process.env.NODE_ENV !== "production") console.log("🚀 Profile fetch failed - will show name prompt after warp");
           // Profile fetch error → treat as new user, play welcome-to-the-heartverse
           welcomeAudioTypeRef.current = 'heartverse';
         } else if (profileData?.profile_complete !== true) {
-          console.log("🚀 profile_complete is not true - will show name prompt after warp");
+          if (process.env.NODE_ENV !== "production") console.log("🚀 profile_complete is not true - will show name prompt after warp");
           // Has profile but profile_complete is false → you-are-home
           welcomeAudioTypeRef.current = 'home';
         } else {
-          console.log("🚀 profile_complete is true - proceeding with normal warp");
+          if (process.env.NODE_ENV !== "production") console.log("🚀 profile_complete is true - proceeding with normal warp");
           // Logged in with complete profile → Welcome-Back
           welcomeAudioTypeRef.current = 'back';
         }
 
-        console.log("🚀 Profile data:", profileData, "needsOnboarding:", needsOnboarding, "welcomeAudioType:", welcomeAudioTypeRef.current);
+        if (process.env.NODE_ENV !== "production") console.log("🚀 Profile data:", profileData, "needsOnboarding:", needsOnboarding, "welcomeAudioType:", welcomeAudioTypeRef.current);
       }
 
       // Store flags for after warp completes
@@ -1522,7 +1522,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       setUserSelected(false);
       setLinks({ spotify: LINKS.spotify, apple: LINKS.apple });
 
-      console.log("🏠 Going to Heartverse - onboarding mode:", onboardingModeRef.current);
+      if (process.env.NODE_ENV !== "production") console.log("🏠 Going to Heartverse - onboarding mode:", onboardingModeRef.current);
     } catch (error) {
       console.error("🚀 Error in handleStartClick:", error);
       startInFlightRef.current = false;
@@ -1534,7 +1534,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // This is a HARD fallback that forces UI transition regardless of onWarpSfxEnd
     setTimeout(() => {
       if (process.env.NODE_ENV === "development") {
-        console.log("🔧 BACKUP TIMER: Checking if UI transition completed...", {
+        if (process.env.NODE_ENV !== "production") console.log("🔧 BACKUP TIMER: Checking if UI transition completed...", {
           buttonRevealTriggered: buttonRevealTriggeredRef.current,
           warpFullyComplete
         });
@@ -1548,7 +1548,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       // Use ref to avoid stale closure issues with state
       if (!buttonRevealTriggeredRef.current) {
         if (process.env.NODE_ENV === "development") {
-          console.log("🔧 BACKUP: Forcing UI to landed state (onWarpSfxEnd may have failed)");
+          if (process.env.NODE_ENV !== "production") console.log("🔧 BACKUP: Forcing UI to landed state (onWarpSfxEnd may have failed)");
         }
         buttonRevealTriggeredRef.current = true; // Mark as triggered to prevent duplicate
         setUiRevealLocked(false);
@@ -1593,14 +1593,14 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         // Check what to show after warp
         if (typeof window !== 'undefined' && (window).__SHOW_WELCOME_HOME_AFTER_WARP) {
           // User not logged in - show WelcomeHomeModal
-          console.log("🎯 WARP COMPLETE: User not logged in, showing WelcomeHomeModal");
+          if (process.env.NODE_ENV !== "production") console.log("🎯 WARP COMPLETE: User not logged in, showing WelcomeHomeModal");
           (window).__SHOW_WELCOME_HOME_AFTER_WARP = false;
           setTimeout(() => {
             setShowWelcomeHomeModal(true);
           }, 500);
         } else if (onboardingModeRef.current) {
           // User logged in but profile incomplete - show name prompt
-          console.log("🎯 ONBOARDING: Warp complete, opening name prompt");
+          if (process.env.NODE_ENV !== "production") console.log("🎯 ONBOARDING: Warp complete, opening name prompt");
           onboardingModeRef.current = false; // Reset flag
           setTimeout(() => {
             openNamePromptFromAuth();
@@ -1626,7 +1626,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     // to ensure proper sequence: warp.mp3 -> button.mp3 -> beam opens -> HUD opens
     setTimeout(() => {
       if (process.env.NODE_ENV === "development") {
-        console.log("🛬 LANDING COMPLETE - Phase updated (beam/HUD handled by onWarpSfxEnd)");
+        if (process.env.NODE_ENV !== "production") console.log("🛬 LANDING COMPLETE - Phase updated (beam/HUD handled by onWarpSfxEnd)");
       }
       // Only set phase to landed if not already set by onWarpSfxEnd
       // and only if UI reveal is no longer locked (button.mp3 finished)
@@ -1639,12 +1639,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       try {
         enterHeartverse();
         if (process.env.NODE_ENV === "development") {
-          console.log("✅ User entered Heartverse - profile bar will show immediately");
+          if (process.env.NODE_ENV !== "production") console.log("✅ User entered Heartverse - profile bar will show immediately");
         }
       } catch {
         setHasEnteredHeartverse(true);
         if (process.env.NODE_ENV === "development") {
-          console.log("✅ Fallback: set hasEnteredHeartverse to true");
+          if (process.env.NODE_ENV !== "production") console.log("✅ Fallback: set hasEnteredHeartverse to true");
         }
       }
 
@@ -1658,7 +1658,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       // This code path only runs for users with profile_complete = true
       setTimeout(() => {
         const currentProfile = profileRef.current;
-        console.log("🛬 Post-warp - user has complete profile, no modal needed", {
+        if (process.env.NODE_ENV !== "production") console.log("🛬 Post-warp - user has complete profile, no modal needed", {
           id: currentProfile?.id,
           profile_complete: currentProfile?.profile_complete
         });
@@ -1831,21 +1831,21 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     const handlePlanetWarp = (e) => {
       const { element, isDailyElement, isCenterPlanet, audioPath, isOnboarding } = e.detail || {};
       if (process.env.NODE_ENV === "development") {
-        console.log('🌍 planet:warp event received:', { element, isDailyElement, isCenterPlanet, audioPath, isOnboarding });
+        if (process.env.NODE_ENV !== "production") console.log('🌍 planet:warp event received:', { element, isDailyElement, isCenterPlanet, audioPath, isOnboarding });
       }
 
       // During onboarding, still play the Heartverse music but skip warp visual effects
       // (the START button already handles the warp animation)
       if (isOnboarding) {
-        console.log('🌍 Onboarding flow - playing Heartverse music');
+        if (process.env.NODE_ENV !== "production") console.log('🌍 Onboarding flow - playing Heartverse music');
         // Play Heartverse/center element audio
         if (element) {
           const elementId = String(element).toLowerCase();
-          console.log('🎵 Playing element audio for onboarding:', elementId);
+          if (process.env.NODE_ENV !== "production") console.log('🎵 Playing element audio for onboarding:', elementId);
           try {
             audioManager.selectTrack(elementId);
           } catch (err) {
-            console.warn('[WARP] Element audio playback failed:', err);
+            if (process.env.NODE_ENV !== "production") console.warn('[WARP] Element audio playback failed:', err);
           }
         }
         // Set curTrack to show element in dropdown
@@ -1893,12 +1893,12 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       // Element tracks are registered in AudioProvider: HEART, WATER, LIGHTNING, DARKNESS, CENTER
       if (element) {
         const elementId = String(element).toLowerCase();
-        console.log('🎵 Playing element audio via AudioProvider:', elementId);
+        if (process.env.NODE_ENV !== "production") console.log('🎵 Playing element audio via AudioProvider:', elementId);
         try {
           // Use selectTrack which stops current audio, plays warp SFX, then loads and auto-plays
           audioManager.selectTrack(elementId);
         } catch (err) {
-          console.warn('[WARP] Element audio playback failed:', err);
+          if (process.env.NODE_ENV !== "production") console.warn('[WARP] Element audio playback failed:', err);
         }
       }
 
@@ -1930,7 +1930,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     const handleSongWarpRequest = (e) => {
       const { songSlug, source, autoPlay } = e.detail || {};
       if (process.env.NODE_ENV === "development") {
-        console.log('🎵 song:warp-request event received:', { songSlug, source, autoPlay });
+        if (process.env.NODE_ENV !== "production") console.log('🎵 song:warp-request event received:', { songSlug, source, autoPlay });
       }
       if (songSlug) {
         // Call onSongChange which triggers the full warp sequence (camera + visual effect)
@@ -1939,7 +1939,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         // If autoPlay is requested (from LISTEN button), trigger playback after warp completes
         if (autoPlay) {
           setTimeout(() => {
-            console.log('🎵 Auto-playing song after warp:', songSlug);
+            if (process.env.NODE_ENV !== "production") console.log('🎵 Auto-playing song after warp:', songSlug);
             try {
               // Play the flip SFX to indicate playback starting
               sfx.play('flip', 0.6);
@@ -1947,7 +1947,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               // (togglePlayPause would use a stale closure and potentially play the wrong song)
               audioManager.playTrack(songSlug);
             } catch (err) {
-              console.warn('Auto-play failed:', err);
+              if (process.env.NODE_ENV !== "production") console.warn('Auto-play failed:', err);
             }
           }, WARP_DURATION_MS + 500); // Wait for warp to complete
         }
@@ -1972,7 +1972,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
     const handler = (e) => {
       const target = e.target;
       if (process.env.NODE_ENV === "development" && false) { // Disabled very verbose log
-        console.log("🖱 Global click:", {
+        if (process.env.NODE_ENV !== "production") console.log("🖱 Global click:", {
         tag: target?.tagName,
         id: target?.id,
         className: target?.className,
@@ -2344,7 +2344,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         lightspeedYoutubeUrl={'https://youtu.be/KFssNa5WvKc'}
         onWarpSfxEnd={() => {
           // Simple cleanup - core UI transitions handled by phase state machine
-          console.log("🎵 Warp SFX ended");
+          if (process.env.NODE_ENV !== "production") console.log("🎵 Warp SFX ended");
           // Notify unified audio system that warp completed so pending tracks auto-play
           try { audioManager?.markWarpCompleted(); } catch {}
 
@@ -2355,7 +2355,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           // NOTE: Beam/HUD enabling is handled by playButtonAndRevealUI below
           // to ensure proper sequence: warp.mp3 -> button.mp3 -> beam -> HUD
           if (startButtonWarpRef.current && uiPhase !== "landed") {
-            console.log("🛬 FALLBACK: Start button warp SFX ended, preparing systems");
+            if (process.env.NODE_ENV !== "production") console.log("🛬 FALLBACK: Start button warp SFX ended, preparing systems");
             startInFlightRef.current = false;
 
             // Mark warp as completed for unified audio system
@@ -2398,10 +2398,10 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
               // Play heart.MP3 for onboarding users (profile_complete = false), space-music for others
               if (welcomeType === 'home') {
-                console.log('🎵 Playing heart.MP3 through AudioProvider (onboarding user)');
+                if (process.env.NODE_ENV !== "production") console.log('🎵 Playing heart.MP3 through AudioProvider (onboarding user)');
                 audioManager?.playTrack('heart');
               } else {
-                console.log('🎵 Playing space-music through AudioProvider');
+                if (process.env.NODE_ENV !== "production") console.log('🎵 Playing space-music through AudioProvider');
                 audioManager?.playTrack('space-music');
               }
 
@@ -2409,22 +2409,22 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
 
               if (welcomeType === 'heartverse') {
                 // Logged out user → welcome-to-the-heartverse
-                console.log('🎵 Playing welcome-to-the-heartverse (logged out user)');
+                if (process.env.NODE_ENV !== "production") console.log('🎵 Playing welcome-to-the-heartverse (logged out user)');
                 welcomeAudioPath = '/tracks/welcome-to-the-heartverse.mp3';
               } else if (welcomeType === 'back') {
                 // Logged in with complete profile → Welcome-Back
-                console.log('🎵 Playing Welcome-Back (logged in, profile complete)');
+                if (process.env.NODE_ENV !== "production") console.log('🎵 Playing Welcome-Back (logged in, profile complete)');
                 welcomeAudioPath = '/tracks/Welcome-Back.mp3';
               } else if (welcomeType === 'home') {
                 // Logged in but profile_complete is false → you-are-home
-                console.log('🎵 Playing you-are-home (profile incomplete)');
+                if (process.env.NODE_ENV !== "production") console.log('🎵 Playing you-are-home (profile incomplete)');
                 welcomeAudioPath = '/tracks/you-are-home.mp3';
               }
 
               if (welcomeAudioPath) {
                 const welcomeAudio = new Audio(welcomeAudioPath);
                 welcomeAudio.volume = 0.9;
-                welcomeAudio.play().catch((e) => console.warn('Welcome audio failed:', e));
+                welcomeAudio.play().catch((e) => { if (process.env.NODE_ENV !== "production") console.warn('Welcome audio failed:', e); });
               }
             }
           } catch {}
@@ -2437,7 +2437,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
           const playButtonAndRevealUI = () => {
             // Guard: prevent multiple button.mp3 plays per warp
             if (buttonRevealTriggeredRef.current) {
-              console.log("⏭️ Skipping button.mp3 - already triggered for this warp");
+              if (process.env.NODE_ENV !== "production") console.log("⏭️ Skipping button.mp3 - already triggered for this warp");
               return;
             }
             buttonRevealTriggeredRef.current = true;
@@ -2453,19 +2453,19 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               setTimeout(() => {
                 setShowHUD(true);
                 setUiPhase("landed");
-                console.log("✅ UI revealed: beam -> HUD");
+                if (process.env.NODE_ENV !== "production") console.log("✅ UI revealed: beam -> HUD");
 
                 // Check what to show after warp
                 if (typeof window !== 'undefined' && (window).__SHOW_WELCOME_HOME_AFTER_WARP) {
                   // User not logged in - show WelcomeHomeModal
-                  console.log("🎯 WARP COMPLETE: User not logged in, showing WelcomeHomeModal");
+                  if (process.env.NODE_ENV !== "production") console.log("🎯 WARP COMPLETE: User not logged in, showing WelcomeHomeModal");
                   (window).__SHOW_WELCOME_HOME_AFTER_WARP = false;
                   setTimeout(() => {
                     setShowWelcomeHomeModal(true);
                   }, 300);
                 } else if (onboardingModeRef.current) {
                   // User logged in but profile incomplete - show name prompt
-                  console.log("🎯 ONBOARDING: UI revealed, opening name prompt");
+                  if (process.env.NODE_ENV !== "production") console.log("🎯 ONBOARDING: UI revealed, opening name prompt");
                   onboardingModeRef.current = false; // Reset flag
                   setTimeout(() => {
                     openNamePromptFromAuth();
@@ -2479,20 +2479,20 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
                   }
                   // Trigger play/pause button
                   setTimeout(() => {
-                    console.log("▶️ Triggering play");
+                    if (process.env.NODE_ENV !== "production") console.log("▶️ Triggering play");
                     setPlaySignal((n) => n + 1);
                   }, 100);
                 }
               }, 150);
             };
 
-            console.log("🔊 Playing button.mp3");
+            if (process.env.NODE_ENV !== "production") console.log("🔊 Playing button.mp3");
             try {
               // Play button sound and reveal UI simultaneously (don't wait for sound to finish)
               sfx.play('button', 0.9);
               revealUIAndPlay();
             } catch {
-              console.warn("⚠️ SFX system failed, revealing UI directly");
+              if (process.env.NODE_ENV !== "production") console.warn("⚠️ SFX system failed, revealing UI directly");
               revealUIAndPlay();
             }
           };
@@ -2668,7 +2668,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               trackPlayTimerRef.current = window.setTimeout(() => {
                 const proceed = () => {
                   if (pendingTrackPlay) {
-                    console.log('🎵 PLAY SIGNAL TRIGGERED - proceed()');
+                    if (process.env.NODE_ENV !== "production") console.log('🎵 PLAY SIGNAL TRIGGERED - proceed()');
                     try {
                       if (!(typeof window !== 'undefined' && (window).__AUDIO_MANAGER_ACTIVE)) {
                         setPlaySignal((n) => n + 1);
@@ -2776,7 +2776,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             // Add a final failsafe timer - if song doesn't start within 3 seconds, force it
             const failsafeTimer = setTimeout(() => {
               if (pendingTrackPlay) {
-                console.warn('DashboardApp: Failsafe timer triggered - forcing song start');
+                if (process.env.NODE_ENV !== "production") console.warn('DashboardApp: Failsafe timer triggered - forcing song start');
                 try {
                   if (!(typeof window !== 'undefined' && (window).__AUDIO_MANAGER_ACTIVE)) {
                     setPlaySignal((n) => n + 1);
@@ -2792,7 +2792,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
               clearTimeout(failsafeTimer); // Clear the failsafe timer
               // Small delay to ensure unified audio system has set up the audio element properly
               setTimeout(() => {
-                console.log('🎵 PLAY SIGNAL TRIGGERED - initialSlug autoplay');
+                if (process.env.NODE_ENV !== "production") console.log('🎵 PLAY SIGNAL TRIGGERED - initialSlug autoplay');
                 try {
                   if (!(typeof window !== 'undefined' && (window).__AUDIO_MANAGER_ACTIVE)) {
                     setPlaySignal((n) => n + 1);

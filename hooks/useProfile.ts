@@ -119,7 +119,7 @@ export function useProfile(): UseProfileReturn {
       const { updated_at, created_at, id, ...safeUpdates } = updates as any;
 
       // Dev log: print exact payload keys being sent
-      console.log('[useProfile.updateProfile] Payload keys:', Object.keys(safeUpdates));
+      if (process.env.NODE_ENV !== "production") console.log('[useProfile.updateProfile] Payload keys:', Object.keys(safeUpdates));
 
       let { data, error } = await supabaseBrowser
         .from('profiles')

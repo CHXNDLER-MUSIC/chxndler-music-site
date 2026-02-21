@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     // Extract variant selection (optional)
     const selectedVariant = body?.selected_variant || null;
     const selectedColor = body?.selected_color || null;
-    console.log('[API /api/merch/purchase] selectedColor:', selectedColor);
+    if (process.env.NODE_ENV !== "production") console.log('[API /api/merch/purchase] selectedColor:', selectedColor);
     // Normalize payment type to allowed values
     let normalizedPaymentType: 'heartcoins' | 'stripe';
     try {
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    console.log('[PURCHASE] Incoming request:', {
+    if (process.env.NODE_ENV !== "production") console.log('[PURCHASE] Incoming request:', {
       merchItemId,
       quantity,
       idempotencyKey,
@@ -83,20 +83,22 @@ export async function POST(request: NextRequest) {
 
     // DEBUG: Log all cookies received
     const allCookies = cookieStore.getAll();
-    console.log('[MERCH PURCHASE DEBUG] Cookie names:', allCookies.map(c => c.name));
-    console.log('[MERCH PURCHASE DEBUG] sb-* cookies:', allCookies.filter(c => c.name.startsWith('sb-')).map(c => ({ name: c.name, valueLen: c.value?.length })));
+    if (process.env.NODE_ENV !== "production") {
+      console.log('[MERCH PURCHASE DEBUG] Cookie names:', allCookies.map(c => c.name));
+      console.log('[MERCH PURCHASE DEBUG] sb-* cookies:', allCookies.filter(c => c.name.startsWith('sb-')).map(c => ({ name: c.name, valueLen: c.value?.length })));
+    }
 
     const token = cookieStore.get('sb-access-token')?.value || '';
-    console.log('[MERCH PURCHASE DEBUG] sb-access-token found:', !!token, 'length:', token?.length || 0);
+    if (process.env.NODE_ENV !== "production") console.log('[MERCH PURCHASE DEBUG] sb-access-token found:', !!token, 'length:', token?.length || 0);
 
     if (!token) {
-      console.log('[MERCH PURCHASE DEBUG] No sb-access-token cookie - returning 401');
+      if (process.env.NODE_ENV !== "production") console.log('[MERCH PURCHASE DEBUG] No sb-access-token cookie - returning 401');
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     const supabase = createSupabaseServerClientWithJwt(token);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    console.log('[MERCH PURCHASE DEBUG] supabase.auth.getUser() result:', {
+    if (process.env.NODE_ENV !== "production") console.log('[MERCH PURCHASE DEBUG] supabase.auth.getUser() result:', {
       hasUser: !!user,
       userId: user?.id ?? null,
       userEmail: user?.email ?? null,
@@ -120,7 +122,7 @@ export async function POST(request: NextRequest) {
       p_selected_variant: selectedVariant && Object.keys(selectedVariant).length > 0 ? selectedVariant : {},
       p_selected_color: selectedColor || null,
     };
-    console.log('[PURCHASE] RPC call: purchase_merch_with_heartcoins_v4', {
+    if (process.env.NODE_ENV !== "production") console.log('[PURCHASE] RPC call: purchase_merch_with_heartcoins_v4', {
       ...rpcParams,
       expected_payment_type: normalizedPaymentType,
     });
@@ -130,7 +132,7 @@ export async function POST(request: NextRequest) {
       rpcParams
     );
 
-    console.log('[PURCHASE] RPC response:', { success: !rpcError, data: rpcResult, error: rpcError?.message, code: rpcError?.code });
+    if (process.env.NODE_ENV !== "production") console.log('[PURCHASE] RPC response:', { success: !rpcError, data: rpcResult, error: rpcError?.message, code: rpcError?.code });
 
     if (rpcError) {
       console.error('[PURCHASE] RPC error:', rpcError);
@@ -176,14 +178,14 @@ export async function POST(request: NextRequest) {
 
     // Extract the orders.id from RPC result
     const ordersId = result?.order_id ? String(result.order_id) : null;
-    console.log('[PURCHASE] orders.id', ordersId);
+    if (process.env.NODE_ENV !== "production") console.log('[PURCHASE] orders.id', ordersId);
 
     // Variant data is now included in the RPC INSERT directly (no separate UPDATE needed)
-    console.log('[PURCHASE] Variant data passed to RPC:', { selectedVariant, selectedColor });
+    if (process.env.NODE_ENV !== "production") console.log('[PURCHASE] Variant data passed to RPC:', { selectedVariant, selectedColor });
 
     // Treat "Already processed" as success (idempotency)
     if (result?.message === 'Already processed' || result?.idempotent) {
-      console.log('[PURCHASE] Idempotent success:', result);
+      if (process.env.NODE_ENV !== "production") console.log('[PURCHASE] Idempotent success:', result);
       return NextResponse.json({
         success: true,
         order_id: ordersId,
@@ -195,7 +197,7 @@ export async function POST(request: NextRequest) {
 
     // Normal success
     if (result?.success) {
-      console.log('[PURCHASE] Success:', result, { selectedVariant, selectedColor });
+      if (process.env.NODE_ENV !== "production") console.log('[PURCHASE] Success:', result, { selectedVariant, selectedColor });
       return NextResponse.json({
         success: true,
         order_id: ordersId,
@@ -207,7 +209,7 @@ export async function POST(request: NextRequest) {
     }
 
     // RPC returned but without success flag - return what we got
-    console.log('[PURCHASE] RPC returned:', result, { selectedVariant, selectedColor });
+    if (process.env.NODE_ENV !== "production") console.log('[PURCHASE] RPC returned:', result, { selectedVariant, selectedColor });
     return NextResponse.json({
       success: true,
       order_id: ordersId,

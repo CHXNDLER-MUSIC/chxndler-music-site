@@ -12,7 +12,7 @@ export default function StoreProvider() {
       isOpen={isOpen}
       onClose={closeStore}
       onPurchaseSuccess={(item) => {
-        console.log('Purchase successful:', item);
+        if (process.env.NODE_ENV !== "production") console.log('Purchase successful:', item);
         // Could emit an event here for other components to react to
         // Or trigger a toast notification
       }}

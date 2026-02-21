@@ -8,7 +8,7 @@ export default function WorldPage() {
   const worldId = params.id as string;
 
   const handlePlanetSelect = (planetId: string) => {
-    console.log(`Planet selected: ${planetId} in world: ${worldId}`);
+    if (process.env.NODE_ENV !== "production") console.log(`Planet selected: ${planetId} in world: ${worldId}`);
   };
 
   return (

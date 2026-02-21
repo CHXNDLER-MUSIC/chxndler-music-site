@@ -73,7 +73,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   }, [markCompleted, updateProfile]);
 
   const skip = useCallback(async () => {
-    console.log('Tour skip function called');
+    if (process.env.NODE_ENV !== "production") console.log('Tour skip function called');
     setActive(false);
     setEndModalVisible(false);
     markCompleted();
@@ -82,11 +82,11 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     
     // Trigger warp effect when skipping tour
     try {
-      console.log('Dispatching tour:skipped event');
+      if (process.env.NODE_ENV !== "production") console.log('Dispatching tour:skipped event');
       window.dispatchEvent(new CustomEvent('tour:skipped'));
-      console.log('tour:skipped event dispatched successfully');
+      if (process.env.NODE_ENV !== "production") console.log('tour:skipped event dispatched successfully');
     } catch (e) {
-      console.log('Could not dispatch tour:skipped event:', e);
+      if (process.env.NODE_ENV !== "production") console.log('Could not dispatch tour:skipped event:', e);
     }
   }, [markCompleted, markDisabled, updateProfile]);
 
@@ -121,7 +121,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       // If onboarding sequence is active, don't auto-start
       // The sequence will dispatch ONBOARDING_SEQUENCE_COMPLETE when done
       if (isOnboardingSequenceActive()) {
-        console.log('[Tour] Onboarding sequence active, deferring to sequence-complete event');
+        if (process.env.NODE_ENV !== "production") console.log('[Tour] Onboarding sequence active, deferring to sequence-complete event');
         return;
       }
 
@@ -148,12 +148,12 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   // Listen for onboarding sequence completion to show tour prompt
   useEffect(() => {
     const onSequenceComplete = () => {
-      console.log('[Tour] Onboarding sequence complete');
+      if (process.env.NODE_ENV !== "production") console.log('[Tour] Onboarding sequence complete');
 
       // Show tour if user hasn't completed it yet
       const completed = profile?.has_seen_tour || isCompleted();
       if (!completed && !isDisabled()) {
-        console.log('[Tour] Showing tour after onboarding sequence');
+        if (process.env.NODE_ENV !== "production") console.log('[Tour] Showing tour after onboarding sequence');
         clearDisabled();
         setWelcomeVisible(true);
       }
@@ -218,7 +218,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
             <button
               onClick={() => {
                 try { sfx.play('click', 0.5); } catch {}
-                console.log('Skip tour clicked');
+                if (process.env.NODE_ENV !== "production") console.log('Skip tour clicked');
                 setWelcomeVisible(false);
                 // Small delay to ensure modal closes before triggering warp
                 setTimeout(() => skip(), 100);

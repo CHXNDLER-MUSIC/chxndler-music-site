@@ -27,7 +27,7 @@ export default function VanillaThreeScene({
   useEffect(() => {
     if (!mounted || !mountRef.current) return;
 
-    console.log('VanillaThreeScene: Initializing Three.js scene');
+    if (process.env.NODE_ENV !== "production") console.log('VanillaThreeScene: Initializing Three.js scene');
 
     let scene: THREE.Scene;
     let camera: THREE.PerspectiveCamera;
@@ -87,7 +87,7 @@ export default function VanillaThreeScene({
       };
 
       animate();
-      console.log('VanillaThreeScene: Successfully initialized');
+      if (process.env.NODE_ENV !== "production") console.log('VanillaThreeScene: Successfully initialized');
 
     } catch (err) {
       console.error('VanillaThreeScene: Error initializing Three.js:', err);

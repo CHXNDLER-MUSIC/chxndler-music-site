@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     const { error: createTableError } = await supabase.rpc('create_orders_table_if_not_exists');
     
     if (createTableError) {
-      console.warn('Could not ensure orders table exists:', createTableError);
+      if (process.env.NODE_ENV !== "production") console.warn('Could not ensure orders table exists:', createTableError);
     }
 
     // Save the order details in the database

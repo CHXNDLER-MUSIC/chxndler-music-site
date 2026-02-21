@@ -173,7 +173,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
           })
         });
       } catch (trackingError) {
-        console.log('Heart signal tracking failed:', trackingError);
+        if (process.env.NODE_ENV !== "production") console.log('Heart signal tracking failed:', trackingError);
         // Don't fail the flow if tracking fails
       }
 
@@ -181,7 +181,7 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
       try {
         await sfx.play('join-alien', 0.7);
       } catch (audioError) {
-        console.log('Audio playback failed:', audioError);
+        if (process.env.NODE_ENV !== "production") console.log('Audio playback failed:', audioError);
       }
 
       setMessage("Check your email to continue");

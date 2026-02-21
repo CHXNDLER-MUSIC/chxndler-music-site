@@ -399,13 +399,13 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
   // Helper to set the selected variant for an item
   const setSelectedVariantForItem = (itemId: string, variant: NormalizedVariantOption) => {
-    console.log('[VARIANT SELECT] Setting variant for item:', {
+    if (process.env.NODE_ENV !== "production") console.log('[VARIANT SELECT] Setting variant for item:', {
       itemId,
       variant,
     });
     setSelectedVariants(prev => {
       const next = { ...prev, [itemId]: variant };
-      console.log('[VARIANT SELECT] New selectedVariants state:', next);
+      if (process.env.NODE_ENV !== "production") console.log('[VARIANT SELECT] New selectedVariants state:', next);
       return next;
     });
   };
@@ -517,7 +517,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     const elementNorm = normalize(element);
     const filtered = cards.filter(card => ((card.element || '').toUpperCase()) === elementUpper);
 
-    console.log('[buildOrderedElementCards]', {
+    if (process.env.NODE_ENV !== "production") console.log('[buildOrderedElementCards]', {
       element,
       elementNorm,
       totalCards: cards.length,
@@ -545,14 +545,14 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
     // Find the namesake card from all cards (not just filtered)
     const namesake = cards.find(card => isNamesakeCard(card));
-    console.log('[buildOrderedElementCards] namesake found:', namesake?.card_name || 'NONE');
+    if (process.env.NODE_ENV !== "production") console.log('[buildOrderedElementCards] namesake found:', namesake?.card_name || 'NONE');
 
     // Start with filtered list
     let ordered = [...filtered];
 
     // If there are no filtered cards but a namesake exists, show only the namesake
     if (ordered.length === 0) {
-      console.log('[buildOrderedElementCards] No filtered cards, returning namesake only');
+      if (process.env.NODE_ENV !== "production") console.log('[buildOrderedElementCards] No filtered cards, returning namesake only');
       return namesake ? [namesake] : [];
     }
 
@@ -560,17 +560,17 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     const namesakeInFiltered = ordered.find(c => isNamesakeCard(c));
     const otherCards = ordered.filter(c => !isNamesakeCard(c));
 
-    console.log('[buildOrderedElementCards] namesakeInFiltered:', namesakeInFiltered?.card_name || 'NONE');
-    console.log('[buildOrderedElementCards] otherCards:', otherCards.map(c => c.card_name));
+    if (process.env.NODE_ENV !== "production") console.log('[buildOrderedElementCards] namesakeInFiltered:', namesakeInFiltered?.card_name || 'NONE');
+    if (process.env.NODE_ENV !== "production") console.log('[buildOrderedElementCards] otherCards:', otherCards.map(c => c.card_name));
 
     if (namesakeInFiltered) {
       // Namesake found in filtered list - put it first
       ordered = [namesakeInFiltered, ...otherCards];
-      console.log('[buildOrderedElementCards] Put namesake first, new order:', ordered.map(c => c.card_name));
+      if (process.env.NODE_ENV !== "production") console.log('[buildOrderedElementCards] Put namesake first, new order:', ordered.map(c => c.card_name));
     } else if (namesake) {
       // Namesake not in filtered (different element tag) - prepend it
       ordered = [namesake, ...otherCards];
-      console.log('[buildOrderedElementCards] Prepended namesake from all cards');
+      if (process.env.NODE_ENV !== "production") console.log('[buildOrderedElementCards] Prepended namesake from all cards');
     } else {
       // No namesake found - synthesize an element card
       const synthetic = {
@@ -581,7 +581,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         card_description: undefined,
       } as any;
       ordered = [synthetic, ...otherCards];
-      console.log('[buildOrderedElementCards] Created synthetic card');
+      if (process.env.NODE_ENV !== "production") console.log('[buildOrderedElementCards] Created synthetic card');
     }
 
     // Deduplicate by id or by normalized name if id missing
@@ -643,7 +643,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     // Build & set ordered element cards immediately if available
     // buildOrderedElementCards puts the namesake card first (index 0)
     const orderedNow = buildOrderedElementCards(element, allCards);
-    console.log('[Cards] handleElementSelect called:', {
+    if (process.env.NODE_ENV !== "production") console.log('[Cards] handleElementSelect called:', {
       element,
       allCardsCount: allCards.length,
       orderedCount: orderedNow.length,
@@ -676,7 +676,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     // buildOrderedElementCards puts the namesake card first (index 0)
     const ordered = buildOrderedElementCards(selectedElement, allCards);
     try {
-      console.log('[Cards] post-load build for element:', selectedElement, 'count:', ordered.length, 'first:', ordered[0]?.card_name || ordered[0]?.cards?.card_name);
+      if (process.env.NODE_ENV !== "production") console.log('[Cards] post-load build for element:', selectedElement, 'count:', ordered.length, 'first:', ordered[0]?.card_name || ordered[0]?.cards?.card_name);
     } catch {}
     setElementCards(ordered);
     if (ordered.length === 0) return;
@@ -747,7 +747,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
         onClose();
         setTimeout(() => {
           // Dispatch planet:warp event to trigger warp visual effect
-          console.log('[HeartCoinModal] Dispatching planet:warp event for element:', elementOfDay || 'heart');
+          if (process.env.NODE_ENV !== "production") console.log('[HeartCoinModal] Dispatching planet:warp event for element:', elementOfDay || 'heart');
           window.dispatchEvent(new CustomEvent('planet:warp', {
             detail: {
               element: elementOfDay || 'heart',
@@ -767,11 +767,11 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       case 'LISTEN_SONG_OF_DAY':
         // Close modal, warp to song planet, and auto-play
         if (songOfDaySlug) {
-          console.log('[LISTEN] Song of day LISTEN clicked:', songOfDaySlug);
+          if (process.env.NODE_ENV !== "production") console.log('[LISTEN] Song of day LISTEN clicked:', songOfDaySlug);
 
           // IMPORTANT: Start playback IMMEDIATELY on user gesture to avoid autoplay blocking
           // Browser autoplay policy requires playback to start from user interaction
-          console.log('[LISTEN] Triggering immediate playback for:', songOfDaySlug);
+          if (process.env.NODE_ENV !== "production") console.log('[LISTEN] Triggering immediate playback for:', songOfDaySlug);
           if (typeof (window as any).__playTrackDirect === 'function') {
             (window as any).__playTrackDirect(songOfDaySlug, 'daily-quest-listen');
           } else {
@@ -782,7 +782,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
           onClose();
           setTimeout(() => {
-            console.log('[WARP] trigger from daily quest LISTEN button', { songOfDaySlug });
+            if (process.env.NODE_ENV !== "production") console.log('[WARP] trigger from daily quest LISTEN button', { songOfDaySlug });
             try {
               // Set main track in player store (updates UI state)
               playerStore.getState().setMain(songOfDaySlug);
@@ -795,7 +795,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
             }
           }, 200);
         } else {
-          console.warn('[HeartCoinModal] No songOfDaySlug available for LISTEN_SONG_OF_DAY quest');
+          if (process.env.NODE_ENV !== "production") console.warn('[HeartCoinModal] No songOfDaySlug available for LISTEN_SONG_OF_DAY quest');
         }
         break;
 
@@ -889,7 +889,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
             }));
           }
         } catch (err) {
-          console.warn('[HeartCoinModal] Failed to trigger immediate playback:', err);
+          if (process.env.NODE_ENV !== "production") console.warn('[HeartCoinModal] Failed to trigger immediate playback:', err);
         }
 
         onClose();
@@ -910,7 +910,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
       default:
         // Unknown quest_key - log warning and do nothing
-        console.warn(`[HeartCoinModal] No click handler implemented for quest_key: ${questKey}`);
+        if (process.env.NODE_ENV !== "production") console.warn(`[HeartCoinModal] No click handler implemented for quest_key: ${questKey}`);
         break;
     }
   };
@@ -1172,7 +1172,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     // Create unique client request ID for idempotency
     const clientRequestId = crypto.randomUUID();
 
-    console.log('[MERCH PURCHASE] Initiating immediate purchase:', {
+    if (process.env.NODE_ENV !== "production") console.log('[MERCH PURCHASE] Initiating immediate purchase:', {
       merchItemId: item.merch_item_id,
       name: item.name,
       cost: item.heartCoin,
@@ -1200,7 +1200,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
       const result = await response.json();
 
-      console.log('[MERCH PURCHASE] Purchase response:', {
+      if (process.env.NODE_ENV !== "production") console.log('[MERCH PURCHASE] Purchase response:', {
         status: response.status,
         ok: response.ok,
         result
@@ -1223,7 +1223,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
       const orderId = normalizedResult.order_id || result.order_id;
 
-      console.log('[MERCH PURCHASE] Purchase successful! Order ID:', orderId);
+      if (process.env.NODE_ENV !== "production") console.log('[MERCH PURCHASE] Purchase successful! Order ID:', orderId);
 
       // Refresh profile to get updated HeartCoin balance
       await refreshProfile();
@@ -1255,7 +1255,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
     // Double-submit protection
     if (isSubmittingRef.current) {
-      console.warn('[MERCH PURCHASE] Double-submit prevented - already processing');
+      if (process.env.NODE_ENV !== "production") console.warn('[MERCH PURCHASE] Double-submit prevented - already processing');
       return;
     }
 
@@ -1273,7 +1273,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     try {
       // NEW FLOW: Purchase already completed, just update shipping info
       if (completedOrderId && purchasedItemInfo) {
-        console.log('[MERCH SHIPPING] Updating shipping for order:', completedOrderId);
+        if (process.env.NODE_ENV !== "production") console.log('[MERCH SHIPPING] Updating shipping for order:', completedOrderId);
 
         const response = await fetch('/api/merch/updateShipping', {
           method: 'POST',
@@ -1298,7 +1298,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
           return;
         }
 
-        console.log('[MERCH SHIPPING] Shipping info updated successfully');
+        if (process.env.NODE_ENV !== "production") console.log('[MERCH SHIPPING] Shipping info updated successfully');
 
         // Send confirmation email
         try {
@@ -1313,7 +1313,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
           const emailResult = await emailResponse.json();
           if (emailResult.emailSent) {
-            console.log('Order confirmation email sent successfully');
+            if (process.env.NODE_ENV !== "production") console.log('Order confirmation email sent successfully');
           }
         } catch (emailError) {
           console.error('Failed to send confirmation email:', emailError);
@@ -1398,9 +1398,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
             const emailResult = await emailResponse.json();
             if (emailResult.emailSent) {
-              console.log('Card order confirmation email sent successfully');
+              if (process.env.NODE_ENV !== "production") console.log('Card order confirmation email sent successfully');
             } else {
-              console.warn('Card order confirmation email failed to send');
+              if (process.env.NODE_ENV !== "production") console.warn('Card order confirmation email failed to send');
             }
           } catch (emailError) {
             console.error('Failed to send card confirmation email:', emailError);
@@ -1569,9 +1569,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
             const emailResult = await emailResponse.json();
             if (emailResult.emailSent) {
-              console.log('Digital card confirmation email sent successfully');
+              if (process.env.NODE_ENV !== "production") console.log('Digital card confirmation email sent successfully');
             } else {
-              console.warn('Digital card confirmation email failed to send');
+              if (process.env.NODE_ENV !== "production") console.warn('Digital card confirmation email failed to send');
             }
           } catch (emailError) {
             console.error('Failed to send digital card confirmation email:', emailError);
@@ -1638,7 +1638,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     const cardName = currentCard.card_name || currentCard.cards?.card_name || 'Card';
     const cardImage = getCardImageUrl(cardName);
 
-    console.log('[PHYSICAL CARD PURCHASE] Initiating immediate purchase:', {
+    if (process.env.NODE_ENV !== "production") console.log('[PHYSICAL CARD PURCHASE] Initiating immediate purchase:', {
       cardName,
       cost: physicalCardCost,
       clientRequestId
@@ -1664,7 +1664,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
       const result = await response.json();
 
-      console.log('[PHYSICAL CARD PURCHASE] Purchase response:', {
+      if (process.env.NODE_ENV !== "production") console.log('[PHYSICAL CARD PURCHASE] Purchase response:', {
         status: response.status,
         ok: response.ok,
         result
@@ -1687,7 +1687,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
       const orderId = normalizedResult.order_id || result.order_id;
 
-      console.log('[PHYSICAL CARD PURCHASE] Purchase successful! Order ID:', orderId);
+      if (process.env.NODE_ENV !== "production") console.log('[PHYSICAL CARD PURCHASE] Purchase successful! Order ID:', orderId);
 
       // Refresh profile to get updated HeartCoin balance
       await refreshProfile();
@@ -1794,15 +1794,15 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     >
       <div className="relative flex flex-col flex-1 h-full overflow-hidden">
         {/* Balance Display */}
-        <div className="flex items-center gap-0.5 mb-3">
+        <div className="flex items-center mb-3">
           <img
             src="/elements/heart-coin.webp"
             alt="HeartCoin"
             className="w-10 h-10 object-cover -ml-3"
             style={{ filter: 'drop-shadow(0 0 8px rgba(0, 255, 255, 0.6))' }}
           />
-          <span className="text-white text-xl font-semibold">{heartcoinBalance}</span>
-          <span className="text-white/60 text-sm">Balance</span>
+          <span className="text-white text-xl font-semibold -ml-1">{heartcoinBalance}</span>
+          <span className="text-white/60 text-sm ml-1">Balance</span>
         </div>
 
         {/* Top Level Tabs */}
@@ -2289,10 +2289,10 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
               <>
                 {/* Item Title with Variant Toggle */}
                 {(() => {
-                  console.log('[MERCH IIFE] Running, currentPage:', currentPage, 'merchItems count:', merchItems.length);
+                  if (process.env.NODE_ENV !== "production") console.log('[MERCH IIFE] Running, currentPage:', currentPage, 'merchItems count:', merchItems.length);
                   const currentItem = merchItems[currentPage];
                   if (!currentItem) return null;
-                  console.log('[MERCH IIFE] currentItem:', currentItem.name, 'id:', currentItem.id);
+                  if (process.env.NODE_ENV !== "production") console.log('[MERCH IIFE] currentItem:', currentItem.name, 'id:', currentItem.id);
 
                   const variantOptions = normalizeVariantOptions(currentItem.variant_options, currentItem.image_url);
                   const hasVariants = variantOptions.length > 0;
@@ -2358,7 +2358,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   const isTitleItemLocked = isItemLockedForJourney(profile?.journey, titleItemMinTier);
 
                   // Debug: log variant and tier info
-                  console.log('[VARIANT DEBUG]', {
+                  if (process.env.NODE_ENV !== "production") console.log('[VARIANT DEBUG]', {
                     itemName: currentItem.name,
                     itemSlug: (currentItem as any).slug,
                     itemSlugLower,
@@ -2416,7 +2416,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   e.preventDefault();
-                                  console.log('[COLOR DOT CLICK]', opt.value);
+                                  if (process.env.NODE_ENV !== "production") console.log('[COLOR DOT CLICK]', opt.value);
                                   try { sfx.setEnabled(true); sfx.play('click', 0.5); } catch (err) { console.error('SFX error:', err); }
                                   setSelectedVariantForItem(currentItem.id, opt);
                                 }}
@@ -2426,7 +2426,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                                 onTouchEnd={(e) => {
                                   e.stopPropagation();
                                   e.preventDefault();
-                                  console.log('[COLOR DOT TOUCH]', opt.value);
+                                  if (process.env.NODE_ENV !== "production") console.log('[COLOR DOT TOUCH]', opt.value);
                                   try { sfx.setEnabled(true); sfx.play('click', 0.5); } catch (err) { console.error('SFX error:', err); }
                                   setSelectedVariantForItem(currentItem.id, opt);
                                 }}
@@ -2545,8 +2545,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                                 }}
                                 draggable={false}
                                 onClick={() => {
-                                  console.log('[MERCH FLIP] Click detected', { carouselBackImage, beanieColor, isBeanie, selectedVarValue: selectedVar?.value, isMerchFlipped });
-                                  if (!carouselBackImage) { console.log('[MERCH FLIP] No back image, skipping'); return; }
+                                  if (process.env.NODE_ENV !== "production") console.log('[MERCH FLIP] Click detected', { carouselBackImage, beanieColor, isBeanie, selectedVarValue: selectedVar?.value, isMerchFlipped });
+                                  if (!carouselBackImage) { if (process.env.NODE_ENV !== "production") console.log('[MERCH FLIP] No back image, skipping'); return; }
                                   try { sfx.play('flip', 0.8); } catch {}
                                   setMerchFlipScale(0);
                                   setTimeout(() => {
@@ -2938,7 +2938,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                       style={{ filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.6))' }}
                       onError={(e) => {
                         const objectKey = displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name;
-                        console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
+                        if (process.env.NODE_ENV !== "production") console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
                         const fallback = getCardImageUrl('CHXNDLER');
                         if (e.currentTarget.src !== fallback) {
                           e.currentTarget.src = fallback;
@@ -3547,7 +3547,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                         draggable={false}
                         onError={(e) => {
                           const objectKey = displayCards[displayCardIndex]?.card_name || displayCards[displayCardIndex]?.cards?.card_name;
-                          console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
+                          if (process.env.NODE_ENV !== "production") console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: e.currentTarget.src });
                           const fallback = getCardImageUrl('CHXNDLER');
                           if (e.currentTarget.src !== fallback) {
                             e.currentTarget.src = fallback;

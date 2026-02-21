@@ -92,7 +92,7 @@ export default function MessageList({ messages, onUserClick, loading, messageRea
     const emptyKeys = keys.filter(k => !k).length;
     const duplicateCount = keys.length - keySet.size;
     if (emptyKeys > 0 || duplicateCount > 0) {
-      console.warn(`⚠️ MessageList key issues: ${emptyKeys} empty keys, ${duplicateCount} duplicates`, {
+      if (process.env.NODE_ENV !== "production") console.warn(`⚠️ MessageList key issues: ${emptyKeys} empty keys, ${duplicateCount} duplicates`, {
         totalMessages: messages.length,
         uniqueKeys: keySet.size,
         sampleKeys: keys.slice(0, 5)
