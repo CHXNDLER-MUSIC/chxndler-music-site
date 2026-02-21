@@ -12,6 +12,11 @@ insert into public.app_settings (key, value)
 values ('go_live_override', 'false')
 on conflict (key) do nothing;
 
+-- Seed the next_drop config (JSON string)
+insert into public.app_settings (key, value)
+values ('next_drop', '{"title":"MR. BRIGHTSIDE","slug":"mr-brightside-killers-cover","label":"Friday • 12:00 PM ET","target":"2026-02-27T17:00:00Z"}')
+on conflict (key) do nothing;
+
 -- ── RLS ─────────────────────────────────────────────────────
 alter table public.app_settings enable row level security;
 

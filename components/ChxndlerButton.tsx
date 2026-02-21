@@ -87,18 +87,22 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
       {/* CHXNDLER Modal - holographic popup with image */}
       {open && (
         <div
-          className="fixed inset-0 z-[100005] flex items-start justify-center p-4"
+          className="fixed z-[100005] flex flex-col items-center p-4"
           style={{
-            alignItems: 'flex-start',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 'calc(var(--light-beam-boundary) + var(--beam-height))',
             paddingTop: '80px'
           }}
         >
           <div
-            className="chxndler-hologram-container relative"
+            className="chxndler-hologram-container relative flex flex-col"
             style={{
               width: 'min(92vw, 850px)',
               minWidth: '320px',
-              minHeight: '435px',
+              flex: 1,
+              minHeight: 0,
               padding: '20px 20px 14px 20px',
               borderRadius: 18,
               background: 'rgba(0,0,0,0.8)',

@@ -1792,7 +1792,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       title="HeartCoins"
       onTitleClick={() => setShowHeartCoinDescription(!showHeartCoinDescription)}
     >
-      <div className="relative flex flex-col flex-1 h-full overflow-hidden">
+      <div className={`relative flex flex-col overflow-hidden ${isUseMode && activeTab === 'merch' ? '' : 'flex-1 h-full'}`}>
         {/* Balance Display */}
         <div className="flex items-center gap-2 mb-3">
           <img
@@ -2657,9 +2657,9 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   const isLocked = isItemLockedForJourney(profile?.journey, itemMinTier);
 
                   return (
-                    <div className="mt-4 bg-black/20 rounded-lg p-4">
+                    <div className="mt-2 bg-black/20 rounded-lg p-3">
                       {/* Description */}
-                      <p className="text-white text-lg text-center italic leading-tight mb-1">
+                      <p className="text-white text-base text-center italic leading-tight mb-1">
                         {item.description}
                       </p>
 

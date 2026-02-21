@@ -352,6 +352,7 @@ export default function JoinAliens({ visible = true } = {}) {
             letterSpacing: '0.35em',
             textTransform: 'uppercase',
             color: 'rgba(0, 255, 255, 0.6)',
+            marginTop: '8px',
             marginBottom: 'clamp(12px, 3vw, 20px)',
           }}>
             NEXT TRANSMISSION
@@ -435,22 +436,27 @@ export default function JoinAliens({ visible = true } = {}) {
             alignItems: 'center',
             gap: '6px',
           }}>
-            {[
-              { label: 'MONDAY \u2022 7:00 PM EST \u2022 ACOUSTIC SESSION', active: nextBroadcast?.kind === 'acoustic' },
-              { label: 'THURSDAY \u2022 7:00 PM EST \u2022 ELECTRIC SET', active: nextBroadcast?.kind === 'electric' },
-            ].map(({ label, active }) => (
-              <div key={label} style={{
-                fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
-                fontSize: 'clamp(9px, 2.5vw, 12px)',
-                fontWeight: active ? '700' : '500',
-                letterSpacing: '0.2em',
-                color: active ? '#FC54AF' : 'rgba(252, 84, 175, 0.45)',
-                textShadow: active ? '0 0 8px rgba(252, 84, 175, 0.5)' : 'none',
-                textAlign: 'center',
-              }}>
-                {label}
-              </div>
-            ))}
+            {(() => {
+              const acoustic = { label: 'MONDAY \u2022 7:00 PM EST \u2022 ACOUSTIC SESSION', kind: 'acoustic' };
+              const electric = { label: 'THURSDAY \u2022 7:00 PM EST \u2022 ELECTRIC SET', kind: 'electric' };
+              const next = nextBroadcast?.kind === 'electric' ? electric : acoustic;
+              const other = next === acoustic ? electric : acoustic;
+              return [
+                { ...next, isNext: true },
+                { ...other, isNext: false },
+              ].map(({ label, isNext }) => (
+                <div key={label} className={isNext ? 'next-broadcast-pulse' : ''} style={{
+                  fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
+                  fontSize: 'clamp(9px, 2.5vw, 12px)',
+                  fontWeight: isNext ? '700' : '500',
+                  letterSpacing: '0.2em',
+                  color: isNext ? '#00FFFF' : 'rgba(252, 84, 175, 0.45)',
+                  textAlign: 'center',
+                }}>
+                  {label}
+                </div>
+              ));
+            })()}
           </div>
         </div>
       )}
@@ -1260,6 +1266,24 @@ export default function JoinAliens({ visible = true } = {}) {
       )}
 
       <style jsx>{`
+        @keyframes nextBroadcastPulse {
+          0%, 100% {
+            opacity: 0.85;
+            text-shadow:
+              0 0 6px rgba(0, 255, 255, 0.5),
+              0 0 12px rgba(0, 255, 255, 0.25);
+          }
+          50% {
+            opacity: 0.5;
+            text-shadow:
+              0 0 3px rgba(0, 255, 255, 0.3),
+              0 0 6px rgba(0, 255, 255, 0.1);
+          }
+        }
+        .next-broadcast-pulse {
+          animation: nextBroadcastPulse 3s ease-in-out infinite;
+        }
+
         .signal-lost-container {
           padding-top: 0px !important;
           padding-bottom: 0px !important;

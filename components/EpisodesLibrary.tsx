@@ -279,6 +279,19 @@ function isLocked(video: Video): boolean {
   return new Date() < new Date(video.releaseDate);
 }
 
+/** Find the most recently released (unlocked) video ID from a list */
+function getNewestId(videos: Video[]): string | null {
+  let newest: Video | null = null;
+  const now = Date.now();
+  for (const v of videos) {
+    if (isLocked(v) || !v.releaseDate) continue;
+    if (!newest || new Date(v.releaseDate).getTime() > new Date(newest.releaseDate!).getTime()) {
+      newest = v;
+    }
+  }
+  return newest?.id ?? null;
+}
+
 /** Format a release date like "2/17/26 @ 8PM" */
 function formatReleaseDate(isoDate: string): string {
   const d = new Date(isoDate);
@@ -330,6 +343,8 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
     if (topTab === "heartverse") return v.type === "heartverse";
     return v.type === liveSignalSection;
   });
+
+  const newestId = getNewestId(filteredVideos);
 
   const handleVideoClick = (video: Video) => {
     if (isLocked(video)) return;
@@ -512,6 +527,22 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
             </button>
           </div>
 
+          {/* ── New Episodes Schedule ── */}
+          {topTab === "heartverse" && (
+            <div
+              className="schedule-pulse-pink text-center mx-3 mt-1.5"
+              style={{
+                fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
+                fontSize: 'clamp(8px, 2vw, 10px)',
+                fontWeight: '600',
+                letterSpacing: '0.2em',
+                color: '#FC54AF',
+              }}
+            >
+              NEW EPISODES EVERY WEDNESDAY &bull; 7PM EST
+            </div>
+          )}
+
           {/* ── Live Signal Sub-Sections ── */}
           {topTab === "livesignal" && (
             <div className="relative flex gap-1 mx-3 mt-2 p-1 rounded-md bg-white/3 border border-[#00FFFF]/15">
@@ -533,7 +564,7 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
               <button
                 className={`flex-1 py-1 px-2 text-xs font-medium rounded transition-all duration-200 tracking-wide ${
                   liveSignalSection === "electric"
-                    ? "bg-[#00FFFF]/15 text-[#00FFFF] border border-[#00FFFF]/30"
+                    ? "bg-[#F2EF1D]/15 text-[#F2EF1D] border border-[#F2EF1D]/30"
                     : "text-white/40 hover:text-white/70 border border-transparent"
                 }`}
                 onClick={() => {
@@ -545,6 +576,27 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
               >
                 Electric
               </button>
+            </div>
+          )}
+
+          {/* ── Live Signal Schedule ── */}
+          {topTab === "livesignal" && (
+            <div
+              className={liveSignalSection === "acoustic" ? "schedule-pulse" : "schedule-pulse-yellow"}
+              style={{
+                textAlign: 'center',
+                margin: '6px 12px 0',
+                fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
+                fontSize: 'clamp(8px, 2vw, 10px)',
+                fontWeight: '600',
+                letterSpacing: '0.2em',
+                color: liveSignalSection === "acoustic" ? '#00FFFF' : '#F2EF1D',
+              }}
+            >
+              {liveSignalSection === "acoustic"
+                ? <>NEW EPISODES EVERY TUESDAY &bull; 12PM EST</>
+                : <>NEW EPISODES EVERY SATURDAY &bull; 12PM EST</>
+              }
             </div>
           )}
 
@@ -640,6 +692,17 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
                 <div className="flex flex-col gap-1.5">
                   {filteredVideos.map((video) => {
                     const locked = isLocked(video);
+                    const isElectric = topTab === "livesignal" && liveSignalSection === "electric";
+                    const isAcoustic = topTab === "livesignal" && liveSignalSection === "acoustic";
+                    const accentColor = isElectric ? "#F2EF1D" : isAcoustic ? "#00FFFF" : "#FC54AF";
+                    const isNewest = video.id === newestId;
+                    const borderDefault = isNewest
+                      ? accentColor
+                      : isElectric
+                        ? (locked ? 'rgba(242,239,29,0.15)' : 'rgba(242,239,29,0.2)')
+                        : isAcoustic
+                          ? (locked ? 'rgba(0,255,255,0.15)' : 'rgba(0,255,255,0.2)')
+                          : (locked ? 'rgba(252,84,175,0.15)' : 'rgba(252,84,175,0.2)');
                     return (
                       <button
                         key={video.id}
@@ -648,42 +711,54 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
                         disabled={locked}
                         className={`episodes-video-card group flex items-center gap-2 w-full text-left p-2 rounded-lg border transition-all duration-200 ${
                           locked
-                            ? "border-white/10 bg-white/3 cursor-not-allowed"
-                            : "border-white/8 bg-white/3 hover:bg-white/8 hover:border-[#FC54AF]/30"
+                            ? "bg-white/3 cursor-not-allowed"
+                            : "bg-white/3 hover:bg-white/8"
                         }`}
+                        style={{
+                          borderColor: borderDefault,
+                          boxShadow: isNewest ? `0 0 8px ${accentColor}40, inset 0 0 4px ${accentColor}15` : undefined,
+                        }}
+                        onMouseOver={!locked ? (e) => { (e.currentTarget as HTMLElement).style.borderColor = `${accentColor}4D`; } : undefined}
+                        onMouseOut={!locked ? (e) => { (e.currentTarget as HTMLElement).style.borderColor = borderDefault; } : undefined}
                       >
                         {/* Thumbnail placeholder */}
-                        <div
-                          className={`flex-shrink-0 w-12 h-8 rounded-md border flex items-center justify-center transition-colors duration-200 overflow-hidden ${
-                            locked
-                              ? "bg-white/5 border-white/10"
-                              : "bg-white/5 border-white/10 group-hover:border-[#FC54AF]/30"
-                          }`}
-                        >
-                          {locked ? (
-                            <svg
-                              width="12"
-                              height="12"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              className="text-white/40"
-                            >
-                              <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="2" />
-                              <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                            </svg>
-                          ) : (
-                            <svg
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              className="text-white/30 group-hover:text-[#FC54AF]/60 transition-colors duration-200"
-                            >
-                              <path
-                                d="M8 5v14l11-7z"
-                                fill="currentColor"
-                              />
-                            </svg>
+                        <div className="relative flex-shrink-0">
+                          <div
+                            className="w-12 h-8 rounded-md border flex items-center justify-center transition-colors duration-200 overflow-hidden bg-white/5"
+                            style={{
+                              borderColor: locked ? 'rgba(255,255,255,0.1)' : `${accentColor}AA`,
+                            }}
+                          >
+                            {locked ? (
+                              <svg
+                                width="12"
+                                height="12"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                className="text-white/40"
+                              >
+                                <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="2" />
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                              </svg>
+                            ) : (
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                style={{ color: `${accentColor}CC`, transition: 'color 200ms' }}
+                                onMouseOver={(e) => { (e.currentTarget as SVGElement).style.color = accentColor; }}
+                                onMouseOut={(e) => { (e.currentTarget as SVGElement).style.color = `${accentColor}CC`; }}
+                              >
+                                <path
+                                  d="M8 5v14l11-7z"
+                                  fill="currentColor"
+                                />
+                              </svg>
+                            )}
+                          </div>
+                          {video.id === newestId && (
+                            <span className={`new-badge ${isElectric ? "new-badge-yellow" : !isAcoustic ? "new-badge-pink" : ""}`}>NEW</span>
                           )}
                         </div>
                         {/* Title + release date */}
@@ -699,9 +774,9 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
                             <span
                               className="text-[10px] mt-0.5"
                               style={{
-                                color: '#00FFFF',
+                                color: accentColor,
                                 opacity: 0.5,
-                                textShadow: '0 0 4px rgba(0,255,255,0.3)',
+                                textShadow: `0 0 4px ${accentColor}4D`,
                               }}
                             >
                               Released {formatReleaseDate(video.releaseDate)}
@@ -719,6 +794,145 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
       )}
 
       <style jsx>{`
+        @keyframes schedulePulse {
+          0%, 100% {
+            opacity: 0.85;
+            text-shadow:
+              0 0 6px rgba(0, 255, 255, 0.5),
+              0 0 12px rgba(0, 255, 255, 0.25);
+          }
+          50% {
+            opacity: 0.5;
+            text-shadow:
+              0 0 3px rgba(0, 255, 255, 0.3),
+              0 0 6px rgba(0, 255, 255, 0.1);
+          }
+        }
+        .schedule-pulse {
+          animation: schedulePulse 3s ease-in-out infinite;
+        }
+        @keyframes schedulePulsePink {
+          0%, 100% {
+            opacity: 0.85;
+            text-shadow:
+              0 0 6px rgba(252, 84, 175, 0.5),
+              0 0 12px rgba(252, 84, 175, 0.25);
+          }
+          50% {
+            opacity: 0.5;
+            text-shadow:
+              0 0 3px rgba(252, 84, 175, 0.3),
+              0 0 6px rgba(252, 84, 175, 0.1);
+          }
+        }
+        .schedule-pulse-pink {
+          animation: schedulePulsePink 3s ease-in-out infinite;
+        }
+        @keyframes schedulePulseYellow {
+          0%, 100% {
+            opacity: 0.85;
+            text-shadow:
+              0 0 6px rgba(242, 239, 29, 0.5),
+              0 0 12px rgba(242, 239, 29, 0.25);
+          }
+          50% {
+            opacity: 0.5;
+            text-shadow:
+              0 0 3px rgba(242, 239, 29, 0.3),
+              0 0 6px rgba(242, 239, 29, 0.1);
+          }
+        }
+        .schedule-pulse-yellow {
+          animation: schedulePulseYellow 3s ease-in-out infinite;
+        }
+        @keyframes newBadgePulse {
+          0%, 100% {
+            opacity: 1;
+            text-shadow:
+              0 0 4px rgba(0, 255, 255, 0.8),
+              0 0 8px rgba(0, 255, 255, 0.4);
+            box-shadow:
+              0 0 4px rgba(0, 255, 255, 0.4),
+              inset 0 0 3px rgba(0, 255, 255, 0.15);
+          }
+          50% {
+            opacity: 0.6;
+            text-shadow:
+              0 0 2px rgba(0, 255, 255, 0.4),
+              0 0 4px rgba(0, 255, 255, 0.2);
+            box-shadow:
+              0 0 2px rgba(0, 255, 255, 0.2),
+              inset 0 0 2px rgba(0, 255, 255, 0.05);
+          }
+        }
+        .new-badge {
+          position: absolute;
+          top: -5px;
+          left: 50%;
+          transform: translateX(-50%);
+          font-size: 7px;
+          font-weight: 800;
+          letter-spacing: 0.1em;
+          color: #00FFFF;
+          background: rgba(0, 0, 0, 0.85);
+          border: 1px solid rgba(0, 255, 255, 0.5);
+          border-radius: 3px;
+          padding: 1px 4px;
+          line-height: 1.2;
+          z-index: 1;
+          pointer-events: none;
+          animation: newBadgePulse 2s ease-in-out infinite;
+        }
+        @keyframes newBadgePulseYellow {
+          0%, 100% {
+            opacity: 1;
+            text-shadow:
+              0 0 4px rgba(242, 239, 29, 0.8),
+              0 0 8px rgba(242, 239, 29, 0.4);
+            box-shadow:
+              0 0 4px rgba(242, 239, 29, 0.4),
+              inset 0 0 3px rgba(242, 239, 29, 0.15);
+          }
+          50% {
+            opacity: 0.6;
+            text-shadow:
+              0 0 2px rgba(242, 239, 29, 0.4),
+              0 0 4px rgba(242, 239, 29, 0.2);
+            box-shadow:
+              0 0 2px rgba(242, 239, 29, 0.2),
+              inset 0 0 2px rgba(242, 239, 29, 0.05);
+          }
+        }
+        .new-badge-yellow {
+          color: #F2EF1D;
+          border-color: rgba(242, 239, 29, 0.5);
+          animation: newBadgePulseYellow 2s ease-in-out infinite;
+        }
+        @keyframes newBadgePulsePink {
+          0%, 100% {
+            opacity: 1;
+            text-shadow:
+              0 0 4px rgba(252, 84, 175, 0.8),
+              0 0 8px rgba(252, 84, 175, 0.4);
+            box-shadow:
+              0 0 4px rgba(252, 84, 175, 0.4),
+              inset 0 0 3px rgba(252, 84, 175, 0.15);
+          }
+          50% {
+            opacity: 0.6;
+            text-shadow:
+              0 0 2px rgba(252, 84, 175, 0.4),
+              0 0 4px rgba(252, 84, 175, 0.2);
+            box-shadow:
+              0 0 2px rgba(252, 84, 175, 0.2),
+              inset 0 0 2px rgba(252, 84, 175, 0.05);
+          }
+        }
+        .new-badge-pink {
+          color: #FC54AF;
+          border-color: rgba(252, 84, 175, 0.5);
+          animation: newBadgePulsePink 2s ease-in-out infinite;
+        }
         .episodes-trigger-btn:hover {
           box-shadow:
             0 0 24px rgba(252,84,175,0.4),

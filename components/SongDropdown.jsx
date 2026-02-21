@@ -8,14 +8,7 @@ import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
 import { playerStore } from "@/store/usePlayerStore";
 import { useCycleList } from "@/lib/useCycleList";
 import { ElementIcon as OptimizedElementIcon } from "@/lib/elementIcons";
-
-// ── Next drop config ────────────────────────────────────────────────────────
-const NEXT_DROP = {
-  title: 'MR. BRIGHTSIDE',
-  label: 'Friday \u2022 12:00 PM ET',
-  // Target: Friday Feb 27 2026, 12:00 PM ET (UTC-5 = 17:00 UTC)
-  target: new Date('2026-02-27T17:00:00Z'),
-};
+import { useNextDrop } from "@/hooks/useNextDrop";
 
 function ElementIcon({ name }) {
   const colorFor = (key) => {
@@ -66,15 +59,19 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
   const elementFilterHoverRef = useRef(null);
   const [activeElement, setActiveElement] = useState(null);
 
-  // Next-drop countdown (ticks only while dropdown is open)
+  // Supabase-backed next drop config
+  const { nextDrop } = useNextDrop();
+
+  // Next-drop countdown (ticks only while dropdown is open and nextDrop exists)
   const [dropCountdown, setDropCountdown] = useState(0);
   useEffect(() => {
-    if (!open) return;
-    const tick = () => setDropCountdown(Math.max(0, NEXT_DROP.target.getTime() - Date.now()));
+    if (!open || !nextDrop?.target) return;
+    const target = new Date(nextDrop.target).getTime();
+    const tick = () => setDropCountdown(Math.max(0, target - Date.now()));
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [open]);
+  }, [open, nextDrop]);
 
   const normalizeSlug = (slug) => (slug ? String(slug).toLowerCase().replace(/'/g, '') : '');
   const current = useMemo(() => {
@@ -325,8 +322,8 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
             zIndex: 100000
           }}
         >
-          {/* ── NEXT DROP countdown ──────────────────────────── */}
-          {dropCountdown > 0 && (() => {
+          {/* ── NEXT DROP countdown / OUT NOW banner ─────────── */}
+          {nextDrop && dropCountdown > 0 && (() => {
             const ts = Math.floor(dropCountdown / 1000);
             const dd = Math.floor(ts / 86400);
             const hh = Math.floor((ts % 86400) / 3600);
@@ -358,7 +355,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                   textShadow: '0 0 8px rgba(252, 84, 175, 0.6)',
                   marginBottom: '2px',
                 }}>
-                  {NEXT_DROP.title}
+                  {nextDrop.title}
                 </div>
                 {/* Date line */}
                 <div style={{
@@ -368,7 +365,7 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                   color: 'rgba(207, 247, 255, 0.55)',
                   marginBottom: '6px',
                 }}>
-                  {NEXT_DROP.label}
+                  {nextDrop.label}
                 </div>
                 {/* DD : HH : MM : SS */}
                 <div style={{
@@ -384,6 +381,46 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
               </div>
             );
           })()}
+
+          {/* ── OUT NOW banner (post-drop) ─────────────────────── */}
+          {nextDrop && dropCountdown <= 0 && (
+            <div
+              style={{
+                padding: '10px 12px 8px',
+                borderBottom: '1px solid rgba(252, 84, 175, 0.25)',
+                textAlign: 'center',
+                cursor: 'pointer',
+              }}
+              onClick={() => {
+                if (onChange) onChange(nextDrop.slug);
+                setActiveId(nextDrop.slug);
+                setOpen(false);
+                try { playerStore.getState().setHover(null); } catch {}
+              }}
+            >
+              {/* Tag */}
+              <div style={{
+                fontSize: '9px',
+                fontFamily: "'SF Mono', 'Fira Code', monospace",
+                letterSpacing: '0.3em',
+                color: '#00FFFF',
+                textShadow: '0 0 6px rgba(0,255,255,0.5)',
+                marginBottom: '4px',
+              }}>
+                [ OUT NOW ]
+              </div>
+              {/* Song title */}
+              <div style={{
+                fontSize: '15px',
+                fontWeight: '700',
+                letterSpacing: '0.08em',
+                color: '#FC54AF',
+                textShadow: '0 0 8px rgba(252, 84, 175, 0.6)',
+              }}>
+                {nextDrop.title}
+              </div>
+            </div>
+          )}
 
           {/* Element filter rows */}
           <div className="px-1.5 pt-2 pb-1 flex flex-col gap-1">

@@ -34,9 +34,25 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+    const sb = getSupabaseAdmin();
+
+    // ── next_drop management ──────────────────────────────────
+    if (body.key === 'next_drop') {
+      const stored = body.value ? JSON.stringify(body.value) : '{}';
+      const { error } = await sb
+        .from('app_settings')
+        .upsert({ key: 'next_drop', value: stored });
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      return NextResponse.json({ key: 'next_drop', value: body.value ?? null });
+    }
+
+    // ── go_live_override (default / backward-compatible) ──────
     const live = Boolean(body.live);
 
-    const sb = getSupabaseAdmin();
     const { error } = await sb
       .from('app_settings')
       .update({ value: String(live) })

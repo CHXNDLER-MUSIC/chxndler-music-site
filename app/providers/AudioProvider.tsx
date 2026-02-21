@@ -480,16 +480,29 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         .from('user_song_daily_progress')
         .upsert(payload, { onConflict: 'user_id,song_id,day', ignoreDuplicates: false });
       if (error) {
-        console.error('[MARK COMPLETE] upsert error', {
-          error,
-          code: (error as any)?.code,
-          message: (error as any)?.message,
-          details: (error as any)?.details,
-          hint: (error as any)?.hint,
-          table: 'user_song_daily_progress',
-          payload,
+        const errCode = (error as any)?.code;
+        const errMsg = (error as any)?.message ?? '';
+        // If the heartcoin transaction already exists (duplicate from a DB trigger),
+        // treat it as success — the progress was recorded and the coin already awarded.
+        const isHeartcoinDupe =
+          errCode === '23505' && errMsg.includes('heartcoin_tx_card_purchase_unique_idx');
+        if (!isHeartcoinDupe) {
+          console.error('[MARK COMPLETE] upsert error', {
+            error,
+            code: errCode,
+            message: errMsg,
+            details: (error as any)?.details,
+            hint: (error as any)?.hint,
+            table: 'user_song_daily_progress',
+            payload,
+          });
+          return;
+        }
+        console.log('[MARK COMPLETE] heartcoin already awarded (duplicate trigger) — treating as success', {
+          code: errCode,
+          songUuid,
+          day,
         });
-        return;
       }
 
       completedOnceRef.current.add(key);
@@ -584,16 +597,27 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         .select();
 
       if (progressError) {
-        console.error('[SOTD-COMPLETE] user_song_daily_progress upsert error', {
-          error: progressError,
-          code: (progressError as any)?.code,
-          message: (progressError as any)?.message,
-          details: (progressError as any)?.details,
-          hint: (progressError as any)?.hint,
-          payload: progressPayload,
+        const pErrCode = (progressError as any)?.code;
+        const pErrMsg = (progressError as any)?.message ?? '';
+        const isHeartcoinDupe =
+          pErrCode === '23505' && pErrMsg.includes('heartcoin_tx_card_purchase_unique_idx');
+        if (!isHeartcoinDupe) {
+          console.error('[SOTD-COMPLETE] user_song_daily_progress upsert error', {
+            error: progressError,
+            code: pErrCode,
+            message: pErrMsg,
+            details: (progressError as any)?.details,
+            hint: (progressError as any)?.hint,
+            payload: progressPayload,
+          });
+          // Do not proceed to claim if progress write failed
+          return;
+        }
+        console.log('[SOTD-COMPLETE] heartcoin already awarded (duplicate trigger) — continuing', {
+          code: pErrCode,
+          songUuid,
+          day: nyDayString,
         });
-        // Do not proceed to claim if progress write failed
-        return;
       }
 
       // 2) Insert to user_song_of_day_claims to trigger award via DB trigger
