@@ -12,10 +12,10 @@ export function useNextDrop() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Parse the JSON value, returning null for empty/invalid data
+    // Normalize the value — may arrive as a JSON string or already-parsed object
     function parse(raw) {
       try {
-        const obj = JSON.parse(raw);
+        const obj = typeof raw === "string" ? JSON.parse(raw) : raw;
         if (obj && obj.title && obj.target) return obj;
       } catch {}
       return null;
@@ -28,8 +28,11 @@ export function useNextDrop() {
       .eq("key", "next_drop")
       .single()
       .then(({ data, error }) => {
+        console.log("[useNextDrop] fetch result:", { data, error });
         if (!error && data) {
-          setNextDrop(parse(data.value));
+          const parsed = parse(data.value);
+          console.log("[useNextDrop] parsed:", parsed);
+          setNextDrop(parsed);
         }
         setLoading(false);
       });

@@ -1794,11 +1794,11 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     >
       <div className="relative flex flex-col flex-1 h-full overflow-hidden">
         {/* Balance Display */}
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-0.5 mb-3">
           <img
             src="/elements/heart-coin.webp"
             alt="HeartCoin"
-            className="w-10 h-10 object-cover"
+            className="w-10 h-10 object-cover -ml-3"
             style={{ filter: 'drop-shadow(0 0 8px rgba(0, 255, 255, 0.6))' }}
           />
           <span className="text-white text-xl font-semibold">{heartcoinBalance}</span>

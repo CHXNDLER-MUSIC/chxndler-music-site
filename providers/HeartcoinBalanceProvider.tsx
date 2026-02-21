@@ -7,6 +7,7 @@ import React, {
   useEffect,
   useRef,
   useCallback,
+  useMemo,
   ReactNode,
 } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
@@ -715,7 +716,7 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
   // ============================================================================
   // Context Value
   // ============================================================================
-  const value: HeartcoinBalanceContextType = {
+  const value: HeartcoinBalanceContextType = useMemo(() => ({
     balance,
     loading,
     error,
@@ -724,7 +725,16 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
     refetchBalanceAfterAward,
     refreshProfileState,
     optimisticIncrement,
-  };
+  }), [
+    balance,
+    loading,
+    error,
+    songOfDayCompletedToday,
+    refetchBalance,
+    refetchBalanceAfterAward,
+    refreshProfileState,
+    optimisticIncrement,
+  ]);
 
   return (
     <HeartcoinBalanceContext.Provider value={value}>
