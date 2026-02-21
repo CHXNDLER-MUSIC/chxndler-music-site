@@ -9,7 +9,7 @@ import { isOnboardingSequenceActive } from '@/utils/onboardingSequence';
 // ============================================================================
 // DEBUG FLAG - Toggle to enable/disable debug logging
 // ============================================================================
-const DEBUG_CELEBRATIONS = true; // Set to false in production
+const DEBUG_CELEBRATIONS = false;
 
 function debugCelebration(message: string, data?: any) {
   if (DEBUG_CELEBRATIONS) {
@@ -286,6 +286,14 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
               markBadgeAsSeen(newRow.badge_id, newRow.earned_at, seenBadgesRef.current);
               return;
             }
+
+            // Refresh in-memory seen badges from localStorage before checking.
+            // This catches badges marked as seen by markBadgeAsSeenInStorage()
+            // (called from checkAndAwardEligibleBadges) which only writes to
+            // localStorage, not the in-memory ref. Without this refresh, badges
+            // awarded during routine badge checks (e.g. journal save triggering
+            // a Live Witness award) would slip through and celebrate at the wrong time.
+            seenBadgesRef.current = getSeenBadgesFromStorage();
 
             // Skip if we've already seen this badge (prevents duplicates on reconnect/refresh)
             if (isBadgeSeen(newRow.badge_id, newRow.earned_at, seenBadgesRef.current)) {

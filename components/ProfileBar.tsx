@@ -1222,12 +1222,12 @@ export default function ProfileBar({
       />
 
       {/* Journey Modal - Triggered by hamburger menu JOURNEY option */}
-      <JourneyModal 
-        open={isJourneyModalOpen} 
+      <JourneyModal
+        open={isJourneyModalOpen}
         onClose={() => {
           setIsJourneyModalOpen(false);
           try { onOpenBlueDisplay?.(); } catch {}
-        }} 
+        }}
       />
 
       {/* Welcome Home Modal */}

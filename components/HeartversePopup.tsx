@@ -61,7 +61,6 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
         style={{
           ...((positioning === 'top-left') ? {top: '100px', left: '50px', backgroundColor: 'red'} : {
             top: 'var(--profile-bar-boundary, 64px)',
-            bottom: 'calc(var(--light-beam-boundary) + var(--beam-height))',
             left: 0,
             right: 0,
             alignItems: 'flex-start'
@@ -69,7 +68,10 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
           overscrollBehaviorX: 'none'
         }}
       >
-        <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-[#FC54AF]/60 bg-white/5 shadow-[0_0_26px_rgba(56,182,255,0.35)] max-h-full max-w-lg w-full mx-4 overflow-hidden flex flex-col h-fit">
+        <div
+          className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-[#FC54AF]/60 bg-white/5 shadow-[0_0_26px_rgba(56,182,255,0.35)] max-w-lg w-full mx-4 overflow-hidden flex flex-col"
+          style={{ maxHeight: 'calc(100vh - var(--profile-bar-boundary, 64px) - var(--light-beam-boundary, 0px) - var(--beam-height, 0px))' }}
+        >
           <div
             className="absolute inset-0 rounded-2xl pointer-events-none"
             style={{

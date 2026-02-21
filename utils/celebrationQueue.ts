@@ -9,7 +9,7 @@ import { isOnboardingSequenceActive } from '@/utils/onboardingSequence';
 // ============================================================================
 // DEBUG FLAG - Toggle to enable/disable debug logging
 // ============================================================================
-const DEBUG_CELEBRATIONS = true; // Set to false in production
+const DEBUG_CELEBRATIONS = false;
 
 function debugQueue(message: string, data?: any) {
   if (DEBUG_CELEBRATIONS) {

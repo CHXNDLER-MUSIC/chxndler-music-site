@@ -139,11 +139,15 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
       {open && (
         <>
           {/* Hologram base glow with tier color */}
-          <div 
-            className="fixed inset-0 flex items-center justify-center"
+          <div
+            className="fixed flex items-center justify-center"
             style={{
               zIndex: 2147483646,
               pointerEvents: 'none',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 'calc(var(--light-beam-boundary) + var(--beam-height))',
               paddingTop: '220px'
             }}
           >
@@ -157,9 +161,13 @@ export default function JourneyButton({ asChild = false, children, onClick, onHo
             />
           </div>
           
-          <div 
-            className="fixed inset-0 z-[2147483647] flex items-center justify-center"
+          <div
+            className="fixed z-[2147483647] flex items-center justify-center"
             style={{
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 'calc(var(--light-beam-boundary) + var(--beam-height))',
               paddingTop: '220px',
               backdropFilter: 'blur(5px)'
             }}

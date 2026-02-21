@@ -186,6 +186,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
         // Handle dynamic journey titles:
         case "JOURNEY":
         case "MY JOURNEY":
+          try { onBeamColorChange?.('pink-modal'); } catch {}
           setJourneyOpen(true);
           break;
         case "BINDER":

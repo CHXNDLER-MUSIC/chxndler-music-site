@@ -1792,7 +1792,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       title="HeartCoins"
       onTitleClick={() => setShowHeartCoinDescription(!showHeartCoinDescription)}
     >
-      <div className={`relative flex flex-col overflow-hidden ${isUseMode && activeTab === 'merch' ? '' : 'flex-1 h-full'}`}>
+      <div className="relative flex flex-col flex-1 h-full overflow-hidden">
         {/* Balance Display */}
         <div className="flex items-center gap-2 mb-3">
           <img

@@ -1017,9 +1017,14 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         );
       });
 
-      // Update badge progress counters after saving a journal entry
-      // Then refresh user badges to show any newly unlocked badges
+      // Update badge progress counters after saving a journal entry.
+      // Suppress celebrations during this check so that unrelated badges
+      // (e.g. Live Witness, Stream Seeker) don't celebrate at the wrong time.
+      // Only reflection-related badges should celebrate here, but we suppress
+      // all because checkAndAwardEligibleBadges marks awarded badges as seen
+      // in localStorage, preventing future celebrations via the realtime handler.
       if (user?.id) {
+        suppressBadgeCelebrations(10000);
         updateBadgeProgressCounters(user.id)
           .then(() => {
             // Refresh user badges to pick up any newly awarded badges
@@ -1027,6 +1032,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           })
           .catch(err => {
             console.warn('Failed to update badge progress after journal save:', err);
+          })
+          .finally(() => {
+            enableBadgeCelebrations();
           });
       }
 

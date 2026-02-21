@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
 import TiltSpinCard from "./TiltSpinCard";
@@ -81,19 +81,8 @@ export default function JourneyModal({ open, onClose, onBeamColorChange }: Journ
   // For non-logged-in users, force display to show WANDERER
   const displayTier = user ? currentTier : 'wanderer';
 
-  // Change light beam color based on user tier when modal opens
-  useEffect(() => {
-    if (open && onBeamColorChange) {
-      // LOVER = pink, DREAMER = yellow, WANDERER = blue (default)
-      if (displayTier === 'lover') {
-        onBeamColorChange('pink');
-      } else if (displayTier === 'dreamer') {
-        onBeamColorChange('yellow');
-      } else {
-        onBeamColorChange('blue');
-      }
-    }
-  }, [open, displayTier, onBeamColorChange]);
+  // Beam color is now managed by the parent (hamburger menu wrapper) using 'pink-modal' mode
+  // which enables the beam without opening any display panels
 
   const handleTierClick = (tier: TierType) => {
     try { sfx.play('click', 0.8); } catch {}
@@ -114,11 +103,14 @@ export default function JourneyModal({ open, onClose, onBeamColorChange }: Journ
     <>
       {/* Hologram base glow with tier color */}
       <div
-        className="fixed inset-0 flex items-center justify-center"
+        className="fixed flex items-center justify-center"
         style={{
           zIndex: 100004,
           pointerEvents: 'none',
-          paddingTop: '-300px'
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 'calc(var(--light-beam-boundary) + var(--beam-height))'
         }}
       >
         <div
@@ -132,8 +124,12 @@ export default function JourneyModal({ open, onClose, onBeamColorChange }: Journ
       </div>
       
       <div
-        className="fixed inset-0 z-[100005] flex justify-center"
+        className="fixed z-[100005] flex justify-center"
         style={{
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 'calc(var(--light-beam-boundary) + var(--beam-height))',
           paddingTop: '70px'
         }}
         onClick={(e) => {
