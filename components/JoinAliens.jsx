@@ -8,15 +8,39 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import ChatPanel from "@/components/chat/ChatPanel";
 import WelcomeHomeModal from "@/components/WelcomeHomeModal";
 import EpisodesLibrary from "@/components/EpisodesLibrary";
+import { useGoLiveOverride } from "@/hooks/useGoLiveOverride";
 
 export default function JoinAliens({ visible = true } = {}) {
   const { profile, savePhone, user } = useProfile();
+  const { isOverrideActive } = useGoLiveOverride();
   const [phone, setPhone] = useState(profile?.phone ?? "");
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [heartSignalSent, setHeartSignalSent] = useState(false);
   const [status, setStatus] = useState("idle");
+
+  // Check if currently inside a broadcast window (Mon/Thu 7-8 PM ET)
+  const isInBroadcastWindow = () => {
+    const now = new Date();
+    const tz = 'America/New_York';
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(now);
+    const get = (type) => parseInt(parts.find((p) => p.type === type)?.value ?? '0', 10);
+    const etHour = get('hour') === 24 ? 0 : get('hour');
+    const etDate = new Date(get('year'), get('month') - 1, get('day'));
+    const etDow = etDate.getDay();
+    return (etDow === 1 || etDow === 4) && etHour >= 19 && etHour < 20;
+  };
+
+  const showTwitchEmbed = isOverrideActive || isInBroadcastWindow();
   const [showWelcomeHome, setShowWelcomeHome] = useState(false);
   
   // Chat state
@@ -33,95 +57,61 @@ export default function JoinAliens({ visible = true } = {}) {
   const [showPaymentOptions10, setShowPaymentOptions10] = useState(false);
   const [showPhoneForm, setShowPhoneForm] = useState(false);
   
-  // Countdown state
-  const [timeRemaining, setTimeRemaining] = useState(0);
-  const [scrambledTime, setScrambledTime] = useState("0:00");
-  const [isScrambling, setIsScrambling] = useState(false);
-  const countdownRef = useRef(null);
-  const scrambleRef = useRef(null);
+  // ── Next-broadcast countdown ──────────────────────────────────────────────
+  const [countdownMs, setCountdownMs] = useState(0);
+  const [nextBroadcast, setNextBroadcast] = useState(null);
 
-  // Calculate time until specific target date: 11/28/25 12:00:00
-  const getTimeUntilTargetDate = () => {
+  /**
+   * Returns the next upcoming broadcast (Mon 7 PM ET / Thu 7 PM ET).
+   * Respects America/New_York so EST ↔ EDT transitions are automatic.
+   */
+  const getNextBroadcast = () => {
     const now = new Date();
-    // Target date: November 28, 2025 at 12:00:00 (noon)
-    const targetDate = new Date('2025-11-28T12:00:00');
-    
-    // Calculate difference in seconds
-    const diffMs = targetDate.getTime() - now.getTime();
-    
-    // If target date has passed, return 0
-    if (diffMs <= 0) {
-      return 0;
-    }
-    
-    return Math.floor(diffMs / 1000);
-  };
+    const tz = 'America/New_York';
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false,
+    }).formatToParts(now);
 
-  // Scrambling effect for numbers
-  const scrambleNumber = (targetTime) => {
-    setIsScrambling(true);
-    let scrambleCount = 0;
-    const maxScrambles = 8; // Number of scramble iterations
-    
-    scrambleRef.current = setInterval(() => {
-      if (scrambleCount < maxScrambles) {
-        // Generate random scrambled time format
-        const randomDays = Math.floor(Math.random() * 99);
-        const randomHours = Math.floor(Math.random() * 24);
-        const randomMinutes = Math.floor(Math.random() * 60);
-        const randomSeconds = Math.floor(Math.random() * 60);
-        
-        // Create scrambled display with random numbers
-        const scrambledDisplay = `${randomDays}d ${randomHours}h ${randomMinutes}m ${randomSeconds}s`;
-        setScrambledTime(scrambledDisplay);
-        scrambleCount++;
-      } else {
-        // Show actual time
-        setScrambledTime(formatTimeRemaining(targetTime));
-        setIsScrambling(false);
-        clearInterval(scrambleRef.current);
-      }
-    }, 50); // Fast scrambling
-  };
+    const get = (type) => parseInt(parts.find((p) => p.type === type)?.value ?? '0', 10);
+    const etYear = get('year');
+    const etMonth = get('month');
+    const etDay = get('day');
+    const etHour = get('hour') === 24 ? 0 : get('hour');
+    const etDate = new Date(etYear, etMonth - 1, etDay);
+    const etDow = etDate.getDay();
 
-  // Countdown timer for reconnection
-  const startCountdown = () => {
-    const initialTime = getTimeUntilTargetDate();
-    setTimeRemaining(initialTime);
-    setScrambledTime(formatTimeRemaining(initialTime));
-    
-    countdownRef.current = setInterval(() => {
-      setTimeRemaining(prev => {
-        const newTime = prev - 1;
-        
-        if (newTime <= 0) {
-          // Target date reached!
-          clearInterval(countdownRef.current);
-          if (scrambleRef.current) clearInterval(scrambleRef.current);
-          return 0;
-        }
-        
-        // Trigger scramble effect every second
-        scrambleNumber(newTime);
-        return newTime;
-      });
-    }, 1000);
-  };
+    let daysUntil, kind;
+    const isBeforeStreamEnd = etHour < 20;
 
-  // Format time remaining for display (supports days, hours, minutes)
-  const formatTimeRemaining = (seconds) => {
-    const days = Math.floor(seconds / 86400);
-    const hours = Math.floor((seconds % 86400) / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    
-    if (days > 0) {
-      return `${days}d ${hours}h ${minutes}m`;
-    } else if (hours > 0) {
-      return `${hours}h ${minutes}m ${secs}s`;
+    if (etDow === 1 && isBeforeStreamEnd) {
+      daysUntil = 0; kind = 'acoustic';
+    } else if (etDow === 4 && isBeforeStreamEnd) {
+      daysUntil = 0; kind = 'electric';
     } else {
-      return `${minutes}m ${secs}s`;
+      const daysToMon = ((1 - etDow + 7) % 7) || 7;
+      const daysToThu = ((4 - etDow + 7) % 7) || 7;
+      if (daysToMon < daysToThu) { daysUntil = daysToMon; kind = 'acoustic'; }
+      else { daysUntil = daysToThu; kind = 'electric'; }
     }
+
+    const target = new Date(etYear, etMonth - 1, etDay + daysUntil);
+    const tY = target.getFullYear(), tM = target.getMonth(), tD = target.getDate();
+
+    // Convert 19:00 ET → UTC (try EST first, adjust for EDT)
+    let utc = new Date(Date.UTC(tY, tM, tD, 19 + 5, 0, 0));
+    const checkH = parseInt(
+      new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: '2-digit', hour12: false })
+        .formatToParts(utc).find((p) => p.type === 'hour')?.value ?? '0', 10
+    );
+    if (checkH !== 19) utc = new Date(Date.UTC(tY, tM, tD, 19 + 4, 0, 0));
+
+    const dayName = kind === 'acoustic' ? 'MONDAY' : 'THURSDAY';
+    const label = `${dayName} \u2022 7:00 PM ET \u2022 ${kind.toUpperCase()} SESSION`;
+
+    return { kind, start: utc, label, dayName };
   };
 
   // Update phone when profile changes
@@ -129,28 +119,28 @@ export default function JoinAliens({ visible = true } = {}) {
     if (profile?.phone) setPhone(profile.phone);
   }, [profile?.phone]);
 
-  // Start countdown when component becomes visible and reset tip options when hidden
+  // Countdown ticker — runs every second while visible & offline
   useEffect(() => {
-    if (visible) {
-      startCountdown();
-    } else {
-      // Reset all tip-related states when component becomes hidden
+    if (!visible) {
+      // Reset tip states when hidden
       setShowTipOptions(false);
       setShowPaymentOptions(false);
       setShowPaymentOptions5(false);
       setShowPaymentOptions10(false);
       setShowVenmoPopup(false);
       setShowVenmoPayment(false);
+      return;
     }
-    
-    return () => {
-      if (countdownRef.current) {
-        clearInterval(countdownRef.current);
-      }
-      if (scrambleRef.current) {
-        clearInterval(scrambleRef.current);
-      }
+
+    const tick = () => {
+      const broadcast = getNextBroadcast();
+      setNextBroadcast(broadcast);
+      setCountdownMs(Math.max(0, broadcast.start.getTime() - Date.now()));
     };
+
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
   }, [visible]);
 
   // Controlled input: only allow digits and plus sign
@@ -318,30 +308,152 @@ export default function JoinAliens({ visible = true } = {}) {
         </div>
       </div>
 
-      {/* Twitch Stream Embed - Middle */}
-      <div style={{
-        width: 'calc(100% + 16px)',
-        padding: '0',
-        margin: '-6px -8px 8px'
-      }}>
-        <iframe
-          src={`https://player.twitch.tv/?channel=chxndlerthealien&parent=${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}&autoplay=true&muted=true`}
-          width="100%"
-          style={{
-            aspectRatio: '16 / 9',
-            borderRadius: '0px',
-            border: 'none',
-            boxShadow: '0 0 15px rgba(252, 84, 175, 0.2)',
-            background: 'rgba(0, 0, 0, 0.8)',
-            display: 'block'
-          }}
-          frameBorder="0"
-          scrolling="no"
-          allowFullScreen
-          allow="autoplay; fullscreen"
-          title="CHXNDLER Twitch Stream"
-        />
-      </div>
+      {/* Twitch Stream Embed - Middle (only during broadcast or override) */}
+      {showTwitchEmbed ? (
+        <div style={{
+          width: 'calc(100% + 16px)',
+          padding: '0',
+          margin: '-6px -8px 8px'
+        }}>
+          <iframe
+            src={`https://player.twitch.tv/?channel=chxndlerthealien&parent=${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}&autoplay=true&muted=true`}
+            width="100%"
+            style={{
+              aspectRatio: '16 / 9',
+              borderRadius: '0px',
+              border: 'none',
+              boxShadow: '0 0 15px rgba(252, 84, 175, 0.2)',
+              background: 'rgba(0, 0, 0, 0.8)',
+              display: 'block'
+            }}
+            frameBorder="0"
+            scrolling="no"
+            allowFullScreen
+            allow="autoplay; fullscreen"
+            title="CHXNDLER Twitch Stream"
+          />
+        </div>
+      ) : (
+        /* ── Cinematic Countdown ─────────────────────────────────── */
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 'clamp(24px, 6vw, 48px) 16px',
+          width: '100%',
+          boxSizing: 'border-box',
+        }}>
+          {/* "NEXT TRANSMISSION" label */}
+          <div style={{
+            fontSize: 'clamp(10px, 2.5vw, 13px)',
+            fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
+            fontWeight: '600',
+            letterSpacing: '0.35em',
+            textTransform: 'uppercase',
+            color: 'rgba(0, 255, 255, 0.6)',
+            marginBottom: 'clamp(12px, 3vw, 20px)',
+          }}>
+            NEXT TRANSMISSION
+          </div>
+
+          {/* HH : MM : SS countdown */}
+          {(() => {
+            const totalSec = Math.floor(countdownMs / 1000);
+            const h = Math.floor(totalSec / 3600);
+            const m = Math.floor((totalSec % 3600) / 60);
+            const s = totalSec % 60;
+            const pad = (n) => String(n).padStart(2, '0');
+
+            const digitStyle = {
+              fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
+              fontSize: 'clamp(36px, 12vw, 72px)',
+              fontWeight: '700',
+              lineHeight: 1,
+              color: '#00FFFF',
+              textShadow: '0 0 8px #00FFFF, 0 0 20px rgba(0,255,255,0.5), 0 0 40px rgba(0,255,255,0.25)',
+              animation: 'countdownPulse 2s ease-in-out infinite',
+              letterSpacing: '0.05em',
+            };
+
+            const separatorStyle = {
+              fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
+              fontSize: 'clamp(28px, 9vw, 56px)',
+              fontWeight: '300',
+              color: 'rgba(0, 255, 255, 0.35)',
+              padding: '0 clamp(4px, 2vw, 12px)',
+              lineHeight: 1,
+              alignSelf: 'flex-start',
+            };
+
+            const labelStyle = {
+              fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
+              fontSize: 'clamp(8px, 2vw, 11px)',
+              fontWeight: '500',
+              letterSpacing: '0.25em',
+              color: 'rgba(0, 255, 255, 0.4)',
+              marginTop: '6px',
+              textAlign: 'center',
+            };
+
+            return (
+              <div style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'center',
+              }}>
+                {/* Hours */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <span style={digitStyle}>{pad(h)}</span>
+                  <span style={labelStyle}>HRS</span>
+                </div>
+
+                <span style={separatorStyle}>:</span>
+
+                {/* Minutes */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <span style={digitStyle}>{pad(m)}</span>
+                  <span style={labelStyle}>MIN</span>
+                </div>
+
+                <span style={separatorStyle}>:</span>
+
+                {/* Seconds */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <span style={digitStyle}>{pad(s)}</span>
+                  <span style={labelStyle}>SEC</span>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Weekly schedule */}
+          <div style={{
+            marginTop: 'clamp(16px, 4vw, 28px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '6px',
+          }}>
+            {[
+              { label: 'MONDAY \u2022 7:00 PM EST \u2022 ACOUSTIC SESSION', active: nextBroadcast?.kind === 'acoustic' },
+              { label: 'THURSDAY \u2022 7:00 PM EST \u2022 ELECTRIC SET', active: nextBroadcast?.kind === 'electric' },
+            ].map(({ label, active }) => (
+              <div key={label} style={{
+                fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
+                fontSize: 'clamp(9px, 2.5vw, 12px)',
+                fontWeight: active ? '700' : '500',
+                letterSpacing: '0.2em',
+                color: active ? '#FC54AF' : 'rgba(252, 84, 175, 0.45)',
+                textShadow: active ? '0 0 8px rgba(252, 84, 175, 0.5)' : 'none',
+                textAlign: 'center',
+              }}>
+                {label}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Divider */}
       <div style={{
@@ -1198,18 +1310,33 @@ export default function JoinAliens({ visible = true } = {}) {
         
         @keyframes neonPulse {
           0%, 100% {
-            text-shadow: 
+            text-shadow:
               0 0 5px #00FFFF,
               0 0 10px #00FFFF,
               0 0 15px #00FFFF,
               0 0 20px #00FFFF;
           }
           50% {
-            text-shadow: 
+            text-shadow:
               0 0 2px #00FFFF,
               0 0 5px #00FFFF,
               0 0 8px #00FFFF,
               0 0 12px #00FFFF;
+          }
+        }
+
+        @keyframes countdownPulse {
+          0%, 100% {
+            text-shadow:
+              0 0 8px #00FFFF,
+              0 0 20px rgba(0, 255, 255, 0.5),
+              0 0 40px rgba(0, 255, 255, 0.25);
+          }
+          50% {
+            text-shadow:
+              0 0 4px #00FFFF,
+              0 0 12px rgba(0, 255, 255, 0.35),
+              0 0 24px rgba(0, 255, 255, 0.15);
           }
         }
         

@@ -117,8 +117,8 @@ function formatCountdown(ms) {
 export default function TwitchEmbed({ visible = true, channel = "chxndlerthealien" } = {}) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const [isOffline, setIsOffline] = useState(false);
-  const [streamStatus, setStreamStatus] = useState('unknown');
+  const [isOffline, setIsOffline] = useState(true);
+  const [streamStatus, setStreamStatus] = useState('offline');
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [nextBroadcast, setNextBroadcast] = useState(null);
   const iframeRef = useRef(null);

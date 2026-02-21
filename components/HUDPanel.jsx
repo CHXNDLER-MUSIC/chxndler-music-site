@@ -44,6 +44,11 @@ const Pure3DPlanets = dynamic(() => import("@/components/planetarium/Pure3DPlane
   ssr: false,
   loading: () => null // No loading placeholder - prevents flash of wrong background
 });
+// Flat world map (toggle alternative to 3D planets)
+const FlatWorldMap = dynamic(() => import("@/components/FlatWorldMap"), {
+  ssr: false,
+  loading: () => null
+});
 import { DEBUG_MEDIA, dlog, dwarn } from "@/lib/debug";
 import { ElementIcon as OptimizedElementIcon } from "@/lib/elementIcons";
 import { sfx } from "@/lib/sfx";
@@ -179,6 +184,8 @@ const HUDPanel = React.memo(function HUDPanel({
   const [hoverId, setHoverId] = useState(null);
   const [can3D, setCan3D] = useState(false);
   const [preferRaw3D, setPreferRaw3D] = useState(false);
+  // Toggle between 3D planet system and flat world map
+  const [showFlatMap, setShowFlatMap] = useState(false);
   // Remove problematic component state that causes React CurrentOwner issues
   const [threeFailed, setThreeFailed] = useState(null);
   const [mounted, setMounted] = useState(false);
@@ -2326,7 +2333,7 @@ const HUDPanel = React.memo(function HUDPanel({
           overflow: 'visible'
         }}>
           {/* Blue background overlay removed */}
-          {/* 3D planets — align to full blue display width (outside inner padding) */}
+          {/* 3D planets / Flat map — align to full blue display width (outside inner padding) */}
           {!disable3DPlanets && (
           <div
             ref={planetRef}
@@ -2342,7 +2349,65 @@ const HUDPanel = React.memo(function HUDPanel({
               zIndex: 5 // Lower z-index so it doesn't block cover art
             }}
           >
-            <div className="w-full h-full" style={{ pointerEvents: 'none', minHeight: '300px' }}>
+            {/* Toggle button: 3D Planets <-> Flat Map */}
+            <button
+              type="button"
+              onClick={() => { try { sfx.play('click', 0.5); } catch {} setShowFlatMap(prev => !prev); }}
+              aria-label={showFlatMap ? 'Switch to 3D planets' : 'Switch to flat map'}
+              title={showFlatMap ? '3D Planets' : 'World Map'}
+              style={{
+                position: 'absolute',
+                top: '8px',
+                right: '8px',
+                zIndex: 50,
+                pointerEvents: 'auto',
+                background: 'rgba(0, 20, 30, 0.7)',
+                border: '1px solid rgba(61, 245, 255, 0.4)',
+                borderRadius: '8px',
+                padding: '6px 10px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                backdropFilter: 'blur(6px)',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 0 10px rgba(61, 245, 255, 0.15)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(61, 245, 255, 0.8)';
+                e.currentTarget.style.boxShadow = '0 0 16px rgba(61, 245, 255, 0.35)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(61, 245, 255, 0.4)';
+                e.currentTarget.style.boxShadow = '0 0 10px rgba(61, 245, 255, 0.15)';
+              }}
+            >
+              {showFlatMap ? (
+                /* Globe icon - switch back to 3D */
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3DF5FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M2 12h20" />
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                </svg>
+              ) : (
+                /* Map icon - switch to flat map */
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3DF5FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
+                  <line x1="8" y1="2" x2="8" y2="18" />
+                  <line x1="16" y1="6" x2="16" y2="22" />
+                </svg>
+              )}
+              <span style={{ color: '#3DF5FF', fontSize: '10px', fontFamily: 'monospace', letterSpacing: '1px', textTransform: 'uppercase', opacity: 0.9 }}>
+                {showFlatMap ? '3D' : 'MAP'}
+              </span>
+            </button>
+
+            <div className="w-full h-full" style={{ pointerEvents: showFlatMap ? 'auto' : 'none', minHeight: '300px' }}>
+              {showFlatMap ? (
+                /* Flat World Map view */
+                <FlatWorldMap />
+              ) : (
+                /* 3D Planet System view */
                 <ErrorBoundary
                   key={preferRaw3D ? 'raw' : 'r3f'}
                   fallback={<div className="w-full h-full flex items-center justify-center text-red-400">3D Error - Check Console</div>}
@@ -2378,6 +2443,7 @@ const HUDPanel = React.memo(function HUDPanel({
                     onDailyPlanetClick={planetRewards.claimPlanetReward}
                   />
                 </ErrorBoundary>
+              )}
               </div>
           </div>
           )}

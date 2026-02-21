@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sfx";
 import { useAudio } from "@/app/providers/AudioProvider";
@@ -8,6 +8,14 @@ import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
 import { playerStore } from "@/store/usePlayerStore";
 import { useCycleList } from "@/lib/useCycleList";
 import { ElementIcon as OptimizedElementIcon } from "@/lib/elementIcons";
+
+// ── Next drop config ────────────────────────────────────────────────────────
+const NEXT_DROP = {
+  title: 'MR. BRIGHTSIDE',
+  label: 'Friday \u2022 12:00 PM ET',
+  // Target: Friday Feb 27 2026, 12:00 PM ET (UTC-5 = 17:00 UTC)
+  target: new Date('2026-02-27T17:00:00Z'),
+};
 
 function ElementIcon({ name }) {
   const colorFor = (key) => {
@@ -57,6 +65,16 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
   const hoverBtnRef = useRef(null);
   const elementFilterHoverRef = useRef(null);
   const [activeElement, setActiveElement] = useState(null);
+
+  // Next-drop countdown (ticks only while dropdown is open)
+  const [dropCountdown, setDropCountdown] = useState(0);
+  useEffect(() => {
+    if (!open) return;
+    const tick = () => setDropCountdown(Math.max(0, NEXT_DROP.target.getTime() - Date.now()));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [open]);
 
   const normalizeSlug = (slug) => (slug ? String(slug).toLowerCase().replace(/'/g, '') : '');
   const current = useMemo(() => {
@@ -131,13 +149,13 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
     const raf = requestAnimationFrame(() => {
       try {
         const h = optMeasureRef.current?.offsetHeight || 0;
-        const baseMax = h > 0 ? h * 5 : 180;
+        const baseMax = h > 0 ? h * 10 : 380;
 
         // Calculate available space: from trigger bottom to safe zone above cover art
         // Cover art is at bottom: 60px with ~110px height, so reserve ~180px from viewport bottom
         const viewportHeight = window.innerHeight;
         const triggerBottom = rootRef.current?.getBoundingClientRect()?.bottom || 0;
-        const coverArtReserve = 180; // Reserve space for cover art container at bottom-right
+        const coverArtReserve = 100; // Reserve space for cover art container at bottom-right
         const availableSpace = viewportHeight - triggerBottom - coverArtReserve;
 
         // Use the smaller of calculated space or base max, with minimum of 120px for usability
@@ -307,6 +325,66 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
             zIndex: 100000
           }}
         >
+          {/* ── NEXT DROP countdown ──────────────────────────── */}
+          {dropCountdown > 0 && (() => {
+            const ts = Math.floor(dropCountdown / 1000);
+            const dd = Math.floor(ts / 86400);
+            const hh = Math.floor((ts % 86400) / 3600);
+            const mm = Math.floor((ts % 3600) / 60);
+            const ss = ts % 60;
+            const pad = (n) => String(n).padStart(2, '0');
+            return (
+              <div style={{
+                padding: '10px 12px 8px',
+                borderBottom: '1px solid rgba(252, 84, 175, 0.25)',
+                textAlign: 'center',
+              }}>
+                {/* Tag */}
+                <div style={{
+                  fontSize: '9px',
+                  fontFamily: "'SF Mono', 'Fira Code', monospace",
+                  letterSpacing: '0.3em',
+                  color: 'rgba(252, 84, 175, 0.7)',
+                  marginBottom: '4px',
+                }}>
+                  [ NEXT DROP ]
+                </div>
+                {/* Song title */}
+                <div style={{
+                  fontSize: '15px',
+                  fontWeight: '700',
+                  letterSpacing: '0.08em',
+                  color: '#FC54AF',
+                  textShadow: '0 0 8px rgba(252, 84, 175, 0.6)',
+                  marginBottom: '2px',
+                }}>
+                  {NEXT_DROP.title}
+                </div>
+                {/* Date line */}
+                <div style={{
+                  fontSize: '10px',
+                  fontFamily: "'SF Mono', 'Fira Code', monospace",
+                  letterSpacing: '0.15em',
+                  color: 'rgba(207, 247, 255, 0.55)',
+                  marginBottom: '6px',
+                }}>
+                  {NEXT_DROP.label}
+                </div>
+                {/* DD : HH : MM : SS */}
+                <div style={{
+                  fontFamily: "'SF Mono', 'Fira Code', monospace",
+                  fontSize: '16px',
+                  fontWeight: '700',
+                  letterSpacing: '0.06em',
+                  color: '#00FFFF',
+                  textShadow: '0 0 6px rgba(0,255,255,0.5), 0 0 14px rgba(0,255,255,0.25)',
+                }}>
+                  {pad(dd)} : {pad(hh)} : {pad(mm)} : {pad(ss)}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Element filter rows */}
           <div className="px-1.5 pt-2 pb-1 flex flex-col gap-1">
             {/* ALL filter - full width top row */}
