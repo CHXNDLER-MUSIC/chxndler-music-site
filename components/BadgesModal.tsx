@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProfile } from "@/contexts/ProfileContext";
 import { supabaseBrowser } from "@/lib/supabase-browser";
@@ -75,8 +75,9 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   }), [liveStreamCount, inPersonCount, totalAttendanceCount]);
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedBadge, setSelectedBadge] = useState<BadgeDisplay | null>(null);
-  const [enlargedBadge, setEnlargedBadge] = useState<BadgeDisplay | null>(null);
+  // Store IDs instead of full objects so the display stays reactive to userBadges changes
+  const [selectedBadgeId, setSelectedBadgeId] = useState<string | null>(null);
+  const [enlargedBadgeId, setEnlargedBadgeId] = useState<string | null>(null);
   const [badgeRotation, setBadgeRotation] = useState(0); // For 3D spin
   const [isBadgeAnimatingFlip, setIsBadgeAnimatingFlip] = useState(false);
   const [uniqueSongsListened, setUniqueSongsListened] = useState<number>(0);
@@ -136,7 +137,7 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
   useEffect(() => {
     setBadgeRotation(0);
     setIsBadgeAnimatingFlip(false);
-  }, [selectedBadge?.id]);
+  }, [selectedBadgeId]);
 
   // Create badge display objects with unlocked status and progress
   const badgesWithUnlocked: BadgeDisplay[] = allBadges.map(badge => {
@@ -220,6 +221,26 @@ export default function BadgesModal({ open, onClose, embedded = false }: Props) 
       progress
     };
   });
+
+  // Derive selectedBadge and enlargedBadge from current badgesWithUnlocked
+  // so they stay reactive when userBadges updates in real-time
+  const selectedBadge = useMemo(() => {
+    if (!selectedBadgeId) return null;
+    return badgesWithUnlocked.find(b => b.id === selectedBadgeId) ?? null;
+  }, [selectedBadgeId, badgesWithUnlocked]);
+
+  const enlargedBadge = useMemo(() => {
+    if (!enlargedBadgeId) return null;
+    return badgesWithUnlocked.find(b => b.id === enlargedBadgeId) ?? null;
+  }, [enlargedBadgeId, badgesWithUnlocked]);
+
+  // Wrapper setters for backward compat with existing onClick handlers
+  const setSelectedBadge = useCallback((badge: BadgeDisplay | null) => {
+    setSelectedBadgeId(badge?.id ?? null);
+  }, []);
+  const setEnlargedBadge = useCallback((badge: BadgeDisplay | null) => {
+    setEnlargedBadgeId(badge?.id ?? null);
+  }, []);
 
   // Get badge categories organized with all badges (locked and unlocked)
   const getBadgeCategories = (): BadgeCategoryData[] => {

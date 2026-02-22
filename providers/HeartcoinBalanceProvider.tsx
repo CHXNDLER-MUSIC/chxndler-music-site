@@ -14,6 +14,7 @@ import { supabaseBrowser } from "@/lib/supabase-browser";
 import { triggerHeartCoinCelebration } from "@/utils/heartcoinCelebration";
 import { getNYDateString } from "@/lib/time";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { checkAndAwardEligibleBadges } from "@/lib/updateBadgeProgress";
 
 // ============================================================================
 // DEBUG FLAGS - Toggle these to enable/disable debug logging
@@ -503,6 +504,19 @@ export function HeartcoinBalanceProvider({ children }: { children: ReactNode }) 
             prevBalanceRef.current = newBalance;
             return newBalance;
           });
+
+          // After a positive HeartCoin transaction during real-time session,
+          // check and award any newly eligible badges (e.g. Wanderer).
+          // allowCelebration: true lets the realtime badge celebration handler
+          // show the unlock animation instead of silently marking as seen.
+          if (!isInitialLoadRef.current && amount > 0) {
+            checkAndAwardEligibleBadges(currentUserId, { allowCelebration: true })
+              .catch(err => {
+                if (process.env.NODE_ENV !== "production") {
+                  console.warn('[BALANCE] Badge check after HeartCoin failed:', err);
+                }
+              });
+          }
         }
       )
       .subscribe((status) => {

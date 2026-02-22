@@ -331,7 +331,7 @@ function ChatMessage({ message, onUserClick, onUserClickByName, reactions, onRea
         {/* Avatar (only show for non-consecutive messages) */}
         {!isConsecutive && (
           <button
-            onClick={() => onUserClick(senderId)}
+            onClick={(e) => { e.stopPropagation(); onUserClick(senderId); }}
             className="flex-shrink-0 mt-0.5 hover:scale-110 transition-transform duration-200"
           >
             <div
@@ -428,7 +428,7 @@ function ChatMessage({ message, onUserClick, onUserClickByName, reactions, onRea
           {!isConsecutive && (
             <div className="flex items-baseline space-x-2 mb-1">
               <button
-                onClick={() => onUserClick(senderId)}
+                onClick={(e) => { e.stopPropagation(); onUserClick(senderId); }}
                 className="font-semibold text-sm hover:underline transition-colors duration-200"
                 style={elementColor ? { color: elementColor } : undefined}
                 onMouseEnter={() => {

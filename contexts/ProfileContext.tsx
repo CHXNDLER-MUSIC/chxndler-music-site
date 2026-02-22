@@ -17,6 +17,7 @@ import { getLocalDateString } from "@/utils/dateHelpers";
 // instead of detecting balance changes here (removed triggerHeartCoinCelebration import)
 import { updateBadgeProgressCounters } from "@/lib/updateBadgeProgress";
 import { suppressBadgeCelebrations, enableBadgeCelebrations } from "@/utils/celebrationQueue";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
 // Types for user owned cards and badges (joined from user_cards + cards table)
 type OwnedCardRow = {
@@ -219,6 +220,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   // Guard ref to prevent duplicate profile fetches from INITIAL_SESSION + SIGNED_IN race
   const isFetchingProfileRef = React.useRef(false);
+
+  // Realtime channel for user_badges INSERT events
+  const userBadgesChannelRef = React.useRef<RealtimeChannel | null>(null);
+  const userBadgesSubscribedUserRef = React.useRef<string | null>(null);
 
   // Wrapper for setProfile that detects heartcoin balance increases
   // Function to fetch all badges from the database
@@ -711,6 +716,59 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   }, [profile]);
 
+  // Set up realtime subscription for user_badges INSERT events
+  // This keeps userBadges state current when new badges are awarded in real-time
+  const setupUserBadgesRealtime = useCallback((subscribedUserId: string) => {
+    // Skip if already subscribed to this user
+    if (userBadgesSubscribedUserRef.current === subscribedUserId) return;
+
+    // Clean up existing channel
+    if (userBadgesChannelRef.current) {
+      supabaseBrowser.removeChannel(userBadgesChannelRef.current);
+      userBadgesChannelRef.current = null;
+    }
+
+    const channelName = `user-badges-profile-${subscribedUserId}-${Date.now()}`;
+    userBadgesChannelRef.current = supabaseBrowser
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'user_badges',
+          filter: `user_id=eq.${subscribedUserId}`,
+        },
+        (payload) => {
+          const newRow = payload.new as { id: string; badge_id: string; earned_at: string } | undefined;
+          if (!newRow) return;
+
+          debug('[ProfileContext] user_badges INSERT detected', { badge_id: newRow.badge_id });
+
+          // Add the new badge to state, avoiding duplicates
+          setUserBadges(prev => {
+            if (prev.some(b => b.badge_id === newRow.badge_id)) return prev;
+            return [...prev, {
+              id: newRow.id,
+              badge_id: newRow.badge_id,
+              earned_at: newRow.earned_at,
+            }];
+          });
+        }
+      )
+      .subscribe();
+
+    userBadgesSubscribedUserRef.current = subscribedUserId;
+  }, []);
+
+  const cleanupUserBadgesRealtime = useCallback(() => {
+    if (userBadgesChannelRef.current) {
+      supabaseBrowser.removeChannel(userBadgesChannelRef.current);
+      userBadgesChannelRef.current = null;
+    }
+    userBadgesSubscribedUserRef.current = null;
+  }, []);
+
   useEffect(() => {
     // Track if we've already fetched for this mount to avoid duplicate calls
     let hasFetchedInitial = false;
@@ -751,6 +809,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             fetchAllBadges(),
             fetchUserBadges(session.user.id),
           ]);
+          // Set up realtime subscription for user_badges changes
+          setupUserBadgesRealtime(session.user.id);
         }
       } else {
         if (typeof window !== 'undefined') {
@@ -765,6 +825,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         // Don't clear allBadges - badges are public data viewable by anyone
         // Only clear user-specific badge data
         setUserBadges([]);
+        cleanupUserBadgesRealtime();
         setLoading(false);
 
         // Still fetch badges for logged-out users since they're public
@@ -810,6 +871,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             loadJournalEntries(session.user.id),
             fetchUserBadges(session.user.id),
           ]);
+          // Set up realtime subscription for user_badges changes
+          setupUserBadgesRealtime(session.user.id);
         } else if (!session) {
           // No session - user is logged out
           setLoading(false);
@@ -828,6 +891,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       subscription.unsubscribe();
       window.removeEventListener('auth:profile-updated', handleProfileUpdate);
       window.removeEventListener('profile:force-refresh', handleProfileUpdate);
+      cleanupUserBadgesRealtime();
     };
   }, []);
 

@@ -125,8 +125,16 @@ export async function manualBadgeCheck() {
 
 /**
  * Check and automatically award badges that the user has earned
+ * @param userId - The user ID to check badges for
+ * @param options.allowCelebration - When true, skip markBadgeAsSeenInStorage so the
+ *   realtime celebration handler in useBadgeCelebrations can show the unlock animation.
+ *   Use true for real-time badge awards (e.g. after HeartCoin earned).
+ *   Use false/omit for page-load badge checks where celebrations are suppressed.
  */
-export async function checkAndAwardEligibleBadges(userId: string) {
+export async function checkAndAwardEligibleBadges(
+  userId: string,
+  options?: { allowCelebration?: boolean }
+) {
   try {
     log('Checking for eligible badges for user:', userId);
 
@@ -215,11 +223,13 @@ export async function checkAndAwardEligibleBadges(userId: string) {
           newlyAwardedBadges.push(badge);
           log(`✅ Successfully awarded badge: ${badge.badge_name}`);
 
-          // Mark this badge as "seen" in localStorage immediately so the realtime
-          // handler won't celebrate it. This fixes a race condition where the
-          // Supabase realtime INSERT event arrives after suppression has ended,
-          // causing unwanted celebrations on page load.
-          markBadgeAsSeenInStorage(badge.id, earnedAt);
+          // When allowCelebration is true, skip marking as seen so the realtime
+          // celebration handler in useBadgeCelebrations can show the unlock animation.
+          // For page-load checks (allowCelebration=false/default), mark as seen
+          // immediately to prevent unwanted celebrations from stale realtime events.
+          if (!options?.allowCelebration) {
+            markBadgeAsSeenInStorage(badge.id, earnedAt);
+          }
         }
       }
     }

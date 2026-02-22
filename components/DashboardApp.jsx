@@ -150,7 +150,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
   }, [searchParams, router, openNamePrompt]);
   
   // Profile context for user and profile data
-  const { profile } = useProfile();
+  const { profile, isJournalOpen } = useProfile();
 
   // Ref to track latest profile for use in setTimeout closures (avoids stale closure issues)
   const profileRef = React.useRef(profile);
@@ -2156,10 +2156,11 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       width: 'var(--display-width)',
       transform: 'translate3d(-50%,0,0)',
       // Tie beam visibility to overlay UI being shown and Start having been pressed, and hide during warp
-      opacity: (cockpitVisible && (beamEnabled || showHUD) && !warpActive) ? (cardModalOpen ? 0.3 : 1) : 0,
+      // Also show beam when journal is open
+      opacity: (cockpitVisible && (beamEnabled || showHUD || isJournalOpen) && !warpActive) ? (cardModalOpen ? 0.3 : 1) : 0,
       transition: 'opacity 400ms ease-in-out'
     };
-  }, [beamEnabled, showHUD, cardModalOpen, cockpitVisible, warpActive]);
+  }, [beamEnabled, showHUD, cardModalOpen, cockpitVisible, warpActive, isJournalOpen]);
 
   // Compute background-position for the lightbeam base PNG so it anchors under the blue button
   const [beamBaseBgPos, setBeamBaseBgPos] = useState(null);

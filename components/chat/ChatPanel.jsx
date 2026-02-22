@@ -1136,6 +1136,23 @@ export default function ChatPanel({ isOpen, onClose, onProfileOpen }) {
       DEBUG && console.log('🔥 Using guest user:', user);
     }
     
+    // If user not found in chatUsers, try to build from message data
+    if (!user) {
+      const msg = messages.find(m => m.user_id === userId);
+      if (msg) {
+        const msgProfile = msg.user_profile;
+        user = normalizeUser({
+          id: userId,
+          name: msgProfile?.name || msg.username || 'Unknown',
+          element: msgProfile?.element || null,
+          avatar_badge_id: msgProfile?.avatar_badge_id || null,
+          profile_image_url: msgProfile?.profile_image_url || null,
+          last_seen: msg.created_at
+        });
+        DEBUG && console.log('🔥 Built user from message data:', user);
+      }
+    }
+
     if (user) {
       setSelectedUser(user);
       setShowUserBadges(false); // Reset badge view when switching users

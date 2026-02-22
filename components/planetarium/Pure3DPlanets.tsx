@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import * as THREE from 'three';
 import { OrbitControls } from 'three-stdlib';
 import { debug } from '@/lib/logger';
@@ -2115,8 +2116,8 @@ export default function Pure3DPlanets({
         position: 'relative'
       }}
     >
-      {/* Planet Popup - rendered via portal to avoid event conflicts with canvas */}
-      {planetPopup && (
+      {/* Planet Popup - rendered via portal to document.body to escape parent CSS transforms that break position:fixed */}
+      {planetPopup && typeof document !== 'undefined' && createPortal(
         <div
           style={{
             position: 'fixed',
@@ -2251,7 +2252,8 @@ export default function Pure3DPlanets({
               {planetPopup.name}
             </span>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Global keyframes for warp button glow animation - using global style to avoid re-render issues */}
