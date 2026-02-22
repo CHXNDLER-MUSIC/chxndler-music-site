@@ -9,7 +9,7 @@ import { sfx } from "@/lib/sfx";
 import { ELEMENT_COLORS, type Element } from "@/lib/planets";
 import TiltSpinCard from "@/components/TiltSpinCard";
 import { useAudio } from "@/app/providers/AudioProvider";
-import { getCardImageUrl } from "@/lib/supabaseCardUrl";
+import { getCardImageUrl, SUPABASE_CARDS_BASE_URL } from "@/lib/supabaseCardUrl";
 
 // Helper function to determine element from title/slug
 const getTrackElement = (title: string, slug?: string): Element => {
@@ -167,10 +167,10 @@ export default function CoverHologram({ src, title, slug, inline = false, size =
     'ocean-girl-acoustic': getCardImageUrl('OCEAN GIRL (ACOUSTIC)'),
     'pink-moon': getCardImageUrl('PINK MOON'),
     'somebody-to-love': getCardImageUrl('SOMEBODY TO LOVE'),
-    'we-re-just-friends-dmvrco-remix': getCardImageUrl("WE'RE JUST FRIENDS (DMVRCO REMIX)"),
-    'we-re-just-friends-acoustic': getCardImageUrl("WE'RE JUST FRIENDS (ACOUSTIC)"),
+    'we-re-just-friends-dmvrco-remix': `${SUPABASE_CARDS_BASE_URL}/were-just-friends-dmvcrco-remix.webp`,
+    'we-re-just-friends-acoustic': `${SUPABASE_CARDS_BASE_URL}/WERE-JUST-FRIENDS-ACOUSTIC.webp`,
     'we-re-just-friends-mickey-jas-remix': getCardImageUrl("WE'RE JUST FRIENDS (MICKEY JAS REMIX)"),
-    'we-re-just-friends': getCardImageUrl("WE'RE JUST FRIENDS"),
+    'we-re-just-friends': `${SUPABASE_CARDS_BASE_URL}/were-just-friends.webp`,
     'collide': getCardImageUrl('COLLIDE'),
     'mr-brightside': getCardImageUrl('MR. BRIGHTSIDE'),
     'paris': getCardImageUrl('PARIS'),
@@ -549,10 +549,12 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
     try { if (onCardOpen) onCardOpen(); } catch {}
   };
 
-  // Reset flip state when modal closes
+  // Reset flip state and rotation when modal closes
   useEffect(() => {
     if (!showCard) {
       setCardFlipped(false);
+      setCardRotation(0);
+      setIsAnimatingFlip(false);
       setShowElementsPopover(false);
     }
   }, [showCard]);
@@ -775,10 +777,12 @@ Together, they form the emotional ecosystem of the HEARTVERSE.`;
                       if (process.env.NODE_ENV !== "production") console.warn('[CardImage] Failed to load card image', { objectKey, attemptedUrl: target.src });
                       const fbFilename = src.includes('/covers/') ? src.split('/').pop() : null;
                       if (fbFilename) {
-                        target.onerror = () => { target.src = CARD_URLS['back'] || getCardImageUrl('BACK'); };
+                        // Try card image derived from cover filename, then fall back to cover art itself
+                        target.onerror = () => { target.onerror = null; target.src = src; };
                         target.src = getCardImageUrl(fbFilename.replace(/\.\w+$/, ''));
                       } else {
-                        target.src = CARD_URLS['back'] || getCardImageUrl('BACK');
+                        // Fall back to cover art instead of card back
+                        target.src = src;
                       }
                     }}
                     draggable={false}

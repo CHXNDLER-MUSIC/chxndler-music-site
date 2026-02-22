@@ -1746,6 +1746,11 @@ const HUDPanel = React.memo(function HUDPanel({
     }
   }, [shouldOpenJournal, showSoulStarJournal, onJournalOpened]);
 
+  // Sync journal open state to ProfileContext so the light beam stays visible
+  useEffect(() => {
+    setIsJournalOpen(showSoulStarJournal);
+  }, [showSoulStarJournal, setIsJournalOpen]);
+
   // Check if journal was completed today on mount and when user changes
   useEffect(() => {
     const checkJournalCompletion = async () => {
@@ -1793,7 +1798,7 @@ const HUDPanel = React.memo(function HUDPanel({
   const liveAudioRef = useRef(null);
   // Progress bar ref for seeking
   const progressBarRef = useRef(null);
-  const { refreshProfile } = useProfile();
+  const { refreshProfile, setIsJournalOpen } = useProfile();
   useEffect(() => {
     if (typeof beamEnabled === 'boolean') {
       const t = setTimeout(() => setBeamOpacity(beamEnabled ? 1 : 0), 10);

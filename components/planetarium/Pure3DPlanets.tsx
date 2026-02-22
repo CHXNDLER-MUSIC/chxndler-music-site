@@ -1002,8 +1002,10 @@ export default function Pure3DPlanets({
     }
 
         // Fallback: check orbit groups for element click
+        let matchedOrbitPlanet = false;
         orbitGroups.forEach((og, idx) => {
           if (og.group.children.includes(obj)) {
+            matchedOrbitPlanet = true;
             const elementId = planets[idx].id as ElementType;
             // Calculate screen position from planet's center
             scene.updateMatrixWorld(true);
@@ -1023,6 +1025,12 @@ export default function Pure3DPlanets({
             });
           }
         });
+
+        // If no planet/element/song was matched, treat as empty space click
+        if (!matchedOrbitPlanet) {
+          clearSelectionEffects();
+          setPlanetPopup(null);
+        }
       } else {
         // Clicked on empty space - dismiss popup and clear selection effects
         clearSelectionEffects();
