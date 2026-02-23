@@ -56,7 +56,8 @@ export default function ClientOnly3DCanvas(props: ClientOnly3DCanvasProps) {
                 stencil: false,
                 depth: true
               }}
-              dpr={quality === 'high' ? Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 2) : 1}
+              dpr={quality === 'high' ? Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 1.5) : 1}
+              frameloop="demand"
               style={{ background: 'transparent' }}
             >
               <Suspense fallback={null}>

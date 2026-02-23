@@ -88,7 +88,6 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://youtu.be/RXWbQzWjTPg",
     type: "acoustic",
     releaseDate: "2026-02-17T12:00:00",
-    description: "The debut Acoustic Session live stream inside the Heartverse.\nIf you've ever felt like you're searching for your people, this is your signal.",
     postDescription: "Setlist\n00:00 OCEAN GIRL\n03:50 ALWAYS ON MY MIND\n07:15 SOMEBODY TO LOVE\n11:48 MR. BRIGHTSIDE (The Killers)\n14:48 Good Things Fall Apart — Audience Request (Illenium, Jon Bellion)\n15:54 Julia — Audience Request (Lauv)\n16:56 Too Old To Cry — Audience Request (Voodoo Blue)",
   },
   {
@@ -163,15 +162,15 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://youtu.be/TVCTbXqwJ5A",
     type: "electric",
     releaseDate: "2026-02-21T12:00:00",
-    description: "The debut Electric Set live stream inside the Heartverse.\nIf you've been searching for your signal, you just found it.",
     postDescription: "Setlist\n00:00 WELCOME ALIENS\n00:21 WE'RE JUST FRIENDS\n04:28 MR. BRIGHTSIDE (The Killers)\n07:39 SOMEBODY TO LOVE\n10:15 ALWAYS ON MY MIND\n13:29 OCEAN GIRL\n16:29 BE MY BEE\n20:24 BABY (Justin Bieber)",
   },
   {
     id: "lsf-002",
     title: "Electric Signal 02",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    youtubeUrl: "https://youtu.be/UbZ1-hzfuTM",
     type: "electric",
     releaseDate: "2026-02-28T12:00:00",
+    postDescription: "Setlist\n00:00 FEELING THIS\n02:26 PARIS\n06:16 ALWAYS ON MY MIND\n09:32 ALONE\n13:16 CHXNDLER Cards\n14:00 WE'RE JUST FRIENDS\n17:50 MR. BRIGHTSIDE\n21:19 OCEAN GIRL",
   },
   {
     id: "lsf-003",

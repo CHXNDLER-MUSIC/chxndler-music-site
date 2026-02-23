@@ -228,7 +228,7 @@ export default function Pure3DPlanets({
       alpha: true
     });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(quality === 'high' ? Math.min(window.devicePixelRatio, 2) : 1);
+    renderer.setPixelRatio(quality === 'high' ? Math.min(window.devicePixelRatio, 1.5) : 1);
     renderer.setClearColor(0x000000, 0);
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;

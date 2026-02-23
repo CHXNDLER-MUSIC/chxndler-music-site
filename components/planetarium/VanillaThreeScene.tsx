@@ -52,7 +52,7 @@ export default function VanillaThreeScene({
       // Renderer setup
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 
       // Create a simple sphere
       const geometry = new THREE.SphereGeometry(1, 32, 32);

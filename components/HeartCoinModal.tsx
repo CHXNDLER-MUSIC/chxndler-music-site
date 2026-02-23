@@ -1801,8 +1801,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
             className="w-10 h-10 object-cover -ml-3"
             style={{ filter: 'drop-shadow(0 0 8px rgba(0, 255, 255, 0.6))' }}
           />
-          <span className="text-white text-xl font-semibold -ml-1">{heartcoinBalance}</span>
-          <span className="text-white/60 text-sm ml-1">Balance</span>
+          <span className="text-white text-xl font-semibold -ml-2">{heartcoinBalance}</span>
+          <span className="text-white/60 text-sm ml-0.5">Balance</span>
         </div>
 
         {/* Top Level Tabs */}

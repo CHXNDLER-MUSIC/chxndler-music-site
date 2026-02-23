@@ -1,10 +1,21 @@
 'use client';
 
-import React, { Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
+import React, { Suspense, useEffect } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
 import { Stats } from '@react-three/drei';
+
 import { SolarSystemScene } from './SolarSystemScene';
 import type { SongWithElement } from '@/hooks/useSongs';
+
+/** Invalidates the canvas at ~12 FPS so useFrame hooks still run on a budget. */
+function LowFpsLoop() {
+  const { invalidate } = useThree();
+  useEffect(() => {
+    const id = setInterval(invalidate, 83);
+    return () => clearInterval(id);
+  }, [invalidate]);
+  return null;
+}
 
 interface SolarSystemCanvasProps {
   songs: SongWithElement[];
@@ -39,9 +50,11 @@ export const SolarSystemCanvas = React.memo(({
         stencil: false,
         depth: true
       }}
-      dpr={quality === 'high' ? Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 2) : 1}
+      dpr={quality === 'high' ? Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 1.5) : 1}
+      frameloop="demand"
       style={{ background: 'transparent' }}
     >
+      <LowFpsLoop />
       <Suspense fallback={null}>
         <SolarSystemScene 
           songs={songs}

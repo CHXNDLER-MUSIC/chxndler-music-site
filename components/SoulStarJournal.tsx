@@ -852,7 +852,7 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
         top: 0,
         left: 0,
         right: 0,
-        bottom: 'calc(var(--light-beam-boundary) + 50px)',
+        bottom: 'calc(var(--light-beam-boundary) + var(--beam-height))',
         paddingTop: '8vh',
         paddingLeft: '16px',
         paddingRight: '20px'

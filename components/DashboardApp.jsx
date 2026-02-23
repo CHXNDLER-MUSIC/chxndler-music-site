@@ -2917,7 +2917,7 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
             style={{
               position: 'fixed',
               top: '62px', // Slight overlap to sit flush against the profile bar bottom line
-              bottom: 'calc(var(--display-touch-top) + 60px)', // Keep original bottom position
+              bottom: 'calc(var(--display-touch-top) + 60px + 55px)', // Offset to align visual bottom (overflowing icons) with light beam top
               left: '50%',
               transform: 'translateX(-50%)',
               width: 'calc(var(--display-width) + 32px)',

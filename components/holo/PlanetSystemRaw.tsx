@@ -1766,7 +1766,7 @@ export default function PlanetSystemRaw({ showAll = false, hideUntilPlaying = fa
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setClearColor(0x000000, 0);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.setSize(width, height);
     // Boost brightness and use correct color space/energy (slightly reduced to avoid washout)
     // @ts-ignore three versions differ

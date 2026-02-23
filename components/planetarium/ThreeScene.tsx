@@ -1,9 +1,19 @@
 'use client';
 
-import { Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Suspense, useEffect } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import type { Pure3DPlanetsProps } from './Pure3DPlanets';
+
+/** Invalidates the canvas at ~12 FPS so autoRotate keeps spinning on a budget. */
+function LowFpsLoop() {
+  const { invalidate } = useThree();
+  useEffect(() => {
+    const id = setInterval(invalidate, 83);
+    return () => clearInterval(id);
+  }, [invalidate]);
+  return null;
+}
 
 function PlanetSystem({ onPlanetSelect }: { onPlanetSelect?: (planetId: string) => void }) {
   return (
@@ -107,7 +117,7 @@ function PlanetSystem({ onPlanetSelect }: { onPlanetSelect?: (planetId: string) 
         </mesh>
       </group>
 
-      {/* Stars - using fixed positions to avoid re-render issues */}
+      {/* PERF TEST: Stars disabled — 200 individual meshes commented out for benchmarking.
       {[...Array(200)].map((_, i) => {
         const seed = i * 137.508;
         const x = (Math.sin(seed) * 100);
@@ -120,6 +130,7 @@ function PlanetSystem({ onPlanetSelect }: { onPlanetSelect?: (planetId: string) 
           </mesh>
         );
       })}
+      */}
     </>
   );
 }
@@ -129,13 +140,15 @@ export default function ThreeScene({ quality, onPlanetSelect }: Pure3DPlanetsPro
     <Canvas
       camera={{ position: [0, 15, 35], fov: 60 }}
       style={{ background: 'transparent', width: '100%', height: '100%' }}
-      dpr={quality === 'high' ? 2 : 1}
+      dpr={quality === 'high' ? 1.5 : 1}
+      frameloop="demand"
       gl={{
         antialias: quality === 'high',
         alpha: true,
         preserveDrawingBuffer: false,
       }}
     >
+      <LowFpsLoop />
       <Suspense fallback={null}>
         <PlanetSystem onPlanetSelect={onPlanetSelect} />
       </Suspense>
