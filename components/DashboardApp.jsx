@@ -1385,6 +1385,24 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
         setBeamEnabled(true);
         setBeamTransitioning(false);
       }, BEAM_SWITCH_DELAY_MS);
+    } else if (color === 'yellow-modal') {
+      // Yellow beam for modals - just changes beam color without opening any display panel
+      setBeamTransitioning(true);
+      closeAllDisplays();
+      setTimeout(() => {
+        setBeamColor('yellow');
+        setBeamEnabled(true);
+        setBeamTransitioning(false);
+      }, BEAM_SWITCH_DELAY_MS);
+    } else if (color === 'cyan-modal') {
+      // Cyan beam for modals - just changes beam color without opening any display panel
+      setBeamTransitioning(true);
+      closeAllDisplays();
+      setTimeout(() => {
+        setBeamColor('cyan');
+        setBeamEnabled(true);
+        setBeamTransitioning(false);
+      }, BEAM_SWITCH_DELAY_MS);
     }
   }, [beamColor, showHUD, joinAlienOpen, beamTransitioning, explicitClose, uiPhase, uiRevealLocked]);
 

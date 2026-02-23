@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { sfx } from "@/lib/sfx";
 import { useProfile } from "@/contexts/ProfileContext";
 import TiltSpinCard from "./TiltSpinCard";
@@ -8,7 +8,7 @@ import TiltSpinCard from "./TiltSpinCard";
 interface JourneyModalProps {
   open: boolean;
   onClose: () => void;
-  onBeamColorChange?: (color: 'blue' | 'yellow' | 'pink' | 'off') => void;
+  onBeamColorChange?: (color: string) => void;
 }
 
 type TierType = 'wanderer' | 'dreamer' | 'lover';
@@ -81,8 +81,19 @@ export default function JourneyModal({ open, onClose, onBeamColorChange }: Journ
   // For non-logged-in users, force display to show WANDERER
   const displayTier = user ? currentTier : 'wanderer';
 
-  // Beam color is now managed by the parent (hamburger menu wrapper) using 'pink-modal' mode
-  // which enables the beam without opening any display panels
+  // Set beam color based on user tier when modal opens
+  useEffect(() => {
+    if (open && onBeamColorChange) {
+      const cHC = profile?.heartcoin_total || 0;
+      if (cHC >= 25) {
+        onBeamColorChange('pink-modal');   // LOVER → pink
+      } else if (cHC >= 5) {
+        onBeamColorChange('yellow-modal'); // DREAMER → yellow
+      } else {
+        onBeamColorChange('cyan-modal');   // WANDERER → cyan
+      }
+    }
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleTierClick = (tier: TierType) => {
     try { sfx.play('click', 0.8); } catch {}

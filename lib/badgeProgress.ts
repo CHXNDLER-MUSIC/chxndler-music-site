@@ -79,8 +79,8 @@ export function getBadgeProgressForUser(
       break;
       
     case 'heart_coins':
-      // Current HeartCoin total for badges requiring HeartCoin balance
-      current = profile.heartcoin_balance || 0;
+      // Total HeartCoins ever earned (not current balance, which decreases with spending)
+      current = profile.heartcoin_total || 0;
       log(`Badge ${badge.slug || badge.badge_name}: heart_coins current=${current}, target=${target}`);
       break;
       

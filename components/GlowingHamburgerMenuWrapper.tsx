@@ -16,6 +16,7 @@ import { useUIState } from "@/lib/use-ui-state";
 import { useTour } from "@/contexts/TourContext";
 import { useMenuState } from "@/contexts/MenuStateContext";
 import { useElementOfDayClaim, ElementOfDay } from "@/hooks/useElementOfDayClaim";
+import { useProfile } from "@/contexts/ProfileContext";
 
 // Map element of day to beam color
 const ELEMENT_TO_BEAM_COLOR: Record<NonNullable<ElementOfDay>, string> = {
@@ -48,6 +49,15 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
   const tour = useTour();
   const { isMenuOpen, setMenuOpen } = useMenuState();
   const { element: elementOfDay } = useElementOfDayClaim();
+  const { profile, user } = useProfile();
+
+  // Determine beam color for Journey modal based on user tier
+  const getJourneyBeamColor = () => {
+    const heartCoins = profile?.heartcoin_total || 0;
+    if (heartCoins >= 25) return 'pink-modal';   // LOVER → pink
+    if (heartCoins >= 5) return 'yellow-modal';   // DREAMER → yellow
+    return 'cyan-modal';                          // WANDERER → cyan
+  };
 
   useLogOnChange('codeOpen state changed:', { codeOpen });
 
@@ -77,12 +87,12 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
     };
 
     const handleOpenJournalModal = () => {
-      // IMPORTANT: Do NOT change beam color here because 'pink' triggers live stream
-      // The journal modal will handle its own beam color internally
+      try { onBeamColorChange?.('cyan-modal'); } catch {}
       setJournalOpen(true);
     };
 
     const handleOpenJourneyModal = () => {
+      try { onBeamColorChange?.(getJourneyBeamColor()); } catch {}
       setJourneyOpen(true);
     };
 
@@ -124,8 +134,6 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
       if (process.env.NODE_ENV !== "production") console.log('🚫 BLOCKING LIVE STREAM - Opening Journal instead');
       // Close live stream immediately by dispatching closeAllModals event
       try { window.dispatchEvent(new CustomEvent('closeAllModals')); } catch {}
-      // Turn off beam immediately
-      try { onBeamColorChange?.('off'); } catch {}
     }
 
     // Enable a brief click shield to prevent pointerup/click from re-targeting
@@ -186,7 +194,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
         // Handle dynamic journey titles:
         case "JOURNEY":
         case "MY JOURNEY":
-          try { onBeamColorChange?.('pink-modal'); } catch {}
+          try { onBeamColorChange?.(getJourneyBeamColor()); } catch {}
           setJourneyOpen(true);
           break;
         case "BINDER":
@@ -195,10 +203,7 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
           break;
         case "JOURNAL":
         case "COMPLETED": {
-          // IMPORTANT: Do NOT change beam color when opening journal from hamburger menu
-          // because 'pink' beam color triggers the live stream display to open in DashboardApp
-          // The journal modal will handle its own beam color internally
-          // Just open the journal directly without any beam color changes
+          try { onBeamColorChange?.('cyan-modal'); } catch {}
           setJournalOpen(true);
           break;
         }
@@ -432,7 +437,10 @@ export default function GlowingHamburgerMenuWrapper({ hidden = false, onBeamColo
           setHeartCoinOpen(false);
           try { onBeamColorChange?.('off'); } catch {}
         }}
-        onOpenJournal={() => setJournalOpen(true)}
+        onOpenJournal={() => {
+          try { onBeamColorChange?.('cyan-modal'); } catch {}
+          setJournalOpen(true);
+        }}
         onBeamColorChange={onBeamColorChange}
       />
       {/* Welcome Home Modal */}
