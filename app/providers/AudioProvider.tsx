@@ -96,6 +96,7 @@ export const TRACKS = {
   BE_MY_BEE: { mp3: S("be-my-bee.mp3"), opus: S("be-my-bee.opus") },
   BRAIN_FREEZE: { mp3: S("brain-freeze.mp3"), opus: S("brain-freeze.opus") },
   COLLIDE: { mp3: S("collide.mp3"), opus: S("collide.opus") },
+  MR_BRIGHTSIDE: { mp3: S("MR.BRIGHTSIDE.mp3") },
   COLORS_HOME: { mp3: S("COLORS OF OUR HOME.mp3"), opus: S("COLORS-OF-OUR-HOME.opus") },
   COLORS_HOME_ACOUSTIC: { mp3: S("COLORS OF OUR HOME (ACOUSTIC).mp3"), opus: S("COLORS-OF-OUR-HOME-_ACOUSTIC_.opus") },
   COLORS_HOME_BLUMA: { mp3: S("COLORS OF OUR HOME (BLUMA Game Soundtrack).mp3"), opus: S("COLORS-OF-OUR-HOME-_BLUMA-Game-Soundtrack_.opus") },

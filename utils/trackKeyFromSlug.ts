@@ -9,6 +9,7 @@ export function trackKeyFromSlug(slug?: string): string | null {
     "be-my-bee": "BE_MY_BEE",
     "brain-freeze": "BRAIN_FREEZE",
     "collide": "COLLIDE",
+    "mr-brightside": "MR_BRIGHTSIDE",
     "colors-of-our-home": "COLORS_HOME",
     "colors-of-our-home-acoustic": "COLORS_HOME_ACOUSTIC",
     "colors-of-our-home-bluma-game-soundtrack": "COLORS_HOME_BLUMA",

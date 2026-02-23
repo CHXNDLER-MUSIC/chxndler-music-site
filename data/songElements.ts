@@ -24,6 +24,7 @@ export const SONG_ELEMENT_MAPPING: Record<string, ElementType> = {
   "ocean-girl-acoustic": "water",
   "ocean-girl-remix": "water",
   
-  // Darkness songs - adding paris here based on existing data
+  // Darkness songs
+  "mr-brightside": "darkness",
   // "paris": "darkness", // Could be either heart or darkness based on theming
 };

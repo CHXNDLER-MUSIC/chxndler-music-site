@@ -199,6 +199,10 @@ export const AUDIO_ASSETS_BY_SLUG: Record<string, {
       { time: 152.5, label: "Final Drop", kind: "chorus" }
     ]
   },
+  "mr-brightside": {
+    src: supabaseTrackUrl("MR.BRIGHTSIDE.mp3"),
+    cover: "/covers/MR. BRIGHTSIDE.webp",
+  },
   "collide": {
     src: supabaseTrackUrl("collide.mp3"),
     cover: "/covers/COLLIDE.webp",

@@ -10,6 +10,9 @@ import { trackKeyFromSlug } from "@/utils/trackKeyFromSlug";
 import { supabaseTrackUrl } from "@/lib/supabaseTrackUrl";
 import { sfx } from "@/lib/sfx";
 import SongDropdown from "./SongDropdown";
+import { useProfile } from "@/contexts/ProfileContext";
+import type { Tier } from "@/utils/tier";
+import { tierRank, TIER_ORDER } from "@/utils/tier";
 
 // Normalize helper for slugs
 const normalizeSlug = (slug?: string) => (slug ? String(slug).toLowerCase().replace(/'/g, "") : "");
@@ -17,17 +20,46 @@ const normalizeSlug = (slug?: string) => (slug ? String(slug).toLowerCase().repl
 // Element mapping for visual consistency
 const ELEMENT_MAP: Record<string, string> = {
   "ocean-girl": "water",
-  "alone": "darkness", 
+  "alone": "darkness",
   "baby": "heart",
   "be-my-bee": "heart",
   "night-drive": "lightning",
   "starlight": "lightning",
   "horizon": "water",
-  "afterglow": "lightning", 
+  "afterglow": "lightning",
   "midnight": "darkness",
   "tidal": "water",
   "drift": "water",
+  "mr-brightside": "darkness",
 };
+
+// Time-locked tracks: accessible early for certain tiers, public at unlockDate
+const TIME_LOCKED_TRACKS: Record<string, { unlockDate: string; earlyAccessTiers: Tier[] }> = {
+  "mr-brightside": {
+    unlockDate: "2026-02-27T12:00:00-05:00", // Feb 27, 2026 12PM EST
+    earlyAccessTiers: ["dreamer", "lover", "guide"],
+  },
+};
+
+/** Check if a track is currently time-locked for a given user tier */
+function isTrackTimeLocked(slug: string, userTier?: string): { locked: boolean; unlockDate?: string } {
+  const config = TIME_LOCKED_TRACKS[slug];
+  if (!config) return { locked: false };
+
+  const now = Date.now();
+  const unlock = new Date(config.unlockDate).getTime();
+
+  // Past the unlock date — open for everyone
+  if (now >= unlock) return { locked: false };
+
+  // Check early-access tiers
+  const tier = (userTier?.toLowerCase() || "wanderer") as Tier;
+  if (TIER_ORDER.includes(tier) && config.earlyAccessTiers.includes(tier)) {
+    return { locked: false };
+  }
+
+  return { locked: true, unlockDate: config.unlockDate };
+}
 
 // Helper to get track URL from song ID
 function getTrackUrlFromSongId(songId: string): string {
@@ -88,6 +120,9 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
   
   // Get songs from Supabase
   const { songs: supabaseSongs, loading } = useSongs();
+
+  // Get user profile for tier-based time-lock checks
+  const { profile } = useProfile();
   
   // Filter released songs and combine with asset data - memoized for performance
   const availableSongs = useMemo(() => 
@@ -121,6 +156,10 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
 
   // Handle track change from dropdown
   const handleTrackChange = useCallback(async (newTrackId: string) => {
+    // Block time-locked tracks
+    const timeLock = isTrackTimeLocked(newTrackId, profile?.tier);
+    if (timeLock.locked) return;
+
     // Trigger visual warp: focus selected planet and hide all during effect
     try {
       const { playerStore } = await import("@/store/usePlayerStore");
@@ -219,14 +258,19 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
   }, [audioManager]);
 
   // Prepare dropdown items for SongDropdown component - memoized
-  const dropdownItems = useMemo(() => 
-    availableSongs.map(song => ({
-      id: song.id,
-      title: song.title,
-      slug: song.id,
-      icon: ELEMENT_MAP[song.id] || "music",
-    })), 
-    [availableSongs]
+  const dropdownItems = useMemo(() =>
+    availableSongs.map(song => {
+      const timeLock = isTrackTimeLocked(song.id, profile?.tier);
+      return {
+        id: song.id,
+        title: song.title,
+        slug: song.id,
+        icon: ELEMENT_MAP[song.id] || "music",
+        locked: timeLock.locked,
+        unlockDate: timeLock.unlockDate,
+      };
+    }),
+    [availableSongs, profile?.tier]
   );
 
   return (
