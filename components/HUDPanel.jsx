@@ -150,6 +150,9 @@ const HUDPanel = React.memo(function HUDPanel({
   // Get the element of the day for camera focus
   const { focusElement } = useFocusElementOfDay();
 
+  // Profile context (journal open state, refresh)
+  const { refreshProfile, setIsJournalOpen } = useProfile();
+
   // Temporary kill-switch to disable 3D planets for performance testing
   // Set to true to disable. You can also override at runtime by setting
   // localStorage.DISABLE_3D_PLANETS = '0' and refreshing.
@@ -1798,7 +1801,6 @@ const HUDPanel = React.memo(function HUDPanel({
   const liveAudioRef = useRef(null);
   // Progress bar ref for seeking
   const progressBarRef = useRef(null);
-  const { refreshProfile, setIsJournalOpen } = useProfile();
   useEffect(() => {
     if (typeof beamEnabled === 'boolean') {
       const t = setTimeout(() => setBeamOpacity(beamEnabled ? 1 : 0), 10);
