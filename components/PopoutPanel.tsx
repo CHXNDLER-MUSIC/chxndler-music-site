@@ -372,9 +372,9 @@ export default function PopoutPanel({
               }}
               className="absolute top-2 left-4 hover:opacity-80 cursor-pointer w-12 h-12 rounded-full border flex items-center justify-center overflow-hidden"
               style={{ 
-                borderColor: '#F2EF1D80',
-                boxShadow: '0 0 15px #F2EF1D80, 0 0 25px #F2EF1D50, 0 0 35px #F2EF1D30',
-                background: '#F2EF1D10',
+                borderColor: '#FFFFFF80',
+                boxShadow: '0 0 15px #FFFFFF80, 0 0 25px #FFFFFF50, 0 0 35px #FFFFFF30',
+                background: '#FFFFFF10',
                 backdropFilter: 'blur(2px)',
                 padding: 0
               }}

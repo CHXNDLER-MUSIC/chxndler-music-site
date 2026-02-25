@@ -425,11 +425,11 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
       
       {/* Hologram base glow - wider and stronger */}
       {open && (
-        <div 
-          className="fixed inset-0 z-[2147483646] flex items-center justify-center"
+        <div
+          className="fixed inset-0 z-[2147483646] flex items-end justify-center"
           style={{
             pointerEvents: 'none',
-            paddingTop: '400px'
+            paddingBottom: 'calc(var(--light-beam-boundary, 300px) - 100px)'
           }}
         >
           <div
@@ -445,10 +445,10 @@ export default function BinderButton({ asChild = false, children, onClick, onHov
       
       {/* Binder Modal - holographic popup */}
       {open && (
-        <div 
-          className="fixed inset-0 z-[2147483647] flex items-center justify-center"
+        <div
+          className="fixed inset-0 z-[2147483647] flex items-end justify-center"
           style={{
-            paddingTop: '300px'
+            paddingBottom: 'var(--light-beam-boundary, 300px)'
           }}
         >
           <div

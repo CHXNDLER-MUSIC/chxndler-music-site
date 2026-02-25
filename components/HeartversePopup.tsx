@@ -49,8 +49,17 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
       role="dialog"
       aria-label={title}
       style={{ overscrollBehaviorX: 'none' }}
-      onWheel={(e) => { e.preventDefault(); }}
-      onTouchMove={(e) => { e.preventDefault(); }}
+      onWheel={(e) => {
+        // Allow scroll inside scrollable children; only block if it would leak to background
+        const target = e.target as HTMLElement;
+        const scrollable = target.closest('[data-scrollable]');
+        if (!scrollable) e.preventDefault();
+      }}
+      onTouchMove={(e) => {
+        const target = e.target as HTMLElement;
+        const scrollable = target.closest('[data-scrollable]');
+        if (!scrollable) e.preventDefault();
+      }}
     >
       <div
         className="absolute inset-0 backdrop-blur-md"
@@ -70,7 +79,7 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
       >
         <div
           className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-[#FC54AF]/60 bg-white/5 shadow-[0_0_26px_rgba(56,182,255,0.35)] max-w-lg w-full mx-4 overflow-hidden flex flex-col"
-          style={{ maxHeight: 'calc(100vh - var(--profile-bar-boundary, 64px) - var(--light-beam-boundary, 0px) - var(--beam-height, 0px))' }}
+          style={{ maxHeight: 'calc(100vh - var(--profile-bar-boundary, 64px) - var(--light-beam-boundary, 120px) - var(--beam-height, 68px))' }}
         >
           <div
             className="absolute inset-0 rounded-2xl pointer-events-none"
@@ -107,7 +116,7 @@ export default function HeartversePopup({ isOpen, onClose, title, children, icon
             {headerContent && <div className="header-content">{headerContent}</div>}
           </h2>
           
-          <div className="relative flex-1 min-h-0">
+          <div className="relative flex-1 min-h-0 overflow-y-auto" data-scrollable>
             {children}
           </div>
         </div>

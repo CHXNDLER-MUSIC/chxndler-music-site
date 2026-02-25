@@ -2972,6 +2972,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
             style={{
               width: 'min(92vw, 550px)',
               height: '50vh',
+              maxHeight: 'calc(100vh - 80px - var(--light-beam-boundary))',
               padding: '10px 14px 14px 14px',
               borderRadius: 18,
               background: 'rgba(0,0,0,0.6)',
@@ -4860,7 +4861,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                 return (
                                   <div
                                     key={element}
-                                    className="text-center cursor-pointer group w-28"
+                                    className="text-center cursor-pointer group w-24"
                                     onMouseEnter={() => {
                                       try { sfx.play('change-channel', 0.5); } catch {}
                                     }}
@@ -4875,7 +4876,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                                     }}
                                   >
                                     <div
-                                      className={`w-full h-28 rounded-lg relative overflow-hidden transition-all duration-300 group-hover:scale-105`}
+                                      className={`w-full h-24 rounded-lg relative overflow-hidden transition-all duration-300 group-hover:scale-105`}
                                     >
                                       <img
                                         src={`/elements/${element}.webp`}

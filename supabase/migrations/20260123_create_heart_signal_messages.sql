@@ -9,14 +9,27 @@ create table if not exists public.heart_signal_messages (
   -- who sent it
   user_id uuid not null references auth.users(id) on delete cascade,
 
-  -- message payload
-  content text not null,
+  -- sender display name
+  username text not null default 'ALIEN',
 
-  -- optional grouping (room/thread). Keep nullable if you’re not using rooms yet.
+  -- message payload
+  message text not null,
+
+  -- system message flag (join/leave notifications)
+  is_system boolean not null default false,
+
+  -- optional grouping (room/thread). Keep nullable if you're not using rooms yet.
   room_id text null,
 
   -- client-generated id for idempotency (prevents duplicates if client retries)
-  client_nonce uuid null
+  client_nonce uuid null,
+
+  -- reaction counts (denormalized for fast reads)
+  heart_count integer not null default 0,
+  water_count integer not null default 0,
+  lightning_count integer not null default 0,
+  darkness_count integer not null default 0,
+  alien_count integer not null default 0
 );
 
 -- 2) Add missing columns / defaults if the table already existed (safe-ish alterations)
@@ -31,7 +44,7 @@ alter table public.heart_signal_messages
   alter column user_id set not null;
 
 alter table public.heart_signal_messages
-  alter column content set not null;
+  alter column message set not null;
 
 -- 3) Idempotency: if you use client_nonce, enforce uniqueness when present
 create unique index if not exists uq_heart_signal_messages_client_nonce
@@ -48,7 +61,7 @@ on public.heart_signal_messages (room_id, created_at desc);
 create index if not exists idx_heart_signal_messages_user_created_at
 on public.heart_signal_messages (user_id, created_at desc);
 
--- 4) RLS (this is a VERY common reason your /api route throws 500 if you don’t handle errors cleanly)
+-- 4) RLS
 alter table public.heart_signal_messages enable row level security;
 
 -- Read: allow any authenticated user to read messages (simple mode)
@@ -82,4 +95,3 @@ on public.heart_signal_messages
 for delete
 to authenticated
 using (auth.uid() = user_id);
-

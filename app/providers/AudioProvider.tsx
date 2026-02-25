@@ -1346,25 +1346,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       a.removeEventListener("pause", onPauseDebug);
       a.removeEventListener("ended", onEndedDebug);
       try { a.pause(); } catch {}
-      try { document.body.removeChild(a); } catch {}
-      audioRef.current = null;
-    };
-    return () => {
-      a.removeEventListener("timeupdate", onTime);
-      a.removeEventListener("durationchange", onDur);
-      a.removeEventListener("loadedmetadata", onDur);
-      a.removeEventListener("play", onPlay);
-      a.removeEventListener("pause", onPause);
-      a.removeEventListener("volumechange", onVol);
-      a.removeEventListener("loadstart", onLoadStart);
-      a.removeEventListener("canplaythrough", onLoadEnd);
-      a.removeEventListener("ended", onEnded);
-      try {
-        a.pause();
-      } catch {}
-      try {
-        if (a.parentElement) a.parentElement.removeChild(a);
-      } catch {}
+      try { if (a.parentElement) a.parentElement.removeChild(a); } catch {}
       audioRef.current = null;
     };
   }, []);
@@ -1702,17 +1684,26 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const a = audioRef.current;
       if (!a) return;
 
-      if (process.env.NODE_ENV !== "production") console.log('🎵 togglePlayPause called - current playing state:', state.playing);
-      if (process.env.NODE_ENV !== "production") console.log('🎵 Audio element src:', a.src);
-      if (process.env.NODE_ENV !== "production") console.log('🎵 State src:', state.src);
-      if (process.env.NODE_ENV !== "production") console.log('🎵 Current track:', state.currentTrack?.id);
-      if (process.env.NODE_ENV !== "production") console.log('🎵 Audio readyState:', a.readyState);
+      // Use the browser's actual audio state (a.paused) as the source of truth
+      // instead of state.playing which can be stale in useMemo closures.
+      const isActuallyPlaying = !a.paused;
 
-      if (state.playing) {
+      if (process.env.NODE_ENV !== "production") console.log('🎵 togglePlayPause called - state.playing:', state.playing, 'a.paused:', a.paused, 'isActuallyPlaying:', isActuallyPlaying);
+
+      if (isActuallyPlaying || state.playing) {
         if (process.env.NODE_ENV !== "production") console.log('🎵 Pausing audio');
         // Update state immediately to provide instant UI feedback
         setState(s => ({ ...s, playing: false }));
         try { a.pause(); } catch {}
+        // Also stop any ambient/intro audio that might be playing separately
+        try {
+          const ambient = document.querySelector<HTMLAudioElement>('audio[data-ambient="1"]');
+          if (ambient && !ambient.paused) { ambient.pause(); }
+        } catch {}
+        try {
+          const intro = document.querySelector<HTMLAudioElement>('audio[data-intro="1"]');
+          if (intro && !intro.paused) { intro.pause(); }
+        } catch {}
       } else {
         // Check if there's a current track that should be playing
         if (state.currentTrack) {

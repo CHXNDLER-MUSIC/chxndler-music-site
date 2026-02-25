@@ -6,6 +6,7 @@ import { supabaseClient } from '@/lib/supabaseClient';
 import { createAnonClient } from '@/lib/supabase-anon';
 import ProfileModal from '@/components/chat/ProfileModal';
 import { useProfile } from '@/contexts/ProfileContext';
+import { sfx } from '@/lib/sfx';
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
 
 const getAnonymousName = (): string => {
@@ -145,19 +146,15 @@ export default function HeartSignalLive({ isOpen = true, onClose }: { isOpen?: b
     setTogglingReactions(prev => new Set(prev).add(toggleKey));
 
     try {
-      const audioMap: Record<EmojiType, string> = {
-        heart: '/audio/heart-pulse.MP3',
-        water: '/audio/water-ripple.MP3',
-        lightning: '/audio/lightning-spark.MP3',
-        darkness: '/audio/shadow-glow.MP3',
-        alien: '/audio/alien-wave.MP3',
+      const sfxMap: Record<EmojiType, string> = {
+        heart: 'heart-pulse',
+        water: 'water-ripple',
+        lightning: 'lightning-spark',
+        darkness: 'shadow-glow',
+        alien: 'alien-wave',
       };
-      const src = audioMap[emoji];
-      if (src) {
-        const audio = new Audio(src);
-        audio.volume = 0.5;
-        audio.play().catch(() => {});
-      }
+      sfx.setEnabled(true);
+      sfx.play(sfxMap[emoji], 0.5);
     } catch {}
 
     const wasReacted = userReactions.get(messageId)?.has(emoji) || false;

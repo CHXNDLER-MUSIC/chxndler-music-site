@@ -103,7 +103,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
               minWidth: '320px',
               flex: 1,
               minHeight: 0,
-              padding: '20px 20px 14px 20px',
+              padding: '20px 14px 14px 14px',
               borderRadius: 18,
               background: 'rgba(0,0,0,0.8)',
               border: '1px solid rgba(252,84,175,0.6)',
@@ -191,7 +191,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
             
             {/* Tabs */}
             <div className="flex justify-center mb-1" style={{ marginTop: '-4px' }}>
-              <div className="flex rounded-lg p-1 gap-2">
+              <div className="flex rounded-lg p-1 gap-1">
                 <button
                   onClick={() => {
                     sfx.play('click', 0.7);
@@ -200,7 +200,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                   onMouseEnter={() => {
                     try { sfx.play('hover', 0.3); } catch {}
                   }}
-                  className={`px-4 py-2 rounded-md text-base font-semibold transition-all duration-200 border ${
+                  className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all duration-200 border ${
                     activeTab === "WE BELIEVE"
                       ? "bg-pink-500/30 text-pink-200 border-pink-400/70"
                       : "bg-black/20 text-white/70 hover:text-white border-white/30 hover:border-white/50"
@@ -220,7 +220,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                   onMouseEnter={() => {
                     try { sfx.play('hover', 0.3); } catch {}
                   }}
-                  className={`px-4 py-2 rounded-md text-base font-semibold transition-all duration-200 border ${
+                  className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all duration-200 border ${
                     activeTab === "CHXNDLER"
                       ? "bg-pink-500/30 text-pink-200 border-pink-400/70"
                       : "bg-black/20 text-white/70 hover:text-white border-white/30 hover:border-white/50"
@@ -240,7 +240,7 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
                   onMouseEnter={() => {
                     try { sfx.play('hover', 0.3); } catch {}
                   }}
-                  className={`px-4 py-2 rounded-md text-base font-semibold transition-all duration-200 border ${
+                  className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all duration-200 border ${
                     activeTab === "ELEMENTS"
                       ? "bg-pink-500/30 text-pink-200 border-pink-400/70"
                       : "bg-black/20 text-white/70 hover:text-white border-white/30 hover:border-white/50"
@@ -313,19 +313,19 @@ export default function ChxndlerButton({ open: externalOpen, onOpenChange, onOpe
             {activeTab === "ELEMENTS" && (
               <>
                 {/* Elements Content */}
-                <div 
-                  className="text-center mt-2"
-                  style={{ 
-                    fontSize: '16px', 
-                    color: '#FFFFFF !important', 
-                    textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)', 
-                    lineHeight: '1.6'
+                <div
+                  className="text-center mt-0"
+                  style={{
+                    fontSize: '16px',
+                    color: '#FFFFFF !important',
+                    textShadow: '0 0 8px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,0.7)',
+                    lineHeight: '1.4'
                   }}
                 >
                   The Elements shape the Heartverse. Each one carries its own energy, guiding souls on their journey.
                 </div>
-                <div 
-                  className="flex justify-center mt-1"
+                <div
+                  className="flex justify-center mt-0.5"
                   style={{ 
                     fontSize: '16px', 
                     color: '#FFFFFF !important', 

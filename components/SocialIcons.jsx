@@ -110,9 +110,9 @@ export default function SocialIcons({ LINKS, POS, trackLinks }) {
   };
 
   const items = [
-    { key: 'instagram', title: 'Instagram', href: LINKS.instagram, color: colorFor('instagram'), icon: <Icon.Instagram size={iconSize} />, onClick: () => handleSocialClick('instagram') },
-    { key: 'tiktok',    title: 'TikTok',    href: LINKS.tiktok,    color: colorFor('tiktok'),    icon: <Icon.TikTok size={tiktokIconSize} />, onClick: () => handleSocialClick('tiktok') },
-    { key: 'youtube',   title: 'YouTube',   href: LINKS.youtube,   color: colorFor('youtube'),   icon: <Icon.YouTube size={youtubeIconSize} />, onClick: () => handleSocialClick('youtube') },
+    { key: 'instagram', title: 'Instagram', href: LINKS.instagram, color: colorFor('instagram'), icon: <Icon.Instagram size={iconSize} /> },
+    { key: 'tiktok',    title: 'TikTok',    href: LINKS.tiktok,    color: colorFor('tiktok'),    icon: <Icon.TikTok size={tiktokIconSize} /> },
+    { key: 'youtube',   title: 'YouTube',   href: LINKS.youtube,   color: colorFor('youtube'),   icon: <Icon.YouTube size={youtubeIconSize} /> },
   ];
 
   return (
@@ -143,7 +143,6 @@ export default function SocialIcons({ LINKS, POS, trackLinks }) {
               onClickFX={playClick}
               onHoverFX={playHover}
               dataId={it.key === 'instagram' ? 'ig' : it.key === 'tiktok' ? 'tt' : it.key === 'youtube' ? 'yt' : undefined}
-              onClick={it.onClick}
             >
               {it.icon}
             </IconButtonShell>

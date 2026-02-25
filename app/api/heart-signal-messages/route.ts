@@ -20,6 +20,7 @@ export async function POST(req: Request) {
       );
     }
 
+    // Use user-scoped client only for authentication check
     const cookieStore = await cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -55,7 +56,10 @@ export async function POST(req: Request) {
       userResult.user.user_metadata?.full_name ||
       "CHXNDLER";
 
-    const { data, error } = await supabase
+    // Use admin client for insert to bypass RLS (auth already verified above)
+    const admin = getSupabaseAdmin();
+
+    const { data, error } = await admin
       .from("heart_signal_messages")
       .insert({
         user_id: userId,

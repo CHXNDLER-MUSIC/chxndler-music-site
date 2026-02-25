@@ -110,7 +110,7 @@ export default function MessageInput({ onSendMessage, disabled, placeholder = "S
 
         {/* Message Input */}
         <div className="flex items-center space-x-2" style={{ alignItems: 'center' }}>
-          <div className="flex-1 relative">
+          <div className="flex-1 relative" style={{ minWidth: 0, overflow: 'hidden' }}>
             <textarea
               ref={inputRef}
               value={message}

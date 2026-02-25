@@ -1792,7 +1792,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
       title="HeartCoins"
       onTitleClick={() => setShowHeartCoinDescription(!showHeartCoinDescription)}
     >
-      <div className="relative flex flex-col flex-1 h-full overflow-hidden">
+      <div className="relative flex flex-col flex-1 h-full overflow-y-auto" data-scrollable>
         {/* Balance Display */}
         <div className="flex items-center mb-3">
           <img
@@ -1942,7 +1942,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
 
             {/* Quest Content */}
             {activeEarnTab === 'DAILY QUESTS' ? (
-              <div className="space-y-3 max-h-[50vh] overflow-y-auto">
+              <div className="space-y-3 max-h-[50vh] overflow-y-auto" data-scrollable="true">
                 {dbQuestsLoading ? (
                   <div className="text-center py-8">
                     <div className="w-8 h-8 border-2 border-[#4ECDC4] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
@@ -2092,7 +2092,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                 )}
               </div>
             ) : (
-              <div className="space-y-3 max-h-[50vh] overflow-y-auto">
+              <div className="space-y-3 max-h-[50vh] overflow-y-auto" data-scrollable="true">
                 {dbQuestsLoading ? (
                   <div className="text-center py-8">
                     <div className="w-8 h-8 border-2 border-[#F2EF1D] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
@@ -2761,74 +2761,97 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                             </div>
                           )}
 
-                          {/* Add to Collection Button */}
-                          <button
-                            onClick={() => {
-                              // Determine variant selection:
-                              // - Single-variant items: auto-select the single variant
-                              // - Multi-variant items: require explicit user selection
-                              const variantOptions = normalizeVariantOptions(item.variant_options, item.image_url);
-                              let selectedVar: NormalizedVariantOption | null = null;
-
-                              if (variantOptions.length === 1) {
-                                // Single-variant: auto-select
-                                selectedVar = variantOptions[0];
-                              } else if (variantOptions.length > 1) {
-                                // Multi-variant: use explicit selection (may be null)
-                                selectedVar = selectedVariants[item.id] || null;
-                              }
-
-                              const displayImage = getItemDisplayImage(item);
-
-                              const itemSlugOrName2 = ((item as any).slug || item.name || '').toLowerCase();
-                              const isBeanie2 = itemSlugOrName2.includes('beanie');
-                              const isTankTop2 = itemSlugOrName2.replace(/[\s_-]/g, '').includes('tanktop');
-                              const beanieColor2 = (selectedVar?.value || selectedVariants[item.id]?.value || 'pink').toLowerCase();
-
-                              const storeItem: StoreItem = {
-                                name: item.name,
-                                image: displayImage,
-                                image2: isBeanie2
-                                  ? `/store/beanie-back-${beanieColor2}.webp`
-                                  : isTankTop2 ? '/store/tank-top-back.webp'
-                                  : (item.image_url_2 || (item as any).secondary_image_url || undefined),
-                                stripeUrl: item.stripe_url || '',
-                                description: item.description || '',
-                                cost: item.price_usd || 0,
-                                heartCoin: item.price_heartcoins || 0,
-                                merch_item_id: item.id,
-                                min_tier: item.min_journey_tier || item.min_tier || null,
-                                // Include variant selection for purchase
-                                selected_variant: selectedVar ? {
-                                  type: selectedVar.type,
-                                  value: selectedVar.value,
-                                  label: selectedVar.label
-                                } : null,
-                                selected_color: selectedVar?.type === 'color' ? selectedVar.value : null
-                              };
-                              handleHeartCoinPurchaseConfirm(storeItem);
-                            }}
-                            onMouseEnter={() => {
-                              if (!modalLoading && profile && heartcoinBalance >= (item.price_heartcoins || 0)) {
+                          {/* Add to Collection / Login Button */}
+                          {!profile ? (
+                            <button
+                              onClick={() => {
+                                try { sfx.play('click', 0.5); } catch {}
+                                if (onOpenWelcomeHome) {
+                                  onClose();
+                                  setTimeout(() => {
+                                    onOpenWelcomeHome();
+                                  }, 150);
+                                }
+                              }}
+                              onMouseEnter={() => {
                                 try { sfx.play('hover', 0.3); } catch {}
+                              }}
+                              className="w-full py-2 px-4 rounded-lg font-bold text-xs transition-all duration-200 mt-2 bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,239,29,0.6)] cursor-pointer"
+                              style={{
+                                boxShadow: '0 0 15px rgba(242,239,29,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
+                              }}
+                            >
+                              Log in to earn HeartCoins
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                // Determine variant selection:
+                                // - Single-variant items: auto-select the single variant
+                                // - Multi-variant items: require explicit user selection
+                                const variantOptions = normalizeVariantOptions(item.variant_options, item.image_url);
+                                let selectedVar: NormalizedVariantOption | null = null;
+
+                                if (variantOptions.length === 1) {
+                                  // Single-variant: auto-select
+                                  selectedVar = variantOptions[0];
+                                } else if (variantOptions.length > 1) {
+                                  // Multi-variant: use explicit selection (may be null)
+                                  selectedVar = selectedVariants[item.id] || null;
+                                }
+
+                                const displayImage = getItemDisplayImage(item);
+
+                                const itemSlugOrName2 = ((item as any).slug || item.name || '').toLowerCase();
+                                const isBeanie2 = itemSlugOrName2.includes('beanie');
+                                const isTankTop2 = itemSlugOrName2.replace(/[\s_-]/g, '').includes('tanktop');
+                                const beanieColor2 = (selectedVar?.value || selectedVariants[item.id]?.value || 'pink').toLowerCase();
+
+                                const storeItem: StoreItem = {
+                                  name: item.name,
+                                  image: displayImage,
+                                  image2: isBeanie2
+                                    ? `/store/beanie-back-${beanieColor2}.webp`
+                                    : isTankTop2 ? '/store/tank-top-back.webp'
+                                    : (item.image_url_2 || (item as any).secondary_image_url || undefined),
+                                  stripeUrl: item.stripe_url || '',
+                                  description: item.description || '',
+                                  cost: item.price_usd || 0,
+                                  heartCoin: item.price_heartcoins || 0,
+                                  merch_item_id: item.id,
+                                  min_tier: item.min_journey_tier || item.min_tier || null,
+                                  // Include variant selection for purchase
+                                  selected_variant: selectedVar ? {
+                                    type: selectedVar.type,
+                                    value: selectedVar.value,
+                                    label: selectedVar.label
+                                  } : null,
+                                  selected_color: selectedVar?.type === 'color' ? selectedVar.value : null
+                                };
+                                handleHeartCoinPurchaseConfirm(storeItem);
+                              }}
+                              onMouseEnter={() => {
+                                if (!modalLoading && heartcoinBalance >= (item.price_heartcoins || 0)) {
+                                  try { sfx.play('hover', 0.3); } catch {}
+                                }
+                              }}
+                              disabled={modalLoading || heartcoinBalance < (item.price_heartcoins || 0)}
+                              className={`w-full py-2 px-4 rounded-lg font-bold text-xs transition-all duration-200 mt-2 ${
+                                modalLoading || heartcoinBalance < (item.price_heartcoins || 0)
+                                  ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
+                                  : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,239,29,0.6)]'
+                              }`}
+                              style={
+                                modalLoading || heartcoinBalance < (item.price_heartcoins || 0)
+                                  ? undefined
+                                  : {
+                                      boxShadow: '0 0 15px rgba(242,239,29,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
+                                    }
                               }
-                            }}
-                            disabled={modalLoading || !profile || heartcoinBalance < (item.price_heartcoins || 0)}
-                            className={`w-full py-2 px-4 rounded-lg font-bold text-xs transition-all duration-200 mt-2 ${
-                              modalLoading || !profile || heartcoinBalance < (item.price_heartcoins || 0)
-                                ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
-                                : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,239,29,0.6)]'
-                            }`}
-                            style={
-                              modalLoading || !profile || heartcoinBalance < (item.price_heartcoins || 0)
-                                ? undefined
-                                : {
-                                    boxShadow: '0 0 15px rgba(242,239,29,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
-                                  }
-                            }
-                          >
-                            {modalLoading ? 'Purchasing...' : 'Add to Collection'}
-                          </button>
+                            >
+                              {modalLoading ? 'Purchasing...' : 'Add to Collection'}
+                            </button>
+                          )}
                         </>
                       );
                       })()}
@@ -3345,42 +3368,75 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                           </span>
                         </div>
                       )}
-                      <button
-                        onClick={() => {
-                          handleHeartCoinPurchaseConfirm(enlargedItem);
-                          setEnlargedItem(null);
-                          setEnlargedImageIndex(0);
-                        }}
-                        onMouseEnter={() => {
-                          if (!modalLoading && profile && heartcoinBalance >= (enlargedItem.heartCoin || 0)) {
-                            try { sfx.play('hover', 0.3); } catch {}
-                          }
-                        }}
-                        disabled={modalLoading || !profile || heartcoinBalance < (enlargedItem.heartCoin || 0)}
-                        className={`flex items-center gap-2 py-3 px-6 rounded-lg font-bold text-sm transition-all duration-200 ${
-                          modalLoading || !profile || heartcoinBalance < (enlargedItem.heartCoin || 0)
-                            ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
-                            : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,239,29,0.6)]'
-                        }`}
-                        style={
-                          modalLoading || !profile || heartcoinBalance < (enlargedItem.heartCoin || 0)
-                            ? undefined
-                            : {
-                                boxShadow: '0 0 15px rgba(242,239,29,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
-                              }
-                        }
-                      >
-                        <span>PAY WITH</span>
-                        <img
-                          src="/elements/heart-coin.webp"
-                          alt="Heart Coin"
-                          className="w-5 h-5 object-contain"
-                          style={{
-                            filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
+                      {!profile ? (
+                        <button
+                          onClick={() => {
+                            try { sfx.play('click', 0.5); } catch {}
+                            setEnlargedItem(null);
+                            setEnlargedImageIndex(0);
+                            if (onOpenWelcomeHome) {
+                              onClose();
+                              setTimeout(() => {
+                                onOpenWelcomeHome();
+                              }, 150);
+                            }
                           }}
-                        />
-                        <span>{enlargedItem.heartCoin || 0}</span>
-                      </button>
+                          onMouseEnter={() => {
+                            try { sfx.play('hover', 0.3); } catch {}
+                          }}
+                          className="flex items-center gap-2 py-3 px-6 rounded-lg font-bold text-sm transition-all duration-200 bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,239,29,0.6)] cursor-pointer"
+                          style={{
+                            boxShadow: '0 0 15px rgba(242,239,29,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
+                          }}
+                        >
+                          <img
+                            src="/elements/heart-coin.webp"
+                            alt="Heart Coin"
+                            className="w-5 h-5 object-contain"
+                            style={{
+                              filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
+                            }}
+                          />
+                          <span>Log in to earn HeartCoins</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            handleHeartCoinPurchaseConfirm(enlargedItem);
+                            setEnlargedItem(null);
+                            setEnlargedImageIndex(0);
+                          }}
+                          onMouseEnter={() => {
+                            if (!modalLoading && heartcoinBalance >= (enlargedItem.heartCoin || 0)) {
+                              try { sfx.play('hover', 0.3); } catch {}
+                            }
+                          }}
+                          disabled={modalLoading || heartcoinBalance < (enlargedItem.heartCoin || 0)}
+                          className={`flex items-center gap-2 py-3 px-6 rounded-lg font-bold text-sm transition-all duration-200 ${
+                            modalLoading || heartcoinBalance < (enlargedItem.heartCoin || 0)
+                              ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
+                              : 'bg-gradient-to-r from-[#F2EF1D] to-[#FFC700] text-black hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,239,29,0.6)]'
+                          }`}
+                          style={
+                            modalLoading || heartcoinBalance < (enlargedItem.heartCoin || 0)
+                              ? undefined
+                              : {
+                                  boxShadow: '0 0 15px rgba(242,239,29,0.4), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 8px rgba(0,0,0,0.2)'
+                                }
+                          }
+                        >
+                          <span>PAY WITH</span>
+                          <img
+                            src="/elements/heart-coin.webp"
+                            alt="Heart Coin"
+                            className="w-5 h-5 object-contain"
+                            style={{
+                              filter: 'brightness(1.2) saturate(1.5) drop-shadow(0 0 4px #FC54AF)'
+                            }}
+                          />
+                          <span>{enlargedItem.heartCoin || 0}</span>
+                        </button>
+                      )}
                     </div>
                   );
                 })()}

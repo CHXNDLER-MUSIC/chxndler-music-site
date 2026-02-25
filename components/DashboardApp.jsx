@@ -1185,6 +1185,8 @@ export default function DashboardApp({ initialSlug, todaysPrompt } = {}) {
       if (!skipYellowClose) {
         setUiCloseSignal(prev => prev + 1);
       }
+      // Close HeartCoin modal if open (e.g., when switching to yellow/pink display)
+      window.dispatchEvent(new CustomEvent('closeHeartCoinModal'));
     };
     
     if (color === 'off') {
