@@ -29,6 +29,7 @@ export const YOUTUBE_SKIES: Record<string, string> = {
   'i-might-fall-in-love-with-you': 'https://youtu.be/Udds92-CRyQ',
   'i-might-fall-in-love-with-you-acoustic': 'https://youtu.be/Udds92-CRyQ',
   'kid-forever': 'https://youtu.be/pVKgCGjKMN8',
+  'mr-brightside': 'https://youtu.be/vQo8TaVJuec',
   'little-black-heart': 'https://youtu.be/eDS0mj9IsQ0',
   'little-black-heart-acoustic': 'https://youtu.be/eDS0mj9IsQ0',
   'ocean-girl': 'https://youtu.be/6baiJYNeXEM',

@@ -16,7 +16,7 @@ const VIDEOS: Video[] = [
   // Releasing weekly on Wednesdays at 7 PM starting 2/18/26.
   {
     id: "hv-000",
-    title: "First Contact — Welcome to the Heartverse",
+    title: "Heartverse 00: Welcome to the Heartverse",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     releaseDate: "2026-02-12T06:00:00",
@@ -24,7 +24,7 @@ const VIDEOS: Video[] = [
   },
   {
     id: "hv-001",
-    title: "Episode 1 — Searching for Our First Apartment in NYC",
+    title: "Heartverse 01: Searching for a Place to Call Home in NYC",
     youtubeUrl: "https://youtube.com/shorts/9qEktORb8EY?feature=share",
     type: "heartverse",
     releaseDate: "2026-02-18T19:00:00",
@@ -32,49 +32,49 @@ const VIDEOS: Video[] = [
   },
   {
     id: "hv-002",
-    title: "Episode 2 — Moving Day",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    title: "Heartverse 02: Moving Day",
+    youtubeUrl: "https://youtube.com/shorts/o0cZJ_vLn-s",
     type: "heartverse",
     releaseDate: "2026-02-25T19:00:00",
   },
   {
     id: "hv-003",
-    title: "Episode 3 — Welcome To New York",
+    title: "Heartverse 03: Welcome To New York",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     releaseDate: "2026-03-04T19:00:00",
   },
   {
     id: "hv-004",
-    title: "Episode 4 — Fight Club",
+    title: "Heartverse 04: Fight Club",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     releaseDate: "2026-03-11T19:00:00",
   },
   {
     id: "hv-005",
-    title: "Episode 5 — I Got Cheated On Last Night",
+    title: "Heartverse 05: I Got Cheated On Last Night",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     releaseDate: "2026-03-18T19:00:00",
   },
   {
     id: "hv-006",
-    title: "Episode 6 — First Gig",
+    title: "Heartverse 06: First Gig",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     releaseDate: "2026-03-25T19:00:00",
   },
   {
     id: "hv-007",
-    title: "Episode 7 — Our First Tattoos",
+    title: "Heartverse 07: Our First Tattoos",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     releaseDate: "2026-04-01T19:00:00",
   },
   {
     id: "hv-008",
-    title: "Episode 8 — The Dirty Thirties",
+    title: "Heartverse 08: The Dirty Thirties",
     youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     type: "heartverse",
     releaseDate: "2026-04-08T19:00:00",
@@ -96,6 +96,7 @@ const VIDEOS: Video[] = [
     youtubeUrl: "https://youtu.be/MWyv2bfps9w",
     type: "acoustic",
     releaseDate: "2026-02-24T12:00:00",
+    postDescription: "Setlist\n00:00 WE'RE JUST FRIENDS\n05:15 BE MY BEE\n10:19 Love Drunk — Audience Request\n13:51 BABY\n18:55 FEELING THIS\n22:21 AMERICAN DREAM",
   },
   {
     id: "lsp-003",
@@ -167,7 +168,7 @@ const VIDEOS: Video[] = [
   {
     id: "lsf-002",
     title: "Electric Signal 02",
-    youtubeUrl: "https://youtu.be/UbZ1-hzfuTM",
+    youtubeUrl: "https://youtu.be/rsLzbiOIPrM",
     type: "electric",
     releaseDate: "2026-02-28T12:00:00",
     postDescription: "Setlist\n00:00 FEELING THIS\n02:26 PARIS\n06:16 ALWAYS ON MY MIND\n09:32 ALONE\n13:16 CHXNDLER Cards\n14:00 WE'RE JUST FRIENDS\n17:50 MR. BRIGHTSIDE\n21:19 OCEAN GIRL",
@@ -715,7 +716,7 @@ export default function EpisodesLibrary({ isChatOpen = false }: { isChatOpen?: b
                         }`}
                         style={{
                           borderColor: borderDefault,
-                          boxShadow: isNewest ? `0 0 8px ${accentColor}40, inset 0 0 4px ${accentColor}15` : undefined,
+                          boxShadow: isNewest ? `0 0 14px ${accentColor}50, 0 0 28px ${accentColor}20, inset 0 0 6px ${accentColor}15` : undefined,
                         }}
                         onMouseOver={!locked ? (e) => { (e.currentTarget as HTMLElement).style.borderColor = `${accentColor}4D`; } : undefined}
                         onMouseOut={!locked ? (e) => { (e.currentTarget as HTMLElement).style.borderColor = borderDefault; } : undefined}

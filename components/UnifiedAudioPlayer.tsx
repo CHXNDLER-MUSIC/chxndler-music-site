@@ -37,7 +37,7 @@ const ELEMENT_MAP: Record<string, string> = {
 const TIME_LOCKED_TRACKS: Record<string, { unlockDate: string; earlyAccessTiers: Tier[] }> = {
   "mr-brightside": {
     unlockDate: "2026-02-27T12:00:00-05:00", // Feb 27, 2026 12PM EST
-    earlyAccessTiers: ["dreamer", "lover", "guide"],
+    earlyAccessTiers: ["guide"],
   },
 };
 
@@ -118,20 +118,26 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
   // Progress bar reference for click handling
   const progressBarRef = useRef<HTMLDivElement>(null);
   
-  // Get songs from Supabase
-  const { songs: supabaseSongs, loading } = useSongs();
+  // Get songs from Supabase (includes unreleased for time-lock display)
+  const { songs: supabaseSongs, allSongs, loading } = useSongs();
 
   // Get user profile for tier-based time-lock checks
   const { profile } = useProfile();
   
-  // Filter released songs and combine with asset data - memoized for performance
-  const availableSongs = useMemo(() => 
-    supabaseSongs
-      .filter(song => song.is_released)
+  // Filter released songs + time-locked unreleased songs, combine with asset data
+  const availableSongs = useMemo(() => {
+    // Include released songs + unreleased songs that have a time-lock config
+    const timeLocked = allSongs.filter(song => !song.is_released && TIME_LOCKED_TRACKS[song.slug]);
+    const eligible = [
+      ...supabaseSongs.filter(song => song.is_released),
+      ...timeLocked,
+    ];
+
+    return eligible
       .map(song => {
         const asset = AUDIO_ASSETS_BY_SLUG[song.slug];
         if (!asset) return null;
-        
+
         return {
           id: song.slug,
           title: song.title,
@@ -139,13 +145,12 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
           src: asset.src,
           cover: asset.cover,
           element: SONG_ELEMENT_MAPPING[song.slug] || 'heart',
-          // Add placeholder planet info for compatibility
           planet: { radius: 1, color: "#38B6FF", orbitRadius: 3, orbitSpeed: 0.5, tilt: 0.2 }
         };
       })
-      .filter(Boolean), 
-    [supabaseSongs]
-  );
+      .filter(Boolean)
+      .sort((a, b) => a.title.localeCompare(b.title));
+  }, [supabaseSongs, allSongs]);
   
   // Calculate progress (0-1)
   // Use live element timing while playing to avoid lag from throttled events
@@ -196,7 +201,7 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
         }
       } catch {}
     }
-  }, [audioManager]);
+  }, [audioManager, profile?.tier]);
 
   // Handle play/pause button
   const handleTogglePlay = useCallback(() => {
@@ -293,9 +298,9 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
             />
           </div>
 
-          {/* Player Controls with Integrated Progress Bar */}
-          <div className="flex items-center gap-4 mt-2">
-            
+          {/* Player Controls */}
+          <div className="flex items-center justify-center gap-4 mt-2">
+
             {/* Play/Pause Button */}
             <button
               onClick={handleTogglePlay}
@@ -314,14 +319,19 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
                 <div className="w-0 h-0 border-t-[10px] border-t-transparent border-l-[14px] border-l-white border-b-[10px] border-b-transparent ml-1"></div>
               )}
             </button>
+          </div>
 
-            {/* Single Unified Progress Bar */}
-            <div className="flex-1 relative">
+          {/* Progress Bar - Below controls */}
+          <div className="flex items-center gap-3 mt-1">
+            <div className="text-[#9EEBFF]/70 text-xs font-mono min-w-[3ch]">
+              {formatTime(liveTime)}
+            </div>
+            <div className="flex-1 relative group">
               <div
                 ref={progressBarRef}
                 onClick={handleProgressClick}
                 onPointerDown={handleProgressPointerDown}
-                className="relative w-full h-2 bg-white/20 rounded-full cursor-pointer overflow-visible hover:h-2.5 group"
+                className="relative w-full h-2 bg-white/20 rounded-full cursor-pointer overflow-hidden hover:h-2.5"
                 title="Click or drag to seek"
               >
                 {/* Progress Fill with Gradient */}
@@ -336,27 +346,25 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
                     `
                   }}
                 />
-
-                {/* Circular Handle - Only visible on hover or when dragging */}
-                <div
-                  className="absolute top-1/2 w-4 h-4 rounded-full border-2 border-white shadow-lg opacity-0 group-hover:opacity-100"
-                  style={{
-                    left: `${Math.max(0, Math.min(100, progress * 100))}%`,
-                    transform: 'translateX(-50%) translateY(-50%)',
-                    background: `radial-gradient(circle, ${BRAND_COLORS.pink}, ${BRAND_COLORS.blue})`,
-                    boxShadow: `
-                      0 0 10px ${BRAND_COLORS.pink}80,
-                      0 0 18px ${BRAND_COLORS.blue}60,
-                      0 2px 6px rgba(0,0,0,0.3)
-                    `
-                  }}
-                />
               </div>
-            </div>
 
-            {/* Time Display */}
-            <div className="text-[#19E3FF] text-sm font-mono bg-[#19E3FF]/10 px-3 py-1 rounded-md border border-[#19E3FF]/30">
-              {formatTime(currentTime)} / {formatTime(duration)}
+              {/* Circular Handle - Outside track so it's not clipped, only visible on hover */}
+              <div
+                className="absolute top-1/2 w-4 h-4 rounded-full border-2 border-white shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none"
+                style={{
+                  left: `${Math.max(0, Math.min(100, progress * 100))}%`,
+                  transform: 'translateX(-50%) translateY(-50%)',
+                  background: `radial-gradient(circle, ${BRAND_COLORS.pink}, ${BRAND_COLORS.blue})`,
+                  boxShadow: `
+                    0 0 10px ${BRAND_COLORS.pink}80,
+                    0 0 18px ${BRAND_COLORS.blue}60,
+                    0 2px 6px rgba(0,0,0,0.3)
+                  `
+                }}
+              />
+            </div>
+            <div className="text-[#9EEBFF]/70 text-xs font-mono min-w-[3ch]">
+              {formatTime(liveDuration)}
             </div>
           </div>
 

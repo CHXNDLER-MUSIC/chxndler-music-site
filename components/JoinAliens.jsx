@@ -278,7 +278,8 @@ export default function JoinAliens({ visible = true } = {}) {
                 borderRadius: '50%',
                 background: '#FC54AF',
                 boxShadow: '0 0 8px #FC54AF, 0 0 16px #FC54AF',
-                animation: 'signalBlink 1.2s ease-in-out infinite'
+                animation: showTwitchEmbed ? 'signalBlink 1.2s ease-in-out infinite' : 'none',
+                opacity: showTwitchEmbed ? 1 : 0.5
               }}
             />
             <h1
@@ -437,8 +438,8 @@ export default function JoinAliens({ visible = true } = {}) {
             gap: '6px',
           }}>
             {(() => {
-              const acoustic = { label: 'MONDAY \u2022 7:00 PM EST \u2022 ACOUSTIC SESSION', kind: 'acoustic' };
-              const electric = { label: 'THURSDAY \u2022 7:00 PM EST \u2022 ELECTRIC SET', kind: 'electric' };
+              const acoustic = { label: 'MONDAY \u2022 7:00 PM EST \u2022 ACOUSTIC SIGNAL', kind: 'acoustic' };
+              const electric = { label: 'THURSDAY \u2022 7:00 PM EST \u2022 ELECTRIC SIGNAL', kind: 'electric' };
               const next = nextBroadcast?.kind === 'electric' ? electric : acoustic;
               const other = next === acoustic ? electric : acoustic;
               return [
@@ -447,7 +448,7 @@ export default function JoinAliens({ visible = true } = {}) {
               ].map(({ label, isNext }) => (
                 <div key={label} className={isNext ? 'next-broadcast-pulse' : ''} style={{
                   fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
-                  fontSize: 'clamp(9px, 2.5vw, 12px)',
+                  fontSize: 'clamp(9px, 2.4vw, 12px)',
                   fontWeight: isNext ? '700' : '500',
                   letterSpacing: '0.2em',
                   color: isNext ? '#00FFFF' : 'rgba(252, 84, 175, 0.45)',

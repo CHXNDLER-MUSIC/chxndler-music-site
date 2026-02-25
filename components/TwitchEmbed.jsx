@@ -91,8 +91,8 @@ function getNextBroadcast(now = new Date()) {
 
   const label =
     kind === 'acoustic'
-      ? 'MONDAY \u2022 7:00 PM EST \u2022 ACOUSTIC SESSION'
-      : 'THURSDAY \u2022 7:00 PM EST \u2022 ELECTRIC SESSION';
+      ? 'MONDAY \u2022 7:00 PM EST \u2022 ACOUSTIC SIGNAL'
+      : 'THURSDAY \u2022 7:00 PM EST \u2022 ELECTRIC SIGNAL';
 
   return { kind, start: target, label };
 }

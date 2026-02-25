@@ -29,6 +29,13 @@ const SEEN_BADGES_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const BATCH_WINDOW_MS = 2000; // 2 second window to group rapid unlocks
 
 // ============================================================================
+// Init Grace Period - Block all celebrations for N seconds after initialization
+// This is the primary defense against page-load celebrations caused by race
+// conditions between realtime events, suppression timing, and localStorage dedup.
+// ============================================================================
+const INIT_GRACE_PERIOD_MS = 5000; // 5 seconds after init completes
+
+// ============================================================================
 // Types
 // ============================================================================
 export interface BadgeCelebrationItem {
@@ -168,6 +175,8 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
   const pendingBadgesRef = useRef<Map<string, PendingBadge>>(new Map());
   // Unsubscribe function for suppression end listener
   const unsubscribeSuppressionRef = useRef<(() => void) | null>(null);
+  // Track when initialization completed - celebrations are blocked until grace period elapses
+  const initCompletedAtRef = useRef<number>(0);
 
   const pop = useCallback(() => {
     setQueue((prev) => prev.slice(1));
@@ -283,6 +292,22 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
                 subscriptionStart: subscriptionStartTimeRef.current
               });
               // Mark as seen to prevent future attempts
+              markBadgeAsSeen(newRow.badge_id, newRow.earned_at, seenBadgesRef.current);
+              return;
+            }
+
+            // GRACE PERIOD: Block ALL celebrations for a window after initialization.
+            // This is the primary defense against page-load celebrations caused by
+            // race conditions between the realtime event, suppression state, and
+            // the localStorage seen-badge write from checkAndAwardEligibleBadges.
+            const timeSinceInit = Date.now() - initCompletedAtRef.current;
+            if (initCompletedAtRef.current > 0 && timeSinceInit < INIT_GRACE_PERIOD_MS) {
+              debugCelebration("BADGE_CELEBRATION_SKIPPED", {
+                badgeId: newRow.badge_id,
+                reason: "init_grace_period",
+                timeSinceInitMs: timeSinceInit,
+                gracePeriodMs: INIT_GRACE_PERIOD_MS
+              });
               markBadgeAsSeen(newRow.badge_id, newRow.earned_at, seenBadgesRef.current);
               return;
             }
@@ -451,6 +476,10 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
 
       subscribedUserIdRef.current = userId;
       initializingRef.current = false;
+      initCompletedAtRef.current = Date.now();
+      debugCelebration("Initialization complete, grace period started", {
+        gracePeriodMs: INIT_GRACE_PERIOD_MS
+      });
     };
 
     initializeSeenBadges();
@@ -472,6 +501,7 @@ export function useBadgeCelebrations(userId: string | null): UseBadgeCelebration
       subscribedUserIdRef.current = null;
       initializingRef.current = false;
       subscriptionStartTimeRef.current = null;
+      initCompletedAtRef.current = 0;
     };
   }, [userId]);
 

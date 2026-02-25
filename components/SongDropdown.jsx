@@ -236,8 +236,9 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
     }
     if (e.key === "Enter") {
       e.preventDefault();
-      const id = displayItems[highlight]?.id;
-      if (id) { 
+      const item = displayItems[highlight];
+      const id = item?.id;
+      if (id && !item?.locked) {
         setActiveId(id);
         setOpen(false);
         // Audio is handled by parent component via onChange callback
@@ -322,105 +323,111 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
             zIndex: 100000
           }}
         >
-          {/* ── NEXT DROP countdown / OUT NOW banner ─────────── */}
-          {nextDrop && dropCountdown > 0 && (() => {
-            const ts = Math.floor(dropCountdown / 1000);
-            const dd = Math.floor(ts / 86400);
-            const hh = Math.floor((ts % 86400) / 3600);
-            const mm = Math.floor((ts % 3600) / 60);
-            const ss = ts % 60;
-            const pad = (n) => String(n).padStart(2, '0');
+          {/* ── NEXT DROP / OUT NOW song row ─────────── */}
+          {nextDrop && (() => {
+            // Match by slug first, then fall back to title match
+            const nextDropItem = items.find(i => normalizeSlug(i.id) === normalizeSlug(nextDrop.slug))
+              || items.find(i => i.title?.toUpperCase() === nextDrop.title?.toUpperCase());
+            // Use the matched item's actual id so warp/onChange receives the correct slug
+            const nextDropId = nextDropItem?.id || nextDrop.slug;
+            const isNextDropLocked = nextDropItem?.locked ?? false;
+            const nextDropIcon = nextDropItem?.icon || 'darkness';
+
+            // Build countdown string for locked display
+            let countdownStr = null;
+            if (dropCountdown > 0) {
+              const ts = Math.floor(dropCountdown / 1000);
+              const dd = Math.floor(ts / 86400);
+              const hh = Math.floor((ts % 86400) / 3600);
+              const mm = Math.floor((ts % 3600) / 60);
+              const ss = ts % 60;
+              const pad = (n) => String(n).padStart(2, '0');
+              countdownStr = dd > 0 ? `${dd}d ${pad(hh)}h` : `${pad(hh)}:${pad(mm)}:${pad(ss)}`;
+            }
+
             return (
-              <div style={{
-                padding: '10px 12px 8px',
-                borderBottom: '1px solid rgba(252, 84, 175, 0.25)',
-                textAlign: 'center',
-              }}>
-                {/* Tag */}
-                <div style={{
-                  fontSize: '9px',
-                  fontFamily: "'SF Mono', 'Fira Code', monospace",
-                  letterSpacing: '0.3em',
-                  color: 'rgba(252, 84, 175, 0.7)',
-                  marginBottom: '4px',
-                }}>
-                  [ NEXT DROP ]
-                </div>
-                {/* Song title */}
-                <div style={{
-                  fontSize: '15px',
-                  fontWeight: '700',
-                  letterSpacing: '0.08em',
-                  color: '#FC54AF',
-                  textShadow: '0 0 8px rgba(252, 84, 175, 0.6)',
-                  marginBottom: '2px',
-                }}>
-                  {nextDrop.title}
-                </div>
-                {/* Date line */}
-                <div style={{
-                  fontSize: '10px',
-                  fontFamily: "'SF Mono', 'Fira Code', monospace",
-                  letterSpacing: '0.15em',
-                  color: 'rgba(207, 247, 255, 0.55)',
-                  marginBottom: '6px',
-                }}>
-                  {nextDrop.label}
-                </div>
-                {/* DD : HH : MM : SS */}
-                <div style={{
-                  fontFamily: "'SF Mono', 'Fira Code', monospace",
-                  fontSize: '16px',
-                  fontWeight: '700',
-                  letterSpacing: '0.06em',
-                  color: '#00FFFF',
-                  textShadow: '0 0 6px rgba(0,255,255,0.5), 0 0 14px rgba(0,255,255,0.25)',
-                }}>
-                  {pad(dd)} : {pad(hh)} : {pad(mm)} : {pad(ss)}
-                </div>
+              <div
+                role="option"
+                aria-disabled={isNextDropLocked}
+                className={`opt next-drop-row flex items-center gap-3 px-3 py-3 text-sm transition-all duration-200 w-full ${
+                  isNextDropLocked
+                    ? "cursor-not-allowed opacity-50"
+                    : "cursor-pointer text-cyan-200/90 hover:bg-cyan-400/10 hover:text-cyan-100"
+                }`}
+                onMouseEnter={() => {
+                  if (!isNextDropLocked) {
+                    try { setTimeout(() => playerStore.getState().setHover(nextDropId), 0); } catch {};
+                  }
+                  try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {};
+                }}
+                onMouseLeave={() => { /* intentionally noop; clear on close */ }}
+                onPointerDown={(e) => {
+                  if (isNextDropLocked) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                  }
+                  setActiveId(nextDropId);
+                  setOpen(false);
+                  if (onChange) onChange(nextDropId);
+                  try {
+                    setTimeout(() => {
+                      const state = playerStore.getState();
+                      if (state) state.setHover(null);
+                    }, 0);
+                  } catch {}
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+              >
+                <span className="shrink-0">
+                  <ElementIcon name={nextDropIcon} />
+                </span>
+                <span className="flex flex-col min-w-0 flex-1">
+                  <span className={`song-title truncate font-semibold ${isNextDropLocked ? 'text-[#5a7a88]' : 'text-[#9EEBFF]'}`}>
+                    {nextDrop.title}
+                  </span>
+                  <span style={{
+                    fontSize: '9px',
+                    fontFamily: "'SF Mono', 'Fira Code', monospace",
+                    letterSpacing: '0.2em',
+                    color: dropCountdown > 0 ? 'rgba(252, 84, 175, 0.7)' : '#00FFFF',
+                    textShadow: dropCountdown <= 0 ? '0 0 6px rgba(0,255,255,0.5)' : 'none',
+                  }}>
+                    {dropCountdown > 0 ? '[ NEXT DROP ]' : '[ OUT NOW ]'}
+                  </span>
+                </span>
+                {isNextDropLocked ? (
+                  <span className="ml-auto flex items-center gap-1.5 shrink-0">
+                    {countdownStr && (
+                      <span style={{
+                        fontSize: '10px',
+                        fontFamily: "'SF Mono', 'Fira Code', monospace",
+                        color: 'rgba(252, 84, 175, 0.7)',
+                        letterSpacing: '0.05em',
+                      }}>
+                        {countdownStr}
+                      </span>
+                    )}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(252, 84, 175, 0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                  </span>
+                ) : countdownStr ? (
+                  <span className="ml-auto shrink-0" style={{
+                    fontSize: '10px',
+                    fontFamily: "'SF Mono', 'Fira Code', monospace",
+                    color: '#00FFFF',
+                    letterSpacing: '0.05em',
+                    textShadow: '0 0 4px rgba(0,255,255,0.4)',
+                  }}>
+                    {countdownStr}
+                  </span>
+                ) : null}
               </div>
             );
           })()}
-
-          {/* ── OUT NOW banner (post-drop) ─────────────────────── */}
-          {nextDrop && dropCountdown <= 0 && (
-            <div
-              style={{
-                padding: '10px 12px 8px',
-                borderBottom: '1px solid rgba(252, 84, 175, 0.25)',
-                textAlign: 'center',
-                cursor: 'pointer',
-              }}
-              onClick={() => {
-                if (onChange) onChange(nextDrop.slug);
-                setActiveId(nextDrop.slug);
-                setOpen(false);
-                try { playerStore.getState().setHover(null); } catch {}
-              }}
-            >
-              {/* Tag */}
-              <div style={{
-                fontSize: '9px',
-                fontFamily: "'SF Mono', 'Fira Code', monospace",
-                letterSpacing: '0.3em',
-                color: '#00FFFF',
-                textShadow: '0 0 6px rgba(0,255,255,0.5)',
-                marginBottom: '4px',
-              }}>
-                [ OUT NOW ]
-              </div>
-              {/* Song title */}
-              <div style={{
-                fontSize: '15px',
-                fontWeight: '700',
-                letterSpacing: '0.08em',
-                color: '#FC54AF',
-                textShadow: '0 0 8px rgba(252, 84, 175, 0.6)',
-              }}>
-                {nextDrop.title}
-              </div>
-            </div>
-          )}
 
           {/* Element filter rows */}
           <div className="px-1.5 pt-2 pb-1 flex flex-col gap-1">
@@ -519,43 +526,67 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
           {displayItems.map((s, i) => {
             const isActive = s.id === activeId;
             const isHighlight = i === highlight;
+            const isLocked = !!s.locked;
+
+            // Build countdown string for locked tracks
+            let lockCountdown = null;
+            if (isLocked && s.unlockDate) {
+              const diff = Math.max(0, new Date(s.unlockDate).getTime() - Date.now());
+              const ts = Math.floor(diff / 1000);
+              const dd = Math.floor(ts / 86400);
+              const hh = Math.floor((ts % 86400) / 3600);
+              const mm = Math.floor((ts % 3600) / 60);
+              const pad = (n) => String(n).padStart(2, '0');
+              lockCountdown = dd > 0 ? `${dd}d ${pad(hh)}h` : `${pad(hh)}:${pad(mm)}`;
+            }
+
             return (
               <div
                 key={s.id}
                 role="option"
                 aria-selected={isActive}
-                className={`opt flex items-center gap-3 px-3 py-3 text-sm cursor-pointer transition-all duration-200 w-full ${
-                  isHighlight ? "bg-cyan-400/20 text-cyan-100" : "text-cyan-200/90 hover:bg-cyan-400/10 hover:text-cyan-100"
+                aria-disabled={isLocked}
+                className={`opt flex items-center gap-3 px-3 py-3 text-sm transition-all duration-200 w-full ${
+                  isLocked
+                    ? "cursor-not-allowed opacity-50"
+                    : `cursor-pointer ${isHighlight ? "bg-cyan-400/20 text-cyan-100" : "text-cyan-200/90 hover:bg-cyan-400/10 hover:text-cyan-100"}`
                 }`}
                 ref={i === 0 ? optMeasureRef : undefined}
                 onMouseEnter={() => {
                   setHighlight(i);
-                  try { setTimeout(() => playerStore.getState().setHover(s.id), 0); } catch{};
+                  if (!isLocked) {
+                    try { setTimeout(() => playerStore.getState().setHover(s.id), 0); } catch{};
+                  }
                   try { const a = hoverRef.current; if (a) { a.currentTime = 0; a.volume = 0.3; a.play().catch(()=>{}); } } catch {};
                 }}
                 // Keep last hover active to avoid rapid hide/show flicker while moving
                 onMouseLeave={() => { /* intentionally noop; clear on close */ }}
                 onPointerDown={(e) => {
+                  if (isLocked) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                  }
                   // Set active id for UI state
                   setActiveId(s.id);
                   setOpen(false);
-                  
+
                   // Audio is handled by parent component via onChange callback
                   if (onChange) onChange(s.id);
-                  
-                  try { 
+
+                  try {
                     setTimeout(() => {
                       const state = playerStore.getState();
                       if (state) {
                         state.setHover(null);
                       }
-                    }, 0); 
+                    }, 0);
                   } catch(error) {
-                    if (process.env.NODE_ENV !== 'production') { 
-                      console.error('Failed to clear hover state:', error); 
+                    if (process.env.NODE_ENV !== 'production') {
+                      console.error('Failed to clear hover state:', error);
                     }
                   }
-                  
+
                   e.preventDefault();
                   e.stopPropagation();
                 }}
@@ -563,7 +594,25 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                 <span className="shrink-0">
                   <ElementIcon name={s.icon} />
                 </span>
-                <span className={`song-title truncate font-semibold ${isActive ? 'text-[#CFF7FF]' : 'text-[#9EEBFF]'}`}>{s.title}</span>
+                <span className={`song-title truncate font-semibold ${isLocked ? 'text-[#5a7a88]' : isActive ? 'text-[#CFF7FF]' : 'text-[#9EEBFF]'}`}>{s.title}</span>
+                {isLocked && (
+                  <span className="ml-auto flex items-center gap-1.5 shrink-0">
+                    {lockCountdown && (
+                      <span style={{
+                        fontSize: '10px',
+                        fontFamily: "'SF Mono', 'Fira Code', monospace",
+                        color: 'rgba(252, 84, 175, 0.7)',
+                        letterSpacing: '0.05em',
+                      }}>
+                        {lockCountdown}
+                      </span>
+                    )}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(252, 84, 175, 0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                  </span>
+                )}
               </div>
             );
           })}

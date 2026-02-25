@@ -151,7 +151,7 @@ const HUDPanel = React.memo(function HUDPanel({
   const { focusElement } = useFocusElementOfDay();
 
   // Profile context (journal open state, refresh)
-  const { refreshProfile, setIsJournalOpen } = useProfile();
+  const { profile, refreshProfile, setIsJournalOpen } = useProfile();
 
   // Temporary kill-switch to disable 3D planets for performance testing
   // Set to true to disable. You can also override at runtime by setting
@@ -2255,7 +2255,26 @@ const HUDPanel = React.memo(function HUDPanel({
   }, [currentId, songs]);
 
   // Fallback: if songs not provided, build from tracks
-  const resolvedSongs = songs && songs.length ? songs : buildPlanetSongs().hudSongs;
+  const baseSongs = songs && songs.length ? songs : buildPlanetSongs().hudSongs;
+
+  // Time-locked tracks config
+  const TIME_LOCKED_TRACKS = {
+    "mr-brightside": {
+      unlockDate: "2026-02-27T12:00:00-05:00", // Feb 27, 2026 12PM EST
+      earlyAccessTiers: ["guide"],
+    },
+  };
+
+  const resolvedSongs = baseSongs.map(s => {
+    const config = TIME_LOCKED_TRACKS[s.id];
+    if (!config) return s;
+    const now = Date.now();
+    const unlock = new Date(config.unlockDate).getTime();
+    if (now >= unlock) return s;
+    const tier = (profile?.tier || "wanderer").toLowerCase();
+    if (config.earlyAccessTiers.includes(tier)) return s;
+    return { ...s, locked: true, unlockDate: config.unlockDate };
+  });
   
   // Initialize player store with holoSongs for 3D planet system
   useEffect(() => {
@@ -2337,7 +2356,8 @@ const HUDPanel = React.memo(function HUDPanel({
           boxShadow: 'none',
           willChange: 'opacity, transform',
           contain: 'layout',
-          overflow: 'visible'
+          overflow: 'visible',
+          height: '100%'
         }}>
           {/* Blue background overlay removed */}
           {/* 3D planets / Flat map — align to full blue display width (outside inner padding) */}
@@ -2510,8 +2530,8 @@ const HUDPanel = React.memo(function HUDPanel({
           
           {/* Cover section at bottom right corner - using CoverHologram for pop-out functionality */}
           <div ref={coverRef} className="absolute hud-cover-pos" style={{
-            // Align flush to the right and sit slightly higher from bottom
-            bottom: -60,
+            // Align flush to the right, above the player area
+            bottom: 44,
             right: 0,
             width: 'auto',
             display: 'flex',
@@ -2598,11 +2618,8 @@ const HUDPanel = React.memo(function HUDPanel({
             right: oneLinerRight + 2, // Match dropdown right position
             // Adjust height to allow internal bottom buffer
             height: '60px',
-            // Keep player snug to the blue display; slightly lower
-            // Move the visual nudge into the bottom offset so it stays inside the overflow-hidden blue display
-            // Position the control row directly below the music dropdown: align player bottom with cover art bottom
-            // Cover art bottom is at -60px, player height is 60px
-            bottom: -120,
+            // Position player at the bottom of the blue display
+            bottom: -16,
             overflow: 'visible'
           }}>
             <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '10px', paddingBottom: 10, position: 'relative', overflow: 'visible' }}>
@@ -2918,17 +2935,7 @@ const HUDPanel = React.memo(function HUDPanel({
                         )}
                       </button>
                     </div>
-                      {/* Subtle visual connector line */}
-                      <div style={{
-                        position: 'absolute',
-                        left: '17px', // Center under play button
-                        top: '32px',
-                        width: '2px',
-                        height: '6px',
-                        background: 'linear-gradient(to bottom, rgba(255,255,255,0.3), transparent)',
-                        borderRadius: '1px',
-                        zIndex: 5
-                      }} />
+                      {/* Connector line removed - track bar moved below controls */}
 
                       {/* Enhanced glowing track line pinned to the bottom of blue display */}
                       {(() => {
@@ -2985,10 +2992,11 @@ const HUDPanel = React.memo(function HUDPanel({
                             <div
                               style={{
                                 position: 'absolute',
-                                left: 0,
-                                right: 0,
-                                // Keep ambient glow near bottom but inside the blue display
-                                bottom: -28,
+                                // Stretch to full blue display width by compensating for parent offsets
+                                left: -16,
+                                right: -(oneLinerRight + 10),
+                                // Ambient glow below the controls container
+                                bottom: -26,
                                 height: 20,
                                 borderRadius: 9999,
                                 background: 'radial-gradient(ellipse 100% 100%, rgba(25,227,255,0.25) 0%, rgba(25,227,255,0.1) 50%, transparent 80%)',
@@ -3001,12 +3009,12 @@ const HUDPanel = React.memo(function HUDPanel({
                               className="hud-enhanced-track"
                               style={{
                                 position: 'absolute',
-                                left: 8,
-                                // Nudge a bit more past the right edge
-                                right: -96,
-                                // Keep the track bar just below the controls
-                                bottom: -20,
-                                height: 10,
+                                // Stretch to full blue display width by compensating for parent offsets
+                                left: -16,
+                                right: -(oneLinerRight + 10),
+                                // Track bar below the controls container
+                                bottom: -26,
+                                height: 14,
                                 borderRadius: 9999,
                                 background: 'rgba(20,20,25,0.9)',
                                 border: '1px solid rgba(25,227,255,0.6)',
@@ -7335,7 +7343,7 @@ const HUDPanel = React.memo(function HUDPanel({
         {/* Song selector and Media Player positioned outside content opacity container to avoid beamOnly blocking */}
         <div className="absolute" style={{ 
           left: inConsole ? 4 : 4,
-          bottom: 'calc(80px - 24px + 60px - 120px)', // Shifted down to sit above track bar
+          bottom: 100, // Position above the player controls within the blue display
           // Reserve dynamic space to the right so the dropdown never overlaps the cover
           right: oneLinerRight + 2, // Reduced padding to screen edge
           maxWidth: 'none',
@@ -7350,6 +7358,10 @@ const HUDPanel = React.memo(function HUDPanel({
               initialActiveId={active || resolvedSongs[0]?.id}
               currentId={currentId}
               onChange={(id) => {
+                // Block time-locked tracks
+                const item = resolvedSongs.find(s => s.id === id);
+                if (item?.locked) return;
+
                 // IMMEDIATELY close blue display when song is selected from dropdown
                 onCloseBlueDisplay?.();
 

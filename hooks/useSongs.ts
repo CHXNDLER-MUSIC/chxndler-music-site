@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchReleasedSongs } from "@/lib/songs";
+import { fetchReleasedSongs, fetchSongs } from "@/lib/songs";
 import { SONG_ELEMENT_MAPPING } from "@/data/songElements";
 import type { SongRow, ElementType } from "@/types/song";
 
@@ -7,8 +7,21 @@ export interface SongWithElement extends SongRow {
   element: ElementType;
 }
 
+function addElements(data: SongRow[]): SongWithElement[] {
+  return data.map(song => {
+    let element: ElementType;
+    if (song.element && ['heart', 'water', 'lightning', 'darkness'].includes(song.element.toLowerCase())) {
+      element = song.element.toLowerCase() as ElementType;
+    } else {
+      element = SONG_ELEMENT_MAPPING[song.slug] || 'heart';
+    }
+    return { ...song, element };
+  });
+}
+
 export function useSongs() {
   const [songs, setSongs] = useState<SongWithElement[]>([]);
+  const [allSongs, setAllSongs] = useState<SongWithElement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -17,27 +30,11 @@ export function useSongs() {
 
     async function loadSongs() {
       try {
-        const data = await fetchReleasedSongs();
-        
+        const [released, all] = await Promise.all([fetchReleasedSongs(), fetchSongs()]);
+
         if (isMounted) {
-          // Use element from database, fallback to mapping if needed
-          const songsWithElements: SongWithElement[] = data.map(song => {
-            let element: ElementType;
-            
-            if (song.element && ['heart', 'water', 'lightning', 'darkness'].includes(song.element.toLowerCase())) {
-              element = song.element.toLowerCase() as ElementType;
-            } else {
-              // Fallback to slug mapping if element column is empty or invalid
-              element = SONG_ELEMENT_MAPPING[song.slug] || 'heart';
-            }
-            
-            return {
-              ...song,
-              element
-            };
-          });
-          
-          setSongs(songsWithElements);
+          setSongs(addElements(released));
+          setAllSongs(addElements(all));
           setLoading(false);
         }
       } catch (err: any) {
@@ -66,5 +63,5 @@ export function useSongs() {
     return acc;
   }, {} as Record<ElementType, SongWithElement[]>);
 
-  return { songs, songsByElement, loading, error };
+  return { songs, allSongs, songsByElement, loading, error };
 }

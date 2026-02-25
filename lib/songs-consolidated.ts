@@ -138,7 +138,7 @@ function getElementForSong(title: string, slug: string): ElementKind {
   if (s.includes("ocean") || s.includes("tide") || s.includes("wave") || s.includes("sea")) return "WATER";
   if (s.includes("heart") || s.includes("love") || s.includes("friends") || s.includes("somebody-to-love") || s.includes("paris") || s.includes("bee")) return "HEART";
   if (s.includes("lightning") || s.includes("lighting") || s.includes("electric") || s.includes("neon") || s.includes("collide") || s.includes("brain") || s.includes("kid") || s.includes("game")) return "LIGHTNING";
-  if (s.includes("dark") || s.includes("black") || s.includes("alone") || s.includes("midnight")) return "DARKNESS";
+  if (s.includes("dark") || s.includes("black") || s.includes("alone") || s.includes("midnight") || s.includes("mr-brightside")) return "DARKNESS";
   if (s.includes("fire") || s.includes("burn")) return "FIRE";
   if (s.includes("home") || s.includes("earth")) return "EARTH";
   if (s.includes("air") || s.includes("sky")) return "AIR";
@@ -290,6 +290,7 @@ const RAW: Omit<Song, "slug" | "type" | "subtitle" | "bg" | "element" | "theme" 
     { time: 146.9, label: "Outro", kind: "verse" }
   ] },
   { title: "HOUSE PARTY", spotify:"https://open.spotify.com/track/0b5y0gHMf3wLYX69B8S6g4?si=75a45f33ec1f47c0", youtube:"https://www.youtube.com/watch?v=B6EyIK-gE1c" },
+  { title: "MR. BRIGHTSIDE", cover: "/covers/MR. BRIGHTSIDE.webp", src: "/tracks/MR.BRIGHTSIDE.mp3" },
   { title: "PARIS", spotify:"https://open.spotify.com/track/2luPTqZK9w5fJ30T4rLZut?si=9f27fb47e15941c4", apple:"https://music.apple.com/us/album/paris-single/1779879728", youtube:"https://www.youtube.com/watch?v=J2qrS9EGRw8" },
 ];
 
