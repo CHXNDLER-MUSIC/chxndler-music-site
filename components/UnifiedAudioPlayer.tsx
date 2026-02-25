@@ -285,7 +285,7 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
       animate={{ opacity: 1, y: 0 }}
     >
       {/* Main player container */}
-      <div className="backdrop-blur-xl bg-[rgba(8,26,32,0.85)] rounded-2xl p-4 border border-[#19E3FF]/40 shadow-[0_0_25px_rgba(25,227,255,0.2)]">
+      <div className="backdrop-blur-xl bg-[rgba(8,26,32,0.85)] rounded-2xl p-4 border border-[#19E3FF]/40 shadow-[0_0_25px_rgba(25,227,255,0.2)] overflow-hidden">
         <div className="flex flex-col gap-4">
           
           {/* Track Dropdown using existing SongDropdown component */}

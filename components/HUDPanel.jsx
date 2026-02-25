@@ -21,6 +21,13 @@ import { useHeartcoinBalance } from "@/providers/HeartcoinBalanceProvider";
 // IMPORTANT: Do NOT import at module scope — older @react-three/fiber versions
 // are incompatible with React 19 and can crash on evaluation. We lazy-load it
 // only after probing availability, and fall back gracefully.
+
+// ═══════════════════════════════════════════════════════════════════
+// FEATURE FLAG: Set to true to re-enable the 3D planet system.
+// When false, no Three.js Canvas or WebGL context will be created.
+// ═══════════════════════════════════════════════════════════════════
+const ENABLE_PLANETS = false;
+
 import { playerStore } from "@/store/usePlayerStore";
 
 // We import the 3D system directly and only render on client via this client component
@@ -40,10 +47,12 @@ import SimpleWaveform from "@/components/SimpleWaveform";
 import WaveformVisualizer, { ELEMENT_COLORS } from "@/components/WaveformVisualizer";
 import DevErrorLogger from "@/components/DevErrorLogger";
 // 3D Planetarium system with Three.js
-const Pure3DPlanets = dynamic(() => import("@/components/planetarium/Pure3DPlanets"), {
-  ssr: false,
-  loading: () => null // No loading placeholder - prevents flash of wrong background
-});
+const Pure3DPlanets = ENABLE_PLANETS
+  ? dynamic(() => import("@/components/planetarium/Pure3DPlanets"), {
+      ssr: false,
+      loading: () => null // No loading placeholder - prevents flash of wrong background
+    })
+  : null;
 // Flat world map (toggle alternative to 3D planets)
 const FlatWorldMap = dynamic(() => import("@/components/FlatWorldMap"), {
   ssr: false,
@@ -2433,7 +2442,7 @@ const HUDPanel = React.memo(function HUDPanel({
               {showFlatMap ? (
                 /* Flat World Map view */
                 <FlatWorldMap />
-              ) : (
+              ) : ENABLE_PLANETS && Pure3DPlanets ? (
                 /* 3D Planet System view */
                 <ErrorBoundary
                   key={preferRaw3D ? 'raw' : 'r3f'}
@@ -2470,7 +2479,7 @@ const HUDPanel = React.memo(function HUDPanel({
                     onDailyPlanetClick={planetRewards.claimPlanetReward}
                   />
                 </ErrorBoundary>
-              )}
+              ) : null}
               </div>
           </div>
           )}
