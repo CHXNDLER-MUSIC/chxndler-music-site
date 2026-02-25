@@ -2241,3 +2241,112 @@ button:hover > .heart-coin-glow,
   background: radial-gradient(circle, rgba(252, 248, 180, 1), rgba(252, 220, 80, 0.6));
 }
 
+/* =============================================================
+   MOBILE PERFORMANCE PATCH
+   Diagnostic: disable expensive compositing + infinite animations
+   on touch/mobile devices only. Desktop is unchanged.
+   ============================================================= */
+@media (max-width: 768px), (hover: none), (pointer: coarse) {
+
+  /* --- 1. Kill backdrop-filter blur compositing --- */
+  .hud-card,
+  .hud-btn,
+  .hud-top-controls::before {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(10, 16, 28, 0.72) !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  }
+
+  /* --- 2. Stop all infinite CSS animations --- */
+
+  /* Holo particles 1-10 */
+  .holo-particle-1,
+  .holo-particle-2,
+  .holo-particle-3,
+  .holo-particle-4,
+  .holo-particle-5,
+  .holo-particle-6,
+  .holo-particle-7,
+  .holo-particle-8,
+  .holo-particle-9,
+  .holo-particle-10 {
+    animation: none !important;
+  }
+
+  /* Breathing / pulse / glow loops */
+  .pulse-soft,
+  .hud-panel-breathing,
+  .heartPlanetWrapper::after {
+    animation: none !important;
+  }
+
+  /* Neon pulse on hub button */
+  .hub.on,
+  .hub.hub-active {
+    animation: none !important;
+  }
+
+  /* Button rail drift */
+  .hud-top-controls::before {
+    animation: none !important;
+  }
+
+  /* Cover art pulse glow */
+  .cover-pulse-glow {
+    animation: none !important;
+  }
+
+  /* --- 3. Replace animated glows with subtle static outline --- */
+
+  /* Neon glow classes */
+  .glow,
+  .cockpit-glow {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+  }
+
+  /* HUD breathing panel - static border instead of animated shadow */
+  .hud-panel-breathing {
+    box-shadow: 0 0 0 1px rgba(0, 255, 255, 0.15) !important;
+  }
+
+  /* Hub active button - static yellow border instead of animated neon */
+  .hub.on,
+  .hub.hub-active {
+    box-shadow: 0 0 8px rgba(255, 255, 0, 0.4) !important;
+  }
+
+  /* Console HUD - simplify multi-layer shadow */
+  .console-hud {
+    box-shadow:
+      0 4px 8px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+  }
+
+  /* --- 4. Flatten expensive stacked drop-shadow filters --- */
+
+  /* Music element neon glow */
+  .bg-element-music::before {
+    filter: none !important;
+  }
+
+  .neon-white-glow,
+  img[src$="/elements/music.webp"] {
+    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.5)) !important;
+  }
+
+  /* HUD icon button glows - single light shadow instead of stacked */
+  .hud-lyrics-btn svg,
+  .gem-btn-waveform-hud svg,
+  .spotify-btn-waveform-hud svg,
+  .apple-btn-waveform-hud svg,
+  .hud-play-btn-enhanced svg {
+    filter: drop-shadow(0 0 3px currentColor) !important;
+  }
+
+  /* Join-us HUD button */
+  .join-us-waveform-hud {
+    filter: drop-shadow(0 0 4px rgba(0, 255, 255, 0.5)) !important;
+  }
+}
+
