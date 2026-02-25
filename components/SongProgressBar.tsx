@@ -17,6 +17,7 @@ const SongProgressBar: React.FC<SongProgressBarProps> = ({
   element
 }) => {
   const [isHovering, setIsHovering] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [hoverPosition, setHoverPosition] = useState(0);
   const [hoverTime, setHoverTime] = useState(0);
   const progressBarRef = useRef<HTMLDivElement>(null);
@@ -50,14 +51,44 @@ const SongProgressBar: React.FC<SongProgressBarProps> = ({
   }, [duration]);
 
   const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (isDragging) return;
     if (!progressBarRef.current) return;
-    
+
     const rect = progressBarRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
     const time = (percentage / 100) * duration;
-    
+
     onSeek(time);
+  }, [duration, onSeek, isDragging]);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!progressBarRef.current || duration <= 0) return;
+
+    setIsDragging(true);
+
+    const seekFromX = (clientX: number) => {
+      const rect = progressBarRef.current!.getBoundingClientRect();
+      const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+      const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+      onSeek((percentage / 100) * duration);
+      setHoverPosition(percentage);
+      setHoverTime((percentage / 100) * duration);
+    };
+
+    try { (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); } catch {}
+    e.preventDefault();
+
+    seekFromX(e.clientX);
+
+    const onMove = (ev: PointerEvent) => seekFromX(ev.clientX);
+    const onUp = () => {
+      setIsDragging(false);
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp, { once: true });
   }, [duration, onSeek]);
 
   return (
@@ -68,8 +99,10 @@ const SongProgressBar: React.FC<SongProgressBarProps> = ({
         className="relative w-full py-3 cursor-pointer group"
         onMouseMove={handleMouseMove}
         onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
+        onMouseLeave={() => { if (!isDragging) setIsHovering(false); }}
         onClick={handleClick}
+        onPointerDown={handlePointerDown}
+        style={{ touchAction: 'none' }}
       >
         {/* Visual track bar - thinner but with larger click area above */}
         <div
@@ -106,8 +139,21 @@ const SongProgressBar: React.FC<SongProgressBarProps> = ({
           }}
         />
         
+        {/* Progress knob - always visible, draggable */}
+        <div
+          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full shadow-lg pointer-events-none"
+          style={{
+            left: `${progressPercentage}%`,
+            transform: 'translateX(-50%) translateY(-50%)',
+            backgroundColor: currentElementColor,
+            boxShadow: `0 0 6px ${currentElementColor}80, 0 0 12px ${currentElementColor}40, 0 2px 4px rgba(0,0,0,0.3)`,
+            border: '1.5px solid rgba(255,255,255,0.4)',
+            opacity: isHovering || isDragging ? 1 : 0.7,
+          }}
+        />
+
         {/* Hover circle indicator */}
-        {isHovering && (
+        {(isHovering && !isDragging) && (
           <>
             <div 
               className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg transition-all duration-75 pointer-events-none"

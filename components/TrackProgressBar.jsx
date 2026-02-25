@@ -9,6 +9,7 @@ const TrackProgressBar = ({
   const audioManager = useAudio();
   
   const [isDragging, setIsDragging] = useState(false);
+  const [dragPosition, setDragPosition] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
   const [hoverPosition, setHoverPosition] = useState(0);
   const [hoverTime, setHoverTime] = useState(0);
@@ -75,40 +76,36 @@ const TrackProgressBar = ({
     }
   }, [duration, getTimeFromPosition, isDragging, audioManager]);
 
-  const handleMouseDown = useCallback((e) => {
+  const handlePointerDown = useCallback((e) => {
     e.preventDefault();
+    if (!progressBarRef.current || duration <= 0) return;
+
     setIsDragging(true);
-    dragStartX.current = e.clientX;
-    dragStartProgress.current = progressPercentage;
-    
-    let pendingSeekTime = currentTime;
-    
-    const handleMouseMove = (moveEvent) => {
-      const newTime = getTimeFromPosition(moveEvent.clientX);
-      pendingSeekTime = newTime;
-      
-      // Update hover position for visual feedback
-      if (progressBarRef.current) {
-        const rect = progressBarRef.current.getBoundingClientRect();
-        const x = moveEvent.clientX - rect.left;
-        const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
-        setHoverPosition(percentage);
-        setHoverTime(newTime);
-      }
+
+    const seekFromX = (clientX) => {
+      const rect = progressBarRef.current.getBoundingClientRect();
+      const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+      const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+      const newTime = (percentage / 100) * duration;
+      setDragPosition(percentage);
+      setHoverTime(newTime);
+      audioManager.seek(newTime);
     };
-    
-    const handleMouseUp = () => {
+
+    try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch {}
+
+    seekFromX(e.clientX);
+
+    const onMove = (moveEvent) => seekFromX(moveEvent.clientX);
+    const onUp = () => {
       setIsDragging(false);
-      // Use unified audio provider's seek method when dragging ends
-      audioManager.seek(pendingSeekTime);
-      
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
     };
-    
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  }, [getTimeFromPosition, progressPercentage, currentTime, audioManager]);
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp, { once: true });
+  }, [duration, audioManager]);
 
   const currentColor = getCurrentColor();
   
@@ -119,9 +116,10 @@ const TrackProgressBar = ({
         className="relative w-full h-[3px] cursor-pointer group"
         onMouseMove={handleMouseMove}
         onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
+        onMouseLeave={() => { if (!isDragging) setIsHovering(false); }}
         onClick={handleClick}
-        onMouseDown={handleMouseDown}
+        onPointerDown={handlePointerDown}
+        style={{ touchAction: 'none' }}
       >
         {/* Background gray line */}
         <div 
@@ -133,10 +131,10 @@ const TrackProgressBar = ({
         />
         
         {/* Progress fill with glow */}
-        <div 
-          className="absolute left-0 top-0 h-full rounded-full transition-all duration-200"
-          style={{ 
-            width: `${Math.min(progressPercentage, 100)}%`,
+        <div
+          className={`absolute left-0 top-0 h-full rounded-full ${isDragging ? '' : 'transition-all duration-200'}`}
+          style={{
+            width: `${isDragging ? dragPosition : Math.min(progressPercentage, 100)}%`,
             backgroundColor: currentColor,
             boxShadow: selectedSong?.element === 'DARKNESS' 
               ? `0 0 8px ${currentColor}, 0 0 16px ${currentColor}80, 0 0 24px ${currentColor}40`
@@ -145,11 +143,11 @@ const TrackProgressBar = ({
           }}
         />
         
-        {/* Progress knob */}
-        <div 
-          className="absolute top-1/2 w-3 h-3 rounded-full transition-all duration-150 pointer-events-none"
-          style={{ 
-            left: `${Math.min(progressPercentage, 100)}%`,
+        {/* Progress knob - follows drag position when dragging */}
+        <div
+          className={`absolute top-1/2 w-3 h-3 rounded-full pointer-events-none ${isDragging ? 'scale-125' : 'transition-all duration-150'}`}
+          style={{
+            left: `${isDragging ? dragPosition : Math.min(progressPercentage, 100)}%`,
             transform: 'translateX(-50%) translateY(-50%)',
             backgroundColor: currentColor,
             boxShadow: selectedSong?.element === 'DARKNESS'

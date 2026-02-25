@@ -4833,7 +4833,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                         <>
                           
                           <div
-                            className="text-center mb-3"
+                            className="text-center mb-0"
                             style={{
                               color: '#FFFFFF',
                               fontSize: '14px',
@@ -4853,7 +4853,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               </div>
                             </div>
                           ) : (
-                            <div className="grid grid-cols-2 gap-1 justify-center place-items-center mx-auto" style={{ marginTop: '4px' }}>
+                            <div className="grid grid-cols-2 gap-1 justify-center place-items-center mx-auto" style={{ marginTop: '0px' }}>
                               {['lightning', 'darkness', 'water', 'heart'].map((element, index) => {
                                 const elementCounts = getElementCardCounts();
                                 const count = elementCounts[element] || 0;

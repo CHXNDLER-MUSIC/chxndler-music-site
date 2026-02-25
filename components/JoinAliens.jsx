@@ -467,7 +467,7 @@ export default function JoinAliens({ visible = true } = {}) {
         width: '100%',
         height: '1px',
         background: 'linear-gradient(90deg, transparent, rgba(252, 84, 175, 0.5), transparent)',
-        margin: '0px 0 0px 0'
+        marginTop: '-6px',
       }} />
 
       {/* Tip amount buttons - horizontal row below Twitch embed */}

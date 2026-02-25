@@ -2350,3 +2350,34 @@ button:hover > .heart-coin-glow,
   }
 }
 
+/* ── Mobile: kill expensive glow on opened display panels ── */
+@media (max-width: 768px), (hover: none), (pointer: coarse) {
+  /* Lyrics / Identical / Element / Soul-Sky / Brand / Store panels */
+  .lyrics-popover-hud {
+    box-shadow: none !important;
+    filter: none !important;
+    text-shadow: none !important;
+  }
+  .lyrics-modal-enhanced {
+    box-shadow: none !important;
+    filter: none !important;
+    text-shadow: none !important;
+  }
+  .lyrics-modal-enhanced::before {
+    display: none !important;
+  }
+  .lyrics-glow-bg {
+    display: none !important;
+  }
+  /* Spotify inner card (no CSS class — target via aria-label) */
+  [aria-label="Spotify Player"] > div {
+    box-shadow: none !important;
+    filter: none !important;
+  }
+  /* Apple Music inner card (no CSS class — target via aria-label) */
+  [aria-label="Apple Music Player"] > div {
+    box-shadow: none !important;
+    filter: none !important;
+  }
+}
+

@@ -117,6 +117,7 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
   
   // Progress bar reference for click handling
   const progressBarRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
   
   // Get songs from Supabase (includes unreleased for time-lock display)
   const { songs: supabaseSongs, allSongs, loading } = useSongs();
@@ -233,8 +234,10 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
     const el = progressBarRef.current;
     if (!el || duration <= 0) return;
 
-    const rect = el.getBoundingClientRect();
+    setIsDragging(true);
+
     const seekFromX = (clientX: number) => {
+      const rect = el.getBoundingClientRect();
       const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
       const ratio = rect.width > 0 ? x / rect.width : 0;
       audioManager.seek(ratio * duration);
@@ -249,11 +252,12 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
     // Drag listeners
     const onMove = (ev: PointerEvent) => seekFromX(ev.clientX);
     const onUp = () => {
+      setIsDragging(false);
       window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp as any);
+      window.removeEventListener('pointerup', onUp);
     };
     window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp, { once: true } as any);
+    window.addEventListener('pointerup', onUp, { once: true });
   }, [duration, audioManager]);
 
   // Keep track of the current audio element for reference
@@ -326,12 +330,10 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
             <div className="text-[#9EEBFF]/70 text-xs font-mono min-w-[3ch]">
               {formatTime(liveTime)}
             </div>
-            <div className="flex-1 relative group">
+            <div className="flex-1 relative group cursor-pointer" onClick={handleProgressClick} onPointerDown={handleProgressPointerDown} style={{ touchAction: 'none' }}>
               <div
                 ref={progressBarRef}
-                onClick={handleProgressClick}
-                onPointerDown={handleProgressPointerDown}
-                className="relative w-full h-2 bg-white/20 rounded-full cursor-pointer overflow-hidden hover:h-2.5"
+                className="relative w-full h-2 bg-white/20 rounded-full overflow-hidden hover:h-2.5"
                 title="Click or drag to seek"
               >
                 {/* Progress Fill with Gradient */}
@@ -348,9 +350,9 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
                 />
               </div>
 
-              {/* Circular Handle - Outside track so it's not clipped, only visible on hover */}
+              {/* Circular Handle - draggable seek dot */}
               <div
-                className="absolute top-1/2 w-4 h-4 rounded-full border-2 border-white shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none"
+                className={`absolute top-1/2 w-4 h-4 rounded-full border-2 border-white shadow-lg transition-opacity ${isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
                 style={{
                   left: `${Math.max(0, Math.min(100, progress * 100))}%`,
                   transform: 'translateX(-50%) translateY(-50%)',

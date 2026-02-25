@@ -3001,9 +3001,9 @@ const HUDPanel = React.memo(function HUDPanel({
                             <div
                               style={{
                                 position: 'absolute',
-                                // Stretch to full blue display width by compensating for parent offsets
-                                left: -16,
-                                right: -(oneLinerRight + 10),
+                                // Stay contained within the blue display
+                                left: 0,
+                                right: 0,
                                 // Ambient glow below the controls container
                                 bottom: -26,
                                 height: 20,
@@ -3018,9 +3018,9 @@ const HUDPanel = React.memo(function HUDPanel({
                               className="hud-enhanced-track"
                               style={{
                                 position: 'absolute',
-                                // Stretch to full blue display width by compensating for parent offsets
-                                left: -16,
-                                right: -(oneLinerRight + 10),
+                                // Stay contained within the blue display
+                                left: 0,
+                                right: 0,
                                 // Track bar below the controls container
                                 bottom: -26,
                                 height: 14,

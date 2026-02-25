@@ -14,6 +14,7 @@ const DashboardProgressBar: React.FC<DashboardProgressBarProps> = ({ className =
   const currentTime = audio.currentTime || 0;
   const duration = audio.duration || 0;
   const [isHovering, setIsHovering] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [hoverPosition, setHoverPosition] = useState(0);
   const [hoverTime, setHoverTime] = useState(0);
   const [currentElement, setCurrentElement] = useState<Element>('water');
@@ -62,15 +63,44 @@ const DashboardProgressBar: React.FC<DashboardProgressBarProps> = ({ className =
   }, [duration]);
 
   const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (isDragging) return;
     if (!progressBarRef.current || duration <= 0) return;
-    
+
     const rect = progressBarRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
     const time = (percentage / 100) * duration;
-    
-    // Seek via the unified audio context
+
     try { audio.seek(time); } catch {}
+  }, [duration, audio, isDragging]);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!progressBarRef.current || duration <= 0) return;
+
+    setIsDragging(true);
+
+    const seekFromX = (clientX: number) => {
+      const rect = progressBarRef.current!.getBoundingClientRect();
+      const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+      const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+      try { audio.seek((percentage / 100) * duration); } catch {}
+      setHoverPosition(percentage);
+      setHoverTime((percentage / 100) * duration);
+    };
+
+    try { (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); } catch {}
+    e.preventDefault();
+
+    seekFromX(e.clientX);
+
+    const onMove = (ev: PointerEvent) => seekFromX(ev.clientX);
+    const onUp = () => {
+      setIsDragging(false);
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp, { once: true });
   }, [duration, audio]);
 
   // Don't render if no audio is playing
@@ -91,11 +121,13 @@ const DashboardProgressBar: React.FC<DashboardProgressBarProps> = ({ className =
       {/* Progress bar */}
       <div 
         ref={progressBarRef}
-        className="relative w-full h-2 bg-black/40 rounded-full cursor-pointer overflow-hidden border border-white/10 hover:border-white/30 transition-all duration-200"
+        className="relative w-full h-2 bg-black/40 rounded-full cursor-pointer overflow-visible border border-white/10 hover:border-white/30 transition-all duration-200"
         onMouseMove={handleMouseMove}
         onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
+        onMouseLeave={() => { if (!isDragging) setIsHovering(false); }}
         onClick={handleClick}
+        onPointerDown={handlePointerDown}
+        style={{ touchAction: 'none' }}
       >
         {/* Background glow */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
@@ -114,9 +146,9 @@ const DashboardProgressBar: React.FC<DashboardProgressBarProps> = ({ className =
           }}
         />
         
-        {/* Progress handle */}
+        {/* Progress handle - draggable */}
         <div
-          className="absolute top-1/2 w-3 h-3 rounded-full border border-white/60"
+          className={`absolute top-1/2 w-3 h-3 rounded-full border border-white/60 transition-transform ${isDragging ? 'scale-125' : ''}`}
           style={{
             left: `${progressPercentage}%`,
             transform: 'translateX(-50%) translateY(-50%)',
