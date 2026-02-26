@@ -33,7 +33,7 @@ const VIDEOS: Video[] = [
   {
     id: "hv-002",
     title: "Heartverse 02: Moving Day",
-    youtubeUrl: "https://youtube.com/shorts/o0cZJ_vLn-s",
+    youtubeUrl: "https://youtube.com/shorts/AdvP_6VVp3k",
     type: "heartverse",
     releaseDate: "2026-02-25T19:00:00",
   },

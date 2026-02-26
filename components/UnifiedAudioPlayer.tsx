@@ -37,7 +37,8 @@ const ELEMENT_MAP: Record<string, string> = {
 const TIME_LOCKED_TRACKS: Record<string, { unlockDate: string; earlyAccessTiers: Tier[] }> = {
   "mr-brightside": {
     unlockDate: "2026-02-27T12:00:00-05:00", // Feb 27, 2026 12PM EST
-    earlyAccessTiers: ["guide"],
+    // Early access should be available to Dreamers and Lovers (and above)
+    earlyAccessTiers: ["dreamer", "lover", "guide"],
   },
 };
 
@@ -289,7 +290,7 @@ const UnifiedAudioPlayer = React.memo(function UnifiedAudioPlayer({ initialTrack
       animate={{ opacity: 1, y: 0 }}
     >
       {/* Main player container */}
-      <div className="backdrop-blur-xl bg-[rgba(8,26,32,0.85)] rounded-2xl p-4 border border-[#19E3FF]/40 shadow-[0_0_25px_rgba(25,227,255,0.2)] overflow-hidden">
+      <div className="bg-transparent rounded-2xl p-4 border border-[#19E3FF]/40 shadow-[0_0_25px_rgba(25,227,255,0.2)] overflow-hidden">
         <div className="flex flex-col gap-4">
           
           {/* Track Dropdown using existing SongDropdown component */}

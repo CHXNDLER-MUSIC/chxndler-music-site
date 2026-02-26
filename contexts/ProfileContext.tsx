@@ -12,6 +12,7 @@ import React, {
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { debug } from "@/lib/logger";
 import { ProfileTier } from "@/types/card";
+import { TIER_ORDER } from "@/utils/tier";
 import { getLocalDateString } from "@/utils/dateHelpers";
 // HeartCoin celebrations are now triggered explicitly from logHeartcoinTransaction()
 // instead of detecting balance changes here (removed triggerHeartCoinCelebration import)
@@ -345,7 +346,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabaseBrowser
         .from("profiles")
         .select(
-          "id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour, total_reflections, total_listening_minutes, total_heartcoins_earned, elemental_sessions_count, community_interactions, achievements_unlocked, streams_attended, livestreams_attended, concerts_attended, cards_owned, merch_items_owned, unique_merch_items, digital_cards_owned, donations_made, heartcoins_sent, aliens_invited, card_slots"
+          "id, email, phone, name, element, journey, tier, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour, total_reflections, total_listening_minutes, total_heartcoins_earned, elemental_sessions_count, community_interactions, achievements_unlocked, streams_attended, livestreams_attended, concerts_attended, cards_owned, merch_items_owned, unique_merch_items, digital_cards_owned, donations_made, heartcoins_sent, aliens_invited, card_slots"
         )
         .eq("id", user.id)
         .maybeSingle();
@@ -443,6 +444,19 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         return true;
       }) as OwnedCardRow[];
 
+      // Prefer explicit tier from DB if present; fallback to derived tier from totals/journey
+      let computedTier: ProfileTier = "wanderer";
+      const rawTier = (data.tier ?? data.journey ?? "wanderer")?.toString().toLowerCase();
+      // Derive tier from heartcoin_total thresholds if no valid tier set
+      if (typeof data.heartcoin_total === 'number') {
+        if (data.heartcoin_total >= 25) computedTier = "lover";
+        else if (data.heartcoin_total >= 5) computedTier = "dreamer";
+      }
+      // If DB has a valid tier value in allowed order, prefer it
+      if (rawTier && (TIER_ORDER as readonly string[]).includes(rawTier)) {
+        computedTier = rawTier as ProfileTier;
+      }
+
       // Map database columns to interface format
       const mappedProfile: Profile = {
         id: data.id,
@@ -456,7 +470,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         profile_complete: data.profile_complete ?? !!(data.name && data.element),
         created_at: data.created_at,
         updated_at: data.updated_at,
-        tier: "wanderer" as ProfileTier,
+        tier: computedTier,
         has_seen_tour: data.has_seen_tour ?? false,
         profile_image_url: data.profile_image_url ?? null,
         daily_streak: data.daily_streak_current ?? 0,
@@ -574,7 +588,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         .from("profiles")
         .update(dbUpdates)
         .eq("id", user.id)
-        .select("id, email, phone, name, element, journey, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour, total_reflections, total_listening_minutes, total_heartcoins_earned, elemental_sessions_count, community_interactions, achievements_unlocked, streams_attended, livestreams_attended, concerts_attended, cards_owned, merch_items_owned, unique_merch_items, digital_cards_owned, donations_made, heartcoins_sent, aliens_invited, card_slots")
+        .select("id, email, phone, name, element, journey, tier, heartcoin_balance, heartcoin_total, profile_complete, created_at, updated_at, daily_streak_current, last_streak_activity_date, profile_image_url, has_seen_tour, total_reflections, total_listening_minutes, total_heartcoins_earned, elemental_sessions_count, community_interactions, achievements_unlocked, streams_attended, livestreams_attended, concerts_attended, cards_owned, merch_items_owned, unique_merch_items, digital_cards_owned, donations_made, heartcoins_sent, aliens_invited, card_slots")
         .maybeSingle();
 
       if (error) {
@@ -585,6 +599,17 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       if (data) {
         // Map the updated data back to Profile interface, preserving existing cards, badges, and heartcoin_balance
         // Keep existing heartcoin_balance from state (already from computed view) since profile updates don't change it
+        // Derive tier similarly to fetchProfile
+        let updatedTier: ProfileTier = profile?.tier ?? "wanderer";
+        const rawTier2 = (data.tier ?? data.journey ?? updatedTier)?.toString().toLowerCase();
+        if (typeof data.heartcoin_total === 'number') {
+          if (data.heartcoin_total >= 25) updatedTier = "lover";
+          else if (data.heartcoin_total >= 5) updatedTier = "dreamer";
+        }
+        if (rawTier2 && (TIER_ORDER as readonly string[]).includes(rawTier2)) {
+          updatedTier = rawTier2 as ProfileTier;
+        }
+
         const mappedProfile: Profile = {
           id: data.id,
           email: data.email,
@@ -597,7 +622,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           profile_complete: data.profile_complete ?? !!(data.name && data.element),
           created_at: data.created_at,
           updated_at: data.updated_at,
-          tier: "wanderer" as ProfileTier,
+          tier: updatedTier,
           has_seen_tour: data.has_seen_tour ?? false,
           profile_image_url: data.profile_image_url ?? null,
           daily_streak: data.daily_streak_current ?? 0,

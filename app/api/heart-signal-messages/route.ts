@@ -43,18 +43,18 @@ export async function POST(req: Request) {
       }
     );
 
-    const { data: userResult, error: userError } = await supabase.auth.getUser();
-    if (userError || !userResult?.user) {
-      return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
-    }
+    // Try to resolve auth user, but allow guests to post
+    const { data: userResult } = await supabase.auth.getUser();
+    const userId = userResult?.user?.id ?? null;
 
-    const userId = userResult.user.id;
-
-    const username =
+    // Prefer provided displayName/username, then auth metadata, then safe fallback
+    const username = (
       displayName ||
-      userResult.user.user_metadata?.name ||
-      userResult.user.user_metadata?.full_name ||
-      "CHXNDLER";
+      userResult?.user?.user_metadata?.name ||
+      userResult?.user?.user_metadata?.full_name ||
+      body?.username ||
+      "ALIEN"
+    ).toString().trim().substring(0, 64) || "ALIEN";
 
     // Use admin client for insert to bypass RLS (auth already verified above)
     const admin = getSupabaseAdmin();
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
     const { data, error } = await admin
       .from("heart_signal_messages")
       .insert({
-        user_id: userId,
+        user_id: userId, // may be null for guests
         username,
         message,
         is_system: false,

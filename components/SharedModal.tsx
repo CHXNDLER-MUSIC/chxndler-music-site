@@ -37,25 +37,26 @@ export default function SharedModal({ open, onClose, title, children, ariaLabel 
       }}
     >
       <div
-        className="absolute inset-0 bg-black/85 backdrop-blur-md"
+        className="absolute inset-0 bg-black/90"
         onClick={onClose}
       />
-      <div 
+      <div
         className="mx-4 max-w-lg w-full"
         style={{
           position: 'absolute',
           top: '5px',
           left: '50%',
           transform: 'translateX(-50%)',
-          zIndex: 10000
+          zIndex: 10000,
+          willChange: 'transform',
         }}
       >
-        <div className="relative rounded-2xl p-4 backdrop-blur-md border-2 border-[#FC54AF]/60 bg-white/5 shadow-[0_0_26px_rgba(56,182,255,0.35)]">
+        <div className="relative rounded-2xl p-4 border-2 border-[#FC54AF]/60 bg-[rgba(10,10,15,0.95)] shadow-[0_0_26px_rgba(56,182,255,0.35)]">
           <div
             className="absolute inset-0 rounded-2xl pointer-events-none"
             style={{
               boxShadow:
-                "0 0 40px rgba(252,84,175,0.5), 0 0 80px rgba(252,84,175,0.3), inset 0 0 24px rgba(252,84,175,0.2)",
+                "0 0 30px rgba(252,84,175,0.4), inset 0 0 16px rgba(252,84,175,0.15)",
             }}
           />
 

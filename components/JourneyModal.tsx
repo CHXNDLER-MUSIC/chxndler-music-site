@@ -135,13 +135,14 @@ export default function JourneyModal({ open, onClose, onBeamColorChange }: Journ
       </div>
       
       <div
-        className="fixed z-[100005] flex justify-center"
+        className="fixed z-[100005] flex justify-center items-start"
         style={{
           top: 0,
           left: 0,
           right: 0,
           bottom: 'calc(var(--light-beam-boundary) + var(--beam-height))',
-          paddingTop: '70px'
+          paddingTop: '70px',
+          overflow: 'hidden'
         }}
         onClick={(e) => {
           e.stopPropagation();
@@ -157,8 +158,10 @@ export default function JourneyModal({ open, onClose, onBeamColorChange }: Journ
           className="journey-container"
           style={{
             width: 'min(94vw, 740px)',
-            height: '50vh',
+            maxHeight: '50vh',
+            height: '100%',
             padding: '15px',
+            overflow: 'auto',
             borderRadius: 15,
             background: 'rgba(0,0,0,0.7)',
             border: `2px solid ${tierData[displayTier].color}`,

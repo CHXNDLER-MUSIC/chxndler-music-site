@@ -1,11 +1,38 @@
 "use client";
-import React from "react";
+import React, { useCallback, useRef, useState } from "react";
 import Image from "next/image";
 import { useAudio } from "@/app/providers/AudioProvider";
 
 export default function SongHUD({ title, coverSrc, element }: { title: string; coverSrc: string; element: string; }) {
   const { currentTime, duration, playing, play, pause, seek } = useAudio();
+  const [isDragging, setIsDragging] = useState(false);
+  const barRef = useRef<HTMLDivElement | null>(null);
   const pct = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  const handleSeekAt = useCallback((clientX: number) => {
+    const el = barRef.current;
+    if (!el || duration <= 0) return;
+    const rect = el.getBoundingClientRect();
+    const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+    const ratio = rect.width > 0 ? x / rect.width : 0;
+    seek(ratio * duration);
+  }, [duration, seek]);
+
+  const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (duration <= 0) return;
+    setIsDragging(true);
+    try { (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); } catch {}
+    e.preventDefault();
+    handleSeekAt(e.clientX);
+    const onMove = (ev: PointerEvent) => handleSeekAt(ev.clientX);
+    const onUp = () => {
+      setIsDragging(false);
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp, { once: true });
+  }, [duration, handleSeekAt]);
   return (
     <div className="fixed left-1/2 bottom-10 -translate-x-1/2 z-20 pointer-events-auto"
          style={{
@@ -31,12 +58,16 @@ export default function SongHUD({ title, coverSrc, element }: { title: string; c
           {playing ? 'Pause' : 'Play'}
         </button>
       </div>
-      <div onClick={(e:any)=>{
+      <div
+          ref={barRef}
+          onClick={(e:any)=>{
             const rect = e.currentTarget.getBoundingClientRect();
             const nx = (e.clientX - rect.left) / rect.width; seek((duration||0) * nx);
           }}
+          onPointerDown={onPointerDown}
           className="mt-3 h-2 w-full rounded bg-white/10 cursor-pointer"
-          title="Seek">
+          title="Click or drag to seek"
+          style={{ touchAction: 'none' }}>
         <div className="h-2 rounded" style={{ width: `${pct}%`, background: 'var(--color-primary, #19E3FF)' }} />
       </div>
     </div>

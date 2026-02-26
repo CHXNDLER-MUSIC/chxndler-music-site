@@ -4341,7 +4341,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
                   {/* MERCH Tab Content */}
                   {activeUseTab === 'MERCH' && (
-                    <div className={`px-2 ${step === 'shipping' ? 'pb-2' : 'pb-20'}`}>
+                    <div className={`px-2 ${step === 'shipping' ? 'pb-2' : 'pb-4'}`}>
                       {/* Loading state */}
                       {merchLoading && (
                         <div className="text-center py-8">
@@ -4783,7 +4783,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
 
                   {/* CONFIRM button for heart coin purchase - only show when NOT in shipping step (shipping form has its own button) */}
                   {activeUseTab === 'MERCH' && purchaseDraft && showHeartCoinPurchase && step !== 'shipping' && (
-                    <div className="absolute left-6 right-6 bottom-4">
+                    <div className="absolute left-6 right-6 bottom-2">
                       {(
                         /* Check balance against purchaseDraft.uiCost (server is authoritative for actual deduction) */
                         (profile?.id ? heartCoins : 0) >= (purchaseDraft.uiCost || 0) ? (
@@ -4854,7 +4854,7 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                               </div>
                             </div>
                           ) : (
-                            <div className="grid grid-cols-2 gap-1 justify-center place-items-center mx-auto" style={{ marginTop: '0px' }}>
+                            <div className="grid grid-cols-4 gap-1 justify-center place-items-center mx-auto" style={{ marginTop: '0px' }}>
                               {['lightning', 'darkness', 'water', 'heart'].map((element, index) => {
                                 const elementCounts = getElementCardCounts();
                                 const count = elementCounts[element] || 0;
@@ -5997,33 +5997,58 @@ export default function HeartCoinButton({ asChild = false, children, onClick, on
                       </span>
                     </div>
 
-                    {/* Confirm Button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        try { sfx.play('click', 0.6); } catch {}
-                        if (!activeMerchItem) return;
-                        // Single entrypoint: handler manages idempotency and logging
-                        handleConfirmPurchase(activeMerchItem);
-                      }}
-                      disabled={isPurchasing || heartCoins < (activeMerchItem?.price_heartcoins || 0)}
-                      onMouseEnter={() => { playHoverSfx(0.3) }}
-                      className={`px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg hover:scale-110 ${
-                        !isPurchasing && heartCoins >= (activeMerchItem?.price_heartcoins || 0)
-                          ? 'border-green-500/60 bg-green-500/20 hover:bg-green-500/40 hover:border-green-400 hover:shadow-[0_0_30px_rgba(34,197,94,0.8)]'
-                          : 'border-red-500/60 bg-red-500/20 cursor-not-allowed opacity-70 hover:shadow-[0_0_30px_rgba(239,68,68,0.8)]'
-                      }`}
-                      style={!isPurchasing && heartCoins >= (activeMerchItem?.price_heartcoins || 0)
-                        ? { textShadow: '0 0 8px rgba(34,197,94,0.8)', boxShadow: '0 0 15px rgba(34,197,94,0.4)' }
-                        : { textShadow: '0 0 8px rgba(239,68,68,0.8)', boxShadow: '0 0 15px rgba(239,68,68,0.4)' }
-                      }
-                    >
-                      {isPurchasing ? 'Processing...' : 'CONFIRM'}
-                    </button>
+                    {/* Confirm / Login Button */}
+                    {!profile?.id ? (
+                      /* Not logged in - prompt to log in */
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          try { sfx.play('click', 0.8); } catch {}
+                          // Close heart coin display first
+                          setOpen(false);
+                          onClose?.();
+                          window.dispatchEvent(new CustomEvent('close-heartcoin-modal'));
+                          // Then open WELCOME HOME modal
+                          setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('openWelcomeHomeModal'));
+                          }, 150);
+                        }}
+                        onMouseEnter={() => { playHoverSfx(0.3) }}
+                        className="px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg border-red-500/60 bg-red-500/20 hover:bg-red-500/40 hover:border-red-400 hover:shadow-[0_0_30px_rgba(239,68,68,0.8)] cursor-pointer hover:scale-110"
+                        style={{ textShadow: '0 0 8px rgba(239,68,68,0.8)', boxShadow: '0 0 15px rgba(239,68,68,0.4)' }}
+                      >
+                        Log in to earn HeartCoins
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            try { sfx.play('click', 0.6); } catch {}
+                            if (!activeMerchItem) return;
+                            // Single entrypoint: handler manages idempotency and logging
+                            handleConfirmPurchase(activeMerchItem);
+                          }}
+                          disabled={isPurchasing || heartCoins < (activeMerchItem?.price_heartcoins || 0)}
+                          onMouseEnter={() => { playHoverSfx(0.3) }}
+                          className={`px-8 py-3 rounded border transition-all duration-200 text-white font-bold text-lg hover:scale-110 ${
+                            !isPurchasing && heartCoins >= (activeMerchItem?.price_heartcoins || 0)
+                              ? 'border-green-500/60 bg-green-500/20 hover:bg-green-500/40 hover:border-green-400 hover:shadow-[0_0_30px_rgba(34,197,94,0.8)]'
+                              : 'border-red-500/60 bg-red-500/20 cursor-not-allowed opacity-70 hover:shadow-[0_0_30px_rgba(239,68,68,0.8)]'
+                          }`}
+                          style={!isPurchasing && heartCoins >= (activeMerchItem?.price_heartcoins || 0)
+                            ? { textShadow: '0 0 8px rgba(34,197,94,0.8)', boxShadow: '0 0 15px rgba(34,197,94,0.4)' }
+                            : { textShadow: '0 0 8px rgba(239,68,68,0.8)', boxShadow: '0 0 15px rgba(239,68,68,0.4)' }
+                          }
+                        >
+                          {isPurchasing ? 'Processing...' : 'CONFIRM'}
+                        </button>
 
-                    {/* Not enough coins message */}
-                    {heartCoins < (activeMerchItem?.price_heartcoins || 0) && (
-                      <div className="text-red-400 text-xs" style={{ textShadow: '0 0 6px rgba(239,68,68,0.6)' }}>Not enough Heart Coins</div>
+                        {/* Not enough coins message */}
+                        {heartCoins < (activeMerchItem?.price_heartcoins || 0) && (
+                          <div className="text-red-400 text-xs" style={{ textShadow: '0 0 6px rgba(239,68,68,0.6)' }}>Not enough Heart Coins</div>
+                        )}
+                      </>
                     )}
                   </div>
                 ) : (

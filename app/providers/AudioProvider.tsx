@@ -1678,6 +1678,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const a = audioRef.current;
       if (!a) return;
       try { a.pause(); } catch {}
+      // Also pause any other audio elements that might be playing
+      try {
+        const allAudio = document.querySelectorAll<HTMLAudioElement>('audio');
+        allAudio.forEach(audio => {
+          try { if (!audio.paused) audio.pause(); } catch {}
+        });
+      } catch {}
     },
 
     togglePlayPause: () => {
@@ -1688,22 +1695,36 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       // instead of state.playing which can be stale in useMemo closures.
       const isActuallyPlaying = !a.paused;
 
-      if (process.env.NODE_ENV !== "production") console.log('🎵 togglePlayPause called - state.playing:', state.playing, 'a.paused:', a.paused, 'isActuallyPlaying:', isActuallyPlaying);
+      // Also check if ANY audio element on the page is actively playing
+      // This catches cases where audio plays through a different element than audioRef
+      let anyAudioPlaying = isActuallyPlaying;
+      if (!anyAudioPlaying) {
+        try {
+          const allAudio = document.querySelectorAll<HTMLAudioElement>('audio');
+          allAudio.forEach(audio => {
+            if (!audio.paused && audio.currentTime > 0) anyAudioPlaying = true;
+          });
+        } catch {}
+      }
 
-      if (isActuallyPlaying || state.playing) {
+      if (process.env.NODE_ENV !== "production") console.log('🎵 togglePlayPause called - state.playing:', state.playing, 'a.paused:', a.paused, 'isActuallyPlaying:', isActuallyPlaying, 'anyAudioPlaying:', anyAudioPlaying);
+
+      if (anyAudioPlaying || state.playing) {
         if (process.env.NODE_ENV !== "production") console.log('🎵 Pausing audio');
         // Update state immediately to provide instant UI feedback
         setState(s => ({ ...s, playing: false }));
+        // Clear any pending track to prevent auto-replay after pause
+        setState(s => ({ ...s, pendingTrack: null }));
         try { a.pause(); } catch {}
-        // Also stop any ambient/intro audio that might be playing separately
+        // Pause ALL audio elements on the page to ensure nothing keeps playing
         try {
-          const ambient = document.querySelector<HTMLAudioElement>('audio[data-ambient="1"]');
-          if (ambient && !ambient.paused) { ambient.pause(); }
+          const allAudio = document.querySelectorAll<HTMLAudioElement>('audio');
+          allAudio.forEach(audio => {
+            try { if (!audio.paused) audio.pause(); } catch {}
+          });
         } catch {}
-        try {
-          const intro = document.querySelector<HTMLAudioElement>('audio[data-intro="1"]');
-          if (intro && !intro.paused) { intro.pause(); }
-        } catch {}
+        // Block MediaPlayer or other subsystems from auto-resuming after we pause
+        try { (window as any).__BLOCK_MAIN_AUDIO = true; } catch {}
       } else {
         // Check if there's a current track that should be playing
         if (state.currentTrack) {
@@ -1744,6 +1765,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (process.env.NODE_ENV !== "production") console.log('🎵 Starting audio playback with src:', a.src);
+
+        // Allow MediaPlayer/main audio to play again
+        try { (window as any).__BLOCK_MAIN_AUDIO = false; } catch {}
 
         // Check if audio is ready to play
         if (a.readyState >= 3) {
@@ -2156,8 +2180,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     if (process.env.NODE_ENV !== "production") console.log('🎵 Auto-playing after warp completion:', trackToPlay);
 
-    // Clear pending track
-    setState(s => ({ ...s, pendingTrack: null }));
+    // Clear pending track AND warpCompleted to prevent re-triggering
+    setState(s => ({ ...s, pendingTrack: null, warpCompleted: false }));
 
     // Use the API to play the track (playTrack already handles starting playback)
     const playTrack = api.playTrack;
@@ -2165,19 +2189,30 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   }, [state.warpCompleted, state.pendingTrack, api.playTrack]);
 
+  // Keep currentTrack ref in sync for use in playerStore subscription (avoids stale closures)
+  const currentTrackIdRef = useRef<string | null>(state.currentTrack?.id ?? null);
+  useEffect(() => {
+    currentTrackIdRef.current = state.currentTrack?.id ?? null;
+  }, [state.currentTrack?.id]);
+
   // Listen for player store changes to sync with holo panel selections
+  // Single subscription set up once - uses refs to avoid stale closure issues
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    let unsubscribeFn: (() => void) | undefined;
+    let cancelled = false;
+
     // Import playerStore dynamically to avoid SSR issues
-    const subscribeToPlayerStore = async () => {
+    const setup = async () => {
       try {
         const { playerStore } = await import('@/store/usePlayerStore');
-        const { useProfile } = await import('@/contexts/ProfileContext');
+        if (cancelled) return;
 
-        const unsubscribe = playerStore.subscribe((storeState: any) => {
+        unsubscribeFn = playerStore.subscribe((storeState: any) => {
           const currentMainId = storeState?.mainId;
-          const currentTrackId = state.currentTrack?.id; // Use local AudioProvider state, not store state
+          // Use ref to get latest currentTrack.id (avoids stale closure)
+          const currentTrackId = currentTrackIdRef.current;
 
           // Check if HoloAudioBridge is handling the warp sequence - if so, don't interfere
           if ((window as any).__HOLO_WARP_IN_PROGRESS) {
@@ -2202,15 +2237,19 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             setState(s => ({ ...s, pendingTrack: currentMainId, warpCompleted: false }));
           }
         });
-
-        return unsubscribe;
       } catch (err) {
         if (process.env.NODE_ENV !== "production") console.warn('Failed to subscribe to player store:', err);
       }
     };
 
-    subscribeToPlayerStore();
-  }, [state.currentTrack?.id, state.playing, api.playTrack]);
+    setup();
+
+    // Cleanup: unsubscribe when effect re-runs or component unmounts
+    return () => {
+      cancelled = true;
+      if (unsubscribeFn) unsubscribeFn();
+    };
+  }, []); // Empty deps - subscribe once, use refs for latest values
 
   // Store playTrack in a ref to avoid stale closure issues
   const playTrackRef = useRef(api.playTrack);

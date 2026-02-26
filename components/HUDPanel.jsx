@@ -2270,7 +2270,8 @@ const HUDPanel = React.memo(function HUDPanel({
   const TIME_LOCKED_TRACKS = {
     "mr-brightside": {
       unlockDate: "2026-02-27T12:00:00-05:00", // Feb 27, 2026 12PM EST
-      earlyAccessTiers: ["guide"],
+      // Early access should be available to Dreamers and Lovers (and above)
+      earlyAccessTiers: ["dreamer", "lover", "guide"],
     },
   };
 
@@ -3001,9 +3002,10 @@ const HUDPanel = React.memo(function HUDPanel({
                             <div
                               style={{
                                 position: 'absolute',
-                                // Stay contained within the blue display
+                                // Keep within the blue display but extend under the cover art
                                 left: 0,
-                                right: 0,
+                                // Pull the right edge under the cover art area, but not past display edge
+                                right: -Math.max(0, (oneLinerRight || 0) - 8),
                                 // Ambient glow below the controls container
                                 bottom: -26,
                                 height: 20,
@@ -3018,9 +3020,10 @@ const HUDPanel = React.memo(function HUDPanel({
                               className="hud-enhanced-track"
                               style={{
                                 position: 'absolute',
-                                // Stay contained within the blue display
+                                // Keep within the blue display but allow extension beneath cover art
                                 left: 0,
-                                right: 0,
+                                // Pull the right edge under the cover art area, leaving a small gap
+                                right: -Math.max(0, (oneLinerRight || 0) - 8),
                                 // Track bar below the controls container
                                 bottom: -26,
                                 height: 14,

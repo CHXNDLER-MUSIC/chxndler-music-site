@@ -635,8 +635,9 @@ export default function StreamingButtons({ pos, links, showControls = true, disa
           position: fixed; background: transparent; backdrop-filter: none;
           display: flex; justify-content: center; align-items: stretch; z-index: 2147483647;
           left: 0; right: 0;
+          /* Use top/bottom boundaries to avoid collapsed height on some viewports */
           top: var(--profile-bar-boundary, 64px);
-          height: calc(100vh - var(--profile-bar-boundary, 64px) - var(--light-beam-boundary, 120px));
+          bottom: calc(var(--light-beam-boundary, 120px) + var(--beam-height, 68px));
         }
         .lyrics-popover {
           width: min(98vw, 1400px); height: 100%; overflow-y: auto;

@@ -1794,15 +1794,15 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
     >
       <div className="relative flex flex-col flex-1 h-full overflow-y-auto" data-scrollable>
         {/* Balance Display */}
-        <div className="flex items-center mb-3">
+        <div className="flex items-center mb-3" style={{ marginLeft: '-0.5rem' }}>
           <img
             src="/elements/heart-coin.webp"
             alt="HeartCoin"
             className="w-10 h-10 object-cover -ml-3"
             style={{ filter: 'drop-shadow(0 0 8px rgba(0, 255, 255, 0.6))' }}
           />
-          <span className="text-white text-xl font-semibold -ml-2">{heartcoinBalance}</span>
-          <span className="text-white/60 text-sm ml-0.5">Balance</span>
+          <span className="text-white text-xl font-semibold" style={{ marginLeft: '-0.9rem' }}>{heartcoinBalance}</span>
+          <span className="text-white/60 text-sm" style={{ marginLeft: '-0.3rem' }}>Balance</span>
         </div>
 
         {/* Top Level Tabs */}
@@ -2381,7 +2381,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                   });
 
                   return (
-                    <div className="flex flex-col items-center gap-1 mb-2">
+                    <div className="flex flex-col items-center gap-0.5 mb-1">
                       <div className="flex items-center justify-center gap-2">
                         {/* Variant Toggle - to the LEFT of item name */}
                         {variantOptions.length > 0 && (
@@ -2510,7 +2510,7 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                           {/* Item Image - Swipeable */}
                           <div
                             className="relative w-full flex items-center justify-center mb-2 touch-pan-y"
-                            style={{ height: '10rem' }}
+                            style={{ height: '7rem' }}
                             onTouchStart={onTouchStart}
                             onTouchMove={onTouchMove}
                             onTouchEnd={onTouchEnd}
@@ -2539,8 +2539,8 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
                                 className="w-auto max-w-full object-contain rounded-lg cursor-pointer hover:scale-105 transition-transform duration-300 select-none"
                                 style={{
                                   height: '100%',
-                                  maxHeight: '9rem',
-                                  transform: `scale(0.92) scaleX(${merchFlipScale})`,
+                                  maxHeight: '6rem',
+                                  transform: `scale(0.8) scaleX(${merchFlipScale})`,
                                   transition: 'transform 250ms ease-in-out',
                                 }}
                                 draggable={false}
@@ -3160,83 +3160,83 @@ export default function HeartCoinModal({ open, onClose, onOpenJournal, onOpenWel
             </div>
 
             {/* Four Element Containers */}
-            <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto">
+            <div className="flex flex-row justify-center gap-3 w-full mx-auto flex-nowrap">
               {/* Lightning Element */}
               <div
-                className="relative group cursor-pointer"
+                className="relative group cursor-pointer flex-shrink-0"
                 onClick={(e) => { e.stopPropagation(); handleElementSelect('LIGHTNING'); }}
                 onMouseEnter={() => {
                   try { sfx.play('change-channel', 0.5); } catch {}
                 }}
               >
-                <div className="w-36 h-36 mx-auto bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 rounded-full border-2 border-yellow-500/40 flex items-center justify-center transition-all duration-300 hover:border-yellow-400 hover:shadow-[0_0_20px_rgba(255,215,0,0.6)] hover:scale-105">
+                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 rounded-full border-2 border-yellow-500/40 flex items-center justify-center transition-all duration-300 hover:border-yellow-400 hover:shadow-[0_0_20px_rgba(255,215,0,0.6)] hover:scale-105">
                   <img
                     src="/elements/lightning.webp"
                     alt="Lightning"
-                    className="w-24 h-24 object-contain"
+                    className="w-14 h-14 object-contain"
                     draggable={false}
                   />
                 </div>
                 <div className="text-center mt-2">
-                  <span className="text-yellow-400 font-bold text-sm">{getElementCardCount('LIGHTNING')}</span>
+                  <span className="text-yellow-400 font-bold text-xs">{getElementCardCount('LIGHTNING')}</span>
                 </div>
               </div>
 
               {/* Darkness Element */}
               <div
-                className="relative group cursor-pointer"
+                className="relative group cursor-pointer flex-shrink-0"
                 onClick={(e) => { e.stopPropagation(); handleElementSelect('DARKNESS'); }}
                 onMouseEnter={() => {
                   try { sfx.play('change-channel', 0.5); } catch {}
                 }}
               >
-                <div className="w-36 h-36 mx-auto bg-gradient-to-br from-purple-900/30 to-black/40 rounded-full border-2 border-purple-600/40 flex items-center justify-center transition-all duration-300 hover:border-white hover:shadow-[0_0_20px_rgba(255,255,255,0.6)] hover:scale-105">
-                  <div className="w-24 h-24 rounded-full border-2 border-purple-600 bg-gradient-to-br from-transparent to-purple-900/40" />
+                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-purple-900/30 to-black/40 rounded-full border-2 border-purple-600/40 flex items-center justify-center transition-all duration-300 hover:border-white hover:shadow-[0_0_20px_rgba(255,255,255,0.6)] hover:scale-105">
+                  <div className="w-14 h-14 rounded-full border-2 border-purple-600 bg-gradient-to-br from-transparent to-purple-900/40" />
                 </div>
                 <div className="text-center mt-2">
-                  <span className="text-purple-400 font-bold text-sm">{getElementCardCount('DARKNESS')}</span>
+                  <span className="text-purple-400 font-bold text-xs">{getElementCardCount('DARKNESS')}</span>
                 </div>
               </div>
 
               {/* Water Element */}
               <div
-                className="relative group cursor-pointer"
+                className="relative group cursor-pointer flex-shrink-0"
                 onClick={(e) => { e.stopPropagation(); handleElementSelect('WATER'); }}
                 onMouseEnter={() => {
                   try { sfx.play('change-channel', 0.5); } catch {}
                 }}
               >
-                <div className="w-36 h-36 mx-auto bg-gradient-to-br from-blue-400/20 to-blue-600/20 rounded-full border-2 border-blue-400/40 flex items-center justify-center transition-all duration-300 hover:border-blue-300 hover:shadow-[0_0_20px_rgba(0,191,255,0.6)] hover:scale-105">
+                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-blue-400/20 to-blue-600/20 rounded-full border-2 border-blue-400/40 flex items-center justify-center transition-all duration-300 hover:border-blue-300 hover:shadow-[0_0_20px_rgba(0,191,255,0.6)] hover:scale-105">
                   <img
                     src="/elements/water.webp"
                     alt="Water"
-                    className="w-24 h-24 object-contain"
+                    className="w-14 h-14 object-contain"
                     draggable={false}
                   />
                 </div>
                 <div className="text-center mt-2">
-                  <span className="text-blue-400 font-bold text-sm">{getElementCardCount('WATER')}</span>
+                  <span className="text-blue-400 font-bold text-xs">{getElementCardCount('WATER')}</span>
                 </div>
               </div>
 
               {/* Heart Element */}
               <div
-                className="relative group cursor-pointer"
+                className="relative group cursor-pointer flex-shrink-0"
                 onClick={(e) => { e.stopPropagation(); handleElementSelect('HEART'); }}
                 onMouseEnter={() => {
                   try { sfx.play('change-channel', 0.5); } catch {}
                 }}
               >
-                <div className="w-36 h-36 mx-auto bg-gradient-to-br from-pink-500/20 to-pink-600/20 rounded-full border-2 border-pink-500/40 flex items-center justify-center transition-all duration-300 hover:border-pink-400 hover:shadow-[0_0_20px_rgba(255,105,180,0.6)] hover:scale-105">
+                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-pink-500/20 to-pink-600/20 rounded-full border-2 border-pink-500/40 flex items-center justify-center transition-all duration-300 hover:border-pink-400 hover:shadow-[0_0_20px_rgba(255,105,180,0.6)] hover:scale-105">
                   <img
                     src="/elements/heart.webp"
                     alt="Heart"
-                    className="w-24 h-24 object-contain"
+                    className="w-14 h-14 object-contain"
                     draggable={false}
                   />
                 </div>
                 <div className="text-center mt-2">
-                  <span className="text-pink-400 font-bold text-sm">{getElementCardCount('HEART')}</span>
+                  <span className="text-pink-400 font-bold text-xs">{getElementCardCount('HEART')}</span>
                 </div>
               </div>
             </div>

@@ -18,6 +18,7 @@ const SongProgressBar: React.FC<SongProgressBarProps> = ({
 }) => {
   const [isHovering, setIsHovering] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [dragPosition, setDragPosition] = useState(0);
   const [hoverPosition, setHoverPosition] = useState(0);
   const [hoverTime, setHoverTime] = useState(0);
   const progressBarRef = useRef<HTMLDivElement>(null);
@@ -29,7 +30,8 @@ const SongProgressBar: React.FC<SongProgressBarProps> = ({
     DARKNESS: "#5C19FF",
   };
 
-  const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const computedPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const progressPercentage = isDragging ? dragPosition : computedPercentage;
   const currentElementColor = elementColor[element];
 
   const formatTime = (seconds: number): string => {
@@ -67,22 +69,31 @@ const SongProgressBar: React.FC<SongProgressBarProps> = ({
 
     setIsDragging(true);
 
-    const seekFromX = (clientX: number) => {
+    const getPercentage = (clientX: number) => {
       const rect = progressBarRef.current!.getBoundingClientRect();
       const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
-      const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
-      onSeek((percentage / 100) * duration);
-      setHoverPosition(percentage);
-      setHoverTime((percentage / 100) * duration);
+      return Math.max(0, Math.min(100, (x / rect.width) * 100));
     };
 
     try { (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); } catch {}
     e.preventDefault();
 
-    seekFromX(e.clientX);
+    // Immediately update visual position
+    const startPct = getPercentage(e.clientX);
+    setDragPosition(startPct);
+    onSeek((startPct / 100) * duration);
 
-    const onMove = (ev: PointerEvent) => seekFromX(ev.clientX);
-    const onUp = () => {
+    const onMove = (ev: PointerEvent) => {
+      const pct = getPercentage(ev.clientX);
+      setDragPosition(pct);
+      setHoverPosition(pct);
+      setHoverTime((pct / 100) * duration);
+      // Seek continuously while dragging for real-time audio feedback
+      onSeek((pct / 100) * duration);
+    };
+    const onUp = (ev: PointerEvent) => {
+      const finalPct = getPercentage(ev.clientX);
+      onSeek((finalPct / 100) * duration);
       setIsDragging(false);
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
@@ -121,7 +132,7 @@ const SongProgressBar: React.FC<SongProgressBarProps> = ({
         
         {/* Filled progress portion with element-based glow */}
         <div
-          className="absolute inset-0 rounded-full transition-all duration-200"
+          className="absolute inset-0 rounded-full"
           style={{
             width: `${progressPercentage}%`,
             background: `linear-gradient(90deg,
@@ -141,14 +152,16 @@ const SongProgressBar: React.FC<SongProgressBarProps> = ({
         
         {/* Progress knob - always visible, draggable */}
         <div
-          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full shadow-lg pointer-events-none"
+          className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full shadow-lg cursor-grab active:cursor-grabbing"
           style={{
             left: `${progressPercentage}%`,
-            transform: 'translateX(-50%) translateY(-50%)',
+            transform: `translateX(-50%) translateY(-50%) scale(${isDragging ? 1.3 : isHovering ? 1.15 : 1})`,
+            transition: 'transform 0.15s ease, opacity 0.15s ease',
             backgroundColor: currentElementColor,
             boxShadow: `0 0 6px ${currentElementColor}80, 0 0 12px ${currentElementColor}40, 0 2px 4px rgba(0,0,0,0.3)`,
             border: '1.5px solid rgba(255,255,255,0.4)',
             opacity: isHovering || isDragging ? 1 : 0.7,
+            zIndex: 10,
           }}
         />
 

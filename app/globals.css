@@ -2249,7 +2249,12 @@ button:hover > .heart-coin-glow,
 @media (max-width: 768px), (hover: none), (pointer: coarse) {
 
   /* --- 1. Kill backdrop-filter blur compositing --- */
-  .hud-card,
+  /*
+   * Exclude the media player's HUD container from the forced dark background.
+   * The player uses `.hud-card.console-hud`, which should retain its original
+   * translucent styling rather than the darker mobile override.
+   */
+  .hud-card:not(.console-hud),
   .hud-btn,
   .hud-top-controls::before {
     backdrop-filter: none !important;
@@ -2381,3 +2386,8 @@ button:hover > .heart-coin-glow,
   }
 }
 
+/* Ensure the console media player never switches to the dark fallback background
+   when the viewport is narrow. Keep the original translucent HUD look. */
+.hud-card.console-hud {
+  background: rgba(0, 0, 0, 0.35) !important;
+}

@@ -1209,7 +1209,34 @@ export default function SoulStarJournal({ isOpen, onClose, openWelcomeHome, onJo
 
           {/* Scrollable entries container for both PUBLIC and PRIVATE tabs */}
           <div className="journal-scroll mt-3 space-y-3 flex-1 overflow-y-auto pr-1 pl-2">
-            {activeTab === 'private' && (
+            {activeTab === 'private' && !user?.id && (
+              <div className="flex flex-col items-center justify-center py-16 space-y-4">
+                <div className="text-lg text-white/70 font-semibold text-center">Your soul star journal awaits</div>
+                <button
+                  onClick={() => {
+                    sfx.play('button', 0.8);
+                    onClose();
+                    sessionStorage.setItem('reopenJournalAfterLogin', 'true');
+                    setTimeout(() => {
+                      if (openWelcomeHome) {
+                        openWelcomeHome();
+                      }
+                    }, 100);
+                  }}
+                  className="px-6 py-3 rounded-lg text-base font-semibold transition-all duration-200 hover:opacity-90 hover:scale-105"
+                  style={{
+                    background: 'rgba(255, 105, 180, 0.15)',
+                    color: '#FF69B4',
+                    border: '2px solid #FF69B4',
+                    boxShadow: '0 0 20px #FF69B460, 0 0 40px #FF69B430',
+                    textShadow: '0 0 8px #FF69B4, 0 0 15px #FF69B4'
+                  }}
+                >
+                  Log in to cast soul stars
+                </button>
+              </div>
+            )}
+            {activeTab === 'private' && user?.id && (
               <div className="space-y-4">
                 {journalEntries
                   .filter(entry => true) // Show all entries in private tab

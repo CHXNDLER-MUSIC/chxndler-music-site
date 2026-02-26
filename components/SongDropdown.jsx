@@ -330,7 +330,8 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
               || items.find(i => i.title?.toUpperCase() === nextDrop.title?.toUpperCase());
             // Use the matched item's actual id so warp/onChange receives the correct slug
             const nextDropId = nextDropItem?.id || nextDrop.slug;
-            const isNextDropLocked = nextDropItem?.locked ?? false;
+            // Default to locked if item cannot be matched to ensure safe gating for logged-out/WANDERER
+            const isNextDropLocked = nextDropItem?.locked ?? true;
             const nextDropIcon = nextDropItem?.icon || 'darkness';
 
             // Build countdown string for locked display
@@ -351,9 +352,15 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                 aria-disabled={isNextDropLocked}
                 className={`opt next-drop-row flex items-center gap-3 px-3 py-3 text-sm transition-all duration-200 w-full ${
                   isNextDropLocked
-                    ? "cursor-not-allowed opacity-50"
+                    ? "cursor-not-allowed"
                     : "cursor-pointer text-cyan-200/90 hover:bg-cyan-400/10 hover:text-cyan-100"
                 }`}
+                style={{
+                  // Stronger constant glow, even when locked/logged-out
+                  boxShadow: '0 0 28px rgba(25,227,255,0.35), 0 0 64px rgba(25,227,255,0.25), inset 0 0 24px rgba(25,227,255,0.25)',
+                  background: 'linear-gradient(135deg, rgba(25, 227, 255, 0.12) 0%, rgba(25, 227, 255, 0.06) 100%)',
+                  borderBottom: '1px solid rgba(25, 227, 255, 0.35)',
+                }}
                 onMouseEnter={() => {
                   if (!isNextDropLocked) {
                     try { setTimeout(() => playerStore.getState().setHover(nextDropId), 0); } catch {};
@@ -380,51 +387,56 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
                   e.stopPropagation();
                 }}
               >
+                {/* Left: element icon (match song rows) */}
                 <span className="shrink-0">
                   <ElementIcon name={nextDropIcon} />
                 </span>
-                <span className="flex flex-col min-w-0 flex-1">
-                  <span className={`song-title truncate font-semibold ${isNextDropLocked ? 'text-[#5a7a88]' : 'text-[#9EEBFF]'}`}>
-                    {nextDrop.title}
+                {/* Middle: top row with title + right countdown/lock, below hint */}
+                <span className="flex-1 min-w-0 flex flex-col">
+                  <span className="flex items-center gap-2 min-w-0">
+                    <span className={`song-title truncate font-semibold text-[#9EEBFF] flex-1 min-w-0`}>
+                      {nextDrop.title}
+                    </span>
+                    {countdownStr ? (
+                      <span className="shrink-0 flex items-center gap-2" style={{ transform: 'translateY(-1px)' }}>
+                        <span style={{
+                          fontSize: '11px',
+                          fontFamily: "'SF Mono', 'Fira Code', monospace",
+                          color: '#FFFFFF',
+                          letterSpacing: '0.05em',
+                        }}>
+                          {countdownStr}
+                        </span>
+                        {isNextDropLocked && (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                            <path d="M7 11V7a 5 5 0 0 1 10 0v4" />
+                          </svg>
+                        )}
+                      </span>
+                    ) : null}
                   </span>
                   <span style={{
+                    marginTop: '2px',
                     fontSize: '9px',
+                    lineHeight: 1.2,
                     fontFamily: "'SF Mono', 'Fira Code', monospace",
-                    letterSpacing: '0.2em',
-                    color: dropCountdown > 0 ? 'rgba(252, 84, 175, 0.7)' : '#00FFFF',
-                    textShadow: dropCountdown <= 0 ? '0 0 6px rgba(0,255,255,0.5)' : 'none',
+                    letterSpacing: '0.05em',
+                    whiteSpace: 'nowrap',
                   }}>
-                    {dropCountdown > 0 ? '[ NEXT DROP ]' : '[ OUT NOW ]'}
+                    {dropCountdown > 0 ? (
+                      <>
+                        <span style={{ color: '#FFFFFF' }}>Signal unlocked for </span>
+                        <span style={{ color: '#F2EF1D' }}>DREAMERS</span>
+                        <span style={{ color: '#FFFFFF' }}> & </span>
+                        <span style={{ color: '#FC54AF' }}>LOVERS</span>
+                      </>
+                    ) : (
+                      <span style={{ color: '#00FFFF', textShadow: '0 0 6px rgba(0,255,255,0.5)' }}>[ OUT NOW ]</span>
+                    )}
                   </span>
                 </span>
-                {isNextDropLocked ? (
-                  <span className="ml-auto flex items-center gap-1.5 shrink-0">
-                    {countdownStr && (
-                      <span style={{
-                        fontSize: '10px',
-                        fontFamily: "'SF Mono', 'Fira Code', monospace",
-                        color: 'rgba(252, 84, 175, 0.7)',
-                        letterSpacing: '0.05em',
-                      }}>
-                        {countdownStr}
-                      </span>
-                    )}
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(252, 84, 175, 0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                  </span>
-                ) : countdownStr ? (
-                  <span className="ml-auto shrink-0" style={{
-                    fontSize: '10px',
-                    fontFamily: "'SF Mono', 'Fira Code', monospace",
-                    color: '#00FFFF',
-                    letterSpacing: '0.05em',
-                    textShadow: '0 0 4px rgba(0,255,255,0.4)',
-                  }}>
-                    {countdownStr}
-                  </span>
-                ) : null}
+                {/* Right column no longer needed; countdown/lock are inline with title */}
               </div>
             );
           })()}
@@ -452,17 +464,17 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
               }}
               className={`filter-pill w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border text-sm font-semibold tracking-wide transition-all duration-200 ${
                 !activeElement
-                  ? 'bg-[#19E3FF] text-white border-[#19E3FF]'
+                  ? 'bg-[#19E3FF]/30 text-[#CFF7FF] border-[#19E3FF]/60'
                   : 'border-[#19E3FF]/40 text-[#CFF7FF] hover:bg-cyan-400/10'
               }`}
               style={!activeElement ? {
-                boxShadow: 'inset 0 0 20px rgba(25, 227, 255, 0.4), inset 0 0 40px rgba(25, 227, 255, 0.2)',
-                textShadow: '0 0 3px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.7), 0 0 16px rgba(255,255,255,0.5)'
+                boxShadow: 'inset 0 0 8px rgba(25, 227, 255, 0.15), inset 0 0 16px rgba(25, 227, 255, 0.08)',
+                textShadow: '0 0 4px rgba(25, 227, 255, 0.5), 0 0 8px rgba(25, 227, 255, 0.3)'
               } : {}}
               aria-pressed={!activeElement}
             >
               <span style={!activeElement ? {
-                textShadow: '0 0 3px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.7), 0 0 16px rgba(255,255,255,0.5)'
+                textShadow: '0 0 4px rgba(25, 227, 255, 0.5), 0 0 8px rgba(25, 227, 255, 0.3)'
               } : {}}>ALL</span>
             </button>
 
@@ -658,6 +670,17 @@ export default function SongDropdown({ items = [], initialActiveId, onChange, cu
           /* Remove scale to prevent option height jitter */
           transform: none;
           color: rgba(255, 255, 255, 1) !important;
+        }
+        /* Boost glow specifically for the Next Drop row */
+        .next-drop-row{
+          border-color: rgba(25,227,255,0.45) !important;
+          outline-color: rgba(25,227,255,0.8) !important;
+          box-shadow: 0 0 28px rgba(25,227,255,0.35), 0 0 64px rgba(25,227,255,0.25), inset 0 0 24px rgba(25,227,255,0.25) !important;
+          background: linear-gradient(135deg, rgba(25, 227, 255, 0.12) 0%, rgba(25, 227, 255, 0.06) 100%) !important;
+        }
+        .next-drop-row:hover{
+          box-shadow: 0 0 52px rgba(25,227,255,0.7), 0 0 90px rgba(25,227,255,0.45), inset 0 0 28px rgba(25,227,255,0.35) !important;
+          border-color: rgba(25,227,255,0.85) !important;
         }
         .holo-icon{ display:inline-flex; will-change: transform; }
         @keyframes holoPulse { 0%,100%{ transform: scale(1);} 50%{ transform: scale(1.06);} }

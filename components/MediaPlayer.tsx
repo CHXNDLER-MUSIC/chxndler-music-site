@@ -286,8 +286,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
       const t = e.target as Node | null;
       const inMain = !!(mainVolRef.current && t && mainVolRef.current.contains(t));
       const inWave = !!(waveVolRef.current && t && waveVolRef.current.contains(t));
-      if (!inMain) setShowMainVolumePopover(false);
-      if (!inWave) setShowWaveformVolumePopover(false);
+      // Also check if click is inside a portalled volume-popover
+      const inPopover = !!(t && (t as Element).closest?.('.volume-popover'));
+      if (!inMain && !inPopover) setShowMainVolumePopover(false);
+      if (!inWave && !inPopover) setShowWaveformVolumePopover(false);
       // Close lyrics popover when clicking outside waveform container
       try {
         const wf = document.querySelector('.waveform');
@@ -1243,10 +1245,10 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 data-slug={cur.slug}
                 data-id="lyrics"
                 onMouseEnter={playHover}
-                onClick={async () => {
+                onClick={() => {
                   uiClick();
-                  await ensureLyricsLoaded(cur.slug);
                   setLyricsOpen(true);
+                  ensureLyricsLoaded(cur.slug);
                 }}
               >
                 <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
@@ -1359,13 +1361,13 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                 ref={waveVolBtnRef}
                 className="waveform-volume-btn"
                 onClick={() => {
-                  const a = audioRef.current; if (!a) return; uiClick();
+                  uiClick();
                   setShowMainVolumePopover(false);
                   setShowWaveformVolumePopover(v => {
                     const next = !v;
                     if (next && waveVolBtnRef.current) {
                       const r = waveVolBtnRef.current.getBoundingClientRect();
-                      setWavePopoverPos({ left: r.left + r.width / 2, top: r.top - 8 });
+                      setWavePopoverPos({ left: r.left + r.width / 2, top: r.bottom + 8 });
                     }
                     return next;
                   });
@@ -1822,7 +1824,6 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
               ref={mainVolBtnRef}
               className="track-btn volume-btn"
               onClick={() => {
-                const a = audioRef.current; if (!a) return;
                 uiClick();
                 // Only open/close the dropdown; do not change volume on click
                 setShowWaveformVolumePopover(false);
@@ -1830,7 +1831,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
                   const next = !v;
                   if (next && mainVolBtnRef.current) {
                     const r = mainVolBtnRef.current.getBoundingClientRect();
-                    setMainPopoverPos({ left: r.left + r.width / 2, top: r.top - 8 });
+                    setMainPopoverPos({ left: r.left + r.width / 2, top: r.bottom + 8 });
                   }
                   return next;
                 });
@@ -2309,7 +2310,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           margin-top: 6px;
         }
         
-        /* Waveform visualization - cosmic dark background for glow visibility */
+        /* Waveform visualization - remove dark background to avoid bleed behind controls on narrow layouts */
         .waveform{
           position: relative; /* make positioned context for absolute children */
           width: 28vw;
@@ -2321,7 +2322,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           display: flex;
           align-items: center;
           justify-content: center;
-          background: rgba(0,0,5,0.85); /* Very dark background for cosmic feel */
+          background: transparent;
           border-radius: 20px;
           backdrop-filter: blur(12px);
           overflow: visible;
@@ -2780,7 +2781,7 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           text-align: center;
         }
         
-        /* Sleek integrated controls - matching blue container style */
+        /* Sleek integrated controls - keep fully transparent so it doesn't look dark on narrow layouts */
         .sleek-controls {
           display: flex;
           order: 3 !important; /* Controls are below waveform */
@@ -2788,12 +2789,12 @@ export default function MediaPlayer({ onSkyChange, onPlayingChange, onTrackChang
           justify-content: center; /* center row so waveform can sit directly under */
           flex-wrap: wrap; /* allow wrapping on smaller screens */
           gap: 12px;
-          padding: 8px 12px;
-          border-radius: 16px;
-          border: 1px solid rgba(25,227,255,0.4);
-          background: rgba(6,182,212,0.08);
-          backdrop-filter: blur(12px);
-          box-shadow: 0 0 12px rgba(25,227,255,0.25);
+          padding: 0;
+          border-radius: 0;
+          border: none;
+          background: transparent;
+          backdrop-filter: none;
+          box-shadow: none;
           margin: 0 2px;
           transform: translateY(10px); /* nudge buttons slightly lower */
         }
