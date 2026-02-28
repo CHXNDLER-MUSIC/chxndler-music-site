@@ -2611,8 +2611,8 @@ const HUDPanel = React.memo(function HUDPanel({
             right: oneLinerRight + 2, // Match dropdown right position
             // Adjust height to allow internal bottom buffer
             height: '60px',
-            // Position player at the bottom of the blue display
-            bottom: -16,
+            // Keep player anchored within the blue display
+            bottom: 0,
             overflow: 'visible'
           }}>
             <div className="hud-waveform-player" style={{ margin: 0, borderRadius: '10px', paddingBottom: 10, position: 'relative', overflow: 'visible' }}>
@@ -2949,7 +2949,7 @@ const HUDPanel = React.memo(function HUDPanel({
                     </div>
                       {/* Connector line removed - track bar moved below controls */}
 
-                      {/* Enhanced glowing track line pinned to the bottom of blue display */}
+                      {/* Enhanced glowing track line pinned inside the blue display */}
                       {(() => {
                         try {
                           const a = liveAudioRef?.current;
@@ -3008,8 +3008,8 @@ const HUDPanel = React.memo(function HUDPanel({
                                 left: 0,
                                 // Pull the right edge under the cover art area, but not past display edge
                                 right: -Math.max(0, (oneLinerRight || 0) - 8),
-                                // Ambient glow below the controls container
-                                bottom: -26,
+                                // Ambient glow just above the blue display bottom
+                                bottom: 8,
                                 height: 20,
                                 borderRadius: 9999,
                                 background: 'radial-gradient(ellipse 100% 100%, rgba(25,227,255,0.25) 0%, rgba(25,227,255,0.1) 50%, transparent 80%)',
@@ -3026,8 +3026,8 @@ const HUDPanel = React.memo(function HUDPanel({
                                 left: 0,
                                 // Pull the right edge under the cover art area, leaving a small gap
                                 right: -Math.max(0, (oneLinerRight || 0) - 8),
-                                // Track bar below the controls container
-                                bottom: -26,
+                                // Track bar just above the blue display bottom
+                                bottom: 8,
                                 height: 14,
                                 borderRadius: 9999,
                                 background: 'rgba(20,20,25,0.9)',

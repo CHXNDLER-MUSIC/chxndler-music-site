@@ -197,7 +197,10 @@ const WelcomeHomeModal = React.memo(function WelcomeHomeModal({ open, onClose }:
     } catch (e: any) {
       // Show sanitized email in error message so users don't see invisible characters
       const errorMsg = e?.message || "Failed to send heart signal";
-      if (errorMsg.toLowerCase().includes("invalid") || errorMsg.toLowerCase().includes("email")) {
+      const lower = errorMsg.toLowerCase();
+      if (lower.includes("rate") && lower.includes("limit")) {
+        setError("Too many signals from this address. Please wait ~60s and try again.");
+      } else if (lower.includes("invalid")) {
         setError(`Email address "${cleanEmail}" is invalid. Please check and try again.`);
       } else {
         setError(errorMsg);
